@@ -59,8 +59,11 @@ export const addChildren = (el, children) => {
  * @param {ElementProperties} [properties] - Object containing properties of the element.
  * @returns {HTMLElement} The created HTML element.
  */
-export const createElement = (properties = {type: "div", classes: undefined}) => {
+export const createElement = properties => {
     try {
+        // Initialize type if undefined
+        if (!properties.type || typeof properties.type !== "string") properties.type = "div";
+
         // Create element of given type
         let el = document.createElement(properties.type);
 
@@ -244,6 +247,6 @@ export const createIconButton = properties => {
  * @param {HTMLElement} parent - The parent element to append the spacer to
  * @returns {HTMLDivElement} The created spacer element
  */
-export const createSpacer = parent => {
+export const createSpacer = (parent = null) => {
     return createElement({type: "div", style: "flex-grow: 1", parent: parent});
 };
