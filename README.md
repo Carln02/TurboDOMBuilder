@@ -5,7 +5,13 @@ For now, the library allows you to create any generic HTML element, and has more
 
 ## Installation
 
-To use TurboDOMBuilder in your web project, simply include the following script tag in your HTML file:
+You can install TurboDOMBuilder via npm:
+
+```bash
+npm install turbodombuilder
+```
+
+Alternatively, you can include it directly in your HTML:
 
 ```html
 <script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/src.js"></script>
@@ -14,7 +20,7 @@ To use TurboDOMBuilder in your web project, simply include the following script 
 ## Usage
 ```javascript
 // Example: Creating an H2 element and appending it to the body
-const div = createText({ type: "h2", text: "Hello, TurboDOMBuilder!", parent: document.body});
+const div = TurboDOMBuilder.createText({ type: "h2", text: "Hello, TurboDOMBuilder!", parent: document.body});
 ```
 
 ## License
