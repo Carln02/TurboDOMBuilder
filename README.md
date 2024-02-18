@@ -8,7 +8,7 @@ For now, the library allows you to create any generic HTML element, and has more
 To use TurboDOMBuilder in your web project, simply include the following script tag in your HTML file:
 
 ```html
-<script src="https://path/to/cdn/or/local/file"></script>
+<script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/src.js"></script>
 ```
 
 ## Usage
