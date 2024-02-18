@@ -1,0 +1,26 @@
+{
+  "name": "turbodombuilder",
+  "version": "0.1.0",
+  "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
+  "main": "src.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Carln02/TurboDOMBuilder.git"
+  },
+  "keywords": [
+    "DOM",
+    "builder",
+    "elements",
+    "JavaScript",
+    "library"
+  ],
+  "author": "Carln02",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Carln02/TurboDOMBuilder/issues"
+  },
+  "homepage": "https://github.com/Carln02/TurboDOMBuilder.git"
+}
