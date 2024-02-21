@@ -2,9 +2,12 @@
   "name": "turbodombuilder",
   "version": "0.2.1",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
-  "main": "src.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
@@ -22,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/Carln02/TurboDOMBuilder/issues"
   },
-  "homepage": "https://github.com/Carln02/TurboDOMBuilder.git"
+  "homepage": "https://github.com/Carln02/TurboDOMBuilder.git",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
 }
