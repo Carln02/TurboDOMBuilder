@@ -14,7 +14,7 @@ npm install turbodombuilder
 Alternatively, you can include it directly in your HTML:
 
 ```html
-<script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/bundle/turbodombuilder.js"></script>
+<script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/dist/turbodombuilder.js"></script>
 ```
 
 ## Usage

@@ -1,34 +1,15 @@
 const gulp = require("gulp");
 const ts = require("gulp-typescript");
-const webpack = require("webpack-stream");
-const TerserPlugin = require("terser-webpack-plugin");
+const terser = require("gulp-terser");
 const concat = require("gulp-concat");
+const rename = require("gulp-rename");
 const replace = require("gulp-replace");
-const path = require("path");
 const fs = require("fs");
 
 const tempFilePath = "temp.ts";
+const outDir = "dist";
+const outFilePath = outDir + "/turbodombuilder.js"
 
-//Webpack configuration (for minified file)
-const webpackConfig = {
-    mode: "development",
-    entry: "./dist/turbodombuilder.js",
-    output: {
-        filename: "turbodombuilder.min.js"
-    },
-    optimization: {
-        minimizer: [
-            new TerserPlugin({
-                terserOptions: {
-                    compress: {},
-                    output: {
-                        comments: false,
-                    },
-                },
-            }),
-        ],
-    },
-};
 
 //TypeScript configuration
 const tsConfig = {
@@ -37,7 +18,7 @@ const tsConfig = {
     esModuleInterop: true,
     declaration: true,
     skipLibCheck: true,
-    outFile: "turbodombuilder.js",
+    outFile: outFilePath,
 }
 
 //Combine TypeScript files
@@ -54,7 +35,7 @@ function combineFiles() {
 function compile() {
     return gulp.src(tempFilePath)
         .pipe(ts(tsConfig))
-        .pipe(gulp.dest("dist"));
+        .pipe(gulp.dest("."));
 }
 
 //Delete the temp file
@@ -62,11 +43,12 @@ async function clean() {
     await fs.promises.unlink(tempFilePath);
 }
 
-//Minify (using webpack)
+//Minify code
 function minify() {
-    return gulp.src(webpackConfig.entry)
-        .pipe(webpack(webpackConfig))
-        .pipe(gulp.dest("dist"));
+    return gulp.src(outFilePath)
+        .pipe(terser())
+        .pipe(rename({suffix: ".min"}))
+        .pipe(gulp.dest(outDir));
 }
 
 //Chain tasks under "gulp build"
