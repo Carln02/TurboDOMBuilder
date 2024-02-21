@@ -9,11 +9,8 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npm run build-ts && npm run build-webpack && npm run build-min",
-    "build-ts": "tsc",
-    "build-webpack": "webpack --config webpack.config.js",
-    "build-min": "webpack --config webpack.min.config.js",
-    "clean": "rm -rf dist && rm -rf build"
+    "build": "gulp build",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
@@ -33,10 +30,18 @@
   },
   "homepage": "https://github.com/Carln02/TurboDOMBuilder.git",
   "devDependencies": {
-    "ts-loader": "^9.5.1",
+    "del": "^7.1.0",
+    "gulp": "^4.0.2",
+    "gulp-concat": "^2.6.1",
+    "gulp-replace": "^1.1.4",
+    "gulp-typescript": "^6.0.0-alpha.1",
     "terser-webpack-plugin": "^5.3.10",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.90.3",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "webpack-stream": "^7.0.0"
   }
 }

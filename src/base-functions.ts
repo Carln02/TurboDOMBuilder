@@ -1,3 +1,4 @@
+// @ts-ignore
 import {TurboElement} from "./turbo-element";
 
 /**
@@ -5,7 +6,7 @@ import {TurboElement} from "./turbo-element";
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-export const addClass = (element: TurboElement | HTMLElement, classes: string | string[] | undefined) => {
+function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined) {
     if (!classes) return;
     //Extract HTML element
     let el: HTMLElement = element instanceof TurboElement ? element.element : element;
@@ -19,14 +20,14 @@ export const addClass = (element: TurboElement | HTMLElement, classes: string | 
     }
 
     return element;
-};
+}
 
 /**
  * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-export const removeClass = (element: TurboElement | HTMLElement, classes: string | string[] | undefined) => {
+function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined) {
     if (!classes) return;
     //Extract HTML element
     let el: HTMLElement = element instanceof TurboElement ? element.element : element;
@@ -40,14 +41,14 @@ export const removeClass = (element: TurboElement | HTMLElement, classes: string
     }
 
     return element;
-};
+}
 
 /**
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-export const toggleClass = (element: TurboElement | HTMLElement, classes: string | string[] | undefined) => {
+function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined) {
     if (!classes) return;
     //Extract HTML element
     let el: HTMLElement = element instanceof TurboElement ? element.element : element;
@@ -61,7 +62,7 @@ export const toggleClass = (element: TurboElement | HTMLElement, classes: string
     }
 
     return element;
-};
+}
 
 /**
  * @description Add children elements to a parent element.
@@ -69,8 +70,8 @@ export const toggleClass = (element: TurboElement | HTMLElement, classes: string
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-export const addChild = (element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
-    TurboElement[] | HTMLElement[] | undefined) => {
+function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
+    TurboElement[] | HTMLElement[] | undefined) {
     if (!children) return;
 
     //Extract HTML element
@@ -87,7 +88,7 @@ export const addChild = (element: TurboElement | HTMLElement, children: TurboEle
     }
 
     return element;
-};
+}
 
 /**
  * @description Remove children elements from a parent element.
@@ -95,8 +96,8 @@ export const addChild = (element: TurboElement | HTMLElement, children: TurboEle
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-export const removeChild = (element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
-    TurboElement[] | HTMLElement[] | undefined) => {
+function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
+    TurboElement[] | HTMLElement[] | undefined) {
     if (!children) return;
 
     //Extract HTML element
@@ -113,4 +114,6 @@ export const removeChild = (element: TurboElement | HTMLElement, children: Turbo
     }
 
     return element;
-};
+}
+
+export {addClass, removeClass, toggleClass, addChild, removeChild};

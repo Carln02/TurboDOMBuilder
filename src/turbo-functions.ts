@@ -13,24 +13,24 @@ let _iconsType: string = "";
  * not assign any path.
  * @param iconsType - a string representing the type of the icons. E.g.: "svg". Keep empty to not assign any type.
  */
-export const setIconsPath = (pathToIcons: string | undefined, iconsType: string | undefined): void => {
+const setIconsPath = (pathToIcons: string | undefined, iconsType: string | undefined): void => {
     if (pathToIcons) _pathToIcons = pathToIcons;
     if (iconsType && iconsType.length > 0) _iconsType = "." + iconsType;
-}
+};
 
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-export const element = (properties: TurboElementProperties): TurboElement => new TurboElement(properties);
+const element = (properties: TurboElementProperties): TurboElement => new TurboElement(properties);
 
 /**
  * @description Create an image element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-export const image = (properties: TurboElementProperties): TurboElement => {
+const image = (properties: TurboElementProperties): TurboElement => {
     //Check for missing required field
     if (!properties.src) console.error("No src for image provided in the properties of the element");
 
@@ -44,7 +44,7 @@ export const image = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element
  */
-export const input = (properties: TurboElementProperties): TurboElement => {
+const input = (properties: TurboElementProperties): TurboElement => {
     //Check for missing required field
     if (!properties.type) console.error("Input type not provided in the properties of the element");
 
@@ -58,7 +58,7 @@ export const input = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element
  */
-export const textButton = (properties: TurboElementProperties): TurboElement => {
+const textButton = (properties: TurboElementProperties): TurboElement => {
     //Check for missing required field
     if (!properties.text) console.error("Text content not provided in the properties of the element");
 
@@ -73,7 +73,7 @@ export const textButton = (properties: TurboElementProperties): TurboElement => 
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element
  */
-export const icon = (properties: TurboElementProperties): TurboElement => {
+const icon = (properties: TurboElementProperties): TurboElement => {
     //Update properties as needed and create element
     properties.src = _pathToIcons + properties.icon + _iconsType;
     if (!properties.alt) properties.alt = properties.icon;
@@ -85,7 +85,7 @@ export const icon = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element
  */
-export const iconButton = (properties: TurboElementProperties): TurboElement => {
+const iconButton = (properties: TurboElementProperties): TurboElement => {
     //Update properties as needed and create element
     properties.tag = "button";
     properties.children = [icon({icon: properties.icon, alt: properties.alt})];
@@ -97,6 +97,8 @@ export const iconButton = (properties: TurboElementProperties): TurboElement => 
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
  * @returns {TurboElement} The created spacer element
  */
-export const createSpacer = (parent: TurboElement | HTMLElement | undefined): TurboElement => {
+const spacer = (parent: TurboElement | HTMLElement | undefined): TurboElement => {
     return element({style: "flex-grow: 1", parent: parent});
 };
+
+export {setIconsPath, element, image, input, textButton, icon, iconButton, spacer};

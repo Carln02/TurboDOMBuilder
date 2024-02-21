@@ -18,7 +18,7 @@ import {addChild, addClass, removeChild, removeClass, toggleClass} from "./base-
  * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
  * icon-based elements (e.g., "search", "close").
  */
-export type TurboElementProperties = {
+type TurboElementProperties = {
     tag?: string;
     id?: string;
     classes?: string | string[];
@@ -36,7 +36,7 @@ export type TurboElementProperties = {
 /**
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
-export class TurboElement {
+class TurboElement {
     public element: HTMLElement;
 
     /**
@@ -61,7 +61,7 @@ export class TurboElement {
             this.addChild(properties.children);
 
             // Append to parent (if provided)
-            if (properties.parent) addChild(properties.parent, [this.element]);
+            if (properties.parent) addChild(properties.parent, this.element);
         } catch (e) {
             //Create element of given type
             this.element = document.createElement("div");
@@ -165,3 +165,5 @@ export class TurboElement {
         this.element.innerHTML = text;
     }
 }
+
+export {TurboElementProperties, TurboElement};
