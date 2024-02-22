@@ -1,4 +1,3 @@
-// @ts-ignore
 import {TurboElement} from "./turbo-element";
 
 /**

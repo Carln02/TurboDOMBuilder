@@ -1,6 +1,7 @@
 import {addChild, addClass, removeChild, removeClass, toggleClass} from "./base-functions";
 
 /**
+ * @type TurboElementProperties
  * @description Object containing properties for configuring a TurboElement.
  *
  * @property {string} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
@@ -34,6 +35,7 @@ type TurboElementProperties = {
 };
 
 /**
+ * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
 class TurboElement {

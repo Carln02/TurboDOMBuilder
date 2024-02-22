@@ -1,22 +1,5 @@
 import {TurboElement, TurboElementProperties} from "./turbo-element";
-
-let _pathToIcons: string = "";
-let _iconsType: string = "";
-
-/**
- * @function setIconsPath
- * @description Define the path to icons and their type, to not type them again on every icon creation.
- * @example
- * setIconsPath("assets/icons/", "svg");
- * icon({icon: "icon"}); // provide "icon" as parameter instead of "assets/icons/icon.svg"}
- * @param pathToIcons - a string representing the path to the icons' directory. E.g.: "assets/icons/". Keep empty to
- * not assign any path.
- * @param iconsType - a string representing the type of the icons. E.g.: "svg". Keep empty to not assign any type.
- */
-const setIconsPath = (pathToIcons: string | undefined, iconsType: string | undefined): void => {
-    if (pathToIcons) _pathToIcons = pathToIcons;
-    if (iconsType && iconsType.length > 0) _iconsType = "." + iconsType;
-};
+import {TurboConfig} from "./turbo-config";
 
 /**
  * @description Create an HTML element with specified properties.
@@ -75,7 +58,7 @@ const textButton = (properties: TurboElementProperties): TurboElement => {
  */
 const icon = (properties: TurboElementProperties): TurboElement => {
     //Update properties as needed and create element
-    properties.src = _pathToIcons + properties.icon + _iconsType;
+    properties.src = TurboConfig.pathToIcons + properties.icon + TurboConfig.iconsType;
     if (!properties.alt) properties.alt = properties.icon;
     return image(properties);
 };
@@ -101,4 +84,4 @@ const spacer = (parent: TurboElement | HTMLElement | undefined): TurboElement =>
     return element({style: "flex-grow: 1", parent: parent});
 };
 
-export {setIconsPath, element, image, input, textButton, icon, iconButton, spacer};
+export {element, image, input, textButton, icon, iconButton, spacer};

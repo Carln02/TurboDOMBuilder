@@ -31,6 +31,37 @@ declare function addChild(element: TurboElement | HTMLElement, children: TurboEl
  */
 declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement | HTMLElement | undefined;
 /**
+ * @class TurboConfig
+ * @description A static configuration class to customize TurboDOMBuilder to your needs.
+ */
+declare abstract class TurboConfig {
+    private static _pathToIcons;
+    private static _iconsType;
+    /**
+     * @function pathToIcons
+     * @description Define the path to icons, to not type it again on every icon creation. Check also
+     * [iconsType]{@link TurboConfig.iconsType}.
+     * @example
+     * TurboConfig.pathToIcons = "assets/icons/";
+     * icon({icon: "icon.svg"}); // provide "icon.svg" as parameter instead of "assets/icons/icon.svg"}
+     * @param path - a string representing the path to the icons' directory.
+     */
+    static set pathToIcons(path: string);
+    static get pathToIcons(): string;
+    /**
+     * @function iconsType
+     * @description Define the extension type of icons, to not type it again on every icon creation. Check also
+     * [pathToIcons]{@link TurboConfig.pathToIcons}.
+     * @example
+     * TurboConfig.iconsType = "svg";
+     * icon({icon: "assets/icons/icon"}); // provide "assets/icons/icon" as parameter instead of "assets/icons/icon.svg"}
+     * @param type - a string representing the extension of the icons.
+     */
+    static set iconsType(type: string);
+    static get iconsType(): string;
+}
+/**
+ * @type TurboElementProperties
  * @description Object containing properties for configuring a TurboElement.
  *
  * @property {string} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
@@ -127,19 +158,6 @@ declare class TurboElement {
      */
     set innerHTML(text: string);
 }
-declare let _pathToIcons: string;
-declare let _iconsType: string;
-/**
- * @function setIconsPath
- * @description Define the path to icons and their type, to not type them again on every icon creation.
- * @example
- * setIconsPath("assets/icons/", "svg");
- * icon({icon: "icon"}); // provide "icon" as parameter instead of "assets/icons/icon.svg"}
- * @param pathToIcons - a string representing the path to the icons' directory. E.g.: "assets/icons/". Keep empty to
- * not assign any path.
- * @param iconsType - a string representing the type of the icons. E.g.: "svg". Keep empty to not assign any type.
- */
-declare const setIconsPath: (pathToIcons: string | undefined, iconsType: string | undefined) => void;
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.

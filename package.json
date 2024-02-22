@@ -10,6 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "gulp build",
+    "doc": "typedoc src/**/*.ts",
     "clean": "rm -rf dist"
   },
   "repository": {
@@ -30,20 +31,13 @@
   },
   "homepage": "https://github.com/Carln02/TurboDOMBuilder.git",
   "devDependencies": {
-    "del": "^7.1.0",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.1.4",
-    "gulp-typescript": "^6.0.0-alpha.1",
-    "terser-webpack-plugin": "^5.3.10",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.3.3",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
     "gulp-terser": "^2.1.0",
-    "webpack-stream": "^7.0.0"
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "typedoc": "^0.25.8",
+    "typescript": "^5.3.3"
   }
 }
