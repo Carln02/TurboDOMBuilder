@@ -107,6 +107,7 @@ class TurboElement {
      * @description Add one or more child elements to the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
+     * @returns This Turbo element instance for method chaining.
      */
     public addChild(children: TurboElement[] | HTMLElement[] | undefined): TurboElement {
         addChild(this.element, children);
@@ -117,9 +118,24 @@ class TurboElement {
      * @description Remove one or more child elements from the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
+     * @returns This Turbo element instance for method chaining.
      */
     public removeChild(children: TurboElement[] | HTMLElement[] | undefined): TurboElement {
         removeChild(this.element, children);
+        return this;
+    }
+
+    /**
+     * @description Add an event listener to the element. Check the
+     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener}
+     * for more information.
+     * @param {string} event - The JavaScript event to listen for. E.g.: click, mousedown, etc.
+     * @param {(arg0: Event) => void} fn - The callback function to execute when the event occurs
+     * @param {any} options - (Optional) Object containing custom options to specify (if any)
+     * @returns This Turbo element instance for method chaining.
+     */
+    public addListener(event: string, fn: (arg0: Event) => void, options: any = false) {
+        this.element.addEventListener(event, e => fn(e), options);
         return this;
     }
 

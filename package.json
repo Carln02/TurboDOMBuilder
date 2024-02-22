@@ -18,18 +18,21 @@
     "url": "https://github.com/Carln02/TurboDOMBuilder.git"
   },
   "keywords": [
+    "turbo",
+    "fast",
     "DOM",
     "builder",
     "elements",
     "JavaScript",
-    "library"
+    "library",
+    "simple"
   ],
   "author": "Carln02",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Carln02/TurboDOMBuilder/issues"
   },
-  "homepage": "https://github.com/Carln02/TurboDOMBuilder.git",
+  "homepage": "https://carln02.github.io/TurboDOMBuilder/",
   "devDependencies": {
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
