@@ -1,4 +1,5 @@
 import {addChild, addClass, removeChild, removeClass, toggleClass} from "./base-functions";
+import {TurboConfig} from "./turbo-config";
 
 /**
  * @type TurboElementProperties
@@ -16,6 +17,10 @@ import {addChild, addClass, removeChild, removeClass, toggleClass} from "./base-
  * @property {string} [alt] - The alternate text for the image element (if it is one).
  * @property {string} [type] - The type attribute of input elements (if it is one).
  * @property {string} [value] - The value attribute of input elements (if it is one).
+ *
+ * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
+ * @property {string} [gap] - The gap between children elements (if it is a flex element)
+ *
  * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
  * icon-based elements (e.g., "search", "close").
  */
@@ -26,11 +31,16 @@ type TurboElementProperties = {
     style?: string;
     children?: TurboElement[] | HTMLElement[];
     parent?: TurboElement | HTMLElement;
+
     text?: string;
     src?: string;
     alt?: string;
     type?: string;
     value?: string;
+
+    flex?: string;
+    gap?: string;
+
     icon?: string;
 };
 
@@ -57,6 +67,14 @@ class TurboElement {
             if (properties.style) this.element.style.cssText = properties.style;
 
             if (properties.text) this.innerText = properties.text;
+
+            //Set flex value (if any), as well as the gap
+            if (properties.flex) {
+                this.element.style.display = "flex";
+                this.element.style.flexDirection = properties.flex;
+                this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
+                    TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
+            }
 
             // Add classes and children
             this.addClass(properties.classes);
@@ -139,6 +157,47 @@ class TurboElement {
         return this;
     }
 
+    /**
+     * @description Retrieve the first Element in the current element's tree that matches the provided query. Check the
+     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector}
+     * for more information.
+     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
+     * @returns The first element in the tree that matches the specified set of CSS selectors, or null if none matches
+     * the provided selectors.
+     */
+    public query = (selectors: string): Element | null => this.element.querySelector(selectors);
+
+    /**
+     * @description Retrieve a NodeList of Elements in the current element's tree that match the provided query. Check the
+     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll}
+     * for more information.
+     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
+     * @returns A NodeList of all elements in the tree that match the specified set of CSS selectors, or an empty NodeList if
+     * none matches the provided selectors.
+     */
+    public queryAll = (selectors: string): NodeListOf<Element> => this.element.querySelectorAll(selectors);
+
+    /**
+     * @description Set a certain style attribute of the element to the provided value
+     * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
+     * @param {string} value - A string representing the value to set the attribute to.
+     * @returns This Turbo element instance for method chaining.
+     */
+    public setStyle(attribute: keyof CSSStyleDeclaration, value: string): TurboElement {
+        (this.element.style as any)[attribute] = value;
+        return this;
+    }
+
+    /**
+     * @description Appends the given CSS to the element's inline styles.
+     * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons.
+     * @returns This Turbo element instance for method chaining.
+     */
+    public setStyles(cssText: string): TurboElement {
+        this.element.style.cssText += cssText;
+        return this;
+    }
+
     //Getters and setters
 
     /**
@@ -181,6 +240,20 @@ class TurboElement {
      */
     public set innerHTML(text: string) {
         this.element.innerHTML = text;
+    }
+
+    /**
+     * @description Get the parent of the underlying HTMLElement (or null if non-existent).
+     */
+    public get parentElement(): HTMLElement | null {
+        return this.element.parentElement;
+    }
+
+    /**
+     * @description Get the children of the underlying HTMLElement.
+     */
+    public get children(): HTMLCollection {
+        return this.element.children;
     }
 }
 

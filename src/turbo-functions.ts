@@ -1,6 +1,8 @@
 import {TurboElement, TurboElementProperties} from "./turbo-element";
 import {TurboConfig} from "./turbo-config";
 
+//Basics
+
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -35,6 +37,8 @@ const input = (properties: TurboElementProperties): TurboElement => {
     properties.tag = "input";
     return element(properties);
 };
+
+//Buttons
 
 /**
  * @description Create a text button element with specified properties.
@@ -75,6 +79,8 @@ const iconButton = (properties: TurboElementProperties): TurboElement => {
     return element(properties);
 };
 
+//Misc useful functions
+
 /**
  * @description Create a spacer element.
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
@@ -84,4 +90,24 @@ const spacer = (parent: TurboElement | HTMLElement | undefined): TurboElement =>
     return element({style: "flex-grow: 1", parent: parent});
 };
 
-export {element, image, input, textButton, icon, iconButton, spacer};
+/**
+ * @description Create a flex row element.
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
+ * @returns {TurboElement} The created flex element
+ */
+const flexRow = (properties: TurboElementProperties): TurboElement => {
+    properties.flex = "row";
+    return element(properties);
+}
+
+/**
+ * @description Create a flex column element.
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
+ * @returns {TurboElement} The created flex element
+ */
+const flexCol = (properties: TurboElementProperties): TurboElement => {
+    properties.flex = "column";
+    return element(properties);
+}
+
+export {element, image, input, textButton, icon, iconButton, spacer, flexRow, flexCol};

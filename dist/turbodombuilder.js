@@ -80,7 +80,7 @@ function addChild(element, children) {
         else if (children instanceof HTMLElement)
             el.appendChild(children);
         else
-            children.forEach(child => el.appendChild(child instanceof TurboElement ? child.element : child));
+            children.forEach((child) => el.appendChild(child instanceof TurboElement ? child.element : child));
     }
     catch (e) {
         console.error(e);
@@ -125,6 +125,7 @@ class TurboConfig {
      * TurboConfig.pathToIcons = "assets/icons/";
      * icon({icon: "icon.svg"}); // provide "icon.svg" as parameter instead of "assets/icons/icon.svg"}
      * @param path - a string representing the path to the icons' directory.
+     * @returns The previously set path to icons (or an empty string if not set).
      */
     static set pathToIcons(path) {
         this._pathToIcons = path;
@@ -140,6 +141,7 @@ class TurboConfig {
      * TurboConfig.iconsType = "svg";
      * icon({icon: "assets/icons/icon"}); // provide "assets/icons/icon" as parameter instead of "assets/icons/icon.svg"}
      * @param type - a string representing the extension of the icons.
+     * @returns The previously set icons type (or an empty string if not set).
      */
     static set iconsType(type) {
         if (type.length > 0)
@@ -148,10 +150,60 @@ class TurboConfig {
     static get iconsType() {
         return this._iconsType;
     }
+    /**
+     * @function flexGap
+     * @description Define the default gap for all created flex elements (both horizontal and vertical)
+     * @example
+     * TurboConfig.flexGap = "10px";
+     * flexCol({children: [...]}) // Will automatically set the gap between children to 10px, without explicitly specifying it.
+     * @param gap - a string representing the gap value to set.
+     * @returns The value of the gap between elements (or an empty string if not set). If the vertical and horizontal gaps are
+     * set to different values, it will return by default the value of the horizontal gap.
+     */
+    static set flexGap(gap) {
+        this._horizontalFlexGap = gap;
+        this._verticalFlexGap = gap;
+    }
+    static get flexGap() {
+        return this._horizontalFlexGap;
+    }
+    /**
+     * @function horizontalFlexGap
+     * @description Define the default horizontal gap for all created flex elements.
+     * @example
+     * TurboConfig.horizontalFlexGap = "10px";
+     * flexRow({children: [...]}) // Will automatically set the gap between children to 10px, without explicitly specifying it.
+     * @param gap - a string representing the gap value to set.
+     * @returns The value of the gap between elements (or an empty string if not set).
+     */
+    static set horizontalFlexGap(gap) {
+        this._horizontalFlexGap = gap;
+    }
+    static get horizontalFlexGap() {
+        return this._horizontalFlexGap;
+    }
+    /**
+     * @function verticalFlexGap
+     * @description Define the default vertical gap for all created flex elements.
+     * @example
+     * TurboConfig.verticalFlexGap = "10px";
+     * flexCol({children: [...]}) // Will automatically set the gap between children to 10px, without explicitly specifying it.
+     * @param gap - a string representing the gap value to set.
+     * @returns The value of the gap between elements (or an empty string if not set).
+     */
+    static set verticalFlexGap(gap) {
+        this._verticalFlexGap = gap;
+    }
+    static get verticalFlexGap() {
+        return this._verticalFlexGap;
+    }
 }
 TurboConfig._pathToIcons = "";
 TurboConfig._iconsType = "";
+TurboConfig._horizontalFlexGap = "";
+TurboConfig._verticalFlexGap = "";
 /**
+ * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
 class TurboElement {
@@ -160,6 +212,24 @@ class TurboElement {
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
     constructor(properties = {}) {
+        /**
+         * @description Retrieve the first Element in the current element's tree that matches the provided query. Check the
+         * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector}
+         * for more information.
+         * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
+         * @returns The first element in the tree that matches the specified set of CSS selectors, or null if none matches
+         * the provided selectors.
+         */
+        this.query = (selectors) => this.element.querySelector(selectors);
+        /**
+         * @description Retrieve a NodeList of Elements in the current element's tree that match the provided query. Check the
+         * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll}
+         * for more information.
+         * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
+         * @returns A NodeList of all elements in the tree that match the specified set of CSS selectors, or an empty NodeList if
+         * none matches the provided selectors.
+         */
+        this.queryAll = (selectors) => this.element.querySelectorAll(selectors);
         if (!properties.type)
             properties.type = "div";
         try {
@@ -172,6 +242,13 @@ class TurboElement {
                 this.element.style.cssText = properties.style;
             if (properties.text)
                 this.innerText = properties.text;
+            //Set flex value (if any), as well as the gap
+            if (properties.flex) {
+                this.element.style.display = "flex";
+                this.element.style.flexDirection = properties.flex;
+                this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
+                    TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
+            }
             // Add classes and children
             this.addClass(properties.classes);
             this.addChild(properties.children);
@@ -217,6 +294,7 @@ class TurboElement {
      * @description Add one or more child elements to the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
+     * @returns This Turbo element instance for method chaining.
      */
     addChild(children) {
         addChild(this.element, children);
@@ -226,9 +304,42 @@ class TurboElement {
      * @description Remove one or more child elements from the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
+     * @returns This Turbo element instance for method chaining.
      */
     removeChild(children) {
         removeChild(this.element, children);
+        return this;
+    }
+    /**
+     * @description Add an event listener to the element. Check the
+     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener}
+     * for more information.
+     * @param {string} event - The JavaScript event to listen for. E.g.: click, mousedown, etc.
+     * @param {(arg0: Event) => void} fn - The callback function to execute when the event occurs
+     * @param {any} options - (Optional) Object containing custom options to specify (if any)
+     * @returns This Turbo element instance for method chaining.
+     */
+    addListener(event, fn, options = false) {
+        this.element.addEventListener(event, e => fn(e), options);
+        return this;
+    }
+    /**
+     * @description Set a certain style attribute of the element to the provided value
+     * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
+     * @param {string} value - A string representing the value to set the attribute to.
+     * @returns This Turbo element instance for method chaining.
+     */
+    setStyle(attribute, value) {
+        this.element.style[attribute] = value;
+        return this;
+    }
+    /**
+     * @description Appends the given CSS to the element's inline styles.
+     * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons.
+     * @returns This Turbo element instance for method chaining.
+     */
+    setStyles(cssText) {
+        this.element.style.cssText += cssText;
         return this;
     }
     //Getters and setters
@@ -268,7 +379,20 @@ class TurboElement {
     set innerHTML(text) {
         this.element.innerHTML = text;
     }
+    /**
+     * @description Get the parent of the underlying HTMLElement (or null if non-existent).
+     */
+    get parentElement() {
+        return this.element.parentElement;
+    }
+    /**
+     * @description Get the children of the underlying HTMLElement.
+     */
+    get children() {
+        return this.element.children;
+    }
 }
+//Basics
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -301,6 +425,7 @@ const input = (properties) => {
     properties.tag = "input";
     return element(properties);
 };
+//Buttons
 /**
  * @description Create a text button element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -338,6 +463,7 @@ const iconButton = (properties) => {
     properties.children = [icon({ icon: properties.icon, alt: properties.alt })];
     return element(properties);
 };
+//Misc useful functions
 /**
  * @description Create a spacer element.
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
@@ -345,4 +471,22 @@ const iconButton = (properties) => {
  */
 const spacer = (parent) => {
     return element({ style: "flex-grow: 1", parent: parent });
+};
+/**
+ * @description Create a flex row element.
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
+ * @returns {TurboElement} The created flex element
+ */
+const flexRow = (properties) => {
+    properties.flex = "row";
+    return element(properties);
+};
+/**
+ * @description Create a flex column element.
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
+ * @returns {TurboElement} The created flex element
+ */
+const flexCol = (properties) => {
+    properties.flex = "column";
+    return element(properties);
 };

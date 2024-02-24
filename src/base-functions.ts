@@ -80,7 +80,7 @@ function addChild(element: TurboElement | HTMLElement, children: TurboElement | 
     try {
         if (children instanceof TurboElement) el.appendChild(children.element);
         else if (children instanceof HTMLElement) el.appendChild(children);
-        else children.forEach(child =>
+        else children.forEach((child: TurboElement | HTMLElement) =>
                 el.appendChild(child instanceof TurboElement ? child.element : child));
     } catch (e) {
         console.error(e);
