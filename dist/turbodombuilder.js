@@ -230,18 +230,63 @@ class TurboElement {
          * none matches the provided selectors.
          */
         this.queryAll = (selectors) => this.element.querySelectorAll(selectors);
-        if (!properties.type)
-            properties.type = "div";
+        /**
+         * @description Function that sets the focus on the underlying HTML element.
+         * @param {any} options - (Optional) Object containing custom options to specify (if any)
+         * @returns This Turbo element instance for method chaining.
+         */
+        this.focus = (options) => {
+            this.element.focus(options);
+            return this.element;
+        };
+        /**
+         * @description Function that blurs the underlying HTML element.
+         * @returns This Turbo element instance for method chaining.
+         */
+        this.blur = () => {
+            this.element.blur();
+            return this.element;
+        };
+        //Set tag to input if type is set
+        if (properties.type)
+            properties.tag = "input";
+        //Otherwise, if undefined, set tag to div
+        else if (!properties.tag)
+            properties.tag = "div";
         try {
             //Create element of given type
-            this.element = document.createElement(properties.type);
+            this.element = document.createElement(properties.tag);
             //Set ID and custom CSS style (if any)
             if (properties.id)
                 this.element.id = properties.id;
             if (properties.style)
                 this.element.style.cssText = properties.style;
+            //Set inner text (if specified)
             if (properties.text)
                 this.innerText = properties.text;
+            //Set link attributes (if defined)
+            if (this.element instanceof HTMLLinkElement) {
+                if (properties.href)
+                    this.element.href = properties.href;
+            }
+            //Set image attributes (if defined)
+            if (this.element instanceof HTMLImageElement) {
+                if (properties.src)
+                    this.element.src = properties.src;
+                if (properties.alt)
+                    this.element.alt = properties.alt;
+            }
+            //Set input attributes (if defined)
+            if (this.element instanceof HTMLInputElement) {
+                if (properties.value)
+                    this.element.value = properties.value;
+                if (properties.placeholder)
+                    this.element.placeholder = properties.placeholder;
+            }
+            //Add custom attributes
+            if (properties.customAttributes) {
+                Object.entries(properties.customAttributes).forEach(([key, value]) => this.element.setAttribute(key, value));
+            }
             //Set flex value (if any), as well as the gap
             if (properties.flex) {
                 this.element.style.display = "flex";

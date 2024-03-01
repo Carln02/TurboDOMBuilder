@@ -23,7 +23,9 @@ const tsConfig = {
 
 //Combine TypeScript files
 function combineFiles() {
-    return gulp.src("src" + "/**/*.ts")
+    const excludedFiles = ["!src/transition.ts"];
+
+    return gulp.src(["src" + "/**/*.ts",  ...excludedFiles])
         .pipe(replace(/^\s*import .+;$\s*/gm, ""))
         .pipe(replace(/^\s*export .+;$\s*/gm, ""))
         .pipe(replace(/^\s*export /gm, " "))
