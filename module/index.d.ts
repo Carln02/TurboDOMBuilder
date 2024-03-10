@@ -30,6 +30,7 @@ declare function addChild(element: TurboElement | HTMLElement, children: TurboEl
  * Turbo or HTML DOM elements
  */
 declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement | HTMLElement | undefined;
+export { addClass, removeClass, toggleClass, addChild, removeChild };
 /**
  * @class TurboConfig
  * @description A static configuration class to customize TurboDOMBuilder to your needs.
@@ -98,6 +99,7 @@ declare abstract class TurboConfig {
     static set verticalFlexGap(gap: string);
     static get verticalFlexGap(): string;
 }
+export { TurboConfig };
 /**
  * @typedef {Object} TurboElementProperties
  * @description Object containing properties for configuring a TurboElement.
@@ -286,6 +288,7 @@ declare class TurboElement {
      */
     get children(): HTMLCollection;
 }
+export { TurboElementProperties, TurboElement };
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -340,3 +343,4 @@ declare const flexRow: (properties: TurboElementProperties) => TurboElement;
  * @returns {TurboElement} The created flex element
  */
 declare const flexCol: (properties: TurboElementProperties) => TurboElement;
+export { element, image, input, textButton, icon, iconButton, spacer, flexRow, flexCol };

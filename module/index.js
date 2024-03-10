@@ -1,4 +1,3 @@
-"use strict";
 /**
  * @description Add one or more classes to the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
@@ -112,6 +111,7 @@ function removeChild(element, children) {
     }
     return element;
 }
+export { addClass, removeClass, toggleClass, addChild, removeChild };
 /**
  * @class TurboConfig
  * @description A static configuration class to customize TurboDOMBuilder to your needs.
@@ -202,6 +202,7 @@ TurboConfig._pathToIcons = "";
 TurboConfig._iconsType = "";
 TurboConfig._horizontalFlexGap = "";
 TurboConfig._verticalFlexGap = "";
+export { TurboConfig };
 /**
  * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
@@ -447,6 +448,7 @@ class TurboElement {
         return this.element.children;
     }
 }
+export { TurboElement };
 //Basics
 /**
  * @description Create an HTML element with specified properties.
@@ -545,3 +547,4 @@ const flexCol = (properties) => {
     properties.flex = "column";
     return element(properties);
 };
+export { element, image, input, textButton, icon, iconButton, spacer, flexRow, flexCol };

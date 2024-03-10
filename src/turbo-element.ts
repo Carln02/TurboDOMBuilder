@@ -10,7 +10,8 @@ import {TurboConfig} from "./turbo-config";
  * classes or an array of class names).
  * @property {string} [id] - The ID attribute of the element.
  * @property {string} [style] - The inline CSS styles for the element.
- * @property {TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML elements to append to the created element.
+ * @property {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML
+ * elements to append to the created element.
  * @property {TurboElement | HTMLElement} [parent] - The parent element to which the created element will be appended.
  *
  * @property {string} [text] - The text content of the element (if any).
@@ -42,7 +43,7 @@ type TurboElementProperties = {
     id?: string;
     classes?: string | string[];
     style?: string;
-    children?: TurboElement[] | HTMLElement[];
+    children?: TurboElement | HTMLElement | TurboElement[] | HTMLElement[];
     parent?: TurboElement | HTMLElement;
 
     text?: string;
@@ -104,6 +105,7 @@ class TurboElement {
 
             //Set input attributes (if defined)
             if (this.element instanceof HTMLInputElement) {
+                if (properties.type) this.element.type = properties.type;
                 if (properties.value) this.element.value = properties.value;
                 if (properties.placeholder) this.element.placeholder = properties.placeholder;
             }
@@ -173,7 +175,7 @@ class TurboElement {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public addChild(children: TurboElement[] | HTMLElement[] | undefined): TurboElement {
+    public addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement {
         addChild(this.element, children);
         return this;
     }
@@ -184,7 +186,7 @@ class TurboElement {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public removeChild(children: TurboElement[] | HTMLElement[] | undefined): TurboElement {
+    public removeChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement {
         removeChild(this.element, children);
         return this;
     }
@@ -204,6 +206,15 @@ class TurboElement {
     }
 
     /**
+     * @description Remove this element from the DOM tree.
+     * @returns This Turbo element instance for method chaining.
+     */
+    public remove(): TurboElement {
+        this.element.remove();
+        return this;
+    }
+
+    /**
      * @description Retrieve the first Element in the current element's tree that matches the provided query. Check the
      * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector}
      * for more information.
@@ -211,7 +222,7 @@ class TurboElement {
      * @returns The first element in the tree that matches the specified set of CSS selectors, or null if none matches
      * the provided selectors.
      */
-    public query = (selectors: string): Element | null => this.element.querySelector(selectors);
+    public query = (selectors: string): HTMLElement | null => this.element.querySelector(selectors);
 
     /**
      * @description Retrieve a NodeList of Elements in the current element's tree that match the provided query. Check the
@@ -221,7 +232,7 @@ class TurboElement {
      * @returns A NodeList of all elements in the tree that match the specified set of CSS selectors, or an empty NodeList if
      * none matches the provided selectors.
      */
-    public queryAll = (selectors: string): NodeListOf<Element> => this.element.querySelectorAll(selectors);
+    public queryAll = (selectors: string): NodeListOf<HTMLElement> => this.element.querySelectorAll(selectors);
 
     /**
      * @description Function that sets the focus on the underlying HTML element.

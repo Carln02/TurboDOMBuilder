@@ -1,11 +1,12 @@
 {
   "name": "turbodombuilder",
-  "version": "0.2.5",
+  "version": "0.2.9",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/turbodombuilder.js",
+  "module": "module/index.js",
+  "types": "module/index.d.ts",
   "files": [
-    "dist"
+    "dist", "module"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
