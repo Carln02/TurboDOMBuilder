@@ -3,33 +3,33 @@
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): TurboElement | HTMLElement | undefined;
+declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
 /**
  * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): TurboElement | HTMLElement | undefined;
+declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
 /**
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): TurboElement | HTMLElement | undefined;
+declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
 /**
  * @description Add children elements to a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement | HTMLElement | undefined;
+declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement | undefined;
 /**
  * @description Remove children elements from a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement | HTMLElement | undefined;
+declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement | undefined;
 export { addClass, removeClass, toggleClass, addChild, removeChild };
 /**
  * @class TurboConfig
@@ -148,6 +148,7 @@ type TurboElementProperties = {
     src?: string;
     alt?: string;
     type?: string;
+    name?: string;
     value?: string;
     placeholder?: string;
     customAttributes?: Record<string, string>;
@@ -155,6 +156,9 @@ type TurboElementProperties = {
     gap?: string;
     icon?: string;
 };
+interface TurboElement extends HTMLElement {
+    [key: string]: any;
+}
 /**
  * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
@@ -165,128 +169,97 @@ declare class TurboElement {
      * @description Create a new Turbo element with the given properties.
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
-    constructor(properties?: TurboElementProperties);
+    constructor(properties?: TurboElementProperties | HTMLElement);
+    private setProperties;
+    private generateProxy;
+    /**
+     * Adds an event listener to the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject} listener The function or object that receives a notification.
+     * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    /**
+     * Sets the value of an attribute on the underlying element.
+     * @param {string} name The name of the attribute.
+     * @param {string} value The value of the attribute.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    setAttribute(name: string, value: string): this;
+    /**
+     * Removes an attribute from the underlying element.
+     * @param {string} name The name of the attribute to remove.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    removeAttribute(name: string): this;
+    /**
+     * Removes an event listener from the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
+     * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this;
+    /**
+     * Causes the element to lose focus.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    blur(): this;
+    /**
+     * Sets focus on the element.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    focus(): this;
+    /**
+     * Removes the element from its parent node.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    remove(): this;
     /**
      * @description Add one or more CSS classes to the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    addClass(classes: string | string[] | undefined): TurboElement;
+    addClass(classes: string | string[] | undefined): this;
     /**
      * @description Remove one or more CSS classes from the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    removeClass(classes: string | string[] | undefined): TurboElement;
+    removeClass(classes: string | string[] | undefined): this;
     /**
      * @description Toggle one or more CSS classes in the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    toggleClass(classes: string | string[] | undefined): TurboElement;
+    toggleClass(classes: string | string[] | undefined): this;
     /**
      * @description Add one or more child elements to the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement;
+    addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this;
     /**
      * @description Remove one or more child elements from the element.
      * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    removeChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement;
-    /**
-     * @description Add an event listener to the element. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener}
-     * for more information.
-     * @param {string} event - The JavaScript event to listen for. E.g.: click, mousedown, etc.
-     * @param {(arg0: Event) => void} fn - The callback function to execute when the event occurs
-     * @param {any} options - (Optional) Object containing custom options to specify (if any)
-     * @returns This Turbo element instance for method chaining.
-     */
-    addListener(event: string, fn: (arg0: Event) => void, options?: any): this;
-    /**
-     * @description Remove this element from the DOM tree.
-     * @returns This Turbo element instance for method chaining.
-     */
-    remove(): TurboElement;
-    /**
-     * @description Retrieve the first Element in the current element's tree that matches the provided query. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector}
-     * for more information.
-     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
-     * @returns The first element in the tree that matches the specified set of CSS selectors, or null if none matches
-     * the provided selectors.
-     */
-    query: (selectors: string) => HTMLElement | null;
-    /**
-     * @description Retrieve a NodeList of Elements in the current element's tree that match the provided query. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll}
-     * for more information.
-     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
-     * @returns A NodeList of all elements in the tree that match the specified set of CSS selectors, or an empty NodeList if
-     * none matches the provided selectors.
-     */
-    queryAll: (selectors: string) => NodeListOf<HTMLElement>;
-    /**
-     * @description Function that sets the focus on the underlying HTML element.
-     * @param {any} options - (Optional) Object containing custom options to specify (if any)
-     * @returns This Turbo element instance for method chaining.
-     */
-    focus: (options?: any) => HTMLElement;
-    /**
-     * @description Function that blurs the underlying HTML element.
-     * @returns This Turbo element instance for method chaining.
-     */
-    blur: () => HTMLElement;
+    remChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this;
     /**
      * @description Set a certain style attribute of the element to the provided value
      * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
      * @param {string} value - A string representing the value to set the attribute to.
      * @returns This Turbo element instance for method chaining.
      */
-    setStyle(attribute: keyof CSSStyleDeclaration, value: string): TurboElement;
+    setStyle(attribute: keyof CSSStyleDeclaration, value: string): this;
     /**
      * @description Appends the given CSS to the element's inline styles.
      * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons.
      * @returns This Turbo element instance for method chaining.
      */
-    setStyles(cssText: string): TurboElement;
-    /**
-     * @description Get the underlying HTMLElement's style property.
-     */
-    get style(): CSSStyleDeclaration;
-    /**
-     * @description Get the underlying HTMLElement's classList property.
-     */
-    get classList(): DOMTokenList;
-    /**
-     * @description Get the underlying HTMLElement's innerText property.
-     */
-    get innerText(): string;
-    /**
-     * @description Set the underlying HTMLElement's innerText property.
-     */
-    set innerText(text: string);
-    /**
-     * @description Get the underlying HTMLElement's innerHTML property.
-     */
-    get innerHTML(): string;
-    /**
-     * @description Set the underlying HTMLElement's innerHTML property.
-     */
-    set innerHTML(text: string);
-    /**
-     * @description Get the parent of the underlying HTMLElement (or null if non-existent).
-     */
-    get parentElement(): HTMLElement | null;
-    /**
-     * @description Get the children of the underlying HTMLElement.
-     */
-    get children(): HTMLCollection;
+    setStyles(cssText: string): this;
 }
 export { TurboElementProperties, TurboElement };
 /**

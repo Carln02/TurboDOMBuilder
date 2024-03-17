@@ -1,4 +1,4 @@
-import {addChild, addClass, removeChild, removeClass, toggleClass} from "./base-functions";
+import {addChild, removeChild, addClass, removeClass, toggleClass} from "./base-functions";
 import {TurboConfig} from "./turbo-config";
 
 /**
@@ -53,6 +53,7 @@ type TurboElementProperties = {
     alt?: string;
 
     type?: string;
+    name?: string;
     value?: string;
     placeholder?: string;
 
@@ -63,6 +64,11 @@ type TurboElementProperties = {
 
     icon?: string;
 };
+
+//Allow all methods of HTMLElement to be called from TurboElement
+interface TurboElement extends HTMLElement {
+    [key: string]: any;
+}
 
 /**
  * @class TurboElement
@@ -75,66 +81,179 @@ class TurboElement {
      * @description Create a new Turbo element with the given properties.
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
-    constructor(properties: TurboElementProperties = {}) {
+    constructor(properties: TurboElementProperties | HTMLElement = {}) {
+        //If HTMLElement provided as parameter --> create TurboElement from the latter and return Proxy
+        if (properties instanceof HTMLElement) {
+            this.element = properties;
+            return this.generateProxy();
+        }
+
         //Set tag to input if type is set
         if (properties.type) properties.tag = "input";
         //Otherwise, if undefined, set tag to div
         else if (!properties.tag) properties.tag = "div";
 
         try {
-            //Create element of given type
+            //Create element of given type, set its properties, and return proxy
             this.element = document.createElement(properties.tag);
+            this.setProperties(properties);
+            return this.generateProxy();
 
-            //Set ID and custom CSS style (if any)
-            if (properties.id) this.element.id = properties.id;
-            if (properties.style) this.element.style.cssText = properties.style;
-
-            //Set inner text (if specified)
-            if (properties.text) this.innerText = properties.text;
-
-            //Set link attributes (if defined)
-            if (this.element instanceof HTMLLinkElement) {
-                if (properties.href) this.element.href = properties.href;
-            }
-
-            //Set image attributes (if defined)
-            if (this.element instanceof HTMLImageElement) {
-                if (properties.src) this.element.src = properties.src;
-                if (properties.alt) this.element.alt = properties.alt;
-            }
-
-            //Set input attributes (if defined)
-            if (this.element instanceof HTMLInputElement) {
-                if (properties.type) this.element.type = properties.type;
-                if (properties.value) this.element.value = properties.value;
-                if (properties.placeholder) this.element.placeholder = properties.placeholder;
-            }
-
-            //Add custom attributes
-            if (properties.customAttributes) {
-                Object.entries(properties.customAttributes).forEach(([key, value]) =>
-                    this.element.setAttribute(key, value));
-            }
-
-            //Set flex value (if any), as well as the gap
-            if (properties.flex) {
-                this.element.style.display = "flex";
-                this.element.style.flexDirection = properties.flex;
-                this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
-                    TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
-            }
-
-            // Add classes and children
-            this.addClass(properties.classes);
-            this.addChild(properties.children);
-
-            // Append to parent (if provided)
-            if (properties.parent) addChild(properties.parent, this.element);
         } catch (e) {
             //Create element of given type
             this.element = document.createElement("div");
             console.error(e);
         }
+    }
+
+    private setProperties(properties: TurboElementProperties) {
+        //Set ID and custom CSS style (if any)
+        if (properties.id) this.element.id = properties.id;
+        if (properties.style) this.element.style.cssText = properties.style;
+
+        //Set inner text (if specified)
+        if (properties.text) this.element.innerText = properties.text;
+
+        //Set link attributes (if defined)
+        if (this.element instanceof HTMLLinkElement) {
+            if (properties.href) this.element.href = properties.href;
+        }
+
+        //Set image attributes (if defined)
+        if (this.element instanceof HTMLImageElement) {
+            if (properties.src) this.element.src = properties.src;
+            if (properties.alt) this.element.alt = properties.alt;
+        }
+
+        //Set input attributes (if defined)
+        if (this.element instanceof HTMLInputElement) {
+            if (properties.type) this.element.type = properties.type;
+            if (properties.name) this.element.name = properties.name;
+            if (properties.value) this.element.value = properties.value;
+            if (properties.placeholder) this.element.placeholder = properties.placeholder;
+        }
+
+        //Add custom attributes
+        if (properties.customAttributes) {
+            Object.entries(properties.customAttributes).forEach(([key, value]) =>
+                this.element.setAttribute(key, value));
+        }
+
+        //Set flex value (if any), as well as the gap
+        if (properties.flex) {
+            this.element.style.display = "flex";
+            this.element.style.flexDirection = properties.flex;
+            this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
+                TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
+        }
+
+        // Add classes and children
+        this.addClass(properties.classes);
+        this.addChild(properties.children);
+
+        // Append to parent (if provided)
+        if (properties.parent) addChild(properties.parent, this.element);
+    }
+
+    private generateProxy() {
+        return new Proxy(this, {
+            get: (target, prop, receiver) => {
+                //Ignore if prop not string (for now)
+                if (typeof prop !== "string") return receiver;
+
+                const turboMethod = (target as TurboElement)[prop];
+                const elementMethod = (target.element as any)[prop];
+
+                //If property exists on TurboElement --> return it directly
+                if (turboMethod) return (typeof turboMethod === "function") ? turboMethod.bind(target) : turboMethod;
+
+                //Otherwise, if function
+                if (elementMethod && (typeof elementMethod === "function")) return elementMethod.bind(target.element);
+
+                //Other cases --> delegate to the HTMLElement
+                return Reflect.get(target.element, prop);
+            },
+            set: (target, prop, value, receiver) => {
+                //If found in TurboElement --> set in itself
+                if (prop in target) return Reflect.set(target, prop, value, receiver);
+                //Otherwise --> delegate to the HTMLElement
+                return Reflect.set(target.element, prop, value);
+            }
+        }) as unknown as TurboElement;
+    }
+
+    //Method Chaining Declarations
+
+    /**
+     * Adds an event listener to the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject} listener The function or object that receives a notification.
+     * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): this {
+        this.element.addEventListener(type, listener, options);
+        return this;
+    }
+
+    /**
+     * Sets the value of an attribute on the underlying element.
+     * @param {string} name The name of the attribute.
+     * @param {string} value The value of the attribute.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    setAttribute(name: string, value: string): this {
+        this.element.setAttribute(name, value);
+        return this;
+    }
+
+    /**
+     * Removes an attribute from the underlying element.
+     * @param {string} name The name of the attribute to remove.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    removeAttribute(name: string): this {
+        this.element.removeAttribute(name);
+        return this;
+    }
+
+    /**
+     * Removes an event listener from the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
+     * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this {
+        this.element.removeEventListener(type, listener, options);
+        return this;
+    }
+
+    /**
+     * Causes the element to lose focus.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    blur(): this {
+        this.element.blur();
+        return this;
+    }
+
+    /**
+     * Sets focus on the element.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    focus(): this {
+        this.element.focus();
+        return this;
+    }
+
+    /**
+     * Removes the element from its parent node.
+     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     */
+    remove(): this {
+        this.element.remove();
+        return this;
     }
 
     //Custom functions
@@ -144,7 +263,7 @@ class TurboElement {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    public addClass(classes: string | string[] | undefined): TurboElement {
+    public addClass(classes: string | string[] | undefined): this {
         addClass(this.element, classes);
         return this;
     }
@@ -154,7 +273,7 @@ class TurboElement {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    public removeClass(classes: string | string[] | undefined): TurboElement {
+    public removeClass(classes: string | string[] | undefined): this {
         removeClass(this.element, classes);
         return this;
     }
@@ -164,7 +283,7 @@ class TurboElement {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    public toggleClass(classes: string | string[] | undefined): TurboElement {
+    public toggleClass(classes: string | string[] | undefined): this {
         toggleClass(this.element, classes);
         return this;
     }
@@ -175,7 +294,7 @@ class TurboElement {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement {
+    public addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this {
         addChild(this.element, children);
         return this;
     }
@@ -186,71 +305,9 @@ class TurboElement {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public removeChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): TurboElement {
+    public remChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this {
         removeChild(this.element, children);
         return this;
-    }
-
-    /**
-     * @description Add an event listener to the element. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener}
-     * for more information.
-     * @param {string} event - The JavaScript event to listen for. E.g.: click, mousedown, etc.
-     * @param {(arg0: Event) => void} fn - The callback function to execute when the event occurs
-     * @param {any} options - (Optional) Object containing custom options to specify (if any)
-     * @returns This Turbo element instance for method chaining.
-     */
-    public addListener(event: string, fn: (arg0: Event) => void, options: any = false) {
-        this.element.addEventListener(event, e => fn(e), options);
-        return this;
-    }
-
-    /**
-     * @description Remove this element from the DOM tree.
-     * @returns This Turbo element instance for method chaining.
-     */
-    public remove(): TurboElement {
-        this.element.remove();
-        return this;
-    }
-
-    /**
-     * @description Retrieve the first Element in the current element's tree that matches the provided query. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector}
-     * for more information.
-     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
-     * @returns The first element in the tree that matches the specified set of CSS selectors, or null if none matches
-     * the provided selectors.
-     */
-    public query = (selectors: string): HTMLElement | null => this.element.querySelector(selectors);
-
-    /**
-     * @description Retrieve a NodeList of Elements in the current element's tree that match the provided query. Check the
-     * [official documentation]{@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelectorAll}
-     * for more information.
-     * @param {string} selectors - A string containing one or more selectors to match. It must be a valid CSS selector string.
-     * @returns A NodeList of all elements in the tree that match the specified set of CSS selectors, or an empty NodeList if
-     * none matches the provided selectors.
-     */
-    public queryAll = (selectors: string): NodeListOf<HTMLElement> => this.element.querySelectorAll(selectors);
-
-    /**
-     * @description Function that sets the focus on the underlying HTML element.
-     * @param {any} options - (Optional) Object containing custom options to specify (if any)
-     * @returns This Turbo element instance for method chaining.
-     */
-    public focus = (options? : any) => {
-        this.element.focus(options);
-        return this.element;
-    }
-
-    /**
-     * @description Function that blurs the underlying HTML element.
-     * @returns This Turbo element instance for method chaining.
-     */
-    public blur = () => {
-        this.element.blur();
-        return this.element;
     }
 
     /**
@@ -259,7 +316,7 @@ class TurboElement {
      * @param {string} value - A string representing the value to set the attribute to.
      * @returns This Turbo element instance for method chaining.
      */
-    public setStyle(attribute: keyof CSSStyleDeclaration, value: string): TurboElement {
+    public setStyle(attribute: keyof CSSStyleDeclaration, value: string): this {
         (this.element.style as any)[attribute] = value;
         return this;
     }
@@ -269,67 +326,9 @@ class TurboElement {
      * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons.
      * @returns This Turbo element instance for method chaining.
      */
-    public setStyles(cssText: string): TurboElement {
+    public setStyles(cssText: string): this {
         this.element.style.cssText += cssText;
         return this;
-    }
-
-    //Getters and setters
-
-    /**
-     * @description Get the underlying HTMLElement's style property.
-     */
-    public get style(): CSSStyleDeclaration {
-        return this.element.style;
-    }
-
-    /**
-     * @description Get the underlying HTMLElement's classList property.
-     */
-    public get classList(): DOMTokenList {
-        return this.element.classList;
-    }
-
-    /**
-     * @description Get the underlying HTMLElement's innerText property.
-     */
-    public get innerText(): string {
-        return this.element.innerText;
-    }
-
-    /**
-     * @description Set the underlying HTMLElement's innerText property.
-     */
-    public set innerText(text: string) {
-        this.element.innerText = text;
-    }
-
-    /**
-     * @description Get the underlying HTMLElement's innerHTML property.
-     */
-    public get innerHTML(): string {
-        return this.element.innerHTML;
-    }
-
-    /**
-     * @description Set the underlying HTMLElement's innerHTML property.
-     */
-    public set innerHTML(text: string) {
-        this.element.innerHTML = text;
-    }
-
-    /**
-     * @description Get the parent of the underlying HTMLElement (or null if non-existent).
-     */
-    public get parentElement(): HTMLElement | null {
-        return this.element.parentElement;
-    }
-
-    /**
-     * @description Get the children of the underlying HTMLElement.
-     */
-    public get children(): HTMLCollection {
-        return this.element.children;
     }
 }
 
