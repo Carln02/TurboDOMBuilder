@@ -39,7 +39,7 @@ import {TurboConfig} from "./turbo-config";
  * @type {TurboElementProperties}
  */
 type TurboElementProperties = {
-    tag?: string;
+    tag?: keyof HTMLElementTagNameMap;
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -65,7 +65,6 @@ type TurboElementProperties = {
     icon?: string;
 };
 
-//Allow all methods of HTMLElement to be called from TurboElement
 interface TurboElement extends HTMLElement {
     [key: string]: any;
 }
@@ -74,36 +73,28 @@ interface TurboElement extends HTMLElement {
  * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
-class TurboElement {
-    public element: HTMLElement;
+class TurboElement<T extends HTMLElement = HTMLElement> {
+    public element: T;
 
     /**
      * @description Create a new Turbo element with the given properties.
+     * @param {T extends HTMLElement} element - The HTML element to create the TurboElement from
+     */
+    constructor(element: T) {
+        this.element = element;
+    }
+
+    /**
+     * @description Factory method to create a TurboElement from the given properties and with an HTML element
+     * of the corresponding type.
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
-    constructor(properties: TurboElementProperties | HTMLElement = {}) {
-        //If HTMLElement provided as parameter --> create TurboElement from the latter and return Proxy
-        if (properties instanceof HTMLElement) {
-            this.element = properties;
-            return this.generateProxy();
-        }
-
-        //Set tag to input if type is set
-        if (properties.type) properties.tag = "input";
-        //Otherwise, if undefined, set tag to div
-        else if (!properties.tag) properties.tag = "div";
-
-        try {
-            //Create element of given type, set its properties, and return proxy
-            this.element = document.createElement(properties.tag);
-            this.setProperties(properties);
-            return this.generateProxy();
-
-        } catch (e) {
-            //Create element of given type
-            this.element = document.createElement("div");
-            console.error(e);
-        }
+    static create<K extends keyof HTMLElementTagNameMap>(properties: TurboElementProperties = {}): TurboElement {
+        const tagName = properties.tag || "div";
+        const element = document.createElement(tagName) as HTMLElementTagNameMap[K];
+        const turboElement = new TurboElement<HTMLElementTagNameMap[K]>(element);
+        turboElement.setProperties(properties);
+        return turboElement.generateProxy();
     }
 
     private setProperties(properties: TurboElementProperties) {
@@ -155,31 +146,37 @@ class TurboElement {
         if (properties.parent) addChild(properties.parent, this.element);
     }
 
-    private generateProxy() {
+    private generateProxy(): TurboElement<T> {
         return new Proxy(this, {
-            get: (target, prop, receiver) => {
-                //Ignore if prop not string (for now)
-                if (typeof prop !== "string") return receiver;
+            get: (target: TurboElement<T>, prop, receiver) => {
+                // Check if the property exists directly on the TurboElement instance
+                // This includes methods bound to the TurboElement
+                if (prop in target) {
+                    const value = (target as any)[prop];
+                    return typeof value === 'function' ? value.bind(target) : value;
+                }
 
-                const turboMethod = (target as TurboElement)[prop];
-                const elementMethod = (target.element as any)[prop];
+                // If the property is not part of TurboElement, attempt to access it on the underlying HTMLElement
+                const elementProp = (target.element as any)[prop];
+                if (elementProp !== undefined) {
+                    return typeof elementProp === 'function' ? elementProp.bind(target.element) : elementProp;
+                }
 
-                //If property exists on TurboElement --> return it directly
-                if (turboMethod) return (typeof turboMethod === "function") ? turboMethod.bind(target) : turboMethod;
-
-                //Otherwise, if function
-                if (elementMethod && (typeof elementMethod === "function")) return elementMethod.bind(target.element);
-
-                //Other cases --> delegate to the HTMLElement
-                return Reflect.get(target.element, prop);
+                // Default behavior
+                return Reflect.get(target.element, prop, receiver);
             },
-            set: (target, prop, value, receiver) => {
-                //If found in TurboElement --> set in itself
-                if (prop in target) return Reflect.set(target, prop, value, receiver);
-                //Otherwise --> delegate to the HTMLElement
-                return Reflect.set(target.element, prop, value);
+            set: (target, prop, value) => {
+                // If trying to set a property that exists on the TurboElement, set it there
+                if (prop in target) {
+                    (target as any)[prop] = value;
+                    return true;
+                }
+
+                // Otherwise, set the property on the underlying HTMLElement
+                (target.element as any)[prop] = value;
+                return true;
             }
-        }) as unknown as TurboElement;
+        }) as unknown as TurboElement<T>;
     }
 
     //Method Chaining Declarations

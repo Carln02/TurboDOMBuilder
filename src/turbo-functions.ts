@@ -8,7 +8,11 @@ import {TurboConfig} from "./turbo-config";
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-const element = (properties: TurboElementProperties): TurboElement => new TurboElement(properties);
+const element = (properties?: TurboElementProperties): TurboElement => {
+    if (!properties) properties = {};
+    properties.tag = properties.tag || "div";
+    return TurboElement.create(properties);
+}
 
 /**
  * @description Create an image element with specified properties.
@@ -86,7 +90,7 @@ const iconButton = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
  * @returns {TurboElement} The created spacer element
  */
-const spacer = (parent: TurboElement | HTMLElement | undefined): TurboElement => {
+const spacer = (parent?: TurboElement | HTMLElement): TurboElement => {
     return element({style: "flex-grow: 1", parent: parent});
 };
 

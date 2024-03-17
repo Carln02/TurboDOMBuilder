@@ -1,4 +1,38 @@
 /**
+ * @typedef {Object} TurboElementProperties
+ * @description Object containing properties for configuring a TurboElement.
+ *
+ * @property {string} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
+ * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
+ * classes or an array of class names).
+ * @property {string} [id] - The ID attribute of the element.
+ * @property {string} [style] - The inline CSS styles for the element.
+ * @property {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML
+ * elements to append to the created element.
+ * @property {TurboElement | HTMLElement} [parent] - The parent element to which the created element will be appended.
+ *
+ * @property {string} [text] - The text content of the element (if any).
+ * @property {string} [href] - The address/URL of the link element (if it is one).
+ *
+ * @property {string} [src] - The source URL of the element (if any).
+ * @property {string} [alt] - The alternate text for the image element (if it is one).
+ *
+ * @property {string} [type] - The type attribute of input elements (if it is one). If this entry is set, the element will
+ * be turned into an input, disregarding the value of "tag".
+ * @property {string} [value] - The value attribute of input elements (if it is one).
+ * @property {string} [placeholder] - The placeholder attribute of input elements (if it is one).
+ *
+ * @property {Record<string, string>} [customAttributes] - Object containing custom attributes to set to the HTML element
+ * in the form {"attribute": "value", ...}.
+ *
+ * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
+ * @property {string} [gap] - The gap between children elements (if it is a flex element)
+ *
+ * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
+ * icon-based elements (e.g., "search", "close").
+ */
+
+/**
  * @description Add one or more classes to the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
@@ -210,31 +244,22 @@ export { TurboConfig };
 class TurboElement {
     /**
      * @description Create a new Turbo element with the given properties.
+     * @param {T extends HTMLElement} element - The HTML element to create the TurboElement from
+     */
+    constructor(element) {
+        this.element = element;
+    }
+    /**
+     * @description Factory method to create a TurboElement from the given properties and with an HTML element
+     * of the corresponding type.
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
-    constructor(properties = {}) {
-        //If HTMLElement provided as parameter --> create TurboElement from the latter and return Proxy
-        if (properties instanceof HTMLElement) {
-            this.element = properties;
-            return this.generateProxy();
-        }
-        //Set tag to input if type is set
-        if (properties.type)
-            properties.tag = "input";
-        //Otherwise, if undefined, set tag to div
-        else if (!properties.tag)
-            properties.tag = "div";
-        try {
-            //Create element of given type, set its properties, and return proxy
-            this.element = document.createElement(properties.tag);
-            this.setProperties(properties);
-            return this.generateProxy();
-        }
-        catch (e) {
-            //Create element of given type
-            this.element = document.createElement("div");
-            console.error(e);
-        }
+    static create(properties = {}) {
+        const tagName = properties.tag || "div";
+        const element = document.createElement(tagName);
+        const turboElement = new TurboElement(element);
+        turboElement.setProperties(properties);
+        return turboElement.generateProxy();
     }
     setProperties(properties) {
         //Set ID and custom CSS style (if any)
@@ -289,38 +314,29 @@ class TurboElement {
     generateProxy() {
         return new Proxy(this, {
             get: (target, prop, receiver) => {
-                //Ignore if prop not string (for now)
-                if (typeof prop !== "string")
-                    return receiver;
-                const turboMethod = target[prop];
-                const elementMethod = target.element[prop];
-                //If property exists on TurboElement --> return it directly
-                if (turboMethod)
-                    return (typeof turboMethod === "function") ? turboMethod.bind(target) : turboMethod;
-                //Otherwise, if function
-                if (elementMethod && (typeof elementMethod === "function")) {
-                    //If it returns nothing --> call it and return the proxy
-                    if (["addEventListener", "setAttribute", "removeAttribute", "removeEventListener", "blur",
-                        "focus", "remove"].includes(prop)) {
-                        return (...args) => {
-                            target.element[prop](...args);
-                            return receiver;
-                        };
-                    }
-                    else {
-                        //Otherwise --> return the method
-                        return elementMethod.bind(target.element);
-                    }
+                // Check if the property exists directly on the TurboElement instance
+                // This includes methods bound to the TurboElement
+                if (prop in target) {
+                    const value = target[prop];
+                    return typeof value === 'function' ? value.bind(target) : value;
                 }
-                //Other cases --> delegate to the HTMLElement
-                return Reflect.get(target.element, prop);
+                // If the property is not part of TurboElement, attempt to access it on the underlying HTMLElement
+                const elementProp = target.element[prop];
+                if (elementProp !== undefined) {
+                    return typeof elementProp === 'function' ? elementProp.bind(target.element) : elementProp;
+                }
+                // Default behavior
+                return Reflect.get(target.element, prop, receiver);
             },
-            set: (target, prop, value, receiver) => {
-                //If found in TurboElement --> set in itself
-                if (prop in target)
-                    return Reflect.set(target, prop, value, receiver);
-                //Otherwise --> delegate to the HTMLElement
-                return Reflect.set(target.element, prop, value);
+            set: (target, prop, value) => {
+                // If trying to set a property that exists on the TurboElement, set it there
+                if (prop in target) {
+                    target[prop] = value;
+                    return true;
+                }
+                // Otherwise, set the property on the underlying HTMLElement
+                target.element[prop] = value;
+                return true;
             }
         });
     }
@@ -332,10 +348,10 @@ class TurboElement {
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    // addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): this {
-    //     this.element.addEventListener(type, listener, options);
-    //     return this;
-    // }
+    addEventListener(type, listener, options) {
+        this.element.addEventListener(type, listener, options);
+        return this;
+    }
     /**
      * Sets the value of an attribute on the underlying element.
      * @param {string} name The name of the attribute.
@@ -465,7 +481,12 @@ export { TurboElement };
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-const element = (properties) => new TurboElement(properties);
+const element = (properties) => {
+    if (!properties)
+        properties = {};
+    properties.tag = properties.tag || "div";
+    return TurboElement.create(properties);
+};
 /**
  * @description Create an image element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.

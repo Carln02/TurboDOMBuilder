@@ -3,33 +3,33 @@
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
+declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
 /**
  * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
+declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
 /**
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | undefined;
+declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
 /**
  * @description Add children elements to a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement | undefined;
+declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement;
 /**
  * @description Remove children elements from a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement | undefined;
+declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement;
 export { addClass, removeClass, toggleClass, addChild, removeChild };
 /**
  * @class TurboConfig
@@ -137,7 +137,7 @@ export { TurboConfig };
  * @type {TurboElementProperties}
  */
 type TurboElementProperties = {
-    tag?: string;
+    tag?: keyof HTMLElementTagNameMap;
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -163,13 +163,19 @@ interface TurboElement extends HTMLElement {
  * @class TurboElement
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
-declare class TurboElement {
-    element: HTMLElement;
+declare class TurboElement<T extends HTMLElement = HTMLElement> {
+    element: T;
     /**
      * @description Create a new Turbo element with the given properties.
+     * @param {T extends HTMLElement} element - The HTML element to create the TurboElement from
+     */
+    constructor(element: T);
+    /**
+     * @description Factory method to create a TurboElement from the given properties and with an HTML element
+     * of the corresponding type.
      * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
      */
-    constructor(properties?: TurboElementProperties | HTMLElement);
+    static create<K extends keyof HTMLElementTagNameMap>(properties?: TurboElementProperties): TurboElement;
     private setProperties;
     private generateProxy;
     /**
@@ -179,6 +185,7 @@ declare class TurboElement {
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): this;
     /**
      * Sets the value of an attribute on the underlying element.
      * @param {string} name The name of the attribute.
@@ -267,7 +274,7 @@ export { TurboElementProperties, TurboElement };
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-declare const element: (properties: TurboElementProperties) => TurboElement;
+declare const element: (properties?: TurboElementProperties) => TurboElement;
 /**
  * @description Create an image element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -303,7 +310,7 @@ declare const iconButton: (properties: TurboElementProperties) => TurboElement;
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
  * @returns {TurboElement} The created spacer element
  */
-declare const spacer: (parent: TurboElement | HTMLElement | undefined) => TurboElement;
+declare const spacer: (parent?: TurboElement | HTMLElement) => TurboElement;
 /**
  * @description Create a flex row element.
  * @param {TurboElementProperties} properties - Object containing properties of the element.

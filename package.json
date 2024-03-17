@@ -1,12 +1,12 @@
 {
   "name": "turbodombuilder",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
-  "main": "dist/turbodombuilder.js",
+  "main": "module/index.js",
   "module": "module/index.js",
   "types": "module/index.d.ts",
   "files": [
-    "dist", "module"
+    "module"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -37,10 +37,12 @@
   "devDependencies": {
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
+    "gulp-insert": "^0.5.0",
     "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.1.4",
     "gulp-terser": "^2.1.0",
     "gulp-typescript": "^6.0.0-alpha.1",
+    "through2": "^4.0.2",
     "typedoc": "^0.25.8",
     "typescript": "^5.3.3"
   }

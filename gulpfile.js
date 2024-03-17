@@ -4,7 +4,9 @@ const terser = require("gulp-terser");
 const concat = require("gulp-concat");
 const rename = require("gulp-rename");
 const replace = require("gulp-replace");
+const insert = require("gulp-insert");
 const fs = require("fs");
+const through = require("through2");
 
 const staticOutDir = "dist";
 const moduleOutDir = "module";
@@ -12,24 +14,25 @@ const moduleOutDir = "module";
 const staticTempFilePath = "temp.ts";
 const moduleTempFilePath = "index.ts";
 
-const outFilePath = staticOutDir + "/turbodombuilder.js";
+const staticOutFilePath = staticOutDir + "/turbodombuilder.js";
+const staticDefFilePath = staticOutDir + "/turbodombuilder.d.ts";
+
+const moduleOutFilePath = moduleOutDir + "/index.js";
 
 const excludedFiles = ["!src/transition.ts"];
 
 //TypeScript configurations
 const tsConfig = {
     target: "ES6",
-    strict: true,
     esModuleInterop: true,
     declaration: true,
     skipLibCheck: true,
-    outFile: outFilePath,
+    outFile: staticOutFilePath,
 };
 
 //Modules TS config
 const modulesTsConfig = {
     target: "ES6",
-    strict: true,
     esModuleInterop: true,
     declaration: true,
     skipLibCheck: true,
@@ -67,6 +70,32 @@ function compileModuleTemp() {
         .pipe(gulp.dest(moduleOutDir));
 }
 
+//Copy typedef {Object} JSDocs from TS declaration files to JS
+function moveTypedefsToJS() {
+    let typedefs = "";
+    //Extract typedef comments from .d.ts file
+    return gulp.src(staticDefFilePath)
+        .pipe(through.obj(function (file, enc, cb) {
+            const contents = file.contents.toString();
+            const typedefRegex = /\/\*\*\s+\*\s+@typedef {Object}[\s\S]+?\*\//gm;
+            let match;
+            while ((match = typedefRegex.exec(contents)) !== null) typedefs += match[0] + '\n\n';
+            cb(null, file);
+        }))
+        .on("end", () => {
+            //Prepend extracted comments to .js files
+            if (typedefs) {
+                gulp.src(staticOutFilePath)
+                    .pipe(insert.prepend(typedefs))
+                    .pipe(gulp.dest(staticOutDir));
+
+                gulp.src(moduleOutFilePath)
+                    .pipe(insert.prepend(typedefs))
+                    .pipe(gulp.dest(moduleOutDir));
+            }
+        });
+}
+
 //Delete the temp file
 async function clean() {
     await fs.promises.unlink(staticTempFilePath);
@@ -75,7 +104,7 @@ async function clean() {
 
 //Minify code
 function minify() {
-    return gulp.src(outFilePath)
+    return gulp.src(staticOutFilePath)
         .pipe(terser())
         .pipe(rename({suffix: ".min"}))
         .pipe(gulp.dest(staticOutDir));
@@ -83,4 +112,4 @@ function minify() {
 
 //Chain tasks under "gulp build"
 gulp.task("build", gulp.series(combineFilesWithoutImports, generateTempWithoutExports,
-    compileStaticTemp, compileModuleTemp, clean, minify));
+    compileStaticTemp, compileModuleTemp, moveTypedefsToJS, clean, minify));
