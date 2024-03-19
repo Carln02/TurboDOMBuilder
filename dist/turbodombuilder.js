@@ -2,7 +2,7 @@
  * @typedef {Object} TurboElementProperties
  * @description Object containing properties for configuring a TurboElement.
  *
- * @property {string} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
+ * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
  * classes or an array of class names).
  * @property {string} [id] - The ID attribute of the element.
@@ -25,8 +25,13 @@
  * @property {Record<string, string>} [customAttributes] - Object containing custom attributes to set to the HTML element
  * in the form {"attribute": "value", ...}.
  *
+ * @property {string} [margin] - Set the CSS margin property
+ * @property {string} [padding] - Set the CSS padding property
+ *
  * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
- * @property {string} [gap] - The gap between children elements (if it is a flex element)
+ * @property {string} [alignItems] - The align items CSS property
+ * @property {string} [justifyContent] - The justify content CSS property
+ * @property {string} [gap] - The CSS gap for flex displays.
  *
  * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
  * icon-based elements (e.g., "search", "close").
@@ -78,8 +83,10 @@ function removeClass(element, classes) {
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
+ * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+ * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
  */
-function toggleClass(element, classes) {
+function toggleClass(element, classes, force) {
     if (!classes)
         return;
     //Extract HTML element
@@ -88,7 +95,12 @@ function toggleClass(element, classes) {
         // If string provided --> split by spaces
         if (typeof classes === "string")
             classes = classes.split(" ");
-        classes.forEach(entry => el.classList.toggle(entry));
+        classes.forEach(entry => {
+            if (force == undefined)
+                el.classList.toggle(entry);
+            else
+                el.classList.toggle(entry);
+        });
     }
     catch (e) {
         console.error(e);
@@ -250,9 +262,14 @@ class TurboElement {
     /**
      * @description Factory method to create a TurboElement from the given properties and with an HTML element
      * of the corresponding type.
-     * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
+     * @param {TurboElementProperties | HTMLElement} properties - Object containing the properties of the element to
+     * instantiate OR HTML element to create a TurboElement from
      */
     static create(properties = {}) {
+        if (properties instanceof HTMLElement) {
+            const turboElement = new TurboElement(properties);
+            return turboElement.generateProxy();
+        }
         const tagName = properties.tag || "div";
         const element = document.createElement(tagName);
         const turboElement = new TurboElement(element);
@@ -268,33 +285,60 @@ class TurboElement {
         //Set inner text (if specified)
         if (properties.text)
             this.element.innerText = properties.text;
-        //Set link attributes (if defined)
-        if (this.element instanceof HTMLLinkElement) {
+        //Set href attribute (if defined)
+        if (this.element instanceof HTMLAnchorElement || this.element instanceof HTMLAreaElement
+            || this.element instanceof HTMLLinkElement) {
             if (properties.href)
                 this.element.href = properties.href;
         }
-        //Set image attributes (if defined)
-        if (this.element instanceof HTMLImageElement) {
+        //Set src attribute (if defined)
+        if (this.element instanceof HTMLImageElement || this.element instanceof HTMLSourceElement
+            || this.element instanceof HTMLIFrameElement || this.element instanceof HTMLScriptElement
+            || this.element instanceof HTMLEmbedElement || this.element instanceof HTMLTrackElement
+            || this.element instanceof HTMLVideoElement || this.element instanceof HTMLAudioElement) {
             if (properties.src)
                 this.element.src = properties.src;
+        }
+        //Set alt attribute for image elements (if defined)
+        if (this.element instanceof HTMLImageElement) {
             if (properties.alt)
                 this.element.alt = properties.alt;
         }
-        //Set input attributes (if defined)
-        if (this.element instanceof HTMLInputElement) {
+        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLSourceElement
+            || this.element instanceof HTMLButtonElement || this.element instanceof HTMLEmbedElement
+            || this.element instanceof HTMLObjectElement || this.element instanceof HTMLScriptElement
+            || this.element instanceof HTMLStyleElement) {
             if (properties.type)
                 this.element.type = properties.type;
-            if (properties.name)
-                this.element.name = properties.name;
-            if (properties.value)
-                this.element.value = properties.value;
+        }
+        //Set placeholder attribute (if defined)
+        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement) {
             if (properties.placeholder)
                 this.element.placeholder = properties.placeholder;
+        }
+        //Set input name attribute (if defined)
+        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement
+            || this.element instanceof HTMLSelectElement) {
+            if (properties.name)
+                this.element.name = properties.name;
+        }
+        //Set input value attribute (if defined)
+        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement
+            || this.element instanceof HTMLSelectElement || this.element instanceof HTMLOptionElement
+            || this.element instanceof HTMLButtonElement || this.element instanceof HTMLLIElement
+            || this.element instanceof HTMLMeterElement || this.element instanceof HTMLProgressElement) {
+            if (properties.value)
+                this.element.value = properties.value;
         }
         //Add custom attributes
         if (properties.customAttributes) {
             Object.entries(properties.customAttributes).forEach(([key, value]) => this.element.setAttribute(key, value));
         }
+        //Set margin and padding
+        if (properties.margin)
+            this.setStyle("margin", properties.margin);
+        if (properties.padding)
+            this.setStyle("padding", properties.padding);
         //Set flex value (if any), as well as the gap
         if (properties.flex) {
             this.element.style.display = "flex";
@@ -302,6 +346,11 @@ class TurboElement {
             this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
                 TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
         }
+        //Set children alignment if specified
+        if (properties.alignItems)
+            this.setStyle("alignItems", properties.alignItems);
+        if (properties.justifyContent)
+            this.setStyle("justifyContent", properties.justifyContent);
         // Add classes and children
         this.addClass(properties.classes);
         this.addChild(properties.children);
@@ -312,27 +361,26 @@ class TurboElement {
     generateProxy() {
         return new Proxy(this, {
             get: (target, prop, receiver) => {
-                // Check if the property exists directly on the TurboElement instance
-                // This includes methods bound to the TurboElement
+                //Check if the property exists directly on the TurboElement instance
                 if (prop in target) {
                     const value = target[prop];
-                    return typeof value === 'function' ? value.bind(target) : value;
+                    return typeof value === "function" ? value.bind(target) : value;
                 }
-                // If the property is not part of TurboElement, attempt to access it on the underlying HTMLElement
+                //If the property is not part of TurboElement, attempt to access it on the underlying HTMLElement
                 const elementProp = target.element[prop];
                 if (elementProp !== undefined) {
-                    return typeof elementProp === 'function' ? elementProp.bind(target.element) : elementProp;
+                    return typeof elementProp === "function" ? elementProp.bind(target.element) : elementProp;
                 }
-                // Default behavior
+                //Default behavior
                 return Reflect.get(target.element, prop, receiver);
             },
             set: (target, prop, value) => {
-                // If trying to set a property that exists on the TurboElement, set it there
+                //If trying to set a property that exists on the TurboElement, set it there
                 if (prop in target) {
                     target[prop] = value;
                     return true;
                 }
-                // Otherwise, set the property on the underlying HTMLElement
+                //Otherwise, set the property on the underlying HTMLElement
                 target.element[prop] = value;
                 return true;
             }
@@ -426,15 +474,17 @@ class TurboElement {
     /**
      * @description Toggle one or more CSS classes in the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
      * @returns This Turbo element instance for method chaining.
      */
-    toggleClass(classes) {
-        toggleClass(this.element, classes);
+    toggleClass(classes, force) {
+        toggleClass(this.element, classes, force);
         return this;
     }
     /**
      * @description Add one or more child elements to the element.
-     * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
+     * @param {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
@@ -444,7 +494,7 @@ class TurboElement {
     }
     /**
      * @description Remove one or more child elements from the element.
-     * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
+     * @param {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */

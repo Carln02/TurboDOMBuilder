@@ -46,8 +46,10 @@ function removeClass(element: TurboElement | HTMLElement, classes: string | stri
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
+ * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+ * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
  */
-function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined) {
+function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined, force?: boolean) {
     if (!classes) return;
     //Extract HTML element
     let el: HTMLElement = element instanceof TurboElement ? element.element : element;
@@ -55,7 +57,10 @@ function toggleClass(element: TurboElement | HTMLElement, classes: string | stri
     try {
         // If string provided --> split by spaces
         if (typeof classes === "string") classes = classes.split(" ");
-        classes.forEach(entry => el.classList.toggle(entry));
+        classes.forEach(entry => {
+            if (force == undefined) el.classList.toggle(entry);
+            else el.classList.toggle(entry);
+        });
     } catch (e) {
         console.error(e);
     }

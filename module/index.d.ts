@@ -14,8 +14,10 @@ declare function removeClass(element: TurboElement | HTMLElement, classes: strin
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
+ * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+ * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
  */
-declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
+declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined, force?: boolean): HTMLElement;
 /**
  * @description Add children elements to a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
@@ -104,7 +106,7 @@ export { TurboConfig };
  * @typedef {Object} TurboElementProperties
  * @description Object containing properties for configuring a TurboElement.
  *
- * @property {string} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
+ * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
  * classes or an array of class names).
  * @property {string} [id] - The ID attribute of the element.
@@ -127,8 +129,13 @@ export { TurboConfig };
  * @property {Record<string, string>} [customAttributes] - Object containing custom attributes to set to the HTML element
  * in the form {"attribute": "value", ...}.
  *
+ * @property {string} [margin] - Set the CSS margin property
+ * @property {string} [padding] - Set the CSS padding property
+ *
  * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
- * @property {string} [gap] - The gap between children elements (if it is a flex element)
+ * @property {string} [alignItems] - The align items CSS property
+ * @property {string} [justifyContent] - The justify content CSS property
+ * @property {string} [gap] - The CSS gap for flex displays.
  *
  * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
  * icon-based elements (e.g., "search", "close").
@@ -141,7 +148,7 @@ type TurboElementProperties = {
     id?: string;
     classes?: string | string[];
     style?: string;
-    children?: TurboElement | HTMLElement | TurboElement[] | HTMLElement[];
+    children?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
     parent?: TurboElement | HTMLElement;
     text?: string;
     href?: string;
@@ -152,7 +159,11 @@ type TurboElementProperties = {
     value?: string;
     placeholder?: string;
     customAttributes?: Record<string, string>;
+    margin?: string;
+    padding?: string;
     flex?: string;
+    alignItems?: string;
+    justifyContent?: string;
     gap?: string;
     icon?: string;
 };
@@ -173,9 +184,10 @@ declare class TurboElement<T extends HTMLElement = HTMLElement> {
     /**
      * @description Factory method to create a TurboElement from the given properties and with an HTML element
      * of the corresponding type.
-     * @param {TurboElementProperties} properties - Object containing the properties of the element to instantiate
+     * @param {TurboElementProperties | HTMLElement} properties - Object containing the properties of the element to
+     * instantiate OR HTML element to create a TurboElement from
      */
-    static create<K extends keyof HTMLElementTagNameMap>(properties?: TurboElementProperties): TurboElement;
+    static create<K extends keyof HTMLElementTagNameMap>(properties?: TurboElementProperties | HTMLElementTagNameMap[K]): TurboElement;
     private setProperties;
     private generateProxy;
     /**
@@ -237,23 +249,25 @@ declare class TurboElement<T extends HTMLElement = HTMLElement> {
     /**
      * @description Toggle one or more CSS classes in the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
      * @returns This Turbo element instance for method chaining.
      */
-    toggleClass(classes: string | string[] | undefined): this;
+    toggleClass(classes: string | string[] | undefined, force?: boolean): this;
     /**
      * @description Add one or more child elements to the element.
-     * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
+     * @param {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    addChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this;
+    addChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): this;
     /**
      * @description Remove one or more child elements from the element.
-     * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
+     * @param {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} children - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    remChild(children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): this;
+    remChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): this;
     /**
      * @description Set a certain style attribute of the element to the provided value
      * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
