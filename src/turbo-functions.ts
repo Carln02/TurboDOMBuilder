@@ -1,5 +1,4 @@
 import {TurboElement, TurboElementProperties} from "./turbo-element";
-import {TurboConfig} from "./turbo-config";
 
 //Basics
 
@@ -8,10 +7,12 @@ import {TurboConfig} from "./turbo-config";
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-const element = (properties?: TurboElementProperties): TurboElement => {
-    if (!properties) properties = {};
-    properties.tag = properties.tag || "div";
-    return TurboElement.create(properties);
+function element(properties?: TurboElementProperties): TurboElement {
+    const effectiveProperties: TurboElementProperties & { tag: keyof HTMLElementTagNameMap } = {
+        tag: properties.tag || "div",
+        ...properties
+    };
+    return TurboElement.create(effectiveProperties);
 }
 
 /**
@@ -19,69 +20,22 @@ const element = (properties?: TurboElementProperties): TurboElement => {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-const image = (properties: TurboElementProperties): TurboElement => {
-    //Check for missing required field
+function image(properties: TurboElementProperties): TurboElement<HTMLImageElement> {
     if (!properties.src) console.error("No src for image provided in the properties of the element");
-
-    //Update properties as needed and create element
     properties.tag = "img";
-    return element(properties);
-};
+    return new TurboElement<HTMLImageElement>(properties);
+}
 
 /**
  * @description Create an input element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element
  */
-const input = (properties: TurboElementProperties): TurboElement => {
-    //Check for missing required field
+function input(properties: TurboElementProperties): TurboElement<HTMLInputElement> {
     if (!properties.type) console.error("Input type not provided in the properties of the element");
-
-    //Update properties as needed and create element
     properties.tag = "input";
-    return element(properties);
-};
-
-//Buttons
-
-/**
- * @description Create a text button element with specified properties.
- * @param {TurboElementProperties} properties - Object containing properties of the element.
- * @returns {TurboElement} The created Turbo element
- */
-const textButton = (properties: TurboElementProperties): TurboElement => {
-    //Check for missing required field
-    if (!properties.text) console.error("Text content not provided in the properties of the element");
-
-    //Update properties as needed and create element
-    properties.tag = "input";
-    properties.type = "button";
-    return element(properties);
-};
-
-/**
- * @description Create an icon element with the specified properties.
- * @param {TurboElementProperties} properties - Object containing properties of the element.
- * @returns {TurboElement} The created Turbo element
- */
-const icon = (properties: TurboElementProperties): TurboElement => {
-    //Update properties as needed and create element
-    properties.src = TurboConfig.pathToIcons + properties.icon + TurboConfig.iconsType;
-    if (!properties.alt) properties.alt = properties.icon;
-    return image(properties);
-};
-
-/**
- * @description Create a button with an icon element with specified properties.
- * @param {TurboElementProperties} properties - Object containing properties of the element.
- * @returns {TurboElement} The created Turbo element
- */
-const iconButton = (properties: TurboElementProperties): TurboElement => {
-    //Update properties as needed and create element
-    properties.tag = "button";
-    properties.children = [icon({icon: properties.icon, alt: properties.alt})];
-    return element(properties);
-};
+    return new TurboElement<HTMLInputElement>(properties);
+}
 
 //Misc useful functions
 
@@ -90,16 +44,16 @@ const iconButton = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
  * @returns {TurboElement} The created spacer element
  */
-const spacer = (parent?: TurboElement | HTMLElement): TurboElement => {
+function spacer(parent?: TurboElement | HTMLElement): TurboElement {
     return element({style: "flex-grow: 1", parent: parent});
-};
+}
 
 /**
  * @description Create a flex row element.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-const flexRow = (properties: TurboElementProperties): TurboElement => {
+function flexRow(properties: TurboElementProperties): TurboElement {
     properties.flex = "row";
     return element(properties);
 }
@@ -109,9 +63,9 @@ const flexRow = (properties: TurboElementProperties): TurboElement => {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-const flexCol = (properties: TurboElementProperties): TurboElement => {
+function flexCol(properties: TurboElementProperties): TurboElement {
     properties.flex = "column";
     return element(properties);
 }
 
-export {element, image, input, textButton, icon, iconButton, spacer, flexRow, flexCol};
+export {element, image, input, spacer, flexRow, flexCol};

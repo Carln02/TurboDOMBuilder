@@ -1,8 +1,7 @@
-import {addChild, removeChild, addClass, removeClass, toggleClass} from "./base-functions";
-import {TurboConfig} from "./turbo-config";
+import {addChild, removeChild, addBefore, addClass, removeClass, toggleClass} from "./base-functions";
 
 /**
- * @typedef {Object} TurboElementProperties
+ * @type {TurboElementProperties}
  * @description Object containing properties for configuring a TurboElement.
  *
  * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
@@ -35,13 +34,6 @@ import {TurboConfig} from "./turbo-config";
  * @property {string} [alignItems] - The align items CSS property
  * @property {string} [justifyContent] - The justify content CSS property
  * @property {string} [gap] - The CSS gap for flex displays.
- *
- * @property {string} [icon] - The name of the icon (or the full path if the latter was not configured - {@link function:setIconsPath}) for
- * icon-based elements (e.g., "search", "close").
- */
-
-/**
- * @type {TurboElementProperties}
  */
 type TurboElementProperties = {
     tag?: keyof HTMLElementTagNameMap;
@@ -88,32 +80,28 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
 
     /**
      * @description Create a new Turbo element with the given properties.
-     * @param {T extends HTMLElement} element - The HTML element to create the TurboElement from
+     * @param {T extends HTMLElement | TurboElementProperties} properties - Object containing properties for
+     * configuring a TurboElement, or the HTML element to create the TurboElement from.
      */
-    constructor(element: T) {
-        this.element = element;
+    constructor(properties: T | TurboElementProperties = {}) {
+        if (properties instanceof HTMLElement) this.element = properties as T;
+        else {
+            this.element = document.createElement(properties.tag || "div") as T;
+            this.setProperties(properties);
+        }
+        return this.generateProxy();
     }
 
     /**
-     * @description Factory method to create a TurboElement from the given properties and with an HTML element
-     * of the corresponding type.
-     * @param {TurboElementProperties | HTMLElement} properties - Object containing the properties of the element to
-     * instantiate OR HTML element to create a TurboElement from
+     * @description Factory method to create a TurboElement of the appropriate type based on the provided tag.
+     * @param {TurboElementProperties} properties - Object containing properties for configuring a TurboElement.
      */
-    static create<K extends keyof HTMLElementTagNameMap>(properties: TurboElementProperties | HTMLElementTagNameMap[K] = {}): TurboElement {
-        if (properties instanceof HTMLElement) {
-            const turboElement = new TurboElement<HTMLElementTagNameMap[K]>(properties);
-            return turboElement.generateProxy();
-        }
-
-        const tagName = properties.tag || "div";
-        const element = document.createElement(tagName) as HTMLElementTagNameMap[K];
-        const turboElement = new TurboElement<HTMLElementTagNameMap[K]>(element);
-        turboElement.setProperties(properties);
-        return turboElement.generateProxy();
+    static create<K extends keyof HTMLElementTagNameMap>(properties: TurboElementProperties):
+        TurboElement<HTMLElementTagNameMap[K]> {
+        return new TurboElement<HTMLElementTagNameMap[K]>(properties);
     }
 
-    private setProperties(properties: TurboElementProperties) {
+    protected setProperties(properties: TurboElementProperties) {
         //Set ID and custom CSS style (if any)
         if (properties.id) this.element.id = properties.id;
         if (properties.style) this.element.style.cssText = properties.style;
@@ -181,8 +169,7 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
         if (properties.flex) {
             this.element.style.display = "flex";
             this.element.style.flexDirection = properties.flex;
-            this.element.style.gap = properties.gap ? properties.gap : (properties.flex.includes("row") ?
-                TurboConfig.horizontalFlexGap : TurboConfig.verticalFlexGap);
+            if (properties.gap) this.element.style.gap = properties.gap;
         }
 
         //Set children alignment if specified
@@ -238,9 +225,10 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): this {
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean |
+        AddEventListenerOptions): TurboElement<T> {
         this.element.addEventListener(type, listener, options);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -249,9 +237,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string} value The value of the attribute.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    setAttribute(name: string, value: string): this {
+    setAttribute(name: string, value: string): TurboElement<T> {
         this.element.setAttribute(name, value);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -259,9 +247,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string} name The name of the attribute to remove.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    removeAttribute(name: string): this {
+    removeAttribute(name: string): TurboElement<T> {
         this.element.removeAttribute(name);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -271,36 +259,37 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this {
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean |
+        EventListenerOptions): TurboElement<T> {
         this.element.removeEventListener(type, listener, options);
-        return this;
+        return this.generateProxy();
     }
 
     /**
      * Causes the element to lose focus.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    blur(): this {
+    blur(): TurboElement<T> {
         this.element.blur();
-        return this;
+        return this.generateProxy();
     }
 
     /**
      * Sets focus on the element.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    focus(): this {
+    focus(): TurboElement<T> {
         this.element.focus();
-        return this;
+        return this.generateProxy();
     }
 
     /**
      * Removes the element from its parent node.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    remove(): this {
+    remove(): TurboElement<T> {
         this.element.remove();
-        return this;
+        return this.generateProxy();
     }
 
     //Custom functions
@@ -310,9 +299,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    public addClass(classes: string | string[] | undefined): this {
+    public addClass(classes: string | string[] | undefined): TurboElement<T> {
         addClass(this.element, classes);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -320,9 +309,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns This Turbo element instance for method chaining.
      */
-    public removeClass(classes: string | string[] | undefined): this {
+    public removeClass(classes: string | string[] | undefined): TurboElement<T> {
         removeClass(this.element, classes);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -332,9 +321,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
      * @returns This Turbo element instance for method chaining.
      */
-    public toggleClass(classes: string | string[] | undefined, force?: boolean): this {
+    public toggleClass(classes: string | string[] | undefined, force?: boolean): TurboElement<T> {
         toggleClass(this.element, classes, force);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -343,9 +332,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public addChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): this {
+    public addChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): TurboElement<T> {
         addChild(this.element, children);
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -354,9 +343,22 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * Turbo or HTML DOM elements
      * @returns This Turbo element instance for method chaining.
      */
-    public remChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): this {
+    public remChild(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): TurboElement<T> {
         removeChild(this.element, children);
-        return this;
+        return this.generateProxy();
+    }
+
+    /**
+     * @description Add one or more child elements to the element.
+     * @param {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} children - Array of (or single element) child
+     * Turbo or HTML DOM elements to insert before sibling.
+     * @param {TurboElement | HTMLElement} sibling - The sibling element
+     * @returns This Turbo element instance for method chaining.
+     */
+    public addBefore(children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined,
+                     sibling: TurboElement | HTMLElement): TurboElement<T> {
+        addBefore(this.element, children, sibling);
+        return this.generateProxy();
     }
 
     /**
@@ -365,9 +367,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string} value - A string representing the value to set the attribute to.
      * @returns This Turbo element instance for method chaining.
      */
-    public setStyle(attribute: keyof CSSStyleDeclaration, value: string): this {
+    public setStyle(attribute: keyof CSSStyleDeclaration, value: string): TurboElement<T> {
         (this.element.style as any)[attribute] = value;
-        return this;
+        return this.generateProxy();
     }
 
     /**
@@ -375,9 +377,9 @@ class TurboElement<T extends HTMLElement = HTMLElement> {
      * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons.
      * @returns This Turbo element instance for method chaining.
      */
-    public setStyles(cssText: string): this {
+    public setStyles(cssText: string): TurboElement<T> {
         this.element.style.cssText += cssText;
-        return this;
+        return this.generateProxy();
     }
 }
 

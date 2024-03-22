@@ -70,20 +70,24 @@ function compileModuleTemp() {
         .pipe(gulp.dest(moduleOutDir));
 }
 
-//Copy typedef {Object} JSDocs from TS declaration files to JS
-function moveTypedefsToJS() {
+//Copy (and update to typedefs) JSDocs types from TS declaration files to JS
+function copyTypedefsToJS() {
     let typedefs = "";
+
     //Extract typedef comments from .d.ts file
     return gulp.src(staticDefFilePath)
-        .pipe(through.obj(function (file, enc, cb) {
+        .pipe(through.obj((file, enc, cb) => {
             const contents = file.contents.toString();
-            const typedefRegex = /\/\*\*\s+\*\s+@typedef {Object}[\s\S]+?\*\//gm;
+            const typeDocRegex = /\/\*\*\s+\*\s+@type {[^}]+}[\s\S]+?\*\//gm;
             let match;
-            while ((match = typedefRegex.exec(contents)) !== null) typedefs += match[0] + '\n\n';
+            while ((match = typeDocRegex.exec(contents)) !== null) {
+                let docEntry = match[0];
+                docEntry = docEntry.replace(/@type {([^}]+)}/, "@typedef {Object} $1");
+                typedefs += docEntry + "\n\n";
+            }
             cb(null, file);
         }))
         .on("end", () => {
-            //Prepend extracted comments to .js files
             if (typedefs) {
                 gulp.src(staticOutFilePath)
                     .pipe(insert.prepend(typedefs))
@@ -112,4 +116,4 @@ function minify() {
 
 //Chain tasks under "gulp build"
 gulp.task("build", gulp.series(combineFilesWithoutImports, generateTempWithoutExports,
-    compileStaticTemp, compileModuleTemp, moveTypedefsToJS, clean, minify));
+    compileStaticTemp, compileModuleTemp, copyTypedefsToJS, clean, minify));

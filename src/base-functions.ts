@@ -120,4 +120,34 @@ function removeChild(element: TurboElement | HTMLElement, children: TurboElement
     return element;
 }
 
-export {addClass, removeClass, toggleClass, addChild, removeChild};
+/**
+ * @description Add children elements to a parent element.
+ * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
+ * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
+ * Turbo or HTML DOM elements to insert before sibling
+ * @param {TurboElement | HTMLElement} sibling - Sibling Turbo or HTML DOM element
+ */
+function addBefore(element: TurboElement | HTMLElement, children: TurboElement |
+    HTMLElement | (TurboElement | HTMLElement)[] | undefined, sibling: TurboElement | HTMLElement) {
+    if (!children) return;
+
+    //Extract HTML element
+    let el: HTMLElement = element instanceof TurboElement ? element.element : element;
+
+    //Extract HTML sibling element
+    let siblingEl: HTMLElement = sibling instanceof TurboElement ? sibling.element : sibling;
+
+    //Try to append every provided child (according to its type)
+    try {
+        if (children instanceof TurboElement) el.insertBefore(children.element, siblingEl);
+        else if (children instanceof HTMLElement) el.insertBefore(children, siblingEl);
+        else children.forEach((child: TurboElement | HTMLElement) =>
+                el.insertBefore(child instanceof TurboElement ? child.element : child, siblingEl));
+    } catch (e) {
+        console.error(e);
+    }
+
+    return element;
+}
+
+export {addClass, removeClass, toggleClass, addChild, removeChild, addBefore};
