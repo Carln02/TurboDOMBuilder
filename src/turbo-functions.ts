@@ -7,12 +7,9 @@ import {TurboElement, TurboElementProperties} from "./turbo-element";
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-function element(properties?: TurboElementProperties): TurboElement {
-    const effectiveProperties: TurboElementProperties & { tag: keyof HTMLElementTagNameMap } = {
-        tag: properties.tag || "div",
-        ...properties
-    };
-    return TurboElement.create(effectiveProperties);
+function element<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T> {
+    if (!properties) properties = {};
+    return TurboElement.create(properties);
 }
 
 /**
@@ -23,7 +20,7 @@ function element(properties?: TurboElementProperties): TurboElement {
 function image(properties: TurboElementProperties): TurboElement<HTMLImageElement> {
     if (!properties.src) console.error("No src for image provided in the properties of the element");
     properties.tag = "img";
-    return new TurboElement<HTMLImageElement>(properties);
+    return TurboElement.create<HTMLImageElement>(properties);
 }
 
 /**
@@ -34,18 +31,20 @@ function image(properties: TurboElementProperties): TurboElement<HTMLImageElemen
 function input(properties: TurboElementProperties): TurboElement<HTMLInputElement> {
     if (!properties.type) console.error("Input type not provided in the properties of the element");
     properties.tag = "input";
-    return new TurboElement<HTMLInputElement>(properties);
+    return TurboElement.create<HTMLInputElement>(properties);
 }
 
 //Misc useful functions
 
 /**
  * @description Create a spacer element.
- * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created spacer element
  */
-function spacer(parent?: TurboElement | HTMLElement): TurboElement {
-    return element({style: "flex-grow: 1", parent: parent});
+function spacer<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T> {
+    if (!properties) properties = {};
+    properties.flexGrow = "1";
+    return TurboElement.create(properties);
 }
 
 /**
@@ -53,8 +52,10 @@ function spacer(parent?: TurboElement | HTMLElement): TurboElement {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-function flexRow(properties: TurboElementProperties): TurboElement {
-    properties.flex = "row";
+function flexRow<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T> {
+    if (!properties) properties = {};
+    properties.display = "flex";
+    properties.flexDirection = "row";
     return element(properties);
 }
 
@@ -63,8 +64,10 @@ function flexRow(properties: TurboElementProperties): TurboElement {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-function flexCol(properties: TurboElementProperties): TurboElement {
-    properties.flex = "column";
+function flexCol<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T> {
+    if (!properties) properties = {};
+    properties.display = "flex";
+    properties.flexDirection = "column";
     return element(properties);
 }
 

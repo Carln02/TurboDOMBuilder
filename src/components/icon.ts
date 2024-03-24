@@ -146,6 +146,7 @@ class IconButton extends Icon {
     constructor(properties: TurboIconProperties) {
         properties.tag = "button";
         super(properties);
+        return this.generateProxy() as Icon;
     }
 }
 

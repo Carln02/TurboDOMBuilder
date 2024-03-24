@@ -75,7 +75,7 @@ function toggleClass(element: TurboElement | HTMLElement, classes: string | stri
  * Turbo or HTML DOM elements
  */
 function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
-    TurboElement[] | HTMLElement[] | undefined) {
+    (TurboElement | HTMLElement)[] | undefined) {
     if (!children) return;
 
     //Extract HTML element
@@ -101,7 +101,7 @@ function addChild(element: TurboElement | HTMLElement, children: TurboElement | 
  * Turbo or HTML DOM elements
  */
 function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement |
-    TurboElement[] | HTMLElement[] | undefined) {
+    (TurboElement | HTMLElement)[] | undefined) {
     if (!children) return;
 
     //Extract HTML element

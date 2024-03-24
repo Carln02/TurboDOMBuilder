@@ -1,37 +1,16 @@
 /**
  * @typedef {Object} TurboElementProperties
- * @description Object containing properties for configuring a TurboElement.
+ * @description Object containing properties for configuring a TurboElement. Any CSS property or HTML attribute can
+ * be passed as key, and will be processed by the TurboElement. The type also has the following custom properties:
  *
  * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
  * classes or an array of class names).
- * @property {string} [id] - The ID attribute of the element.
  * @property {string} [style] - The inline CSS styles for the element.
  * @property {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML
  * elements to append to the created element.
  * @property {TurboElement | HTMLElement} [parent] - The parent element to which the created element will be appended.
- *
  * @property {string} [text] - The text content of the element (if any).
- * @property {string} [href] - The address/URL of the link element (if it is one).
- *
- * @property {string} [src] - The source URL of the element (if any).
- * @property {string} [alt] - The alternate text for the image element (if it is one).
- *
- * @property {string} [type] - The type attribute of input elements (if it is one). If this entry is set, the element will
- * be turned into an input, disregarding the value of "tag".
- * @property {string} [value] - The value attribute of input elements (if it is one).
- * @property {string} [placeholder] - The placeholder attribute of input elements (if it is one).
- *
- * @property {Record<string, string>} [customAttributes] - Object containing custom attributes to set to the HTML element
- * in the form {"attribute": "value", ...}.
- *
- * @property {string} [margin] - Set the CSS margin property
- * @property {string} [padding] - Set the CSS padding property
- *
- * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
- * @property {string} [alignItems] - The align items CSS property
- * @property {string} [justifyContent] - The justify content CSS property
- * @property {string} [gap] - The CSS gap for flex displays.
  */
 
 /**
@@ -236,10 +215,13 @@ class TurboElement {
      * @param {T extends HTMLElement | TurboElementProperties} properties - Object containing properties for
      * configuring a TurboElement, or the HTML element to create the TurboElement from.
      */
-    constructor(properties = {}) {
-        if (properties instanceof HTMLElement)
+    constructor(properties = undefined) {
+        if (properties instanceof HTMLElement) {
             this.element = properties;
+        }
         else {
+            if (!properties)
+                properties = {};
             this.element = document.createElement(properties.tag || "div");
             this.setProperties(properties);
         }
@@ -253,86 +235,26 @@ class TurboElement {
         return new TurboElement(properties);
     }
     setProperties(properties) {
-        //Set ID and custom CSS style (if any)
-        if (properties.id)
-            this.element.id = properties.id;
-        if (properties.style)
-            this.element.style.cssText = properties.style;
-        //Set inner text (if specified)
-        if (properties.text)
-            this.element.innerText = properties.text;
-        //Set href attribute (if defined)
-        if (this.element instanceof HTMLAnchorElement || this.element instanceof HTMLAreaElement
-            || this.element instanceof HTMLLinkElement) {
-            if (properties.href)
-                this.element.href = properties.href;
-        }
-        //Set src attribute (if defined)
-        if (this.element instanceof HTMLImageElement || this.element instanceof HTMLSourceElement
-            || this.element instanceof HTMLIFrameElement || this.element instanceof HTMLScriptElement
-            || this.element instanceof HTMLEmbedElement || this.element instanceof HTMLTrackElement
-            || this.element instanceof HTMLVideoElement || this.element instanceof HTMLAudioElement) {
-            if (properties.src)
-                this.element.src = properties.src;
-        }
-        //Set alt attribute for image elements (if defined)
-        if (this.element instanceof HTMLImageElement) {
-            if (properties.alt)
-                this.element.alt = properties.alt;
-        }
-        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLSourceElement
-            || this.element instanceof HTMLButtonElement || this.element instanceof HTMLEmbedElement
-            || this.element instanceof HTMLObjectElement || this.element instanceof HTMLScriptElement
-            || this.element instanceof HTMLStyleElement) {
-            if (properties.type)
-                this.element.type = properties.type;
-        }
-        //Set placeholder attribute (if defined)
-        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement) {
-            if (properties.placeholder)
-                this.element.placeholder = properties.placeholder;
-        }
-        //Set input name attribute (if defined)
-        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement
-            || this.element instanceof HTMLSelectElement) {
-            if (properties.name)
-                this.element.name = properties.name;
-        }
-        //Set input value attribute (if defined)
-        if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement
-            || this.element instanceof HTMLSelectElement || this.element instanceof HTMLOptionElement
-            || this.element instanceof HTMLButtonElement || this.element instanceof HTMLLIElement
-            || this.element instanceof HTMLMeterElement || this.element instanceof HTMLProgressElement) {
-            if (properties.value)
-                this.element.value = properties.value;
-        }
-        //Add custom attributes
-        if (properties.customAttributes) {
-            Object.entries(properties.customAttributes).forEach(([key, value]) => this.element.setAttribute(key, value));
-        }
-        //Set margin and padding
-        if (properties.margin)
-            this.setStyle("margin", properties.margin);
-        if (properties.padding)
-            this.setStyle("padding", properties.padding);
-        //Set flex value (if any), as well as the gap
-        if (properties.flex) {
-            this.element.style.display = "flex";
-            this.element.style.flexDirection = properties.flex;
-            if (properties.gap)
-                this.element.style.gap = properties.gap;
-        }
-        //Set children alignment if specified
-        if (properties.alignItems)
-            this.setStyle("alignItems", properties.alignItems);
-        if (properties.justifyContent)
-            this.setStyle("justifyContent", properties.justifyContent);
-        // Add classes and children
-        this.addClass(properties.classes);
-        this.addChild(properties.children);
-        // Append to parent (if provided)
-        if (properties.parent)
-            addChild(properties.parent, this.element);
+        Object.keys(properties).forEach(property => {
+            if (property in CSSStyleDeclaration.prototype && typeof properties[property] === 'string') {
+                this.element.style[property] = properties[property];
+            }
+            else if (property in HTMLElement.prototype || property in HTMLInputElement.prototype) {
+                this.element[property] = properties[property];
+            }
+            else {
+                if (property == "text")
+                    this.element.innerText = properties.text;
+                else if (property == "classes")
+                    this.addClass(properties.classes);
+                else if (property == "children")
+                    this.addChild(properties.children);
+                else if (property == "parent")
+                    addChild(properties.parent, this.element);
+                else
+                    this.setAttribute(property, properties[property]);
+            }
+        });
     }
     generateProxy() {
         return new Proxy(this, {
@@ -366,22 +288,40 @@ class TurboElement {
     /**
      * Adds an event listener to the element.
      * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject} listener The function or object that receives a notification.
+     * @param {EventListenerOrEventListenerObject | (e: Event, el: TurboElement<T>) => void} listener The function
+     * or object that receives a notification.
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     * @returns {TurboElement<T>} The instance of TurboElement, allowing for method chaining.
      */
     addEventListener(type, listener, options) {
-        this.element.addEventListener(type, listener, options);
+        const wrappedListener = (e) => {
+            if (typeof listener === "function")
+                listener(e, this.generateProxy());
+            else if (typeof listener === "object" && listener.handleEvent)
+                listener.handleEvent(e);
+        };
+        this.element.addEventListener(type, wrappedListener, options);
+        return this.generateProxy();
+    }
+    /**
+     * Execute a callback while still benefiting from chaining.
+     * @param {(el: TurboElement<T>) => void} callback The function to execute.
+     * @returns {TurboElement<T>} The instance of TurboElement, allowing for method chaining.
+     */
+    execute(callback) {
+        callback(this.generateProxy());
         return this.generateProxy();
     }
     /**
      * Sets the value of an attribute on the underlying element.
      * @param {string} name The name of the attribute.
-     * @param {string} value The value of the attribute.
+     * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
     setAttribute(name, value) {
-        this.element.setAttribute(name, value);
+        if (value == undefined)
+            value = true;
+        this.element.setAttribute(name, value.toString());
         return this.generateProxy();
     }
     /**
@@ -516,8 +456,9 @@ class TurboElement {
  * @returns {TurboElement} The created Turbo element.
  */
 function element(properties) {
-    const effectiveProperties = Object.assign({ tag: properties.tag || "div" }, properties);
-    return TurboElement.create(effectiveProperties);
+    if (!properties)
+        properties = {};
+    return TurboElement.create(properties);
 }
 /**
  * @description Create an image element with specified properties.
@@ -528,7 +469,7 @@ function image(properties) {
     if (!properties.src)
         console.error("No src for image provided in the properties of the element");
     properties.tag = "img";
-    return new TurboElement(properties);
+    return TurboElement.create(properties);
 }
 /**
  * @description Create an input element with specified properties.
@@ -539,16 +480,19 @@ function input(properties) {
     if (!properties.type)
         console.error("Input type not provided in the properties of the element");
     properties.tag = "input";
-    return new TurboElement(properties);
+    return TurboElement.create(properties);
 }
 //Misc useful functions
 /**
  * @description Create a spacer element.
- * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created spacer element
  */
-function spacer(parent) {
-    return element({ style: "flex-grow: 1", parent: parent });
+function spacer(properties) {
+    if (!properties)
+        properties = {};
+    properties.flexGrow = "1";
+    return TurboElement.create(properties);
 }
 /**
  * @description Create a flex row element.
@@ -556,7 +500,10 @@ function spacer(parent) {
  * @returns {TurboElement} The created flex element
  */
 function flexRow(properties) {
-    properties.flex = "row";
+    if (!properties)
+        properties = {};
+    properties.display = "flex";
+    properties.flexDirection = "row";
     return element(properties);
 }
 /**
@@ -565,7 +512,10 @@ function flexRow(properties) {
  * @returns {TurboElement} The created flex element
  */
 function flexCol(properties) {
-    properties.flex = "column";
+    if (!properties)
+        properties = {};
+    properties.display = "flex";
+    properties.flexDirection = "column";
     return element(properties);
 }
 /**
@@ -600,6 +550,7 @@ class Button extends TurboElement {
             this.rightIcon = properties.rightIcon;
         if (properties.rightCustomElements)
             this.rightCustomElements = properties.rightCustomElements;
+        return this.generateProxy();
     }
     /**
      * @description Adds a given element or elements to the button at a specified position.
@@ -864,6 +815,7 @@ class IconButton extends Icon {
     constructor(properties) {
         properties.tag = "button";
         super(properties);
+        return this.generateProxy();
     }
 }
 /**

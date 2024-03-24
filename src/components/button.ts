@@ -80,6 +80,8 @@ class Button extends TurboElement<HTMLButtonElement> {
         if (properties.buttonText) this.buttonText = properties.buttonText;
         if (properties.rightIcon) this.rightIcon = properties.rightIcon;
         if (properties.rightCustomElements) this.rightCustomElements = properties.rightCustomElements;
+
+        return this.generateProxy() as Button;
     }
 
     /**

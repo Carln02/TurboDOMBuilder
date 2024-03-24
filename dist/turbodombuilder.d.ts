@@ -3,13 +3,13 @@
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
+declare function addClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | TurboElement<HTMLElement>;
 /**
  * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
  * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
  */
-declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement;
+declare function removeClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined): HTMLElement | TurboElement<HTMLElement>;
 /**
  * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
  * @param {TurboElement | HTMLElement} element - Turbo element or HTML DOM element
@@ -17,21 +17,21 @@ declare function removeClass(element: TurboElement | HTMLElement, classes: strin
  * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
  * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
  */
-declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined, force?: boolean): HTMLElement;
+declare function toggleClass(element: TurboElement | HTMLElement, classes: string | string[] | undefined, force?: boolean): HTMLElement | TurboElement<HTMLElement>;
 /**
  * @description Add children elements to a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement;
+declare function addChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): HTMLElement | TurboElement<HTMLElement>;
 /**
  * @description Remove children elements from a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
  * @param {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} children - Array of (or single element) child
  * Turbo or HTML DOM elements
  */
-declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | TurboElement[] | HTMLElement[] | undefined): HTMLElement;
+declare function removeChild(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined): HTMLElement | TurboElement<HTMLElement>;
 /**
  * @description Add children elements to a parent element.
  * @param {TurboElement | HTMLElement} element - Parent Turbo or HTML DOM element
@@ -39,67 +39,31 @@ declare function removeChild(element: TurboElement | HTMLElement, children: Turb
  * Turbo or HTML DOM elements to insert before sibling
  * @param {TurboElement | HTMLElement} sibling - Sibling Turbo or HTML DOM element
  */
-declare function addBefore(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined, sibling: TurboElement | HTMLElement): HTMLElement;
+declare function addBefore(element: TurboElement | HTMLElement, children: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | undefined, sibling: TurboElement | HTMLElement): HTMLElement | TurboElement<HTMLElement>;
+type HTMLElementAlmostSuperset = Partial<Pick<HTMLElement, keyof HTMLElement>> & Partial<Pick<HTMLInputElement, keyof HTMLInputElement>> & Partial<Pick<HTMLSelectElement, keyof HTMLSelectElement>> & Partial<Pick<HTMLTextAreaElement, keyof HTMLTextAreaElement>> & Partial<Pick<HTMLButtonElement, keyof HTMLButtonElement>> & Partial<Pick<HTMLAnchorElement, keyof HTMLAnchorElement>> & Partial<Pick<HTMLImageElement, keyof HTMLImageElement>> & Partial<Pick<HTMLVideoElement, keyof HTMLVideoElement>> & Partial<Pick<HTMLTableElement, keyof HTMLTableElement>> & Partial<Pick<HTMLFormElement, keyof HTMLFormElement>> & Partial<Pick<HTMLLabelElement, keyof HTMLLabelElement>>;
 /**
  * @type {TurboElementProperties}
- * @description Object containing properties for configuring a TurboElement.
+ * @description Object containing properties for configuring a TurboElement. Any CSS property or HTML attribute can
+ * be passed as key, and will be processed by the TurboElement. The type also has the following custom properties:
  *
  * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
  * classes or an array of class names).
- * @property {string} [id] - The ID attribute of the element.
  * @property {string} [style] - The inline CSS styles for the element.
  * @property {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML
  * elements to append to the created element.
  * @property {TurboElement | HTMLElement} [parent] - The parent element to which the created element will be appended.
- *
  * @property {string} [text] - The text content of the element (if any).
- * @property {string} [href] - The address/URL of the link element (if it is one).
- *
- * @property {string} [src] - The source URL of the element (if any).
- * @property {string} [alt] - The alternate text for the image element (if it is one).
- *
- * @property {string} [type] - The type attribute of input elements (if it is one). If this entry is set, the element will
- * be turned into an input, disregarding the value of "tag".
- * @property {string} [value] - The value attribute of input elements (if it is one).
- * @property {string} [placeholder] - The placeholder attribute of input elements (if it is one).
- *
- * @property {Record<string, string>} [customAttributes] - Object containing custom attributes to set to the HTML element
- * in the form {"attribute": "value", ...}.
- *
- * @property {string} [margin] - Set the CSS margin property
- * @property {string} [padding] - Set the CSS padding property
- *
- * @property {string} [flex] - Set it to a flex-direction value to set the element's display to flex with the given direction.
- * @property {string} [alignItems] - The align items CSS property
- * @property {string} [justifyContent] - The justify content CSS property
- * @property {string} [gap] - The CSS gap for flex displays.
  */
-type TurboElementProperties = {
-    tag?: keyof HTMLElementTagNameMap;
-    id?: string;
+type TurboElementProperties = Partial<CSSStyleDeclaration> & HTMLElementAlmostSuperset & {
+    tag?: keyof HTMLElementTagNameMap | "svg";
     classes?: string | string[];
-    style?: string;
     children?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
     parent?: TurboElement | HTMLElement;
     text?: string;
-    href?: string;
-    src?: string;
-    alt?: string;
-    type?: string;
-    name?: string;
-    value?: string;
-    placeholder?: string;
-    customAttributes?: Record<string, string>;
-    margin?: string;
-    padding?: string;
-    flex?: string;
-    alignItems?: string;
-    justifyContent?: string;
-    gap?: string;
-    icon?: string;
+    [key: string]: any;
 };
-interface TurboElement extends HTMLElement {
+interface TurboElement<T extends HTMLElement = HTMLElement> extends HTMLElementAlmostSuperset {
     [key: string]: any;
 }
 /**
@@ -118,24 +82,31 @@ declare class TurboElement<T extends HTMLElement = HTMLElement> {
      * @description Factory method to create a TurboElement of the appropriate type based on the provided tag.
      * @param {TurboElementProperties} properties - Object containing properties for configuring a TurboElement.
      */
-    static create<K extends keyof HTMLElementTagNameMap>(properties: TurboElementProperties): TurboElement<HTMLElementTagNameMap[K]>;
+    static create<K extends HTMLElement>(properties: TurboElementProperties): TurboElement<K>;
     protected setProperties(properties: TurboElementProperties): void;
-    private generateProxy;
+    protected generateProxy(): TurboElement<T>;
     /**
      * Adds an event listener to the element.
      * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject} listener The function or object that receives a notification.
+     * @param {EventListenerOrEventListenerObject | (e: Event, el: TurboElement<T>) => void} listener The function
+     * or object that receives a notification.
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
+     * @returns {TurboElement<T>} The instance of TurboElement, allowing for method chaining.
      */
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): TurboElement<T>;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: TurboElement<T>) => void), options?: boolean | AddEventListenerOptions): TurboElement<T>;
+    /**
+     * Execute a callback while still benefiting from chaining.
+     * @param {(el: TurboElement<T>) => void} callback The function to execute.
+     * @returns {TurboElement<T>} The instance of TurboElement, allowing for method chaining.
+     */
+    execute(callback: ((el: TurboElement<T>) => void)): TurboElement<T>;
     /**
      * Sets the value of an attribute on the underlying element.
      * @param {string} name The name of the attribute.
-     * @param {string} value The value of the attribute.
+     * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
      * @returns {TurboElement} The instance of TurboElement, allowing for method chaining.
      */
-    setAttribute(name: string, value: string): TurboElement<T>;
+    setAttribute(name: string, value?: string | boolean): TurboElement<T>;
     /**
      * Removes an attribute from the underlying element.
      * @param {string} name The name of the attribute to remove.
@@ -226,7 +197,7 @@ declare class TurboElement<T extends HTMLElement = HTMLElement> {
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created Turbo element.
  */
-declare function element(properties?: TurboElementProperties): TurboElement;
+declare function element<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T>;
 /**
  * @description Create an image element with specified properties.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
@@ -241,22 +212,22 @@ declare function image(properties: TurboElementProperties): TurboElement<HTMLIma
 declare function input(properties: TurboElementProperties): TurboElement<HTMLInputElement>;
 /**
  * @description Create a spacer element.
- * @param {TurboElement | HTMLElement} parent - The parent element to append the spacer to
+ * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created spacer element
  */
-declare function spacer(parent?: TurboElement | HTMLElement): TurboElement;
+declare function spacer<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T>;
 /**
  * @description Create a flex row element.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-declare function flexRow(properties: TurboElementProperties): TurboElement;
+declare function flexRow<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T>;
 /**
  * @description Create a flex column element.
  * @param {TurboElementProperties} properties - Object containing properties of the element.
  * @returns {TurboElement} The created flex element
  */
-declare function flexCol(properties: TurboElementProperties): TurboElement;
+declare function flexCol<T extends HTMLElement>(properties?: TurboElementProperties): TurboElement<T>;
 /**
  * @type {TurboButtonProperties}
  * @description Properties object for configuring a Button. Extends TurboElementProperties.
