@@ -1,6 +1,7 @@
 import {TurboElement, TurboElementProperties} from "../turbo-element";
 import {icon, Icon} from "./icon";
 import {element} from "../turbo-functions";
+import {TurboConfig} from "./turbo-config";
 
 /**
  * @type {TurboButtonProperties}
@@ -19,6 +20,8 @@ import {element} from "../turbo-functions";
  * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
  * @property {keyof HTMLElementTagNameMap} [customTextTag] - The HTML tag to be used for the text element. If not
  * specified, the default tag specified in the Button class will be used.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
+ * to this instance of Button.
  */
 type TurboButtonProperties = TurboElementProperties & {
     buttonText?: string | TurboElement | HTMLElement;
@@ -26,8 +29,11 @@ type TurboButtonProperties = TurboElementProperties & {
     rightIcon?: string | Icon;
     leftCustomElements?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
     rightCustomElements?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
+
     type?: "button" | "submit" | "reset";
+
     customTextTag?: keyof HTMLElementTagNameMap;
+    unsetDefaultClasses?: boolean;
 };
 
 /**
@@ -49,6 +55,19 @@ type ButtonChildren = {
     rightIcon: Icon | HTMLElement | null,
     rightCustomElements: TurboElement | HTMLElement | (TurboElement | HTMLElement)[] | null,
 };
+
+/**
+ * @type {TurboButtonConfig}
+ * @description Configuration object for the Button class. Set it via TurboConfig.Button.
+ *
+ * @property {keyof HTMLElementTagNameMap} [defaultTextTag] - The default HTML tag for the creation of the text
+ * element in the button.
+ * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
+ */
+type TurboButtonConfig = {
+    defaultTextTag?: keyof HTMLElementTagNameMap;
+    defaultClasses?: string | string[];
+}
 
 /**
  * Button class for creating Turbo button elements.
@@ -74,6 +93,8 @@ class Button extends TurboElement<HTMLButtonElement> {
             rightIcon: null,
             rightCustomElements: null,
         };
+
+        if (!properties.unsetDefaultClasses) this.addClass(TurboConfig.Button.defaultClasses);
 
         if (properties.leftCustomElements) this.leftCustomElements = properties.leftCustomElements;
         if (properties.leftIcon) this.leftIcon = properties.leftIcon;
@@ -177,7 +198,7 @@ class Button extends TurboElement<HTMLButtonElement> {
                 return;
             }
             value = element({tag: this.customTextTag ?
-                    this.customTextTag : Button.defaultTextTag, text: value});
+                    this.customTextTag : TurboConfig.Button.defaultTextTag, text: value});
         }
         this.addAtPosition(value, "buttonText");
         this.removeElement(this.buttonText);
@@ -211,33 +232,6 @@ class Button extends TurboElement<HTMLButtonElement> {
         this.removeElement(this.rightCustomElements);
         this.elements.rightCustomElements = value;
     }
-
-    //Static fields
-
-    private static _defaultTextTag: keyof HTMLElementTagNameMap = "h4";
-    private static _defaultClasses: string | string[] = null;
-
-    /**
-     * @description The default tag for the text element in buttons.
-     */
-    static get defaultTextTag() {
-        return this._defaultTextTag;
-    }
-
-    static set defaultTextTag(value: keyof HTMLElementTagNameMap) {
-        this._defaultTextTag = value;
-    }
-
-    /**
-     * @description The default classes to assign to newly created icons.
-     */
-    static get defaultClasses() {
-        return this._defaultClasses;
-    }
-
-    static set defaultClasses(value: string | string[] | null) {
-        this._defaultClasses = value;
-    }
 }
 
 /**
@@ -249,4 +243,4 @@ function button(properties: TurboButtonProperties): Button {
     return new Button(properties);
 }
 
-export {Button, button, TurboButtonProperties};
+export {Button, button, TurboButtonProperties, TurboButtonConfig};

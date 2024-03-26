@@ -1,6 +1,12 @@
 import {addChild, removeChild, addBefore, addClass, removeClass, toggleClass} from "./base-functions";
 
-type HTMLElementAlmostSuperset = Partial<Pick<HTMLElement, keyof HTMLElement>>
+/**
+ * @type {HTMLElementAlmostSuperset}
+ * @description Represents a type that is an almost superset of properties from various HTML element types. It
+ * encapsulates partial properties from various HTMLElement types.
+ */
+type HTMLElementAlmostSuperset = Omit<
+    Partial<Pick<HTMLElement, keyof HTMLElement>>
     & Partial<Pick<HTMLInputElement, keyof HTMLInputElement>>
     & Partial<Pick<HTMLSelectElement, keyof HTMLSelectElement>>
     & Partial<Pick<HTMLTextAreaElement, keyof HTMLTextAreaElement>>
@@ -10,34 +16,66 @@ type HTMLElementAlmostSuperset = Partial<Pick<HTMLElement, keyof HTMLElement>>
     & Partial<Pick<HTMLVideoElement, keyof HTMLVideoElement>>
     & Partial<Pick<HTMLTableElement, keyof HTMLTableElement>>
     & Partial<Pick<HTMLFormElement, keyof HTMLFormElement>>
-    & Partial<Pick<HTMLLabelElement, keyof HTMLLabelElement>>;
-
-// type TurboElementProperties<Tag extends keyof HTMLElementTagNameMap> = Partial<CSSStyleDeclaration> &
-//     Partial<Pick<HTMLElementTagNameMap[Tag], keyof HTMLElementTagNameMap[Tag]>> & {
-//     tag?: Tag;
-//     classes?: string | string[];
-//     children?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
-//     parent?: TurboElement | HTMLElement;
-//     text?: string;
-//     [key: string]: any;
-// };
+    & Partial<Pick<HTMLLabelElement, keyof HTMLLabelElement>>
+, "children" | "className">;
 
 /**
  * @type {TurboElementProperties}
  * @description Object containing properties for configuring a TurboElement. Any CSS property or HTML attribute can
- * be passed as key, and will be processed by the TurboElement. The type also has the following custom properties:
+ * be passed as key, and will be processed by the TurboElement. A few of these properties were explicitly defined here
+ * for autocompletion in JavaScript. Use TypeScript for optimal autocompletion. The type also has the following
+ * described custom properties:
  *
- * @property {keyof HTMLElementTagNameMap} [tag="div"] - The HTML tag for the element (e.g., "div", "span", "input").
+ * @property {keyof HTMLElementTagNameMap | "svg"} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input").
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of space-separated
  * classes or an array of class names).
- * @property {string} [style] - The inline CSS styles for the element.
- * @property {TurboElement | HTMLElement | TurboElement[] | HTMLElement[]} [children] - An array of child Turbo or HTML
+ * @property {TurboElement | HTMLElement | (TurboElement | HTMLElement)[]} [children] - An array of child Turbo or HTML
  * elements to append to the created element.
  * @property {TurboElement | HTMLElement} [parent] - The parent element to which the created element will be appended.
  * @property {string} [text] - The text content of the element (if any).
+ *
+ * @property id
+ * @property style
+ * @property alt
+ * @property src
+ * @property href
+ * @property target
+ * @property action
+ * @property method
+ * @property type
+ * @property value
+ * @property placeholder
+ * @property name
+ * @property disabled
+ * @property checked
+ * @property selected
+ *
+ * @property width
+ * @property height
+ * @property margin
+ * @property padding
+ * @property border
+ * @property backgroundColor
+ * @property color
+ * @property fontSize
+ * @property fontWeight
+ * @property textAlign
+ * @property textDecoration
+ * @property display
+ * @property position
+ * @property top
+ * @property right
+ * @property bottom
+ * @property left
+ * @property flexDirection
+ * @property justifyContent
+ * @property alignItems
+ * @property gap
+ * @property opacity
+ * @property visibility
+ * @property transition
  */
-type TurboElementProperties = Partial<CSSStyleDeclaration> &
-    HTMLElementAlmostSuperset & {
+type TurboElementProperties = Partial<CSSStyleDeclaration> & HTMLElementAlmostSuperset & {
     tag?: keyof HTMLElementTagNameMap | "svg";
     classes?: string | string[];
     children?: TurboElement | HTMLElement | (TurboElement | HTMLElement)[];
@@ -55,6 +93,9 @@ interface TurboElement<T extends HTMLElement = HTMLElement> extends HTMLElementA
  * @description A Turbo element. Basically an HTML element with added utility functions.
  */
 class TurboElement<T extends HTMLElement = HTMLElement> {
+    /**
+     * @description The underlying HTML element.
+     */
     public element: T;
 
     /**
