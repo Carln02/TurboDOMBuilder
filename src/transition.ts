@@ -1,4 +1,4 @@
-import {TurboElement} from "./turbo-element";
+import {TurboElement} from "./turbo/elements/turbo-element";
 
 /**
  * @type {TransitionProperties}

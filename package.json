@@ -1,13 +1,22 @@
 {
   "name": "turbodombuilder",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
-  "main": "module/index.js",
-  "module": "module/index.js",
-  "types": "module/index.d.ts",
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "browser": "dist/turbodombuilder.js",
+  "types": "esm/index.d.ts",
   "files": [
-    "module"
+    "cjs",
+    "esm",
+    "dist"
   ],
+  "exports": {
+    ".": {
+      "import": "./esm/index.js",
+      "require": "./cjs/index.js"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "gulp build",
@@ -43,7 +52,10 @@
     "gulp-terser": "^2.1.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "through2": "^4.0.2",
+    "ts-loader": "^9.5.1",
     "typedoc": "^0.25.8",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.3",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
   }
 }
