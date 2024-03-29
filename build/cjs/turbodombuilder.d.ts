@@ -623,6 +623,192 @@ declare function Turbo<T extends HTMLElement>(Base: new (...args: any[]) => T): 
     configure(value: typeof this.config): void;
 };
 export { Turbo };
+/**
+ * @interface ITurbo
+ * @description Interface declaring all the base functions to be implemented by Turbo classes.
+ */
+interface ITurbo {
+    /**
+     * @description The root of the element (the document's head or the shadow root - if enabled).
+     */
+    readonly root: ShadowRoot | HTMLHeadElement;
+    /**
+     * Sets the declared properties to the element.
+     * @param {TurboProperties} properties - The properties object.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    setProperties(properties: TurboProperties): this;
+    /**
+     * @description Add one or more CSS classes to the element.
+     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addClass(classes: string | string[] | undefined): this;
+    /**
+     * @description Remove one or more CSS classes from the element.
+     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    removeClass(classes: string | string[] | undefined): this;
+    /**
+     * @description Toggle one or more CSS classes in the element.
+     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    toggleClass(classes: string | string[] | undefined, force?: boolean): this;
+    /**
+     * @description Add one or more child elements to the element.
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
+     * TurboWrapper or HTML elements.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addChild(children: TurboCompatible | TurboCompatible[] | undefined): this;
+    /**
+     * @description Remove one or more child elements from the element.
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
+     * TurboWrapper or HTML elements.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    remChild(children: TurboCompatible | TurboCompatible[] | undefined): this;
+    /**
+     * @description Add one or more child elements to the element.
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
+     * TurboWrapper or HTML elements to insert before sibling.
+     * @param {TurboCompatible} sibling - The sibling element
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addBefore(children: TurboCompatible | TurboCompatible[] | undefined, sibling: TurboCompatible): this;
+    /**
+     * @description Set a certain style attribute of the element to the provided value.
+     * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
+     * @param {string} value - A string representing the value to set the attribute to.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    setStyle(attribute: keyof CSSStyleDeclaration, value: string): this;
+    /**
+     * @description Appends the given CSS to the element's inline styles.
+     * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons. Use the
+     * css literal function for autocompletion.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    setStyles(cssText: string): this;
+    /**
+     * @description Adds an event listener to the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener The function
+     * or object that receives a notification.
+     * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: this) => void), options?: boolean | AddEventListenerOptions): this;
+    /**
+     * @description Removes an event listener from the element.
+     * @param {string} type The type of the event.
+     * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
+     * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    removeListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this;
+    /**
+     * @description Execute a callback while still benefiting from chaining.
+     * @param {(el: ITurbo) => void} callback The function to execute, with 1 parameter representing the instance itself.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    execute(callback: ((el: this) => void)): this;
+    /**
+     * @description Sets the value of an attribute on the underlying element.
+     * @param {string} name The name of the attribute.
+     * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    setAttribute(name: string, value?: string | boolean): this;
+    /**
+     * @description Removes an attribute from the underlying element.
+     * @param {string} name The name of the attribute to remove.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    removeAttribute(name: string): this;
+    /**
+     * @description Causes the element to lose focus.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    blur(): this;
+    /**
+     * @description Sets focus on the element.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    focus(): this;
+    /**
+     * @description Removes the element from its parent node.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    remove(): this;
+}
+export { ITurbo };
+/**
+ * @type {TurboCompatible}
+ * @description A type that encapsulates both HTML elements (and thus TurboElements), and TurboWrappers.
+ */
+type TurboCompatible = (TurboWrapper | HTMLElement);
+/**
+ * @type {TurboProperties}
+ * @description Object containing properties for configuring a TurboWrapper or a TurboElement. Any HTML attribute can
+ * be passed as key to be processed by the class/function. A few of these attributes were explicitly defined here
+ * for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target generic type, if
+ * needed). The type also has the following described custom properties:
+ *
+ * @property {keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap} [tag="div"] -
+ * For TurboWrapper only. The HTML tag of the element (e.g., "div", "span", "input").
+ * @property {string} [id] - The ID of the element.
+ * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
+ * space-separated classes or an array of class names).
+ * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
+ * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
+ * generate automatically a new style element in the element's corresponding root. Use the css literal function
+ * for autocompletion.
+ * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: TurboCompatible) => void)>} [listeners]
+ * - An object containing event listeners to be applied to this element.
+ * @property {TurboCompatible | TurboCompatible[]} [children] - An array of child wrappers or elements to append to
+ * the created element.
+ * @property {TurboCompatible} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {string} [text] - The text content of the element (if any).
+ * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
+ * @property {boolean} [useProxy] - For TurboWrapper only. A boolean that indicates whether to use a proxy for
+ * TurboWrappers or not. If set to true, every function called from the TurboWrapper instance will return a proxy
+ * which, if trying to access a property or function non-existent on TurboWrapper, will try to delegate it to the
+ * underlying HTML element. This proxy might lead to a small additional performance overhead.
+ *
+ * @property alt
+ * @property src
+ * @property href
+ * @property target
+ * @property action
+ * @property method
+ * @property type
+ * @property value
+ * @property placeholder
+ * @property name
+ * @property disabled
+ * @property checked
+ * @property selected
+ */
+type TurboProperties<K extends HTMLElement = HTMLElement> = Omit<Partial<Pick<K, keyof K>>, "children" | "className" | "style"> & {
+    tag?: keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap;
+    id?: string;
+    classes?: string | string[];
+    style?: string;
+    stylesheet?: string;
+    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: TurboCompatible) => void)>;
+    children?: TurboCompatible | TurboCompatible[];
+    parent?: TurboCompatible;
+    text?: string;
+    shadowDOM?: boolean;
+    useProxy?: boolean;
+    [key: string]: any;
+};
+export { TurboCompatible, TurboProperties };
 declare const TurboElement_base: {
     new (...args: any[]): {
         readonly root: HTMLHeadElement | ShadowRoot;
@@ -1040,192 +1226,6 @@ declare class TurboWrapper implements ITurbo {
     remove(): this;
 }
 export { TurboWrapper };
-/**
- * @interface ITurbo
- * @description Interface declaring all the base functions to be implemented by Turbo classes.
- */
-interface ITurbo {
-    /**
-     * @description The root of the element (the document's head or the shadow root - if enabled).
-     */
-    readonly root: ShadowRoot | HTMLHeadElement;
-    /**
-     * Sets the declared properties to the element.
-     * @param {TurboProperties} properties - The properties object.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setProperties(properties: TurboProperties): this;
-    /**
-     * @description Add one or more CSS classes to the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addClass(classes: string | string[] | undefined): this;
-    /**
-     * @description Remove one or more CSS classes from the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeClass(classes: string | string[] | undefined): this;
-    /**
-     * @description Toggle one or more CSS classes in the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
-     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    toggleClass(classes: string | string[] | undefined, force?: boolean): this;
-    /**
-     * @description Add one or more child elements to the element.
-     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
-     * TurboWrapper or HTML elements.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addChild(children: TurboCompatible | TurboCompatible[] | undefined): this;
-    /**
-     * @description Remove one or more child elements from the element.
-     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
-     * TurboWrapper or HTML elements.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    remChild(children: TurboCompatible | TurboCompatible[] | undefined): this;
-    /**
-     * @description Add one or more child elements to the element.
-     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
-     * TurboWrapper or HTML elements to insert before sibling.
-     * @param {TurboCompatible} sibling - The sibling element
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addBefore(children: TurboCompatible | TurboCompatible[] | undefined, sibling: TurboCompatible): this;
-    /**
-     * @description Set a certain style attribute of the element to the provided value.
-     * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
-     * @param {string} value - A string representing the value to set the attribute to.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setStyle(attribute: keyof CSSStyleDeclaration, value: string): this;
-    /**
-     * @description Appends the given CSS to the element's inline styles.
-     * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons. Use the
-     * css literal function for autocompletion.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setStyles(cssText: string): this;
-    /**
-     * @description Adds an event listener to the element.
-     * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener The function
-     * or object that receives a notification.
-     * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: this) => void), options?: boolean | AddEventListenerOptions): this;
-    /**
-     * @description Removes an event listener from the element.
-     * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
-     * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this;
-    /**
-     * @description Execute a callback while still benefiting from chaining.
-     * @param {(el: ITurbo) => void} callback The function to execute, with 1 parameter representing the instance itself.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    execute(callback: ((el: this) => void)): this;
-    /**
-     * @description Sets the value of an attribute on the underlying element.
-     * @param {string} name The name of the attribute.
-     * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setAttribute(name: string, value?: string | boolean): this;
-    /**
-     * @description Removes an attribute from the underlying element.
-     * @param {string} name The name of the attribute to remove.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeAttribute(name: string): this;
-    /**
-     * @description Causes the element to lose focus.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    blur(): this;
-    /**
-     * @description Sets focus on the element.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    focus(): this;
-    /**
-     * @description Removes the element from its parent node.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    remove(): this;
-}
-export { ITurbo };
-/**
- * @type {TurboCompatible}
- * @description A type that encapsulates both HTML elements (and thus TurboElements), and TurboWrappers.
- */
-type TurboCompatible = (TurboWrapper | HTMLElement);
-/**
- * @type {TurboProperties}
- * @description Object containing properties for configuring a TurboWrapper or a TurboElement. Any HTML attribute can
- * be passed as key to be processed by the class/function. A few of these attributes were explicitly defined here
- * for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target generic type, if
- * needed). The type also has the following described custom properties:
- *
- * @property {keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap} [tag="div"] -
- * For TurboWrapper only. The HTML tag of the element (e.g., "div", "span", "input").
- * @property {string} [id] - The ID of the element.
- * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
- * space-separated classes or an array of class names).
- * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
- * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
- * generate automatically a new style element in the element's corresponding root. Use the css literal function
- * for autocompletion.
- * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: TurboCompatible) => void)>} [listeners]
- * - An object containing event listeners to be applied to this element.
- * @property {TurboCompatible | TurboCompatible[]} [children] - An array of child wrappers or elements to append to
- * the created element.
- * @property {TurboCompatible} [parent] - The parent element or wrapper to which the created element will be appended.
- * @property {string} [text] - The text content of the element (if any).
- * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
- * @property {boolean} [useProxy] - For TurboWrapper only. A boolean that indicates whether to use a proxy for
- * TurboWrappers or not. If set to true, every function called from the TurboWrapper instance will return a proxy
- * which, if trying to access a property or function non-existent on TurboWrapper, will try to delegate it to the
- * underlying HTML element. This proxy might lead to a small additional performance overhead.
- *
- * @property alt
- * @property src
- * @property href
- * @property target
- * @property action
- * @property method
- * @property type
- * @property value
- * @property placeholder
- * @property name
- * @property disabled
- * @property checked
- * @property selected
- */
-type TurboProperties<K extends HTMLElement = HTMLElement> = Omit<Partial<Pick<K, keyof K>>, "children" | "className" | "style"> & {
-    tag?: keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap;
-    id?: string;
-    classes?: string | string[];
-    style?: string;
-    stylesheet?: string;
-    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: TurboCompatible) => void)>;
-    children?: TurboCompatible | TurboCompatible[];
-    parent?: TurboCompatible;
-    text?: string;
-    shadowDOM?: boolean;
-    useProxy?: boolean;
-    [key: string]: any;
-};
-export { TurboCompatible, TurboProperties };
 /**
  * @description Create an HTML element with specified properties.
  * @param {TurboProperties} properties - Object containing properties of the element.

@@ -10,15 +10,15 @@ const through = require("through2");
 
 const excludedFiles = ["!src/transition.ts"];
 
-const tempFilePath = "index.ts";
+const tempFilePath = "turbodombuilder.ts";
 
-const umdOutDir = "dist";
-const esmOutDir = "esm";
-const cjsOutDir = "cjs";
+const umdOutDir = "build/dist";
+const esmOutDir = "build/esm";
+const cjsOutDir = "build/cjs";
 
 const umdOutFilePath = umdOutDir + "/turbodombuilder.js";
-const esmOutFilePath = esmOutDir + "/index.js";
-const cjsOutFilePath = cjsOutDir + "/index.js";
+const esmOutFilePath = esmOutDir + "/turbodombuilder.js";
+const cjsOutFilePath = cjsOutDir + "/turbodombuilder.js";
 
 let typedefs = "";
 
