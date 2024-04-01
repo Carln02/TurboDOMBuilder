@@ -1,77 +1,61 @@
-const gulp = require("gulp");
-const ts = require("gulp-typescript");
-const terser = require("gulp-terser");
-const concat = require("gulp-concat");
-const rename = require("gulp-rename");
-const replace = require("gulp-replace");
-const insert = require("gulp-insert");
-const fs = require("fs");
-const through = require("through2");
+import gulp from "gulp";
+import insert from "gulp-insert";
+import through from "through2";
+import {rollup} from "rollup";
+import {deleteAsync} from "del";
+import rollupConfig from "./rollup.config.js";
+import { promises as fs } from "fs";
+import * as path from "path";
 
-const excludedFiles = ["!src/transition.ts"];
-
-const tempFilePath = "turbodombuilder.ts";
-
-const umdOutDir = "build/dist";
-const esmOutDir = "build/esm";
-const cjsOutDir = "build/cjs";
-
-const umdOutFilePath = umdOutDir + "/turbodombuilder.js";
-const esmOutFilePath = esmOutDir + "/turbodombuilder.js";
-const cjsOutFilePath = cjsOutDir + "/turbodombuilder.js";
+const outDir = "build";
+const typesDir = "types";
+const outName = "turbodombuilder";
 
 let typedefs = "";
 
-//CommonJS TS Config
-const cjsTsConfig = {
-    target: "ES2015",
-    module: "commonjs",
-    lib: ["DOM"],
-    esModuleInterop: true,
-    declaration: true,
-    skipLibCheck: true,
-    outDir: esmOutDir,
-};
+const libraryPath = "./src";
+const outputPath = path.join("./src", "index.ts");
 
-//ES Modules TS config
-const esmTsConfig = {
-    target: "ES2015",
-    module: "ES2015",
-    lib: ["DOM", "ES2015"],
-    esModuleInterop: true,
-    declaration: true,
-    skipLibCheck: true,
-    outDir: esmOutDir,
-};
+async function processDirectory(dirPath) {
+    let indexContent = "";
+    const files = await fs.readdir(dirPath);
 
-//Combine TypeScript files from "turbo" directory (the core) into the temp file
-function combineTurboFiles() {
-    return gulp.src(["src/turbo/**/*.ts", ...excludedFiles])
-        .pipe(concat(tempFilePath))
-        .pipe(gulp.dest("."));
-}
+    for (const file of files) {
+        const fullPath = path.join(dirPath, file);
+        const relativePath = path.relative("./src", fullPath).replace(/\.ts$/, "")
+            .replace(/\\/g, "/");
 
-//Append the rest of the source code to the temp file
-function combineOtherFiles() {
-    return gulp.src(["src/**/*.ts", "!src/turbo/**/*.ts", ...excludedFiles])
-        .pipe(through.obj(function(file, enc, cb) {
-            if (file.isBuffer()) {
-                fs.appendFileSync(tempFilePath, "\n" + file.contents.toString());
+        if ((await fs.stat(fullPath)).isDirectory()) {
+            indexContent += await processDirectory(fullPath);
+        } else if (file.endsWith(".ts") && !file.endsWith(".d.ts") && file !== "index.ts") {
+            const fileContent = await fs.readFile(fullPath, "utf8");
+            const exportLines = fileContent.split("\n").filter(line => line.startsWith("export {"));
+
+            for (const exportLine of exportLines) {
+                const exportContent = exportLine.match(/export {(.*)}/)[1];
+                indexContent += `import {${exportContent}} from "./${relativePath}";\n`;
+                indexContent += `export {${exportContent}};\n`;
             }
-            cb();
-        }));
+        }
+    }
+
+    return indexContent;
 }
 
-//Remove all import statements from the temp file
-function removeImports() {
-    return gulp.src(tempFilePath)
-        .pipe(replace(/^\s*import\s+((.|\s)+?);/gm, ""))
-        .pipe(gulp.dest("."));
+async function createIndexFile() {
+    const indexContent = await processDirectory(libraryPath);
+    await fs.writeFile(outputPath, indexContent.trim());
 }
 
-//Get JSDocs types from the TS temp file into a variable and convert them to typedefs
+async function rollupBuild() {
+    for (const config of rollupConfig) {
+        const bundle = await rollup(config);
+        await Promise.all(config.output.map(output => bundle.write(output)));
+    }
+}
+
 function getTypedefs() {
-    return gulp.src(tempFilePath)
+    return gulp.src(outDir + "/" + outName + ".d.ts")
         .pipe(through.obj((file, enc, cb) => {
             const contents = file.contents.toString();
             const typeDocRegex = /\/\*\*\s+\*\s+@type {[^}]+}[\s\S]+?\*\//gm;
@@ -86,59 +70,28 @@ function getTypedefs() {
 }
 
 //Compile the TypeScript file as ESM
-function compileEsmTemp() {
-    return gulp.src(tempFilePath)
-        .pipe(ts(esmTsConfig))
+function addTypedefsEsm() {
+    return gulp.src(outDir + "/" + outName + ".esm.js")
         .pipe(insert.prepend(typedefs))
-        .pipe(gulp.dest(esmOutDir));
+        .pipe(gulp.dest(outDir));
 }
 
-//Compile the TypeScript file as CommonJS
-function compileCjsTemp() {
-    return gulp.src(tempFilePath)
-        .pipe(ts(cjsTsConfig))
+function addTypedefsCjs() {
+    return gulp.src(outDir + "/" + outName + ".cjs.js")
         .pipe(insert.prepend(typedefs))
-        .pipe(gulp.dest(cjsOutDir));
+        .pipe(gulp.dest(outDir));
 }
 
-//Generate a UMD script without exports
-function generateUmdFile() {
-    return gulp.src(esmOutFilePath)
-        .pipe(replace(/^\s*export\s+((.|\s)+?);/gm, ""))
-        .pipe(replace(/^\s*export /gm, " "))
-        .pipe(concat(umdOutFilePath))
-        .pipe(gulp.dest("."));
-}
-
-//Minify the ESM compiled code
-function minifyEsm() {
-    return gulp.src(esmOutFilePath)
-        .pipe(terser())
-        .pipe(rename({suffix: ".min"}))
-        .pipe(gulp.dest(esmOutDir));
-}
-
-//Minify the CommonJS compiled code
-function minifyCjs() {
-    return gulp.src(cjsOutFilePath)
-        .pipe(terser())
-        .pipe(rename({suffix: ".min"}))
-        .pipe(gulp.dest(cjsOutDir));
-}
-
-//Minify the UMD script
-function minifyUmd() {
-    return gulp.src(umdOutFilePath)
-        .pipe(terser())
-        .pipe(rename({suffix: ".min"}))
-        .pipe(gulp.dest(umdOutDir));
+function addTypedefsUmd() {
+    return gulp.src(outDir + "/" + outName + ".js")
+        .pipe(insert.prepend(typedefs))
+        .pipe(gulp.dest(outDir));
 }
 
 //Delete the temp file
 async function clean() {
-    await fs.promises.unlink(tempFilePath);
+    await deleteAsync([`${outDir}/${typesDir}`]);
 }
 
 //Chain tasks under "gulp build"
-gulp.task("build", gulp.series(combineTurboFiles, combineOtherFiles, removeImports, getTypedefs,
-    compileEsmTemp, compileCjsTemp, generateUmdFile, minifyEsm, minifyCjs, minifyUmd, clean));
+gulp.task("build", gulp.series(createIndexFile, rollupBuild, getTypedefs, addTypedefsEsm, addTypedefsCjs, addTypedefsUmd, clean));

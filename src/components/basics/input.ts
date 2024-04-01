@@ -1,5 +1,6 @@
-import {TurboProperties} from "../../turbo/definitions/turbo-types";
-import {Turbo} from "../../turbo/core/turbo";
+import {TurboProperties} from "../../core/definitions/turbo-types";
+import {Turbo} from "../../core/turbo";
+import {setProperties} from "../../turbo-functions/element-manipulation/set-properties";
 
 /**
  * @class TurboInput
@@ -21,7 +22,9 @@ customElements.define("turbo-input", TurboInput, {extends: "input"});
  * @returns The Turbo input element.
  */
 function input(properties: TurboProperties<HTMLInputElement> = {}): TurboInput {
-    return new TurboInput(properties);
+    let el = document.createElement("turbo-input") as TurboInput;
+    setProperties(el, properties);
+    return el;
 }
 
 export {TurboInput, input};

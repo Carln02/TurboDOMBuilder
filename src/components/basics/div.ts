@@ -1,5 +1,6 @@
-import {TurboProperties} from "../../turbo/definitions/turbo-types";
-import {Turbo} from "../../turbo/core/turbo";
+import {TurboProperties} from "../../core/definitions/turbo-types";
+import {Turbo} from "../../core/turbo";
+import {setProperties} from "../../turbo-functions/element-manipulation/set-properties";
 
 /**
  * @class TurboDiv
@@ -21,7 +22,9 @@ customElements.define("turbo-div", TurboDiv, {extends: "div"});
  * @returns The Turbo div element.
  */
 function div(properties: TurboProperties<HTMLDivElement> = {}): TurboDiv {
-    return new TurboDiv(properties);
+    let el = document.createElement("turbo-div") as TurboDiv;
+    setProperties(el, properties);
+    return el;
 }
 
 export {TurboDiv, div};
