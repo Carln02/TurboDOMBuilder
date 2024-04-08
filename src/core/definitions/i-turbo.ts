@@ -1,4 +1,4 @@
-import {TurboProperties} from "./turbo-types";
+import {TurboCompatible, TurboProperties} from "./turbo-types";
 
 /**
  * @interface ITurbo
@@ -24,14 +24,14 @@ interface ITurbo {
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns {this} Itself, allowing for method chaining.
      */
-    addClass(classes: string | string[] | undefined): this;
+    addClass(classes?: string | string[]): this;
 
     /**
      * @description Remove one or more CSS classes from the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
      * @returns {this} Itself, allowing for method chaining.
      */
-    removeClass(classes: string | string[] | undefined): this;
+    removeClass(classes?: string | string[]): this;
 
     /**
      * @description Toggle one or more CSS classes in the element.
@@ -40,30 +40,30 @@ interface ITurbo {
      * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
      * @returns {this} Itself, allowing for method chaining.
      */
-    toggleClass(classes: string | string[] | undefined, force?: boolean): this;
+    toggleClass(classes?: string | string[], force?: boolean): this;
 
     /**
      * @description Add one or more child elements to the element.
-     * @param {HTMLElement | HTMLElement[]} children - Array of (or single element) child Turbo or HTML elements.
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child Turbo or HTML elements.
      * @returns {this} Itself, allowing for method chaining.
      */
-    addChild(children: HTMLElement | HTMLElement[] | undefined): this;
+    addChild(children?: TurboCompatible | TurboCompatible[]): this;
 
     /**
      * @description Remove one or more child elements from the element.
-     * @param {HTMLElement | HTMLElement[]} children - Array of (or single element) child Turbo or HTML elements.
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child Turbo or HTML elements.
      * @returns {this} Itself, allowing for method chaining.
      */
-    remChild(children: HTMLElement | HTMLElement[] | undefined): this;
+    remChild(children?: TurboCompatible | TurboCompatible[]): this;
 
     /**
      * @description Add one or more child elements to the element.
-     * @param {HTMLElement | HTMLElement[]} children - Array of (or single element) child Turbo or HTML elements to
+     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child Turbo or HTML elements to
      * insert before sibling.
-     * @param {HTMLElement} sibling - The sibling element
+     * @param {TurboCompatible} sibling - The sibling element
      * @returns {this} Itself, allowing for method chaining.
      */
-    addChildBefore(children: HTMLElement | HTMLElement[] | undefined, sibling: HTMLElement): this;
+    addChildBefore(children?: TurboCompatible | TurboCompatible[], sibling?: TurboCompatible): this;
 
     /**
      * @description Remove all child elements of the element.

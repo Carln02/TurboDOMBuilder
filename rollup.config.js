@@ -1,6 +1,9 @@
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import dts from 'rollup-plugin-dts';
+import postcss from 'rollup-plugin-postcss';
+import autoprefixer from 'autoprefixer';
+import cssnano from 'cssnano';
 
 const outDir = "build";
 const outName = "turbodombuilder";
@@ -15,7 +18,12 @@ export default [
             {file: outDir + "/" + outName + ".cjs.js", format: "cjs"},
             {file: outDir + "/" + outName + ".js", format: "iife", name: "Turbo"}
         ],
-        plugins: typescript({tsconfig: "./tsconfig.json"})
+        plugins: [
+            typescript({tsconfig: "./tsconfig.json"}),
+            postcss({
+                plugins: [autoprefixer(), cssnano()]
+            })
+        ]
     },
     {
         input: outDir + "/" + outName + ".esm.js",
@@ -31,6 +39,17 @@ export default [
         output: [
             {file: outDir + "/" + outName + ".d.ts", format: "es"}
         ],
-        plugins: dts(),
+        plugins: [dts(), ignoreFiles([".scss", ".css"])]
     }
 ];
+
+function ignoreFiles(extensions = []) {
+    return {
+        name: "ignore-files",
+        resolveId(importee) {
+            if (extensions.some(ext => importee.endsWith(ext))) {
+                return { id: importee, external: true };
+            }
+        }
+    };
+}

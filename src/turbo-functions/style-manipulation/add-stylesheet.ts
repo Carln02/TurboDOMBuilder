@@ -8,7 +8,6 @@ function addStylesheet(styles: string | undefined, root: HTMLHeadElement | Shado
     const stylesheet = document.createElement("style");
     stylesheet.innerHTML = styles;
     root.appendChild(stylesheet);
-    console.log("HI")
 }
 
 export {addStylesheet};

@@ -1,4 +1,4 @@
-import {element} from "../../components/element";
+import {element} from "../../turbo-element-creation/element";
 
 
 function convertTextToElement(text: string): Element {
