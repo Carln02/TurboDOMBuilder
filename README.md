@@ -14,13 +14,13 @@ npm install turbodombuilder
 Alternatively, you can include it directly in your HTML:
 
 ```html
-<script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/dist/turbodombuilder.js"></script>
+<script src="https://raw.githack.com/Carln02/TurboDOMBuilder/main/build/turbodombuilder.js"></script>
 ```
 
 ## Usage
 ```javascript
 // Example: Creating an H2 element and appending it to the body
-const div = TurboDOMBuilder.element({tag: "h2", text: "Hello, TurboDOMBuilder!", parent: document.body});
+const div = Turbo.element({tag: "h2", text: "Hello, TurboDOMBuilder!", parent: document.body});
 ```
 
 ## License
