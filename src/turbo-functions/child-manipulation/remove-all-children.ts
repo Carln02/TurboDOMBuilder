@@ -1,5 +1,6 @@
 import {TurboCompatible} from "../../core/definitions/turbo-types";
 import {getElement} from "../element-manipulation/get-element";
+import {getChildHandler} from "../element-manipulation/get-child-handler";
 
 /**
  * @description Remove all children of the given parent element.
@@ -10,7 +11,7 @@ function removeAllChildren(element?: TurboCompatible): TurboCompatible {
     if (!element) return element;
 
     try {
-        Array.from(getElement(element).children).forEach(child => child.remove());
+        Array.from(getChildHandler(element).children).forEach(child => child.remove());
     } catch (e) {
         console.error(e);
     }

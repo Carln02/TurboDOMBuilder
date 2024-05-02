@@ -9,6 +9,7 @@ import {TurboWrapper} from "../../core/turbo-wrapper";
 function getElement(element: TurboCompatible): Element {
     if (element instanceof Element) return element;
     if ("element" in element) return (element as TurboWrapper).element;
+    return element;
 }
 
 export {getElement};

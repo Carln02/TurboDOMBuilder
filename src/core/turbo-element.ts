@@ -11,6 +11,7 @@ import {removeAllChildren} from "../turbo-functions/child-manipulation/remove-al
 import {addListener} from "../turbo-functions/listener-manipulation/add-listener";
 import {StylesRecord} from "../utils/styles/styles-record";
 import {getClosestRoot} from "../turbo-functions/element-manipulation/get-closest-root";
+import {kebabToCamelCase} from "../utils/string-manipulation/kebab-to-camel-case";
 
 /**
  * @class TurboElement
@@ -19,8 +20,6 @@ import {getClosestRoot} from "../turbo-functions/element-manipulation/get-closes
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
  */
 class TurboElement extends HTMLElement implements ITurbo {
-    public readonly root: ShadowRoot | HTMLHeadElement = document.head;
-
     /**
      * @description The stylesheet associated to this class. It will automatically be added once to the document
      * (or once to the closest shadow root).
@@ -33,12 +32,14 @@ class TurboElement extends HTMLElement implements ITurbo {
 
     constructor(properties: TurboProperties = {}) {
         super();
-        if (properties.shadowDOM) this.root = this.attachShadow({mode: "open"});
-
+        if (properties.shadowDOM) this.attachShadow({mode: "open"});
         TurboElement.stylesRecord.addStylesheet((this.constructor as any).stylesheet, this.className, getClosestRoot(this));
-        TurboElement.stylesRecord.addStylesheetFile((this.constructor as any).stylesheetFile, this.className, getClosestRoot(this));
+        this.setProperties(properties, true);
+    }
 
-        this.setProperties(properties);
+    attributeChangedCallback(name: string, oldValue: any, newValue: any) {
+        if (newValue == null || newValue == oldValue) return;
+        this[kebabToCamelCase(name)] = newValue;
     }
 
     //Config
@@ -60,8 +61,8 @@ class TurboElement extends HTMLElement implements ITurbo {
 
     //Custom functions
 
-    public setProperties(properties: TurboProperties): this {
-        setProperties(this, properties);
+    public setProperties(properties: TurboProperties, setOnlyBaseProperties: boolean = false): this {
+        setProperties(this, properties, setOnlyBaseProperties);
         return this;
     }
 
@@ -81,7 +82,7 @@ class TurboElement extends HTMLElement implements ITurbo {
     }
 
     public addChild(children?: TurboCompatible | TurboCompatible[]): this {
-        addChild(this, children)
+        addChild(this, children);
         return this;
     }
 

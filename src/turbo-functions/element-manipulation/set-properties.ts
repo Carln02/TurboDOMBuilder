@@ -1,22 +1,27 @@
-import {TurboCompatible, TurboProperties} from "../../core/definitions/turbo-types";
+import {ElementTagMap, TurboCompatible, TurboProperties} from "../../core/definitions/turbo-types";
 import {addStylesheet} from "../style-manipulation/add-stylesheet";
 import {addClass} from "../class-manipulation/add-class";
 import {addListener} from "../listener-manipulation/add-listener";
 import {addChild} from "../child-manipulation/add-child";
 import {getElement} from "./get-element";
+import {camelToKebabCase} from "../../utils/string-manipulation/camel-to-kebab-case";
+import {getClosestRoot} from "./get-closest-root";
 
 /**
  * Sets the declared properties to the provided element.
  * @param {TurboCompatible} element - The element onto which the properties will be applied.
  * @param {TurboProperties} [properties] - The properties object.
+ * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+ * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
  * @return The element itself.
  */
-function setProperties(element: TurboCompatible, properties: TurboProperties = {}): TurboCompatible {
+function setProperties<T extends keyof ElementTagMap = "div">(element: TurboCompatible, properties:
+    TurboProperties<T> = {} as TurboProperties<T>, setOnlyBaseProperties: boolean = false): TurboCompatible {
     let htmlElement: Element = getElement(element);
 
     Object.keys(properties).forEach(property => {
         switch (property) {
-            case "tag" || "shadowDOM":
+            case "tag" || "namespace" || "shadowDOM":
                 return;
             case "text":
                 if (!(htmlElement instanceof HTMLElement)) return;
@@ -27,7 +32,10 @@ function setProperties(element: TurboCompatible, properties: TurboProperties = {
                 htmlElement.style.cssText += properties.style;
                 return;
             case "stylesheet":
-                addStylesheet(properties.stylesheet, "root" in element ? element.root : document.head);
+                addStylesheet(properties.stylesheet, getClosestRoot(element));
+                return;
+            case "id":
+                htmlElement.id = properties.id;
                 return;
             case "classes":
                 addClass(htmlElement, properties.classes);
@@ -43,7 +51,9 @@ function setProperties(element: TurboCompatible, properties: TurboProperties = {
                 addChild(properties.parent, htmlElement);
                 return;
             default:
-                htmlElement.setAttribute(property, properties[property]);
+                if (setOnlyBaseProperties) return;
+                try {(htmlElement as any)[property] = properties[property]}
+                catch (e) {console.error(e)}
                 return;
         }
     });

@@ -18,12 +18,13 @@ import {TurboProperties} from "../../core/definitions/turbo-types";
  * TurboIcon.config.defaultClasses to this instance of Icon.
  */
 type TurboIconProperties = TurboProperties & {
+    type?: string;
+    directory?: string;
+
     icon: string;
     iconColor?: string;
     onLoaded?: ((svg: SVGElement) => {});
 
-    type?: string;
-    directory?: string;
     unsetDefaultClasses?: boolean;
 };
 

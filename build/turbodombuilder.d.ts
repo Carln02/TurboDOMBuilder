@@ -2,17 +2,15 @@
  * @interface ITurbo
  * @description Interface declaring all the base functions to be implemented by Turbo classes.
  */
-interface ITurbo {
-    /**
-     * @description The root of the element (the document's head or the shadow root - if enabled).
-     */
-    readonly root: ShadowRoot | HTMLHeadElement;
+interface ITurbo<T extends keyof ElementTagMap = "div"> {
     /**
      * Sets the declared properties to the element.
-     * @param {TurboProperties} properties - The properties object.
+     * @param {TurboProperties<T>} properties - The properties object.
+     * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+     * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
      * @returns {this} Itself, allowing for method chaining.
      */
-    setProperties(properties: TurboProperties): this;
+    setProperties(properties: TurboProperties<T>, setOnlyBaseProperties: boolean): this;
     /**
      * @description Add one or more CSS classes to the element.
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
@@ -133,29 +131,28 @@ interface TurboWrapper extends HTMLElement {
  * @class TurboWrapper
  * @description A Turbo wrapper class, wrapping an HTML elements and providing all the Turbo functionalities.
  */
-declare class TurboWrapper implements ITurbo {
+declare class TurboWrapper<T extends keyof ElementTagMap = "div"> implements ITurbo<T> {
     /**
      * @description The underlying HTML element.
      */
-    element: HTMLElement;
+    element: ElementTagMap[T];
     /**
      * @description Whether or not this wrapper uses its proxy.
      */
     useProxy: boolean;
-    root: ShadowRoot | HTMLHeadElement;
     /**
      * @description Create a new Turbo element with the given properties.
      * @param {T extends HTMLElement | TurboElementProperties} properties - Object containing properties for
      * configuring a TurboElement, or the HTML element to create the TurboElement from.
      */
-    constructor(properties?: HTMLElement | TurboProperties);
+    constructor(properties?: ElementTagMap[T] | TurboProperties<T>);
     /**
      * @description Generates a proxy for this element. When trying to access a property that does not exist on the
      * TurboWrapper, the proxy will automatically try to access it on the underlying HTML element
      * @returns The proxy
      */
     proxy(): this;
-    setProperties(properties: TurboProperties): this;
+    setProperties(properties: TurboProperties<T>, setOnlyBaseProperties?: boolean): this;
     addClass(classes: string | string[] | undefined): this;
     removeClass(classes: string | string[] | undefined): this;
     toggleClass(classes: string | string[] | undefined, force?: boolean): this;
@@ -176,29 +173,51 @@ declare class TurboWrapper implements ITurbo {
     show(b: boolean): this;
 }
 
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
-type ReadonlyKeys<T> = {
-    [P in keyof T]-?: IfEquals<{
-        [Q in P]: T[P];
-    }, {
-        -readonly [Q in P]: T[P];
-    }, P>;
-}[keyof T];
-type RemoveReadonly<T> = Pick<T, Exclude<keyof T, ReadonlyKeys<T>>>;
 type HTMLElementNonFunctions<K extends Element = HTMLElement> = {
     [T in keyof K]: K[T] extends Function ? never : T;
 }[keyof K];
-type HTMLElementMutableFields<K extends Element = HTMLElement> = RemoveReadonly<Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">>;
+type HTMLElementMutableFields<K extends Element = HTMLElement> = Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">;
+/**
+ * @type {TurboCompatible}
+ * @description All types that are compatible with Turbo functions (any element and TurboWrappers).
+ */
 type TurboCompatible = Element | TurboWrapper;
-type HTMLTag = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap;
+/**
+ * @type {ChildHandler}
+ * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
+ */
+type ChildHandler = Element | ShadowRoot;
+/**
+ * @type {StylesRoot}
+ * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
+ */
+type StylesRoot = ShadowRoot | HTMLHeadElement;
+/**
+ * @type {ElementTagMap}
+ * @description A type that represents a union of HTML, SVG, and MathML tag name maps.
+ */
+type ElementTagMap = HTMLElementTagNameMap & SVGElementTagNameMap & MathMLElementTagNameMap;
+/**
+ * @type {ElementTagDefinition}
+ * @description Represents an element's definition of its tag and its namespace (both optional).
+ *
+ * @property {ElementTagMap} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
+ * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svg" or "mathML" is provided,
+ * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
+ */
+type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
+    tag?: T;
+    namespace?: string;
+};
 /**
  * @type {TurboProperties}
- * @description Object containing properties for configuring a TurboWrapper or a TurboElement. Any HTML attribute can
- * be passed as key to be processed by the class/function. A few of these attributes were explicitly defined here
- * for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target generic type, if
- * needed). The type also has the following described custom properties:
+ * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
+ * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
+ * properties if set.
+ * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
+ * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
+ * generic type, if needed). The type also has the following described custom properties:
  *
- * @property {HTMLTag} [tag="div"] - For TurboWrapper only. The HTML tag of the element (e.g., "div", "span", "input").
  * @property {string} [id] - The ID of the element.
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
  * space-separated classes or an array of class names).
@@ -228,8 +247,7 @@ type HTMLTag = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof 
  * @property checked
  * @property selected
  */
-type TurboProperties<K extends Element = HTMLElement> = HTMLElementMutableFields<K> & {
-    tag?: HTMLTag;
+type TurboProperties<T extends keyof ElementTagMap = "div"> = HTMLElementMutableFields<ElementTagMap[T]> & ElementTagDefinition<T> & {
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -257,7 +275,7 @@ type TurboProperties<K extends Element = HTMLElement> = HTMLElementMutableFields
  * @property {TurboCompatible | TurboCompatible[]} [rightCustomElements] - Custom elements
  * to be placed on the right side of the button (after the right icon).
  * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
- * @property {HTMLTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * @property {keyof ElementTagMap} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
  * a string). If not specified, the default text tag specified in the Button class will be used.
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
  * to this instance of Button.
@@ -268,8 +286,7 @@ type TurboButtonProperties = TurboProperties & {
     rightIcon?: string | TurboCompatible;
     leftCustomElements?: TurboCompatible | TurboCompatible[];
     rightCustomElements?: TurboCompatible | TurboCompatible[];
-    type?: "button" | "submit" | "reset";
-    customTextTag?: HTMLTag;
+    customTextTag?: keyof ElementTagMap;
     unsetDefaultClasses?: boolean;
 };
 /**
@@ -295,12 +312,12 @@ type ButtonChildren = {
  * @type {TurboButtonConfig}
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
- * @property {HTMLTag} [defaultTextTag] - The default HTML tag for the creation of the text
+ * @property {keyof ElementTagMap} [defaultTextTag] - The default HTML tag for the creation of the text
  * element in the button.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
  */
 type TurboButtonConfig = {
-    defaultTextTag?: HTMLTag;
+    defaultTextTag?: keyof ElementTagMap;
     defaultClasses?: string | string[];
 };
 
@@ -311,7 +328,6 @@ type TurboButtonConfig = {
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
  */
 declare class TurboElement extends HTMLElement implements ITurbo {
-    readonly root: ShadowRoot | HTMLHeadElement;
     /**
      * @description The stylesheet associated to this class. It will automatically be added once to the document
      * (or once to the closest shadow root).
@@ -320,6 +336,7 @@ declare class TurboElement extends HTMLElement implements ITurbo {
     private static stylesRecord;
     private pendingStyles;
     constructor(properties?: TurboProperties);
+    attributeChangedCallback(name: string, oldValue: any, newValue: any): void;
     /**
      * @description Static configuration object.
      */
@@ -329,7 +346,7 @@ declare class TurboElement extends HTMLElement implements ITurbo {
      * @property {typeof this.config} value - The object containing the new configurations.
      */
     static configure(value: typeof this.config): void;
-    setProperties(properties: TurboProperties): this;
+    setProperties(properties: TurboProperties, setOnlyBaseProperties?: boolean): this;
     addClass(classes?: string | string[]): this;
     removeClass(classes?: string | string[]): this;
     toggleClass(classes?: string | string[], force?: boolean): this;
@@ -384,8 +401,8 @@ declare class TurboButton extends TurboElement {
     /**
      * @description The tag of the text element in the button
      */
-    get buttonTextTag(): HTMLTag;
-    set buttonTextTag(value: HTMLTag | undefined);
+    get buttonTextTag(): keyof ElementTagMap;
+    set buttonTextTag(value: keyof ElementTagMap | undefined);
     /**
      * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
      */
@@ -446,9 +463,9 @@ type TurboDropdownEntryProperties = TurboProperties & {
  * @property {string} [underlyingInputName] - Name attribute for a hidden input element to store the selected value(s).
  * If not declared, the hidden input will not be created.
  *
- * @property {HTMLTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
+ * @property {keyof ElementTagMap} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
- * @property {HTMLTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
+ * @property {keyof ElementTagMap} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
  * default tag set in TurboConfig.Dropdown.
  *
  * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
@@ -467,8 +484,8 @@ type TurboDropdownProperties = TurboProperties & {
     popup?: HTMLElement;
     multiSelection?: boolean;
     underlyingInputName?: string;
-    customSelectorTag?: HTMLTag;
-    customEntryTag?: HTMLTag;
+    customSelectorTag?: keyof ElementTagMap;
+    customEntryTag?: keyof ElementTagMap;
     customSelectorClasses?: string;
     customPopupClasses?: string;
     customEntriesClasses?: string;
@@ -478,9 +495,9 @@ type TurboDropdownProperties = TurboProperties & {
  * @type {TurboDropdownConfig}
  * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
  *
- * @property {HTMLTag} [defaultEntryTag] - The default HTML tag for the creation of generic
+ * @property {keyof ElementTagMap} [defaultEntryTag] - The default HTML tag for the creation of generic
  * dropdown entries.
- * @property {HTMLTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
+ * @property {keyof ElementTagMap} [defaultSelectorTag] - The default HTML tag for the creation of the text
  * element in generic selectors (which are Buttons).
  *
  * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
@@ -490,8 +507,8 @@ type TurboDropdownProperties = TurboProperties & {
  * dropdown entries.
  */
 type TurboDropdownConfig = {
-    defaultEntryTag?: HTMLTag;
-    defaultSelectorTag?: HTMLTag;
+    defaultEntryTag?: keyof ElementTagMap;
+    defaultSelectorTag?: keyof ElementTagMap;
     defaultSelectorClasses?: string | string[];
     defaultPopupClasses?: string | string[];
     defaultEntriesClasses?: string | string[];
@@ -612,11 +629,11 @@ declare function dropdown(properties: TurboDropdownProperties): Dropdown;
  * TurboIcon.config.defaultClasses to this instance of Icon.
  */
 type TurboIconProperties = TurboProperties & {
+    type?: string;
+    directory?: string;
     icon: string;
     iconColor?: string;
     onLoaded?: ((svg: SVGElement) => {});
-    type?: string;
-    directory?: string;
     unsetDefaultClasses?: boolean;
 };
 /**
@@ -677,7 +694,7 @@ declare class TurboIcon extends TurboElement {
      * Setting it will update the icon accordingly.
      */
     get icon(): string;
-    private set icon(value);
+    set icon(value: string);
     /**
      * @description The assigned color to the icon (if any)
      */
@@ -699,7 +716,7 @@ type TurboPopupProperties = TurboProperties & {
 declare class TurboPopup extends TurboElement {
     viewportMargin: number;
     offsetFromParent: number;
-    constructor(properties?: TurboProperties);
+    constructor(properties?: TurboPopupProperties);
     private addListeners;
     private recomputePosition;
     private recomputeTop;
@@ -712,6 +729,22 @@ declare class TurboPopup extends TurboElement {
     toggle(): this;
 }
 declare function popup(properties?: TurboProperties): TurboPopup;
+
+/**
+ * @description Defines the element as a custom element with the given name, and processes all observed fields
+ * and handles them. Use as class decorator in TypeScript (e.g.: @define("my-class")), and as a regular function call
+ * in JavaScript (e.g.: define("my-class")(MyClass)).
+ * @param {string} elementName - The name of the custom element.
+ * @return Function that takes as parameter "constructor," the class to define.
+ */
+declare const define: (elementName: string) => (constructor: any) => any;
+
+/**
+ * @description Sets the corresponding property as observed, to sync its changes with a corresponding HTML attribute.
+ * @param {Object} target
+ * @param {string} propertyKey
+ */
+declare function observe(target: Object, propertyKey: string): void;
 
 /**
  * @class {TurboConfig}
@@ -810,138 +843,76 @@ declare class Transition {
     update(changedProperties: TransitionProperties): void;
 }
 
-/**
- * @description Creates a canvas TurboElement with the given properties.
- * @param {TurboProperties<HTMLCanvasElement>} [properties] - The properties object.
- * @returns The Turbo canvas element.
- */
-declare function canvas(properties?: TurboProperties<HTMLCanvasElement>): HTMLCanvasElement;
+declare const canvas: (properties?: TurboProperties<"canvas">) => HTMLCanvasElement;
+declare const div: (properties?: TurboProperties<"div">) => HTMLDivElement;
+declare const form: (properties?: TurboProperties<"form">) => HTMLFormElement;
+declare const h1: (properties?: TurboProperties<"h1">) => HTMLHeadingElement;
+declare const h2: (properties?: TurboProperties<"h2">) => HTMLHeadingElement;
+declare const h3: (properties?: TurboProperties<"h3">) => HTMLHeadingElement;
+declare const h4: (properties?: TurboProperties<"h4">) => HTMLHeadingElement;
+declare const h5: (properties?: TurboProperties<"h5">) => HTMLHeadingElement;
+declare const h6: (properties?: TurboProperties<"h6">) => HTMLHeadingElement;
+declare const img: (properties?: TurboProperties<"img">) => HTMLImageElement;
+declare const input: (properties?: TurboProperties<"input">) => HTMLInputElement;
+declare const p: (properties?: TurboProperties<"p">) => HTMLParagraphElement;
+declare const textarea: (properties?: TurboProperties<"textarea">) => HTMLTextAreaElement;
 
 /**
- * @description Creates a div TurboElement with the given properties.
- * @param {TurboProperties<HTMLDivElement>} [properties] - The properties object.
- * @returns The Turbo div element.
+ * @description returns a function that generates an HTML element with the provided tag that takes TurboProperties
+ * as input.
+ * @param {keyof ElementTagMap} tag - The tag to generate the function from.
+ * @return The function
  */
-declare function div(properties?: TurboProperties<HTMLDivElement>): HTMLDivElement;
+declare function generateTagFunction<T extends keyof ElementTagMap>(tag: T): (properties?: TurboProperties<T>) => ElementTagMap[T];
 
 /**
- * @description Creates a form TurboElement with the given properties.
- * @param {TurboProperties<HTMLFormElement>} [properties] - The properties object.
- * @returns The Turbo form element.
+ * @description Create an element with the specified properties. Supports SVG and MathML.
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created element.
  */
-declare function form(properties?: TurboProperties<HTMLFormElement>): HTMLFormElement;
+declare function blindElement<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
- * @description Creates a h1 TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h1 element.
+ * @description Create an element with the specified properties (and the specified namespace if applicable).
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created element.
  */
-declare function h1(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates a h2 TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h2 element.
- */
-declare function h2(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates a h3 TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h3 element.
- */
-declare function h3(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates a h TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h element.
- */
-declare function h4(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates a h5 TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h5 element.
- */
-declare function h5(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates a h6 TurboElement with the given properties.
- * @param {TurboProperties<HTMLHeadingElement>} [properties] - The properties object.
- * @returns The Turbo h6 element.
- */
-declare function h6(properties?: TurboProperties<HTMLHeadingElement>): HTMLHeadingElement;
-
-/**
- * @description Creates an image TurboElement with the given properties.
- * @param {TurboProperties<HTMLImageElement>} [properties] - The properties object.
- * @returns The Turbo image element.
- */
-declare function img(properties?: TurboProperties<HTMLImageElement>): HTMLImageElement;
-
-/**
- * @description Creates an input TurboElement with the given properties.
- * @param {TurboProperties<HTMLInputElement>} [properties] - The properties object.
- * @returns The Turbo input element.
- */
-declare function input(properties?: TurboProperties<HTMLInputElement>): HTMLInputElement;
-
-/**
- * @description Creates a p TurboElement with the given properties.
- * @param {TurboProperties<HTMLParagraphElement>} [properties] - The properties object.
- * @returns The Turbo p element.
- */
-declare function p(properties?: TurboProperties<HTMLParagraphElement>): HTMLParagraphElement;
-
-/**
- * @description Creates a text area TurboElement with the given properties.
- * @param {TurboProperties<HTMLTextAreaElement>} [properties] - The properties object.
- * @returns The Turbo input element.
- */
-declare function textArea(properties?: TurboProperties<HTMLTextAreaElement>): HTMLTextAreaElement;
-
-/**
- * @description Create an HTML element with the specified properties.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created HTML element.
- */
-declare function element(properties?: TurboProperties): HTMLElement;
+declare function element<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Create a flex column element.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created flex element
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created flex element
  */
-declare function flexColCenter(properties?: TurboProperties): HTMLElement;
+declare function flexColCenter<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Create a flex column element.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created flex element
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created flex element
  */
-declare function flexCol(properties?: TurboProperties): HTMLElement;
+declare function flexCol<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Create a flex row element.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created flex element
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created flex element
  */
-declare function flexRowCenter(properties?: TurboProperties): HTMLElement;
+declare function flexRowCenter<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Create a flex row element.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created flex element
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created flex element
  */
-declare function flexRow(properties?: TurboProperties): HTMLElement;
+declare function flexRow<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Create a spacer element.
- * @param {TurboProperties} properties - Object containing properties of the element.
- * @returns {HTMLElement} The created spacer element
+ * @param {TurboProperties<T>} properties - Object containing properties of the element.
+ * @returns {ElementTagMap[T]} The created spacer element
  */
-declare function spacer(properties?: TurboProperties): HTMLElement;
+declare function spacer<T extends keyof ElementTagMap>(properties?: TurboProperties<T>): ElementTagMap[T];
 
 /**
  * @description Add children elements to a parent element.
@@ -1005,11 +976,18 @@ declare function removeClass(element?: TurboCompatible, classes?: string | strin
 declare function toggleClass(element?: TurboCompatible, classes?: string | string[], force?: boolean): TurboCompatible;
 
 /**
+ * @description Returns the HTML child handler object associated with the provided Turbo compatible entity.
+ * @param {TurboCompatible} element - The Turbo compatible entity to get the handler object from
+ * @return The HTML element or its shadow root (if defined)
+ */
+declare function getChildHandler(element: TurboCompatible): ChildHandler;
+
+/**
  * @description Retrieves the closest root to the provided element in  the document.
  * @param {TurboCompatible} [element] - The element from which to start the search.
  * @return The closest root, or the document's head.
  */
-declare function getClosestRoot(element?: TurboCompatible): ShadowRoot | HTMLHeadElement;
+declare function getClosestRoot(element?: TurboCompatible): StylesRoot;
 
 /**
  * @description Returns the HTML element from the provided Turbo compatible entity.
@@ -1022,9 +1000,11 @@ declare function getElement(element: TurboCompatible): Element;
  * Sets the declared properties to the provided element.
  * @param {TurboCompatible} element - The element onto which the properties will be applied.
  * @param {TurboProperties} [properties] - The properties object.
+ * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+ * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
  * @return The element itself.
  */
-declare function setProperties(element: TurboCompatible, properties?: TurboProperties): TurboCompatible;
+declare function setProperties<T extends keyof ElementTagMap = "div">(element: TurboCompatible, properties?: TurboProperties<T>, setOnlyBaseProperties?: boolean): TurboCompatible;
 
 /**
  * @description Adds the provided event listener to the element.
@@ -1041,36 +1021,146 @@ declare function addListener(element: TurboCompatible | undefined, type: string,
 /**
  * @description Adds the file at the provided path as a new style element to the provided root.
  * @param {string | undefined} href - The path to the CSS file to add.
- * @param {HTMLHeadElement | ShadowRoot} [root] - The root to which the style element will be added.
+ * @param {StylesRoot} [root] - The root to which the style element will be added.
  */
-declare function addStylesheetFile(href: string | undefined, root?: HTMLHeadElement | ShadowRoot): void;
+declare function addStylesheetFile(href: string | undefined, root?: StylesRoot): void;
 
 /**
  * @description Adds the provided string as a new style element to the provided root.
  * @param {string | undefined} styles - The css string. Use the css literal function for autocompletion.
- * @param {HTMLHeadElement | ShadowRoot} [root] - The root to which the style element will be added.
+ * @param {StylesRoot} [root] - The root to which the style element will be added.
  */
-declare function addStylesheet(styles: string | undefined, root?: HTMLHeadElement | ShadowRoot): void;
+declare function addStylesheet(styles: string | undefined, root?: StylesRoot): void;
 
 /**
  * @description Constructs a single CSS string from a template literal containing CSS rules.
  */
 declare function css(strings: TemplateStringsArray, ...values: any[]): string;
 
+/**
+ * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
+ * (for readability).
+ * @param {string} baseColor - The base color in Hex format.
+ * @param {string} [overlayColor1="#000000"] - The first overlay color to evaluate in Hex format. Defaults to black.
+ * @param {string} [overlayColor2="#FFFFFF"] - The second overlay color to evaluate in Hex format. Defaults to white.
+ */
+declare function bestOverlayColor(baseColor: string, overlayColor1?: string, overlayColor2?: string): string;
+
+/**
+ * @description Computes the contrast between two colors.
+ * @param {string} color1 - The first color in Hex format
+ * @param {string} color2 - The second color in Hex format
+ * @return The contrast value, or NaN if one of the colors provided is not valid.
+ */
+declare function contrast(color1?: string, color2?: string): number;
+
+/**
+ * @description Computes the luminance of a color
+ * @param {string} color - The color in Hex format
+ * @return The luminance value, or NaN if the color is not valid.
+ */
+declare function luminance(color?: string): number;
+
+/**
+ * @description Converts a string of tags into an Element.
+ * @param {string} text - The string to convert
+ * @return The Element
+ */
+declare function convertTextToElement(text: string): Element;
+
+declare const MathMLNamespace = "http://www.w3.org/1998/Math/MathML";
+declare const MathMlTagsDefinitions: Record<any, any>;
+/**
+ * @description Evaluates whether the provided string is a MathML tag.
+ * @param {string} [tag] - The string to evaluate
+ * @return A boolean indicating whether the tag is in the MathML namespace or not.
+ */
+declare function isMathMLTag(tag?: string): boolean;
+
+declare const SvgNamespace = "http://www.w3.org/2000/svg";
+declare const SvgTagsDefinitions: Record<any, any>;
+/**
+ * @description Evaluates whether the provided string is an SVG tag.
+ * @param {string} [tag] - The string to evaluate
+ * @return A boolean indicating whether the tag is in the SVG namespace or not.
+ */
+declare function isSvgTag(tag?: string): boolean;
+
+/**
+ * @type {FontProperties}
+ * @description An object representing a local font, or a family of fonts.
+ *
+ * @property {string} name - The name of the font. The font's filename should also match.
+ * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
+ * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
+ * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
+ * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
+ * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
+ * @property {string} [format] - The format of the font. Defaults to "woff2".
+ * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
+ */
+type FontProperties = {
+    name: string;
+    pathOrDirectory: string;
+    stylesPerWeights?: Record<string, string> | Record<number, Record<string, string>>;
+    format?: string;
+    extension?: string;
+};
+
+/**
+ * @description Loads a local font file, or a family of fonts from a directory.
+ * @param {FontProperties} font - The font properties
+ */
+declare function loadLocalFont(font: FontProperties): void;
+
+/**
+ * @description converts the provided string from camelCase to kebab-case.
+ * @param {string} str - The string to convert
+ */
+declare function camelToKebabCase(str?: string): string;
+
+/**
+ * @description Extracts the extension from the given filename or path (e.g.: ".png").
+ * @param {string} str - The filename or path
+ * @return The extension, or an empty string if not found.
+ */
 declare function getFileExtension(str?: string): string;
+
+/**
+ * @description converts the provided string from kebab-case to camelCase.
+ * @param {string} str - The string to convert
+ */
+declare function kebabToCamelCase(str?: string): string;
 
 declare class StylesRecord {
     private addedStylesheets;
     private getStylesheets;
-    addStylesheet(styles: string, id: string, root?: ShadowRoot | HTMLHeadElement): void;
-    addStylesheetFile(href: string, id: string, root?: ShadowRoot | HTMLHeadElement): void;
+    addStylesheet(styles: string, id: string, root?: StylesRoot): void;
 }
 
+/**
+ * @class SvgCache
+ * @description Class representing a cache for SVG files. Use it to not fetch the same SVG file multiple times.
+ */
 declare class SvgCache {
-    cache: Record<string, SVGElement>;
-    fetchSvg(path: any, onLoaded: (svg: SVGElement) => void): void;
+    /**
+     * @description The instance's current cache
+     */
+    readonly cache: Record<string, SVGElement>;
+    /**
+     * @description Fetches an SVG from the given path, then executes on it the provided callback, and stores it in
+     * the cache.
+     * @param {string} path - The path to the SVG
+     * @param {(svg: SVGElement) => void} onLoaded - The callback to execute
+     */
+    fetchSvg(path: string, onLoaded: (svg: SVGElement) => void): void;
 }
 
-declare function fetchSvg(path: any, onLoaded: (svg: SVGElement) => void): void;
+/**
+ * @description Fetches an SVG from the given path, then executes on it the provided callback
+ * @param {string} path - The path to the SVG
+ * @param {(svg: SVGElement) => void} onLoaded - The callback to execute
+ */
+declare function fetchSvg(path: string, onLoaded: (svg: SVGElement) => void): void;
 
-export { type ButtonChildren, Dropdown, DropdownEntry, type HTMLTag, type ITurbo, StylesRecord, SvgCache, Transition, type TransitionProperties, TurboButton, type TurboButtonConfig, type TurboButtonProperties, type TurboCompatible, TurboConfig, type TurboDropdownConfig, type TurboDropdownEntryProperties, type TurboDropdownProperties, TurboElement, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboPopup, type TurboPopupProperties, type TurboProperties, TurboWrapper, addChild, addChildBefore, addClass, addListener, addStylesheet, addStylesheetFile, button, canvas, css, div, dropdown, dropdownEntry, element, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, getClosestRoot, getElement, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, p, popup, removeAllChildren, removeChild, removeClass, setProperties, spacer, textArea, toggleClass };
+export { type ButtonChildren, type ChildHandler, Dropdown, DropdownEntry, type ElementTagMap, type FontProperties, type ITurbo, MathMLNamespace, MathMlTagsDefinitions, StylesRecord, type StylesRoot, SvgCache, SvgNamespace, SvgTagsDefinitions, Transition, type TransitionProperties, TurboButton, type TurboButtonConfig, type TurboButtonProperties, type TurboCompatible, TurboConfig, type TurboDropdownConfig, type TurboDropdownEntryProperties, type TurboDropdownProperties, TurboElement, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboPopup, type TurboPopupProperties, type TurboProperties, TurboWrapper, addChild, addChildBefore, addClass, addListener, addStylesheet, addStylesheetFile, bestOverlayColor, blindElement, button, camelToKebabCase, canvas, contrast, convertTextToElement, css, define, div, dropdown, dropdownEntry, element, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getChildHandler, getClosestRoot, getElement, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isSvgTag, kebabToCamelCase, loadLocalFont, luminance, observe, p, popup, removeAllChildren, removeChild, removeClass, setProperties, spacer, textarea, toggleClass };

@@ -1,5 +1,6 @@
 import {TurboCompatible} from "../../core/definitions/turbo-types";
 import {getElement} from "../element-manipulation/get-element";
+import {getChildHandler} from "../element-manipulation/get-child-handler";
 
 /**
  * @description Add children elements to a parent element.
@@ -11,7 +12,7 @@ import {getElement} from "../element-manipulation/get-element";
 function addChild(element?: TurboCompatible, children?: TurboCompatible | TurboCompatible[]): TurboCompatible {
     if (!element || !children) return element;
 
-    let htmlElement = getElement(element);
+    let htmlElement = getChildHandler(element);
 
     //Try to append every provided child (according to its type)
     try {

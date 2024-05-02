@@ -1,13 +1,20 @@
 import {TurboElement} from "../../core/turbo-element";
 import {TurboProperties} from "../../core/definitions/turbo-types";
 import "./popup.css";
+import {TurboPopupProperties} from "./popup-types";
+import {define} from "../../core/descriptors/define";
 
+@define("turbo-popup")
 class TurboPopup extends TurboElement {
     public viewportMargin: number = 0;
     public offsetFromParent: number = 0;
 
-    constructor(properties: TurboProperties = {}) {
+    constructor(properties: TurboPopupProperties = {}) {
         super(properties);
+
+        if (properties.viewportMargin) this.viewportMargin = properties.viewportMargin;
+        if (properties.offsetFromParent) this.offsetFromParent = properties.offsetFromParent;
+
         this.addListeners();
         this.show(false);
     }
@@ -26,32 +33,37 @@ class TurboPopup extends TurboElement {
         const computedStyle = window.getComputedStyle(this);
         const parentComputedStyle = window.getComputedStyle(this.parentElement);
 
-        const top = this.recomputeTop(rect, parentRect);
-        const left = this.recomputeLeft(rect, parentRect);
+        const top = this.recomputeTop(rect, parentRect, computedStyle, parentComputedStyle);
+        const left = this.recomputeLeft(rect, parentRect, computedStyle, parentComputedStyle);
 
         this.recomputeMaxHeight(top, computedStyle, parentComputedStyle);
         this.recomputeMaxWidth(left, computedStyle, parentComputedStyle);
     }
 
-    private recomputeTop(rect: DOMRect, parentRect: DOMRect): number {
+    private recomputeTop(rect: DOMRect, parentRect: DOMRect, computedStyle: CSSStyleDeclaration,
+                         parentComputedStyle: CSSStyleDeclaration): number {
         let top: number;
 
-        const popupHeightWithMargins = rect.height + this.offsetFromParent + this.viewportMargin;
+        const popupHeightWithMargins = rect.height + this.offsetFromParent + this.viewportMargin
+            + parseFloat(computedStyle.marginTop) + parseFloat(computedStyle.marginBottom);
 
-        if (window.innerHeight - parentRect.bottom >= popupHeightWithMargins) top = parentRect.bottom;
-        else if (parentRect.top >= popupHeightWithMargins) top = parentRect.top - rect.height;
-        else top = parentRect.bottom;
+        if (window.innerHeight - parentRect.bottom >= popupHeightWithMargins) top = parentRect.bottom + this.offsetFromParent;
+        else if (parentRect.top >= popupHeightWithMargins) top = parentRect.top - rect.height - this.offsetFromParent;
+        else top = parentRect.bottom + this.offsetFromParent;
 
         this.setStyle("top", top + "px");
         return top;
     }
 
-    private recomputeLeft(rect: DOMRect, parentRect: DOMRect): number {
-        let left = parentRect.left + (parentRect.width / 2) - (rect.width / 2);
+    private recomputeLeft(rect: DOMRect, parentRect: DOMRect, computedStyle: CSSStyleDeclaration,
+                          parentComputedStyle: CSSStyleDeclaration): number {
+        let left = parentRect.left + (parentRect.width / 2) - (rect.width / 2) +
+            parseFloat(parentComputedStyle.marginLeft) - parseFloat(computedStyle.marginLeft);
 
-        if (left < this.viewportMargin) left = 0;
+        if (left < this.viewportMargin) left = this.viewportMargin;
         else if (left + rect.width > window.innerWidth - this.viewportMargin)
-            left = window.innerWidth - rect.width;
+            left = window.innerWidth - rect.width - parseFloat(computedStyle.marginLeft)
+                - parseFloat(computedStyle.marginRight) - this.viewportMargin;
 
         this.setStyle("left", left + "px");
         return left;
@@ -96,8 +108,6 @@ class TurboPopup extends TurboElement {
         return this.show(!this.isShown);
     }
 }
-
-customElements.define("turbo-popup", TurboPopup);
 
 function popup(properties: TurboProperties = {}): TurboPopup {
     return new TurboPopup(properties);

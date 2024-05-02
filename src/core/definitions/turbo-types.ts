@@ -1,33 +1,58 @@
 import {TurboWrapper} from "../turbo-wrapper";
 
-type IfEquals<X, Y, A = X, B = never> =
-    (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
-
-type ReadonlyKeys<T> = {
-    [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>
-}[keyof T];
-
-type RemoveReadonly<T> = Pick<T, Exclude<keyof T, ReadonlyKeys<T>>>;
-
 type HTMLElementNonFunctions<K extends Element = HTMLElement> = {
     [T in keyof K]: K[T] extends Function ? never : T;
 }[keyof K];
 
-type HTMLElementMutableFields<K extends Element = HTMLElement> = RemoveReadonly<
-    Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">>;
+type HTMLElementMutableFields<K extends Element = HTMLElement> =
+    Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">;
 
+/**
+ * @type {TurboCompatible}
+ * @description All types that are compatible with Turbo functions (any element and TurboWrappers).
+ */
 type TurboCompatible = Element | TurboWrapper;
 
-type HTMLTag = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof MathMLElementTagNameMap;
+/**
+ * @type {ChildHandler}
+ * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
+ */
+type ChildHandler = Element | ShadowRoot;
+
+/**
+ * @type {StylesRoot}
+ * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
+ */
+type StylesRoot = ShadowRoot | HTMLHeadElement;
+
+/**
+ * @type {ElementTagMap}
+ * @description A type that represents a union of HTML, SVG, and MathML tag name maps.
+ */
+type ElementTagMap = HTMLElementTagNameMap & SVGElementTagNameMap & MathMLElementTagNameMap;
+
+/**
+ * @type {ElementTagDefinition}
+ * @description Represents an element's definition of its tag and its namespace (both optional).
+ *
+ * @property {ElementTagMap} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
+ * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svg" or "mathML" is provided,
+ * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
+ */
+type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
+    tag?: T;
+    namespace?: string;
+};
 
 /**
  * @type {TurboProperties}
- * @description Object containing properties for configuring a TurboWrapper or a TurboElement. Any HTML attribute can
- * be passed as key to be processed by the class/function. A few of these attributes were explicitly defined here
- * for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target generic type, if
- * needed). The type also has the following described custom properties:
+ * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
+ * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
+ * properties if set.
+ * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
+ * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
+ * generic type, if needed). The type also has the following described custom properties:
  *
- * @property {HTMLTag} [tag="div"] - For TurboWrapper only. The HTML tag of the element (e.g., "div", "span", "input").
  * @property {string} [id] - The ID of the element.
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
  * space-separated classes or an array of class names).
@@ -57,10 +82,10 @@ type HTMLTag = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap | keyof 
  * @property checked
  * @property selected
  */
-type TurboProperties<K extends Element = HTMLElement> =
-    HTMLElementMutableFields<K>
+type TurboProperties<T extends keyof ElementTagMap = "div"> =
+    HTMLElementMutableFields<ElementTagMap[T]>
+    & ElementTagDefinition<T>
     & {
-    tag?: HTMLTag;
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -73,4 +98,4 @@ type TurboProperties<K extends Element = HTMLElement> =
     [key: string]: any;
 };
 
-export {TurboCompatible, HTMLTag, TurboProperties};
+export {TurboCompatible, ChildHandler, StylesRoot, ElementTagMap, TurboProperties};

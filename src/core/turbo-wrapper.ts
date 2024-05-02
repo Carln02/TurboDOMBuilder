@@ -1,14 +1,15 @@
-import {TurboProperties} from "./definitions/turbo-types";
+import {ElementTagMap, TurboProperties} from "./definitions/turbo-types";
 import {ITurbo} from "./definitions/i-turbo";
-import { setProperties } from "../turbo-functions/element-manipulation/set-properties";
-import { addClass } from "../turbo-functions/class-manipulation/add-class";
-import { removeClass } from "../turbo-functions/class-manipulation/remove-class";
-import { toggleClass } from "../turbo-functions/class-manipulation/toggle-class";
-import { addChild } from "../turbo-functions/child-manipulation/add-child";
-import { removeChild } from "../turbo-functions/child-manipulation/remove-child";
-import { addChildBefore } from "../turbo-functions/child-manipulation/add-child-before";
-import { addListener } from "../turbo-functions/listener-manipulation/add-listener";
-import { removeAllChildren } from "../turbo-functions/child-manipulation/remove-all-children";
+import {setProperties} from "../turbo-functions/element-manipulation/set-properties";
+import {addClass} from "../turbo-functions/class-manipulation/add-class";
+import {removeClass} from "../turbo-functions/class-manipulation/remove-class";
+import {toggleClass} from "../turbo-functions/class-manipulation/toggle-class";
+import {addChild} from "../turbo-functions/child-manipulation/add-child";
+import {removeChild} from "../turbo-functions/child-manipulation/remove-child";
+import {addChildBefore} from "../turbo-functions/child-manipulation/add-child-before";
+import {addListener} from "../turbo-functions/listener-manipulation/add-listener";
+import {removeAllChildren} from "../turbo-functions/child-manipulation/remove-all-children";
+import {element} from "../turbo-element-creation/element";
 
 interface TurboWrapper extends HTMLElement {
     [key: string]: any;
@@ -18,32 +19,25 @@ interface TurboWrapper extends HTMLElement {
  * @class TurboWrapper
  * @description A Turbo wrapper class, wrapping an HTML elements and providing all the Turbo functionalities.
  */
-class TurboWrapper implements ITurbo {
+class TurboWrapper<T extends keyof ElementTagMap = "div"> implements ITurbo<T> {
     /**
      * @description The underlying HTML element.
      */
-    public element: HTMLElement;
+    public element: ElementTagMap[T];
 
     /**
      * @description Whether or not this wrapper uses its proxy.
      */
     public useProxy: boolean = true;
 
-    public root: ShadowRoot | HTMLHeadElement = document.head;
-
     /**
      * @description Create a new Turbo element with the given properties.
      * @param {T extends HTMLElement | TurboElementProperties} properties - Object containing properties for
      * configuring a TurboElement, or the HTML element to create the TurboElement from.
      */
-    constructor(properties: HTMLElement | TurboProperties = {} as TurboProperties) {
-        if (properties instanceof HTMLElement) {
-            this.element = properties;
-        } else {
-            this.element = document.createElement(properties.tag || "div");
-            if (properties.shadowDOM) this.root = this.element.attachShadow({mode: "open"});
-            this.setProperties(properties);
-        }
+    constructor(properties: ElementTagMap[T] | TurboProperties<T> = {} as TurboProperties<T>) {
+        if (properties instanceof Element) this.element = properties;
+        else this.element = element(properties);
         return this.useProxy ? this.proxy() : this;
     }
 
@@ -54,7 +48,7 @@ class TurboWrapper implements ITurbo {
      */
     public proxy(): this {
         return new Proxy(this, {
-            get: (target: TurboWrapper, prop, receiver) => {
+            get: (target: TurboWrapper<T>, prop, receiver) => {
                 //Check if the property exists directly on the TurboElement instance
                 if (prop in target) {
                     const value = (target as any)[prop];
@@ -86,8 +80,8 @@ class TurboWrapper implements ITurbo {
 
     //Custom functions
 
-    public setProperties(properties: TurboProperties) {
-        setProperties(this, properties);
+    public setProperties(properties: TurboProperties<T>, setOnlyBaseProperties: boolean = false) {
+        setProperties(this, properties, setOnlyBaseProperties);
         return this.useProxy ? this.proxy() : this;
     }
 

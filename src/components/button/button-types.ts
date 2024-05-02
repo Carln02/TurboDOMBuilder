@@ -1,4 +1,4 @@
-import {HTMLTag, TurboCompatible, TurboProperties} from "../../core/definitions/turbo-types";
+import {ElementTagMap, TurboCompatible, TurboProperties} from "../../core/definitions/turbo-types";
 
 /**
  * @type {TurboButtonProperties}
@@ -15,7 +15,7 @@ import {HTMLTag, TurboCompatible, TurboProperties} from "../../core/definitions/
  * @property {TurboCompatible | TurboCompatible[]} [rightCustomElements] - Custom elements
  * to be placed on the right side of the button (after the right icon).
  * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
- * @property {HTMLTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * @property {keyof ElementTagMap} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
  * a string). If not specified, the default text tag specified in the Button class will be used.
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
  * to this instance of Button.
@@ -27,9 +27,7 @@ type TurboButtonProperties = TurboProperties & {
     leftCustomElements?: TurboCompatible | TurboCompatible[];
     rightCustomElements?: TurboCompatible | TurboCompatible[];
 
-    type?: "button" | "submit" | "reset";
-
-    customTextTag?: HTMLTag;
+    customTextTag?: keyof ElementTagMap;
     unsetDefaultClasses?: boolean;
 };
 
@@ -57,12 +55,12 @@ type ButtonChildren = {
  * @type {TurboButtonConfig}
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
- * @property {HTMLTag} [defaultTextTag] - The default HTML tag for the creation of the text
+ * @property {keyof ElementTagMap} [defaultTextTag] - The default HTML tag for the creation of the text
  * element in the button.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
  */
 type TurboButtonConfig = {
-    defaultTextTag?: HTMLTag;
+    defaultTextTag?: keyof ElementTagMap;
     defaultClasses?: string | string[];
 }
 

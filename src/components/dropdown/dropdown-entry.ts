@@ -1,11 +1,14 @@
 import {TurboDropdownEntryProperties} from "./dropdown-types";
 import {TurboElement} from "../../core/turbo-element";
+import {define} from "../../core/descriptors/define";
 
 /**
  * @class DropdownEntry
  * @description Class representing an entry within a Dropdown.
  * @extends TurboElement
  */
+
+@define("turbo-dropdown-entry")
 class DropdownEntry extends TurboElement {
     private _value: string;
     private _selected: boolean = false;
@@ -65,8 +68,6 @@ class DropdownEntry extends TurboElement {
         this._selectedClass = value;
     }
 }
-
-customElements.define("turbo-dropdown-entry", DropdownEntry);
 
 function dropdownEntry(properties: TurboDropdownEntryProperties) {
     return new DropdownEntry(properties);

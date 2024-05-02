@@ -2,13 +2,16 @@ import {TurboElement} from "../../core/turbo-element";
 import {TurboIconProperties, TurboIconConfig} from "./icon-types";
 import {SvgCache} from "../../utils/svg/svg-cache";
 import {getFileExtension} from "../../utils/string-manipulation/get-file-extension";
-import {img} from "../../turbo-element-creation/basics/img";
+import {img} from "../../turbo-element-creation/basics/basic-generated-functions";
+import {observe} from "../../core/descriptors/observe";
+import {define} from "../../core/descriptors/define";
 
 /**
  * Icon class for creating icon elements.
  * @class TurboIcon
  * @extends TurboElement
  */
+@define("turbo-icon")
 class TurboIcon extends TurboElement {
     private _element: HTMLImageElement | SVGElement | null = null;
 
@@ -113,11 +116,12 @@ class TurboIcon extends TurboElement {
      * @description The name (or path) of the icon. Might include the file extension (to override the icon's type).
      * Setting it will update the icon accordingly.
      */
+    @observe
     public get icon() {
         return this._icon;
     }
 
-    private set icon(value: string) {
+    public set icon(value: string) {
         this.type = getFileExtension(value).substring(1);
         this._icon = value;
 
@@ -128,6 +132,7 @@ class TurboIcon extends TurboElement {
     /**
      * @description The assigned color to the icon (if any)
      */
+    @observe
     public get iconColor() {
         return this._iconColor;
     }
@@ -149,9 +154,7 @@ class TurboIcon extends TurboElement {
     }
 }
 
-customElements.define("turbo-icon", TurboIcon);
-
-function icon(properties: TurboIconProperties) {
+function icon(properties: TurboIconProperties): TurboIcon {
     return new TurboIcon(properties);
 }
 

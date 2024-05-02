@@ -1,4 +1,4 @@
-import {HTMLTag, TurboProperties} from "../../core/definitions/turbo-types";
+import {ElementTagMap, TurboProperties} from "../../core/definitions/turbo-types";
 import {DropdownEntry} from "./dropdown-entry";
 
 /**
@@ -31,9 +31,9 @@ type TurboDropdownEntryProperties = TurboProperties & {
  * @property {string} [underlyingInputName] - Name attribute for a hidden input element to store the selected value(s).
  * If not declared, the hidden input will not be created.
  *
- * @property {HTMLTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
+ * @property {keyof ElementTagMap} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
- * @property {HTMLTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
+ * @property {keyof ElementTagMap} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
  * default tag set in TurboConfig.Dropdown.
  *
  * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
@@ -55,8 +55,8 @@ type TurboDropdownProperties = TurboProperties & {
     multiSelection?: boolean;
     underlyingInputName?: string,
 
-    customSelectorTag?: HTMLTag;
-    customEntryTag?: HTMLTag;
+    customSelectorTag?: keyof ElementTagMap;
+    customEntryTag?: keyof ElementTagMap;
 
     customSelectorClasses?: string;
     customPopupClasses?: string;
@@ -68,9 +68,9 @@ type TurboDropdownProperties = TurboProperties & {
  * @type {TurboDropdownConfig}
  * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
  *
- * @property {HTMLTag} [defaultEntryTag] - The default HTML tag for the creation of generic
+ * @property {keyof ElementTagMap} [defaultEntryTag] - The default HTML tag for the creation of generic
  * dropdown entries.
- * @property {HTMLTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
+ * @property {keyof ElementTagMap} [defaultSelectorTag] - The default HTML tag for the creation of the text
  * element in generic selectors (which are Buttons).
  *
  * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
@@ -80,8 +80,8 @@ type TurboDropdownProperties = TurboProperties & {
  * dropdown entries.
  */
 type TurboDropdownConfig = {
-    defaultEntryTag?: HTMLTag;
-    defaultSelectorTag?: HTMLTag;
+    defaultEntryTag?: keyof ElementTagMap;
+    defaultSelectorTag?: keyof ElementTagMap;
 
     defaultSelectorClasses?: string | string[]
     defaultPopupClasses?: string | string[];

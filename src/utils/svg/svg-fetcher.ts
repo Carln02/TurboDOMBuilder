@@ -1,13 +1,12 @@
-import {element} from "../../turbo-element-creation/element";
+import {convertTextToElement} from "../element-manipulation/convert-text-to-element";
 
-
-function convertTextToElement(text: string): Element {
-    let wrapper = element();
-    wrapper.innerHTML = text;
-    return wrapper.children[0];
-}
-
-function fetchSvg(path: any, onLoaded: (svg: SVGElement) => void) {
+/**
+ * @description Fetches an SVG from the given path, then executes on it the provided callback
+ * @param {string} path - The path to the SVG
+ * @param {(svg: SVGElement) => void} onLoaded - The callback to execute
+ */
+function fetchSvg(path: string, onLoaded: (svg: SVGElement) => void): void {
+    if (!path || path.length == 0) return;
     fetch(path)
         .then(response => {
             if (!response.ok) {

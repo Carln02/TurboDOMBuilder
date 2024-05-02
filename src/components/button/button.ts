@@ -2,17 +2,19 @@ import {TurboIcon} from "../icon/icon";
 import {element} from "../../turbo-element-creation/element";
 import {ButtonChildren, TurboButtonConfig, TurboButtonProperties} from "./button-types";
 import {TurboElement} from "../../core/turbo-element";
-import {HTMLTag, TurboCompatible} from "../../core/definitions/turbo-types";
+import {ElementTagMap, TurboCompatible} from "../../core/definitions/turbo-types";
 import "./button.css";
+import {define} from "../../core/descriptors/define";
 
 /**
  * Button class for creating Turbo button elements.
  * @class TurboButton
  * @extends TurboElement
  */
+@define("turbo-button")
 class TurboButton extends TurboElement {
     private _elements: ButtonChildren;
-    private _buttonTextTag: HTMLTag;
+    private _buttonTextTag: keyof ElementTagMap;
 
     static readonly config: TurboButtonConfig = {defaultTextTag: "h4"};
 
@@ -85,11 +87,11 @@ class TurboButton extends TurboElement {
     /**
      * @description The tag of the text element in the button
      */
-    public get buttonTextTag(): HTMLTag {
+    public get buttonTextTag(): keyof ElementTagMap {
         return this._buttonTextTag;
     }
 
-    public set buttonTextTag(value: HTMLTag | undefined) {
+    public set buttonTextTag(value: keyof ElementTagMap | undefined) {
         if (!value) value = TurboButton.config.defaultTextTag || "h4";
         this._buttonTextTag = value;
     }
@@ -172,8 +174,6 @@ class TurboButton extends TurboElement {
         this.elements.rightCustomElements = value;
     }
 }
-
-customElements.define("turbo-button", TurboButton);
 
 function button(properties: TurboButtonProperties): TurboButton {
     return new TurboButton(properties);

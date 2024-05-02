@@ -1,19 +1,21 @@
 import {TurboElement} from "../../core/turbo-element";
-import {input} from "../../turbo-element-creation/basics/input";
+import {input} from "../../turbo-element-creation/basics/basic-generated-functions";
 import {button, TurboButton} from "../button/button";
 import {dropdownEntry, DropdownEntry} from "./dropdown-entry";
 import {TurboDropdownConfig, TurboDropdownProperties} from "./dropdown-types";
 import {addClass} from "../../turbo-functions/class-manipulation/add-class";
 import {addChild} from "../../turbo-functions/child-manipulation/add-child";
-import {HTMLTag} from "../../core/definitions/turbo-types";
+import {ElementTagMap} from "../../core/definitions/turbo-types";
 import "./dropdown.css";
 import { popup } from "../popup/popup";
+import {define} from "../../core/descriptors/define";
 
 /**
  * Dropdown class for creating Turbo button elements.
  * @class Dropdown
  * @extends TurboElement
  */
+@define("turbo-dropdown")
 class Dropdown extends TurboElement {
     /**
      * The dropdown's selector element.
@@ -73,7 +75,7 @@ class Dropdown extends TurboElement {
         if (properties.selector instanceof HTMLElement) {
             selector = properties.selector;
         } else {
-            let textTag: HTMLTag = properties.customSelectorTag
+            let textTag: keyof ElementTagMap = properties.customSelectorTag
                 ? properties.customSelectorTag
                 : Dropdown.config.defaultSelectorTag;
 
@@ -111,12 +113,7 @@ class Dropdown extends TurboElement {
     }
 
     private createDropdownEntry(entry: string | DropdownEntry, properties: TurboDropdownProperties) {
-        if (typeof entry == "string") {
-            entry = dropdownEntry({
-                value: entry,
-                tag: properties.customEntryTag ? properties.customEntryTag : Dropdown.config.defaultEntryTag
-            });
-        }
+        if (typeof entry == "string") entry = dropdownEntry({value: entry});
 
         entry.addClass(properties.customEntriesClasses
             ? properties.customEntriesClasses
@@ -210,8 +207,6 @@ class Dropdown extends TurboElement {
         else this.popup.style.display = b ? "" : "none";
     }
 }
-
-customElements.define("turbo-dropdown", Dropdown);
 
 function dropdown(properties: TurboDropdownProperties): Dropdown {
     return new Dropdown(properties);

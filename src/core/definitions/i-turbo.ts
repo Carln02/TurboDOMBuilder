@@ -1,23 +1,21 @@
-import {TurboCompatible, TurboProperties} from "./turbo-types";
+import {ElementTagMap, TurboCompatible, TurboProperties} from "./turbo-types";
 
 /**
  * @interface ITurbo
  * @description Interface declaring all the base functions to be implemented by Turbo classes.
  */
-interface ITurbo {
-    /**
-     * @description The root of the element (the document's head or the shadow root - if enabled).
-     */
-    readonly root: ShadowRoot | HTMLHeadElement;
+interface ITurbo<T extends keyof ElementTagMap = "div"> {
 
     //Custom functions
 
     /**
      * Sets the declared properties to the element.
-     * @param {TurboProperties} properties - The properties object.
+     * @param {TurboProperties<T>} properties - The properties object.
+     * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+     * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
      * @returns {this} Itself, allowing for method chaining.
      */
-    setProperties(properties: TurboProperties): this;
+    setProperties(properties: TurboProperties<T>, setOnlyBaseProperties: boolean): this;
 
     /**
      * @description Add one or more CSS classes to the element.
@@ -98,7 +96,7 @@ interface ITurbo {
      * @returns {this} Itself, allowing for method chaining.
      */
     addListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: this) => void),
-                     options?: boolean | AddEventListenerOptions): this;
+                options?: boolean | AddEventListenerOptions): this;
 
     /**
      * @description Removes an event listener from the element.
