@@ -1,0 +1,19 @@
+turbo-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+turbo-dropdown > :nth-child(2) {
+    top: calc(100% + 0.4em);
+    left: 0;
+
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    border: solid 0.1em #5e5e5e;
+    border-radius: 0.4em;
+
+    overflow: hidden;
+    z-index: 1;
+}

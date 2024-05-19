@@ -1,9 +1,4 @@
 /**
- * @typedef {Object} TurboCompatible
- * @description All types that are compatible with Turbo functions (any element and TurboWrappers).
- */
-
-/**
  * @typedef {Object} ChildHandler
  * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
  */
@@ -23,7 +18,7 @@
  * @description Represents an element's definition of its tag and its namespace (both optional).
  *
  * @property {ElementTagMap} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
- * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svg" or "mathML" is provided,
+ * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
  * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
  */
 
@@ -43,11 +38,11 @@
  * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
  * generate automatically a new style element in the element's corresponding root. Use the css literal function
  * for autocompletion.
- * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: TurboCompatible) => void)>} [listeners]
+ * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => void)>} [listeners]
  * - An object containing event listeners to be applied to this element.
- * @property {TurboCompatible | TurboCompatible[]} [children] - An array of child wrappers or elements to append to
+ * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
  * the created element.
- * @property {TurboCompatible} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
  * @property {string} [text] - The text content of the element (if any).
  * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
  *
@@ -71,14 +66,14 @@
  * @description Properties object for configuring a Button. Extends TurboElementProperties.
  * @extends TurboProperties
  *
- * @property {string | TurboCompatible} [buttonText] - The text content of the button.
- * @property {string | TurboCompatible} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
+ * @property {string | Element} [buttonText] - The text content of the button.
+ * @property {string | Element} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
  * string (icon name/path) or an Icon instance.
- * @property {string | TurboCompatible} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
+ * @property {string | Element} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
  * string (icon name/path) or an Icon instance.
- * @property {TurboCompatible | TurboCompatible[]} [leftCustomElements] - Custom elements
+ * @property {Element | Element[]} [leftCustomElements] - Custom elements
  * to be placed on the left side of the button (before the left icon).
- * @property {TurboCompatible | TurboCompatible[]} [rightCustomElements] - Custom elements
+ * @property {Element | Element[]} [rightCustomElements] - Custom elements
  * to be placed on the right side of the button (after the right icon).
  * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
  * @property {keyof ElementTagMap} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
@@ -91,12 +86,12 @@
  * @typedef {Object} ButtonChildren
  * @description Holds references to the button's child elements for internal management.
  *
- * @property {TurboCompatible | TurboCompatible[] | null} leftCustomElements - Elements placed
+ * @property {Element | Element[] | null} leftCustomElements - Elements placed
  * on the left side of the button.
- * @property {TurboCompatible | null} leftIcon - The icon placed on the left side of the button.
- * @property {TurboCompatible | null} text - The text element of the button.
- * @property {TurboCompatible | null} rightIcon - The icon placed on the right side of the button.
- * @property {TurboCompatible | TurboCompatible[] | null} rightCustomElements - Elements placed
+ * @property {Element | null} leftIcon - The icon placed on the left side of the button.
+ * @property {Element | null} text - The text element of the button.
+ * @property {Element | null} rightIcon - The icon placed on the right side of the button.
+ * @property {Element | Element[] | null} rightCustomElements - Elements placed
  * on the right side of the button.
  */
 
@@ -124,7 +119,7 @@
  * @description Properties for configuring a Dropdown.
  * @extends TurboProperties
  *
- * @property {(string | DropdownEntry)[]} values - The values or DropdownEntry instances to be used as dropdown options.
+ * @property {(string | TurboDropdownEntry)[]} values - The values or DropdownEntry instances to be used as dropdown options.
  * @property {string[]} [selectedValues=[]] - Array of values that are initially selected.
  * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
  * string is passed, a Button with the given string as text will be assigned as the selector.
@@ -172,11 +167,11 @@
  *
  * @property {string} icon - The name of the icon.
  * @property {string} [iconColor] - The color of the icon.
- * @property {((svg: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
+ * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
  * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
  *
  * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
- * TurboIcon.config.type (whose default value is "svg").
+ * TurboIcon.config.type (whose default value is "svgManipulation").
  * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
  * TurboIcon.config.directory.
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
@@ -187,11 +182,24 @@
  * @typedef {Object} TurboIconConfig
  * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
  *
- * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svg".
+ * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
  * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
  * directory once here to not type it again at every Icon generation.
- * @property {string} [customType] - Custom type of the icon, overrides the default type assigned to Icon.type.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
+ */
+
+/**
+ * @typedef {Object} FontProperties
+ * @description An object representing a local font, or a family of fonts.
+ *
+ * @property {string} name - The name of the font. The font's filename should also match.
+ * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
+ * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
+ * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
+ * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
+ * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
+ * @property {string} [format] - The format of the font. Defaults to "woff2".
+ * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
  */
 
 /**
@@ -220,130 +228,23 @@
  * "timingFunction" property (if the latter is set).
  */
 
-/**
- * @typedef {Object} FontProperties
- * @description An object representing a local font, or a family of fonts.
- *
- * @property {string} name - The name of the font. The font's filename should also match.
- * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
- * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
- * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
- * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
- * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
- * @property {string} [format] - The format of the font. Defaults to "woff2".
- * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
- */
-
 var Turbo = (function (exports) {
     'use strict';
 
-    /******************************************************************************
-    Copyright (c) Microsoft Corporation.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with or without fee is hereby granted.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-    PERFORMANCE OF THIS SOFTWARE.
-    ***************************************************************************** */
-    /* global Reflect, Promise, SuppressedError, Symbol */
-
-
-    function __decorate(decorators, target, key, desc) {
-        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-        return c > 3 && r && Object.defineProperty(target, key, r), r;
-    }
-
-    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-        var e = new Error(message);
-        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-    };
-
-    /**
-     * @description Returns the HTML element from the provided Turbo compatible entity.
-     * @param {TurboCompatible} element - The Turbo compatible entity to get the HTML element from
-     * @return The HTML element
-     */
-    function getElement(element) {
-        if (element instanceof Element)
-            return element;
-        if ("element" in element)
-            return element.element;
-        return element;
-    }
-
-    /**
-     * @description Returns the HTML child handler object associated with the provided Turbo compatible entity.
-     * @param {TurboCompatible} element - The Turbo compatible entity to get the handler object from
-     * @return The HTML element or its shadow root (if defined)
-     */
-    function getChildHandler(element) {
-        if ("element" in element && !(element instanceof Element))
-            element = element.element;
-        if (element.shadowRoot)
-            return element.shadowRoot;
-        return element;
-    }
-
-    /**
-     * @description Remove children elements from a parent element.
-     * @param {TurboCompatible} element - Parent Turbo or HTML DOM element
-     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
-     * Turbo or HTML DOM elements
-     * @return The element itself
-     */
-    function removeChild(element, children) {
-        if (!element || !children)
-            return element;
-        let htmlElement = getChildHandler(element);
-        //Try to remove every provided child (according to its type)
-        try {
-            if (!Array.isArray(children))
-                htmlElement.removeChild(getElement(children));
-            else
-                children.forEach(child => htmlElement.removeChild(getElement(child)));
-        }
-        catch (e) {
-            console.error(e);
-        }
-        return element;
-    }
-
-    /**
-     * @description Adds the provided string as a new style element to the provided root.
-     * @param {string | undefined} styles - The css string. Use the css literal function for autocompletion.
-     * @param {StylesRoot} [root] - The root to which the style element will be added.
-     */
-    function addStylesheet(styles, root = document.head) {
-        if (!styles)
-            return;
-        const stylesheet = document.createElement("style");
-        stylesheet.innerHTML = styles;
-        root.appendChild(stylesheet);
-    }
-
     /**
      * @description Add one or more classes to the provided HTML DOM element's (or TurboElement) class list.
-     * @param {TurboCompatible} element - Turbo or HTML DOM element
+     * @param {Element} element - Turbo or HTML DOM element
      * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
      * @return The element itself
      */
     function addClass(element, classes) {
         if (!element || !classes)
             return element;
-        let htmlElement = getElement(element);
         try {
             // If string provided --> split by spaces
             if (typeof classes === "string")
                 classes = classes.split(" ");
-            classes.filter(entry => entry.trim().length > 0).forEach(entry => htmlElement.classList.add(entry));
+            classes.filter(entry => entry.trim().length > 0).forEach(entry => element.classList.add(entry));
         }
         catch (e) {
             console.error(e);
@@ -353,9 +254,9 @@ var Turbo = (function (exports) {
 
     /**
      * @description Adds the provided event listener to the element.
-     * @param {TurboCompatible} element - The element to which the event listener should be applied.
+     * @param {Element} element - The element to which the event listener should be applied.
      * @param {string} type - The type of the event.
-     * @param {EventListenerOrEventListenerObject | (e: Event, el: TurboCompatible) => void} listener - The function
+     * @param {EventListenerOrEventListenerObject | (e: Event, el: Element) => void} listener - The function
      * or object that receives a notification. Has (optionally) two parameters: the event, and the element itself.
      * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the
      * event listener.
@@ -370,27 +271,38 @@ var Turbo = (function (exports) {
             else if (typeof listener === "object" && listener.handleEvent)
                 listener.handleEvent(e);
         };
-        getElement(element).addEventListener(type, wrappedListener, options);
+        element.addEventListener(type, wrappedListener, options);
+        return element;
+    }
+
+    /**
+     * @description Returns the HTML child handler object associated with the provided Turbo compatible entity.
+     * @param {Element} element - The element to get the handler object from
+     * @return The HTML element or its shadow root (if defined)
+     */
+    function childHandler(element) {
+        if (element.shadowRoot)
+            return element.shadowRoot;
         return element;
     }
 
     /**
      * @description Add children elements to a parent element.
-     * @param {TurboCompatible} [element] - Parent Turbo or HTML DOM element
-     * @param {TurboCompatible | TurboCompatible[]} [children] - Array of (or single element) child
+     * @param {Element} [element] - Parent Turbo or HTML DOM element
+     * @param {Element | Element[]} [children] - Array of (or single element) child
      * Turbo or HTML DOM elements
      * @return The element itself
      */
     function addChild(element, children) {
         if (!element || !children)
             return element;
-        let htmlElement = getChildHandler(element);
+        let htmlElement = childHandler(element);
         //Try to append every provided child (according to its type)
         try {
             if (!Array.isArray(children))
-                htmlElement.appendChild(getElement(children));
+                htmlElement.appendChild(children);
             else
-                children.forEach((child) => htmlElement.appendChild(getElement(child)));
+                children.forEach((child) => htmlElement.appendChild(child));
         }
         catch (e) {
             console.error(e);
@@ -400,10 +312,10 @@ var Turbo = (function (exports) {
 
     /**
      * @description Retrieves the closest root to the provided element in  the document.
-     * @param {TurboCompatible} [element] - The element from which to start the search.
+     * @param {Element} [element] - The element from which to start the search.
      * @return The closest root, or the document's head.
      */
-    function getClosestRoot(element) {
+    function closestRoot(element) {
         while (element) {
             if (element.shadowRoot)
                 return element.shadowRoot;
@@ -413,52 +325,63 @@ var Turbo = (function (exports) {
     }
 
     /**
+     * @description Adds the provided string as a new style element to the provided root.
+     * @param {string | undefined} styles - The css string. Use the css literal function for autocompletion.
+     * @param {StylesRoot} [root] - The root to which the style element will be added.
+     */
+    function stylesheet(styles, root = document.head) {
+        if (!styles)
+            return;
+        const stylesheet = style({ innerHTML: styles });
+        root.appendChild(stylesheet);
+    }
+
+    /**
      * Sets the declared properties to the provided element.
-     * @param {TurboCompatible} element - The element onto which the properties will be applied.
+     * @param {Element} element - The element onto which the properties will be applied.
      * @param {TurboProperties} [properties] - The properties object.
      * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
      * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
      * @return The element itself.
      */
     function setProperties(element, properties = {}, setOnlyBaseProperties = false) {
-        let htmlElement = getElement(element);
         Object.keys(properties).forEach(property => {
             switch (property) {
                 case "tag"  :
                     return;
                 case "text":
-                    if (!(htmlElement instanceof HTMLElement))
+                    if (!(element instanceof HTMLElement))
                         return;
-                    htmlElement.innerText = properties.text;
+                    element.innerText = properties.text;
                     return;
                 case "style":
-                    if (!(htmlElement instanceof HTMLElement || htmlElement instanceof SVGElement))
+                    if (!(element instanceof HTMLElement || element instanceof SVGElement))
                         return;
-                    htmlElement.style.cssText += properties.style;
+                    element.style.cssText += properties.style;
                     return;
                 case "stylesheet":
-                    addStylesheet(properties.stylesheet, getClosestRoot(element));
+                    stylesheet(properties.stylesheet, closestRoot(element));
                     return;
                 case "id":
-                    htmlElement.id = properties.id;
+                    element.id = properties.id;
                     return;
                 case "classes":
-                    addClass(htmlElement, properties.classes);
+                    addClass(element, properties.classes);
                     return;
                 case "listeners":
-                    Object.keys(properties.listeners).forEach(listenerType => addListener(htmlElement, listenerType, properties.listeners[listenerType]));
+                    Object.keys(properties.listeners).forEach(listenerType => addListener(element, listenerType, properties.listeners[listenerType]));
                     return;
                 case "children":
-                    addChild(htmlElement, properties.children);
+                    addChild(element, properties.children);
                     return;
                 case "parent":
-                    addChild(properties.parent, htmlElement);
+                    addChild(properties.parent, element);
                     return;
                 default:
                     if (setOnlyBaseProperties)
                         return;
                     try {
-                        htmlElement[property] = properties[property];
+                        element[property] = properties[property];
                     }
                     catch (e) {
                         console.error(e);
@@ -467,345 +390,6 @@ var Turbo = (function (exports) {
             }
         });
         return element;
-    }
-
-    /**
-     * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
-     * @param {TurboCompatible} element - Turbo or HTML DOM element
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
-     * @return The element itself
-     */
-    function removeClass(element, classes) {
-        if (!element || !classes)
-            return element;
-        let htmlElement = getElement(element);
-        try {
-            // If string provided --> split by spaces
-            if (typeof classes === "string")
-                classes = classes.split(" ");
-            classes.filter(entry => entry.trim().length > 0).forEach(entry => htmlElement.classList.remove(entry));
-        }
-        catch (e) {
-            console.error(e);
-        }
-        return element;
-    }
-
-    /**
-     * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
-     * @param {TurboCompatible} element - Turbo or HTML DOM element
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
-     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
-     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
-     * @return The element itself
-     */
-    function toggleClass(element, classes, force) {
-        if (!element || !classes)
-            return element;
-        let htmlElement = getElement(element);
-        try {
-            // If string provided --> split by spaces
-            if (typeof classes === "string")
-                classes = classes.split(" ");
-            classes.filter(entry => entry.trim().length > 0).forEach(entry => {
-                if (force != undefined)
-                    htmlElement.classList.toggle(entry, force);
-                else
-                    htmlElement.classList.toggle(entry);
-            });
-        }
-        catch (e) {
-            console.error(e);
-        }
-        return element;
-    }
-
-    /**
-     * @description Add children elements to a parent element.
-     * @param {TurboCompatible} element - Parent Turbo or HTML DOM element
-     * @param {TurboCompatible | TurboCompatible[]} children - Array of (or single element) child
-     * Turbo or HTML DOM elements to insert before sibling
-     * @param {TurboCompatible} sibling - Sibling Turbo or HTML DOM element
-     * @return The element itself
-     */
-    function addChildBefore(element, children, sibling) {
-        if (!element || !children)
-            return element;
-        if (!sibling)
-            return addChild(element, children);
-        let htmlElement = getChildHandler(element);
-        let htmlSibling = getElement(sibling);
-        //Try to append every provided child (according to its type)
-        try {
-            if (!Array.isArray(children))
-                htmlElement.insertBefore(getElement(children), htmlSibling);
-            else
-                children.forEach((child) => htmlElement.insertBefore(getElement(child), htmlSibling));
-        }
-        catch (e) {
-            console.error(e);
-        }
-        return element;
-    }
-
-    /**
-     * @description Remove all children of the given parent element.
-     * @param {TurboCompatible} element - Parent Turbo or HTML DOM element
-     * @return The element itself
-     */
-    function removeAllChildren(element) {
-        if (!element)
-            return element;
-        try {
-            Array.from(getChildHandler(element).children).forEach(child => child.remove());
-        }
-        catch (e) {
-            console.error(e);
-        }
-        return element;
-    }
-
-    class StylesRecord {
-        addedStylesheets = new Map();
-        getStylesheets(root) {
-            let stylesheets = this.addedStylesheets.get(root);
-            if (!stylesheets) {
-                this.addedStylesheets.set(root, new Set());
-                stylesheets = this.addedStylesheets.get(root);
-            }
-            return stylesheets;
-        }
-        addStylesheet(styles, id, root = document.head) {
-            if (!styles || styles.length == 0)
-                return;
-            let stylesheets = this.getStylesheets(root);
-            if (stylesheets.has(id))
-                return;
-            addStylesheet(styles);
-            stylesheets.add(id);
-        }
-    }
-
-    /**
-     * @description converts the provided string from kebab-case to camelCase.
-     * @param {string} str - The string to convert
-     */
-    function kebabToCamelCase(str) {
-        if (!str || str.length == 0)
-            return;
-        return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
-    }
-
-    /**
-     * @class TurboElement
-     * @extends HTMLElement
-     * @implements ITurbo
-     * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
-     */
-    class TurboElement extends HTMLElement {
-        /**
-         * @description The stylesheet associated to this class. It will automatically be added once to the document
-         * (or once to the closest shadow root).
-         */
-        static stylesheet = "";
-        static stylesRecord = new StylesRecord();
-        pendingStyles = {};
-        constructor(properties = {}) {
-            super();
-            if (properties.shadowDOM)
-                this.attachShadow({ mode: "open" });
-            TurboElement.stylesRecord.addStylesheet(this.constructor.stylesheet, this.className, getClosestRoot(this));
-            this.setProperties(properties, true);
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            if (newValue == null || newValue == oldValue)
-                return;
-            this[kebabToCamelCase(name)] = newValue;
-        }
-        //Config
-        /**
-         * @description Static configuration object.
-         */
-        static config = {};
-        /**
-         * @description Update the class's static configurations. Will only overwrite the set properties.
-         * @property {typeof this.config} value - The object containing the new configurations.
-         */
-        static configure(value) {
-            Object.entries(value).forEach(([key, val]) => {
-                if (val !== undefined)
-                    this.config[key] = val;
-            });
-        }
-        //Custom functions
-        setProperties(properties, setOnlyBaseProperties = false) {
-            setProperties(this, properties, setOnlyBaseProperties);
-            return this;
-        }
-        addClass(classes) {
-            addClass(this, classes);
-            return this;
-        }
-        removeClass(classes) {
-            removeClass(this, classes);
-            return this;
-        }
-        toggleClass(classes, force) {
-            toggleClass(this, classes, force);
-            return this;
-        }
-        addChild(children) {
-            addChild(this, children);
-            return this;
-        }
-        remChild(children) {
-            removeChild(this, children);
-            return this;
-        }
-        addChildBefore(children, sibling) {
-            addChildBefore(this, children, sibling);
-            return this;
-        }
-        removeAllChildren() {
-            removeAllChildren(this);
-            return this;
-        }
-        addListener(type, listener, options) {
-            addListener(this, type, listener, options);
-            return this;
-        }
-        setStyle(attribute, value) {
-            this.pendingStyles[attribute] = value;
-            this.applyStyles();
-            return this;
-        }
-        setStyles(cssText) {
-            this.pendingStyles["cssText"] = cssText;
-            this.applyStyles();
-            return this;
-        }
-        applyStyles() {
-            requestAnimationFrame(() => {
-                for (const property in this.pendingStyles) {
-                    if (property == "cssText")
-                        this.style.cssText += ";" + this.pendingStyles["cssText"];
-                    else
-                        this.style[property] = this.pendingStyles[property];
-                }
-                this.pendingStyles = {};
-            });
-        }
-        //Method Chaining Declarations
-        execute(callback) {
-            callback(this);
-            return this;
-        }
-        removeListener(type, listener, options) {
-            this.removeEventListener(type, listener, options);
-            return this;
-        }
-        setAttribute(name, value) {
-            super.setAttribute(name, value?.toString() || "true");
-            return this;
-        }
-        removeAttribute(name) {
-            super.removeAttribute(name);
-            return this;
-        }
-        blur() {
-            super.blur();
-            return this;
-        }
-        focus() {
-            super.focus();
-            return this;
-        }
-        remove() {
-            super.remove();
-            return this;
-        }
-        //Other
-        show(b) {
-            this.setStyle("display", b ? "" : "none");
-            return this;
-        }
-    }
-
-    /**
-     * @description Converts a string of tags into an Element.
-     * @param {string} text - The string to convert
-     * @return The Element
-     */
-    function convertTextToElement(text) {
-        let wrapper = document.createElement("div");
-        wrapper.innerHTML = text;
-        return wrapper.children[0];
-    }
-
-    /**
-     * @description Fetches an SVG from the given path, then executes on it the provided callback
-     * @param {string} path - The path to the SVG
-     * @param {(svg: SVGElement) => void} onLoaded - The callback to execute
-     */
-    function fetchSvg(path, onLoaded) {
-        if (!path || path.length == 0)
-            return;
-        fetch(path)
-            .then(response => {
-            if (!response.ok) {
-                throw new Error("Network response was not ok while loading your SVG");
-            }
-            return response.text();
-        })
-            .then(svgText => {
-            let svg = convertTextToElement(svgText);
-            if (svg && onLoaded) {
-                onLoaded(svg);
-            }
-        })
-            .catch(error => console.error("Error fetching SVG:", error));
-    }
-
-    /**
-     * @class SvgCache
-     * @description Class representing a cache for SVG files. Use it to not fetch the same SVG file multiple times.
-     */
-    class SvgCache {
-        /**
-         * @description The instance's current cache
-         */
-        cache = {};
-        /**
-         * @description Fetches an SVG from the given path, then executes on it the provided callback, and stores it in
-         * the cache.
-         * @param {string} path - The path to the SVG
-         * @param {(svg: SVGElement) => void} onLoaded - The callback to execute
-         */
-        fetchSvg(path, onLoaded) {
-            if (!path || path.length == 0)
-                return;
-            let savedEl = this.cache[path];
-            if (savedEl) {
-                onLoaded(savedEl.cloneNode(true));
-                return;
-            }
-            fetchSvg(path, (svg) => {
-                this.cache[path] = svg.cloneNode(true);
-                onLoaded(svg);
-            });
-        }
-    }
-
-    /**
-     * @description Extracts the extension from the given filename or path (e.g.: ".png").
-     * @param {string} str - The filename or path
-     * @return The extension, or an empty string if not found.
-     */
-    function getFileExtension(str) {
-        if (!str || str.length == 0)
-            return "";
-        const match = str.match(/\.\S{1,4}$/);
-        return match ? match[0] : "";
     }
 
     const SvgNamespace = "http://www.w3.org/2000/svg";
@@ -884,7 +468,7 @@ var Turbo = (function (exports) {
     }
 
     const MathMLNamespace = "http://www.w3.org/1998/Math/MathML";
-    const MathMlTagsDefinitions = {
+    const MathMLTagsDefinitions = {
         annotation: MathMLElement,
         "annotation-xml": MathMLElement,
         maction: MathMLElement,
@@ -922,7 +506,7 @@ var Turbo = (function (exports) {
      * @return A boolean indicating whether the tag is in the MathML namespace or not.
      */
     function isMathMLTag(tag) {
-        return Object.keys(MathMlTagsDefinitions).includes(tag) || tag?.startsWith("math");
+        return Object.keys(MathMLTagsDefinitions).includes(tag) || tag?.startsWith("math");
     }
 
     /**
@@ -962,6 +546,7 @@ var Turbo = (function (exports) {
         };
     }
 
+    const a = generateTagFunction("a");
     const canvas = generateTagFunction("canvas");
     const div = generateTagFunction("div");
     const form = generateTagFunction("form");
@@ -973,21 +558,213 @@ var Turbo = (function (exports) {
     const h6 = generateTagFunction("h6");
     const img = generateTagFunction("img");
     const input = generateTagFunction("input");
+    const link = generateTagFunction("link");
     const p = generateTagFunction("p");
+    const style = generateTagFunction("style");
     const textarea = generateTagFunction("textarea");
+    const video = generateTagFunction("video");
 
     /**
-     * @description Sets the corresponding property as observed, to sync its changes with a corresponding HTML attribute.
-     * @param {Object} target
-     * @param {string} propertyKey
+     * @description Create an element with the specified properties. Supports SVG and MathML.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created element.
      */
-    function observe(target, propertyKey) {
-        let constructor = target.constructor;
-        if (!constructor.observedFields)
-            constructor.observedFields = [];
-        if (!constructor.observedFields.includes(propertyKey)) {
-            constructor.observedFields.push(propertyKey);
+    function blindElement(properties = {}) {
+        let element;
+        if (isSvgTag(properties.tag))
+            element = document.createElementNS(SvgNamespace, properties.tag);
+        else if (isMathMLTag(properties.tag))
+            element = document.createElementNS(MathMLNamespace, properties.tag);
+        else
+            element = document.createElement(properties.tag || "div");
+        if (properties.shadowDOM)
+            element.attachShadow({ mode: "open" });
+        setProperties(element, properties);
+        return element;
+    }
+
+    /**
+     * @description Create a flex column element.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created flex element
+     */
+    function flexCol(properties) {
+        let el = element(properties);
+        el.style.display = "flex";
+        el.style.flexDirection = "column";
+        return el;
+    }
+
+    /**
+     * @description Create a flex column element.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created flex element
+     */
+    function flexColCenter(properties) {
+        let el = flexCol(properties);
+        el.style.justifyContent = "center";
+        el.style.alignItems = "center";
+        return el;
+    }
+
+    /**
+     * @description Create a flex row element.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created flex element
+     */
+    function flexRow(properties) {
+        let el = element(properties);
+        el.style.display = "flex";
+        el.style.flexDirection = "row";
+        return el;
+    }
+
+    /**
+     * @description Create a flex row element.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created flex element
+     */
+    function flexRowCenter(properties) {
+        let el = flexRow(properties);
+        el.style.justifyContent = "center";
+        el.style.alignItems = "center";
+        return el;
+    }
+
+    /**
+     * @description Create a spacer element.
+     * @param {TurboProperties<T>} properties - Object containing properties of the element.
+     * @returns {ElementTagMap[T]} The created spacer element
+     */
+    function spacer(properties) {
+        let el = element(properties);
+        el.style.flexGrow = "1";
+        return el;
+    }
+
+    /**
+     * @description Add children elements to a parent element.
+     * @param {Element} element - Parent Turbo or HTML DOM element
+     * @param {Element | Element[]} children - Array of (or single element) child
+     * Turbo or HTML DOM elements to insert before sibling
+     * @param {Element} sibling - Sibling Turbo or HTML DOM element
+     * @return The element itself
+     */
+    function addChildBefore(element, children, sibling) {
+        if (!element || !children)
+            return element;
+        if (!sibling)
+            return addChild(element, children);
+        let htmlElement = childHandler(element);
+        //Try to append every provided child (according to its type)
+        try {
+            if (!Array.isArray(children))
+                htmlElement.insertBefore(children, sibling);
+            else
+                children.forEach((child) => htmlElement.insertBefore(child, sibling));
         }
+        catch (e) {
+            console.error(e);
+        }
+        return element;
+    }
+
+    /**
+     * @description Remove all children of the given parent element.
+     * @param {Element} element - Parent Turbo or HTML DOM element
+     * @return The element itself
+     */
+    function removeAllChildren(element) {
+        if (!element)
+            return element;
+        try {
+            Array.from(childHandler(element).children).forEach(child => child.remove());
+        }
+        catch (e) {
+            console.error(e);
+        }
+        return element;
+    }
+
+    /**
+     * @description Remove children elements from a parent element.
+     * @param {Element} element - Parent Turbo or HTML DOM element
+     * @param {Element | Element[]} children - Array of (or single element) child
+     * Turbo or HTML DOM elements
+     * @return The element itself
+     */
+    function removeChild(element, children) {
+        if (!element || !children)
+            return element;
+        let htmlElement = childHandler(element);
+        //Try to remove every provided child (according to its type)
+        try {
+            if (!Array.isArray(children))
+                htmlElement.removeChild(children);
+            else
+                children.forEach(child => htmlElement.removeChild(child));
+        }
+        catch (e) {
+            console.error(e);
+        }
+        return element;
+    }
+
+    /**
+     * @description Remove one or more classes from the provided HTML DOM element's (or TurboElement) class list.
+     * @param {Element} element - Turbo or HTML DOM element
+     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
+     * @return The element itself
+     */
+    function removeClass(element, classes) {
+        if (!element || !classes)
+            return element;
+        try {
+            // If string provided --> split by spaces
+            if (typeof classes === "string")
+                classes = classes.split(" ");
+            classes.filter(entry => entry.trim().length > 0).forEach(entry => element.classList.remove(entry));
+        }
+        catch (e) {
+            console.error(e);
+        }
+        return element;
+    }
+
+    /**
+     * @description Toggle one or more classes in the provided HTML DOM element's (or TurboElement) class list.
+     * @param {Element} element - Turbo or HTML DOM element
+     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings
+     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
+     * @return The element itself
+     */
+    function toggleClass(element, classes, force) {
+        if (!element || !classes)
+            return element;
+        try {
+            // If string provided --> split by spaces
+            if (typeof classes === "string")
+                classes = classes.split(" ");
+            classes.filter(entry => entry.trim().length > 0).forEach(entry => {
+                if (force != undefined)
+                    element.classList.toggle(entry, force);
+                else
+                    element.classList.toggle(entry);
+            });
+        }
+        catch (e) {
+            console.error(e);
+        }
+        return element;
+    }
+
+    function closest(element, type) {
+        if (!element || !type)
+            return null;
+        while (element && !(element instanceof type))
+            element = element.parentElement;
+        return element || null;
     }
 
     /**
@@ -1007,13 +784,15 @@ var Turbo = (function (exports) {
         };
         Object.defineProperty(prototype, field, {
             get: descriptor.get || function () {
-                return this[field];
+                return this["__" + field];
             },
             set: function (value) {
+                if (this["__" + field] === value)
+                    return;
                 if (descriptor.set)
                     descriptor.set.call(this, value);
                 else
-                    this[field] = value;
+                    this["__" + field] = value;
                 if (this.setAttribute && typeof this.setAttribute === "function") {
                     this.setAttribute(attribute, value.toString());
                 }
@@ -1042,6 +821,953 @@ var Turbo = (function (exports) {
         customElements.define(elementName, constructor);
         return constructor;
     };
+
+    /**
+     * @description Sets the corresponding property as observed, to sync its changes with a corresponding HTML attribute.
+     * @param {Object} target
+     * @param {string} propertyKey
+     */
+    function observe(target, propertyKey) {
+        let constructor = target.constructor;
+        if (!constructor.observedFields)
+            constructor.observedFields = [];
+        if (!constructor.observedFields.includes(propertyKey)) {
+            constructor.observedFields.push(propertyKey);
+        }
+    }
+
+    /**
+     * @description converts the provided string from kebab-case to camelCase.
+     * @param {string} str - The string to convert
+     */
+    function kebabToCamelCase(str) {
+        if (!str || str.length == 0)
+            return;
+        return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
+    }
+
+    /**
+     * @class TurboElement
+     * @extends HTMLElement
+     * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+     */
+    class TurboElement extends HTMLElement {
+        pendingStyles = {};
+        constructor(properties = {}) {
+            super();
+            if (properties.shadowDOM)
+                this.attachShadow({ mode: "open" });
+            this.setProperties(properties, true);
+        }
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (newValue == null || newValue == oldValue)
+                return;
+            this[kebabToCamelCase(name)] = newValue;
+        }
+        //Config
+        /**
+         * @description Static configuration object.
+         */
+        static config = { shadowDOM: false };
+        /**
+         * @description Update the class's static configurations. Will only overwrite the set properties.
+         * @property {typeof this.config} value - The object containing the new configurations.
+         */
+        static configure(value) {
+            Object.entries(value).forEach(([key, val]) => {
+                if (val !== undefined)
+                    this.config[key] = val;
+            });
+        }
+        //Custom functions
+        /**
+         * Sets the declared properties to the element.
+         * @param {TurboProperties<T>} properties - The properties object.
+         * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+         * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setProperties(properties, setOnlyBaseProperties = false) {
+            setProperties(this, properties, setOnlyBaseProperties);
+            return this;
+        }
+        /**
+         * @description Add one or more CSS classes to the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addClass(classes) {
+            addClass(this, classes);
+            return this;
+        }
+        /**
+         * @description Remove one or more CSS classes from the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeClass(classes) {
+            removeClass(this, classes);
+            return this;
+        }
+        /**
+         * @description Toggle one or more CSS classes in the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+         * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        toggleClass(classes, force) {
+            toggleClass(this, classes, force);
+            return this;
+        }
+        /**
+         * @description Add one or more child elements to the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addChild(children) {
+            addChild(this, children);
+            return this;
+        }
+        /**
+         * @description Remove one or more child elements from the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        remChild(children) {
+            removeChild(this, children);
+            return this;
+        }
+        /**
+         * @description Add one or more child elements to the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements to
+         * insert before sibling.
+         * @param {Element} sibling - The sibling element
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addChildBefore(children, sibling) {
+            addChildBefore(this, children, sibling);
+            return this;
+        }
+        /**
+         * @description Remove all child elements of the element.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeAllChildren() {
+            removeAllChildren(this);
+            return this;
+        }
+        getClosest(type) {
+            return closest(this, type);
+        }
+        /**
+         * @description Adds an event listener to the element.
+         * @param {string} type The type of the event.
+         * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener The function
+         * or object that receives a notification.
+         * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addListener(type, listener, options) {
+            addListener(this, type, listener, options);
+            return this;
+        }
+        /**
+         * @description Set a certain style attribute of the element to the provided value.
+         * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
+         * @param {string} value - A string representing the value to set the attribute to.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setStyle(attribute, value) {
+            this.pendingStyles[attribute] = value;
+            this.applyStyles();
+            return this;
+        }
+        /**
+         * @description Appends the given CSS to the element's inline styles.
+         * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons. Use the
+         * css literal function for autocompletion.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setStyles(cssText) {
+            this.pendingStyles["cssText"] = cssText;
+            this.applyStyles();
+            return this;
+        }
+        applyStyles() {
+            requestAnimationFrame(() => {
+                for (const property in this.pendingStyles) {
+                    if (property == "cssText")
+                        this.style.cssText += ";" + this.pendingStyles["cssText"];
+                    else
+                        this.style[property] = this.pendingStyles[property];
+                }
+                this.pendingStyles = {};
+            });
+        }
+        //Method Chaining Declarations
+        /**
+         * @description Execute a callback while still benefiting from chaining.
+         * @param {(el: ITurbo) => void} callback The function to execute, with 1 parameter representing the instance itself.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        execute(callback) {
+            callback(this);
+            return this;
+        }
+        /**
+         * @description Removes an event listener from the element.
+         * @param {string} type The type of the event.
+         * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
+         * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeListener(type, listener, options) {
+            this.removeEventListener(type, listener, options);
+            return this;
+        }
+        /**
+         * @description Sets the value of an attribute on the underlying element.
+         * @param {string} name The name of the attribute.
+         * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setAttribute(name, value) {
+            super.setAttribute(name, value?.toString() || "true");
+            return this;
+        }
+        /**
+         * @description Removes an attribute from the underlying element.
+         * @param {string} name The name of the attribute to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeAttribute(name) {
+            super.removeAttribute(name);
+            return this;
+        }
+        /**
+         * @description Causes the element to lose focus.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        blur() {
+            super.blur();
+            return this;
+        }
+        /**
+         * @description Sets focus on the element.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        focus() {
+            super.focus();
+            return this;
+        }
+        /**
+         * @description Removes the element from its parent node.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        remove() {
+            super.remove();
+            return this;
+        }
+        //Other
+        show(b) {
+            this.setStyle("display", b ? "" : "none");
+            return this;
+        }
+    }
+
+    class Delegate {
+        callbacks = new Set();
+        /**
+         * @description Adds a callback to the list.
+         * @param callback - The callback function to add.
+         */
+        add(callback) {
+            this.callbacks.add(callback);
+        }
+        /**
+         * @description Removes a callback from the list.
+         * @param callback - The callback function to remove.
+         * @returns A boolean indicating whether the callback was found and removed.
+         */
+        remove(callback) {
+            return this.callbacks.delete(callback);
+        }
+        /**
+         * @description Invokes all callbacks with the provided arguments.
+         * @param args - The arguments to pass to the callbacks.
+         */
+        fire(...args) {
+            for (const callback of this.callbacks) {
+                try {
+                    callback(...args);
+                }
+                catch (error) {
+                    console.error("Error invoking callback:", error);
+                }
+            }
+        }
+        /**
+         * @description Clears added callbacks
+         */
+        clear() {
+            this.callbacks.clear();
+        }
+    }
+
+    exports.ActionMode = void 0;
+    (function (ActionMode) {
+        ActionMode[ActionMode["none"] = 0] = "none";
+        ActionMode[ActionMode["click"] = 1] = "click";
+        ActionMode[ActionMode["longPress"] = 2] = "longPress";
+        ActionMode[ActionMode["drag"] = 3] = "drag";
+    })(exports.ActionMode || (exports.ActionMode = {}));
+    exports.ClickMode = void 0;
+    (function (ClickMode) {
+        ClickMode[ClickMode["none"] = 0] = "none";
+        ClickMode[ClickMode["left"] = 1] = "left";
+        ClickMode[ClickMode["right"] = 2] = "right";
+        ClickMode[ClickMode["middle"] = 3] = "middle";
+        ClickMode[ClickMode["other"] = 4] = "other";
+        ClickMode[ClickMode["key"] = 5] = "key";
+    })(exports.ClickMode || (exports.ClickMode = {}));
+    exports.InputDevice = void 0;
+    (function (InputDevice) {
+        InputDevice[InputDevice["unknown"] = 0] = "unknown";
+        InputDevice[InputDevice["mouse"] = 1] = "mouse";
+        InputDevice[InputDevice["trackpad"] = 2] = "trackpad";
+        InputDevice[InputDevice["touch"] = 3] = "touch";
+    })(exports.InputDevice || (exports.InputDevice = {}));
+
+    exports.TurboEventName = void 0;
+    (function (TurboEventName) {
+        TurboEventName["keyPressed"] = "turbo-key-pressed";
+        TurboEventName["keyReleased"] = "turbo-key-released";
+        TurboEventName["click"] = "turbo-click";
+        TurboEventName["clickStart"] = "turbo-click-start";
+        TurboEventName["clickEnd"] = "turbo-click-end";
+        TurboEventName["move"] = "turbo-move";
+        TurboEventName["dragStart"] = "turbo-drag-start";
+        TurboEventName["drag"] = "turbo-drag";
+        TurboEventName["dragEnd"] = "turbo-drag-end";
+        TurboEventName["trackpadScroll"] = "turbo-trackpad-scroll";
+        TurboEventName["trackpadPinch"] = "turbo-trackpad-pinch";
+        TurboEventName["mouseWheel"] = "turbo-mouse-wheel";
+    })(exports.TurboEventName || (exports.TurboEventName = {}));
+
+    class Point {
+        x;
+        y;
+        constructor(x = 0, y = typeof x == "number" ? x : 0) {
+            if (typeof x == "number") {
+                this.x = x;
+                this.y = y;
+            }
+            else if ("clientX" in x) {
+                this.x = x.clientX;
+                this.y = x.clientY;
+            }
+            else if ("x" in x) {
+                this.x = x.x;
+                this.y = x.y;
+            }
+            else {
+                this.x = x[0];
+                this.y = x[1];
+            }
+        }
+        // Static methods
+        /**
+         * @description Calculate the distance between two Position2D points.
+         * @param {Point} p1 - First point
+         * @param {Point} p2 - Second point
+         */
+        static dist(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+        /**
+         * @description Calculate the mid-point from the provided points
+         * @param {Point[]} arr - Undetermined number of point parameters
+         */
+        static midPoint(...arr) {
+            if (arr.length == 0)
+                return null;
+            const x = arr.reduce((sum, p) => sum + p.x, 0) / arr.length;
+            const y = arr.reduce((sum, p) => sum + p.y, 0) / arr.length;
+            return new Point(x, y);
+        }
+        /**
+         * @description Calculate the max on both x and y from the provided points
+         * @param {Point[]} arr - Undetermined number of point parameters
+         */
+        static max(...arr) {
+            if (arr.length == 0)
+                return null;
+            const x = arr.reduce((max, p) => Math.max(max, p.x), -Infinity);
+            const y = arr.reduce((max, p) => Math.max(max, p.y), -Infinity);
+            return new Point(x, y);
+        }
+        /**
+         * @description Calculate the min on both x and y from the provided points
+         * @param {Point[]} arr - Undetermined number of point parameters
+         */
+        static min(...arr) {
+            if (arr.length == 0)
+                return null;
+            const x = arr.reduce((min, p) => Math.min(min, p.x), Infinity);
+            const y = arr.reduce((min, p) => Math.min(min, p.y), Infinity);
+            return new Point(x, y);
+        }
+        equals(x, y = 0) {
+            if (typeof x == "number")
+                return this.x == x && this.y == y;
+            return this.x == x.x && this.y == x.y;
+        }
+        add(x, y) {
+            if (typeof x == "number")
+                return new Point(this.x + x, this.y + (y || y == 0 ? y : x));
+            return new Point(this.x + x.x, this.y + x.y);
+        }
+        sub(x, y) {
+            if (typeof x == "number")
+                return new Point(this.x - x, this.y - (y || y == 0 ? y : x));
+            return new Point(this.x - x.x, this.y - x.y);
+        }
+        mul(x, y) {
+            if (typeof x == "number")
+                return new Point(this.x * x, this.y * (y || y == 0 ? y : x));
+            return new Point(this.x * x.x, this.y * x.y);
+        }
+        div(x, y) {
+            if (typeof x == "number")
+                return new Point(this.x / x, this.y / (y || y == 0 ? y : x));
+            return new Point(this.x / x.x, this.y / x.y);
+        }
+        /**
+         * @description Calculate the absolute value of the coordinates
+         * @returns A new Point object with the absolute values
+         */
+        abs() {
+            return new Point(Math.abs(this.x), Math.abs(this.y));
+        }
+        /**
+         * @description Get the maximum value between x and y coordinates
+         * @returns The maximum value
+         */
+        max() {
+            return Math.max(this.x, this.y);
+        }
+        /**
+         * @description Get the minimum value between x and y coordinates
+         * @returns The minimum value
+         */
+        min() {
+            return Math.min(this.x, this.y);
+        }
+        /**
+         * @description Create a copy of the current point
+         * @returns A new Point object with the same coordinates
+         */
+        copy() {
+            return new Point(this.x, this.y);
+        }
+        /**
+         * @description Get the coordinates as an array
+         * @returns An array with x and y coordinates
+         */
+        arr() {
+            return [this.x, this.y];
+        }
+    }
+
+    class TurboMap extends Map {
+        set(key, value) {
+            return super.set(key, this.copy(value));
+        }
+        get(key) {
+            return this.copy(super.get(key));
+        }
+        get first() {
+            if (this.size == 0)
+                return null;
+            return this.copy(this.values().next().value);
+        }
+        get last() {
+            if (this.size == 0)
+                return null;
+            return this.valuesArray()[this.size - 1];
+        }
+        keysArray() {
+            return Array.from(this.keys());
+        }
+        valuesArray() {
+            return Array.from(this.values());
+        }
+        copy(value) {
+            if (value && typeof value == "object")
+                return { ...value };
+            return value;
+        }
+        mapKeys(callback) {
+            const newMap = new TurboMap();
+            for (let [key, value] of this) {
+                newMap.set(callback(key, value), value);
+            }
+            return newMap;
+        }
+        mapValues(callback) {
+            const newMap = new TurboMap();
+            for (let [key, value] of this) {
+                newMap.set(key, callback(key, value));
+            }
+            return newMap;
+        }
+        filter(callback) {
+            const newMap = new TurboMap();
+            for (let [key, value] of this) {
+                if (callback(key, value))
+                    newMap.set(key, value);
+            }
+            return newMap;
+        }
+        merge(map) {
+            for (let [key, value] of map) {
+                this.set(key, value);
+            }
+            return this;
+        }
+    }
+
+    class TurboEvent extends Event {
+        clickMode;
+        keys;
+        firePosition;
+        constructor(firePosition, clickMode, keys, eventName, eventInitDict) {
+            super(eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+            this.clickMode = clickMode;
+            this.keys = keys;
+            this.firePosition = firePosition;
+        }
+        closest(type) {
+            return closest(this.target, type);
+        }
+        get target() {
+            return super.target || document;
+        }
+    }
+
+    class TurboKeyEvent extends TurboEvent {
+        keyPressed;
+        keyReleased;
+        constructor(keyPressed, keyReleased, clickMode, keys, eventName = exports.TurboEventName.keyPressed, eventInitDict) {
+            super(null, clickMode, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+            this.keyPressed = keyPressed;
+            this.keyReleased = keyReleased;
+        }
+    }
+
+    class TurboWheelEvent extends TurboEvent {
+        delta;
+        constructor(delta, keys, eventName, eventInitDict) {
+            super(null, exports.ClickMode.none, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+            this.delta = delta;
+        }
+    }
+
+    class TurboDragEvent extends TurboEvent {
+        _origins;
+        _previousPositions;
+        _positions;
+        constructor(origins, previousPositions, positions, clickMode, keys, eventName = exports.TurboEventName.drag, eventInitDict) {
+            super(positions.first, clickMode, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+            this.origins = origins;
+            this.previousPositions = previousPositions;
+            this.positions = positions;
+        }
+        //Origins
+        get origins() {
+            return this._origins;
+        }
+        set origins(value) {
+            this._origins = value;
+        }
+        //Previous positions
+        get previousPositions() {
+            return this._previousPositions;
+        }
+        set previousPositions(value) {
+            this._previousPositions = value;
+        }
+        //Positions
+        get positions() {
+            return this._positions;
+        }
+        set positions(value) {
+            this._positions = value;
+        }
+    }
+
+    class EventManager {
+        static _instance;
+        _inputDevice = exports.InputDevice.unknown;
+        onInputDeviceChange = new Delegate();
+        //States
+        currentKeys = [];
+        currentAction = exports.ActionMode.none;
+        currentClick = exports.ClickMode.none;
+        //Saved values
+        origins;
+        previousPositions;
+        timer = null;
+        moveThreshold = 10;
+        longPressDuration = 500;
+        constructor() {
+            //Cancel construction if exists already
+            if (EventManager.instance)
+                return EventManager.instance;
+            EventManager.instance = this;
+            this.origins = new TurboMap();
+            this.previousPositions = new TurboMap();
+            this.initEvents();
+        }
+        initEvents() {
+            document.addEventListener("keydown", this.keyDown);
+            document.addEventListener("keyup", this.keyUp);
+            document.addEventListener("wheel", this.wheel, { passive: false });
+            document.addEventListener("mousedown", this.pointerDown);
+            document.addEventListener("mousemove", this.pointerMove);
+            document.addEventListener("mouseup", this.pointerUp);
+            document.addEventListener("mouseleave", this.pointerLeave);
+            document.addEventListener("touchstart", this.pointerDown, { passive: false });
+            document.addEventListener("touchmove", this.pointerMove, { passive: false });
+            document.addEventListener("touchend", this.pointerUp, { passive: false });
+        }
+        /**
+         * @description The singleton instance.
+         */
+        static get instance() {
+            return this._instance;
+        }
+        static set instance(value) {
+            this._instance = value;
+        }
+        /**
+         * @description The currently identified input device. It is not 100% accurate, especially when differentiating
+         * between mouse and trackpad.
+         */
+        get inputDevice() {
+            return this._inputDevice;
+        }
+        set inputDevice(value) {
+            if (this.inputDevice == value)
+                return;
+            this._inputDevice = value;
+            this.onInputDeviceChange.fire(value);
+        }
+        //Key Events
+        keyDown = (e) => {
+            if (this.currentKeys.includes(e.key))
+                return;
+            this.currentKeys.push(e.key);
+            document.dispatchEvent(new TurboKeyEvent(e.key, null, this.currentClick, this.currentKeys, exports.TurboEventName.keyPressed));
+        };
+        keyUp = (e) => {
+            if (!this.currentKeys.includes(e.key))
+                return;
+            this.currentKeys.splice(this.currentKeys.indexOf(e.key), 1);
+            document.dispatchEvent(new TurboKeyEvent(null, e.key, this.currentClick, this.currentKeys, exports.TurboEventName.keyReleased));
+        };
+        //Wheel Event
+        wheel = (e) => {
+            e.preventDefault();
+            if (this.inputDevice != exports.InputDevice.trackpad)
+                this.inputDevice = exports.InputDevice.mouse;
+            //Most likely trackpad
+            if (Math.abs(e.deltaY) <= 40 || e.deltaX != 0)
+                this.inputDevice = exports.InputDevice.trackpad;
+            //Reset trackpad timer
+            this.clearTimer();
+            this.setTimer(() => {
+                if (this.inputDevice == exports.InputDevice.trackpad)
+                    this.inputDevice = exports.InputDevice.mouse;
+            });
+            //Get name of event according to input type
+            let eventName;
+            //Trackpad pinching
+            if (this.inputDevice == exports.InputDevice.trackpad && e.ctrlKey)
+                eventName = exports.TurboEventName.trackpadPinch;
+            //Trackpad zooming
+            else if (e.ctrlKey)
+                eventName = exports.TurboEventName.trackpadScroll;
+            //Mouse scrolling
+            else
+                eventName = exports.TurboEventName.mouseWheel;
+            document.dispatchEvent(new TurboWheelEvent(new Point(e.deltaX, e.deltaY), this.currentKeys, eventName));
+        };
+        //Mouse and Touch Events
+        pointerDown = (e) => {
+            e.preventDefault();
+            const isTouch = e instanceof TouchEvent;
+            if (isTouch)
+                this.inputDevice = exports.InputDevice.touch;
+            else if (this.inputDevice == exports.InputDevice.unknown)
+                this.inputDevice = exports.InputDevice.mouse;
+            //Touch start initialization
+            if (isTouch) {
+                Array.from(e.touches).forEach(touchPoint => {
+                    const position = new Point(touchPoint);
+                    this.origins.set(touchPoint.identifier, position);
+                    this.previousPositions.set(touchPoint.identifier, position);
+                });
+                this.setClickMode(e.touches.length, true);
+            }
+            //Mouse down initialization
+            else {
+                const position = new Point(e);
+                this.origins.set(0, position);
+                this.previousPositions.set(0, position);
+                this.setClickMode(e.button);
+            }
+            //Fire click start and set click timer
+            if (this.origins.first) {
+                this.currentAction = exports.ActionMode.click;
+                this.setTimer(this.clickTimer);
+                this.fireClick(this.origins.first, exports.TurboEventName.clickStart);
+            }
+        };
+        pointerMove = (e) => {
+            e.preventDefault();
+            const isTouch = e instanceof TouchEvent;
+            const positions = new TurboMap();
+            //Get current positions
+            if (isTouch) {
+                Array.from(e.touches).forEach(touchPoint => {
+                    positions.set(touchPoint.identifier, new Point(touchPoint));
+                });
+            }
+            else {
+                positions.set(0, new Point(e));
+            }
+            //Fire move event
+            this.fireDrag(positions, exports.TurboEventName.move);
+            if (this.currentAction == exports.ActionMode.none)
+                return;
+            //Initialize drag
+            if (this.currentAction != exports.ActionMode.drag) {
+                if (!Array.from(this.origins.entries()).some(([key, origin]) => {
+                    const position = positions.get(key);
+                    return position && Point.dist(position, origin) > this.moveThreshold;
+                }))
+                    return;
+                this.fireDrag(positions, exports.TurboEventName.dragStart);
+                this.currentAction = exports.ActionMode.drag;
+            }
+            //Fire drag and update previous points
+            this.fireDrag(positions);
+            positions.forEach((position, key) => this.previousPositions.set(key, position));
+        };
+        pointerUp = (e) => {
+            e.preventDefault();
+            this.clearTimer();
+            const positions = new TurboMap();
+            const isTouch = e instanceof TouchEvent;
+            if (isTouch) {
+                Array.from(e.changedTouches).forEach(touchPoint => {
+                    positions.set(touchPoint.identifier, new Point(touchPoint));
+                });
+            }
+            else {
+                positions.set(0, new Point(e));
+            }
+            if (this.currentAction == exports.ActionMode.click)
+                this.fireClick(positions.first);
+            if (this.currentAction == exports.ActionMode.drag)
+                this.fireDrag(positions, exports.TurboEventName.dragEnd);
+            this.fireClick(this.origins.first, exports.TurboEventName.clickEnd);
+            if (isTouch) {
+                Array.from(e.changedTouches).forEach(touchPoint => {
+                    this.origins.delete(touchPoint.identifier);
+                    this.previousPositions.delete(touchPoint.identifier);
+                });
+            }
+            else {
+                this.origins.clear();
+                this.previousPositions.clear();
+            }
+            this.currentAction = exports.ActionMode.none;
+            this.currentClick = exports.ClickMode.none;
+        };
+        pointerLeave = () => {
+            if (this.currentAction == exports.ActionMode.none)
+                return;
+            this.clearTimer();
+            if (this.currentAction != exports.ActionMode.drag) {
+                this.fireClick(this.origins.first, exports.TurboEventName.clickEnd);
+                this.currentAction = exports.ActionMode.none;
+            }
+        };
+        //Event triggering
+        //Fires a custom VC click event at the click target with the click position
+        //All this to deal with issues caused by Apple...
+        fireClick(p, eventName = exports.TurboEventName.click) {
+            (document.elementFromPoint(p.x, p.y) || document).dispatchEvent(new TurboEvent(p, this.currentClick, this.currentKeys, eventName));
+        }
+        //Fires a custom VC drag event at the target with the origin of the drag, the last drag position,
+        //and the current position
+        fireDrag(positions, eventName = exports.TurboEventName.drag) {
+            (document.elementFromPoint(positions.first.x, positions.first.y) || document).dispatchEvent(new TurboDragEvent(this.origins, this.previousPositions, positions, this.currentClick, this.currentKeys, eventName));
+        }
+        //Timer
+        //Timer function, executed when timer ends
+        clickTimer = () => {
+            //Turn a click into long press
+            if (this.currentAction == exports.ActionMode.click)
+                this.currentAction = exports.ActionMode.longPress;
+        };
+        //Sets a timer function with its duration (defaults to longPressDuration)
+        setTimer(callback, duration = this.longPressDuration) {
+            this.clearTimer();
+            this.timer = setTimeout(() => {
+                callback();
+                this.clearTimer();
+            }, duration);
+        }
+        //Clears timer and sets it to null
+        clearTimer() {
+            if (!this.timer)
+                return;
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+        //Click mode
+        setClickMode(button, isTouch = false) {
+            if (isTouch)
+                button--;
+            switch (button) {
+                case -1:
+                    this.currentClick = exports.ClickMode.none;
+                    return;
+                case 0:
+                    this.currentClick = exports.ClickMode.left;
+                    return;
+                case 1:
+                    this.currentClick = exports.ClickMode.middle;
+                    return;
+                case 2:
+                    this.currentClick = exports.ClickMode.right;
+                    return;
+                default:
+                    this.currentClick = exports.ClickMode.other;
+                    return;
+            }
+        }
+    }
+
+    /******************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+    /* global Reflect, Promise, SuppressedError, Symbol */
+
+
+    function __decorate(decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    }
+
+    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+        var e = new Error(message);
+        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    };
+
+    /**
+     * @description Converts a string of tags into an Element.
+     * @param {string} text - The string to convert
+     * @return The Element
+     */
+    function textToElement(text) {
+        let wrapper = document.createElement("div");
+        wrapper.innerHTML = text;
+        return wrapper.children[0];
+    }
+
+    /**
+     * @description Fetches an SVG from the given path, then executes on it the provided callback
+     * @param {string} path - The path to the SVG
+     * @param {(svgManipulation: SVGElement) => void} onLoaded - The callback to execute
+     */
+    function fetchSvg(path, onLoaded) {
+        if (!path || path.length == 0)
+            return;
+        fetch(path)
+            .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok while loading your SVG");
+            }
+            return response.text();
+        })
+            .then(svgText => {
+            let svg = textToElement(svgText);
+            if (svg && onLoaded) {
+                onLoaded(svg);
+            }
+        })
+            .catch(error => console.error("Error fetching SVG:", error));
+    }
+
+    /**
+     * @class SvgCache
+     * @description Class representing a cache for SVG files. Use it to not fetch the same SVG file multiple times.
+     */
+    class SvgCache {
+        /**
+         * @description The instance's current cache
+         */
+        cache = {};
+        /**
+         * @description Fetches an SVG from the given path, then executes on it the provided callback, and stores it in
+         * the cache.
+         * @param {string} path - The path to the SVG
+         * @param {(svgManipulation: SVGElement) => void} onLoaded - The callback to execute
+         */
+        fetchSvg(path, onLoaded) {
+            if (!path || path.length == 0)
+                return;
+            let savedEl = this.cache[path];
+            if (savedEl) {
+                onLoaded(savedEl.cloneNode(true));
+                return;
+            }
+            fetchSvg(path, (svg) => {
+                this.cache[path] = svg.cloneNode(true);
+                onLoaded(svg);
+            });
+        }
+    }
+
+    /**
+     * @description Extracts the extension from the given filename or path (e.g.: ".png").
+     * @param {string} str - The filename or path
+     * @return The extension, or an empty string if not found.
+     */
+    function getFileExtension(str) {
+        if (!str || str.length == 0)
+            return "";
+        const match = str.match(/\.\S{1,4}$/);
+        return match ? match[0] : "";
+    }
 
     var TurboIcon_1;
     /**
@@ -1216,8 +1942,8 @@ var Turbo = (function (exports) {
       }
     }
 
-    var css_248z$2 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-    styleInject(css_248z$2);
+    var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+    styleInject(css_248z$3);
 
     var TurboButton_1;
     /**
@@ -1259,7 +1985,7 @@ var Turbo = (function (exports) {
         }
         /**
          * @description Adds a given element or elements to the button at a specified position.
-         * @param {TurboCompatible | TurboCompatible[] | null} element - The element(s) to add.
+         * @param {Element | Element[] | null} element - The element(s) to add.
          * @param {keyof ButtonChildren} type - The type of child element being added.
          */
         addAtPosition(element, type) {
@@ -1276,7 +2002,7 @@ var Turbo = (function (exports) {
         }
         /**
          * @description Removes a given element or elements from the button.
-         * @param {TurboCompatible | TurboCompatible[] | null} element - The element(s) to remove.
+         * @param {Element | Element[] | null} element - The element(s) to remove.
          */
         removeElement(element) {
             if (!element)
@@ -1384,12 +2110,15 @@ var Turbo = (function (exports) {
         return new exports.TurboButton(properties);
     }
 
+    var css_248z$2 = "turbo-dropdown-entry{padding:.5em .7em;width:100%}turbo-dropdown-entry:hover{background-color:#d7d7d7}turbo-dropdown-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+    styleInject(css_248z$2);
+
     /**
-     * @class DropdownEntry
+     * @class TurboDropdownEntry
      * @description Class representing an entry within a Dropdown.
      * @extends TurboElement
      */
-    exports.DropdownEntry = class DropdownEntry extends TurboElement {
+    exports.TurboDropdownEntry = class TurboDropdownEntry extends TurboElement {
         _value;
         _selected = false;
         _selectedClass = "";
@@ -1441,14 +2170,14 @@ var Turbo = (function (exports) {
             this._selectedClass = value;
         }
     };
-    exports.DropdownEntry = __decorate([
+    exports.TurboDropdownEntry = __decorate([
         define("turbo-dropdown-entry")
-    ], exports.DropdownEntry);
+    ], exports.TurboDropdownEntry);
     function dropdownEntry(properties) {
-        return new exports.DropdownEntry(properties);
+        return new exports.TurboDropdownEntry(properties);
     }
 
-    var css_248z$1 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>:nth-child(2){background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;left:0;overflow:hidden;top:calc(100% + .4em);z-index:1}turbo-dropdown-entry{padding:.5em .7em;width:100%}turbo-dropdown-entry:hover{background-color:#d7d7d7}turbo-dropdown-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+    var css_248z$1 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>:nth-child(2){background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;left:0;overflow:hidden;top:calc(100% + .4em);z-index:1}";
     styleInject(css_248z$1);
 
     var css_248z = "turbo-popup{position:fixed}";
@@ -1551,14 +2280,14 @@ var Turbo = (function (exports) {
         return new exports.TurboPopup(properties);
     }
 
-    var Dropdown_1;
+    var TurboDropdown_1;
     /**
      * Dropdown class for creating Turbo button elements.
-     * @class Dropdown
+     * @class TurboDropdown
      * @extends TurboElement
      */
-    exports.Dropdown = class Dropdown extends TurboElement {
-        static { Dropdown_1 = this; }
+    exports.TurboDropdown = class TurboDropdown extends TurboElement {
+        static { TurboDropdown_1 = this; }
         /**
          * The dropdown's selector element.
          */
@@ -1610,7 +2339,7 @@ var Turbo = (function (exports) {
             else {
                 let textTag = properties.customSelectorTag
                     ? properties.customSelectorTag
-                    : Dropdown_1.config.defaultSelectorTag;
+                    : TurboDropdown_1.config.defaultSelectorTag;
                 let initialText = typeof properties.selector == "string"
                     ? properties.selector
                     : typeof properties.values[0] == "string"
@@ -1620,7 +2349,7 @@ var Turbo = (function (exports) {
             }
             let selectorClasses = properties.customSelectorClasses
                 ? properties.customSelectorClasses
-                : Dropdown_1.config.defaultSelectorClasses;
+                : TurboDropdown_1.config.defaultSelectorClasses;
             selector.addEventListener("click", () => this.openPopup(!this.popupOpen));
             this.addChild(selector);
             addClass(selector, selectorClasses);
@@ -1630,7 +2359,7 @@ var Turbo = (function (exports) {
             let popupEl = properties.popup ? properties.popup : popup();
             let popupClasses = properties.customPopupClasses
                 ? properties.customPopupClasses
-                : Dropdown_1.config.defaultPopupClasses;
+                : TurboDropdown_1.config.defaultPopupClasses;
             this.addChild(popupEl);
             popupEl.style.display = "none";
             addClass(popupEl, popupClasses);
@@ -1641,10 +2370,10 @@ var Turbo = (function (exports) {
                 entry = dropdownEntry({ value: entry });
             entry.addClass(properties.customEntriesClasses
                 ? properties.customEntriesClasses
-                : Dropdown_1.config.defaultEntriesClasses);
+                : TurboDropdown_1.config.defaultEntriesClasses);
             entry.selectedClass += " " + (properties.customSelectedEntriesClasses
                 ? properties.customSelectedEntriesClasses
-                : Dropdown_1.config.defaultSelectedEntriesClasses);
+                : TurboDropdown_1.config.defaultSelectedEntriesClasses);
             entry.addEventListener("click", () => {
                 this.select(entry);
                 this.openPopup(false);
@@ -1654,8 +2383,8 @@ var Turbo = (function (exports) {
         }
         /**
          * @description Select an entry.
-         * @param {string | DropdownEntry} entry - The DropdownEntry (or its string value) to select.
-         * @return {Dropdown} - This Dropdown for chaining.
+         * @param {string | TurboDropdownEntry} entry - The DropdownEntry (or its string value) to select.
+         * @return {TurboDropdown} - This Dropdown for chaining.
          */
         select(entry) {
             if (typeof entry == "string") {
@@ -1723,160 +2452,110 @@ var Turbo = (function (exports) {
                 this.popup.style.display = b ? "" : "none";
         }
     };
-    exports.Dropdown = Dropdown_1 = __decorate([
+    exports.TurboDropdown = TurboDropdown_1 = __decorate([
         define("turbo-dropdown")
-    ], exports.Dropdown);
+    ], exports.TurboDropdown);
     function dropdown(properties) {
-        return new exports.Dropdown(properties);
+        return new exports.TurboDropdown(properties);
     }
 
     /**
-     * @class {TurboConfig}
-     * @description Static configuration class for TurboDOMBuilder.
+     * @description Computes the luminance of a color
+     * @param {string} color - The color in Hex format
+     * @return The luminance value, or NaN if the color is not valid.
      */
-    class TurboConfig {
-        static shadowDOM = false;
+    function luminance(color) {
+        if (!color)
+            return NaN;
+        const rgb = parseInt(color.substring(1), 16);
+        const r = ((rgb >> 16) & 0xff) / 255;
+        const g = ((rgb >> 8) & 0xff) / 255;
+        const b = ((rgb >> 0) & 0xff) / 255;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
 
     /**
-     * @class TurboWrapper
-     * @description A Turbo wrapper class, wrapping an HTML elements and providing all the Turbo functionalities.
+     * @description Computes the contrast between two colors.
+     * @param {string} color1 - The first color in Hex format
+     * @param {string} color2 - The second color in Hex format
+     * @return The contrast value, or NaN if one of the colors provided is not valid.
      */
-    class TurboWrapper {
-        /**
-         * @description The underlying HTML element.
-         */
-        element;
-        /**
-         * @description Whether or not this wrapper uses its proxy.
-         */
-        useProxy = true;
-        /**
-         * @description Create a new Turbo element with the given properties.
-         * @param {T extends HTMLElement | TurboElementProperties} properties - Object containing properties for
-         * configuring a TurboElement, or the HTML element to create the TurboElement from.
-         */
-        constructor(properties = {}) {
-            if (properties instanceof Element)
-                this.element = properties;
-            else
-                this.element = element(properties);
-            return this.useProxy ? this.proxy() : this;
-        }
-        /**
-         * @description Generates a proxy for this element. When trying to access a property that does not exist on the
-         * TurboWrapper, the proxy will automatically try to access it on the underlying HTML element
-         * @returns The proxy
-         */
-        proxy() {
-            return new Proxy(this, {
-                get: (target, prop, receiver) => {
-                    //Check if the property exists directly on the TurboElement instance
-                    if (prop in target) {
-                        const value = target[prop];
-                        return typeof value === "function" ? value.bind(target) : value;
-                    }
-                    //If the property is not part of TurboElement, attempt to access it on the underlying HTMLElement
-                    const elementProp = target.element[prop];
-                    if (elementProp !== undefined) {
-                        return typeof elementProp === "function" ? elementProp.bind(target.element) : elementProp;
-                    }
-                    //Default behavior
-                    return Reflect.get(target.element, prop, receiver);
-                },
-                set: (target, prop, value) => {
-                    //If trying to set a property that exists on the TurboElement, set it there
-                    if (prop in target) {
-                        target[prop] = value;
-                        return true;
-                    }
-                    //Otherwise, set the property on the underlying HTMLElement
-                    target.element[prop] = value;
-                    return true;
-                }
-            });
-        }
-        //Custom functions
-        setProperties(properties, setOnlyBaseProperties = false) {
-            setProperties(this, properties, setOnlyBaseProperties);
-            return this.useProxy ? this.proxy() : this;
-        }
-        addClass(classes) {
-            addClass(this.element, classes);
-            return this.useProxy ? this.proxy() : this;
-        }
-        removeClass(classes) {
-            removeClass(this.element, classes);
-            return this.useProxy ? this.proxy() : this;
-        }
-        toggleClass(classes, force) {
-            toggleClass(this.element, classes, force);
-            return this.useProxy ? this.proxy() : this;
-        }
-        addChild(children) {
-            addChild(this.element, children);
-            return this.useProxy ? this.proxy() : this;
-        }
-        remChild(children) {
-            removeChild(this.element, children);
-            return this.useProxy ? this.proxy() : this;
-        }
-        addChildBefore(children, sibling) {
-            addChildBefore(this.element, children, sibling);
-            return this.useProxy ? this.proxy() : this;
-        }
-        removeAllChildren() {
-            removeAllChildren(this.element);
-            return this.useProxy ? this.proxy() : this;
-        }
-        setStyle(attribute, value) {
-            this.element.style[attribute] = value;
-            return this.useProxy ? this.proxy() : this;
-        }
-        setStyles(cssText) {
-            this.element.style.cssText += cssText;
-            return this.useProxy ? this.proxy() : this;
-        }
-        //Method Chaining Declarations
-        addListener(type, listener, options) {
-            addListener(this.element, type, listener, options);
-            return this.useProxy ? this.proxy() : this;
-        }
-        removeListener(type, listener, options) {
-            this.element.removeEventListener(type, listener, options);
-            return this.useProxy ? this.proxy() : this;
-        }
-        execute(callback) {
-            callback(this.proxy());
-            return this.useProxy ? this.proxy() : this;
-        }
-        setAttribute(name, value) {
-            if (value == undefined)
-                value = true;
-            this.element.setAttribute(name, value.toString());
-            return this.useProxy ? this.proxy() : this;
-        }
-        removeAttribute(name) {
-            this.element.removeAttribute(name);
-            return this.useProxy ? this.proxy() : this;
-        }
-        blur() {
-            this.element.blur();
-            return this.useProxy ? this.proxy() : this;
-        }
-        focus() {
-            this.element.focus();
-            return this.useProxy ? this.proxy() : this;
-        }
-        remove() {
-            this.element.remove();
-            return this.useProxy ? this.proxy() : this;
-        }
-        //Other
-        show(b) {
-            this.setStyle("display", b ? "" : "none");
-            return this.useProxy ? this.proxy() : this;
-        }
+    function contrast(color1, color2) {
+        if (!color1 || !color2)
+            return NaN;
+        const luminance1 = luminance(color1);
+        const luminance2 = luminance(color2);
+        return (Math.max(luminance1, luminance2) + 0.1) / (Math.min(luminance1, luminance2) + 0.1);
+    }
+
+    /**
+     * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
+     * (for readability).
+     * @param {string} baseColor - The base color in Hex format.
+     * @param {string} [overlayColor1="#000000"] - The first overlay color to evaluate in Hex format. Defaults to black.
+     * @param {string} [overlayColor2="#FFFFFF"] - The second overlay color to evaluate in Hex format. Defaults to white.
+     */
+    function bestOverlayColor(baseColor, overlayColor1 = "#000000", overlayColor2 = "#FFFFFF") {
+        const contrastLight = contrast(baseColor, overlayColor2);
+        const contrastDark = contrast(overlayColor1, baseColor);
+        return contrastLight > contrastDark ? overlayColor2 : overlayColor1;
+    }
+
+    /**
+     * @description Constructs a single CSS string from a template literal containing CSS rules.
+     */
+    function css(strings, ...values) {
+        let str = "";
+        strings.forEach((string, i) => {
+            str += string + (values[i] || '');
+        });
+        return str;
+    }
+
+    /**
+     * @description Default font weights, sub-names, and styles when loading a font family.
+     */
+    const defaultFamilyWeights = {
+        900: { "Black": "normal", "BlackItalic": "italic" },
+        800: { "ExtraBold": "normal", "ExtraBoldItalic": "italic" },
+        700: { "Bold": "normal", "BoldItalic": "italic" },
+        600: { "SemiBold": "normal", "SemiBoldItalic": "italic" },
+        500: { "Medium": "normal", "MediumItalic": "italic" },
+        400: { "Regular": "normal", "Italic": "italic" },
+        300: { "Light": "normal", "LightItalic": "italic" },
+        200: { "ExtraLight": "normal", "ExtraLightItalic": "italic" },
+        100: { "Thin": "normal", "ThinItalic": "italic" },
+    };
+    function createFontFace(name, path, format, weight, style) {
+        return css `
+        @font-face {
+            font-family: "${name}";
+            src: local("${name}"), url("${path}") format("${format}");
+            font-weight: "${weight}";
+            font-style: "${style}";
+        }`;
+    }
+    /**
+     * @description Loads a local font file, or a family of fonts from a directory.
+     * @param {FontProperties} font - The font properties
+     */
+    function loadLocalFont(font) {
+        if (!font.name || !font.pathOrDirectory)
+            console.error("Please specify font name and path/directory");
+        const isFamily = getFileExtension(font.pathOrDirectory).length == 0;
+        if (!font.stylesPerWeights)
+            font.stylesPerWeights = isFamily ? defaultFamilyWeights : { "normal": "normal" };
+        if (!font.format)
+            font.format = "woff2";
+        if (!font.extension)
+            font.extension = ".ttf";
+        if (font.extension[0] != ".")
+            font.extension = "." + font.extension;
+        stylesheet(Object.entries(font.stylesPerWeights).map(([weight, value]) => {
+            if (typeof value == "string")
+                return createFontFace(font.name, font.pathOrDirectory, font.format, weight, value);
+            return Object.entries(value).map(([weightName, style]) => createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`, font.format, weight, style)).join("\n");
+        }).join("\n"));
     }
 
     /**
@@ -1996,218 +2675,35 @@ var Turbo = (function (exports) {
         }
     }
 
-    /**
-     * @description Create an element with the specified properties. Supports SVG and MathML.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created element.
-     */
-    function blindElement(properties = {}) {
-        let element;
-        if (isSvgTag(properties.tag))
-            element = document.createElementNS(SvgNamespace, properties.tag);
-        else if (isMathMLTag(properties.tag))
-            element = document.createElementNS(MathMLNamespace, properties.tag);
-        else
-            element = document.createElement(properties.tag || "div");
-        if (properties.shadowDOM)
-            element.attachShadow({ mode: "open" });
-        setProperties(element, properties);
-        return element;
-    }
-
-    /**
-     * @description Create a flex column element.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created flex element
-     */
-    function flexCol(properties) {
-        let el = element(properties);
-        el.style.display = "flex";
-        el.style.flexDirection = "column";
-        return el;
-    }
-
-    /**
-     * @description Create a flex column element.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created flex element
-     */
-    function flexColCenter(properties) {
-        let el = flexCol(properties);
-        el.style.justifyContent = "center";
-        el.style.alignItems = "center";
-        return el;
-    }
-
-    /**
-     * @description Create a flex row element.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created flex element
-     */
-    function flexRow(properties) {
-        let el = element(properties);
-        el.style.display = "flex";
-        el.style.flexDirection = "row";
-        return el;
-    }
-
-    /**
-     * @description Create a flex row element.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created flex element
-     */
-    function flexRowCenter(properties) {
-        let el = flexRow(properties);
-        el.style.justifyContent = "center";
-        el.style.alignItems = "center";
-        return el;
-    }
-
-    /**
-     * @description Create a spacer element.
-     * @param {TurboProperties<T>} properties - Object containing properties of the element.
-     * @returns {ElementTagMap[T]} The created spacer element
-     */
-    function spacer(properties) {
-        let el = element(properties);
-        el.style.flexGrow = "1";
-        return el;
-    }
-
-    /**
-     * @description Adds the file at the provided path as a new style element to the provided root.
-     * @param {string | undefined} href - The path to the CSS file to add.
-     * @param {StylesRoot} [root] - The root to which the style element will be added.
-     */
-    function addStylesheetFile(href, root = document.head) {
-        if (!href)
-            return;
-        const stylesheet = element({ tag: "link", rel: "stylesheet", href: href, type: "text/css" });
-        root.appendChild(stylesheet);
-    }
-
-    /**
-     * @description Constructs a single CSS string from a template literal containing CSS rules.
-     */
-    function css(strings, ...values) {
-        let str = "";
-        strings.forEach((string, i) => {
-            str += string + (values[i] || '');
-        });
-        return str;
-    }
-
-    /**
-     * @description Computes the luminance of a color
-     * @param {string} color - The color in Hex format
-     * @return The luminance value, or NaN if the color is not valid.
-     */
-    function luminance(color) {
-        if (!color)
-            return NaN;
-        const rgb = parseInt(color.substring(1), 16);
-        const r = ((rgb >> 16) & 0xff) / 255;
-        const g = ((rgb >> 8) & 0xff) / 255;
-        const b = ((rgb >> 0) & 0xff) / 255;
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    }
-
-    /**
-     * @description Computes the contrast between two colors.
-     * @param {string} color1 - The first color in Hex format
-     * @param {string} color2 - The second color in Hex format
-     * @return The contrast value, or NaN if one of the colors provided is not valid.
-     */
-    function contrast(color1, color2) {
-        if (!color1 || !color2)
-            return NaN;
-        const luminance1 = luminance(color1);
-        const luminance2 = luminance(color2);
-        return (Math.max(luminance1, luminance2) + 0.1) / (Math.min(luminance1, luminance2) + 0.1);
-    }
-
-    /**
-     * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
-     * (for readability).
-     * @param {string} baseColor - The base color in Hex format.
-     * @param {string} [overlayColor1="#000000"] - The first overlay color to evaluate in Hex format. Defaults to black.
-     * @param {string} [overlayColor2="#FFFFFF"] - The second overlay color to evaluate in Hex format. Defaults to white.
-     */
-    function bestOverlayColor(baseColor, overlayColor1 = "#000000", overlayColor2 = "#FFFFFF") {
-        const contrastLight = contrast(baseColor, overlayColor2);
-        const contrastDark = contrast(overlayColor1, baseColor);
-        return contrastLight > contrastDark ? overlayColor2 : overlayColor1;
-    }
-
-    /**
-     * @description Default font weights, sub-names, and styles when loading a font family.
-     */
-    const defaultFamilyWeights = {
-        900: { "Black": "normal", "BlackItalic": "italic" },
-        800: { "ExtraBold": "normal", "ExtraBoldItalic": "italic" },
-        700: { "Bold": "normal", "BoldItalic": "italic" },
-        600: { "SemiBold": "normal", "SemiBoldItalic": "italic" },
-        500: { "Medium": "normal", "MediumItalic": "italic" },
-        400: { "Regular": "normal", "Italic": "italic" },
-        300: { "Light": "normal", "LightItalic": "italic" },
-        200: { "ExtraLight": "normal", "ExtraLightItalic": "italic" },
-        100: { "Thin": "normal", "ThinItalic": "italic" },
-    };
-    function createFontFace(name, path, format, weight, style) {
-        return css `
-        @font-face {
-            font-family: "${name}";
-            src: local("${name}"), url("${path}") format("${format}");
-            font-weight: "${weight}";
-            font-style: "${style}";
-        }`;
-    }
-    /**
-     * @description Loads a local font file, or a family of fonts from a directory.
-     * @param {FontProperties} font - The font properties
-     */
-    function loadLocalFont(font) {
-        if (!font.name || !font.pathOrDirectory)
-            console.error("Please specify font name and path/directory");
-        const isFamily = getFileExtension(font.pathOrDirectory).length == 0;
-        if (!font.stylesPerWeights)
-            font.stylesPerWeights = isFamily ? defaultFamilyWeights : { "normal": "normal" };
-        if (!font.format)
-            font.format = "woff2";
-        if (!font.extension)
-            font.extension = ".ttf";
-        if (font.extension[0] != ".")
-            font.extension = "." + font.extension;
-        addStylesheet(Object.entries(font.stylesPerWeights).map(([weight, value]) => {
-            if (typeof value == "string")
-                return createFontFace(font.name, font.pathOrDirectory, font.format, weight, value);
-            return Object.entries(value).map(([weightName, style]) => createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`, font.format, weight, style)).join("\n");
-        }).join("\n"));
-    }
-
+    exports.Delegate = Delegate;
+    exports.EventManager = EventManager;
     exports.MathMLNamespace = MathMLNamespace;
-    exports.MathMlTagsDefinitions = MathMlTagsDefinitions;
-    exports.StylesRecord = StylesRecord;
+    exports.MathMLTagsDefinitions = MathMLTagsDefinitions;
+    exports.Point = Point;
     exports.SvgCache = SvgCache;
     exports.SvgNamespace = SvgNamespace;
     exports.SvgTagsDefinitions = SvgTagsDefinitions;
     exports.Transition = Transition;
-    exports.TurboConfig = TurboConfig;
+    exports.TurboDragEvent = TurboDragEvent;
     exports.TurboElement = TurboElement;
-    exports.TurboWrapper = TurboWrapper;
+    exports.TurboEvent = TurboEvent;
+    exports.TurboKeyEvent = TurboKeyEvent;
+    exports.TurboMap = TurboMap;
+    exports.TurboWheelEvent = TurboWheelEvent;
+    exports.a = a;
     exports.addChild = addChild;
     exports.addChildBefore = addChildBefore;
     exports.addClass = addClass;
     exports.addListener = addListener;
-    exports.addStylesheet = addStylesheet;
-    exports.addStylesheetFile = addStylesheetFile;
     exports.bestOverlayColor = bestOverlayColor;
     exports.blindElement = blindElement;
     exports.button = button;
     exports.camelToKebabCase = camelToKebabCase;
     exports.canvas = canvas;
+    exports.childHandler = childHandler;
+    exports.closest = closest;
+    exports.closestRoot = closestRoot;
     exports.contrast = contrast;
-    exports.convertTextToElement = convertTextToElement;
     exports.css = css;
     exports.define = define;
     exports.div = div;
@@ -2221,9 +2717,6 @@ var Turbo = (function (exports) {
     exports.flexRowCenter = flexRowCenter;
     exports.form = form;
     exports.generateTagFunction = generateTagFunction;
-    exports.getChildHandler = getChildHandler;
-    exports.getClosestRoot = getClosestRoot;
-    exports.getElement = getElement;
     exports.getFileExtension = getFileExtension;
     exports.h1 = h1;
     exports.h2 = h2;
@@ -2237,6 +2730,7 @@ var Turbo = (function (exports) {
     exports.isMathMLTag = isMathMLTag;
     exports.isSvgTag = isSvgTag;
     exports.kebabToCamelCase = kebabToCamelCase;
+    exports.link = link;
     exports.loadLocalFont = loadLocalFont;
     exports.luminance = luminance;
     exports.observe = observe;
@@ -2247,8 +2741,12 @@ var Turbo = (function (exports) {
     exports.removeClass = removeClass;
     exports.setProperties = setProperties;
     exports.spacer = spacer;
+    exports.style = style;
+    exports.stylesheet = stylesheet;
+    exports.textToElement = textToElement;
     exports.textarea = textarea;
     exports.toggleClass = toggleClass;
+    exports.video = video;
 
     return exports;
 
