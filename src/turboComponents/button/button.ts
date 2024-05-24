@@ -1,4 +1,4 @@
-import {TurboIcon} from "../icon/icon";
+import {TurboIcon} from "../icon/icon/icon";
 import {element} from "../../domBuilding/elementCreation/element";
 import {ButtonChildren, TurboButtonConfig, TurboButtonProperties} from "./button.types";
 import {TurboElement} from "../../domBuilding/turboElement/turboElement";
@@ -67,8 +67,8 @@ class TurboButton extends TurboElement {
      */
     private removeElement(element: Element | Element[] | null) {
         if (!element) return;
-        if (!Array.isArray(element)) this.remChild(element);
-        else element.forEach(el =>  this.remChild(el));
+        if (!Array.isArray(element)) this.removeChild(element);
+        else element.forEach(el =>  this.removeChild(el));
     }
 
     // Getters and setters

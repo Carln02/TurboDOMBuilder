@@ -1,25 +1,110 @@
+/**
+ * @description Creates an "a" element with the specified properties.
+ * @param {TurboProperties<"a">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["a"]} The created element.
+ */
 declare const a: (properties?: TurboProperties<"a">) => HTMLAnchorElement & SVGAElement;
+/**
+ * @description Creates a canvas element with the specified properties.
+ * @param {TurboProperties<"canvas">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["canvas"]} The created element.
+ */
 declare const canvas: (properties?: TurboProperties<"canvas">) => HTMLCanvasElement;
+/**
+ * @description Creates a div element with the specified properties.
+ * @param {TurboProperties<"div">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["div"]} The created element.
+ */
 declare const div: (properties?: TurboProperties<"div">) => HTMLDivElement;
+/**
+ * @description Creates a form element with the specified properties.
+ * @param {TurboProperties<"form">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["form"]} The created element.
+ */
 declare const form: (properties?: TurboProperties<"form">) => HTMLFormElement;
+/**
+ * @description Creates a h1 element with the specified properties.
+ * @param {TurboProperties<"h1">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h1"]} The created element.
+ */
 declare const h1: (properties?: TurboProperties<"h1">) => HTMLHeadingElement;
+/**
+ * @description Creates a h2 element with the specified properties.
+ * @param {TurboProperties<"h2">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h2"]} The created element.
+ */
 declare const h2: (properties?: TurboProperties<"h2">) => HTMLHeadingElement;
+/**
+ * @description Creates a h3 element with the specified properties.
+ * @param {TurboProperties<"h3">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h3"]} The created element.
+ */
 declare const h3: (properties?: TurboProperties<"h3">) => HTMLHeadingElement;
+/**
+ * @description Creates a h4 element with the specified properties.
+ * @param {TurboProperties<"h4">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h4"]} The created element.
+ */
 declare const h4: (properties?: TurboProperties<"h4">) => HTMLHeadingElement;
+/**
+ * @description Creates a h5 element with the specified properties.
+ * @param {TurboProperties<"h5">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h5"]} The created element.
+ */
 declare const h5: (properties?: TurboProperties<"h5">) => HTMLHeadingElement;
+/**
+ * @description Creates a h6 element with the specified properties.
+ * @param {TurboProperties<"h6">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["h6"]} The created element.
+ */
 declare const h6: (properties?: TurboProperties<"h6">) => HTMLHeadingElement;
+/**
+ * @description Creates an image element with the specified properties.
+ * @param {TurboProperties<"img">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["img"]} The created element.
+ */
 declare const img: (properties?: TurboProperties<"img">) => HTMLImageElement;
+/**
+ * @description Creates an input element with the specified properties.
+ * @param {TurboProperties<"input">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["input"]} The created element.
+ */
 declare const input: (properties?: TurboProperties<"input">) => HTMLInputElement;
+/**
+ * @description Creates a link element with the specified properties.
+ * @param {TurboProperties<"link">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["link"]} The created element.
+ */
 declare const link: (properties?: TurboProperties<"link">) => HTMLLinkElement;
+/**
+ * @description Creates a p element with the specified properties.
+ * @param {TurboProperties<"p">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["p"]} The created element.
+ */
 declare const p: (properties?: TurboProperties<"p">) => HTMLParagraphElement;
-declare const style: (properties?: TurboProperties<"style">) => HTMLStyleElement & SVGStyleElement;
+/**
+ * @description Creates a style element with the specified properties.
+ * @param {TurboProperties<"style">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["style"]} The created element.
+ */
+declare const style: (properties?: TurboProperties<"style">) => HTMLStyleElement;
+/**
+ * @description Creates a textarea element with the specified properties.
+ * @param {TurboProperties<"textarea">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["textarea"]} The created element.
+ */
 declare const textarea: (properties?: TurboProperties<"textarea">) => HTMLTextAreaElement;
+/**
+ * @description Creates a video element with the specified properties.
+ * @param {TurboProperties<"video">} properties - Object containing properties of the element.
+ * @returns {ElementTagMap["video"]} The created element.
+ */
 declare const video: (properties?: TurboProperties<"video">) => HTMLVideoElement;
 
-type HTMLElementNonFunctions<K extends Element = HTMLElement> = {
-    [T in keyof K]: K[T] extends Function ? never : T;
-}[keyof K];
-type HTMLElementMutableFields<K extends Element = HTMLElement> = Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">;
+type HTMLElementNonFunctions<T extends keyof ElementTagMap = "div"> = {
+    [K in keyof ElementTagMap[T]]: ElementTagMap[T][K] extends Function ? never : K;
+}[keyof ElementTagMap[T]];
+type HTMLElementMutableFields<T extends keyof ElementTagMap = "div"> = Omit<Partial<Pick<ElementTagMap[T], HTMLElementNonFunctions<T>>>, "children" | "className" | "style">;
 /**
  * @type {ChildHandler}
  * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
@@ -34,7 +119,7 @@ type StylesRoot = ShadowRoot | HTMLHeadElement;
  * @type {ElementTagMap}
  * @description A type that represents a union of HTML, SVG, and MathML tag name maps.
  */
-type ElementTagMap = HTMLElementTagNameMap & SVGElementTagNameMap & MathMLElementTagNameMap;
+type ElementTagMap = HTMLElementTagNameMap & Omit<SVGElementTagNameMap, "style"> & MathMLElementTagNameMap;
 /**
  * @type {ElementTagDefinition}
  * @description Represents an element's definition of its tag and its namespace (both optional).
@@ -85,7 +170,7 @@ type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
  * @property checked
  * @property selected
  */
-type TurboProperties<T extends keyof ElementTagMap = "div"> = HTMLElementMutableFields<ElementTagMap[T]> & ElementTagDefinition<T> & {
+type TurboProperties<T extends keyof ElementTagMap = "div"> = HTMLElementMutableFields<T> & ElementTagDefinition<T> & {
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -301,7 +386,6 @@ declare function observe(target: Object, propertyKey: string): void;
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
  */
 declare class TurboElement extends HTMLElement {
-    private pendingStyles;
     constructor(properties?: TurboProperties);
     attributeChangedCallback(name: string, oldValue: any, newValue: any): void;
     /**
@@ -313,130 +397,135 @@ declare class TurboElement extends HTMLElement {
      * @property {typeof this.config} value - The object containing the new configurations.
      */
     static configure(value: typeof this.config): void;
-    /**
-     * Sets the declared properties to the element.
-     * @param {TurboProperties<T>} properties - The properties object.
-     * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
-     * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setProperties(properties: TurboProperties, setOnlyBaseProperties?: boolean): this;
-    /**
-     * @description Add one or more CSS classes to the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addClass(classes?: string | string[]): this;
-    /**
-     * @description Remove one or more CSS classes from the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeClass(classes?: string | string[]): this;
-    /**
-     * @description Toggle one or more CSS classes in the element.
-     * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
-     * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
-     * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    toggleClass(classes?: string | string[], force?: boolean): this;
-    /**
-     * @description Add one or more child elements to the element.
-     * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addChild(children?: Element | Element[]): this;
-    /**
-     * @description Remove one or more child elements from the element.
-     * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    remChild(children?: Element | Element[]): this;
-    /**
-     * @description Add one or more child elements to the element.
-     * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements to
-     * insert before sibling.
-     * @param {Element} sibling - The sibling element
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addChildBefore(children?: Element | Element[], sibling?: Element): this;
-    /**
-     * @description Remove all child elements of the element.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeAllChildren(): this;
-    getClosest<T extends Element>(type: {
-        new (...args: any[]): T;
-    }): T | null;
-    /**
-     * @description Adds an event listener to the element.
-     * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener The function
-     * or object that receives a notification.
-     * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    addListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: this) => void), options?: boolean | AddEventListenerOptions): this;
-    /**
-     * @description Set a certain style attribute of the element to the provided value.
-     * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
-     * @param {string} value - A string representing the value to set the attribute to.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setStyle(attribute: keyof CSSStyleDeclaration, value: string): this;
-    /**
-     * @description Appends the given CSS to the element's inline styles.
-     * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons. Use the
-     * css literal function for autocompletion.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setStyles(cssText: string): this;
-    private applyStyles;
-    /**
-     * @description Execute a callback while still benefiting from chaining.
-     * @param {(el: ITurbo) => void} callback The function to execute, with 1 parameter representing the instance itself.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    execute(callback: ((el: this) => void)): this;
-    /**
-     * @description Removes an event listener from the element.
-     * @param {string} type The type of the event.
-     * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
-     * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this;
-    /**
-     * @description Sets the value of an attribute on the underlying element.
-     * @param {string} name The name of the attribute.
-     * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    setAttribute(name: string, value?: string | boolean): this;
-    /**
-     * @description Removes an attribute from the underlying element.
-     * @param {string} name The name of the attribute to remove.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    removeAttribute(name: string): this;
-    /**
-     * @description Causes the element to lose focus.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    blur(): this;
-    /**
-     * @description Sets focus on the element.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    focus(): this;
-    /**
-     * @description Removes the element from its parent node.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    remove(): this;
-    show(b: boolean): this;
 }
+
+declare global {
+    interface Element {
+        /**
+         * Sets the declared properties to the element.
+         * @param {TurboProperties<T>} properties - The properties object.
+         * @param {boolean} [setOnlyBaseProperties="false"] - If set to true, will only set the base turbo properties (classes,
+         * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setProperties(properties: TurboProperties, setOnlyBaseProperties?: boolean): this;
+        /**
+         * @description Add one or more CSS classes to the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addClass(classes?: string | string[]): this;
+        /**
+         * @description Remove one or more CSS classes from the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeClass(classes?: string | string[]): this;
+        /**
+         * @description Toggle one or more CSS classes in the element.
+         * @param {string | string[]} classes - String of classes separated by spaces, or array of strings.
+         * @param {boolean} force - (Optional) Boolean that turns the toggle into a one way-only operation. If set to false,
+         * then the class will only be removed, but not added. If set to true, then token will only be added, but not removed.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        toggleClass(classes?: string | string[], force?: boolean): this;
+        /**
+         * @description Add one or more child elements to the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addChild(children?: Element | Element[]): this;
+        /**
+         * @description Remove one or more child elements from the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        remChild(children?: Element | Element[]): this;
+        /**
+         * @description Add one or more child elements to the element.
+         * @param {Element | Element[]} children - Array of (or single element) child Turbo or HTML elements to
+         * insert before sibling.
+         * @param {Element} sibling - The sibling element
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addChildBefore(children?: Element | Element[], sibling?: Element): this;
+        /**
+         * @description Remove all child elements of the element.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeAllChildren(): this;
+        getClosest<T extends Element>(type: {
+            new (...args: any[]): T;
+        }): T | null;
+        /**
+         * @description Adds an event listener to the element.
+         * @param {string} type The type of the event.
+         * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener The function
+         * or object that receives a notification.
+         * @param {boolean | AddEventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addListener(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Element) => void), options?: boolean | AddEventListenerOptions): this;
+        /**
+         * @description Execute a callback while still benefiting from chaining.
+         * @param {(el: ITurbo) => void} callback The function to execute, with 1 parameter representing the instance itself.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        execute(callback: ((el: this) => void)): this;
+        /**
+         * @description Removes an event listener from the element.
+         * @param {string} type The type of the event.
+         * @param {EventListenerOrEventListenerObject} listener The function or object that was previously added as a listener.
+         * @param {boolean | EventListenerOptions} [options] An options object that specifies characteristics about the event listener.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): this;
+        /**
+         * @description Sets the value of an attribute on the underlying element.
+         * @param {string} name The name of the attribute.
+         * @param {string | boolean} [value] The value of the attribute. Can be left blank to represent a true boolean.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setAttribute(name: string, value?: string | boolean): this;
+        /**
+         * @description Removes an attribute from the underlying element.
+         * @param {string} name The name of the attribute to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeAttribute(name: string): this;
+    }
+    interface HTMLElement extends Element {
+        pendingStyles: Record<keyof CSSStyleDeclaration, string> | {};
+        /**
+         * @description Set a certain style attribute of the element to the provided value.
+         * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
+         * @param {string} value - A string representing the value to set the attribute to.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setStyle(attribute: keyof CSSStyleDeclaration, value: string): this;
+        /**
+         * @description Appends the given CSS to the element's inline styles.
+         * @param {string} cssText - A CSS string of style attributes and their values, seperated by semicolons. Use the
+         * css literal function for autocompletion.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setStyles(cssText: string): this;
+        applyStyles(): void;
+        /**
+         * @description Causes the element to lose focus.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        blur(): this;
+        /**
+         * @description Sets focus on the element.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        focus(): this;
+        show(b: boolean): this;
+    }
+}
+
+declare function turbofy(): void;
 
 declare class Delegate<T extends (...args: any[]) => any> {
     private callbacks;
@@ -547,11 +636,6 @@ declare class Point {
      */
     constructor(x: number, y: number);
     /**
-     * @description Create a point with the provided coordinates
-     * @param {Coordinate} p - The coordinates (or Point)
-     */
-    constructor(p: Coordinate);
-    /**
      * @description Create a point with the clientX/clientY values. Useful for events.
      * @param {{clientX: number, clientY: number}} e - The coordinates
      */
@@ -559,6 +643,11 @@ declare class Point {
         clientX: number;
         clientY: number;
     });
+    /**
+     * @description Create a point with the provided coordinates
+     * @param {Coordinate} p - The coordinates (or Point)
+     */
+    constructor(p: Coordinate);
     /**
      * @description Create a point with the provided [x, y] values.
      * @param {[number, number]} arr - The array of size 2.
@@ -702,6 +791,7 @@ declare class Point {
 }
 
 declare class TurboMap<A, B> extends Map<A, B> {
+    enforceImmutability: boolean;
     set(key: A, value: B): any;
     get(key: A): B;
     get first(): B | null;
@@ -1165,6 +1255,21 @@ declare class TurboIcon extends TurboElement {
 }
 declare function icon(properties: TurboIconProperties): TurboIcon;
 
+type TurboIconToggleProperties = TurboIconProperties & {
+    toggled?: boolean;
+    onToggle?: (value: boolean, el: TurboIconToggle) => void;
+};
+
+declare class TurboIconToggle extends TurboIcon {
+    private _toggled;
+    private onToggle;
+    constructor(properties: TurboIconToggleProperties);
+    get toggled(): boolean;
+    set toggled(value: boolean);
+    toggle(): void;
+}
+declare function iconToggle(properties: TurboIconToggleProperties): TurboIconToggle;
+
 type TurboPopupProperties = TurboProperties & {
     viewportMargin?: number;
     offsetFromParent?: number;
@@ -1383,4 +1488,4 @@ declare class Transition {
     update(changedProperties: TransitionProperties): void;
 }
 
-export { ActionMode, type ButtonChildren, type ChildHandler, ClickMode, type Coordinate, Delegate, type ElementTagMap, EventManager, type FontProperties, InputDevice, MathMLNamespace, MathMLTagsDefinitions, Point, type PositionsMap, type StylesRoot, SvgCache, SvgNamespace, SvgTagsDefinitions, Transition, type TransitionProperties, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboDragEvent, TurboDropdown, type TurboDropdownConfig, TurboDropdownEntry, type TurboDropdownEntryProperties, type TurboDropdownProperties, TurboElement, TurboEvent, TurboEventName, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboKeyEvent, TurboMap, TurboPopup, type TurboPopupProperties, type TurboProperties, TurboWheelEvent, a, addChild, addChildBefore, addClass, addListener, bestOverlayColor, blindElement, button, camelToKebabCase, canvas, childHandler, closest, closestRoot, contrast, css, define, div, dropdown, dropdownEntry, element, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isSvgTag, kebabToCamelCase, link, loadLocalFont, luminance, observe, p, popup, removeAllChildren, removeChild, removeClass, setProperties, spacer, style, stylesheet, textToElement, textarea, toggleClass, video };
+export { ActionMode, type ButtonChildren, type ChildHandler, ClickMode, type Coordinate, Delegate, type ElementTagMap, EventManager, type FontProperties, InputDevice, MathMLNamespace, MathMLTagsDefinitions, Point, type PositionsMap, type StylesRoot, SvgCache, SvgNamespace, SvgTagsDefinitions, Transition, type TransitionProperties, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboDragEvent, TurboDropdown, type TurboDropdownConfig, TurboDropdownEntry, type TurboDropdownEntryProperties, type TurboDropdownProperties, TurboElement, TurboEvent, TurboEventName, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconToggle, type TurboIconToggleProperties, TurboKeyEvent, TurboMap, TurboPopup, type TurboPopupProperties, type TurboProperties, TurboWheelEvent, a, addChild, addChildBefore, addClass, addListener, bestOverlayColor, blindElement, button, camelToKebabCase, canvas, childHandler, closest, closestRoot, contrast, css, define, div, dropdown, dropdownEntry, element, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getFileExtension, h1, h2, h3, h4, h5, h6, icon, iconToggle, img, input, isMathMLTag, isSvgTag, kebabToCamelCase, link, loadLocalFont, luminance, observe, p, popup, removeAllChildren, removeChild, removeClass, setProperties, spacer, style, stylesheet, textToElement, textarea, toggleClass, turbofy, video };

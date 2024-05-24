@@ -1,9 +1,9 @@
-type HTMLElementNonFunctions<K extends Element = HTMLElement> = {
-    [T in keyof K]: K[T] extends Function ? never : T;
-}[keyof K];
+type HTMLElementNonFunctions<T extends keyof ElementTagMap = "div"> = {
+    [K in keyof ElementTagMap[T]]: ElementTagMap[T][K] extends Function ? never : K;
+}[keyof ElementTagMap[T]];
 
-type HTMLElementMutableFields<K extends Element = HTMLElement> =
-    Omit<Partial<Pick<K, HTMLElementNonFunctions<K>>>, "children" | "className" | "style">;
+type HTMLElementMutableFields<T extends keyof ElementTagMap = "div"> =
+    Omit<Partial<Pick<ElementTagMap[T], HTMLElementNonFunctions<T>>>, "children" | "className" | "style">;
 
 /**
  * @type {ChildHandler}
@@ -21,7 +21,7 @@ type StylesRoot = ShadowRoot | HTMLHeadElement;
  * @type {ElementTagMap}
  * @description A type that represents a union of HTML, SVG, and MathML tag name maps.
  */
-type ElementTagMap = HTMLElementTagNameMap & SVGElementTagNameMap & MathMLElementTagNameMap;
+type ElementTagMap = HTMLElementTagNameMap & Omit<SVGElementTagNameMap, "style"> & MathMLElementTagNameMap;
 
 /**
  * @type {ElementTagDefinition}
@@ -75,9 +75,7 @@ type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
  * @property selected
  */
 type TurboProperties<T extends keyof ElementTagMap = "div"> =
-    HTMLElementMutableFields<ElementTagMap[T]>
-    & ElementTagDefinition<T>
-    & {
+    HTMLElementMutableFields<T> & ElementTagDefinition<T> & {
     id?: string;
     classes?: string | string[];
     style?: string;

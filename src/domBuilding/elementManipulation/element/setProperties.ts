@@ -1,7 +1,4 @@
 import {ElementTagMap, TurboProperties} from "../../turboElement/turboElement.types";
-import {addClass} from "../class/addClass";
-import {addListener} from "../listener/addListener";
-import {addChild} from "../child/addChild";
 import {closestRoot} from "./closestRoot";
 import {stylesheet} from "../../elementCreation/misc/stylesheet";
 
@@ -35,17 +32,17 @@ function setProperties<T extends keyof ElementTagMap = "div">(element: Element, 
                 element.id = properties.id;
                 return;
             case "classes":
-                addClass(element, properties.classes);
+                element.addClass(properties.classes);
                 return;
             case "listeners":
                 Object.keys(properties.listeners).forEach(listenerType =>
-                    addListener(element, listenerType, properties.listeners[listenerType]));
+                    element.addListener(listenerType, properties.listeners[listenerType]));
                 return;
             case "children":
-                addChild(element, properties.children);
+                element.addChild(properties.children);
                 return;
             case "parent":
-                addChild(properties.parent, element);
+                properties.parent.addChild(element);
                 return;
             default:
                 if (setOnlyBaseProperties) return;

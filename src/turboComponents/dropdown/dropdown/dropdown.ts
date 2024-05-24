@@ -128,7 +128,7 @@ class TurboDropdown extends TurboElement {
             this.openPopup(false);
         });
 
-        addChild(this.popup, entry);
+        this.popup.addChild(entry);
         return entry;
     }
 

@@ -1,4 +1,4 @@
-import {TurboProperties} from "../../domBuilding/turboElement/turboElement.types";
+import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 
 /**
  * @type {TurboIconProperties}

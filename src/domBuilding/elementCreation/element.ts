@@ -23,7 +23,7 @@ function element<T extends keyof ElementTagMap>(properties: TurboProperties<T> =
     }
 
     if (properties.shadowDOM) element.attachShadow({mode: "open"});
-    setProperties(element, properties);
+    setProperties(element as Element, properties);
     return element;
 }
 

@@ -1,7 +1,16 @@
 import {camelToKebabCase} from "../../../utils/dataManipulation/stringManipulation/camelToKebabCase";
 
+function getPropertyDescriptor(prototype: any, field: string): PropertyDescriptor | undefined {
+    while (prototype) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, field);
+        if (descriptor) return descriptor;
+        prototype = Object.getPrototypeOf(prototype);
+    }
+    return undefined;
+}
+
 function updateObservedFieldProperty(prototype: any, field: string, attribute: string) {
-    let descriptor = Object.getOwnPropertyDescriptor(prototype, field) || {
+    let descriptor = getPropertyDescriptor(prototype, field) || {
         enumerable: true,
         configurable: true
     };

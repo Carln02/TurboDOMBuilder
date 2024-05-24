@@ -16,7 +16,7 @@ function blindElement<T extends keyof ElementTagMap>(properties: TurboProperties
     else element = document.createElement(properties.tag || "div") as ElementTagMap[T];
 
     if (properties.shadowDOM) element.attachShadow({mode: "open"});
-    setProperties(element, properties);
+    setProperties(element as Element, properties);
     return element;
 }
 

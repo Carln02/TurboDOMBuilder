@@ -1,20 +1,25 @@
 class TurboMap<A, B> extends Map<A, B> {
+    public enforceImmutability: boolean = true;
+
     public set(key: A, value: B): any {
-        return super.set(key, this.copy(value));
+        return super.set(key, this.enforceImmutability ? this.copy(value) : value);
     }
 
     public get(key: A): B {
-        return this.copy(super.get(key));
+        const result = super.get(key);
+        return this.enforceImmutability ? this.copy(result) : result;
     }
 
     public get first(): B | null {
         if (this.size == 0) return null;
-        return this.copy(this.values().next().value);
+        const result = this.values().next().value;
+        return this.enforceImmutability ? this.copy(result) : result;
     }
 
     public get last(): B | null {
         if (this.size == 0) return null;
-        return this.valuesArray()[this.size - 1];
+        const result = this.valuesArray()[this.size - 1];
+        return this.enforceImmutability ? this.copy(result) : result;
     }
 
     public keysArray(): A[] {
@@ -26,7 +31,14 @@ class TurboMap<A, B> extends Map<A, B> {
     }
 
     private copy(value: B): B {
-        if (value && typeof value == "object") return {...value};
+        if (value && typeof value == "object") {
+            if (value instanceof Array) return value.map(item => this.copy(item)) as any;
+            if (value.constructor && value.constructor != Object) {
+                if (typeof (value as any).clone == "function") return (value as any).clone();
+                if (typeof (value as any).copy == "function") return (value as any).copy();
+            }
+            return {...value};
+        }
         return value;
     }
 

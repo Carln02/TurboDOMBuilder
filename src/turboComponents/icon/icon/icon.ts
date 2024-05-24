@@ -1,10 +1,10 @@
-import {TurboElement} from "../../domBuilding/turboElement/turboElement";
+import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
 import {TurboIconProperties, TurboIconConfig} from "./icon.types";
-import {SvgCache} from "../../utils/dataManipulation/svgManipulation/svgCache";
-import {getFileExtension} from "../../utils/dataManipulation/stringManipulation/getFileExtension";
-import {img} from "../../domBuilding/elementCreation/basic/basicGeneratedFunctions";
-import {observe} from "../../domBuilding/turboElement/decorators/observe";
-import {define} from "../../domBuilding/turboElement/decorators/define";
+import {SvgCache} from "../../../utils/dataManipulation/svgManipulation/svgCache";
+import {getFileExtension} from "../../../utils/dataManipulation/stringManipulation/getFileExtension";
+import {img} from "../../../domBuilding/elementCreation/basic/basicGeneratedFunctions";
+import {observe} from "../../../domBuilding/turboElement/decorators/observe";
+import {define} from "../../../domBuilding/turboElement/decorators/define";
 
 /**
  * Icon class for creating icon elements.

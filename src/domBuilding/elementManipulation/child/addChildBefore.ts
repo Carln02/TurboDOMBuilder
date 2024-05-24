@@ -12,7 +12,7 @@ import {childHandler} from "../element/childHandler";
 function addChildBefore(element?: Element, children?: Element | Element[],
                    sibling?: Element): Element {
     if (!element || !children) return element;
-    if (!sibling) return addChild(element, children);
+    if (!sibling) return element.addChild(children);
 
     let htmlElement = childHandler(element);
 

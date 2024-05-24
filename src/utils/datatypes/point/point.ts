@@ -20,15 +20,15 @@ class Point {
      */
     constructor(x: number, y: number)
     /**
-     * @description Create a point with the provided coordinates
-     * @param {Coordinate} p - The coordinates (or Point)
-     */
-    constructor(p: Coordinate)
-    /**
      * @description Create a point with the clientX/clientY values. Useful for events.
      * @param {{clientX: number, clientY: number}} e - The coordinates
      */
     constructor(e: { clientX: number, clientY: number })
+    /**
+     * @description Create a point with the provided coordinates
+     * @param {Coordinate} p - The coordinates (or Point)
+     */
+    constructor(p: Coordinate)
     /**
      * @description Create a point with the provided [x, y] values.
      * @param {[number, number]} arr - The array of size 2.
