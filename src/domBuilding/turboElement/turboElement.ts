@@ -1,5 +1,5 @@
 import {TurboProperties} from "./turboElement.types";
-import {kebabToCamelCase} from "../../utils/dataManipulation/stringManipulation/kebabToCamelCase";
+import {kebabToCamelCase, parse} from "../../utils/dataManipulation/stringManipulation";
 
 /**
  * @class TurboElement
@@ -13,9 +13,9 @@ class TurboElement extends HTMLElement {
         this.setProperties(properties, true);
     }
 
-    attributeChangedCallback(name: string, oldValue: any, newValue: any) {
-        if (newValue == null || newValue == oldValue) return;
-        this[kebabToCamelCase(name)] = newValue;
+    public attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+        if (!newValue || newValue == oldValue) return;
+        this[kebabToCamelCase(name)] = parse(newValue);
     }
 
     //Config
@@ -23,7 +23,7 @@ class TurboElement extends HTMLElement {
     /**
      * @description Static configuration object.
      */
-    static readonly config: any = {shadowDOM: false};
+    public static readonly config: any = {shadowDOM: false};
 
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.

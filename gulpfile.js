@@ -29,12 +29,34 @@ async function processDirectory(dirPath) {
             indexContent += await processDirectory(fullPath);
         } else if (file.endsWith(".ts") && !file.endsWith(".d.ts") && file !== "index.ts") {
             const fileContent = await fs.readFile(fullPath, "utf8");
-            const exportLines = fileContent.split("\n").filter(line => line.startsWith("export {"));
+            const lines = fileContent.split("\n");
+            let exportLines = [];
+            let capturing = false;
+            let buffer = "";
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith("export {")) capturing = true;
+
+                if (capturing) {
+                    buffer += trimmedLine;
+                    if (trimmedLine.endsWith("}") || trimmedLine.endsWith("};")) {
+                        exportLines.push(buffer);
+                        buffer = "";
+                        capturing = false;
+                    }
+                }
+            }
 
             for (const exportLine of exportLines) {
-                const exportContent = exportLine.match(/export {(.*)}/)[1];
-                indexContent += `import {${exportContent}} from "./${relativePath}";\n`;
-                indexContent += `export {${exportContent}};\n`;
+                const match = exportLine.match(/export\s*{\s*([^}]*)\s*}/);
+                if (match) {
+                    const exportContent = match[1];
+                    indexContent += `import {${exportContent}} from "./${relativePath}";\n`;
+                    indexContent += `export {${exportContent}};\n`;
+                } else {
+                    console.error(`Failed to match export line: ${exportLine}`);
+                }
             }
         }
     }

@@ -1,49 +1,92 @@
 import {TurboEvent} from "../turboEvent";
-import {ClickMode} from "../../eventManager/eventManager.types";
-import {PositionsMap, TurboEventName} from "../turboEvent.types";
+import {ClickMode} from "../../turboEventManager/turboEventManager.types";
+import {TurboMap} from "../../../utils/datatypes/turboMap/turboMap";
+import {Point} from "../../../utils/datatypes/point/point";
+import {TurboEventName, TurboEventNameEntry} from "../../eventNaming";
+import {cache} from "../../../domBuilding/decorators/cache/cache";
 
+/**
+ * @class TurboDragEvent
+ * @extends TurboEvent
+ * @description Turbo drag event class, fired on turbo-drag, turbo-drag-start, turbo-drag-end, etc.
+ */
 class TurboDragEvent extends TurboEvent {
-    private _origins: PositionsMap;
-    private _previousPositions: PositionsMap;
-    private _positions: PositionsMap;
+    /**
+     * @description Map containing the origins of the dragging points
+     */
+    public readonly origins: TurboMap<number, Point>;
 
-    constructor(origins: PositionsMap, previousPositions: PositionsMap, positions: PositionsMap,
-                clickMode: ClickMode, keys: string[], eventName: TurboEventName = TurboEventName.drag, eventInitDict?: EventInit) {
-        super(positions.first, clickMode, keys, eventName, {bubbles: true, cancelable: true, ...eventInitDict});
+    /**
+     * @description Map containing the previous positions of the dragging points
+     */
+    public readonly previousPositions: TurboMap<number, Point>;
 
+    /**
+     * @description Map containing the positions of the dragging points
+     */
+    public readonly positions: TurboMap<number, Point>;
+
+    constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>,
+                positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[],
+                eventName: TurboEventNameEntry = TurboEventName.drag, eventInitDict?: EventInit) {
+        super(positions.first, clickMode, keys, eventName,
+            {bubbles: true, cancelable: true, ...eventInitDict});
         this.origins = origins;
         this.previousPositions = previousPositions;
         this.positions = positions;
     }
 
-    //Origins
-
-    public get origins() {
-        return this._origins;
+    /**
+     * @description Map of the origins mapped to the current canvas translation and scale
+     */
+    @cache()
+    public get scaledOrigins() {
+        if (!this.authorizeScaling()) return this.origins;
+        return this.scalePositionsMap(this.origins);
     }
 
-    private set origins(value: PositionsMap) {
-        this._origins = value;
+    /**
+     * @description Map of the previous positions mapped to the current canvas translation and scale
+     */
+    @cache()
+    public get scaledPreviousPositions() {
+        if (!this.authorizeScaling()) return this.previousPositions;
+        return this.scalePositionsMap(this.previousPositions);
     }
 
-    //Previous positions
-
-    public get previousPositions() {
-        return this._previousPositions;
+    /**
+     * @description Map of the positions mapped to the current canvas translation and scale
+     */
+    @cache()
+    public get scaledPositions() {
+        if (!this.authorizeScaling()) return this.positions;
+        return this.scalePositionsMap(this.positions);
     }
 
-    private set previousPositions(value: PositionsMap) {
-        this._previousPositions = value;
+    @cache()
+    public get deltaPositions() {
+        return this.positions.mapValues((key, position) => {
+            const previousPosition = this.previousPositions.get(key);
+            if (previousPosition) return position.sub(previousPosition);
+        });
     }
 
-    //Positions
-
-    public get positions() {
-        return this._positions;
+    @cache()
+    public get deltaPosition() {
+        return Point.midPoint(...this.deltaPositions.valuesArray());
     }
 
-    private set positions(value: PositionsMap) {
-        this._positions = value;
+    @cache()
+    public get scaledDeltaPositions() {
+        return this.scaledPositions.mapValues((key, position) => {
+            const previousPosition = this.scaledPreviousPositions.get(key);
+            if (previousPosition) return position.sub(previousPosition);
+        });
+    }
+
+    @cache()
+    public get scaledDeltaPosition() {
+        return Point.midPoint(...this.scaledDeltaPositions.valuesArray());
     }
 }
 

@@ -1,0 +1,23 @@
+turbo-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+turbo-dropdown > turbo-popup {
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    border: solid 0.1em #5e5e5e;
+    border-radius: 0.4em;
+
+    overflow: hidden;
+}
+
+turbo-dropdown > turbo-popup > turbo-select-entry {
+    padding: 0.5em;
+}
+
+turbo-dropdown > turbo-popup > turbo-select-entry:not(:last-child) {
+    border-bottom: solid 0.1em #bdbdbd;
+}

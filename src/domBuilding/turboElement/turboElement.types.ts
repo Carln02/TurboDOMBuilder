@@ -1,38 +1,28 @@
-type HTMLElementNonFunctions<T extends keyof ElementTagMap = "div"> = {
-    [K in keyof ElementTagMap[T]]: ElementTagMap[T][K] extends Function ? never : K;
-}[keyof ElementTagMap[T]];
-
-type HTMLElementMutableFields<T extends keyof ElementTagMap = "div"> =
-    Omit<Partial<Pick<ElementTagMap[T], HTMLElementNonFunctions<T>>>, "children" | "className" | "style">;
+import {ValidElement, ValidTag} from "../core.types";
 
 /**
- * @type {ChildHandler}
- * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
+ * @description Ensures that non-function properties of an element are selected.
  */
-type ChildHandler = Element | ShadowRoot;
+type HTMLElementNonFunctions<Tag extends ValidTag = ValidTag> = {
+    [ElementField in keyof ValidElement<Tag>]: ValidElement<Tag>[ElementField] extends Function ? never : ElementField;
+}[keyof ValidElement<Tag>];
 
 /**
- * @type {StylesRoot}
- * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
+ * @description Represents mutable fields of an HTML element, excluding specific fields.
  */
-type StylesRoot = ShadowRoot | HTMLHeadElement;
+type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> =
+    Omit<Partial<Pick<ValidElement<Tag>, HTMLElementNonFunctions<Tag>>>, "children" | "className" | "style">
 
 /**
- * @type {ElementTagMap}
- * @description A type that represents a union of HTML, SVG, and MathML tag name maps.
- */
-type ElementTagMap = HTMLElementTagNameMap & Omit<SVGElementTagNameMap, "style"> & MathMLElementTagNameMap;
-
-/**
- * @type {ElementTagDefinition}
  * @description Represents an element's definition of its tag and its namespace (both optional).
  *
- * @property {ElementTagMap} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
+ * @property {Tag} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
  * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
  * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
+ * @template {ValidTag} Tag
  */
-type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
-    tag?: T;
+type ElementTagDefinition<Tag extends ValidTag> = {
+    tag?: Tag;
     namespace?: string;
 };
 
@@ -57,6 +47,8 @@ type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
  * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
  * the created element.
  * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
+ * as name.
  * @property {string} [text] - The text content of the element (if any).
  * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
  *
@@ -74,18 +66,19 @@ type ElementTagDefinition<T extends keyof ElementTagMap = "div"> = {
  * @property checked
  * @property selected
  */
-type TurboProperties<T extends keyof ElementTagMap = "div"> =
-    HTMLElementMutableFields<T> & ElementTagDefinition<T> & {
+type TurboProperties<Tag extends ValidTag = "div"> =
+    HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
     id?: string;
     classes?: string | string[];
     style?: string;
     stylesheet?: string;
-    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => void)>
+    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>
     children?: Element | Element[];
     parent?: Element;
+    out?: string | Element;
     text?: string;
     shadowDOM?: boolean;
     [key: string]: any;
 };
 
-export {ChildHandler, StylesRoot, ElementTagMap, TurboProperties};
+export {TurboProperties};

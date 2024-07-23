@@ -1,9 +1,11 @@
-import typescript from '@rollup/plugin-typescript';
-import terser from '@rollup/plugin-terser';
-import dts from 'rollup-plugin-dts';
-import postcss from 'rollup-plugin-postcss';
-import autoprefixer from 'autoprefixer';
-import cssnano from 'cssnano';
+import typescript from "@rollup/plugin-typescript";
+import terser from "@rollup/plugin-terser";
+import dts from "rollup-plugin-dts";
+import postcss from "rollup-plugin-postcss";
+import autoprefixer from "autoprefixer";
+import cssnano from "cssnano";
+import nodeResolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 
 const outDir = "build";
 const outName = "turbodombuilder";
@@ -19,6 +21,8 @@ export default [
             {file: outDir + "/" + outName + ".js", format: "iife", name: "Turbo"}
         ],
         plugins: [
+            nodeResolve(), // Resolves modules from node_modules
+            commonjs(), // Converts CommonJS modules to ES6
             typescript({tsconfig: "./tsconfig.json"}),
             postcss({
                 plugins: [autoprefixer(), cssnano()]

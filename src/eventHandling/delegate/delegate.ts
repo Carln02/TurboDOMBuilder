@@ -1,11 +1,11 @@
-class Delegate<T extends (...args: any[]) => any> {
-    private callbacks: Set<T> = new Set();
+class Delegate<CallbackType extends (...args: any[]) => any> {
+    private callbacks: Set<CallbackType> = new Set();
 
     /**
      * @description Adds a callback to the list.
      * @param callback - The callback function to add.
      */
-    public add(callback: T) {
+    public add(callback: CallbackType) {
         this.callbacks.add(callback);
     }
 
@@ -14,7 +14,7 @@ class Delegate<T extends (...args: any[]) => any> {
      * @param callback - The callback function to remove.
      * @returns A boolean indicating whether the callback was found and removed.
      */
-    public remove(callback: T): boolean {
+    public remove(callback: CallbackType): boolean {
         return this.callbacks.delete(callback);
     }
 
@@ -22,7 +22,7 @@ class Delegate<T extends (...args: any[]) => any> {
      * @description Invokes all callbacks with the provided arguments.
      * @param args - The arguments to pass to the callbacks.
      */
-    public fire(...args: Parameters<T>) {
+    public fire(...args: Parameters<CallbackType>) {
         for (const callback of this.callbacks) {
             try {
                 callback(...args);

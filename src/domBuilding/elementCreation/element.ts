@@ -1,30 +1,48 @@
-import {ElementTagMap, TurboProperties} from "../turboElement/turboElement.types";
-import {setProperties} from "../elementManipulation/element/setProperties";
-import {SvgNamespace} from "./tagDefinitions/svgTagsDefinitions";
-import {MathMLNamespace} from "./tagDefinitions/mathMLTagsDefinitions";
+import {TurboProperties} from "../turboElement/turboElement.types";
+import {isMathMLTag, isSvgTag, MathMLNamespace, SvgNamespace} from "./namespaceIdentification";
+import {ValidElement, ValidTag} from "../core.types";
 
 /**
  * @description Create an element with the specified properties (and the specified namespace if applicable).
- * @param {TurboProperties<T>} properties - Object containing properties of the element.
- * @returns {ElementTagMap[T]} The created element.
+ * @param {TurboProperties<Tag>} [properties] - Object containing properties of the element.
+ * @returns {ValidElement<Tag>} The created element.
+ * @template Tag
  */
-function element<T extends keyof ElementTagMap>(properties: TurboProperties<T> = {} as TurboProperties<T>): ElementTagMap[T] {
-    let element: ElementTagMap[T];
+function element<Tag extends ValidTag>(properties: TurboProperties<Tag> = {} as TurboProperties<Tag>): ValidElement<Tag> {
+    let element: Element;
 
     if (properties.namespace) {
         if (properties.namespace == "svg")
-            element = document.createElementNS(SvgNamespace, properties.tag) as ElementTagMap[T];
+            element = document.createElementNS(SvgNamespace, properties.tag || "svg");
         else if (properties.namespace == "mathML")
-            element = document.createElementNS(MathMLNamespace, properties.tag) as ElementTagMap[T];
+            element = document.createElementNS(MathMLNamespace, properties.tag || "math");
         else
-            element = document.createElementNS(properties.namespace, properties.tag) as ElementTagMap[T];
+            element = document.createElementNS(properties.namespace, properties.tag || "div");
     } else {
-        element = document.createElement(properties.tag || "div") as ElementTagMap[T];
+        element = document.createElement(properties.tag || "div");
     }
 
     if (properties.shadowDOM) element.attachShadow({mode: "open"});
-    setProperties(element as Element, properties);
-    return element;
+    element.setProperties(properties);
+    return element as ValidElement<Tag>;
 }
 
-export {element};
+/**
+ * @description Create an element with the specified properties. Supports SVG and MathML.
+ * @param {TurboProperties<Tag>} [properties] - Object containing properties of the element.
+ * @returns {ValidElement<Tag>} The created element.
+ * @template Tag
+ */
+function blindElement<Tag extends ValidTag>(properties: TurboProperties<Tag> = {} as TurboProperties<Tag>): ValidElement<Tag> {
+    let element: Element;
+
+    if (isSvgTag(properties.tag)) element = document.createElementNS(SvgNamespace, properties.tag || "svg");
+    else if (isMathMLTag(properties.tag)) element = document.createElementNS(MathMLNamespace, properties.tag || "math");
+    else element = document.createElement(properties.tag || "div");
+
+    if (properties.shadowDOM) element.attachShadow({mode: "open"});
+    element.setProperties(properties);
+    return element as ValidElement<Tag>;
+}
+
+export {element, blindElement};
