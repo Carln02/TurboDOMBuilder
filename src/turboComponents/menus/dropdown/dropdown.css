@@ -21,3 +21,16 @@ turbo-dropdown > turbo-popup > turbo-select-entry {
 turbo-dropdown > turbo-popup > turbo-select-entry:not(:last-child) {
     border-bottom: solid 0.1em #bdbdbd;
 }
+
+turbo-dropdown > turbo-select-entry {
+    width: 100%;
+    padding: 0.5em 0.7em;
+}
+
+turbo-dropdown > turbo-select-entry:hover {
+    background-color: #d7d7d7;
+}
+
+turbo-dropdown > turbo-select-entry:not(:last-child) {
+    border-bottom: solid 0.1em #bdbdbd;
+}

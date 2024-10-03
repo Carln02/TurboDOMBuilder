@@ -98,6 +98,10 @@ class Point {
 
     // Instance methods
 
+    public get object(): Coordinate {
+        return {x: this.x, y: this.y};
+    }
+
     /**
      * @description Determine whether this point is equal to the provided coordinates
      * @param {Coordinate} p - The coordinates to compare it to

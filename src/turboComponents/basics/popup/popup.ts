@@ -47,8 +47,8 @@ class TurboPopup extends TurboElement {
     }
 
     private addListeners() {
-        document.addEventListener(DefaultEventName.scroll, () => this.show(false));
-        document.addEventListener(DefaultEventName.click, e => {
+        document.addListener(DefaultEventName.scroll, () => this.show(false));
+        document.addListener(DefaultEventName.click, e => {
             if (this.isShown && !this.contains(e.target as Node)) this.show(false);
         });
     }

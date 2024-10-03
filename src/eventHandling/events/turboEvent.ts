@@ -24,9 +24,26 @@ class TurboEvent extends Event {
      */
     public readonly position: Point;
 
+    /**
+     * @description Callback function (or boolean) to be overridden to specify when to allow transformation
+     * and/or scaling.
+     */
+    public authorizeScaling: boolean | (() => boolean);
+
+    /**
+     * @description Callback function to be overridden to specify how to transform a position from screen to
+     * document space.
+     */
+    public scalePosition: (position: Point) => Point;
+
     constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry,
+                authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point,
                 eventInitDict?: EventInit) {
         super(eventName, {bubbles: true, cancelable: true, ...eventInitDict});
+
+        this.authorizeScaling = authorizeScaling ?? true;
+        this.scalePosition = scalePosition ?? ((position: Point) => position);
+
         this.clickMode = clickMode;
         this.keys = keys;
         this.position = position;
@@ -78,23 +95,15 @@ class TurboEvent extends Event {
      */
     @cache()
     public get scaledPosition() {
-        if (!this.authorizeScaling()) return this.position;
+        if (!this.scalingAuthorized) return this.position;
         return this.scalePosition(this.position);
     }
 
     /**
-     * @description Function to be overridden to specify how to transform a position from screen to document space.
-     * @param position
+     * @description Specifies whether to allow transformation and/or scaling.
      */
-    public scalePosition(position: Point): Point {
-        return position;
-    }
-
-    /**
-     * @description Function to be overridden to specify when to allow transformation and/or scaling (or not).
-     */
-    public authorizeScaling(): boolean {
-        return true;
+    public get scalingAuthorized(): boolean {
+        return typeof this.authorizeScaling == "function" ? this.authorizeScaling() : this.authorizeScaling;
     }
 
     /**

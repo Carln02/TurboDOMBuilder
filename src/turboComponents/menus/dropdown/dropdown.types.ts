@@ -1,21 +1,17 @@
 import {TurboSelectConfig, TurboSelectProperties} from "../../basics/select/select.types";
 import {HTMLTag} from "../../../domBuilding/core.types";
-import {TurboDropdownEntry} from "./dropdownEntry/dropdownEntry";
+import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 
 /**
  * @type {TurboDropdownProperties}
  * @description Properties for configuring a Dropdown.
  * @extends TurboProperties
  *
- * @property {(string | TurboDropdownEntry)[]} values - The values or DropdownEntry instances to be used as dropdown options.
- * @property {string[]} [selectedValues=[]] - Array of values that are initially selected.
  * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
  * string is passed, a Button with the given string as text will be assigned as the selector.
  * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
  *
  * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- * @property {string} [underlyingInputName] - Name attribute for a hidden input element to store the selected value(s).
- * If not declared, the hidden input will not be created.
  *
  * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
@@ -31,7 +27,8 @@ import {TurboDropdownEntry} from "./dropdownEntry/dropdownEntry";
  * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
  * the default classes set in TurboConfig.Dropdown.
  */
-type TurboDropdownProperties = TurboSelectProperties<TurboDropdownEntry> & {
+type TurboDropdownProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
+    = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
 

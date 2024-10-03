@@ -1,0 +1,24 @@
+turbo-drawer {
+    display: flex;
+}
+
+turbo-drawer.top-drawer {
+    flex-direction: column;
+}
+
+turbo-drawer.bottom-drawer {
+    flex-direction: column-reverse;
+}
+
+turbo-drawer.left-drawer {
+    flex-direction: row;
+}
+
+turbo-drawer.right-drawer {
+    flex-direction: row-reverse;
+}
+
+turbo-drawer > div:nth-child(2) > :first-child {
+    position: absolute;
+    display: block;
+}

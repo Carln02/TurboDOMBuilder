@@ -1,6 +1,7 @@
 import {
     ActionMode,
-    ClickMode, DisabledTurboEventTypes,
+    ClickMode,
+    DisabledTurboEventTypes,
     InputDevice,
     TurboEventManagerLockStateProperties,
     TurboEventManagerProperties,
@@ -16,18 +17,24 @@ import {TurboDragEvent} from "../events/basic/turboDragEvent";
 import {cache, clearCache} from "../../domBuilding/decorators/cache/cache";
 import {setupTurboEventManagerBypassing} from "./managerBypassing/managerBypassing";
 import {
-    DefaultEventName, TurboClickEventName, TurboDragEventName,
+    DefaultEventName,
+    TurboClickEventName,
+    TurboDragEventName,
     TurboEventName,
     TurboEventNameEntry,
-    TurboKeyEventName, TurboMoveName,
+    TurboKeyEventName,
+    TurboMoveName,
     TurboWheelEventName
 } from "../eventNaming";
+import {TurboElement} from "../../domBuilding/turboElement/turboElement";
+import {define} from "../../domBuilding/decorators/define";
 
 /**
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
  * easier management of input.
  */
-class TurboEventManager {
+@define()
+class TurboEventManager extends TurboElement {
     private _inputDevice: InputDevice = InputDevice.unknown;
 
     //Delegate fired when the input device changes
@@ -47,6 +54,9 @@ class TurboEventManager {
     //Saved values (Maps to account for different touch points and their IDs)
     private readonly origins: TurboMap<number, Point>;
     private readonly previousPositions: TurboMap<number, Point>;
+    private positions: TurboMap<number, Point>;
+
+    private lastTargetOrigin: Node;
 
     //Single timer instance --> easily cancel it and set it again
     private readonly timerMap: TurboMap<string, NodeJS.Timeout>;
@@ -56,8 +66,14 @@ class TurboEventManager {
     //Duration to reach long press
     private readonly longPressDuration: number;
 
+    private readonly authorizeEventScaling: boolean | (() => boolean);
+    private readonly scaleEventPosition: (position: Point) => Point;
+
     constructor(properties: TurboEventManagerProperties = {}) {
+        super({parent: document.body});
         this.onInputDeviceChange = new Delegate<(device: InputDevice) => void>();
+        this.authorizeEventScaling = properties.authorizeEventScaling;
+        this.scaleEventPosition = properties.scaleEventPosition;
 
         this.defaultState = {
             enabled: properties.enabled ?? true,
@@ -88,13 +104,13 @@ class TurboEventManager {
     private initEvents() {
         try {
             if (!this.disabledEventTypes.disableKeyEvents) {
-                document.addEventListener("keydown", this.keyDown);
-                document.addEventListener("keyup", this.keyUp);
+                document.addListener("keydown", this.keyDown);
+                document.addListener("keyup", this.keyUp);
                 this.applyEventNames(TurboKeyEventName);
             }
 
             if (!this.disabledEventTypes.disableWheelEvents) {
-                document.addEventListener("wheel", this.wheel, {passive: false});
+                document.addListener("wheel", this.wheel, this, {passive: false});
                 this.applyEventNames(TurboWheelEventName);
             }
 
@@ -103,17 +119,17 @@ class TurboEventManager {
             }
 
             if (!this.disabledEventTypes.disableMouseEvents) {
-                document.addEventListener("mousedown", this.pointerDown);
-                document.addEventListener("mousemove", this.pointerMove);
-                document.addEventListener("mouseup", this.pointerUp);
-                document.addEventListener("mouseleave", this.pointerLeave);
+                document.addListener("mousedown", this.pointerDown);
+                document.addListener("mousemove", this.pointerMove);
+                document.addListener("mouseup", this.pointerUp);
+                document.addListener("mouseleave", this.pointerLeave);
             }
 
             if (!this.disabledEventTypes.disableTouchEvents) {
-                document.addEventListener("touchstart", this.pointerDown, {passive: false});
-                document.addEventListener("touchmove", this.pointerMove, {passive: false});
-                document.addEventListener("touchend", this.pointerUp, {passive: false});
-                document.addEventListener("touchcancel", this.pointerUp, {passive: false});
+                document.addListener("touchstart", this.pointerDown, this, {passive: false});
+                document.addListener("touchmove", this.pointerMove, this, {passive: false});
+                document.addListener("touchend", this.pointerUp, this, {passive: false});
+                document.addListener("touchcancel", this.pointerUp, this, {passive: false});
             }
 
             if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {
@@ -123,20 +139,6 @@ class TurboEventManager {
         } catch (error) {
             console.error("Error initializing events: ", error);
         }
-    }
-
-    public destroy() {
-        document.removeEventListener("keydown", this.keyDown);
-        document.removeEventListener("keyup", this.keyUp);
-        document.removeEventListener("wheel", this.wheel);
-        document.removeEventListener("mousedown", this.pointerDown);
-        document.removeEventListener("mousemove", this.pointerMove);
-        document.removeEventListener("mouseup", this.pointerUp);
-        document.removeEventListener("mouseleave", this.pointerLeave);
-        document.removeEventListener("touchstart", this.pointerDown);
-        document.removeEventListener("touchmove", this.pointerMove);
-        document.removeEventListener("touchend", this.pointerUp);
-        document.removeEventListener("touchcancel", this.pointerUp);
     }
 
     /**
@@ -200,7 +202,8 @@ class TurboEventManager {
         //Add key to currentKeys
         this.currentKeys.push(e.key);
         //Fire a keyPressed event (only once)
-        document.dispatchEvent(new TurboKeyEvent(e.key, null, this.currentClick, this.currentKeys, TurboEventName.keyPressed));
+        document.dispatchEvent(new TurboKeyEvent(e.key, null, this.currentClick, this.currentKeys,
+            TurboEventName.keyPressed, this.authorizeEventScaling, this.scaleEventPosition));
     }
 
     private keyUp = (e: KeyboardEvent) => {
@@ -210,7 +213,8 @@ class TurboEventManager {
         //Remove key from currentKeys
         this.currentKeys.splice(this.currentKeys.indexOf(e.key), 1);
         //Fire a keyReleased event
-        document.dispatchEvent(new TurboKeyEvent(null, e.key, this.currentClick, this.currentKeys, TurboEventName.keyReleased));
+        document.dispatchEvent(new TurboKeyEvent(null, e.key, this.currentClick, this.currentKeys,
+            TurboEventName.keyReleased, this.authorizeEventScaling, this.scaleEventPosition));
     }
 
     //Wheel Event
@@ -241,13 +245,17 @@ class TurboEventManager {
         //Mouse scrolling
         else eventName = TurboEventName.mouseWheel;
 
-        document.dispatchEvent(new TurboWheelEvent(new Point(e.deltaX, e.deltaY), this.currentKeys, eventName));
+        document.dispatchEvent(new TurboWheelEvent(new Point(e.deltaX, e.deltaY), this.currentKeys, eventName,
+            this.authorizeEventScaling, this.scaleEventPosition));
     };
 
     //Mouse and Touch Events
 
     private pointerDown = (e: MouseEvent | TouchEvent) => {
-        if (!e.composedPath().includes(this.lockState.lockOrigin)) this.resetLockState();
+        if (!e.composedPath().includes(this.lockState.lockOrigin)) {
+            (document.activeElement as HTMLElement)?.blur();
+            this.resetLockState();
+        }
         if (!this.enabled) return;
 
         //Check if it's touch
@@ -313,18 +321,21 @@ class TurboEventManager {
         if (this.preventDefaultTouch && isTouch) e.preventDefault();
 
         //Initialize a new positions map
-        const positions = new TurboMap<number, Point>();
+        this.positions = new TurboMap<number, Point>();
 
         //Get current position(s) for touch (or mouse)
         if (isTouch) {
             Array.from(e.touches).forEach(touchPoint =>
-                positions.set(touchPoint.identifier, new Point(touchPoint)));
+                this.positions.set(touchPoint.identifier, new Point(touchPoint)));
         } else {
-            positions.set(0, new Point(e.clientX, e.clientY));
+            this.positions.set(0, new Point(e.clientX, e.clientY));
         }
 
+        //Clear cached target origin if not dragging
+        if (this.currentAction != ActionMode.drag) this.lastTargetOrigin = null;
+
         //Fire move event if enabled
-        if (!this.disabledEventTypes.disableMoveEvent) this.fireDrag(positions, TurboEventName.move);
+        if (!this.disabledEventTypes.disableMoveEvent) this.fireDrag(this.positions, TurboEventName.move);
 
         //If drag events are enabled and user is interacting
         if (this.currentAction != ActionMode.none && !this.disabledEventTypes.disableDragEvents) {
@@ -332,7 +343,7 @@ class TurboEventManager {
             if (this.currentAction != ActionMode.drag) {
                 //Loop on saved origins points and check if any point's distance from its origin is greater than the threshold
                 if (!Array.from(this.origins.entries()).some(([key, origin]) => {
-                    const position = positions.get(key);
+                    const position = this.positions.get(key);
                     return position && Point.dist(position, origin) > this.moveThreshold;
                 })) return;
                 //If didn't return --> fire drag start and set action to drag
@@ -342,11 +353,11 @@ class TurboEventManager {
             }
 
             //Fire drag and update previous points
-            this.fireDrag(positions);
+            this.fireDrag(this.positions);
         }
 
         //Update previous positions
-        positions.forEach((position, key) => this.previousPositions.set(key, position));
+        this.positions.forEach((position, key) => this.previousPositions.set(key, position));
     };
 
     private pointerUp = (e: MouseEvent | TouchEvent) => {
@@ -363,26 +374,26 @@ class TurboEventManager {
         this.clearTimer(TurboEventName.longPress);
 
         //Initialize a new positions map
-        const positions = new TurboMap<number, Point>();
+        this.positions = new TurboMap<number, Point>();
 
         //Get current position(s) for touch (or mouse)
         if (isTouch) {
             Array.from((e as TouchEvent).changedTouches).forEach(touchPoint => {
-                positions.set(touchPoint.identifier, new Point(touchPoint));
+                this.positions.set(touchPoint.identifier, new Point(touchPoint));
             });
         } else {
-            positions.set(0, new Point(e as MouseEvent));
+            this.positions.set(0, new Point(e as MouseEvent));
         }
 
         //If action was drag --> fire drag end
         if (this.currentAction == ActionMode.drag && !this.disabledEventTypes.disableDragEvents)
-            this.fireDrag(positions, TurboEventName.dragEnd);
+            this.fireDrag(this.positions, TurboEventName.dragEnd);
 
         //If click events are enabled
         if (!this.disabledEventTypes.disableClickEvents) {
             //If action is click --> fire click
             if (this.currentAction == ActionMode.click) {
-                this.fireClick(positions.first, TurboEventName.click);
+                this.fireClick(this.positions.first, TurboEventName.click);
             }
 
             //Fire click end
@@ -418,9 +429,12 @@ class TurboEventManager {
         }
     }
 
-    private getFireOrigin(positions?: TurboMap<number, Point>): Element | Document {
-        const origin = this.origins.first ? this.origins.first : positions.first;
-        return document.elementFromPoint(origin.x, origin.y) as Element || document;
+    private getFireOrigin(positions?: TurboMap<number, Point>, reload: boolean = false): Node {
+        if (!this.lastTargetOrigin || reload) {
+            const origin = this.origins.first ? this.origins.first : positions.first;
+            this.lastTargetOrigin = document.elementFromPoint(origin.x, origin.y) as Node;
+        }
+        return this.lastTargetOrigin;
     }
 
     //Event triggering
@@ -434,7 +448,8 @@ class TurboEventManager {
     private fireClick(p: Point, eventName: TurboEventNameEntry = TurboEventName.click) {
         if (!p) return;
         const target = document.elementFromPoint(p.x, p.y) as Element || document;
-        target.dispatchEvent(new TurboEvent(p, this.currentClick, this.currentKeys, eventName));
+        target.dispatchEvent(new TurboEvent(p, this.currentClick, this.currentKeys, eventName,
+            this.authorizeEventScaling, this.scaleEventPosition));
     }
 
     /**
@@ -445,8 +460,9 @@ class TurboEventManager {
      */
     private fireDrag(positions: TurboMap<number, Point>, eventName: TurboEventNameEntry = TurboEventName.drag) {
         if (!positions) return;
-        this.getFireOrigin(positions).dispatchEvent(new TurboDragEvent(this.origins, this.previousPositions, positions,
-            this.currentClick, this.currentKeys, eventName));
+        this.getFireOrigin(positions).dispatchEvent(new TurboDragEvent(this.origins, this.previousPositions,
+            positions, this.currentClick, this.currentKeys, eventName, this.authorizeEventScaling,
+            this.scaleEventPosition));
     }
 
     //Timer

@@ -1,290 +1,3 @@
-/**
- * @typedef {Object} AutoOptions
- * @description Options for configuring the `auto` decorator.
- * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
- * current value. Defaults to `true`.
- * @property {(value: Type) => Type} [callBefore] - Optional callback to execute on the value just before it is set.
- * @property {boolean} [returnDefinedGetterValue] - If true and a getter is defined, will not modify the latter.
- * @template Type
- */
-
-/**
- * @typedef {Object} CacheOptions
- * @property {number} [timeout] - The duration (in milliseconds) after which the cache should expire.
- * @property {string | string[]} [onEvent] - A string of one or more space-separated event names or an array of
- * event names. The cache will be cleared when one of these events occur.
- * @property {() => boolean | Promise<boolean>} [onCallback] - A callback function that returns a boolean or a
- * promise resolving to a boolean. The cache will be cleared if the function returns true.
- * @property {number} [onCallbackFrequency] - The frequency (in milliseconds) at which the onCallback function is called.
- * @property {string | Function | (string | Function)[]} [onFieldChange] - The field or function names to watch for
- * changes. The cache will be cleared when any of these change. Multiple field names can be provided in the same.
- * @property {boolean} [clearOnNextFrame] - If set to true, the cache will be cleared on the next animation frame.
- * space-separated string.
- */
-
-/**
- * @typedef {Object} TurboProperties
- * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
- * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
- * properties if set.
- * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
- * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
- * generic type, if needed). The type also has the following described custom properties:
- *
- * @property {string} [id] - The ID of the element.
- * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
- * space-separated classes or an array of class names).
- * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
- * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
- * generate automatically a new style element in the element's corresponding root. Use the css literal function
- * for autocompletion.
- * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => void)>} [listeners]
- * - An object containing event listeners to be applied to this element.
- * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
- * the created element.
- * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
- * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
- * as name.
- * @property {string} [text] - The text content of the element (if any).
- * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
- *
- * @property alt
- * @property src
- * @property href
- * @property target
- * @property action
- * @property method
- * @property type
- * @property value
- * @property placeholder
- * @property name
- * @property disabled
- * @property checked
- * @property selected
- */
-
-/**
- * @typedef {Object} TransitionInterpolation
- * @description Represents a callback function that would return the appropriate transition value based on the index
- * and total count.
- */
-
-/**
- * @typedef {Object} TransitionStyles
- * @description Represents all types accepted by styles options and parameters for Transitions.
- */
-
-/**
- * @typedef {Object} TransitionProperties
- * @description Object containing properties for a Transition element.
- *
- * @property {string | string[]} [properties] - The CSS properties (or property) to apply the transition on. Takes a
- * string of whitespace-separated properties, or an array of strings. Set to `"all"` or don't specify to apply to all
- * CSS properties.
- * @property {number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>} [duration] -
- * The duration of the transition in seconds. Optionally, provide separate values for "in" and "out" transitions.
- * @property {string | PartialRecord<InOut, string>} [timingFunction] - The timing function to apply to the transition.
- * Optionally, provide separate values for "in" and "out" transitions.
- * @property {number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>} [delay] -
- * The delay of the transition in seconds. Optionally, provide separate values for "in" and "out" transitions.
- * @property {TransitionStyles | PartialRecord<InOut, TransitionStyles>} [defaultStyles] - The default styles
- * applied when transitioning, per transition direction ("in" or "out").
- * @property {TransitionInterpolation<void>} [beforeComputing] - Optional callback to be executed on all concerned
- * elements before computing and setting the transitions and styles.
- */
-
-/**
- * @typedef {Object} TransitionData
- * @description Object representing the data associated with a transition for an element.
- *
- * @property {HTMLElement} element - The element associated with the data.
- * @property {TransitionMode} [enabled=TransitionMode.enabled] - Indicates the transition mode of the transition
- * for the element.
- * @property {InOut} [lastState] - The last applied state (in or out) of the transition.
- * @property {PartialRecord<InOut, PartialRecord<keyof CSSStyleDeclaration, string | number> | null>} [resolvedStyles] -
- * The resolved styles to be applied for the transition.
- * @property {number} [elementIndex] - The position of the element for interpolation computations.
- * @property {number} [totalElementCount] - The total count of elements for interpolation computations.
- */
-
-/**
- * @typedef {Object} TransitionEntry
- * @description Object representing the properties of a transition entry.
- *
- * @property {string} property - The CSS property (or properties) to which the transition applies.
- * @property {number | TransitionInterpolation} duration - The duration of the transition in seconds.
- * @property {string} timingFunction - The timing function of the transition.
- * @property {number | TransitionInterpolation} delay - The delay of the transition in seconds.
- * @property {TransitionStyles} [defaultStyles] - The default styles applied when transitioning.
- */
-
-/**
- * @typedef {Object} StylesRoot
- * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
- */
-
-/**
- * @typedef {Object} StylesType
- * @description A type that represents types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
- * method).
- */
-
-/**
- * @typedef {Object} ChildHandler
- * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
- */
-
-/**
- * @typedef {Object} TurboButtonProperties
- * @description Properties object for configuring a Button. Extends TurboElementProperties.
- * @extends TurboProperties
- *
- * @property {string | Element} [buttonText] - The text content of the button.
- * @property {string | Element} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {string | Element} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {Element | Element[]} [leftCustomElements] - Custom elements
- * to be placed on the left side of the button (before the left icon).
- * @property {Element | Element[]} [rightCustomElements] - Custom elements
- * to be placed on the right side of the button (after the right icon).
- * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
- * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
- * a string). If not specified, the default text tag specified in the Button class will be used.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
- * to this instance of Button.
- */
-
-/**
- * @typedef {Object} ButtonChildren
- * @description Holds references to the button's child elements for internal management.
- *
- * @property {Element | Element[] | null} leftCustomElements - Elements placed
- * on the left side of the button.
- * @property {Element | null} leftIcon - The icon placed on the left side of the button.
- * @property {Element | null} text - The text element of the button.
- * @property {Element | null} rightIcon - The icon placed on the right side of the button.
- * @property {Element | Element[] | null} rightCustomElements - Elements placed
- * on the right side of the button.
- */
-
-/**
- * @typedef {Object} TurboButtonConfig
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {ValidTag} [defaultTextTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-
-/**
- * @typedef {Object} TurboIconProperties
- * @description Properties object that extends TurboElementProperties with properties specific to icons.
- * @extends TurboProperties
- *
- * @property {string} icon - The name of the icon.
- * @property {string} [iconColor] - The color of the icon.
- * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
- * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
- *
- * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
- * TurboIcon.config.type (whose default value is "svgManipulation").
- * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
- * TurboIcon.config.directory.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
- * TurboIcon.config.defaultClasses to this instance of Icon.
- */
-
-/**
- * @typedef {Object} TurboIconConfig
- * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
- *
- * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
- * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
- * directory once here to not type it again at every Icon generation.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
- */
-
-/**
- * @typedef {Object} TurboDropdownEntryProperties
- * @description Properties for configuring a DropdownEntry.
- * @extends TurboProperties
- *
- * @property {string} value - The value associated with the dropdown entry.
- * @property {boolean} [selected=false] - Indicates whether the entry is initially selected.
- * @property {string | string[]} [selectedClass=""] - CSS class(es) applied to the entry when it is selected.
- */
-
-/**
- * @typedef {Object} TurboDropdownProperties
- * @description Properties for configuring a Dropdown.
- * @extends TurboProperties
- *
- * @property {(string | TurboDropdownEntry)[]} values - The values or DropdownEntry instances to be used as dropdown options.
- * @property {string[]} [selectedValues=[]] - Array of values that are initially selected.
- * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
- * string is passed, a Button with the given string as text will be assigned as the selector.
- * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
- *
- * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- * @property {string} [underlyingInputName] - Name attribute for a hidden input element to store the selected value(s).
- * If not declared, the hidden input will not be created.
- *
- * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- * @property {ValidTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
- * default tag set in TurboConfig.Dropdown.
- *
- * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
- * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customPopupClasses] - Custom CSS class(es) for the popup container. Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
- */
-
-/**
- * @typedef {Object} TurboDropdownConfig
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultEntryTag] - The default HTML tag for the creation of generic
- * dropdown entries.
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-
-/**
- * @typedef {Object} TurboDropdownEntryProperties
- * @description Properties for configuring a DropdownEntry.
- * @extends TurboProperties
- *
- * @property {string} value - The value associated with the dropdown entry.
- * @property {boolean} [selected=false] - Indicates whether the entry is initially selected.
- * @property {string | string[]} [selectedClass=""] - CSS class(es) applied to the entry when it is selected.
- */
-
-/**
- * @typedef {Object} FontProperties
- * @description An object representing a local font, or a family of fonts.
- *
- * @property {string} name - The name of the font. The font's filename should also match.
- * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
- * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
- * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
- * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
- * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
- * @property {string} [format] - The format of the font. Defaults to "woff2".
- * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
- */
-
 var Turbo = (function (exports) {
     'use strict';
 
@@ -405,22 +118,24 @@ var Turbo = (function (exports) {
             }, setupKey);
             if (isGetter) {
                 descriptor.get = function () {
-                    if (!this[cacheKey]) {
-                        setupOptionsCallback.call(this, this);
-                        this[cacheKey] = originalMethod.apply(this);
+                    const instance = this || target;
+                    if (!instance[cacheKey]) {
+                        setupOptionsCallback.call(instance, instance);
+                        instance[cacheKey] = originalMethod.apply(instance);
                         if (options.timeout)
-                            timeoutIds.push(setTimeout(() => deleteCallback.call(this), options.timeout));
+                            timeoutIds.push(setTimeout(() => deleteCallback.call(instance), options.timeout));
                         if (options.clearOnNextFrame)
-                            requestAnimationFrame(() => deleteCallback.call(this));
+                            requestAnimationFrame(() => deleteCallback.call(instance));
                     }
-                    return this[cacheKey];
+                    return instance[cacheKey];
                 };
             }
             else {
                 descriptor.value = function (...args) {
-                    if (!this[cacheKey]) {
-                        this[cacheKey] = new Map();
-                        setupOptionsCallback.call(this, this);
+                    const instance = this || target;
+                    if (!instance[cacheKey]) {
+                        instance[cacheKey] = new Map();
+                        setupOptionsCallback.call(instance, instance);
                     }
                     const key = args.length == 0 ? "__no_args__" : JSON.stringify(args.map(value => {
                         if (typeof value == "function")
@@ -429,16 +144,16 @@ var Turbo = (function (exports) {
                             return JSON.stringify(Object.entries(value).sort());
                         return value == undefined ? "undefined" : value;
                     }));
-                    if (this[cacheKey].has(key)) {
-                        return this[cacheKey].get(key);
+                    if (instance[cacheKey].has(key)) {
+                        return instance[cacheKey].get(key);
                     }
                     else {
-                        const result = originalMethod.apply(this, args);
-                        this[cacheKey].set(key, result);
+                        const result = originalMethod.apply(instance, args);
+                        instance[cacheKey].set(key, result);
                         if (options.timeout)
-                            timeoutIds.push(setTimeout(() => this[cacheKey].delete(key), options.timeout));
+                            timeoutIds.push(setTimeout(() => instance[cacheKey].delete(key), options.timeout));
                         if (options.clearOnNextFrame)
-                            requestAnimationFrame(() => deleteCallback.call(this));
+                            requestAnimationFrame(() => deleteCallback.call(instance));
                         return result;
                     }
                 };
@@ -522,7 +237,6 @@ var Turbo = (function (exports) {
             console.warn(`No method ${propertyKey} found on target. It will be ignored.`);
             return;
         }
-        console.log(originalField);
         if (typeof originalField == "function") {
             instance[fieldName] = function (...args) {
                 deleteCallback.call(instance);
@@ -572,13 +286,6 @@ var Turbo = (function (exports) {
         if (cacheKey && instance[cacheKey])
             delete instance[cacheKey];
     }
-
-    /**
-     * @description Defines the element as a custom element with the given name. Use as class decorator in TypeScript
-     * (e.g.: @define("my-class")), and as a regular function call in JavaScript (e.g.: define("my-class")(MyClass)).
-     * @param {string} elementName - The name of the custom element.
-     */
-    const define = (elementName) => (constructor) => customElements.define(elementName, constructor);
 
     /**
      * @description Converts the passed variable into a string.
@@ -681,6 +388,16 @@ var Turbo = (function (exports) {
             return;
         return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
+
+    /**
+     * @description Defines the element as a custom element with the given name. Use as class decorator in TypeScript
+     * (e.g.: @define("my-class")), and as a regular function call in JavaScript (e.g.: define("my-class")(MyClass)).
+     * If the elementName is not provided, it defaults to the class name.
+     * @param {string} [elementName] - The name of the custom element.
+     */
+    const define = (elementName) => (constructor) => {
+        customElements.define(elementName || camelToKebabCase(constructor.name), constructor);
+    };
 
     function getPropertyDescriptor(prototype, field) {
         while (prototype) {
@@ -1111,758 +828,6 @@ var Turbo = (function (exports) {
         root.addChild(stylesheet);
     }
 
-    /******************************************************************************
-    Copyright (c) Microsoft Corporation.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose with or without fee is hereby granted.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-    PERFORMANCE OF THIS SOFTWARE.
-    ***************************************************************************** */
-    /* global Reflect, Promise, SuppressedError, Symbol */
-
-
-    function __decorate(decorators, target, key, desc) {
-        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-        return c > 3 && r && Object.defineProperty(target, key, r), r;
-    }
-
-    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-        var e = new Error(message);
-        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-    };
-
-    /**
-     * @enum {TransitionMode}
-     * @description Enum representing a transition mode. `stylesOnly` will disable the transition and only apply the
-     * corresponding style, while `transitionOnly` will disable setting styles and only apply the transition.
-     */
-    exports.TransitionMode = void 0;
-    (function (TransitionMode) {
-        TransitionMode["enabled"] = "enabled";
-        TransitionMode["disabled"] = "disabled";
-        TransitionMode["stylesOnly"] = "stylesOnly";
-        TransitionMode["transitionOnly"] = "transitionOnly";
-    })(exports.TransitionMode || (exports.TransitionMode = {}));
-
-    exports.Direction = void 0;
-    (function (Direction) {
-        Direction["vertical"] = "vertical";
-        Direction["horizontal"] = "horizontal";
-    })(exports.Direction || (exports.Direction = {}));
-    exports.InOut = void 0;
-    (function (InOut) {
-        InOut["in"] = "in";
-        InOut["out"] = "out";
-    })(exports.InOut || (exports.InOut = {}));
-    exports.AccessLevel = void 0;
-    (function (AccessLevel) {
-        AccessLevel["public"] = "public";
-        AccessLevel["protected"] = "protected";
-        AccessLevel["private"] = "private";
-    })(exports.AccessLevel || (exports.AccessLevel = {}));
-    exports.Range = void 0;
-    (function (Range) {
-        Range["min"] = "min";
-        Range["max"] = "max";
-    })(exports.Range || (exports.Range = {}));
-
-    function isNull(value) {
-        return value == null && value != undefined;
-    }
-    function isUndefined(value) {
-        return typeof value == "undefined";
-    }
-
-    function areEqual(...entries) {
-        if (entries.length < 2)
-            return true;
-        for (let i = 0; i < entries.length - 1; i++) {
-            if (entries[i] != entries[i + 1])
-                return false;
-        }
-        return true;
-    }
-    function eachEqualToAny(values, ...entries) {
-        if (entries.length < 1)
-            return true;
-        for (const entry of entries) {
-            let equals = false;
-            for (const value of values) {
-                if (entry == value)
-                    equals = true;
-            }
-            if (!equals)
-                return false;
-        }
-        return true;
-    }
-
-    /**
-     * @class Transition
-     * @description A class representing a CSS transition. It has two states (in and out), which you can set up
-     * almost independently (they must only share the animation properties). Use a Transition to transition one or more
-     * HTMLElement(s) easily.
-     */
-    class Transition {
-        inTransition;
-        outTransition;
-        attachedElements;
-        /**
-         * @description Callback executed on the concerned elements before applying their transition/styles.
-         */
-        beforeComputing;
-        /**
-         * @constructor
-         * @param {TransitionProperties} [properties={}] - The transition properties to apply to this newly created
-         * Transition.
-         */
-        constructor(properties = {}) {
-            this.attachedElements = new Set();
-            this.enabled = true;
-            for (const direction of [exports.InOut.in, exports.InOut.out]) {
-                this[`${direction}Transition`] = {
-                    properties: ["all"],
-                    duration: 0,
-                    delay: 0,
-                    timingFunction: "linear"
-                };
-            }
-            this.update(properties);
-        }
-        //Set management
-        /**
-         * @function attach
-         * @description Attach one or more elements to the transition.
-         * @param {...HTMLElement} elements - The element(s) to attach.
-         * @returns {this} The transition itself.
-         */
-        attach(...elements) {
-            elements.forEach(element => {
-                if (this.findData(element))
-                    return;
-                this.attachedElements.add({ element: element, enabled: exports.TransitionMode.enabled });
-                element.transitions.attach(this);
-            });
-            return this;
-        }
-        /**
-         * @function detach
-         * @description Detach one or more elements from the transition.
-         * @param {...HTMLElement} elements - The element(s) to detach.
-         * @returns {this} The transition itself.
-         */
-        detach(...elements) {
-            elements.forEach(element => {
-                const data = this.findData(element);
-                if (!data)
-                    return;
-                this.attachedElements.delete(data);
-                element.transitions.detach(this);
-            });
-            return this;
-        }
-        //Transition methods
-        /**
-         * @function initialize
-         * @description Initializes the element to the corresponding transition direction and styles. Interpolation values
-         * will be computed from the provided array (or element).
-         * @param {InOut} [direction=InOut.out] - The direction of the transition.
-         * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-         * transition will be applied. Defaults to the transition's attached elements.
-         * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-         * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-         * of attached elements (containing both previous and new elements).
-         * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @param {TransitionStyles} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-         * not set any styles on the element(s).
-         * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-         * on all concerned elements before returning the elements' list.
-         * @returns {this} Itself for method chaining.
-         */
-        initialize(direction = exports.InOut.out, elements, executeForAll = false, recomputeIndices = true, overrideStyles, overrideBeforeComputing = this.beforeComputing) {
-            this.getEnabledEntriesData(elements, executeForAll, recomputeIndices, overrideBeforeComputing)
-                .forEach((data) => {
-                data.lastState = direction;
-                this.resolveAndOverrideStyles(data, { [direction]: overrideStyles });
-                data.element.setStyles(data.resolvedStyles[direction]);
-            });
-            return this;
-        }
-        /**
-         * @function apply
-         * @description Applies the transition (in or out) to the provided element(s). Interpolation values will be
-         * computed from the provided array (or element).
-         * @param {InOut} [direction=InOut.out] - The direction of the transition.
-         * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-         * transition will be applied. Defaults to the transition's attached elements.
-         * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-         * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-         * of attached elements (containing both previous and new elements).
-         * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @param {TransitionStyles} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-         * not set any styles on the element(s).
-         * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-         * on all concerned elements before returning the elements' list.
-         * @returns {this} Itself for method chaining.
-         */
-        apply(direction = exports.InOut.out, elements, executeForAll = false, recomputeIndices = true, overrideStyles, overrideBeforeComputing = this.beforeComputing) {
-            this.getEnabledEntriesData(elements, executeForAll, recomputeIndices, overrideBeforeComputing)
-                .forEach((data) => {
-                data.lastState = direction;
-                this.resolveAndOverrideStyles(data, { [direction]: overrideStyles });
-                data.element.transitions.reload();
-            });
-            return this;
-        }
-        /**
-         * @function toggle
-         * @description Toggles the transition (in or out) for the provided element(s). Interpolation values will be
-         * computed from the provided array (or element).
-         * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-         * transition will be applied. Defaults to the transition's attached elements.
-         * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-         * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-         * of attached elements (containing both previous and new elements).
-         * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @param {PartialRecord<InOut, TransitionStyles>} [overrideStyles] - Optional styles to override the defaults.
-         * Set to `Record<InOut, null>` or `null` to not set any styles on the element(s).
-         * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-         * on all concerned elements before returning the elements' list.
-         * @returns {this} Itself for method chaining.
-         */
-        toggle(elements, executeForAll = false, recomputeIndices = true, overrideStyles, overrideBeforeComputing = this.beforeComputing) {
-            this.getEnabledEntriesData(elements, executeForAll, recomputeIndices, overrideBeforeComputing)
-                .forEach((data) => {
-                if (!data.lastState)
-                    data.lastState = this.stateOf(data.element) || exports.InOut.out;
-                data.lastState = data.lastState == exports.InOut.out ? exports.InOut.in : exports.InOut.out;
-                this.resolveAndOverrideStyles(data, overrideStyles);
-                data.element.transitions.reload();
-            });
-            return this;
-        }
-        /**
-         * @function getEnabledEntriesData
-         * @description Resolves the provided elements into an array, attaches all those who aren't already attached,
-         * skips if disabled, update indices, and executes the beforeComputing callback on the indicated list of elements.
-         * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-         * transition will be applied. Defaults to the transition's attached elements.
-         * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-         * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-         * of attached elements (containing both previous and new elements).
-         * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-         * on all concerned elements before returning the elements' list.
-         * @returns {this} Itself for method chaining.
-         */
-        getEnabledEntriesData(elements, executeForAll = false, recomputeIndices = true, overrideBeforeComputing = this.beforeComputing) {
-            if (this.enabled == exports.TransitionMode.disabled) {
-                console.warn("The transition you are trying to set on an element is disabled.");
-                return [];
-            }
-            if (!elements)
-                elements = [];
-            else if (elements instanceof HTMLCollection)
-                elements = Array.from(elements);
-            else if (!Array.isArray(elements))
-                elements = [elements];
-            if (elements.length == 0)
-                executeForAll = true;
-            elements.forEach(element => this.attach(element));
-            if (executeForAll) {
-                elements = [];
-                this.attachedElements.forEach(entry => elements.push(entry.element));
-            }
-            const enabledElementsData = [];
-            elements.forEach((element) => {
-                if (element.transitions.enabled == exports.TransitionMode.disabled) {
-                    console.warn("The transition handler of the element you are trying to animate is disabled.");
-                    return;
-                }
-                const data = this.findData(element);
-                if (data.enabled == exports.TransitionMode.disabled) {
-                    console.warn("The transition you are trying to set on an element is disabled for this " +
-                        "particular element.");
-                    return;
-                }
-                if (recomputeIndices || data.elementIndex == undefined)
-                    data.elementIndex = enabledElementsData.length;
-                enabledElementsData.push(data);
-            });
-            enabledElementsData.forEach(data => {
-                if (recomputeIndices || data.totalElementCount == undefined) {
-                    data.totalElementCount = enabledElementsData.length;
-                }
-                if (overrideBeforeComputing) {
-                    overrideBeforeComputing(data.elementIndex, data.totalElementCount, data.element);
-                }
-            });
-            return enabledElementsData;
-        }
-        /**
-         * @function reload
-         * @description Reloads the transitions for all the attached elements, without recomputing styles.
-         * @returns {this} Itself for method chaining.
-         */
-        reload() {
-            this.attachedElements.forEach(data => data.element.transitions.reload());
-            return this;
-        }
-        /**
-         * @function reloadFor
-         * @description Generates the transition CSS string for the provided transition with the correct interpolation
-         * information.
-         * @param {HTMLElement} element - The element to apply the string to.
-         * @returns {this} Itself for method chaining.
-         */
-        reloadFor(element) {
-            if (this.enabled == exports.TransitionMode.disabled
-                || element.transitions.enabled == exports.TransitionMode.disabled)
-                return this;
-            const data = this.findData(element);
-            if (!data || data.enabled == exports.TransitionMode.disabled)
-                return this;
-            const direction = data.lastState;
-            const setTransition = eachEqualToAny([exports.TransitionMode.enabled, exports.TransitionMode.transitionOnly], this.enabled, element.transitions.enabled, data.enabled)
-                && (this.duration[direction] != 0 || this.delay[direction] != 0);
-            const setStyles = eachEqualToAny([exports.TransitionMode.enabled, exports.TransitionMode.stylesOnly], this.enabled, element.transitions.enabled, data.enabled);
-            if (setTransition)
-                element.appendStyle("transition", this.getTransitionString(data), ", ", true);
-            if (setStyles)
-                element.setStyles(data.resolvedStyles[direction], true);
-            return this;
-        }
-        //Getters and setters
-        /**
-         * @description The enabled state of the transition. Modifying it will automatically reload the transition for
-         * all attached elements.
-         */
-        set enabled(value) {
-            this.reload();
-        }
-        /**
-         * @description The properties (or property) being transitioned.
-         */
-        get properties() {
-            return this.inTransition.properties;
-        }
-        set properties(value) {
-            if (!value)
-                return;
-            value = typeof value == "string" ? value.split(" ") : value;
-            this.inTransition.properties = value;
-            this.outTransition.properties = value;
-        }
-        /**
-         * @description The duration of the transition.
-         */
-        get duration() {
-            return this.getTransitionField("duration");
-        }
-        set duration(value) {
-            this.setTransitionField(value, "duration");
-        }
-        /**
-         * @description The timing function of the transition.
-         */
-        get timingFunction() {
-            return this.getTransitionField("timingFunction");
-        }
-        set timingFunction(value) {
-            this.setTransitionField(value, "timingFunction");
-        }
-        /**
-         * @description The delay of the transition.
-         */
-        get delay() {
-            return this.getTransitionField("delay");
-        }
-        set delay(value) {
-            this.setTransitionField(value, "delay");
-        }
-        /**
-         * @description The default styles applied when transitioning.
-         */
-        get defaultStyles() {
-            return this.getTransitionField("defaultStyles");
-        }
-        set defaultStyles(value) {
-            this.setTransitionField(value, "defaultStyles");
-        }
-        /**
-         * @description The transition string for the in direction.
-         */
-        get inTransitionString() {
-            return this.getTransitionString({ ...this.attachedElements[0], lastState: exports.InOut.in });
-        }
-        /**
-         * @description The transition string for the out direction.
-         */
-        get outTransitionString() {
-            return this.getTransitionString({ ...this.attachedElements[0], lastState: exports.InOut.out });
-        }
-        //Data manipulation utilities
-        /**
-         * @function update
-         * @description Function to update certain (or every) parameter in the Transition.
-         * @param {TransitionProperties} [properties={}] - The new transition properties.
-         */
-        update(properties = {}) {
-            if (!properties)
-                return;
-            if (properties.beforeComputing)
-                this.beforeComputing = properties.beforeComputing;
-            for (const [field, value] of Object.entries(properties)) {
-                this[field] = value;
-            }
-        }
-        /**
-         * @function enableTransitionFor
-         * @description Enable or disable the transition for a specific element.
-         * @param {HTMLElement} element - The element to enable or disable the transition for.
-         * @param {TransitionMode | boolean} state - The state to set (enabled, disabled, or styleOnly).
-         */
-        enableTransitionFor(element, state) {
-            const data = this.findData(element);
-            state = Transition.parseMode(state);
-            if (!data || data.enabled == state)
-                return;
-            data.enabled = state;
-            element.transitions.reload();
-        }
-        /**
-         * @private
-         * @function getTransitionField
-         * @description Gets the specified field for both in and out states.
-         * @param {string} field - The field to get.
-         * @returns {Record<InOut, Type>}
-         */
-        getTransitionField(field) {
-            return { [exports.InOut.in]: this.inTransition[field], [exports.InOut.out]: this.outTransition[field] };
-        }
-        /**
-         * @private
-         * @function setTransitionField
-         * @description Sets the specified field for both in and out states.
-         * @param {Type | PartialRecord<InOut, Type>} value - The value to set.
-         * @param {string} field - The field to set.
-         */
-        setTransitionField(value, field) {
-            if (value == undefined)
-                return;
-            const isInOutRecord = typeof value == "object" && ("in" in value || "out" in value);
-            [exports.InOut.in, exports.InOut.out].forEach(direction => this[`${direction}Transition`][field] = isInOutRecord ? value[direction] : value);
-        }
-        //Information gathering utilities
-        /**
-         * @private
-         * @function findData
-         * @description Find the data entry for a given element.
-         * @param {HTMLElement} element - The element to find the data of.
-         * @returns {TransitionData} The corresponding transition data.
-         */
-        findData(element) {
-            for (const entry of this.attachedElements) {
-                if (entry.element == element)
-                    return entry;
-            }
-            return null;
-        }
-        /**
-         * @function stateOf
-         * @description Determine the current state (In or Out) of the transition on the provided element.
-         * @param {HTMLElement} element - The element to determine the state for.
-         * @returns {InOut | undefined} - The current state of the transition or undefined if not determinable.
-         */
-        stateOf(element) {
-            if (!element)
-                return undefined;
-            const data = this.findData(element);
-            if (!data)
-                return undefined;
-            if (data.lastState)
-                return data.lastState;
-            if (!data.resolvedStyles)
-                this.resolveAndOverrideStyles(data);
-            for (const direction of [exports.InOut.in, exports.InOut.out]) {
-                if (!data.resolvedStyles[direction])
-                    continue;
-                let matches = true;
-                for (const [property, value] of Object.entries(data.resolvedStyles[direction])) {
-                    if (data.element.style[property] != value) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (!matches)
-                    continue;
-                data.lastState = direction;
-                return direction;
-            }
-            return undefined;
-        }
-        //Other utilities
-        /**
-         * @description Clone the transition to create a new copy with the same properties but no attached elements.
-         * @returns {Transition} - The new transition.
-         */
-        clone() {
-            return new Transition({
-                properties: this.properties,
-                duration: this.duration,
-                timingFunction: this.timingFunction,
-                delay: this.delay,
-                defaultStyles: this.defaultStyles,
-            });
-        }
-        /**
-         * @function getTransitionString
-         * @description Gets the CSS transition string for the specified direction.
-         * @param {TransitionData} data - The target element's transition data entry.
-         * @returns {string} The CSS transition string.
-         */
-        getTransitionString(data) {
-            const transition = this[`${data.lastState}Transition`];
-            const duration = typeof transition.duration == "function"
-                ? transition.duration(data.elementIndex, data.totalElementCount, data.element)
-                : transition.duration;
-            const delay = typeof transition.delay == "function"
-                ? transition.delay(data.elementIndex, data.totalElementCount, data.element)
-                : transition.delay;
-            let transitionString = "";
-            this.properties.forEach(property => transitionString
-                += `, ${property} ${duration}s ${transition.timingFunction} ${delay}s`);
-            return transitionString.substring(2);
-        }
-        /**
-         * @private
-         * @description Computes interpolations and resolves accepted styles for transitions into a record of properties
-         * to values. Stores the resolved styles in the element's data.
-         * @param {TransitionData} data - The concerned transition data.
-         * @param {TransitionStyles} overrideStyles - The styles to override.
-         */
-        resolveAndOverrideStyles(data, overrideStyles) {
-            if (isNull(overrideStyles)) {
-                data.resolvedStyles = {};
-                return;
-            }
-            const defaultStyles = this.defaultStyles;
-            overrideStyles = overrideStyles || {};
-            if (!data.resolvedStyles)
-                data.resolvedStyles = {};
-            [exports.InOut.in, exports.InOut.out].forEach(direction => {
-                if (isNull(overrideStyles[direction])) {
-                    data.resolvedStyles[direction] = {};
-                    return;
-                }
-                const stylesEntry = overrideStyles[direction] ?? defaultStyles[direction];
-                data.resolvedStyles[direction] = {};
-                switch (typeof stylesEntry) {
-                    case "number":
-                        this.properties.forEach(property => data.resolvedStyles[direction][property] = stylesEntry);
-                        return;
-                    case "string":
-                        const splitStyles = stylesEntry.split(";")
-                            .map(entry => entry.split(":")
-                            .map(part => part.trim()));
-                        if (splitStyles.length == 1 && splitStyles[0].length == 1)
-                            this.properties
-                                .forEach(property => data.resolvedStyles[direction][property] = splitStyles[0][0]);
-                        else
-                            splitStyles.forEach(([field, value]) => {
-                                if (field && value)
-                                    data.resolvedStyles[direction][field] = value;
-                            });
-                        return;
-                    case "object":
-                        for (const [field, value] of Object.entries(stylesEntry)) {
-                            if (!field || value == undefined)
-                                continue;
-                            data.resolvedStyles[direction][field] = typeof value == "function"
-                                ? value(data.elementIndex, data.totalElementCount) : value;
-                        }
-                        return;
-                    case "function":
-                        const result = stylesEntry(data.elementIndex, data.totalElementCount, data.element);
-                        if (typeof result == "string" || typeof result == "number") {
-                            this.properties.forEach(property => data.resolvedStyles[direction][property] = result);
-                        }
-                        else
-                            data.resolvedStyles[direction] = result;
-                        return;
-                }
-            });
-        }
-        //Static utilities
-        /**
-         * @function parseMode
-         * @description Parse the transition mode from a boolean or TransitionMode.
-         * @param {boolean | TransitionMode} state - The state to parse.
-         * @returns {TransitionMode} The parsed transition mode.
-         */
-        static parseMode(state) {
-            if (state == true)
-                return exports.TransitionMode.enabled;
-            else if (state == false)
-                return exports.TransitionMode.disabled;
-            else
-                return state;
-        }
-    }
-    __decorate([
-        auto({ callBefore: Transition.parseMode })
-    ], Transition.prototype, "enabled", null);
-    function transition(properties = {}) {
-        return new Transition(properties);
-    }
-
-    /**
-     * @class TransitionHandler
-     * @description A class to handle transitions for an attached element.
-     */
-    class TransitionHandler {
-        attachedElement;
-        transitions;
-        /**
-         * @constructor
-         * @param {HTMLElement} attachedElement - The element to attach transitions to.
-         */
-        constructor(attachedElement) {
-            this.attachedElement = attachedElement;
-            this.transitions = new Set();
-            this.enabled = true;
-        }
-        //Set management
-        /**
-         * @function attach
-         * @description Attach one or more transitions to the element.
-         * @param {Transition} transitions - The transition(s) to attach.
-         * @returns {this} The element's TransitionHandler instance.
-         */
-        attach(...transitions) {
-            transitions.forEach(transition => {
-                if (this.transitions.has(transition))
-                    return;
-                this.transitions.add(transition);
-                transition.attach(this.attachedElement);
-            });
-            return this;
-        }
-        /**
-         * @function detach
-         * @description Detach one or more transitions from the element.
-         * @param {Transition} transitions - The transition(s) to detach.
-         * @returns {this} The element's TransitionHandler instance.
-         */
-        detach(...transitions) {
-            transitions.forEach(transition => {
-                if (!this.transitions.has(transition))
-                    return;
-                this.transitions.delete(transition);
-                transition.detach(this.attachedElement);
-            });
-            return this;
-        }
-        //Transition methods
-        /**
-         * @function initialize
-         * @description Initializes the element to the corresponding transition direction and styles.
-         * @param {Transition} transition - The transition to initialize.
-         * @param {InOut} direction - The direction of the transition.
-         * @param {TransitionStyles | null} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-         * not set any styles on the element.
-         * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @returns {this} The element's TransitionHandler instance.
-         */
-        initialize(transition, direction, overrideStyles, recomputeIndices = false) {
-            transition.initialize(direction, this.attachedElement, false, recomputeIndices, overrideStyles);
-            return this;
-        }
-        /**
-         * @function apply
-         * @description Apply a transition to the element.
-         * @param {Transition} transition - The transition to apply.
-         * @param {InOut} direction - The direction of the transition.
-         * @param {TransitionStyles | null} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-         * not set any styles on the element.
-         * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @returns {this} The element's TransitionHandler instance.
-         */
-        apply(transition, direction, overrideStyles, recomputeIndices = false) {
-            transition.apply(direction, this.attachedElement, false, recomputeIndices, overrideStyles);
-            return this;
-        }
-        /**
-         * @function toggle
-         * @description Toggle the provided transition on the element.
-         * @param {Transition} transition - The transition to apply.
-         * @param {PartialRecord<InOut, TransitionStyles | null>} [overrideStyles] - Optional styles to override the
-         * defaults. Set to a `Record<InOut, null>` or `null` to not set any styles on the element.
-         * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-         * based on the passed elements list.
-         * @returns {this} The element's TransitionHandler instance.
-         */
-        toggle(transition, overrideStyles, recomputeIndices = false) {
-            transition.toggle(this.attachedElement, false, recomputeIndices, overrideStyles);
-            return this;
-        }
-        /**
-         * @private
-         * @function clear
-         * @description Clears the set transition styles on the element.
-         */
-        clear() {
-            this.attachedElement.style.transition = "";
-        }
-        /**
-         * @function reload
-         * @description Reloads all transitions attached to the element. Doesn't recompute styles.
-         */
-        reload() {
-            this.clear();
-            this.transitions.forEach(transition => transition.reloadFor(this.attachedElement));
-        }
-        //State management
-        /**
-         * @description Dictates whether the transitions on the element are enabled. Will automatically remove/reload
-         * the transitions when set.
-         * @param value
-         */
-        set enabled(value) {
-            if (value)
-                this.reload();
-            else
-                this.clear();
-        }
-        /**
-         * @description Enable or disable a certain transition for this element only. Will automatically remove/add back
-         * the transition when set.
-         * @param transition
-         * @param state
-         */
-        enableTransition(transition, state) {
-            transition.enableTransitionFor(this.attachedElement, state);
-        }
-    }
-    __decorate([
-        auto({ callBefore: (value) => Transition.parseMode(value) })
-    ], TransitionHandler.prototype, "enabled", null);
-
     /**
      * @class TurboElement
      * @extends HTMLElement
@@ -1956,10 +921,16 @@ var Turbo = (function (exports) {
         //Readonly fields
         /**
          * @description The child handler object associated with the node. It is the node itself (if it is handling
-         * its children) or its shadow root (if defined).
+         * its children) or its shadow root (if defined). Set it to change the node where the children are added/removed/
+         * queried from when manipulating the node's children.
          */
         Object.defineProperty(Node.prototype, "childHandler", {
+            set: function (value) {
+                this["__childHandler__"] = value;
+            },
             get: function () {
+                if (this["__childHandler__"])
+                    return this["__childHandler__"];
                 if (this instanceof Element && this.shadowRoot)
                     return this.shadowRoot;
                 return this;
@@ -2008,6 +979,14 @@ var Turbo = (function (exports) {
             enumerable: true
         });
         //Self manipulation
+        Node.prototype.bringToFront = function _bringToFront() {
+            this.parentNode?.addChild(this);
+            return this;
+        };
+        Node.prototype.sendToBack = function _sendToBack() {
+            this.parentNode?.addChild(this, 0);
+            return this;
+        };
         /**
          * @description Removes the node from the document.
          * @returns {this} Itself, allowing for method chaining.
@@ -2503,10 +1482,6 @@ var Turbo = (function (exports) {
     }
 
     function addStylesManipulationToElementPrototype() {
-        const showTransition = new Transition({
-            properties: "visibility",
-            defaultStyles: { in: "visible", out: "hidden" }
-        });
         /**
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
          */
@@ -2524,43 +1499,6 @@ var Turbo = (function (exports) {
             enumerable: true
         });
         /**
-         * @description Adds a readonly "transitions" property to HTMLElement prototype.
-         */
-        Object.defineProperty(HTMLElement.prototype, "transitions", {
-            get: function () {
-                if (!this._transitions)
-                    this._transitions = new TransitionHandler(this);
-                return this._transitions;
-            },
-            configurable: false,
-            enumerable: true
-        });
-        /**
-         * @description Adds a configurable "showTransition" property to HTMLElement prototype. Defaults to a global
-         * transition assigned to all elements.
-         */
-        Object.defineProperty(HTMLElement.prototype, "showTransition", {
-            value: showTransition,
-            writable: true,
-            configurable: true,
-            enumerable: true
-        });
-        /**
-         * @description Boolean indicating whether the element is shown or not, based on its showTransition.
-         */
-        Object.defineProperty(HTMLElement.prototype, "isShown", {
-            get: function () {
-                const state = this.showTransition.stateOf(this);
-                if (state == exports.InOut.in)
-                    return true;
-                else if (state == exports.InOut.out)
-                    return false;
-                return this.style.display != "none" && this.style.visibility != "hidden" && this.style.opacity != "0";
-            },
-            configurable: false,
-            enumerable: true
-        });
-        /**
          * @description Set a certain style attribute of the element to the provided value.
          * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
          * @param {string | number} value - A string representing the value to set the attribute to.
@@ -2568,8 +1506,10 @@ var Turbo = (function (exports) {
          * animation frame.
          * @returns {this} Itself, allowing for method chaining.
          */
-        HTMLElement.prototype.setStyle = function _setStyle(attribute, value, instant = false) {
+        Node.prototype.setStyle = function _setStyle(attribute, value, instant = false) {
             if (!attribute || value == undefined)
+                return this;
+            if (!(this instanceof HTMLElement) && !(this instanceof SVGElement))
                 return this;
             if (!this.pendingStyles)
                 this.pendingStyles = {};
@@ -2590,8 +1530,10 @@ var Turbo = (function (exports) {
          * animation frame.
          * @returns {this} Itself, allowing for method chaining.
          */
-        HTMLElement.prototype.appendStyle = function _appendStyle(attribute, value, separator = ", ", instant = false) {
+        Node.prototype.appendStyle = function _appendStyle(attribute, value, separator = ", ", instant = false) {
             if (!attribute || value == undefined)
+                return this;
+            if (!(this instanceof HTMLElement) && !(this instanceof SVGElement))
                 return this;
             if (!this.pendingStyles)
                 this.pendingStyles = {};
@@ -2613,8 +1555,10 @@ var Turbo = (function (exports) {
          * animation frame.
          * @returns {this} Itself, allowing for method chaining.
          */
-        HTMLElement.prototype.setStyles = function _setStyles(styles, instant = false) {
+        Node.prototype.setStyles = function _setStyles(styles, instant = false) {
             if (!styles || typeof styles == "number")
+                return this;
+            if (!(this instanceof HTMLElement) && !(this instanceof SVGElement))
                 return this;
             if (!this.pendingStyles)
                 this.pendingStyles = {};
@@ -2642,7 +1586,9 @@ var Turbo = (function (exports) {
         /**
          * @description Apply the pending styles to the element.
          */
-        HTMLElement.prototype.applyStyles = function _applyStyles() {
+        Node.prototype.applyStyles = function _applyStyles() {
+            if (!(this instanceof HTMLElement) && !(this instanceof SVGElement))
+                return;
             requestAnimationFrame(() => {
                 for (const property in this.pendingStyles) {
                     if (property == "cssText")
@@ -2653,17 +1599,1111 @@ var Turbo = (function (exports) {
                 this.pendingStyles = {};
             });
         };
+    }
+
+    exports.Direction = void 0;
+    (function (Direction) {
+        Direction["vertical"] = "vertical";
+        Direction["horizontal"] = "horizontal";
+    })(exports.Direction || (exports.Direction = {}));
+    exports.Side = void 0;
+    (function (Side) {
+        Side["top"] = "top";
+        Side["bottom"] = "bottom";
+        Side["left"] = "left";
+        Side["right"] = "right";
+    })(exports.Side || (exports.Side = {}));
+    exports.InOut = void 0;
+    (function (InOut) {
+        InOut["in"] = "in";
+        InOut["out"] = "out";
+    })(exports.InOut || (exports.InOut = {}));
+    exports.OnOff = void 0;
+    (function (OnOff) {
+        OnOff["on"] = "on";
+        OnOff["off"] = "off";
+    })(exports.OnOff || (exports.OnOff = {}));
+    exports.Open = void 0;
+    (function (Open) {
+        Open["open"] = "open";
+        Open["closed"] = "closed";
+    })(exports.Open || (exports.Open = {}));
+    exports.Shown = void 0;
+    (function (Shown) {
+        Shown["visible"] = "visible";
+        Shown["hidden"] = "hidden";
+    })(exports.Shown || (exports.Shown = {}));
+    exports.AccessLevel = void 0;
+    (function (AccessLevel) {
+        AccessLevel["public"] = "public";
+        AccessLevel["protected"] = "protected";
+        AccessLevel["private"] = "private";
+    })(exports.AccessLevel || (exports.AccessLevel = {}));
+    exports.Range = void 0;
+    (function (Range) {
+        Range["min"] = "min";
+        Range["max"] = "max";
+    })(exports.Range || (exports.Range = {}));
+
+    /**
+     * @class ReifectHandler
+     * @description A class to handle reifects for an attached element.
+     * @template {object = Node} ClassType
+     */
+    class ReifectHandler {
+        attachedNode;
+        reifects;
+        _enabled;
+        /**
+         * @constructor
+         * @param {Node} attachedNode - The element to attach transitions to.
+         */
+        constructor(attachedNode) {
+            this.attachedNode = attachedNode;
+            this.reifects = [];
+            this._enabled = {};
+            this.enabled = true;
+        }
+        //Set management
+        /**
+         * @function attach
+         * @description Attach one or more transitions to the element.
+         * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to attach.
+         * @returns {this} The element's TransitionHandler instance.
+         */
+        attach(...reifects) {
+            reifects.forEach(entry => {
+                if (this.reifects.some(ref => ref.deref() == entry))
+                    return;
+                this.reifects.push(new WeakRef(entry));
+                entry.attach(this.attachedNode);
+            });
+            return this;
+        }
+        /**
+         * @function detach
+         * @description Detach one or more transitions from the element.
+         * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to detach.
+         * @returns {this} The element's TransitionHandler instance.
+         */
+        detach(...reifects) {
+            reifects.forEach(entry => {
+                const attachedEntry = this.reifects.find(ref => ref.deref() == entry);
+                if (!attachedEntry)
+                    return;
+                this.reifects.splice(this.reifects.indexOf(attachedEntry), 1);
+                entry.detach(this.attachedNode);
+            });
+            return this;
+        }
+        //Transition methods
+        /**
+         * @function initialize
+         * @description Initializes the element to the corresponding transition direction and styles.
+         * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+         * @param {InOut} direction - The direction of the transition.
+         * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
+         * `null` to not set any styles on the element.
+         * @returns {this} The element's TransitionHandler instance.
+         * @template {string | symbol | number} State
+         * @template {object} ClassType
+         */
+        initialize(reifect, direction, options) {
+            reifect.initialize(direction, this.attachedNode, options);
+            return this;
+        }
+        /**
+         * @function initialize
+         * @description Initializes the element to the corresponding transition direction and styles.
+         * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+         * @param {InOut} direction - The direction of the transition.
+         * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to `null` to
+         * not set any styles on the element.
+         * @returns {this} The element's TransitionHandler instance.
+         * @template {string | symbol | number} State
+         * @template {object} ClassType
+         */
+        apply(reifect, direction, options) {
+            reifect.apply(direction, this.attachedNode, options);
+            return this;
+        }
+        /**
+         * @function initialize
+         * @description Initializes the element to the corresponding transition direction and styles.
+         * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+         * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
+         * `null` to not set any styles on the element.
+         * @returns {this} The element's TransitionHandler instance.
+         * @template {string | symbol | number} State
+         * @template {object} ClassType
+         */
+        toggle(reifect, options) {
+            reifect.toggle(this.attachedNode, options);
+            return this;
+        }
+        /**
+         * @private
+         * @function clear
+         * @description Clears the set transition styles on the element.
+         */
+        clear() {
+            if (!(this.attachedNode instanceof Node))
+                return;
+            this.attachedNode.setStyle("transition", "", true);
+        }
+        /**
+         * @function reload
+         * @description Reloads all transitions attached to the element. Doesn't recompute styles.
+         */
+        reload() {
+            this.clear();
+            this.reifects.forEach(reifect => reifect.deref()?.reloadFor(this.attachedNode));
+        }
+        /**
+         * @function reload
+         * @description Reloads all transitions attached to the element. Doesn't recompute styles.
+         */
+        reloadTransitions() {
+            this.clear();
+            this.reifects.forEach(reifect => reifect.deref()?.reloadTransitionFor(this.attachedNode));
+        }
+        //State management
+        /**
+         * @description The enabled state of the reifect (as a {@link ReifectEnabledState}). Setting it to a boolean will
+         * accordingly update the value of `enabled.global`.
+         */
+        get enabled() {
+            return this._enabled;
+        }
+        set enabled(value) {
+            if (typeof value == "boolean")
+                this._enabled.global = value;
+            else if (!value)
+                return;
+            else
+                for (const [key, state] of Object.entries(value)) {
+                    this._enabled[key] = state;
+                }
+        }
+        getEnabledState(reifect) {
+            return reifect.getEnabledState(this.attachedNode);
+        }
+        setEnabledState(reifect, value) {
+            reifect.setEnabledState(this.attachedNode, value);
+        }
+    }
+
+    function isNull(value) {
+        return value == null && value != undefined;
+    }
+    function isUndefined(value) {
+        return typeof value == "undefined";
+    }
+
+    function areEqual(...entries) {
+        if (entries.length < 2)
+            return true;
+        for (let i = 0; i < entries.length - 1; i++) {
+            if (entries[i] != entries[i + 1])
+                return false;
+        }
+        return true;
+    }
+    function equalToAny(entry, ...values) {
+        if (values.length < 1)
+            return true;
+        for (const value of values) {
+            if (entry == value)
+                return true;
+        }
+        return false;
+    }
+    function eachEqualToAny(values, ...entries) {
+        if (entries.length < 1)
+            return true;
+        for (const entry of entries) {
+            let equals = false;
+            for (const value of values) {
+                if (entry == value)
+                    equals = true;
+            }
+            if (!equals)
+                return false;
+        }
+        return true;
+    }
+
+    function trim(value, max, min = 0) {
+        if (value < min)
+            value = min;
+        if (value > max)
+            value = max;
+        return value;
+    }
+    function mod(value, modValue = 0) {
+        while (value < 0)
+            value += modValue;
+        while (value >= modValue)
+            value -= modValue;
+        return value;
+    }
+
+    /**
+     * @class StatefulReifect
+     * @description A class to manage and apply dynamic state-based properties, styles, classes, and transitions to a
+     * set of objects.
+     *
+     * @template {string | number | symbol} State - The type of the reifier's states.
+     * @template {object} ClassType - The object type this reifier will be applied to.
+     */
+    class StatefulReifect {
+        //List of attached objects
+        attachedObjects;
+        _states;
+        _enabled;
+        values;
+        /**
+         * @description Creates an instance of StatefulReifier.
+         * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
+         */
+        constructor(properties) {
+            this.attachedObjects = [];
+            if (properties.attachedObjects)
+                this.attachAll(...properties.attachedObjects);
+            //Initializing enabled state
+            this._enabled = {
+                global: true, properties: true, classes: true, styles: true,
+                replaceWith: true, transition: true
+            };
+            this.values = {
+                properties: properties.properties || {},
+                classes: properties.classes || {},
+                styles: properties.styles || {},
+                replaceWith: properties.replaceWith || {},
+                transitionProperties: properties.transitionProperties || ["all"],
+                transitionDuration: properties.transitionDuration || 0,
+                transitionTimingFunction: properties.transitionTimingFunction || "linear",
+                transitionDelay: properties.transitionDelay || 0,
+            };
+            //Disable transition if undefined
+            if (!properties.transitionProperties && !properties.transitionDuration
+                && !properties.transitionTimingFunction && !properties.transitionDelay)
+                this.enabled.transition = false;
+            this.states = properties.states;
+        }
+        //Attached objects management
+        /**
+         * @function attach
+         * @description Attaches an object to the reifier.
+         * @param {ClassType} object - The object to attach.
+         * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+         * callback fired when the reifier is applied to the object. The callback takes as parameters:
+         * - `state: State`: The state being applied to the object.
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+         * attached list.
+         * @returns {this} - The reifier itself, for method chaining.
+         */
+        attach(object, onSwitch, index) {
+            const data = this.getData(object);
+            if (data && onSwitch)
+                data.onSwitch = onSwitch;
+            if (data)
+                return;
+            this.attachObject(object, index, onSwitch);
+            return this;
+        }
+        /**
+         * @function attachAll
+         * @description Attaches multiple objects to the reifier.
+         * @param {...ClassType[]} objects - The objects to attach.
+         * @returns {this} - The reifier itself, for method chaining.
+         */
+        attachAll(...objects) {
+            objects.forEach(object => {
+                if (this.getData(object))
+                    return;
+                this.attachObject(object);
+            });
+            return this;
+        }
+        /**
+         * @function attachAllAt
+         * @description Attaches multiple objects to the reifier at a specified index.
+         * @param {number} index - The index to specify the position at which to insert the objects in the reifier's
+         * attached list.
+         * @param {...ClassType[]} objects - The objects to attach.
+         * @returns {this} - The reifier itself, for method chaining.
+         */
+        attachAllAt(index, ...objects) {
+            objects.forEach((object, count) => {
+                if (this.getData(object))
+                    return;
+                this.attachObject(object, index + count);
+            });
+            return this;
+        }
+        /**
+         * @function detach
+         * @description Detaches one or more objects from the reifier.
+         * @param {...ClassType[]} objects - The objects to detach.
+         * @returns {this} - The reifier itself, for method chaining.
+         */
+        detach(...objects) {
+            objects.forEach(object => {
+                const data = this.getData(object);
+                if (!data)
+                    return;
+                this.detachObject(data);
+            });
+            return this;
+        }
+        /**
+         * @function getData
+         * @description Retrieve the data entry of a given object.
+         * @param {ClassType} object - The object to find the data of.
+         * @returns {ReifectObjectData<State, ClassType>} - The corresponding data, or `null` if was not found.
+         */
+        getData(object) {
+            if (!object)
+                return null;
+            for (const entry of this.attachedObjects) {
+                const entryObject = this.getObject(entry);
+                if (entryObject && entryObject == object)
+                    return entry;
+            }
+            return null;
+        }
+        /**
+         * @function getObject
+         * @description Retrieves the object attached to the given data entry.
+         * @param {ReifectObjectData<State, ClassType>} data - The data entry to get the corresponding object of.
+         * @returns {ClassType} The corresponding object, or `null` if was garbage collected.
+         */
+        getObject(data) {
+            if (!data)
+                return null;
+            const object = data.object.deref();
+            return object || null;
+        }
+        /**
+         * @function getEnabledState
+         * @description Returns the `enabled` value corresponding to the provided object for this reifier.
+         * @param {ClassType} object - The object to get the state of.
+         * @returns {ReifectEnabledState} - The corresponding enabled state.
+         */
+        getEnabledState(object) {
+            return this.getData(object)?.enabled;
+        }
+        /**
+         * @function setEnabledState
+         * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
+         * @param {ClassType} object - The object to set the state of.
+         * @param {boolean | ReifectEnabledState} value - The value to set/update with. Setting it to a boolean will
+         * accordingly update the value of `enabled.global`.
+         */
+        setEnabledState(object, value) {
+            const data = this.getData(object);
+            if (!data)
+                return;
+            if (typeof value == "boolean")
+                data.enabled.global = value;
+            else if (!value)
+                return;
+            else
+                for (const [key, state] of Object.entries(value)) {
+                    data.enabled[key] = state;
+                }
+        }
+        //Getters and setters
+        /**
+         * @description All possible states.
+         */
+        get states() {
+            return this._states;
+        }
+        set states(value) {
+            if (!value)
+                this._states = this.getAllStates();
+            else
+                this._states = value;
+        }
+        /**
+         * @description The enabled state of the reifier (as a {@link ReifectEnabledState}). Setting it to a boolean will
+         * accordingly update the value of `enabled.global`.
+         */
+        get enabled() {
+            return this._enabled;
+        }
+        set enabled(value) {
+            if (typeof value == "boolean")
+                this._enabled.global = value;
+            else if (!value)
+                return;
+            else
+                for (const [key, state] of Object.entries(value)) {
+                    this._enabled[key] = state;
+                }
+        }
+        /**
+         * @description The properties to be assigned to the objects. It could take:
+         * - A record of `{key: value}` pairs.
+         * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
+         * {key: value} pairs}`.
+         * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get properties() {
+            return this.values.properties;
+        }
+        set properties(value) {
+            this.values.properties = value;
+        }
+        /**
+         * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+         * - A record of `{CSS property: value}` pairs.
+         * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
+         * {key: value} pairs}`.
+         * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get styles() {
+            return this.values.styles;
+        }
+        set styles(value) {
+            this.values.styles = value;
+        }
+        /**
+         * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+         * - A string of space-separated classes.
+         * - An array of classes.
+         * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
+         * return any of the latter}`.
+         * - An interpolation function that would return a string of space-separated classes or an array of classes based
+         * on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get classes() {
+            return this.values.classes;
+        }
+        set classes(value) {
+            this.values.classes = value;
+        }
+        /**
+         * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+         * - The object to be replaced with.
+         * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
+         * to be replaced with}`.
+         * - An interpolation function that would return the object to be replaced with based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get replaceWith() {
+            return this.values.replaceWith;
+        }
+        set replaceWith(value) {
+            this.values.replaceWith = value;
+        }
+        /**
+         * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+         * could take:
+         * - A string of space-separated CSS properties.
+         * - An array of CSS properties.
+         * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
+         * function that would return any of the latter}`.
+         * - An interpolation function that would return a string of space-separated CSS properties or an array of
+         * CSS properties based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionProperties() {
+            return this.values.transitionProperties;
+        }
+        set transitionProperties(value) {
+            this.values.transitionProperties = value;
+        }
+        /**
+         * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+         * - A numerical value (in seconds).
+         * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
+         * (number in seconds)}`.
+         * - An interpolation function that would return a duration (number in seconds) based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionDuration() {
+            return this.values.transitionDuration;
+        }
+        set transitionDuration(value) {
+            this.values.transitionDuration = value;
+        }
+        /**
+         * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+         * It could take:
+         * - A string representing the timing function to apply.
+         * - A record of `{state: timing function (string) or an interpolation function that would return a timing
+         * function (string)}`.
+         * - An interpolation function that would return a timing function (string) based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionTimingFunction() {
+            return this.values.transitionTimingFunction;
+        }
+        set transitionTimingFunction(value) {
+            this.values.transitionTimingFunction = value;
+        }
+        /**
+         * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+         * - A numerical value (in seconds).
+         * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
+         * (number in seconds)}`.
+         * - An interpolation function that would return a delay (number in seconds) based on the state value.
+         *
+         * The interpolation function would take as arguments:
+         * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+         * defined for the whole field (and not for a specific state).
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionDelay() {
+            return this.values.transitionDelay;
+        }
+        set transitionDelay(value) {
+            this.values.transitionDelay = value;
+        }
+        //Usage methods
+        initialize(state, objects, options) {
+            if (!this.enabled.global)
+                return;
+            state = this.parseState(state);
+            options = this.initializeOptions(options, objects);
+            this.getEnabledObjectsData(objects, options).forEach(data => {
+                if (options.recomputeProperties || !data.resolvedValues)
+                    this.processRawProperties(data, options.propertiesOverride);
+                data.lastState = state;
+                this.applyResolvedValues(data, data.lastState, true);
+                if (data.onSwitch)
+                    data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
+            });
+        }
+        apply(state, objects, options) {
+            if (!this.enabled.global)
+                return;
+            state = this.parseState(state);
+            options = this.initializeOptions(options, objects);
+            this.getEnabledObjectsData(objects, options).forEach(data => {
+                if (options.recomputeProperties || !data.resolvedValues)
+                    this.processRawProperties(data, options.propertiesOverride);
+                data.lastState = state;
+                const handler = data.object.deref()?.reifects;
+                if (handler)
+                    handler.reloadTransitions();
+                this.applyResolvedValues(data);
+                if (data.onSwitch)
+                    data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
+            });
+        }
+        toggle(objects, options) {
+            if (!this.enabled.global)
+                return;
+            if (!objects)
+                objects = [];
+            else if (objects instanceof HTMLCollection)
+                objects = [...objects];
+            else if (!Array.isArray(objects))
+                objects = [objects];
+            const previousState = this.getData(objects[0])?.lastState;
+            const nextStateIndex = mod(previousState != undefined
+                ? this.states.indexOf(previousState) + 1 : 0, this.states.length);
+            this.apply(this.states[nextStateIndex], objects, options);
+        }
+        /**
+         * @function reloadFor
+         * @description Generates the transition CSS string for the provided transition with the correct interpolation
+         * information.
+         * @param {ClassType} object - The element to apply the string to.
+         * @returns {this} Itself for method chaining.
+         */
+        reloadFor(object) {
+            if (!this.enabled.global)
+                return this;
+            const data = this.getData(object);
+            if (!data || !data.enabled || !data.enabled.global)
+                return this;
+            this.applyResolvedValues(data, data.lastState);
+            return this;
+        }
+        reloadTransitionFor(object) {
+            if (!this.enabled.global)
+                return this;
+            const data = this.getData(object);
+            if (!data || !data.enabled || !data.enabled.global)
+                return this;
+            if (this.enabled.transition && data.enabled.transition)
+                this.applyTransition(data, data.lastState);
+            return this;
+        }
+        getEnabledObjectsData(objects, options) {
+            if (!this.enabled.global) {
+                console.warn("The reifier object you are trying to access is disabled.");
+                return [];
+            }
+            if (!objects)
+                objects = [];
+            else if (objects instanceof HTMLCollection)
+                objects = [...objects];
+            else if (!Array.isArray(objects))
+                objects = [objects];
+            options = this.initializeOptions(options, objects);
+            if (options.attachObjects)
+                objects.forEach(element => this.attach(element));
+            if (options.executeForAll) {
+                objects = [];
+                this.attachedObjects.forEach(entry => {
+                    const object = entry.object.deref();
+                    if (object)
+                        objects.push(object);
+                });
+            }
+            const enabledObjectsData = [];
+            objects.forEach((object) => {
+                const data = this.getData(object) || this.generateNewData(object);
+                if (!this.filterEnabledObjects(data))
+                    return;
+                if (options.recomputeIndices || data.objectIndex == undefined)
+                    data.objectIndex = enabledObjectsData.length;
+                enabledObjectsData.push(data);
+            });
+            enabledObjectsData.forEach(data => {
+                if (options.recomputeIndices || data.totalObjectCount == undefined) {
+                    data.totalObjectCount = enabledObjectsData.length;
+                }
+            });
+            return enabledObjectsData;
+        }
+        /**
+         * @function stateOf
+         * @description Determine the current state of the reifect on the provided object.
+         * @param {ClassType} object - The object to determine the state for.
+         * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+         */
+        stateOf(object) {
+            if (!object)
+                return undefined;
+            const data = this.getData(object);
+            if (!data)
+                return undefined;
+            if (data.lastState)
+                return data.lastState;
+            if (!(object instanceof HTMLElement))
+                return this.states[0];
+            if (!data.resolvedValues)
+                this.processRawProperties(data);
+            for (const state of this.states) {
+                if (!data.resolvedValues.styles[state])
+                    continue;
+                let matches = true;
+                for (const [property, value] of Object.entries(data.resolvedValues.styles[state])) {
+                    if (object.style[property] != value) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (!matches)
+                    continue;
+                data.lastState = state;
+                return state;
+            }
+            return this.states[0];
+        }
+        //Property setting methods
+        applyResolvedValues(data, state = data.lastState, skipTransition = false) {
+            if (this.enabled.transition && data.enabled.transition && !skipTransition)
+                this.applyTransition(data, state);
+            if (this.enabled.replaceWith && data.enabled.replaceWith)
+                this.replaceObject(data, state);
+            if (this.enabled.properties && data.enabled.properties)
+                this.setProperties(data, state);
+            if (this.enabled.classes && data.enabled.classes)
+                this.applyClasses(data, state);
+            if (this.enabled.styles && data.enabled.styles)
+                this.applyStyles(data, state);
+        }
+        replaceObject(data, state = data.lastState) {
+            const newObject = data.resolvedValues.replaceWith[state];
+            if (!newObject)
+                return;
+            try {
+                const object = data.object.deref();
+                if (object && object instanceof Node && newObject instanceof Node)
+                    object.parentNode?.replaceChild(newObject, object);
+                data.object = new WeakRef(newObject);
+            }
+            catch (e) {
+                console.error(`Unable to replace object: ${e.message}`);
+            }
+        }
+        setProperties(data, state = data.lastState) {
+            const properties = data.resolvedValues.properties[state];
+            if (!properties)
+                return;
+            const object = data.object.deref();
+            if (!object)
+                return;
+            for (const [field, value] of Object.entries(properties)) {
+                if (!field || value == undefined)
+                    continue;
+                try {
+                    object[field] = value;
+                }
+                catch (e) {
+                    console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
+                }
+            }
+        }
+        applyClasses(data, state = data.lastState) {
+            const classes = data.resolvedValues.classes;
+            if (!classes)
+                return;
+            const object = data.object.deref();
+            if (!object || !(object instanceof Element))
+                return;
+            for (const [key, value] of Object.entries(classes)) {
+                object.toggleClass(value, state == key);
+            }
+        }
+        applyStyles(data, state = data.lastState) {
+            const object = data.object.deref();
+            if (!object || !(object instanceof Element))
+                return;
+            object.setStyles(data.resolvedValues.styles[state]);
+        }
+        applyTransition(data, state = data.lastState) {
+            const object = data.object.deref();
+            if (!object || !(object instanceof Element))
+                return;
+            object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
+        }
+        //General methods (to be overridden for custom functionalities)
+        /**
+         * @protected
+         * @function attachObject
+         * @description Function used to generate a data entry for the given object, and add it to the attached list at
+         * the provided index (if any).
+         * @param {ClassType} object - The object to attach
+         * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+         * attached list.
+         * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+         * callback fired when the reifier is applied to the object. The callback takes as parameters:
+         * - `state: State`: The state being applied to the object.
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
+         */
+        attachObject(object, index, onSwitch) {
+            if (index == undefined || isNaN(index))
+                index = this.attachedObjects.length;
+            if (index < 0)
+                index = 0;
+            const data = this.generateNewData(object, onSwitch);
+            this.attachedObjects.splice(index, 0, data);
+            return data;
+        }
+        /**
+         * @protected
+         * @function detachObject
+         * @description Function used to remove a data entry from the attached objects list.
+         * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
+         */
+        detachObject(data) {
+            this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
+        }
+        filterEnabledObjects(data) {
+            if (!data.enabled || !data.enabled.global) {
+                console.warn("The reified properties instance you are trying to set on an object is " +
+                    "disabled for this particular object.");
+                return false;
+            }
+            return true;
+        }
+        //Utilities
+        getAllStates() {
+            const states = [...this.states];
+            for (const values of [this.properties,
+                this.classes, this.styles, this.replaceWith]) {
+                if (typeof values != "object")
+                    continue;
+                for (const state of Object.keys(values)) {
+                    if (!states.includes(state))
+                        states.push(state);
+                }
+            }
+            if (states.length == 0)
+                console.warn("No states found for this particular reifect:", this);
+            return states;
+        }
+        processRawProperties(data, override) {
+            if (!data.resolvedValues)
+                data.resolvedValues = {
+                    properties: undefined,
+                    styles: undefined,
+                    classes: undefined,
+                    replaceWith: undefined,
+                    transitionProperties: undefined,
+                    transitionDuration: undefined,
+                    transitionTimingFunction: undefined,
+                    transitionDelay: undefined
+                };
+            if (isNull(override))
+                return;
+            const rawProperties = {
+                properties: this.properties,
+                styles: this.styles,
+                classes: this.classes,
+                replaceWith: this.replaceWith,
+                transitionProperties: this.transitionProperties,
+                transitionDuration: this.transitionDuration,
+                transitionTimingFunction: this.transitionTimingFunction,
+                transitionDelay: this.transitionDelay,
+                ...(override || {})
+            };
+            data.resolvedValues.properties = {};
+            this.states.forEach(state => this.processRawPropertyForState(data, "properties", rawProperties.properties, state));
+            if ("transitionProperties" in rawProperties) {
+                data.resolvedValues.transitionProperties = {};
+                this.states.forEach(state => this.processRawPropertyForState(data, "transitionProperties", rawProperties.transitionProperties, state));
+            }
+            for (const [field, values] of Object.entries(rawProperties)) {
+                if (field == "transitionProperties" || field == "properties")
+                    continue;
+                data.resolvedValues[field] = {};
+                this.states.forEach(state => this.processRawPropertyForState(data, field, values, state));
+            }
+        }
+        generateNewData(object, onSwitch) {
+            return {
+                object: new WeakRef(object),
+                enabled: {
+                    global: true,
+                    properties: true,
+                    classes: true,
+                    styles: true,
+                    replaceWith: true,
+                    transition: true
+                },
+                lastState: this.stateOf(object),
+                onSwitch: onSwitch
+            };
+        }
+        initializeOptions(options, objects) {
+            if (!objects)
+                objects = [];
+            else if (objects instanceof HTMLCollection)
+                objects = [...objects];
+            else if (!Array.isArray(objects))
+                objects = [objects];
+            options = options || {};
+            options.attachObjects = options.attachObjects ?? true;
+            options.executeForAll = options.executeForAll ?? (objects.length === 0);
+            options.recomputeIndices = options.recomputeIndices ?? (objects.length !== 0);
+            options.recomputeProperties = options.recomputeProperties ?? (objects.length !== 0);
+            return options;
+        }
+        /**
+         * @description Clone the reifect to create a new copy with the same properties but no attached objects.
+         * @returns {StatefulReifect<State, ClassType>} - The new reifect.
+         */
+        clone() {
+            return new StatefulReifect({
+                states: this.states,
+                properties: this.properties,
+                classes: this.classes,
+                styles: this.styles,
+                replaceWith: this.replaceWith,
+                transitionProperties: this.transitionProperties,
+                transitionDuration: this.transitionDuration,
+                transitionTimingFunction: this.transitionTimingFunction,
+                transitionDelay: this.transitionDelay,
+            });
+        }
+        /**
+         * @protected
+         * @function parseState
+         * @description Parses a boolean into the corresponding state value.
+         * @param {State | boolean} value - The value to parse.
+         * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
+         */
+        parseState(value) {
+            if (typeof value != "boolean")
+                return value;
+            else
+                for (const str of value ? ["true", "on", "in", "enabled", "shown"]
+                    : ["false", "off", "out", "disabled", "hidden"]) {
+                    if (!this.states.includes(str))
+                        continue;
+                    return str;
+                }
+        }
+        /**
+         * @function getTransitionString
+         * @description Gets the CSS transition string for the specified direction.
+         * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
+         * @param state
+         * @returns {string} The CSS transition string.
+         */
+        getTransitionString(data, state = data.lastState) {
+            let transitionString = "";
+            data.resolvedValues.transitionProperties[state].forEach(property => transitionString
+                += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
+                    + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
+                    + (data.resolvedValues.transitionDelay[state] || 0) + "s");
+            return transitionString.substring(2);
+        }
+        processRawPropertyForState(data, field, value, state) {
+            let resolvedValue;
+            const object = data.object.deref();
+            if (!object)
+                return;
+            if (typeof value == "function") {
+                resolvedValue = value(state, data.objectIndex, data.totalObjectCount, object);
+            }
+            else if (typeof value == "object" && eachEqualToAny(this.states, ...Object.keys(value))) {
+                const currentValue = value[state];
+                if (typeof currentValue == "function")
+                    resolvedValue = currentValue(data.objectIndex, data.totalObjectCount, object);
+                else
+                    resolvedValue = currentValue;
+            }
+            else
+                resolvedValue = value;
+            if ((field == "properties" || field == "transitionProperties") && typeof resolvedValue == "string") {
+                resolvedValue = resolvedValue.split(" ");
+            }
+            else if (field == "styles") {
+                if (data.resolvedValues.styles[state] == undefined)
+                    data.resolvedValues.styles[state] = {};
+                if (typeof resolvedValue == "number") {
+                    data.resolvedValues.transitionProperties[state].forEach(property => data.resolvedValues.styles[state][property] = resolvedValue);
+                    return;
+                }
+                else if (typeof resolvedValue == "string") {
+                    const splitStyles = resolvedValue.split(";")
+                        .map(entry => entry.split(":")
+                        .map(part => part.trim()));
+                    if (splitStyles.length == 1 && splitStyles[0].length == 1) {
+                        data.resolvedValues.transitionProperties[state].forEach(property => data.resolvedValues.styles[state][property] = splitStyles[0][0]);
+                        return;
+                    }
+                }
+            }
+            data.resolvedValues[field][state] = resolvedValue;
+        }
+    }
+    function statefulReifier(properties) {
+        return new StatefulReifect(properties);
+    }
+
+    function addReifectManagementToNodePrototype() {
+        const showTransition = new StatefulReifect({
+            states: [exports.Shown.visible, exports.Shown.hidden],
+            styles: (state) => `visibility: ${state}`
+        });
+        /**
+         * @description Adds a readonly "reifects" property to Node prototype.
+         */
+        Object.defineProperty(Node.prototype, "reifects", {
+            get: function () {
+                if (!this._reifects)
+                    this._reifects = new ReifectHandler(this);
+                return this._reifects;
+            },
+            configurable: false,
+            enumerable: true
+        });
+        /**
+         * @description Adds a configurable "showTransition" property to Node prototype. Defaults to a global
+         * transition assigned to all nodes.
+         */
+        Object.defineProperty(Node.prototype, "showTransition", {
+            value: showTransition,
+            writable: true,
+            configurable: true,
+            enumerable: true
+        });
+        /**
+         * @description Boolean indicating whether the node is shown or not, based on its showTransition.
+         */
+        Object.defineProperty(Node.prototype, "isShown", {
+            get: function () {
+                const state = this.showTransition.stateOf(this);
+                if (state == exports.Shown.visible)
+                    return true;
+                else if (state == exports.Shown.hidden)
+                    return false;
+                return this.style.display != "none" && this.style.visibility != "hidden" && this.style.opacity != "0";
+            },
+            configurable: false,
+            enumerable: true
+        });
         /**
          * @description Show or hide the element (based on CSS) by transitioning in/out of the element's showTransition.
          * @param {boolean} b - Whether to show the element or not
+         * @param {ReifectAppliedOptions<Shown>} [options={executeForAll: false}] - The options to pass to the reifect
+         * execution.
          * @returns {this} Itself, allowing for method chaining.
          */
-        HTMLElement.prototype.show = function _show(b) {
-            this.showTransition.apply(b ? exports.InOut.in : exports.InOut.out, this);
+        Node.prototype.show = function _show(b, options = { executeForAll: false }) {
+            if (!(this instanceof HTMLElement) && !(this instanceof SVGElement))
+                return this;
+            this.showTransition.apply(b ? exports.Shown.visible : exports.Shown.hidden, this, options);
             return this;
         };
     }
 
+    //TODO ADD CONFIG
     function turbofy() {
         addClassManipulationToElementPrototype();
         addChildManipulationToElementPrototype();
@@ -2671,6 +2711,7 @@ var Turbo = (function (exports) {
         addElementManipulationToElementPrototype();
         addStylesManipulationToElementPrototype();
         updateChainingPropertiesInElementPrototype();
+        addReifectManagementToNodePrototype();
     }
 
     class Delegate {
@@ -2769,6 +2810,35 @@ var Turbo = (function (exports) {
         blur: "blur",
     };
 
+    /******************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+    /* global Reflect, Promise, SuppressedError, Symbol */
+
+
+    function __decorate(decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    }
+
+    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+        var e = new Error(message);
+        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    };
+
     exports.ClosestOrigin = void 0;
     (function (ClosestOrigin) {
         ClosestOrigin["target"] = "target";
@@ -2791,8 +2861,20 @@ var Turbo = (function (exports) {
          * @description The screen position from where the event was fired
          */
         position;
-        constructor(position, clickMode, keys, eventName, eventInitDict) {
+        /**
+         * @description Callback function (or boolean) to be overridden to specify when to allow transformation
+         * and/or scaling.
+         */
+        authorizeScaling;
+        /**
+         * @description Callback function to be overridden to specify how to transform a position from screen to
+         * document space.
+         */
+        scalePosition;
+        constructor(position, clickMode, keys, eventName, authorizeScaling, scalePosition, eventInitDict) {
             super(eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+            this.authorizeScaling = authorizeScaling ?? true;
+            this.scalePosition = scalePosition ?? ((position) => position);
             this.clickMode = clickMode;
             this.keys = keys;
             this.position = position;
@@ -2836,22 +2918,15 @@ var Turbo = (function (exports) {
          * @description The position of the fired event transformed and/or scaled using the class's scalePosition().
          */
         get scaledPosition() {
-            if (!this.authorizeScaling())
+            if (!this.scalingAuthorized)
                 return this.position;
             return this.scalePosition(this.position);
         }
         /**
-         * @description Function to be overridden to specify how to transform a position from screen to document space.
-         * @param position
+         * @description Specifies whether to allow transformation and/or scaling.
          */
-        scalePosition(position) {
-            return position;
-        }
-        /**
-         * @description Function to be overridden to specify when to allow transformation and/or scaling (or not).
-         */
-        authorizeScaling() {
-            return true;
+        get scalingAuthorized() {
+            return typeof this.authorizeScaling == "function" ? this.authorizeScaling() : this.authorizeScaling;
         }
         /**
          * @private
@@ -2931,6 +3006,10 @@ var Turbo = (function (exports) {
             const x = arr.reduce((min, p) => Math.min(min, p.x), Infinity);
             const y = arr.reduce((min, p) => Math.min(min, p.y), Infinity);
             return new Point(x, y);
+        }
+        // Instance methods
+        get object() {
+            return { x: this.x, y: this.y };
         }
         equals(x, y = 0) {
             if (typeof x == "number")
@@ -3025,8 +3104,8 @@ var Turbo = (function (exports) {
          * @description Map containing the positions of the dragging points
          */
         positions;
-        constructor(origins, previousPositions, positions, clickMode, keys, eventName = TurboEventName.drag, eventInitDict) {
-            super(positions.first, clickMode, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+        constructor(origins, previousPositions, positions, clickMode, keys, eventName = TurboEventName.drag, authorizeScaling, scalePosition, eventInitDict) {
+            super(positions.first, clickMode, keys, eventName, authorizeScaling, scalePosition, { bubbles: true, cancelable: true, ...eventInitDict });
             this.origins = origins;
             this.previousPositions = previousPositions;
             this.positions = positions;
@@ -3035,7 +3114,7 @@ var Turbo = (function (exports) {
          * @description Map of the origins mapped to the current canvas translation and scale
          */
         get scaledOrigins() {
-            if (!this.authorizeScaling())
+            if (!this.scalingAuthorized)
                 return this.origins;
             return this.scalePositionsMap(this.origins);
         }
@@ -3043,7 +3122,7 @@ var Turbo = (function (exports) {
          * @description Map of the previous positions mapped to the current canvas translation and scale
          */
         get scaledPreviousPositions() {
-            if (!this.authorizeScaling())
+            if (!this.scalingAuthorized)
                 return this.previousPositions;
             return this.scalePositionsMap(this.previousPositions);
         }
@@ -3051,7 +3130,7 @@ var Turbo = (function (exports) {
          * @description Map of the positions mapped to the current canvas translation and scale
          */
         get scaledPositions() {
-            if (!this.authorizeScaling())
+            if (!this.scalingAuthorized)
                 return this.positions;
             return this.scalePositionsMap(this.positions);
         }
@@ -3112,8 +3191,8 @@ var Turbo = (function (exports) {
          * @description The key released (if any) when the event was fired
          */
         keyReleased;
-        constructor(keyPressed, keyReleased, clickMode, keys, eventName = TurboEventName.keyPressed, eventInitDict) {
-            super(null, clickMode, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+        constructor(keyPressed, keyReleased, clickMode, keys, eventName = TurboEventName.keyPressed, authorizeScaling, scalePosition, eventInitDict) {
+            super(null, clickMode, keys, eventName, authorizeScaling, scalePosition, { bubbles: true, cancelable: true, ...eventInitDict });
             this.keyPressed = keyPressed;
             this.keyReleased = keyReleased;
         }
@@ -3153,16 +3232,16 @@ var Turbo = (function (exports) {
          * @description The delta amount of scrolling
          */
         delta;
-        constructor(delta, keys, eventName, eventInitDict) {
-            super(null, exports.ClickMode.none, keys, eventName, { bubbles: true, cancelable: true, ...eventInitDict });
+        constructor(delta, keys, eventName, authorizeScaling, scalePosition, eventInitDict) {
+            super(null, exports.ClickMode.none, keys, eventName, authorizeScaling, scalePosition, { bubbles: true, cancelable: true, ...eventInitDict });
             this.delta = delta;
         }
     }
 
     function setupTurboEventManagerBypassing(eventManager) {
-        HTMLElement.prototype.bypassTurboEventManagerOn = (e) => true;
+        HTMLElement.prototype.lockTurboEventManagerOn = (e) => false;
         const bypassManager = function (e) {
-            const bypassingResult = this.bypassTurboEventManagerOn(e);
+            const bypassingResult = this.lockTurboEventManagerOn(e);
             if (typeof bypassingResult == "boolean")
                 eventManager.setLockState(this, {
                     enabled: bypassingResult,
@@ -3261,7 +3340,7 @@ var Turbo = (function (exports) {
      * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
      * easier management of input.
      */
-    class TurboEventManager {
+    exports.TurboEventManager = class TurboEventManager extends TurboElement {
         _inputDevice = exports.InputDevice.unknown;
         //Delegate fired when the input device changes
         onInputDeviceChange;
@@ -3277,14 +3356,21 @@ var Turbo = (function (exports) {
         //Saved values (Maps to account for different touch points and their IDs)
         origins;
         previousPositions;
+        positions;
+        lastTargetOrigin;
         //Single timer instance --> easily cancel it and set it again
         timerMap;
         //Threshold differentiating a click from a drag
         moveThreshold;
         //Duration to reach long press
         longPressDuration;
+        authorizeEventScaling;
+        scaleEventPosition;
         constructor(properties = {}) {
+            super({ parent: document.body });
             this.onInputDeviceChange = new Delegate();
+            this.authorizeEventScaling = properties.authorizeEventScaling;
+            this.scaleEventPosition = properties.scaleEventPosition;
             this.defaultState = {
                 enabled: properties.enabled ?? true,
                 preventDefaultWheel: properties.preventDefaultWheel ?? true,
@@ -3308,28 +3394,28 @@ var Turbo = (function (exports) {
         initEvents() {
             try {
                 if (!this.disabledEventTypes.disableKeyEvents) {
-                    document.addEventListener("keydown", this.keyDown);
-                    document.addEventListener("keyup", this.keyUp);
+                    document.addListener("keydown", this.keyDown);
+                    document.addListener("keyup", this.keyUp);
                     this.applyEventNames(TurboKeyEventName);
                 }
                 if (!this.disabledEventTypes.disableWheelEvents) {
-                    document.addEventListener("wheel", this.wheel, { passive: false });
+                    document.addListener("wheel", this.wheel, this, { passive: false });
                     this.applyEventNames(TurboWheelEventName);
                 }
                 if (!this.disabledEventTypes.disableMoveEvent) {
                     this.applyEventNames(TurboMoveName);
                 }
                 if (!this.disabledEventTypes.disableMouseEvents) {
-                    document.addEventListener("mousedown", this.pointerDown);
-                    document.addEventListener("mousemove", this.pointerMove);
-                    document.addEventListener("mouseup", this.pointerUp);
-                    document.addEventListener("mouseleave", this.pointerLeave);
+                    document.addListener("mousedown", this.pointerDown);
+                    document.addListener("mousemove", this.pointerMove);
+                    document.addListener("mouseup", this.pointerUp);
+                    document.addListener("mouseleave", this.pointerLeave);
                 }
                 if (!this.disabledEventTypes.disableTouchEvents) {
-                    document.addEventListener("touchstart", this.pointerDown, { passive: false });
-                    document.addEventListener("touchmove", this.pointerMove, { passive: false });
-                    document.addEventListener("touchend", this.pointerUp, { passive: false });
-                    document.addEventListener("touchcancel", this.pointerUp, { passive: false });
+                    document.addListener("touchstart", this.pointerDown, this, { passive: false });
+                    document.addListener("touchmove", this.pointerMove, this, { passive: false });
+                    document.addListener("touchend", this.pointerUp, this, { passive: false });
+                    document.addListener("touchcancel", this.pointerUp, this, { passive: false });
                 }
                 if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {
                     if (!this.disabledEventTypes.disableClickEvents)
@@ -3341,19 +3427,6 @@ var Turbo = (function (exports) {
             catch (error) {
                 console.error("Error initializing events: ", error);
             }
-        }
-        destroy() {
-            document.removeEventListener("keydown", this.keyDown);
-            document.removeEventListener("keyup", this.keyUp);
-            document.removeEventListener("wheel", this.wheel);
-            document.removeEventListener("mousedown", this.pointerDown);
-            document.removeEventListener("mousemove", this.pointerMove);
-            document.removeEventListener("mouseup", this.pointerUp);
-            document.removeEventListener("mouseleave", this.pointerLeave);
-            document.removeEventListener("touchstart", this.pointerDown);
-            document.removeEventListener("touchmove", this.pointerMove);
-            document.removeEventListener("touchend", this.pointerUp);
-            document.removeEventListener("touchcancel", this.pointerUp);
         }
         /**
          * @description The currently identified input device. It is not 100% accurate, especially when differentiating
@@ -3412,7 +3485,7 @@ var Turbo = (function (exports) {
             //Add key to currentKeys
             this.currentKeys.push(e.key);
             //Fire a keyPressed event (only once)
-            document.dispatchEvent(new TurboKeyEvent(e.key, null, this.currentClick, this.currentKeys, TurboEventName.keyPressed));
+            document.dispatchEvent(new TurboKeyEvent(e.key, null, this.currentClick, this.currentKeys, TurboEventName.keyPressed, this.authorizeEventScaling, this.scaleEventPosition));
         };
         keyUp = (e) => {
             if (!this.enabled)
@@ -3423,7 +3496,7 @@ var Turbo = (function (exports) {
             //Remove key from currentKeys
             this.currentKeys.splice(this.currentKeys.indexOf(e.key), 1);
             //Fire a keyReleased event
-            document.dispatchEvent(new TurboKeyEvent(null, e.key, this.currentClick, this.currentKeys, TurboEventName.keyReleased));
+            document.dispatchEvent(new TurboKeyEvent(null, e.key, this.currentClick, this.currentKeys, TurboEventName.keyReleased, this.authorizeEventScaling, this.scaleEventPosition));
         };
         //Wheel Event
         wheel = (e) => {
@@ -3456,12 +3529,14 @@ var Turbo = (function (exports) {
             //Mouse scrolling
             else
                 eventName = TurboEventName.mouseWheel;
-            document.dispatchEvent(new TurboWheelEvent(new Point(e.deltaX, e.deltaY), this.currentKeys, eventName));
+            document.dispatchEvent(new TurboWheelEvent(new Point(e.deltaX, e.deltaY), this.currentKeys, eventName, this.authorizeEventScaling, this.scaleEventPosition));
         };
         //Mouse and Touch Events
         pointerDown = (e) => {
-            if (!e.composedPath().includes(this.lockState.lockOrigin))
+            if (!e.composedPath().includes(this.lockState.lockOrigin)) {
+                document.activeElement?.blur();
                 this.resetLockState();
+            }
             if (!this.enabled)
                 return;
             //Check if it's touch
@@ -3525,24 +3600,27 @@ var Turbo = (function (exports) {
             if (this.preventDefaultTouch && isTouch)
                 e.preventDefault();
             //Initialize a new positions map
-            const positions = new TurboMap();
+            this.positions = new TurboMap();
             //Get current position(s) for touch (or mouse)
             if (isTouch) {
-                Array.from(e.touches).forEach(touchPoint => positions.set(touchPoint.identifier, new Point(touchPoint)));
+                Array.from(e.touches).forEach(touchPoint => this.positions.set(touchPoint.identifier, new Point(touchPoint)));
             }
             else {
-                positions.set(0, new Point(e.clientX, e.clientY));
+                this.positions.set(0, new Point(e.clientX, e.clientY));
             }
+            //Clear cached target origin if not dragging
+            if (this.currentAction != exports.ActionMode.drag)
+                this.lastTargetOrigin = null;
             //Fire move event if enabled
             if (!this.disabledEventTypes.disableMoveEvent)
-                this.fireDrag(positions, TurboEventName.move);
+                this.fireDrag(this.positions, TurboEventName.move);
             //If drag events are enabled and user is interacting
             if (this.currentAction != exports.ActionMode.none && !this.disabledEventTypes.disableDragEvents) {
                 //Initialize drag
                 if (this.currentAction != exports.ActionMode.drag) {
                     //Loop on saved origins points and check if any point's distance from its origin is greater than the threshold
                     if (!Array.from(this.origins.entries()).some(([key, origin]) => {
-                        const position = positions.get(key);
+                        const position = this.positions.get(key);
                         return position && Point.dist(position, origin) > this.moveThreshold;
                     }))
                         return;
@@ -3552,10 +3630,10 @@ var Turbo = (function (exports) {
                     this.currentAction = exports.ActionMode.drag;
                 }
                 //Fire drag and update previous points
-                this.fireDrag(positions);
+                this.fireDrag(this.positions);
             }
             //Update previous positions
-            positions.forEach((position, key) => this.previousPositions.set(key, position));
+            this.positions.forEach((position, key) => this.previousPositions.set(key, position));
         };
         pointerUp = (e) => {
             if (!this.enabled)
@@ -3570,24 +3648,24 @@ var Turbo = (function (exports) {
             //Clear any timer set
             this.clearTimer(TurboEventName.longPress);
             //Initialize a new positions map
-            const positions = new TurboMap();
+            this.positions = new TurboMap();
             //Get current position(s) for touch (or mouse)
             if (isTouch) {
                 Array.from(e.changedTouches).forEach(touchPoint => {
-                    positions.set(touchPoint.identifier, new Point(touchPoint));
+                    this.positions.set(touchPoint.identifier, new Point(touchPoint));
                 });
             }
             else {
-                positions.set(0, new Point(e));
+                this.positions.set(0, new Point(e));
             }
             //If action was drag --> fire drag end
             if (this.currentAction == exports.ActionMode.drag && !this.disabledEventTypes.disableDragEvents)
-                this.fireDrag(positions, TurboEventName.dragEnd);
+                this.fireDrag(this.positions, TurboEventName.dragEnd);
             //If click events are enabled
             if (!this.disabledEventTypes.disableClickEvents) {
                 //If action is click --> fire click
                 if (this.currentAction == exports.ActionMode.click) {
-                    this.fireClick(positions.first, TurboEventName.click);
+                    this.fireClick(this.positions.first, TurboEventName.click);
                 }
                 //Fire click end
                 this.fireClick(this.origins.first, TurboEventName.clickEnd);
@@ -3620,9 +3698,12 @@ var Turbo = (function (exports) {
                 this.currentAction = exports.ActionMode.none;
             }
         };
-        getFireOrigin(positions) {
-            const origin = this.origins.first ? this.origins.first : positions.first;
-            return document.elementFromPoint(origin.x, origin.y) || document;
+        getFireOrigin(positions, reload = false) {
+            if (!this.lastTargetOrigin || reload) {
+                const origin = this.origins.first ? this.origins.first : positions.first;
+                this.lastTargetOrigin = document.elementFromPoint(origin.x, origin.y);
+            }
+            return this.lastTargetOrigin;
         }
         //Event triggering
         /**
@@ -3635,7 +3716,7 @@ var Turbo = (function (exports) {
             if (!p)
                 return;
             const target = document.elementFromPoint(p.x, p.y) || document;
-            target.dispatchEvent(new TurboEvent(p, this.currentClick, this.currentKeys, eventName));
+            target.dispatchEvent(new TurboEvent(p, this.currentClick, this.currentKeys, eventName, this.authorizeEventScaling, this.scaleEventPosition));
         }
         /**
          * @description Fires a custom Turbo drag event at the target with the origin of the drag, the last drag position, and the current position
@@ -3646,7 +3727,7 @@ var Turbo = (function (exports) {
         fireDrag(positions, eventName = TurboEventName.drag) {
             if (!positions)
                 return;
-            this.getFireOrigin(positions).dispatchEvent(new TurboDragEvent(this.origins, this.previousPositions, positions, this.currentClick, this.currentKeys, eventName));
+            this.getFireOrigin(positions).dispatchEvent(new TurboDragEvent(this.origins, this.previousPositions, positions, this.currentClick, this.currentKeys, eventName, this.authorizeEventScaling, this.scaleEventPosition));
         }
         //Timer
         //Sets a timer function associated with a certain event name, with its duration
@@ -3692,7 +3773,40 @@ var Turbo = (function (exports) {
                 DefaultEventName[eventName] = eventNames[eventName];
             }
         }
+    };
+    exports.TurboEventManager = __decorate([
+        define()
+    ], exports.TurboEventManager);
+
+    function styleInject(css, ref) {
+      if ( ref === void 0 ) ref = {};
+      var insertAt = ref.insertAt;
+
+      if (!css || typeof document === 'undefined') { return; }
+
+      var head = document.head || document.getElementsByTagName('head')[0];
+      var style = document.createElement('style');
+      style.type = 'text/css';
+
+      if (insertAt === 'top') {
+        if (head.firstChild) {
+          head.insertBefore(style, head.firstChild);
+        } else {
+          head.appendChild(style);
+        }
+      } else {
+        head.appendChild(style);
+      }
+
+      if (style.styleSheet) {
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
     }
+
+    var css_248z$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+    styleInject(css_248z$1);
 
     /**
      * @description Converts a string of tags into an Element.
@@ -3703,6 +3817,22 @@ var Turbo = (function (exports) {
         let wrapper = document.createElement("div");
         wrapper.innerHTML = text;
         return wrapper.children[0];
+    }
+    function createProxy(self, proxied) {
+        return new Proxy(self, {
+            get(target, prop, receiver) {
+                if (prop in target)
+                    return Reflect.get(target, prop, receiver);
+                if (prop in proxied)
+                    return Reflect.get(proxied, prop, receiver);
+                return undefined;
+            },
+            set(target, prop, value, receiver) {
+                if (prop in target)
+                    return Reflect.set(target, prop, value, receiver);
+                return Reflect.set(proxied, prop, value, receiver);
+            }
+        });
     }
 
     /**
@@ -3743,13 +3873,13 @@ var Turbo = (function (exports) {
      */
     exports.TurboIcon = class TurboIcon extends TurboElement {
         static { TurboIcon_1 = this; }
-        _element = null;
+        _element;
         _type;
         _directory;
-        _icon;
-        _iconColor = null;
-        _onLoaded = null;
-        static config = { defaultType: "svg", defaultDirectory: "" };
+        onLoaded;
+        static config = { defaultType: "svg", defaultDirectory: "", customLoaders: {} };
+        static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
+            "PNG", "JPG", "JPEG", "GIF", "WEBP"];
         /**
          * Creates an instance of Icon.
          * @param {TurboIconProperties} properties - Properties to configure the icon.
@@ -3768,39 +3898,8 @@ var Turbo = (function (exports) {
             if (properties.iconColor)
                 this.iconColor = properties.iconColor;
             if (properties.onLoaded)
-                this._onLoaded = properties.onLoaded;
+                this.onLoaded = properties.onLoaded;
             this.icon = properties.icon;
-        }
-        fetchSvg(path) {
-            return fetchSvg(path);
-        }
-        generateSvg() {
-            this.clear();
-            this.fetchSvg(this.path).then(svg => {
-                if (this.element)
-                    return;
-                this.element = svg;
-                this.addChild(this.element);
-                if (this.element) {
-                    if (this.iconColor)
-                        this.element.style.fill = this.iconColor;
-                    if (this._onLoaded)
-                        this._onLoaded(this.element);
-                }
-            });
-        }
-        generateImg() {
-            if (this.element instanceof HTMLImageElement) {
-                this.element.src = this.path;
-                this.element.alt = this.icon;
-                return;
-            }
-            this.clear();
-            this.element = img({ src: this.path, alt: this.icon, parent: this });
-        }
-        clear() {
-            this.removeAllChildren();
-            this.element = null;
         }
         //Getters and setters
         /**
@@ -3812,6 +3911,8 @@ var Turbo = (function (exports) {
         set type(value) {
             if (!value || value.length == 0)
                 value = this.type || TurboIcon_1.config.defaultType || "svg";
+            if (value[0] == ".")
+                value = value.substring(1);
             this._type = value;
         }
         /**
@@ -3838,26 +3939,15 @@ var Turbo = (function (exports) {
          * @description The name (or path) of the icon. Might include the file extension (to override the icon's type).
          * Setting it will update the icon accordingly.
          */
-        get icon() {
-            return this._icon;
-        }
         set icon(value) {
             this.type = getFileExtension(value).substring(1);
-            this._icon = value;
-            if (this.type == "svg")
-                this.generateSvg();
-            else
-                this.generateImg();
+            this.generateIcon();
         }
         /**
          * @description The assigned color to the icon (if any)
          */
-        get iconColor() {
-            return this._iconColor;
-        }
         set iconColor(value) {
-            this._iconColor = value;
-            if (this.element instanceof SVGElement && value)
+            if (value && this.element instanceof SVGElement)
                 this.element.style.fill = value;
         }
         /**
@@ -3869,93 +3959,115 @@ var Turbo = (function (exports) {
         get element() {
             return this._element;
         }
+        //Utilities
+        loadSvg(path) {
+            return fetchSvg(path);
+        }
+        loadImg(path) {
+            return img({ src: path, alt: this.icon, parent: this });
+        }
+        generateIcon() {
+            if (this.element instanceof HTMLImageElement
+                && equalToAny(this.type, ...TurboIcon_1.imageTypes)) {
+                this.element.src = this.path;
+                this.element.alt = this.icon;
+                return;
+            }
+            this.clear();
+            const element = this.getLoader()(this.path);
+            if (element instanceof Element)
+                this.setupLoadedElement(element);
+            else
+                element.then(element => this.setupLoadedElement(element))
+                    .catch(error => console.error(`Failed to load icon: ${error}`));
+        }
+        getLoader() {
+            if (!this.type)
+                return;
+            const customLoader = TurboIcon_1.config.customLoaders[this.type];
+            if (customLoader)
+                return customLoader;
+            if (equalToAny(this.type, "svg", "SVG"))
+                return this.loadSvg;
+            if (equalToAny(this.type, ...TurboIcon_1.imageTypes))
+                return this.loadImg;
+            throw new Error(`Unsupported icon type: ${this.type}`);
+        }
+        setupLoadedElement(element) {
+            if (this.element || !element)
+                return;
+            if (element.parentElement)
+                element = element.cloneNode(true);
+            this.addChild(element);
+            if (this.iconColor && element instanceof SVGElement)
+                element.style.fill = this.iconColor;
+            if (this.onLoaded)
+                this.onLoaded(element);
+            this.element = element;
+        }
+        clear() {
+            this.element?.destroy();
+            this.element = null;
+        }
     };
     __decorate([
-        cache()
-    ], exports.TurboIcon.prototype, "fetchSvg", null);
-    __decorate([
-        observe
+        observe,
+        auto()
     ], exports.TurboIcon.prototype, "icon", null);
     __decorate([
-        observe
+        observe,
+        auto()
     ], exports.TurboIcon.prototype, "iconColor", null);
+    __decorate([
+        cache()
+    ], exports.TurboIcon.prototype, "loadSvg", null);
     exports.TurboIcon = TurboIcon_1 = __decorate([
-        define("turbo-icon")
+        define()
     ], exports.TurboIcon);
     function icon(properties) {
         return new exports.TurboIcon(properties);
     }
 
-    function styleInject(css, ref) {
-      if ( ref === void 0 ) ref = {};
-      var insertAt = ref.insertAt;
-
-      if (!css || typeof document === 'undefined') { return; }
-
-      var head = document.head || document.getElementsByTagName('head')[0];
-      var style = document.createElement('style');
-      style.type = 'text/css';
-
-      if (insertAt === 'top') {
-        if (head.firstChild) {
-          head.insertBefore(style, head.firstChild);
-        } else {
-          head.appendChild(style);
-        }
-      } else {
-        head.appendChild(style);
-      }
-
-      if (style.styleSheet) {
-        style.styleSheet.cssText = css;
-      } else {
-        style.appendChild(document.createTextNode(css));
-      }
-    }
-
-    var css_248z$2 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-    styleInject(css_248z$2);
-
-    var TurboButton_1;
+    var TurboRichElement_1;
     /**
      * Button class for creating Turbo button elements.
-     * @class TurboButton
+     * @class TurboRichElement
      * @extends TurboElement
      */
-    exports.TurboButton = class TurboButton extends TurboElement {
-        static { TurboButton_1 = this; }
+    exports.TurboRichElement = class TurboRichElement extends TurboElement {
+        static { TurboRichElement_1 = this; }
         /**
          * @description Object containing the children of the button.
          */
         elements;
-        _buttonTextTag;
-        static config = { defaultTextTag: "h4" };
+        static config = { defaultElementTag: "h4" };
         /**
          * Initializes a new instance of the Button class.
          * @param {TurboButtonProperties} properties - Properties to configure the button.
          */
         constructor(properties) {
-            super(properties);
+            if (properties.text && !properties.element)
+                properties.element = properties.text;
+            super({ ...properties, text: null });
+            if (!properties.unsetDefaultClasses)
+                this.addClass(TurboRichElement_1.config.defaultClasses);
+            this.elementTag = properties.elementTag;
             this.elements = {
                 leftCustomElements: null,
                 leftIcon: null,
-                buttonText: null,
+                prefixEntry: null,
+                element: null,
+                suffixEntry: null,
                 rightIcon: null,
                 rightCustomElements: null,
             };
-            this.buttonTextTag = properties.customTextTag;
-            if (!properties.unsetDefaultClasses)
-                this.addClass(TurboButton_1.config.defaultClasses);
-            if (properties.leftCustomElements)
-                this.leftCustomElements = properties.leftCustomElements;
-            if (properties.leftIcon)
-                this.leftIcon = properties.leftIcon;
-            if (properties.buttonText)
-                this.buttonText = properties.buttonText;
-            if (properties.rightIcon)
-                this.rightIcon = properties.rightIcon;
-            if (properties.rightCustomElements)
-                this.rightCustomElements = properties.rightCustomElements;
+            this.leftCustomElements = properties.leftCustomElements;
+            this.leftIcon = properties.leftIcon;
+            this.prefixEntry = properties.prefixEntry;
+            this.element = properties.element;
+            this.suffixEntry = properties.suffixEntry;
+            this.rightIcon = properties.rightIcon;
+            this.rightCustomElements = properties.rightCustomElements;
         }
         /**
          * @description Adds a given element or elements to the button at a specified position.
@@ -3963,7 +4075,7 @@ var Turbo = (function (exports) {
          * @param {keyof ButtonChildren} type - The type of child element being added.
          */
         addAtPosition(element, type) {
-            if (!element)
+            if (!element || !type)
                 return;
             let nextSiblingIndex = 0;
             for (let key in this.elements) {
@@ -3975,27 +4087,9 @@ var Turbo = (function (exports) {
             this.addChild(element, nextSiblingIndex);
         }
         /**
-         * @description Removes a given element or elements from the button.
-         * @param {Element | Element[] | null} element - The element(s) to remove.
-         */
-        removeElement(element) {
-            if (!element)
-                return;
-            if (!Array.isArray(element))
-                this.removeChild(element);
-            else
-                element.forEach(el => this.removeChild(el));
-        }
-        /**
          * @description The tag of the text element in the button
          */
-        get buttonTextTag() {
-            return this._buttonTextTag;
-        }
-        set buttonTextTag(value) {
-            if (!value)
-                value = TurboButton_1.config.defaultTextTag || "h4";
-            this._buttonTextTag = value;
+        set elementTag(value) {
         }
         /**
          * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
@@ -4004,8 +4098,10 @@ var Turbo = (function (exports) {
             return this.elements.leftCustomElements;
         }
         set leftCustomElements(value) {
+            this.removeChild(this.leftCustomElements);
+            if (!value)
+                return;
             this.addAtPosition(value, "leftCustomElements");
-            this.removeElement(this.leftCustomElements);
             this.elements.leftCustomElements = value;
         }
         /**
@@ -4016,30 +4112,109 @@ var Turbo = (function (exports) {
             return this.elements.leftIcon;
         }
         set leftIcon(value) {
-            if (typeof value == "string")
+            if (!value) {
+                this.removeChild(this.leftIcon);
+                return;
+            }
+            if (typeof value == "string") {
+                if (this.leftIcon) {
+                    this.leftIcon.icon = value;
+                    return;
+                }
                 value = new exports.TurboIcon({ icon: value });
+            }
+            this.removeChild(this.leftIcon);
             this.addAtPosition(value, "leftIcon");
-            this.removeElement(this.leftIcon);
             this.elements.leftIcon = value;
+        }
+        /**
+         * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
+         * icon, or a Turbo/HTML element).
+         */
+        get prefixEntry() {
+            return this.elements.prefixEntry;
+        }
+        set prefixEntry(value) {
+            if (!value) {
+                this.removeChild(this.prefixEntry);
+                return;
+            }
+            if (typeof value == "string") {
+                if (this.prefixEntry) {
+                    this.prefixEntry.innerText = value;
+                    return;
+                }
+                value = element({ text: value });
+            }
+            this.removeChild(this.prefixEntry);
+            this.addAtPosition(value, "prefixEntry");
+            this.elements.prefixEntry = value;
         }
         /**
          * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
          * string will update the text's innerText with the given string.
          */
-        get buttonText() {
-            return this.elements.buttonText;
+        get element() {
+            return this.elements.element;
         }
-        set buttonText(value) {
+        set element(value) {
+            if (!value) {
+                this.removeChild(this.element);
+                return;
+            }
             if (typeof value == "string") {
-                if (this.buttonText && "innerText" in this.buttonText) {
-                    this.buttonText.innerText = value;
+                if (this.element && "innerText" in this.element) {
+                    this.element.innerText = value;
                     return;
                 }
-                value = element({ tag: this.buttonTextTag, text: value });
+                value = element({ tag: this.elementTag, text: value });
             }
-            this.addAtPosition(value, "buttonText");
-            this.removeElement(this.buttonText);
-            this.elements.buttonText = value;
+            else if (typeof value == "object" && !(value instanceof Element)) {
+                value = element(value);
+            }
+            this.removeChild(this.element);
+            this.addAtPosition(value, "element");
+            this.elements.element = value;
+        }
+        /**
+         * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
+         * string will update the text's innerText with the given string.
+         */
+        get text() {
+            const element = this.elements.element;
+            if (!element)
+                return "";
+            if ("innerText" in element)
+                return element.innerText;
+            return element.innerHTML;
+        }
+        set text(value) {
+            if (!value)
+                return;
+            this.element = value;
+        }
+        /**
+         * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
+         * icon, or a Turbo/HTML element).
+         */
+        get suffixEntry() {
+            return this.elements.prefixEntry;
+        }
+        set suffixEntry(value) {
+            if (!value) {
+                this.removeChild(this.suffixEntry);
+                return;
+            }
+            if (typeof value == "string") {
+                if (this.suffixEntry) {
+                    this.suffixEntry.innerText = value;
+                    return;
+                }
+                value = element({ text: value });
+            }
+            this.removeChild(this.suffixEntry);
+            this.addAtPosition(value, "suffixEntry");
+            this.elements.suffixEntry = value;
         }
         /**
          * @description The right icon element. Can be set with a new icon by a simple assignment (the name/path of the
@@ -4049,10 +4224,19 @@ var Turbo = (function (exports) {
             return this.elements.rightIcon;
         }
         set rightIcon(value) {
-            if (typeof value == "string")
+            if (!value) {
+                this.removeChild(this.rightIcon);
+                return;
+            }
+            if (typeof value == "string") {
+                if (this.rightIcon) {
+                    this.rightIcon.icon = value;
+                    return;
+                }
                 value = new exports.TurboIcon({ icon: value });
+            }
+            this.removeChild(this.rightIcon);
             this.addAtPosition(value, "rightIcon");
-            this.removeElement(this.rightIcon);
             this.elements.rightIcon = value;
         }
         /**
@@ -4062,16 +4246,69 @@ var Turbo = (function (exports) {
             return this.elements.rightCustomElements;
         }
         set rightCustomElements(value) {
+            this.removeChild(this.rightCustomElements);
+            if (!value)
+                return;
             this.addAtPosition(value, "rightCustomElements");
-            this.removeElement(this.rightCustomElements);
             this.elements.rightCustomElements = value;
         }
     };
-    exports.TurboButton = TurboButton_1 = __decorate([
+    __decorate([
+        auto({ callBefore: (value) => exports.TurboRichElement.config.defaultElementTag || "h4" })
+    ], exports.TurboRichElement.prototype, "elementTag", null);
+    exports.TurboRichElement = TurboRichElement_1 = __decorate([
+        define("turbo-rich-element")
+    ], exports.TurboRichElement);
+    function richElement(properties) {
+        return new exports.TurboRichElement(properties);
+    }
+
+    /**
+     * Button class for creating Turbo button elements.
+     * @class TurboButton
+     * @extends TurboElement
+     */
+    exports.TurboButton = class TurboButton extends exports.TurboRichElement {
+        static config = { defaultTextTag: "h4" };
+        /**
+         * Initializes a new instance of the Button class.
+         * @param {TurboButtonProperties} properties - Properties to configure the button.
+         */
+        constructor(properties) {
+            super(properties);
+        }
+        /**
+         * @description The tag of the text element in the button
+         */
+        set elementTag(value) { }
+    };
+    __decorate([
+        auto({ callBefore: (value) => exports.TurboRichElement.config.defaultElementTag || "h4" })
+    ], exports.TurboButton.prototype, "elementTag", null);
+    exports.TurboButton = __decorate([
         define("turbo-button")
     ], exports.TurboButton);
     function button(properties) {
         return new exports.TurboButton(properties);
+    }
+
+    class TurboIconSwitch extends exports.TurboIcon {
+        switchReifect;
+        constructor(properties) {
+            super(properties);
+            if (properties.switchReifect instanceof StatefulReifect)
+                this.switchReifect = properties.switchReifect;
+            else
+                this.switchReifect = new StatefulReifect(properties.switchReifect || {});
+            if (properties.appendStateToIconName || !properties.switchReifect.properties?.icon) {
+                this.switchReifect.properties.icon = {};
+                this.switchReifect.states.forEach(state => this.switchReifect.properties[state] = properties.icon + "-" + state.toString());
+            }
+            this.switchReifect.attach(this);
+        }
+    }
+    function iconSwitch(properties) {
+        return new TurboIconSwitch(properties);
     }
 
     exports.TurboIconToggle = class TurboIconToggle extends exports.TurboIcon {
@@ -4095,78 +4332,88 @@ var Turbo = (function (exports) {
         }
     };
     exports.TurboIconToggle = __decorate([
-        define("turbo-icon-toggle")
+        define()
     ], exports.TurboIconToggle);
     function iconToggle(properties) {
         return new exports.TurboIconToggle(properties);
     }
 
     exports.TurboInput = class TurboInput extends TurboElement {
-        inputElement;
         labelElement;
-        prefixElement;
-        suffixElement;
+        inputElement;
         locked;
+        lastValueWithInputCheck;
+        lastValueWithBlurCheck;
         constructor(properties = {}) {
             super(properties);
             this.locked = properties.locked || false;
+            this.lastValueWithInputCheck = "";
+            this.lastValueWithBlurCheck = "";
             if (properties.label)
                 this.labelElement = element({ tag: "label", text: properties.label, parent: this });
-            const flexElement = element({ parent: this });
-            if (properties.prefix)
-                this.prefixElement = element({
-                    tag: "span",
-                    text: properties.prefix,
-                    parent: flexElement
-                });
-            this.inputElement = element({
-                ...properties.inputProperties,
-                tag: properties.inputTag,
-                parent: flexElement
+            this.inputElement = new exports.TurboRichElement({
+                ...properties,
+                elementTag: properties.elementTag || "input",
+                element: properties.element || element({ tag: properties.elementTag || "input" }),
+                parent: this
             });
-            if (properties.suffix)
-                this.suffixElement = element({
-                    tag: "span",
-                    text: properties.suffix,
-                    parent: flexElement
-                });
             this.setupEvents(properties);
         }
         setupEvents(properties) {
-            if ("bypassTurboEventManager" in this.inputElement)
-                this.inputElement.bypassTurboEventManager();
-            if (properties.onClick)
-                this.inputElement.addEventListener(DefaultEventName.click, (e) => properties.onClick(e));
-            if (properties.onBlur)
-                this.inputElement.addEventListener(DefaultEventName.blur, (e) => properties.onBlur(e));
-            this.inputElement.addEventListener(DefaultEventName.focus, () => {
+            if ("bypassTurboEventManager" in this.inputElement.element)
+                this.inputElement.element.bypassTurboEventManager();
+            this.inputElement.element.addListener(DefaultEventName.blur, (e) => {
+                if (properties.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
+                    this.stringValue = this.lastValueWithBlurCheck;
+                this.dispatchEvent(new FocusEvent(DefaultEventName.blur, e));
+            });
+            this.inputElement.element.addListener(DefaultEventName.focus, (e) => {
                 if (this.locked)
                     this.inputElement.blur();
                 if (properties.selectTextOnFocus)
-                    this.inputElement.select();
+                    this.inputElement.element.select();
+                this.dispatchEvent(new FocusEvent(DefaultEventName.focus, e));
             });
-            this.inputElement.addEventListener(DefaultEventName.input, (e) => {
+            this.inputElement.element.addListener(DefaultEventName.input, (e) => {
                 if (properties.dynamicVerticalResize) {
                     this.inputElement.style.height = "";
                     this.inputElement.style.height = this.inputElement.scrollHeight + "px";
                 }
-                if (properties.regexCheck) {
-                    const regex = properties.regexCheck instanceof RegExp
-                        ? properties.regexCheck
-                        : new RegExp(properties.regexCheck, "g");
-                    this.value = this.value.toString().replace(regex, "");
+                if (properties.inputRegexCheck) {
+                    const regex = new RegExp(properties.inputRegexCheck, "g");
+                    if (!regex.test(this.stringValue))
+                        this.stringValue = this.lastValueWithInputCheck;
                 }
-                else
-                    this.value = this.value;
-                if (properties.onInput)
-                    properties.onInput(e);
+                this.lastValueWithInputCheck = this.stringValue;
+                if (properties.blurRegexCheck) {
+                    const regex = new RegExp(properties.blurRegexCheck, "g");
+                    if (regex.test(this.stringValue))
+                        this.lastValueWithBlurCheck = this.stringValue;
+                }
+                if (this.stringValue.length == 0) {
+                    this.lastValueWithInputCheck = "0";
+                    this.lastValueWithBlurCheck = "0";
+                }
+                this.dispatchEvent(new InputEvent(DefaultEventName.input, e));
             });
         }
+        set stringValue(value) {
+            this.inputElement.element.value = value;
+        }
+        get stringValue() {
+            return this.inputElement.element.value;
+        }
         get value() {
-            return this.inputElement.value;
+            const value = this.stringValue;
+            // if (typeof value === "string" && value.trim() !== "") {
+            //     if (typeof th === "number") {
+            //         return parseFloat(value) as ValueType;
+            //     }
+            // }
+            return value;
         }
         set value(value) {
-            this.inputElement.value = value.toString();
+            this.stringValue = value.toString();
         }
     };
     exports.TurboInput = __decorate([
@@ -4183,7 +4430,8 @@ var Turbo = (function (exports) {
         max;
         constructor(properties = {}) {
             //Only allow numbers (positive, negative, and decimal)
-            properties.regexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
+            properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
+            properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
             super(properties);
             this.multiplier = properties.multiplier || 1;
             this.decimalPlaces = properties.decimalPlaces;
@@ -4191,7 +4439,7 @@ var Turbo = (function (exports) {
             this.max = properties.max;
         }
         get value() {
-            return Number.parseFloat(this.inputElement.value) / this.multiplier;
+            return Number.parseFloat(this.stringValue) / this.multiplier;
         }
         set value(value) {
             if (!value || value == "")
@@ -4206,7 +4454,7 @@ var Turbo = (function (exports) {
             if (this.decimalPlaces != undefined) {
                 value = Math.round(value * Math.pow(10, this.decimalPlaces)) / Math.pow(10, this.decimalPlaces);
             }
-            this.inputElement.value = value.toString();
+            super.value = value;
         }
     };
     exports.TurboNumericalInput = __decorate([
@@ -4254,8 +4502,8 @@ var Turbo = (function (exports) {
             this.show(false);
         }
         addListeners() {
-            document.addEventListener(DefaultEventName.scroll, () => this.show(false));
-            document.addEventListener(DefaultEventName.click, e => {
+            document.addListener(DefaultEventName.scroll, () => this.show(false));
+            document.addListener(DefaultEventName.click, e => {
                 if (this.isShown && !this.contains(e.target))
                     this.show(false);
             });
@@ -4413,14 +4661,14 @@ var Turbo = (function (exports) {
      * @description Class representing an entry within a TurboSelect.
      * @extends TurboElement
      */
-    exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends TurboElement {
+    exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends exports.TurboRichElement {
         _value;
         _selected;
-        _enabled;
         /**
          * @description The class(es) assigned to the dropdown entry when it is selected
          */
         selectedClasses = "";
+        action;
         onSelected;
         onEnabled;
         reflectedElement;
@@ -4428,13 +4676,14 @@ var Turbo = (function (exports) {
         config = {};
         /**
          * @description DropdownEntry constructor
-         * @param {TurboDropdownEntryProperties} properties - Properties for configuring the dropdown entry.
+         * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
          */
         constructor(properties) {
             super(properties);
             if (!properties.unsetDefaultClasses)
                 this.addClass(TurboSelectEntry_1.config.defaultClasses);
             this.selectedClasses = properties.selectedClasses;
+            this.action = properties.action || (() => { });
             this.onSelected = properties.onSelected || (() => { });
             this.onEnabled = properties.onEnabled || (() => { });
             this.reflectedElement = properties.reflectValueOn != undefined ? properties.reflectValueOn : this;
@@ -4457,8 +4706,12 @@ var Turbo = (function (exports) {
         }
         set value(value) {
             this._value = value;
-            if (this.reflectedElement)
-                this.reflectedElement.innerText = this.stringValue;
+            if (this.reflectedElement) {
+                if (this.reflectedElement instanceof exports.TurboRichElement)
+                    this.reflectedElement.text = this.stringValue;
+                else
+                    this.reflectedElement.innerText = this.stringValue;
+            }
             if (this.inputElement)
                 this.inputElement.value = this.stringValue;
         }
@@ -4476,12 +4729,14 @@ var Turbo = (function (exports) {
                 return;
             this._selected = value;
             this.toggleClass(this.selectedClasses, value);
+            if (value)
+                this.action();
             this.onSelected(value);
         }
         set enabled(value) {
             if (!value && this.selected)
                 this.selected = false;
-            this.transitions.enabled = value;
+            this.reifects.enabled = value;
             this.setStyle("visibility", value ? "" : "hidden");
             this.onEnabled(value);
         }
@@ -4515,26 +4770,11 @@ var Turbo = (function (exports) {
     class TurboSelectInputEvent extends TurboEvent {
         toggledEntry;
         values;
-        constructor(toggledEntry, values, clickMode = exports.ClickMode.left, eventInitDict) {
-            super(null, clickMode, null, TurboEventName.selectInput, eventInitDict);
+        constructor(toggledEntry, values, clickMode = exports.ClickMode.left, authorizeScaling, scalePosition, eventInitDict) {
+            super(null, clickMode, null, TurboEventName.selectInput, authorizeScaling, scalePosition, eventInitDict);
             this.toggledEntry = toggledEntry;
             this.values = values;
         }
-    }
-
-    function trim(value, max, min = 0) {
-        if (value < min)
-            value = min;
-        if (value > max)
-            value = max;
-        return value;
-    }
-    function mod(value, modValue = 0) {
-        while (value < 0)
-            value -= modValue;
-        while (value >= modValue)
-            value += modValue;
-        return value;
     }
 
     var TurboSelect_1;
@@ -4557,6 +4797,7 @@ var Turbo = (function (exports) {
         inputName;
         multiSelection = false;
         forceSelection = false;
+        onSelect;
         selectedEntryClasses;
         static config = {};
         /**
@@ -4573,6 +4814,7 @@ var Turbo = (function (exports) {
             this.multiSelection = properties.multiSelection ?? false;
             this.forceSelection = properties.forceSelection ?? !this.multiSelection;
             this.inputName = properties.inputName;
+            this.onSelect = properties.onSelect || (() => { });
             this.selectedEntryClasses = properties.customSelectedEntryClasses || TurboSelect_1.config.defaultSelectedEntryClasses;
             (properties.values ?? []).forEach(entry => {
                 entry = this.addEntry(entry);
@@ -4593,7 +4835,7 @@ var Turbo = (function (exports) {
             }
             if (!entry.selectedClasses)
                 entry.selectedClasses = this.selectedEntryClasses;
-            entry.addEventListener(DefaultEventName.click, (e) => this.onEntryClick(entry, e));
+            entry.addListener(DefaultEventName.click, (e) => this.onEntryClick(entry, e));
             this.entriesParent.addChild(entry);
             this.entries.push(entry);
             return entry;
@@ -4620,6 +4862,7 @@ var Turbo = (function (exports) {
                 });
             if (!entry.selected && this.forceSelection && this.selectedEntries.length == 0)
                 entry.toggle();
+            this.onSelect(entry.selected, entry, this.getIndex(entry));
             this.dispatchEvent(new TurboSelectInputEvent(entry, this.selectedValues));
             return this;
         }
@@ -4633,6 +4876,9 @@ var Turbo = (function (exports) {
         selectByIndex(index, preprocess = trim) {
             index = preprocess(index, this.entries.length - 1, 0);
             return this.select(this.entries[index]);
+        }
+        getIndex(entry) {
+            return this.entries.indexOf(entry);
         }
         deselectAll() {
             this.selectedEntries.forEach(entry => entry.toggle());
@@ -4710,8 +4956,8 @@ var Turbo = (function (exports) {
         return new exports.TurboSelect(properties);
     }
 
-    var css_248z$1 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-    styleInject(css_248z$1);
+    var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+    styleInject(css_248z);
 
     var TurboDropdown_1;
     /**
@@ -4744,18 +4990,20 @@ var Turbo = (function (exports) {
             this.popup = properties.entriesParent;
             this.initPopup(properties);
             this.initSelector(properties);
-            document.addEventListener(DefaultEventName.click, e => {
+            document.addListener(DefaultEventName.click, e => {
                 if (this.popupOpen && !this.contains(e.target))
                     this.openPopup(false);
             });
         }
         initSelector(properties) {
             if (this.selector instanceof exports.TurboButton) {
-                this.selector.buttonText = typeof properties.selector == "string"
-                    ? properties.selector
-                    : typeof properties.values[0] == "string"
-                        ? properties.values[0]
-                        : properties.values[0].value;
+                if (typeof properties.selector == "string")
+                    this.selector.text = properties.selector;
+                else {
+                    const selectorText = this.entries[0]?.value;
+                    if (typeof selectorText == "string")
+                        this.selector.text = selectorText;
+                }
             }
             this.selector.addListener(DefaultEventName.click, (e) => {
                 this.openPopup(!this.popupOpen);
@@ -4779,8 +5027,8 @@ var Turbo = (function (exports) {
         }
         select(entry) {
             super.select(entry);
-            if (this.selector instanceof exports.TurboButton)
-                this.selector.buttonText = this.selectedValue;
+            if (this.selector instanceof exports.TurboButton && typeof this.selectedValue == "string")
+                this.selector.text = this.selectedValue;
             return this;
         }
         openPopup(b) {
@@ -4800,31 +5048,15 @@ var Turbo = (function (exports) {
         return new exports.TurboDropdown(properties);
     }
 
-    var css_248z = "turbo-dropdown-entry{padding:.5em .7em;width:100%}turbo-dropdown-entry:hover{background-color:#d7d7d7}turbo-dropdown-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-    styleInject(css_248z);
-
-    /**
-     * @class TurboDropdownEntry
-     * @description Class representing an entry within a Dropdown.
-     * @extends TurboElement
-     */
-    exports.TurboDropdownEntry = class TurboDropdownEntry extends exports.TurboSelectEntry {
-        /**
-         * @description DropdownEntry constructor
-         * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
-         */
-        constructor(properties) {
-            super(properties);
-        }
-    };
-    exports.TurboDropdownEntry = __decorate([
-        define("turbo-dropdown-entry")
-    ], exports.TurboDropdownEntry);
-    function dropdownEntry(properties) {
-        return new exports.TurboDropdownEntry(properties);
+    function getEventPosition(e) {
+        if (e instanceof TurboEvent)
+            return e.scaledPosition;
+        if (e instanceof PointerEvent)
+            return new Point(e.clientX, e.clientY);
+        return;
     }
 
-    exports.MarkingMenu = class MarkingMenu extends exports.TurboSelect {
+    exports.TurboMarkingMenu = class TurboMarkingMenu extends exports.TurboSelect {
         transition;
         semiMajor;
         semiMinor;
@@ -4842,12 +5074,12 @@ var Turbo = (function (exports) {
             this.semiMajor = properties.semiMajor ?? 50;
             this.semiMinor = properties.semiMinor ?? 45;
             this.minDragDistance = properties.minDragDistance ?? 20;
-            this.transition = properties.transition instanceof Transition ? properties.transition
+            this.transition = properties.transition instanceof StatefulReifect ? properties.transition
                 : this.initializeTransition(properties.transition ?? {});
             this.transition.initialize(exports.InOut.out, this.entries);
             this.setStyles({ position: "fixed", top: 0, left: 0 });
             this.showTransition = this.showTransition.clone();
-            this.showTransition.delay = { out: (index, totalCount) => 0.13 + totalCount * 0.02, in: 0 };
+            this.showTransition.transitionDelay = { hidden: (index, totalCount) => 0.13 + totalCount * 0.02, visible: 0 };
             this.initEvents();
         }
         get totalAngle() {
@@ -4857,28 +5089,31 @@ var Turbo = (function (exports) {
             return totalAngle;
         }
         initEvents() {
-            const hideOnEvent = () => {
+            const hideOnEvent = (e) => {
+                if (e.target.findInParents(this))
+                    return;
                 if (this.isShown)
                     this.show(false);
             };
-            document.addEventListener(DefaultEventName.scroll, hideOnEvent);
-            // document.addEventListener(DefaultEventName.clickEnd, hideOnEvent);
-            document.addEventListener(DefaultEventName.dragStart, hideOnEvent);
+            document.addListener(DefaultEventName.scroll, hideOnEvent);
+            document.addListener(DefaultEventName.clickEnd, hideOnEvent);
+            document.addListener(DefaultEventName.dragStart, hideOnEvent);
         }
         initializeTransition(properties) {
-            if (!properties.properties)
-                properties.properties = "opacity transform";
-            if (properties.duration == undefined)
-                properties.duration = 0.1;
-            if (!properties.timingFunction)
-                properties.timingFunction = { in: "ease-out", out: "ease-in" };
-            if (!properties.delay)
-                properties.delay = {
+            properties.states = [exports.InOut.in, exports.InOut.out];
+            if (!properties.transitionProperties)
+                properties.transitionProperties = "opacity transform";
+            if (properties.transitionDuration == undefined)
+                properties.transitionDuration = 0.1;
+            if (!properties.transitionTimingFunction)
+                properties.transitionTimingFunction = { in: "ease-out", out: "ease-in" };
+            if (!properties.transitionDelay)
+                properties.transitionDelay = {
                     in: (index) => 0.01 + index * 0.02,
                     out: (index, totalCount) => 0.01 + (totalCount - index) * 0.02
                 };
-            if (!properties.defaultStyles)
-                properties.defaultStyles = {
+            if (!properties.styles)
+                properties.styles = {
                     in: (index, totalCount) => {
                         //Compute angle of current entry (offset by 90 deg)
                         const angle = this.computeAngle(index, totalCount);
@@ -4901,7 +5136,7 @@ var Turbo = (function (exports) {
                     },
                     out: { opacity: 0, transform: `translate3d(-50%, -50%, 0)` }
                 };
-            return transition(properties);
+            return statefulReifier(properties);
         }
         computeAngle(index, totalCount) {
             const totalAngleEntriesCount = totalCount - (this.totalAngle < Math.PI * 2 ? 1 : 0);
@@ -4915,7 +5150,7 @@ var Turbo = (function (exports) {
         }
         addEntry(entry) {
             entry = super.addEntry(entry);
-            this.transition?.initialize(this.isShown ? exports.InOut.in : exports.InOut.out, entry, true);
+            this.transition?.initialize(this.isShown ? exports.InOut.in : exports.InOut.out, entry);
             entry.setStyles({ position: "absolute" });
             return entry;
         }
@@ -4954,16 +5189,47 @@ var Turbo = (function (exports) {
             });
             return closestEntry;
         }
+        selectEntryInDirection(position) {
+            this.select(this.getEntryInDirection(position));
+        }
+        attachTo(element, onClick = (e) => this.show(true, getEventPosition(e)), onDragStart = (e) => this.show(true, getEventPosition(e)), onDragEnd = onDragStart
+            ? (e) => this.selectEntryInDirection(getEventPosition(e))
+            : null) {
+            //Cancel default hide operation on click end
+            element.addListener(DefaultEventName.clickEnd, (e) => e.stopImmediatePropagation());
+            //Setup click if defined
+            if (onClick)
+                element.addListener(DefaultEventName.click, (e) => {
+                    e.stopImmediatePropagation();
+                    onClick(e);
+                }, this);
+            //Cancel default hide operation on drag start
+            element.addListener(DefaultEventName.dragStart, (e) => {
+                e.stopImmediatePropagation();
+                //Setup drag start if defined
+                if (onDragStart)
+                    onDragStart(e);
+            }, this);
+            //Setup drag end if defined
+            if (onDragEnd)
+                element.addListener(DefaultEventName.dragEnd, (e) => {
+                    e.stopImmediatePropagation();
+                    onDragEnd(e);
+                }, this);
+        }
     };
     __decorate([
         auto({ callBefore: (value) => value - Math.PI / 2 })
-    ], exports.MarkingMenu.prototype, "startAngle", null);
+    ], exports.TurboMarkingMenu.prototype, "startAngle", null);
     __decorate([
         auto({ callBefore: (value) => value - Math.PI / 2 })
-    ], exports.MarkingMenu.prototype, "endAngle", null);
-    exports.MarkingMenu = __decorate([
+    ], exports.TurboMarkingMenu.prototype, "endAngle", null);
+    exports.TurboMarkingMenu = __decorate([
         define("turbo-marking-menu")
-    ], exports.MarkingMenu);
+    ], exports.TurboMarkingMenu);
+    function markingMenu(properties = {}) {
+        return new exports.TurboMarkingMenu(properties);
+    }
 
     /**
      * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
@@ -4987,15 +5253,211 @@ var Turbo = (function (exports) {
         return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
     }
 
+    // @ts-nocheck
+    /**
+     * @class Reifect
+     * @description A class to manage and apply dynamic properties, styles, classes, and transitions to a
+     * set of objects.
+     *
+     * @template {object} ClassType - The object type this reifier will be applied to.
+     */
+    class Reifect extends StatefulReifect {
+        /**
+         * @description Creates an instance of StatefulReifier.
+         * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
+         */
+        constructor(properties) {
+            const statefulProperties = properties;
+            statefulProperties.states = [""];
+            super(statefulProperties);
+        }
+        /**
+         * @description The properties to be assigned to the objects. It could take:
+         * - A record of `{key: value}` pairs.
+         * - An interpolation function that would return a record of `{key: value}` pairs.
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get properties() {
+            const properties = super.properties;
+            if (typeof properties == "object" && "" in properties)
+                return properties[""];
+            else
+                return properties;
+        }
+        set properties(value) {
+            super.properties = value;
+        }
+        /**
+         * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+         * - A record of `{CSS property: value}` pairs.
+         * - An interpolation function that would return a record of `{key: value}` pairs.
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get styles() {
+            const styles = super.styles;
+            if (typeof styles == "object" && "" in styles)
+                return styles[""];
+            else
+                return styles;
+        }
+        set styles(value) {
+            super.styles = value;
+        }
+        /**
+         * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+         * - A string of space-separated classes.
+         * - An array of classes.
+         * - An interpolation function that would return a string of space-separated classes or an array of classes.
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get classes() {
+            const classes = super.classes;
+            if (typeof classes == "object" && "" in classes)
+                return classes[""];
+            else
+                return classes;
+        }
+        set classes(value) {
+            super.classes = value;
+        }
+        /**
+         * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+         * - The object to be replaced with.
+         * - An interpolation function that would return the object to be replaced with.
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get replaceWith() {
+            const replaceWith = super.replaceWith;
+            if (typeof replaceWith == "object" && "" in replaceWith)
+                return replaceWith[""];
+            else
+                return replaceWith;
+        }
+        set replaceWith(value) {
+            super.replaceWith = value;
+        }
+        /**
+         * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+         * could take:
+         * - A string of space-separated CSS properties.
+         * - An array of CSS properties.
+         * - An interpolation function that would return a string of space-separated CSS properties or an array of
+         * CSS properties.
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionProperties() {
+            const transitionProperties = super.transitionProperties;
+            if (typeof transitionProperties == "object" && "" in transitionProperties)
+                return transitionProperties[""];
+            else
+                return transitionProperties;
+        }
+        set transitionProperties(value) {
+            super.transitionProperties = value;
+        }
+        /**
+         * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+         * - A numerical value (in seconds).
+         * - An interpolation function that would return a duration (number in seconds).
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionDuration() {
+            const transitionDuration = super.transitionDuration;
+            if (typeof transitionDuration == "object" && "" in transitionDuration)
+                return transitionDuration[""];
+            else
+                return transitionDuration;
+        }
+        set transitionDuration(value) {
+            super.transitionDuration = value;
+        }
+        /**
+         * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+         * It could take:
+         * - A string representing the timing function to apply.
+         * - An interpolation function that would return a timing function (string).
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionTimingFunction() {
+            const transitionTimingFunction = super.transitionTimingFunction;
+            if (typeof transitionTimingFunction == "object" && "" in transitionTimingFunction)
+                return transitionTimingFunction[""];
+            else
+                return transitionTimingFunction;
+        }
+        set transitionTimingFunction(value) {
+            super.transitionTimingFunction = value;
+        }
+        /**
+         * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+         * - A numerical value (in seconds).
+         * - An interpolation function that would return a delay (number in seconds).
+         *
+         * The interpolation function would take as arguments:
+         * - `index: number`: the index of the object in the applied list.
+         * - `total: number`: the total number of objects in the applied list.
+         * - `object: ClassType`: the object itself.
+         */
+        get transitionDelay() {
+            const transitionDelay = super.transitionDelay;
+            if (typeof transitionDelay == "object" && "" in transitionDelay)
+                return transitionDelay[""];
+            else
+                return transitionDelay;
+        }
+        set transitionDelay(value) {
+            super.transitionDelay = value;
+        }
+        initialize(objects, options) {
+            super.initialize("", objects, options);
+        }
+        apply(objects, options) {
+            super.apply("", objects, options);
+        }
+    }
+    function reifect(properties) {
+        return new Reifect(properties);
+    }
+
     exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
-        transition;
+        reifect;
         sizePerEntry = [];
         direction;
-        opacity;
+        set opacity(value) { }
         scale;
         size;
+        openTimeout = 3000;
+        generateCustomStyling;
         dragging;
-        openTimeout;
+        openTimer;
         constructor(properties) {
             properties.multiSelection = false;
             properties.forceSelection = true;
@@ -5004,88 +5466,21 @@ var Turbo = (function (exports) {
             this.scale = properties.scale ?? { max: 1, min: 0.5 };
             this.size = typeof properties.size == "object" ? properties.size
                 : { max: properties.size ?? 100, min: -(properties.size ?? 100) };
+            this.generateCustomStyling = properties.generateCustomStyling;
             this.direction = properties.direction || exports.Direction.horizontal;
-            this.transition = properties.transition instanceof Transition ? properties.transition
-                : this.initializeTransition(properties.transition ?? {});
-            this.setStyles({ display: "block", position: "relative", margin: "100px" });
+            this.reifect = properties.styleReifect instanceof Reifect ? properties.styleReifect
+                : this.initializeStyleReifect(properties.styleReifect);
+            this.setStyles({ display: "block", position: "relative" });
             this.index = 0;
             this.open = false;
             this.initEvents();
             requestAnimationFrame(() => {
-                this.transition.apply(exports.InOut.out, this.entries);
+                this.reifect.apply(this.entries);
                 this.snapTo(0);
             });
         }
-        initializeTransition(properties) {
-            if (!properties.properties)
-                properties.properties = "opacity transform";
-            if (properties.duration == undefined)
-                properties.duration = 0.2;
-            if (!properties.timingFunction)
-                properties.timingFunction = "ease-in-out";
-            return transition(properties);
-        }
-        reloadStyles(reloadSizes = false) {
-            const elements = this.transition.getEnabledEntriesData();
-            if (reloadSizes)
-                elements.forEach(entry => {
-                    const size = entry.element[this.direction == exports.Direction.vertical ? "offsetHeight" : "offsetWidth"];
-                    if (this.sizePerEntry[entry.elementIndex])
-                        this.sizePerEntry[entry.elementIndex] = size;
-                    else
-                        this.sizePerEntry.push(size);
-                });
-            const firstEntrySize = this.sizePerEntry[0];
-            const halfFirstEntrySize = firstEntrySize / 2;
-            const lastEntrySize = this.sizePerEntry[elements.length - 1];
-            const halfLastEntrySize = lastEntrySize / 2;
-            let currentIndex = Math.floor(this.index);
-            let afterOffset = -Math.abs(this.index - currentIndex) * this.sizePerEntry[this.flooredTrimmedIndex];
-            let beforeOffset = afterOffset;
-            while (currentIndex >= elements.length) {
-                beforeOffset -= firstEntrySize;
-                currentIndex--;
-            }
-            while (currentIndex < 0) {
-                afterOffset += lastEntrySize;
-                currentIndex++;
-            }
-            if (beforeOffset < this.size.min + halfFirstEntrySize)
-                beforeOffset = this.size.min + halfFirstEntrySize;
-            if (afterOffset > this.size.max + halfLastEntrySize)
-                afterOffset = this.size.max + halfLastEntrySize;
-            this.applyStyling(elements[currentIndex].element, currentIndex == elements.length - 1
-                ? beforeOffset : afterOffset, halfFirstEntrySize, halfLastEntrySize);
-            for (let i = currentIndex - 1; i >= 0; i--) {
-                beforeOffset -= this.sizePerEntry[i];
-                if (beforeOffset < this.size.min + halfFirstEntrySize)
-                    beforeOffset = this.size.min + halfFirstEntrySize;
-                this.applyStyling(elements[i].element, beforeOffset, halfFirstEntrySize, halfLastEntrySize);
-            }
-            for (let i = currentIndex + 1; i < elements.length; i++) {
-                afterOffset += this.sizePerEntry[i];
-                if (afterOffset > this.size.max + halfLastEntrySize)
-                    afterOffset = this.size.max + halfLastEntrySize;
-                this.applyStyling(elements[i].element, afterOffset, halfFirstEntrySize, halfLastEntrySize);
-            }
-        }
-        applyStyling(element, translationValue, halfFirstEntrySize = this.sizePerEntry[0] / 2, halfLastEntrySize = this.sizePerEntry[this.sizePerEntry.length - 1] / 2) {
-            let opacityValue, scaleValue;
-            if (translationValue > 0) {
-                opacityValue = linearInterpolation(translationValue, 0, this.size.max + halfLastEntrySize, this.opacity.max, this.opacity.min);
-                scaleValue = linearInterpolation(translationValue, 0, this.size.max + halfLastEntrySize, this.scale.max, this.scale.min);
-            }
-            else {
-                opacityValue = Math.abs(linearInterpolation(translationValue, 0, this.size.min + halfFirstEntrySize, this.opacity.max, this.opacity.min));
-                scaleValue = Math.abs(linearInterpolation(translationValue, 0, this.size.min + halfFirstEntrySize, this.scale.max, this.scale.min));
-            }
-            element.setStyles({
-                opacity: opacityValue,
-                transform: `translate3d(
-                        calc(${this.direction == exports.Direction.horizontal ? translationValue : 0}px - 50%), 
-                        calc(${this.direction == exports.Direction.vertical ? translationValue : 0}px - 50%),
-                        0) scale3d(${scaleValue}, ${scaleValue}, 1)`
-            });
+        get isVertical() {
+            return this.direction == exports.Direction.vertical;
         }
         set index(value) {
             this.selectByIndex(this.trimmedIndex);
@@ -5099,27 +5494,135 @@ var Turbo = (function (exports) {
         set open(value) {
             this.setStyle("overflow", value ? "visible" : "hidden");
         }
+        initializeStyleReifect(properties) {
+            if (!properties)
+                properties = {};
+            if (!properties.transitionProperties)
+                properties.transitionProperties = "opacity transform";
+            if (properties.transitionDuration == undefined)
+                properties.transitionDuration = 0.2;
+            if (!properties.transitionTimingFunction)
+                properties.transitionTimingFunction = "ease-in-out";
+            return reifect(properties);
+        }
+        initEvents() {
+            const coordinate = this.direction == exports.Direction.vertical ? "y" : "x";
+            this.addListener(DefaultEventName.drag, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                const currentEntrySize = this.sizePerEntry[this.flooredTrimmedIndex];
+                if (currentEntrySize != 0)
+                    this.index -= e.scaledDeltaPosition[coordinate] / currentEntrySize;
+                this.reloadStyles();
+            });
+            this.addListener(DefaultEventName.dragEnd, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                this.dragging = false;
+                this.snapTo(this.trimmedIndex);
+                this.setOpenTimer();
+            });
+            document.addListener(DefaultEventName.click, () => this.open = false);
+        }
+        reloadStyles(reloadSizes = false) {
+            const elements = this.reifect.getEnabledObjectsData();
+            if (reloadSizes) {
+                elements.forEach(entry => {
+                    const object = entry.object.deref();
+                    const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+                    if (this.sizePerEntry[entry.objectIndex])
+                        this.sizePerEntry[entry.objectIndex] = size;
+                    else
+                        this.sizePerEntry.push(size);
+                });
+            }
+            const firstEntrySize = this.sizePerEntry[0];
+            const halfFirstEntrySize = firstEntrySize / 2;
+            const lastEntrySize = this.sizePerEntry[elements.length - 1];
+            const halfLastEntrySize = lastEntrySize / 2;
+            const offsetSize = {
+                min: this.size.min + this.sizePerEntry[0] / 2,
+                max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
+            };
+            let currentIndex = Math.floor(this.index);
+            let currentElementOffset = -Math.abs(this.index - currentIndex)
+                * this.sizePerEntry[this.flooredTrimmedIndex];
+            let afterOffset = currentElementOffset;
+            let beforeOffset = currentElementOffset;
+            while (currentIndex >= elements.length) {
+                currentElementOffset -= firstEntrySize;
+                beforeOffset -= firstEntrySize;
+                currentIndex--;
+            }
+            while (currentIndex < 0) {
+                currentElementOffset += lastEntrySize;
+                afterOffset += lastEntrySize;
+                currentIndex++;
+            }
+            if (beforeOffset < this.size.min + halfFirstEntrySize)
+                beforeOffset = this.size.min + halfFirstEntrySize;
+            if (afterOffset > this.size.max + halfLastEntrySize)
+                afterOffset = this.size.max + halfLastEntrySize;
+            this.applyStyling(elements[currentIndex].object.deref(), currentElementOffset, offsetSize);
+            for (let i = currentIndex - 1; i >= 0; i--) {
+                beforeOffset -= this.sizePerEntry[i];
+                if (beforeOffset < this.size.min + halfFirstEntrySize)
+                    beforeOffset = this.size.min + halfFirstEntrySize;
+                this.applyStyling(elements[i].object.deref(), beforeOffset, offsetSize);
+            }
+            for (let i = currentIndex + 1; i < elements.length; i++) {
+                afterOffset += this.sizePerEntry[i];
+                if (afterOffset > this.size.max + halfLastEntrySize)
+                    afterOffset = this.size.max + halfLastEntrySize;
+                this.applyStyling(elements[i].object.deref(), afterOffset, offsetSize);
+            }
+        }
+        applyStyling(element, translationValue, size = {
+            min: this.size.min + this.sizePerEntry[0] / 2,
+            max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
+        }) {
+            let opacityValue, scaleValue;
+            if (translationValue > 0) {
+                opacityValue = linearInterpolation(translationValue, 0, size.max, this.opacity.max, this.opacity.min);
+                scaleValue = linearInterpolation(translationValue, 0, size.max, this.scale.max, this.scale.min);
+            }
+            else {
+                opacityValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.opacity.max, this.opacity.min));
+                scaleValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.scale.max, this.scale.min));
+            }
+            let styles = {
+                left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
+            calc(${!this.isVertical ? translationValue : 0}px - 50%), 
+            calc(${this.isVertical ? translationValue : 0}px - 50%),
+            0) scale3d(${scaleValue}, ${scaleValue}, 1)`
+            };
+            if (this.generateCustomStyling)
+                styles = this.generateCustomStyling(element, translationValue, size, styles);
+            element.setStyles(styles);
+        }
         onEntryClick(entry, e) {
             super.onEntryClick(entry, e);
             e.stopImmediatePropagation();
             this.open = true;
             this.snapTo(this.entries.indexOf(entry));
-            this.setOpenTimeout();
+            this.setOpenTimer();
         }
         addEntry(entry) {
             entry = super.addEntry(entry);
-            entry.setStyles({ position: "absolute", left: "50%", top: "50%" });
-            entry.addEventListener(DefaultEventName.dragStart, (e) => {
+            entry.setStyles({ position: "absolute" });
+            entry.addListener(DefaultEventName.dragStart, (e) => {
                 e.stopImmediatePropagation();
-                this.clearOpenTimeout();
+                this.clearOpenTimer();
                 this.open = true;
                 this.dragging = true;
-                this.transition.enabled = exports.TransitionMode.stylesOnly;
+                this.reifect.enabled.transition = false;
                 this.reloadStyles(true);
             });
-            if (this.transition) {
-                this.transition.attach(entry);
-                this.transition.apply();
+            if (this.reifect) {
+                this.reifect.attach(entry);
+                this.reifect.apply();
                 this.reloadStyles(true);
             }
             return entry;
@@ -5129,39 +5632,23 @@ var Turbo = (function (exports) {
         }
         snapTo(value) {
             this.index = value;
-            this.transition.enabled = exports.TransitionMode.enabled;
+            this.reifect.enabled.transition = true;
             this.reloadStyles(true);
             const computedStyle = getComputedStyle(this.selectedEntry);
             this.setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
         }
-        clearOpenTimeout() {
-            if (this.openTimeout)
-                clearTimeout(this.openTimeout);
+        clearOpenTimer() {
+            if (this.openTimer)
+                clearTimeout(this.openTimer);
         }
-        setOpenTimeout() {
-            this.clearOpenTimeout();
-            this.openTimeout = setTimeout(() => this.open = false, 3000);
-        }
-        initEvents() {
-            const coordinate = this.direction == exports.Direction.vertical ? "y" : "x";
-            document.addEventListener(DefaultEventName.drag, (e) => {
-                if (!this.dragging)
-                    return;
-                e.stopImmediatePropagation();
-                this.index -= e.scaledDeltaPosition[coordinate] / this.sizePerEntry[this.flooredTrimmedIndex];
-                this.reloadStyles();
-            });
-            document.addEventListener(DefaultEventName.dragEnd, (e) => {
-                if (!this.dragging)
-                    return;
-                e.stopImmediatePropagation();
-                this.dragging = false;
-                this.snapTo(this.trimmedIndex);
-                this.setOpenTimeout();
-            });
-            document.addEventListener(DefaultEventName.click, () => this.open = false);
+        setOpenTimer() {
+            this.clearOpenTimer();
+            this.openTimer = setTimeout(() => this.open = false, this.openTimeout);
         }
     };
+    __decorate([
+        auto({ callBefore: (value) => trim(value, 1) })
+    ], exports.TurboSelectWheel.prototype, "opacity", null);
     __decorate([
         auto()
     ], exports.TurboSelectWheel.prototype, "index", null);
@@ -5173,6 +5660,65 @@ var Turbo = (function (exports) {
     ], exports.TurboSelectWheel);
     function selectWheel(properties) {
         return new exports.TurboSelectWheel(properties);
+    }
+
+    class TurboWeakSet {
+        _weakRefs;
+        constructor() {
+            this._weakRefs = new Set();
+        }
+        // Add an object as a WeakRef if it's not already in the set
+        add(obj) {
+            if (!this.has(obj))
+                this._weakRefs.add(new WeakRef(obj));
+            return this;
+        }
+        // Check if the set contains a WeakRef to the given object
+        has(obj) {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === obj)
+                    return true;
+            }
+            return false;
+        }
+        // Delete the WeakRef associated with the given object
+        delete(obj) {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === obj) {
+                    this._weakRefs.delete(weakRef);
+                    return true;
+                }
+            }
+            return false;
+        }
+        // Clean up any WeakRefs whose objects have been garbage-collected
+        cleanup() {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === undefined)
+                    this._weakRefs.delete(weakRef);
+            }
+        }
+        // Convert live objects in the TurboWeakSet to an array
+        toArray() {
+            const result = [];
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    result.push(obj);
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+            return result;
+        }
+        // Get the size of the TurboWeakSet (only live objects)
+        get size() {
+            this.cleanup();
+            return this.toArray().length;
+        }
+        // Clear all weak references
+        clear() {
+            this._weakRefs.clear();
+        }
     }
 
     /**
@@ -5279,22 +5825,24 @@ var Turbo = (function (exports) {
     exports.MathMLNamespace = MathMLNamespace;
     exports.MathMLTagsDefinitions = MathMLTagsDefinitions;
     exports.Point = Point;
+    exports.Reifect = Reifect;
+    exports.ReifectHandler = ReifectHandler;
+    exports.StatefulReifect = StatefulReifect;
     exports.SvgNamespace = SvgNamespace;
     exports.SvgTagsDefinitions = SvgTagsDefinitions;
-    exports.Transition = Transition;
-    exports.TransitionHandler = TransitionHandler;
     exports.TurboClickEventName = TurboClickEventName;
     exports.TurboDragEvent = TurboDragEvent;
     exports.TurboDragEventName = TurboDragEventName;
     exports.TurboElement = TurboElement;
     exports.TurboEvent = TurboEvent;
-    exports.TurboEventManager = TurboEventManager;
     exports.TurboEventName = TurboEventName;
+    exports.TurboIconSwitch = TurboIconSwitch;
     exports.TurboKeyEvent = TurboKeyEvent;
     exports.TurboKeyEventName = TurboKeyEventName;
     exports.TurboMap = TurboMap;
     exports.TurboMoveName = TurboMoveName;
     exports.TurboSelectInputEvent = TurboSelectInputEvent;
+    exports.TurboWeakSet = TurboWeakSet;
     exports.TurboWheelEvent = TurboWheelEvent;
     exports.TurboWheelEventName = TurboWheelEventName;
     exports.a = a;
@@ -5302,6 +5850,7 @@ var Turbo = (function (exports) {
     exports.addClassManipulationToElementPrototype = addClassManipulationToElementPrototype;
     exports.addElementManipulationToElementPrototype = addElementManipulationToElementPrototype;
     exports.addListenerManipulationToElementPrototype = addListenerManipulationToElementPrototype;
+    exports.addReifectManagementToNodePrototype = addReifectManagementToNodePrototype;
     exports.addStylesManipulationToElementPrototype = addStylesManipulationToElementPrototype;
     exports.areEqual = areEqual;
     exports.auto = auto;
@@ -5316,13 +5865,14 @@ var Turbo = (function (exports) {
     exports.clearCache = clearCache;
     exports.clearCacheEntry = clearCacheEntry;
     exports.contrast = contrast;
+    exports.createProxy = createProxy;
     exports.css = css;
     exports.define = define;
     exports.div = div;
     exports.dropdown = dropdown;
-    exports.dropdownEntry = dropdownEntry;
     exports.eachEqualToAny = eachEqualToAny;
     exports.element = element;
+    exports.equalToAny = equalToAny;
     exports.fetchSvg = fetchSvg;
     exports.flexCol = flexCol;
     exports.flexColCenter = flexColCenter;
@@ -5330,6 +5880,7 @@ var Turbo = (function (exports) {
     exports.flexRowCenter = flexRowCenter;
     exports.form = form;
     exports.generateTagFunction = generateTagFunction;
+    exports.getEventPosition = getEventPosition;
     exports.getFileExtension = getFileExtension;
     exports.h1 = h1;
     exports.h2 = h2;
@@ -5338,6 +5889,7 @@ var Turbo = (function (exports) {
     exports.h5 = h5;
     exports.h6 = h6;
     exports.icon = icon;
+    exports.iconSwitch = iconSwitch;
     exports.iconToggle = iconToggle;
     exports.img = img;
     exports.input = input;
@@ -5350,24 +5902,27 @@ var Turbo = (function (exports) {
     exports.link = link;
     exports.loadLocalFont = loadLocalFont;
     exports.luminance = luminance;
+    exports.markingMenu = markingMenu;
     exports.mod = mod;
     exports.numericalInput = numericalInput;
     exports.observe = observe;
     exports.p = p;
     exports.parse = parse;
     exports.popup = popup;
+    exports.reifect = reifect;
+    exports.richElement = richElement;
     exports.select = select;
     exports.selectEntry = selectEntry;
     exports.selectWheel = selectWheel;
     exports.setupTurboEventManagerBypassing = setupTurboEventManagerBypassing;
     exports.spacer = spacer;
     exports.span = span;
+    exports.statefulReifier = statefulReifier;
     exports.stringify = stringify;
     exports.style = style;
     exports.stylesheet = stylesheet;
     exports.textToElement = textToElement;
     exports.textarea = textarea;
-    exports.transition = transition;
     exports.trim = trim;
     exports.turboInput = turboInput;
     exports.turbofy = turbofy;

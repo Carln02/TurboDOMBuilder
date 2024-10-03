@@ -2,7 +2,8 @@ import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.ty
 import {TurboSelectEntry} from "./selectEntry/selectEntry";
 import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
 
-type TurboSelectProperties<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> = TurboProperties & {
+type TurboSelectProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
+    = TurboSelectEntry<ValueType>> = TurboProperties & {
     unsetDefaultClasses?: boolean,
     customSelectedEntryClasses?: string,
 
@@ -14,6 +15,7 @@ type TurboSelectProperties<EntryType extends TurboSelectEntry<ValueType>, ValueT
     inputName?: string,
 
     entriesParent?: Element,
+    onSelect?: (b: boolean, entry: EntryType, index: number) => void,
 };
 
 type TurboSelectConfig = {

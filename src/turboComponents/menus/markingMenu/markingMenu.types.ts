@@ -1,11 +1,12 @@
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelectProperties} from "../../basics/select/select.types";
-import {Transition} from "../../../domBuilding/transition/transition";
-import {TransitionProperties} from "../../../domBuilding/transition/transition.types";
+import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
+import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
+import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 
-type MarkingMenuProperties<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> =
-    TurboSelectProperties<EntryType, ValueType> & {
-    transition?: Transition | TransitionProperties,
+type TurboMarkingMenuProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
+    = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
+    transition?: StatefulReifect<InOut> | StatefulReifectProperties<InOut>,
 
     startAngle?: number,
     endAngle?: number,
@@ -15,4 +16,4 @@ type MarkingMenuProperties<EntryType extends TurboSelectEntry<ValueType>, ValueT
     minDragDistance?: number
 }
 
-export {MarkingMenuProperties};
+export {TurboMarkingMenuProperties};

@@ -7,7 +7,6 @@ import {define} from "../../../domBuilding/decorators/define";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelect} from "../../basics/select/select";
-import {TurboDropdownEntry} from "./dropdownEntry/dropdownEntry";
 
 /**
  * Dropdown class for creating Turbo button elements.
@@ -15,7 +14,8 @@ import {TurboDropdownEntry} from "./dropdownEntry/dropdownEntry";
  * @extends TurboElement
  */
 @define("turbo-dropdown")
-class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
+class TurboDropdown<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any>
+    = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
     /**
      * The dropdown's selector element.
      */
@@ -35,7 +35,7 @@ class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
      * @description Dropdown constructor
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    constructor(properties: TurboDropdownProperties) {
+    constructor(properties: TurboDropdownProperties<ValueType, EntryType>) {
         properties.entriesParent = properties.popup || popup();
         super(properties);
 
@@ -46,18 +46,18 @@ class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
         this.initPopup(properties);
         this.initSelector(properties);
 
-        document.addEventListener(DefaultEventName.click, e => {
+        document.addListener(DefaultEventName.click, e => {
             if (this.popupOpen && !this.contains(e.target as Node)) this.openPopup(false);
         });
     }
 
-    private initSelector(properties: TurboDropdownProperties) {
+    private initSelector(properties: TurboDropdownProperties<ValueType, EntryType>) {
         if (this.selector instanceof TurboButton) {
-            this.selector.buttonText = typeof properties.selector == "string"
-                ? properties.selector
-                : typeof properties.values[0] == "string"
-                    ? properties.values[0]
-                    : properties.values[0].value;
+            if (typeof properties.selector == "string") this.selector.text = properties.selector;
+            else {
+                const selectorText = this.entries[0]?.value;
+                if (typeof selectorText == "string") this.selector.text = selectorText;
+            }
         }
 
         this.selector.addListener(DefaultEventName.click, (e) => {
@@ -71,7 +71,7 @@ class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
             : TurboDropdown.config.defaultSelectorClasses);
     }
 
-    private initPopup(properties: TurboDropdownProperties) {
+    private initPopup(properties: TurboDropdownProperties<ValueType, EntryType>) {
         this.addChild(this.popup);
         this.popup.show(false);
         this.popup.addClass(properties.customPopupClasses
@@ -79,14 +79,15 @@ class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
             : TurboDropdown.config.defaultPopupClasses);
     }
 
-    protected onEntryClick(entry: TurboSelectEntry) {
+    protected onEntryClick(entry: EntryType) {
         super.onEntryClick(entry);
         this.openPopup(false);
     }
 
-    public select(entry: string | TurboSelectEntry): this {
+    public select(entry: ValueType | EntryType): this {
         super.select(entry);
-        if (this.selector instanceof TurboButton) this.selector.buttonText = this.selectedValue;
+        if (this.selector instanceof TurboButton && typeof this.selectedValue == "string")
+            this.selector.text = this.selectedValue;
         return this;
     }
 

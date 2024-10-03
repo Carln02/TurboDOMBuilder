@@ -6,24 +6,27 @@ import {observe} from "../../../domBuilding/decorators/observe";
 import {define} from "../../../domBuilding/decorators/define";
 import {img} from "../../../domBuilding/elementCreation/basicElements";
 import {cache} from "../../../domBuilding/decorators/cache/cache";
+import {auto} from "../../../domBuilding/decorators/auto/auto";
+import {equalToAny} from "../../../utils/computations/equity";
 
 /**
  * Icon class for creating icon elements.
  * @class TurboIcon
  * @extends TurboElement
  */
-@define("turbo-icon")
+@define()
 class TurboIcon extends TurboElement {
-    private _element: HTMLImageElement | SVGElement | null = null;
+    private _element: Element;
 
     private _type: string;
     private _directory: string;
-    private _icon: string;
 
-    private _iconColor: string | null = null;
-    private _onLoaded: ((svg: SVGElement) => void) | null = null;
+    public onLoaded: (element: Element) => void;
 
-    public static readonly config: TurboIconConfig = {defaultType: "svg", defaultDirectory: ""};
+    public static readonly config: TurboIconConfig = {defaultType: "svg", defaultDirectory: "", customLoaders: {}};
+
+    private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
+        "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
 
     /**
      * Creates an instance of Icon.
@@ -42,43 +45,9 @@ class TurboIcon extends TurboElement {
         this.directory = properties.directory;
 
         if (properties.iconColor) this.iconColor = properties.iconColor;
-        if (properties.onLoaded) this._onLoaded = properties.onLoaded;
+        if (properties.onLoaded) this.onLoaded = properties.onLoaded;
 
         this.icon = properties.icon;
-    }
-
-    @cache()
-    private fetchSvg(path: string): Promise<SVGElement> {
-        return fetchSvg(path);
-    }
-
-    private generateSvg() {
-        this.clear();
-        this.fetchSvg(this.path).then(svg => {
-            if (this.element) return;
-            this.element = svg;
-            this.addChild(this.element);
-            if (this.element) {
-                if (this.iconColor) this.element.style.fill = this.iconColor;
-                if (this._onLoaded) this._onLoaded(this.element);
-            }
-        });
-    }
-
-    private generateImg() {
-        if (this.element instanceof HTMLImageElement) {
-            this.element.src = this.path;
-            this.element.alt = this.icon;
-            return;
-        }
-
-        this.clear();
-        this.element = img({src: this.path, alt: this.icon, parent: this});
-    }
-
-    private clear() {
-        this.removeAllChildren();
-        this.element = null;
     }
 
     //Getters and setters
@@ -90,9 +59,10 @@ class TurboIcon extends TurboElement {
         return this._type;
     }
 
-    private set type(value: string | undefined) {
-       if (!value || value.length == 0) value = this.type || TurboIcon.config.defaultType || "svg";
-       this._type = value;
+    private set type(value: string) {
+        if (!value || value.length == 0) value = this.type || TurboIcon.config.defaultType || "svg";
+        if (value[0] == ".") value = value.substring(1);
+        this._type = value;
     }
 
     /**
@@ -102,7 +72,7 @@ class TurboIcon extends TurboElement {
         return this._directory;
     }
 
-    private set directory(value: string | undefined) {
+    private set directory(value: string) {
         if (!value) value = this.directory || TurboIcon.config.defaultDirectory || "";
         if (value.length > 0 && !value.endsWith("/")) value += "/";
         this._directory = value;
@@ -121,40 +91,83 @@ class TurboIcon extends TurboElement {
      * Setting it will update the icon accordingly.
      */
     @observe
-    public get icon() {
-        return this._icon;
-    }
-
+    @auto()
     public set icon(value: string) {
         this.type = getFileExtension(value).substring(1);
-        this._icon = value;
-
-        if (this.type == "svg") this.generateSvg();
-        else this.generateImg();
+        this.generateIcon();
     }
 
     /**
      * @description The assigned color to the icon (if any)
      */
     @observe
-    public get iconColor() {
-        return this._iconColor;
-    }
-
-    public set iconColor(value: string | null) {
-        this._iconColor = value;
-        if (this.element instanceof SVGElement && value) this.element.style.fill = value;
+    @auto()
+    public set iconColor(value: string) {
+        if (value && this.element instanceof SVGElement) this.element.style.fill = value;
     }
 
     /**
      * @description The child element of the icon element (an HTML image or an SVG element).
      */
-    private set element(value: HTMLImageElement | SVGElement) {
+    private set element(value: Element) {
         this._element = value;
     }
 
-    public get element() {
+    public get element(): Element {
         return this._element;
+    }
+
+    //Utilities
+
+    @cache()
+    public loadSvg(path: string): Promise<SVGElement> {
+        return fetchSvg(path);
+    }
+
+    private loadImg(path: string): HTMLImageElement {
+        return img({src: path, alt: this.icon, parent: this});
+    }
+
+    private generateIcon() {
+        if (this.element instanceof HTMLImageElement
+            && equalToAny(this.type, ...TurboIcon.imageTypes)) {
+            this.element.src = this.path;
+            this.element.alt = this.icon;
+            return;
+        }
+
+        this.clear();
+        const element = this.getLoader()(this.path);
+        if (element instanceof Element) this.setupLoadedElement(element);
+        else element.then(element => this.setupLoadedElement(element))
+            .catch(error => console.error(`Failed to load icon: ${error}`));
+    }
+
+    private getLoader(): (path: string) => Element | Promise<Element> {
+        if (!this.type) return;
+
+        const customLoader = TurboIcon.config.customLoaders[this.type];
+        if (customLoader) return customLoader;
+
+        if (equalToAny(this.type, "svg", "SVG")) return this.loadSvg;
+        if (equalToAny(this.type, ...TurboIcon.imageTypes)) return this.loadImg;
+        throw new Error(`Unsupported icon type: ${this.type}`);
+    }
+
+    private setupLoadedElement(element: Element) {
+        if (this.element || !element) return;
+        if (element.parentElement) element = element.cloneNode(true) as Element;
+
+        this.addChild(element);
+        if (this.iconColor && element instanceof SVGElement) element.style.fill = this.iconColor;
+        if (this.onLoaded) this.onLoaded(element);
+
+        this.element = element;
+    }
+
+    private clear() {
+        this.element?.destroy();
+        this.element = null;
     }
 }
 

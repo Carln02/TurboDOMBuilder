@@ -4,7 +4,7 @@ import {TurboInputProperties} from "../input.types";
 import {TurboNumericalInputProperties} from "./numericalInput.types";
 
 @define("turbo-numerical-input")
-class TurboNumericalInput extends TurboInput<"input"> {
+class TurboNumericalInput extends TurboInput<"input", number> {
     public multiplier: number;
     public decimalPlaces: number;
 
@@ -13,7 +13,8 @@ class TurboNumericalInput extends TurboInput<"input"> {
 
     constructor(properties: TurboInputProperties = {}) {
         //Only allow numbers (positive, negative, and decimal)
-        properties.regexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
+        properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
+        properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
         super(properties);
 
         this.multiplier = properties.multiplier || 1;
@@ -24,7 +25,7 @@ class TurboNumericalInput extends TurboInput<"input"> {
     }
 
     public get value(): number {
-        return Number.parseFloat(this.inputElement.value) / this.multiplier;
+        return Number.parseFloat(this.stringValue) / this.multiplier;
     }
 
     public set value(value: string | number) {
@@ -40,7 +41,7 @@ class TurboNumericalInput extends TurboInput<"input"> {
             value = Math.round(value * Math.pow(10, this.decimalPlaces)) / Math.pow(10, this.decimalPlaces);
         }
 
-        this.inputElement.value = value.toString();
+        super.value = value;
     }
 }
 

@@ -10,10 +10,15 @@ function addChildManipulationToElementPrototype() {
 
     /**
      * @description The child handler object associated with the node. It is the node itself (if it is handling
-     * its children) or its shadow root (if defined).
+     * its children) or its shadow root (if defined). Set it to change the node where the children are added/removed/
+     * queried from when manipulating the node's children.
      */
     Object.defineProperty(Node.prototype, "childHandler", {
+        set: function (value?: Node) {
+            this["__childHandler__"] = value;
+        },
         get: function () {
+            if (this["__childHandler__"]) return this["__childHandler__"];
             if (this instanceof Element && this.shadowRoot) return this.shadowRoot;
             return this;
         },
@@ -66,6 +71,16 @@ function addChildManipulationToElementPrototype() {
     });
 
     //Self manipulation
+
+    Node.prototype.bringToFront = function _bringToFront<Type extends Node>(this: Type): Type {
+        this.parentNode?.addChild(this);
+        return this;
+    }
+
+    Node.prototype.sendToBack = function _sendToBack<Type extends Node>(this: Type): Type {
+        this.parentNode?.addChild(this, 0);
+        return this;
+    }
 
     /**
      * @description Removes the node from the document.

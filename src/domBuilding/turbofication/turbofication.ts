@@ -5,7 +5,11 @@ import {addElementManipulationToElementPrototype} from "./elementManipulation/el
 import {addStylesManipulationToElementPrototype} from "./styleManipulation/styleManipulation";
 import {updateChainingPropertiesInElementPrototype} from "./chainingProperties/chainingProperties";
 import "./turbofication.types";
+import {
+    addReifectManagementToNodePrototype
+} from "../../turboComponents/wrappers/reifectManipulation/reifectManipulation";
 
+//TODO ADD CONFIG
 function turbofy() {
     addClassManipulationToElementPrototype();
     addChildManipulationToElementPrototype();
@@ -13,6 +17,7 @@ function turbofy() {
     addElementManipulationToElementPrototype();
     addStylesManipulationToElementPrototype();
     updateChainingPropertiesInElementPrototype();
+    addReifectManagementToNodePrototype();
 }
 
 export {turbofy};

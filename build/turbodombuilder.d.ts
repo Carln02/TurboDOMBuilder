@@ -135,9 +135,10 @@ declare function callOncePerInstance(fn: Function, key?: string | symbol): Funct
 /**
  * @description Defines the element as a custom element with the given name. Use as class decorator in TypeScript
  * (e.g.: @define("my-class")), and as a regular function call in JavaScript (e.g.: define("my-class")(MyClass)).
- * @param {string} elementName - The name of the custom element.
+ * If the elementName is not provided, it defaults to the class name.
+ * @param {string} [elementName] - The name of the custom element.
  */
-declare const define: (elementName: string) => (constructor: CustomElementConstructor) => void;
+declare const define: (elementName?: string) => (constructor: any) => void;
 
 /**
  * @description Sets the corresponding property as observed, to sync its changes with a corresponding HTML attribute.
@@ -389,430 +390,6 @@ declare function flexRowCenter<Tag extends HTMLTag>(properties?: TurboProperties
  */
 declare function spacer<Tag extends HTMLTag>(properties?: TurboProperties<Tag>): ValidHTMLElement<Tag>;
 
-declare enum Direction {
-    vertical = "vertical",
-    horizontal = "horizontal"
-}
-declare enum InOut {
-    in = "in",
-    out = "out"
-}
-declare enum AccessLevel {
-    public = "public",
-    protected = "protected",
-    private = "private"
-}
-declare enum Range {
-    min = "min",
-    max = "max"
-}
-
-/**
- * @type {TransitionInterpolation}
- * @description Represents a callback function that would return the appropriate transition value based on the index
- * and total count.
- */
-type TransitionInterpolation<Type = number> = (index: number, total: number, element: HTMLElement) => Type;
-/**
- * @type {TransitionStyles}
- * @description Represents all types accepted by styles options and parameters for Transitions.
- */
-type TransitionStyles = StylesType | TransitionInterpolation<StylesType> | PartialRecord<keyof CSSStyleDeclaration, TransitionInterpolation<string | number>>;
-/**
- * @enum {TransitionMode}
- * @description Enum representing a transition mode. `stylesOnly` will disable the transition and only apply the
- * corresponding style, while `transitionOnly` will disable setting styles and only apply the transition.
- */
-declare enum TransitionMode {
-    enabled = "enabled",
-    disabled = "disabled",
-    stylesOnly = "stylesOnly",
-    transitionOnly = "transitionOnly"
-}
-/**
- * @type {TransitionProperties}
- * @description Object containing properties for a Transition element.
- *
- * @property {string | string[]} [properties] - The CSS properties (or property) to apply the transition on. Takes a
- * string of whitespace-separated properties, or an array of strings. Set to `"all"` or don't specify to apply to all
- * CSS properties.
- * @property {number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>} [duration] -
- * The duration of the transition in seconds. Optionally, provide separate values for "in" and "out" transitions.
- * @property {string | PartialRecord<InOut, string>} [timingFunction] - The timing function to apply to the transition.
- * Optionally, provide separate values for "in" and "out" transitions.
- * @property {number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>} [delay] -
- * The delay of the transition in seconds. Optionally, provide separate values for "in" and "out" transitions.
- * @property {TransitionStyles | PartialRecord<InOut, TransitionStyles>} [defaultStyles] - The default styles
- * applied when transitioning, per transition direction ("in" or "out").
- * @property {TransitionInterpolation<void>} [beforeComputing] - Optional callback to be executed on all concerned
- * elements before computing and setting the transitions and styles.
- */
-type TransitionProperties = {
-    properties?: string | string[];
-    duration?: number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>;
-    timingFunction?: string | Record<InOut, string>;
-    delay?: number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>;
-    defaultStyles?: TransitionStyles | PartialRecord<InOut, TransitionStyles>;
-    beforeComputing?: TransitionInterpolation<void>;
-};
-/**
- * @type {TransitionData}
- * @description Object representing the data associated with a transition for an element.
- *
- * @property {HTMLElement} element - The element associated with the data.
- * @property {TransitionMode} [enabled=TransitionMode.enabled] - Indicates the transition mode of the transition
- * for the element.
- * @property {InOut} [lastState] - The last applied state (in or out) of the transition.
- * @property {PartialRecord<InOut, PartialRecord<keyof CSSStyleDeclaration, string | number> | null>} [resolvedStyles] -
- * The resolved styles to be applied for the transition.
- * @property {number} [elementIndex] - The position of the element for interpolation computations.
- * @property {number} [totalElementCount] - The total count of elements for interpolation computations.
- */
-type TransitionData = {
-    element: HTMLElement;
-    enabled?: TransitionMode;
-    lastState?: InOut;
-    resolvedStyles?: PartialRecord<InOut, PartialRecord<keyof CSSStyleDeclaration, string | number> | null>;
-    elementIndex?: number;
-    totalElementCount?: number;
-};
-/**
- * @type {TransitionEntry}
- * @description Object representing the properties of a transition entry.
- *
- * @property {string} property - The CSS property (or properties) to which the transition applies.
- * @property {number | TransitionInterpolation} duration - The duration of the transition in seconds.
- * @property {string} timingFunction - The timing function of the transition.
- * @property {number | TransitionInterpolation} delay - The delay of the transition in seconds.
- * @property {TransitionStyles} [defaultStyles] - The default styles applied when transitioning.
- */
-type TransitionEntry = {
-    properties: string[];
-    duration: number | TransitionInterpolation;
-    timingFunction: string;
-    delay: number | TransitionInterpolation;
-    defaultStyles?: TransitionStyles;
-};
-
-/**
- * @class Transition
- * @description A class representing a CSS transition. It has two states (in and out), which you can set up
- * almost independently (they must only share the animation properties). Use a Transition to transition one or more
- * HTMLElement(s) easily.
- */
-declare class Transition {
-    private readonly inTransition;
-    private readonly outTransition;
-    private readonly attachedElements;
-    /**
-     * @description Callback executed on the concerned elements before applying their transition/styles.
-     */
-    beforeComputing: TransitionInterpolation<void>;
-    /**
-     * @constructor
-     * @param {TransitionProperties} [properties={}] - The transition properties to apply to this newly created
-     * Transition.
-     */
-    constructor(properties?: TransitionProperties);
-    /**
-     * @function attach
-     * @description Attach one or more elements to the transition.
-     * @param {...HTMLElement} elements - The element(s) to attach.
-     * @returns {this} The transition itself.
-     */
-    attach(...elements: HTMLElement[]): this;
-    /**
-     * @function detach
-     * @description Detach one or more elements from the transition.
-     * @param {...HTMLElement} elements - The element(s) to detach.
-     * @returns {this} The transition itself.
-     */
-    detach(...elements: HTMLElement[]): this;
-    /**
-     * @function initialize
-     * @description Initializes the element to the corresponding transition direction and styles. Interpolation values
-     * will be computed from the provided array (or element).
-     * @param {InOut} [direction=InOut.out] - The direction of the transition.
-     * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-     * transition will be applied. Defaults to the transition's attached elements.
-     * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-     * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-     * of attached elements (containing both previous and new elements).
-     * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @param {TransitionStyles} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-     * not set any styles on the element(s).
-     * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-     * on all concerned elements before returning the elements' list.
-     * @returns {this} Itself for method chaining.
-     */
-    initialize(direction?: InOut, elements?: HTMLElement | HTMLElement[] | HTMLCollection, executeForAll?: boolean, recomputeIndices?: boolean, overrideStyles?: TransitionStyles, overrideBeforeComputing?: TransitionInterpolation<void>): this;
-    /**
-     * @function apply
-     * @description Applies the transition (in or out) to the provided element(s). Interpolation values will be
-     * computed from the provided array (or element).
-     * @param {InOut} [direction=InOut.out] - The direction of the transition.
-     * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-     * transition will be applied. Defaults to the transition's attached elements.
-     * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-     * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-     * of attached elements (containing both previous and new elements).
-     * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @param {TransitionStyles} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-     * not set any styles on the element(s).
-     * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-     * on all concerned elements before returning the elements' list.
-     * @returns {this} Itself for method chaining.
-     */
-    apply(direction?: InOut, elements?: HTMLElement | HTMLElement[] | HTMLCollection, executeForAll?: boolean, recomputeIndices?: boolean, overrideStyles?: TransitionStyles, overrideBeforeComputing?: TransitionInterpolation<void>): this;
-    /**
-     * @function toggle
-     * @description Toggles the transition (in or out) for the provided element(s). Interpolation values will be
-     * computed from the provided array (or element).
-     * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-     * transition will be applied. Defaults to the transition's attached elements.
-     * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-     * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-     * of attached elements (containing both previous and new elements).
-     * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @param {PartialRecord<InOut, TransitionStyles>} [overrideStyles] - Optional styles to override the defaults.
-     * Set to `Record<InOut, null>` or `null` to not set any styles on the element(s).
-     * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-     * on all concerned elements before returning the elements' list.
-     * @returns {this} Itself for method chaining.
-     */
-    toggle(elements?: HTMLElement | HTMLElement[] | HTMLCollection, executeForAll?: boolean, recomputeIndices?: boolean, overrideStyles?: PartialRecord<InOut, TransitionStyles>, overrideBeforeComputing?: TransitionInterpolation<void>): this;
-    /**
-     * @function getEnabledEntriesData
-     * @description Resolves the provided elements into an array, attaches all those who aren't already attached,
-     * skips if disabled, update indices, and executes the beforeComputing callback on the indicated list of elements.
-     * @param {HTMLElement | HTMLElement[] | HTMLCollection} [elements] - One or more HTMLElements to which the
-     * transition will be applied. Defaults to the transition's attached elements.
-     * @param {boolean} [executeForAll=false] - If set to true, the function will be applied also to all
-     * the previously attached/transitioned elements, and interpolation values will be computed from the stored list
-     * of attached elements (containing both previous and new elements).
-     * @param {boolean} [recomputeIndices=true] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @param {TransitionInterpolation<void>} [overrideBeforeComputing=this.beforeComputing] - The callback to execute
-     * on all concerned elements before returning the elements' list.
-     * @returns {this} Itself for method chaining.
-     */
-    getEnabledEntriesData(elements?: HTMLElement | HTMLElement[] | HTMLCollection, executeForAll?: boolean, recomputeIndices?: boolean, overrideBeforeComputing?: TransitionInterpolation<void>): TransitionData[];
-    /**
-     * @function reload
-     * @description Reloads the transitions for all the attached elements, without recomputing styles.
-     * @returns {this} Itself for method chaining.
-     */
-    reload(): this;
-    /**
-     * @function reloadFor
-     * @description Generates the transition CSS string for the provided transition with the correct interpolation
-     * information.
-     * @param {HTMLElement} element - The element to apply the string to.
-     * @returns {this} Itself for method chaining.
-     */
-    reloadFor(element: HTMLElement): this;
-    /**
-     * @description The enabled state of the transition. Modifying it will automatically reload the transition for
-     * all attached elements.
-     */
-    set enabled(value: boolean | TransitionMode);
-    /**
-     * @description The properties (or property) being transitioned.
-     */
-    get properties(): string[];
-    set properties(value: string | string[]);
-    /**
-     * @description The duration of the transition.
-     */
-    get duration(): Record<InOut, number | TransitionInterpolation>;
-    set duration(value: number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>);
-    /**
-     * @description The timing function of the transition.
-     */
-    get timingFunction(): Record<InOut, string>;
-    set timingFunction(value: string | PartialRecord<InOut, string>);
-    /**
-     * @description The delay of the transition.
-     */
-    get delay(): Record<InOut, number | TransitionInterpolation>;
-    set delay(value: number | TransitionInterpolation | PartialRecord<InOut, number | TransitionInterpolation>);
-    /**
-     * @description The default styles applied when transitioning.
-     */
-    get defaultStyles(): Record<InOut, TransitionStyles>;
-    set defaultStyles(value: TransitionStyles | PartialRecord<InOut, TransitionStyles>);
-    /**
-     * @description The transition string for the in direction.
-     */
-    get inTransitionString(): string;
-    /**
-     * @description The transition string for the out direction.
-     */
-    get outTransitionString(): string;
-    /**
-     * @function update
-     * @description Function to update certain (or every) parameter in the Transition.
-     * @param {TransitionProperties} [properties={}] - The new transition properties.
-     */
-    update(properties?: TransitionProperties): void;
-    /**
-     * @function enableTransitionFor
-     * @description Enable or disable the transition for a specific element.
-     * @param {HTMLElement} element - The element to enable or disable the transition for.
-     * @param {TransitionMode | boolean} state - The state to set (enabled, disabled, or styleOnly).
-     */
-    enableTransitionFor(element: HTMLElement, state: TransitionMode | boolean): void;
-    /**
-     * @private
-     * @function getTransitionField
-     * @description Gets the specified field for both in and out states.
-     * @param {string} field - The field to get.
-     * @returns {Record<InOut, Type>}
-     */
-    private getTransitionField;
-    /**
-     * @private
-     * @function setTransitionField
-     * @description Sets the specified field for both in and out states.
-     * @param {Type | PartialRecord<InOut, Type>} value - The value to set.
-     * @param {string} field - The field to set.
-     */
-    private setTransitionField;
-    /**
-     * @private
-     * @function findData
-     * @description Find the data entry for a given element.
-     * @param {HTMLElement} element - The element to find the data of.
-     * @returns {TransitionData} The corresponding transition data.
-     */
-    private findData;
-    /**
-     * @function stateOf
-     * @description Determine the current state (In or Out) of the transition on the provided element.
-     * @param {HTMLElement} element - The element to determine the state for.
-     * @returns {InOut | undefined} - The current state of the transition or undefined if not determinable.
-     */
-    stateOf(element: HTMLElement): InOut | undefined;
-    /**
-     * @description Clone the transition to create a new copy with the same properties but no attached elements.
-     * @returns {Transition} - The new transition.
-     */
-    clone(): Transition;
-    /**
-     * @function getTransitionString
-     * @description Gets the CSS transition string for the specified direction.
-     * @param {TransitionData} data - The target element's transition data entry.
-     * @returns {string} The CSS transition string.
-     */
-    private getTransitionString;
-    /**
-     * @private
-     * @description Computes interpolations and resolves accepted styles for transitions into a record of properties
-     * to values. Stores the resolved styles in the element's data.
-     * @param {TransitionData} data - The concerned transition data.
-     * @param {TransitionStyles} overrideStyles - The styles to override.
-     */
-    private resolveAndOverrideStyles;
-    /**
-     * @function parseMode
-     * @description Parse the transition mode from a boolean or TransitionMode.
-     * @param {boolean | TransitionMode} state - The state to parse.
-     * @returns {TransitionMode} The parsed transition mode.
-     */
-    static parseMode(state: boolean | TransitionMode): TransitionMode;
-}
-declare function transition(properties?: TransitionProperties): Transition;
-
-/**
- * @class TransitionHandler
- * @description A class to handle transitions for an attached element.
- */
-declare class TransitionHandler {
-    private readonly attachedElement;
-    private readonly transitions;
-    /**
-     * @constructor
-     * @param {HTMLElement} attachedElement - The element to attach transitions to.
-     */
-    constructor(attachedElement: HTMLElement);
-    /**
-     * @function attach
-     * @description Attach one or more transitions to the element.
-     * @param {Transition} transitions - The transition(s) to attach.
-     * @returns {this} The element's TransitionHandler instance.
-     */
-    attach(...transitions: Transition[]): this;
-    /**
-     * @function detach
-     * @description Detach one or more transitions from the element.
-     * @param {Transition} transitions - The transition(s) to detach.
-     * @returns {this} The element's TransitionHandler instance.
-     */
-    detach(...transitions: Transition[]): this;
-    /**
-     * @function initialize
-     * @description Initializes the element to the corresponding transition direction and styles.
-     * @param {Transition} transition - The transition to initialize.
-     * @param {InOut} direction - The direction of the transition.
-     * @param {TransitionStyles | null} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-     * not set any styles on the element.
-     * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @returns {this} The element's TransitionHandler instance.
-     */
-    initialize(transition: Transition, direction: InOut, overrideStyles?: TransitionStyles | null, recomputeIndices?: boolean): this;
-    /**
-     * @function apply
-     * @description Apply a transition to the element.
-     * @param {Transition} transition - The transition to apply.
-     * @param {InOut} direction - The direction of the transition.
-     * @param {TransitionStyles | null} [overrideStyles] - Optional styles to override the defaults. Set to `null` to
-     * not set any styles on the element.
-     * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @returns {this} The element's TransitionHandler instance.
-     */
-    apply(transition: Transition, direction: InOut, overrideStyles?: TransitionStyles | null, recomputeIndices?: boolean): this;
-    /**
-     * @function toggle
-     * @description Toggle the provided transition on the element.
-     * @param {Transition} transition - The transition to apply.
-     * @param {PartialRecord<InOut, TransitionStyles | null>} [overrideStyles] - Optional styles to override the
-     * defaults. Set to a `Record<InOut, null>` or `null` to not set any styles on the element.
-     * @param {boolean} [recomputeIndices=false] - Define whether to keep previously computed indices or recompute them
-     * based on the passed elements list.
-     * @returns {this} The element's TransitionHandler instance.
-     */
-    toggle(transition: Transition, overrideStyles?: PartialRecord<InOut, TransitionStyles | null> | null, recomputeIndices?: boolean): this;
-    /**
-     * @private
-     * @function clear
-     * @description Clears the set transition styles on the element.
-     */
-    clear(): void;
-    /**
-     * @function reload
-     * @description Reloads all transitions attached to the element. Doesn't recompute styles.
-     */
-    reload(): void;
-    /**
-     * @description Dictates whether the transitions on the element are enabled. Will automatically remove/reload
-     * the transitions when set.
-     * @param value
-     */
-    set enabled(value: boolean | TransitionMode);
-    /**
-     * @description Enable or disable a certain transition for this element only. Will automatically remove/add back
-     * the transition when set.
-     * @param transition
-     * @param state
-     */
-    enableTransition(transition: Transition, state: boolean | TransitionMode): void;
-}
-
 /**
  * @type {StylesRoot}
  * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
@@ -825,31 +402,15 @@ type StylesRoot = ShadowRoot | HTMLHeadElement;
  */
 type StylesType = string | number | PartialRecord<keyof CSSStyleDeclaration, string | number>;
 declare global {
-    interface Element {
+    interface Node {
         /**
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
          */
         readonly closestRoot: StylesRoot;
-    }
-    interface HTMLElement {
-        /**
-         * @description Handler for all Transitions attached to this element.
-         */
-        readonly transitions: TransitionHandler;
-        /**
-         * @description The transition used by the element's show() and isShown methods. Directly modifying its
-         * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
-         * new custom Transition.
-         */
-        showTransition: Transition;
         /**
          * @description Object containing the pending styles to be applied on next animation frame.
          */
         pendingStyles: PartialRecord<keyof CSSStyleDeclaration, string>;
-        /**
-         * @description Boolean indicating whether the element is shown or not, based on its showTransition.
-         */
-        readonly isShown: boolean;
         /**
          * @description Set a certain style attribute of the element to the provided value.
          * @param {keyof CSSStyleDeclaration} attribute - A string representing the style attribute to set.
@@ -883,12 +444,6 @@ declare global {
          * @description Apply the pending styles to the element.
          */
         applyStyles(): void;
-        /**
-         * @description Show or hide the element (based on CSS) by transitioning in/out of the element's showTransition.
-         * @param {boolean} b - Whether to show the element or not
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        show(b: boolean): this;
     }
 }
 
@@ -986,9 +541,10 @@ declare global {
     interface Node {
         /**
          * @description The child handler object associated with the node. It is the node itself (if it is handling
-         * its children) or its shadow root (if defined).
+         * its children) or its shadow root (if defined). Set it to change the node where the children are added/
+         * removed/queried from when manipulating the node's children.
          */
-        readonly childHandler: ChildHandler;
+        childHandler: ChildHandler;
         /**
          * @description Static array of all the child nodes of the node.
          */
@@ -1005,6 +561,8 @@ declare global {
          * @description Static array of all the sibling elements (including the element itself, if it is one) of the node.
          */
         readonly siblings: Element[];
+        bringToFront(): this;
+        sendToBack(): this;
         /**
          * @description Removes the node from the document.
          * @returns {this} Itself, allowing for method chaining.
@@ -1259,6 +817,8 @@ declare global {
     interface ShadowRoot extends Element {
     }
     interface ChildNode extends Node {
+    }
+    interface ParentNode extends Node {
     }
     interface ProcessingInstruction extends Node {
     }
@@ -1719,49 +1279,6 @@ declare const DefaultEventName: {
 type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventName];
 type TurboEventNameEntry = typeof TurboEventName[keyof typeof TurboEventName];
 
-type TurboEventManagerStateProperties = {
-    enabled?: boolean;
-    preventDefaultWheel?: boolean;
-    preventDefaultMouse?: boolean;
-    preventDefaultTouch?: boolean;
-};
-type DisabledTurboEventTypes = {
-    disableKeyEvents?: boolean;
-    disableWheelEvents?: boolean;
-    disableMouseEvents?: boolean;
-    disableTouchEvents?: boolean;
-    disableClickEvents?: boolean;
-    disableDragEvents?: boolean;
-    disableMoveEvent?: boolean;
-};
-type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
-    moveThreshold?: number;
-    longPressDuration?: number;
-};
-type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
-    lockOrigin?: Element;
-};
-declare enum ActionMode {
-    none = 0,
-    click = 1,
-    longPress = 2,
-    drag = 3
-}
-declare enum ClickMode {
-    none = 0,
-    left = 1,
-    right = 2,
-    middle = 3,
-    other = 4,
-    key = 5
-}
-declare enum InputDevice {
-    unknown = 0,
-    mouse = 1,
-    trackpad = 2,
-    touch = 3
-}
-
 type Coordinate<Type = number> = {
     x: Type;
     y: Type;
@@ -1828,6 +1345,7 @@ declare class Point {
      * @param {Point[]} arr - Undetermined number of point parameters
      */
     static min(...arr: Coordinate[]): Point;
+    get object(): Coordinate;
     /**
      * @description Determine whether this point is equal to the provided coordinates
      * @param {Coordinate} p - The coordinates to compare it to
@@ -1947,6 +1465,51 @@ declare class Point {
     arr(): number[];
 }
 
+type TurboEventManagerStateProperties = {
+    enabled?: boolean;
+    preventDefaultWheel?: boolean;
+    preventDefaultMouse?: boolean;
+    preventDefaultTouch?: boolean;
+};
+type DisabledTurboEventTypes = {
+    disableKeyEvents?: boolean;
+    disableWheelEvents?: boolean;
+    disableMouseEvents?: boolean;
+    disableTouchEvents?: boolean;
+    disableClickEvents?: boolean;
+    disableDragEvents?: boolean;
+    disableMoveEvent?: boolean;
+};
+type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
+    moveThreshold?: number;
+    longPressDuration?: number;
+    authorizeEventScaling?: boolean | (() => boolean);
+    scaleEventPosition?: (position: Point) => Point;
+};
+type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
+    lockOrigin?: Element;
+};
+declare enum ActionMode {
+    none = 0,
+    click = 1,
+    longPress = 2,
+    drag = 3
+}
+declare enum ClickMode {
+    none = 0,
+    left = 1,
+    right = 2,
+    middle = 3,
+    other = 4,
+    key = 5
+}
+declare enum InputDevice {
+    unknown = 0,
+    mouse = 1,
+    trackpad = 2,
+    touch = 3
+}
+
 declare enum ClosestOrigin {
     target = "target",
     position = "position"
@@ -1983,7 +1546,17 @@ declare class TurboEvent extends Event {
      * @description The screen position from where the event was fired
      */
     readonly position: Point;
-    constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry, eventInitDict?: EventInit);
+    /**
+     * @description Callback function (or boolean) to be overridden to specify when to allow transformation
+     * and/or scaling.
+     */
+    authorizeScaling: boolean | (() => boolean);
+    /**
+     * @description Callback function to be overridden to specify how to transform a position from screen to
+     * document space.
+     */
+    scalePosition: (position: Point) => Point;
+    constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
     /**
      * @description Returns the closest element of the provided type to the target (Searches through the element and
      * all its parents to find one of matching type).
@@ -2007,14 +1580,9 @@ declare class TurboEvent extends Event {
      */
     get scaledPosition(): Point;
     /**
-     * @description Function to be overridden to specify how to transform a position from screen to document space.
-     * @param position
+     * @description Specifies whether to allow transformation and/or scaling.
      */
-    scalePosition(position: Point): Point;
-    /**
-     * @description Function to be overridden to specify when to allow transformation and/or scaling (or not).
-     */
-    authorizeScaling(): boolean;
+    get scalingAuthorized(): boolean;
     /**
      * @private
      * @description Takes a map of points and returns a new map where each point is transformed accordingly.
@@ -2041,7 +1609,7 @@ declare class TurboDragEvent extends TurboEvent {
      * @description Map containing the positions of the dragging points
      */
     readonly positions: TurboMap<number, Point>;
-    constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>, positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, eventInitDict?: EventInit);
+    constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>, positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
     /**
      * @description Map of the origins mapped to the current canvas translation and scale
      */
@@ -2074,7 +1642,7 @@ declare class TurboKeyEvent extends TurboEvent {
      * @description The key released (if any) when the event was fired
      */
     readonly keyReleased: string;
-    constructor(keyPressed: string, keyReleased: string, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, eventInitDict?: EventInit);
+    constructor(keyPressed: string, keyReleased: string, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
 }
 
 /**
@@ -2087,12 +1655,12 @@ declare class TurboWheelEvent extends TurboEvent {
      * @description The delta amount of scrolling
      */
     readonly delta: Point;
-    constructor(delta: Point, keys: string[], eventName: TurboEventNameEntry, eventInitDict?: EventInit);
+    constructor(delta: Point, keys: string[], eventName: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
 }
 
 declare global {
     interface HTMLElement {
-        bypassTurboEventManagerOn: (e: Event) => (boolean | TurboEventManagerStateProperties);
+        lockTurboEventManagerOn: (e: Event) => (boolean | TurboEventManagerStateProperties);
         bypassTurboEventManager(): this;
     }
 }
@@ -2101,7 +1669,7 @@ declare global {
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
  * easier management of input.
  */
-declare class TurboEventManager {
+declare class TurboEventManager extends TurboElement {
     private _inputDevice;
     readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>;
     readonly defaultState: TurboEventManagerStateProperties;
@@ -2113,12 +1681,15 @@ declare class TurboEventManager {
     private wasRecentlyTrackpad;
     private readonly origins;
     private readonly previousPositions;
+    private positions;
+    private lastTargetOrigin;
     private readonly timerMap;
     private readonly moveThreshold;
     private readonly longPressDuration;
+    private readonly authorizeEventScaling;
+    private readonly scaleEventPosition;
     constructor(properties?: TurboEventManagerProperties);
     private initEvents;
-    destroy(): void;
     /**
      * @description The currently identified input device. It is not 100% accurate, especially when differentiating
      * between mouse and trackpad.
@@ -2231,70 +1802,6 @@ type TurboButtonConfig = {
 };
 
 /**
- * Button class for creating Turbo button elements.
- * @class TurboButton
- * @extends TurboElement
- */
-declare class TurboButton extends TurboElement {
-    /**
-     * @description Object containing the children of the button.
-     */
-    private readonly elements;
-    private _buttonTextTag;
-    static readonly config: TurboButtonConfig;
-    /**
-     * Initializes a new instance of the Button class.
-     * @param {TurboButtonProperties} properties - Properties to configure the button.
-     */
-    constructor(properties: TurboButtonProperties);
-    /**
-     * @description Adds a given element or elements to the button at a specified position.
-     * @param {Element | Element[] | null} element - The element(s) to add.
-     * @param {keyof ButtonChildren} type - The type of child element being added.
-     */
-    private addAtPosition;
-    /**
-     * @description Removes a given element or elements from the button.
-     * @param {Element | Element[] | null} element - The element(s) to remove.
-     */
-    private removeElement;
-    /**
-     * @description The tag of the text element in the button
-     */
-    get buttonTextTag(): HTMLTag;
-    set buttonTextTag(value: HTMLTag | undefined);
-    /**
-     * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
-     */
-    get leftCustomElements(): Element | Element[] | null;
-    set leftCustomElements(value: Element | Element[] | null);
-    /**
-     * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
-     * icon, or a Turbo/HTML element).
-     */
-    get leftIcon(): Element | null;
-    set leftIcon(value: string | Element | null);
-    /**
-     * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
-     */
-    get buttonText(): Element | null;
-    set buttonText(value: string | Element | null);
-    /**
-     * @description The right icon element. Can be set with a new icon by a simple assignment (the name/path of the
-     * icon, or a Turbo/HTML element).
-     */
-    get rightIcon(): Element | null;
-    set rightIcon(value: string | Element | null);
-    /**
-     * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
-     */
-    get rightCustomElements(): Element | Element[] | null;
-    set rightCustomElements(value: Element | Element[] | null);
-}
-declare function button(properties: TurboButtonProperties): TurboButton;
-
-/**
  * @type {TurboIconProperties}
  * @description Properties object that extends TurboElementProperties with properties specific to icons.
  * @extends TurboProperties
@@ -2332,6 +1839,7 @@ type TurboIconConfig = {
     defaultType?: string;
     defaultDirectory?: string;
     defaultClasses?: string | string[];
+    customLoaders?: Record<string, (path: string) => Promise<Element>>;
 };
 
 /**
@@ -2343,20 +1851,15 @@ declare class TurboIcon extends TurboElement {
     private _element;
     private _type;
     private _directory;
-    private _icon;
-    private _iconColor;
-    private _onLoaded;
+    onLoaded: (element: Element) => void;
     static readonly config: TurboIconConfig;
+    private static imageTypes;
     /**
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
     constructor(properties: TurboIconProperties);
     update(properties: TurboIconProperties): void;
-    private fetchSvg;
-    private generateSvg;
-    private generateImg;
-    private clear;
     /**
      * @description The type of the icon.
      */
@@ -2375,20 +1878,318 @@ declare class TurboIcon extends TurboElement {
      * @description The name (or path) of the icon. Might include the file extension (to override the icon's type).
      * Setting it will update the icon accordingly.
      */
-    get icon(): string;
     set icon(value: string);
     /**
      * @description The assigned color to the icon (if any)
      */
-    get iconColor(): string | null;
-    set iconColor(value: string | null);
+    set iconColor(value: string);
     /**
      * @description The child element of the icon element (an HTML image or an SVG element).
      */
     private set element(value);
-    get element(): HTMLImageElement | SVGElement;
+    get element(): Element;
+    loadSvg(path: string): Promise<SVGElement>;
+    private loadImg;
+    private generateIcon;
+    private getLoader;
+    private setupLoadedElement;
+    private clear;
 }
 declare function icon(properties: TurboIconProperties): TurboIcon;
+
+/**
+ * @type {TurboRichElementProperties}
+ * @description Properties object for configuring a Button. Extends TurboElementProperties.
+ * @extends TurboProperties
+ *
+ * @property {string} [text] - The text to set to the rich element's main element.
+ *
+ * @property {Element | Element[]} [leftCustomElements] - Custom elements
+ * to be placed on the left side of the button (before the left icon).
+ * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
+ * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {Element | Element[]} [rightCustomElements] - Custom elements
+ * to be placed on the right side of the button (after the right icon).
+ *
+ * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * a string). If not specified, the default text tag specified in the Button class will be used.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
+ * to this instance of Button.
+ *
+ * @template {ValidTag} ElementTag="p"
+ */
+type TurboRichElementProperties<ElementTag extends ValidTag = "p"> = TurboProperties & {
+    elementTag?: ElementTag;
+    text?: string;
+    leftCustomElements?: Element | Element[];
+    leftIcon?: string | TurboIcon;
+    prefixEntry?: string | HTMLElement;
+    element?: string | TurboProperties<ElementTag> | ValidElement<ElementTag>;
+    suffixEntry?: string | HTMLElement;
+    rightIcon?: string | TurboIcon;
+    rightCustomElements?: Element | Element[];
+    unsetDefaultClasses?: boolean;
+};
+/**
+ * @type {TurboRichElementChildren}
+ * @description Holds references to the button's child elements for internal management.
+ *
+ * @property {Element | Element[] | null} leftCustomElements - Elements placed
+ * on the left side of the button.
+ * @property {Element | null} leftIcon - The icon placed on the left side of the button.
+ * @property {Element | null} text - The text element of the button.
+ * @property {Element | null} rightIcon - The icon placed on the right side of the button.
+ * @property {Element | Element[] | null} rightCustomElements - Elements placed
+ * on the right side of the button.
+ */
+type TurboRichElementChildren<ElementTag extends ValidTag = "p"> = {
+    leftCustomElements: Element | Element[];
+    leftIcon: TurboIcon;
+    prefixEntry?: HTMLElement;
+    element: ValidElement<ElementTag>;
+    suffixEntry?: HTMLElement;
+    rightIcon: TurboIcon;
+    rightCustomElements: Element | Element[];
+};
+/**
+ * @type {TurboRichElementConfig}
+ * @description Configuration object for the Button class. Set it via TurboConfig.Button.
+ *
+ * @property {ValidTag} [defaultTextTag] - The default HTML tag for the creation of the text
+ * element in the button.
+ * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
+ */
+type TurboRichElementConfig = {
+    defaultElementTag?: HTMLTag;
+    defaultClasses?: string | string[];
+};
+
+/**
+ * Button class for creating Turbo button elements.
+ * @class TurboRichElement
+ * @extends TurboElement
+ */
+declare class TurboRichElement<ElementTag extends ValidTag = "h4"> extends TurboElement {
+    /**
+     * @description Object containing the children of the button.
+     */
+    private readonly elements;
+    static readonly config: TurboRichElementConfig;
+    /**
+     * Initializes a new instance of the Button class.
+     * @param {TurboButtonProperties} properties - Properties to configure the button.
+     */
+    constructor(properties: TurboRichElementProperties<ElementTag>);
+    /**
+     * @description Adds a given element or elements to the button at a specified position.
+     * @param {Element | Element[] | null} element - The element(s) to add.
+     * @param {keyof ButtonChildren} type - The type of child element being added.
+     */
+    private addAtPosition;
+    /**
+     * @description The tag of the text element in the button
+     */
+    set elementTag(value: ElementTag);
+    /**
+     * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
+     */
+    get leftCustomElements(): Element | Element[];
+    set leftCustomElements(value: Element | Element[]);
+    /**
+     * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
+     * icon, or a Turbo/HTML element).
+     */
+    get leftIcon(): TurboIcon;
+    set leftIcon(value: string | TurboIcon);
+    /**
+     * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
+     * icon, or a Turbo/HTML element).
+     */
+    get prefixEntry(): HTMLElement;
+    set prefixEntry(value: string | HTMLElement);
+    /**
+     * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
+     * string will update the text's innerText with the given string.
+     */
+    get element(): ValidElement<ElementTag>;
+    set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>);
+    /**
+     * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
+     * string will update the text's innerText with the given string.
+     */
+    get text(): string;
+    set text(value: string);
+    /**
+     * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
+     * icon, or a Turbo/HTML element).
+     */
+    get suffixEntry(): HTMLElement;
+    set suffixEntry(value: string | HTMLElement);
+    /**
+     * @description The right icon element. Can be set with a new icon by a simple assignment (the name/path of the
+     * icon, or a Turbo/HTML element).
+     */
+    get rightIcon(): TurboIcon;
+    set rightIcon(value: string | TurboIcon);
+    /**
+     * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
+     */
+    get rightCustomElements(): Element | Element[];
+    set rightCustomElements(value: Element | Element[]);
+}
+declare function richElement<ElementTag extends ValidTag = "h4">(properties: TurboRichElementProperties<ElementTag>): TurboRichElement<ElementTag>;
+
+/**
+ * Button class for creating Turbo button elements.
+ * @class TurboButton
+ * @extends TurboElement
+ */
+declare class TurboButton<ElementTag extends ValidTag = "p"> extends TurboRichElement<ElementTag> {
+    static readonly config: TurboButtonConfig;
+    /**
+     * Initializes a new instance of the Button class.
+     * @param {TurboButtonProperties} properties - Properties to configure the button.
+     */
+    constructor(properties: TurboRichElementProperties<ElementTag>);
+    /**
+     * @description The tag of the text element in the button
+     */
+    set elementTag(value: ElementTag);
+}
+declare function button<ElementTag extends ValidTag = "p">(properties: TurboRichElementProperties<ElementTag>): TurboButton<ElementTag>;
+
+/**
+ * @description A function type that interpolates a value based on the index, total count, and the object.
+ *
+ * @template Type
+ * @template ClassType
+ * @param {number} index - The index of the object.
+ * @param {number} total - The total number of objects.
+ * @param {ClassType} object - The object being interpolated.
+ * @returns {Type}
+ */
+type ReifectInterpolator<Type, ClassType extends object = Element> = ((index: number, total: number, object: ClassType) => Type);
+/**
+ * @description A function type that interpolates a value based on the state, index, total count, and the object.
+ *
+ * @template Type
+ * @template State
+ * @template ClassType
+ * @param {State} state - The current state.
+ * @param {number} index - The index of the object.
+ * @param {number} total - The total number of objects.
+ * @param {ClassType} object - The object being interpolated.
+ * @returns {Type}
+ */
+type StateInterpolator<Type, State extends string | number | symbol, ClassType extends object = Element> = ((state: State, index: number, total: number, object: ClassType) => Type);
+/**
+ * @description A type that represents a property specific to a state or an interpolated value.
+ *
+ * @template Type
+ * @template ClassType
+ */
+type StateSpecificProperty<Type, ClassType extends object = Element> = Type | ReifectInterpolator<Type, ClassType>;
+/**
+ * @description A configuration type for properties based on states or interpolated values.
+ *
+ * @template Type
+ * @template State
+ * @template ClassType
+ */
+type PropertyConfig<Type, State extends string | number | symbol, ClassType extends object = Element> = PartialRecord<State, StateSpecificProperty<Type, ClassType>> | Type | StateInterpolator<Type, State, ClassType>;
+type ReifectObjectData<State extends string | number | symbol, ClassType extends object = Element> = {
+    object: WeakRef<ClassType>;
+    enabled: ReifectEnabledState;
+    lastState?: State;
+    resolvedValues?: ReifectObjectComputedProperties<State, ClassType>;
+    objectIndex?: number;
+    totalObjectCount?: number;
+    onSwitch?: (state: State, index: number, total: number, object: ClassType) => void;
+};
+type ReifectObjectComputedProperties<State extends string | number | symbol, ClassType extends object = Element> = {
+    properties: PartialRecord<State, PartialRecord<keyof ClassType, any>>;
+    styles: PartialRecord<State, StylesType>;
+    classes: PartialRecord<State, string | string[]>;
+    replaceWith: PartialRecord<State, ClassType>;
+    transitionProperties: PartialRecord<State, string[]>;
+    transitionDuration: PartialRecord<State, number>;
+    transitionTimingFunction: PartialRecord<State, string>;
+    transitionDelay: PartialRecord<State, number>;
+};
+type StatefulReifectCoreProperties<State extends string | number | symbol, ClassType extends object = Element> = {
+    properties?: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>;
+    styles?: PropertyConfig<StylesType, State, ClassType>;
+    classes?: PropertyConfig<string | string[], State, ClassType>;
+    replaceWith?: PropertyConfig<ClassType, State, ClassType>;
+    transitionProperties?: PropertyConfig<string | string[], State, ClassType>;
+    transitionDuration?: PropertyConfig<number, State, ClassType>;
+    transitionTimingFunction?: PropertyConfig<string, State, ClassType>;
+    transitionDelay?: PropertyConfig<number, State, ClassType>;
+};
+type StatefulReifectProperties<State extends string | number | symbol, ClassType extends object = Element> = StatefulReifectCoreProperties<State, ClassType> & {
+    states?: State[];
+    attachedObjects?: ClassType[];
+};
+type ReifectAppliedOptions<State extends string | number | symbol, ClassType extends object = Element> = {
+    attachObjects?: boolean;
+    executeForAll?: boolean;
+    recomputeIndices?: boolean;
+    recomputeProperties?: boolean;
+    propertiesOverride?: StatefulReifectCoreProperties<State, ClassType>;
+};
+type ReifectEnabledState = {
+    global?: boolean;
+    properties?: boolean;
+    styles?: boolean;
+    classes?: boolean;
+    replaceWith?: boolean;
+    transition?: boolean;
+};
+
+type TurboIconSwitchProperties<State extends string | number | symbol> = TurboIconProperties & Omit<StatefulReifectProperties<State, TurboIcon>, "element"> & {
+    appendStateToIconName?: boolean;
+};
+
+declare enum Direction {
+    vertical = "vertical",
+    horizontal = "horizontal"
+}
+declare enum Side {
+    top = "top",
+    bottom = "bottom",
+    left = "left",
+    right = "right"
+}
+declare enum InOut {
+    in = "in",
+    out = "out"
+}
+declare enum OnOff {
+    on = "on",
+    off = "off"
+}
+declare enum Open {
+    open = "open",
+    closed = "closed"
+}
+declare enum Shown {
+    visible = "visible",
+    hidden = "hidden"
+}
+declare enum AccessLevel {
+    public = "public",
+    protected = "protected",
+    private = "private"
+}
+declare enum Range {
+    min = "min",
+    max = "max"
+}
+
+declare function iconSwitch<State extends string | number | symbol = OnOff>(properties: TurboIconSwitchProperties<State>): void;
 
 type TurboIconToggleProperties = TurboIconProperties & {
     toggled?: boolean;
@@ -2397,7 +2198,7 @@ type TurboIconToggleProperties = TurboIconProperties & {
 
 declare class TurboIconToggle extends TurboIcon {
     private _toggled;
-    private readonly onToggle;
+    private onToggle;
     constructor(properties: TurboIconToggleProperties);
     get toggled(): boolean;
     set toggled(value: boolean);
@@ -2405,34 +2206,29 @@ declare class TurboIconToggle extends TurboIcon {
 }
 declare function iconToggle(properties: TurboIconToggleProperties): TurboIconToggle;
 
-type ValidInputElement<Tag extends "input" | "textarea"> = Tag extends "input" ? HTMLInputElement : HTMLTextAreaElement;
-type TurboInputProperties<InputTag extends "input" | "textarea" = "input"> = TurboProperties & {
-    inputTag?: InputTag;
-    inputProperties?: TurboProperties<InputTag>;
+type TurboInputProperties<InputTag extends "input" | "textarea" = "input"> = TurboRichElementProperties<InputTag> & {
     label?: string;
-    prefix?: string;
-    suffix?: string;
     locked?: boolean;
     dynamicVerticalResize?: boolean;
-    regexCheck?: RegExp | string;
+    inputRegexCheck?: RegExp | string;
+    blurRegexCheck?: RegExp | string;
     selectTextOnFocus?: boolean;
-    onClick?: (e: Event) => void;
-    onInput?: (e: Event) => void;
-    onBlur?: (e: Event) => void;
 };
 
-declare class TurboInput<InputTag extends "input" | "textarea"> extends TurboElement {
-    readonly inputElement: ValidInputElement<InputTag>;
+declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string> extends TurboElement {
     readonly labelElement: HTMLLabelElement;
-    readonly prefixElement: HTMLSpanElement;
-    readonly suffixElement: HTMLSpanElement;
+    readonly inputElement: TurboRichElement<InputTag>;
     locked: boolean;
+    private lastValueWithInputCheck;
+    private lastValueWithBlurCheck;
     constructor(properties?: TurboInputProperties<InputTag>);
     private setupEvents;
-    get value(): string | number;
-    set value(value: string | number);
+    protected set stringValue(value: string);
+    protected get stringValue(): string;
+    get value(): ValueType;
+    set value(value: string | ValueType);
 }
-declare function turboInput<T extends ("input" | "textarea")>(properties?: TurboInputProperties<T>): TurboInput<T>;
+declare function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string>(properties?: TurboInputProperties<InputTag>): TurboInput<InputTag, ValueType>;
 
 type TurboNumericalInputProperties = TurboInputProperties & {
     multiplier?: number;
@@ -2441,7 +2237,7 @@ type TurboNumericalInputProperties = TurboInputProperties & {
     max?: number;
 };
 
-declare class TurboNumericalInput extends TurboInput<"input"> {
+declare class TurboNumericalInput extends TurboInput<"input", number> {
     multiplier: number;
     decimalPlaces: number;
     min: number;
@@ -2514,20 +2310,21 @@ declare class TurboPopup extends TurboElement {
 declare function popup(properties?: TurboProperties): TurboPopup;
 
 /**
- * @type {TurboDropdownEntryProperties}
+ * @type {TurboSelectEntryProperties}
  * @description Properties for configuring a DropdownEntry.
  * @extends TurboProperties
  *
  * @property {string} value - The value associated with the dropdown entry.
  * @property {boolean} [selected=false] - Indicates whether the entry is initially selected.
- * @property {string | string[]} [selectedClass=""] - CSS class(es) applied to the entry when it is selected.
+ * @property {string | string[]} [selectedClasses=""] - CSS class(es) applied to the entry when it is selected.
  */
-type TurboSelectEntryProperties<ValueType = string> = TurboProperties & {
+type TurboSelectEntryProperties<ValueType = string, ElementTag extends ValidTag = "p"> = TurboRichElementProperties<ElementTag> & {
     unsetDefaultClasses?: boolean;
     selectedClasses?: string | string[];
     value: ValueType;
     selected?: boolean;
     enabled?: boolean;
+    action?: () => void;
     onSelected?: (selected: boolean) => void;
     onEnabled?: (enabled: boolean) => void;
     reflectValueOn?: HTMLElement;
@@ -2542,14 +2339,14 @@ type TurboSelectEntryConfig = {
  * @description Class representing an entry within a TurboSelect.
  * @extends TurboElement
  */
-declare class TurboSelectEntry<ValueType = string> extends TurboElement {
+declare class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> extends TurboRichElement<ElementTag> {
     private _value;
     private _selected;
-    private _enabled;
     /**
      * @description The class(es) assigned to the dropdown entry when it is selected
      */
     selectedClasses: string | string[];
+    private readonly action;
     private readonly onSelected;
     private readonly onEnabled;
     private readonly reflectedElement;
@@ -2557,9 +2354,9 @@ declare class TurboSelectEntry<ValueType = string> extends TurboElement {
     readonly config: TurboSelectEntryConfig;
     /**
      * @description DropdownEntry constructor
-     * @param {TurboDropdownEntryProperties} properties - Properties for configuring the dropdown entry.
+     * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
      */
-    constructor(properties: TurboSelectEntryProperties<ValueType>);
+    constructor(properties: TurboSelectEntryProperties<ValueType, ElementTag>);
     /**
      * @description Toggles the selection of this dropdown entry
      */
@@ -2579,9 +2376,9 @@ declare class TurboSelectEntry<ValueType = string> extends TurboElement {
     get inputName(): string;
     set inputName(value: string);
 }
-declare function selectEntry<ValueType = string>(properties: TurboSelectEntryProperties<ValueType>): TurboSelectEntry<ValueType>;
+declare function selectEntry<ValueType = string, ElementTag extends ValidTag = "p">(properties: TurboSelectEntryProperties<ValueType, ElementTag>): TurboSelectEntry<ValueType, ElementTag>;
 
-type TurboSelectProperties<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> = TurboProperties & {
+type TurboSelectProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> = TurboProperties & {
     unsetDefaultClasses?: boolean;
     customSelectedEntryClasses?: string;
     values?: (ValueType | TurboSelectEntryProperties<ValueType> | EntryType)[];
@@ -2590,6 +2387,7 @@ type TurboSelectProperties<EntryType extends TurboSelectEntry<ValueType>, ValueT
     forceSelection?: boolean;
     inputName?: string;
     entriesParent?: Element;
+    onSelect?: (b: boolean, entry: EntryType, index: number) => void;
 };
 type TurboSelectConfig = {
     defaultClasses?: string | string[];
@@ -2601,7 +2399,7 @@ type TurboSelectConfig = {
  * @class TurboSelect
  * @extends TurboElement
  */
-declare class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> extends TurboElement {
+declare class TurboSelect<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> extends TurboElement {
     /**
      * The dropdown's entries.
      */
@@ -2614,13 +2412,14 @@ declare class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueTy
     readonly inputName: string;
     private readonly multiSelection;
     private readonly forceSelection;
+    private readonly onSelect;
     private readonly selectedEntryClasses;
     static readonly config: TurboSelectConfig;
     /**
      * @description Dropdown constructor
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    constructor(properties: TurboSelectProperties<EntryType, ValueType>);
+    constructor(properties: TurboSelectProperties<ValueType, EntryType>);
     protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType> | EntryType): EntryType;
     protected onEntryClick(entry: EntryType, e?: Event): void;
     /**
@@ -2637,6 +2436,7 @@ declare class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueTy
      * @return {TurboSelect} - This Dropdown for chaining.
      */
     selectByIndex(index: number, preprocess?: (index: number, entriesCount: number, zero?: number) => number): this;
+    getIndex(entry: EntryType): number;
     deselectAll(): void;
     reset(): void;
     get enabledEntries(): EntryType[];
@@ -2661,42 +2461,24 @@ declare class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueTy
     get values(): ValueType[];
     set values(values: (ValueType | TurboSelectEntryProperties<ValueType> | EntryType)[]);
 }
-declare function select<EntryType extends TurboSelectEntry<ValueType>, ValueType = string>(properties: TurboSelectProperties<EntryType, ValueType>): TurboSelect<EntryType, ValueType>;
+declare function select<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(properties: TurboSelectProperties<ValueType, EntryType>): TurboSelect<ValueType, EntryType>;
 
-declare class TurboSelectInputEvent<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> extends TurboEvent {
+declare class TurboSelectInputEvent<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> extends TurboEvent {
     readonly toggledEntry: EntryType;
     readonly values: ValueType[];
-    constructor(toggledEntry: EntryType, values: ValueType[], clickMode?: ClickMode, eventInitDict?: EventInit);
+    constructor(toggledEntry: EntryType, values: ValueType[], clickMode?: ClickMode, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
 }
-
-/**
- * @class TurboDropdownEntry
- * @description Class representing an entry within a Dropdown.
- * @extends TurboElement
- */
-declare class TurboDropdownEntry extends TurboSelectEntry {
-    /**
-     * @description DropdownEntry constructor
-     * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
-     */
-    constructor(properties: TurboSelectEntryProperties);
-}
-declare function dropdownEntry(properties: TurboSelectEntryProperties): TurboDropdownEntry;
 
 /**
  * @type {TurboDropdownProperties}
  * @description Properties for configuring a Dropdown.
  * @extends TurboProperties
  *
- * @property {(string | TurboDropdownEntry)[]} values - The values or DropdownEntry instances to be used as dropdown options.
- * @property {string[]} [selectedValues=[]] - Array of values that are initially selected.
  * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
  * string is passed, a Button with the given string as text will be assigned as the selector.
  * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
  *
  * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- * @property {string} [underlyingInputName] - Name attribute for a hidden input element to store the selected value(s).
- * If not declared, the hidden input will not be created.
  *
  * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
@@ -2712,7 +2494,7 @@ declare function dropdownEntry(properties: TurboSelectEntryProperties): TurboDro
  * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
  * the default classes set in TurboConfig.Dropdown.
  */
-type TurboDropdownProperties = TurboSelectProperties<TurboDropdownEntry> & {
+type TurboDropdownProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
     customSelectorTag?: HTMLTag;
@@ -2751,7 +2533,7 @@ type TurboDropdownConfig = TurboSelectConfig & {
  * @class TurboDropdown
  * @extends TurboElement
  */
-declare class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
+declare class TurboDropdown<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any> = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
     /**
      * The dropdown's selector element.
      */
@@ -2766,32 +2548,327 @@ declare class TurboDropdown extends TurboSelect<TurboDropdownEntry> {
      * @description Dropdown constructor
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    constructor(properties: TurboDropdownProperties);
+    constructor(properties: TurboDropdownProperties<ValueType, EntryType>);
     private initSelector;
     private initPopup;
-    protected onEntryClick(entry: TurboSelectEntry): void;
-    select(entry: string | TurboSelectEntry): this;
+    protected onEntryClick(entry: EntryType): void;
+    select(entry: ValueType | EntryType): this;
     private openPopup;
 }
 declare function dropdown(properties: TurboDropdownProperties): TurboDropdown;
 
 /**
- * @type {TurboDropdownEntryProperties}
- * @description Properties for configuring a DropdownEntry.
- * @extends TurboProperties
+ * @class StatefulReifect
+ * @description A class to manage and apply dynamic state-based properties, styles, classes, and transitions to a
+ * set of objects.
  *
- * @property {string} value - The value associated with the dropdown entry.
- * @property {boolean} [selected=false] - Indicates whether the entry is initially selected.
- * @property {string | string[]} [selectedClass=""] - CSS class(es) applied to the entry when it is selected.
+ * @template {string | number | symbol} State - The type of the reifier's states.
+ * @template {object} ClassType - The object type this reifier will be applied to.
  */
-type TurboDropdownEntryProperties = TurboProperties & {
-    value: string;
-    selected?: boolean;
-    selectedClass?: string;
-};
+declare class StatefulReifect<State extends string | number | symbol, ClassType extends object = Node> {
+    protected readonly attachedObjects: ReifectObjectData<State, ClassType>[];
+    private _states;
+    private readonly _enabled;
+    protected readonly values: StatefulReifectCoreProperties<State, ClassType>;
+    /**
+     * @description Creates an instance of StatefulReifier.
+     * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
+     */
+    constructor(properties: StatefulReifectProperties<State, ClassType>);
+    /**
+     * @function attach
+     * @description Attaches an object to the reifier.
+     * @param {ClassType} object - The object to attach.
+     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * callback fired when the reifier is applied to the object. The callback takes as parameters:
+     * - `state: State`: The state being applied to the object.
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+     * attached list.
+     * @returns {this} - The reifier itself, for method chaining.
+     */
+    attach(object: ClassType, onSwitch?: (state: State, index: number, total: number, object: ClassType) => void, index?: number): this;
+    /**
+     * @function attachAll
+     * @description Attaches multiple objects to the reifier.
+     * @param {...ClassType[]} objects - The objects to attach.
+     * @returns {this} - The reifier itself, for method chaining.
+     */
+    attachAll(...objects: ClassType[]): this;
+    /**
+     * @function attachAllAt
+     * @description Attaches multiple objects to the reifier at a specified index.
+     * @param {number} index - The index to specify the position at which to insert the objects in the reifier's
+     * attached list.
+     * @param {...ClassType[]} objects - The objects to attach.
+     * @returns {this} - The reifier itself, for method chaining.
+     */
+    attachAllAt(index: number, ...objects: ClassType[]): this;
+    /**
+     * @function detach
+     * @description Detaches one or more objects from the reifier.
+     * @param {...ClassType[]} objects - The objects to detach.
+     * @returns {this} - The reifier itself, for method chaining.
+     */
+    detach(...objects: ClassType[]): this;
+    /**
+     * @function getData
+     * @description Retrieve the data entry of a given object.
+     * @param {ClassType} object - The object to find the data of.
+     * @returns {ReifectObjectData<State, ClassType>} - The corresponding data, or `null` if was not found.
+     */
+    getData(object: ClassType): ReifectObjectData<State, ClassType>;
+    /**
+     * @function getObject
+     * @description Retrieves the object attached to the given data entry.
+     * @param {ReifectObjectData<State, ClassType>} data - The data entry to get the corresponding object of.
+     * @returns {ClassType} The corresponding object, or `null` if was garbage collected.
+     */
+    getObject(data: ReifectObjectData<State, ClassType>): ClassType;
+    /**
+     * @function getEnabledState
+     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to get the state of.
+     * @returns {ReifectEnabledState} - The corresponding enabled state.
+     */
+    getEnabledState(object: ClassType): ReifectEnabledState;
+    /**
+     * @function setEnabledState
+     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to set the state of.
+     * @param {boolean | ReifectEnabledState} value - The value to set/update with. Setting it to a boolean will
+     * accordingly update the value of `enabled.global`.
+     */
+    setEnabledState(object: ClassType, value: boolean | ReifectEnabledState): void;
+    /**
+     * @description All possible states.
+     */
+    get states(): State[];
+    set states(value: State[]);
+    /**
+     * @description The enabled state of the reifier (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * accordingly update the value of `enabled.global`.
+     */
+    get enabled(): ReifectEnabledState;
+    set enabled(value: boolean | ReifectEnabledState);
+    /**
+     * @description The properties to be assigned to the objects. It could take:
+     * - A record of `{key: value}` pairs.
+     * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get properties(): PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>;
+    set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>);
+    /**
+     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A record of `{CSS property: value}` pairs.
+     * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get styles(): PropertyConfig<StylesType, State, ClassType>;
+    set styles(value: PropertyConfig<StylesType, State, ClassType>);
+    /**
+     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A string of space-separated classes.
+     * - An array of classes.
+     * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
+     * return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated classes or an array of classes based
+     * on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get classes(): PropertyConfig<string | string[], State, ClassType>;
+    set classes(value: PropertyConfig<string | string[], State, ClassType>);
+    /**
+     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+     * - The object to be replaced with.
+     * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
+     * to be replaced with}`.
+     * - An interpolation function that would return the object to be replaced with based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get replaceWith(): PropertyConfig<ClassType, State, ClassType>;
+    set replaceWith(value: PropertyConfig<ClassType, State, ClassType>);
+    /**
+     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+     * could take:
+     * - A string of space-separated CSS properties.
+     * - An array of CSS properties.
+     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
+     * function that would return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated CSS properties or an array of
+     * CSS properties based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionProperties(): PropertyConfig<string | string[], State, ClassType>;
+    set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>);
+    /**
+     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
+     * (number in seconds)}`.
+     * - An interpolation function that would return a duration (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionDuration(): PropertyConfig<number, State, ClassType>;
+    set transitionDuration(value: PropertyConfig<number, State, ClassType>);
+    /**
+     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+     * It could take:
+     * - A string representing the timing function to apply.
+     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
+     * function (string)}`.
+     * - An interpolation function that would return a timing function (string) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionTimingFunction(): PropertyConfig<string, State, ClassType>;
+    set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>);
+    /**
+     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
+     * (number in seconds)}`.
+     * - An interpolation function that would return a delay (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionDelay(): PropertyConfig<number, State, ClassType>;
+    set transitionDelay(value: PropertyConfig<number, State, ClassType>);
+    initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    /**
+     * @function reloadFor
+     * @description Generates the transition CSS string for the provided transition with the correct interpolation
+     * information.
+     * @param {ClassType} object - The element to apply the string to.
+     * @returns {this} Itself for method chaining.
+     */
+    reloadFor(object: ClassType): this;
+    reloadTransitionFor(object: ClassType): this;
+    getEnabledObjectsData(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ReifectObjectData<State, ClassType>[];
+    /**
+     * @function stateOf
+     * @description Determine the current state of the reifect on the provided object.
+     * @param {ClassType} object - The object to determine the state for.
+     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+     */
+    stateOf(object: ClassType): State;
+    applyResolvedValues(data: ReifectObjectData<State, ClassType>, state?: State, skipTransition?: boolean): void;
+    replaceObject(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    setProperties(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    applyClasses(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    applyStyles(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    applyTransition(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    /**
+     * @protected
+     * @function attachObject
+     * @description Function used to generate a data entry for the given object, and add it to the attached list at
+     * the provided index (if any).
+     * @param {ClassType} object - The object to attach
+     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+     * attached list.
+     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * callback fired when the reifier is applied to the object. The callback takes as parameters:
+     * - `state: State`: The state being applied to the object.
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
+     */
+    protected attachObject(object: ClassType, index?: number, onSwitch?: (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType>;
+    /**
+     * @protected
+     * @function detachObject
+     * @description Function used to remove a data entry from the attached objects list.
+     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
+     */
+    protected detachObject(data: ReifectObjectData<State, ClassType>): void;
+    protected filterEnabledObjects(data: ReifectObjectData<State, ClassType>): boolean;
+    getAllStates(): State[];
+    protected processRawProperties(data: ReifectObjectData<State, ClassType>, override?: StatefulReifectCoreProperties<State, ClassType>): void;
+    private generateNewData;
+    private initializeOptions;
+    /**
+     * @description Clone the reifect to create a new copy with the same properties but no attached objects.
+     * @returns {StatefulReifect<State, ClassType>} - The new reifect.
+     */
+    clone(): StatefulReifect<State, ClassType>;
+    /**
+     * @protected
+     * @function parseState
+     * @description Parses a boolean into the corresponding state value.
+     * @param {State | boolean} value - The value to parse.
+     * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
+     */
+    protected parseState(value: State | boolean): State;
+    /**
+     * @function getTransitionString
+     * @description Gets the CSS transition string for the specified direction.
+     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
+     * @param state
+     * @returns {string} The CSS transition string.
+     */
+    private getTransitionString;
+    protected processRawPropertyForState<Type>(data: ReifectObjectData<State, ClassType>, field: keyof StatefulReifectCoreProperties<State, ClassType>, value: PropertyConfig<Type, State, ClassType>, state: State): void;
+}
+declare function statefulReifier<State extends string | number | symbol, ClassType extends object = Element>(properties: StatefulReifectProperties<State, ClassType>): StatefulReifect<State, ClassType>;
 
-type MarkingMenuProperties<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> = TurboSelectProperties<EntryType, ValueType> & {
-    transition?: Transition | TransitionProperties;
+type TurboMarkingMenuProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
+    transition?: StatefulReifect<InOut> | StatefulReifectProperties<InOut>;
     startAngle?: number;
     endAngle?: number;
     semiMajor?: number;
@@ -2799,7 +2876,7 @@ type MarkingMenuProperties<EntryType extends TurboSelectEntry<ValueType>, ValueT
     minDragDistance?: number;
 };
 
-declare class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> extends TurboSelect<EntryType, ValueType> {
+declare class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any> = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
     private readonly transition;
     semiMajor: number;
     semiMinor: number;
@@ -2807,7 +2884,7 @@ declare class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueTy
     minDragDistance: number;
     set startAngle(value: number);
     set endAngle(value: number);
-    constructor(properties?: MarkingMenuProperties<EntryType, ValueType>);
+    constructor(properties?: TurboMarkingMenuProperties<ValueType, EntryType>);
     get totalAngle(): number;
     private initEvents;
     private initializeTransition;
@@ -2815,44 +2892,309 @@ declare class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueTy
     protected addEntry(entry: TurboSelectEntryProperties<ValueType> | ValueType | EntryType): EntryType;
     show(b?: boolean, position?: Point): this;
     getEntryInDirection(position: Point): EntryType | null;
+    selectEntryInDirection(position: Point): void;
+    attachTo(element: Element, onClick?: (e: Event) => void, onDragStart?: (e: Event) => void, onDragEnd?: (e: Event) => void): void;
 }
+declare function markingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(properties?: TurboMarkingMenuProperties<ValueType, EntryType>): TurboMarkingMenu<ValueType, EntryType>;
 
-type TurboSelectWheelProperties<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> = TurboSelectProperties<EntryType, ValueType> & {
+/**
+ * @description A configuration type for properties based on states or interpolated values.
+ *
+ * @template Type
+ * @template State
+ * @template ClassType
+ */
+type StatelessPropertyConfig<Type, ClassType extends object = Element> = Type | ReifectInterpolator<Type, ClassType>;
+type StatelessReifectCoreProperties<ClassType extends object = Element> = {
+    properties?: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>;
+    styles?: StatelessPropertyConfig<StylesType, ClassType>;
+    classes?: StatelessPropertyConfig<string | string[], ClassType>;
+    replaceWith?: StatelessPropertyConfig<ClassType, ClassType>;
+    transitionProperties?: StatelessPropertyConfig<string | string[], ClassType>;
+    transitionDuration?: StatelessPropertyConfig<number, ClassType>;
+    transitionTimingFunction?: StatelessPropertyConfig<string, ClassType>;
+    transitionDelay?: StatelessPropertyConfig<number, ClassType>;
+};
+type StatelessReifectProperties<ClassType extends object = Element> = StatelessReifectCoreProperties<ClassType> & {
+    attachedObjects?: ClassType[];
+};
+
+/**
+ * @class Reifect
+ * @description A class to manage and apply dynamic properties, styles, classes, and transitions to a
+ * set of objects.
+ *
+ * @template {object} ClassType - The object type this reifier will be applied to.
+ */
+declare class Reifect<ClassType extends object = Node> extends StatefulReifect<"", ClassType> {
+    /**
+     * @description Creates an instance of StatefulReifier.
+     * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
+     */
+    constructor(properties: StatelessReifectProperties<ClassType>);
+    /**
+     * @description The properties to be assigned to the objects. It could take:
+     * - A record of `{key: value}` pairs.
+     * - An interpolation function that would return a record of `{key: value}` pairs.
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get properties(): StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>;
+    set properties(value: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>);
+    /**
+     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A record of `{CSS property: value}` pairs.
+     * - An interpolation function that would return a record of `{key: value}` pairs.
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get styles(): StatelessPropertyConfig<StylesType, ClassType>;
+    set styles(value: StatelessPropertyConfig<StylesType, ClassType>);
+    /**
+     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A string of space-separated classes.
+     * - An array of classes.
+     * - An interpolation function that would return a string of space-separated classes or an array of classes.
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get classes(): StatelessPropertyConfig<string | string[], ClassType>;
+    set classes(value: StatelessPropertyConfig<string | string[], ClassType>);
+    /**
+     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+     * - The object to be replaced with.
+     * - An interpolation function that would return the object to be replaced with.
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get replaceWith(): StatelessPropertyConfig<ClassType, ClassType>;
+    set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>);
+    /**
+     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+     * could take:
+     * - A string of space-separated CSS properties.
+     * - An array of CSS properties.
+     * - An interpolation function that would return a string of space-separated CSS properties or an array of
+     * CSS properties.
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionProperties(): StatelessPropertyConfig<string | string[], ClassType>;
+    set transitionProperties(value: StatelessPropertyConfig<string | string[], ClassType>);
+    /**
+     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - An interpolation function that would return a duration (number in seconds).
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionDuration(): StatelessPropertyConfig<number, ClassType>;
+    set transitionDuration(value: StatelessPropertyConfig<number, ClassType>);
+    /**
+     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+     * It could take:
+     * - A string representing the timing function to apply.
+     * - An interpolation function that would return a timing function (string).
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionTimingFunction(): StatelessPropertyConfig<string, ClassType>;
+    set transitionTimingFunction(value: StatelessPropertyConfig<string, ClassType>);
+    /**
+     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - An interpolation function that would return a delay (number in seconds).
+     *
+     * The interpolation function would take as arguments:
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    get transitionDelay(): StatelessPropertyConfig<number, ClassType>;
+    set transitionDelay(value: StatelessPropertyConfig<number, ClassType>);
+    initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"", ClassType>): void;
+    apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"", ClassType>): void;
+}
+declare function reifect<ClassType extends object = Node>(properties: StatelessReifectProperties<ClassType>): Reifect<ClassType>;
+
+type TurboSelectWheelProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
     direction?: Direction;
-    transition?: Transition | TransitionProperties;
+    styleReifect?: Reifect | StatelessReifectProperties;
+    generateCustomStyling?: (element: HTMLElement, translationValue: number, size: Record<Range, number>, defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>) => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
     size?: number | Record<Range, number>;
     opacity?: Record<Range, number>;
     scale?: Record<Range, number>;
 };
 
-declare class TurboSelectWheel<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> extends TurboSelect<EntryType, ValueType> {
-    private readonly transition;
-    private sizePerEntry;
+declare class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any> = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
+    private readonly reifect;
+    private readonly sizePerEntry;
     private readonly direction;
-    private readonly opacity;
-    private readonly scale;
-    private readonly size;
+    set opacity(value: Record<Range, number>);
+    scale: Record<Range, number>;
+    size: Record<Range, number>;
+    openTimeout: number;
+    generateCustomStyling: (element: HTMLElement, translationValue: number, size: Record<Range, number>, defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>) => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
     private dragging;
-    private openTimeout;
-    constructor(properties: TurboSelectWheelProperties<EntryType, ValueType>);
-    private initializeTransition;
-    private reloadStyles;
-    private applyStyling;
+    private openTimer;
+    constructor(properties: TurboSelectWheelProperties<ValueType, EntryType>);
+    get isVertical(): boolean;
     set index(value: number);
     private get trimmedIndex();
     private get flooredTrimmedIndex();
     set open(value: boolean);
+    private initializeStyleReifect;
+    private initEvents;
+    private reloadStyles;
+    private applyStyling;
     protected onEntryClick(entry: EntryType, e?: Event): void;
     protected addEntry(entry: TurboSelectEntryProperties<ValueType> | ValueType | EntryType): EntryType;
     reset(): void;
     private snapTo;
-    private clearOpenTimeout;
-    private setOpenTimeout;
-    private initEvents;
+    private clearOpenTimer;
+    private setOpenTimer;
 }
-declare function selectWheel<EntryType extends TurboSelectEntry<ValueType>, ValueType = string>(properties: TurboSelectProperties<EntryType, ValueType>): TurboSelectWheel<EntryType, ValueType>;
+declare function selectWheel<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(properties: TurboSelectProperties<ValueType, EntryType>): TurboSelectWheel<ValueType, EntryType>;
+
+/**
+ * @class ReifectHandler
+ * @description A class to handle reifects for an attached element.
+ * @template {object = Node} ClassType
+ */
+declare class ReifectHandler<ClassType extends object = Node> {
+    private readonly attachedNode;
+    private readonly reifects;
+    private readonly _enabled;
+    /**
+     * @constructor
+     * @param {Node} attachedNode - The element to attach transitions to.
+     */
+    constructor(attachedNode: ClassType);
+    /**
+     * @function attach
+     * @description Attach one or more transitions to the element.
+     * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to attach.
+     * @returns {this} The element's TransitionHandler instance.
+     */
+    attach(...reifects: StatefulReifect<any, ClassType>[]): this;
+    /**
+     * @function detach
+     * @description Detach one or more transitions from the element.
+     * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to detach.
+     * @returns {this} The element's TransitionHandler instance.
+     */
+    detach(...reifects: StatefulReifect<any, ClassType>[]): this;
+    /**
+     * @function initialize
+     * @description Initializes the element to the corresponding transition direction and styles.
+     * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+     * @param {InOut} direction - The direction of the transition.
+     * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
+     * `null` to not set any styles on the element.
+     * @returns {this} The element's TransitionHandler instance.
+     * @template {string | symbol | number} State
+     * @template {object} ClassType
+     */
+    initialize<State extends string | symbol | number>(reifect: StatefulReifect<State, ClassType>, direction: State, options?: ReifectAppliedOptions<State, ClassType>): this;
+    /**
+     * @function initialize
+     * @description Initializes the element to the corresponding transition direction and styles.
+     * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+     * @param {InOut} direction - The direction of the transition.
+     * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to `null` to
+     * not set any styles on the element.
+     * @returns {this} The element's TransitionHandler instance.
+     * @template {string | symbol | number} State
+     * @template {object} ClassType
+     */
+    apply<State extends string | symbol | number>(reifect: StatefulReifect<State, ClassType>, direction: State, options?: ReifectAppliedOptions<State, ClassType>): this;
+    /**
+     * @function initialize
+     * @description Initializes the element to the corresponding transition direction and styles.
+     * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
+     * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
+     * `null` to not set any styles on the element.
+     * @returns {this} The element's TransitionHandler instance.
+     * @template {string | symbol | number} State
+     * @template {object} ClassType
+     */
+    toggle<State extends string | symbol | number>(reifect: StatefulReifect<State, ClassType>, options?: ReifectAppliedOptions<State, ClassType>): this;
+    /**
+     * @private
+     * @function clear
+     * @description Clears the set transition styles on the element.
+     */
+    clear(): void;
+    /**
+     * @function reload
+     * @description Reloads all transitions attached to the element. Doesn't recompute styles.
+     */
+    reload(): void;
+    /**
+     * @function reload
+     * @description Reloads all transitions attached to the element. Doesn't recompute styles.
+     */
+    reloadTransitions(): void;
+    /**
+     * @description The enabled state of the reifect (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * accordingly update the value of `enabled.global`.
+     */
+    get enabled(): ReifectEnabledState;
+    set enabled(value: boolean | ReifectEnabledState);
+    getEnabledState(reifect: StatefulReifect<any, ClassType>): ReifectEnabledState;
+    setEnabledState(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledState): void;
+}
+
+declare global {
+    interface Node {
+        /**
+         * @description Handler for all Reifects attached to this element.
+         */
+        readonly reifects: ReifectHandler;
+        /**
+         * @description The transition used by the element's show() and isShown methods. Directly modifying its
+         * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
+         * new custom StatefulReifect.
+         */
+        showTransition: StatefulReifect<Shown>;
+        /**
+         * @description Boolean indicating whether the element is shown or not, based on its showTransition.
+         */
+        readonly isShown: boolean;
+        /**
+         * @description Show or hide the element (based on CSS) by transitioning in/out of the element's showTransition.
+         * @param {boolean} b - Whether to show the element or not
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        show(b: boolean): this;
+    }
+}
+
+declare function addReifectManagementToNodePrototype(): void;
 
 declare function areEqual<Type = any>(...entries: Type[]): boolean;
+declare function equalToAny<Type = any>(entry: Type, ...values: Type[]): boolean;
 declare function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]): boolean;
 
 /**
@@ -2876,6 +3218,7 @@ declare function mod(value: number, modValue?: number): number;
  * @return The Element
  */
 declare function textToElement(text: string): Element;
+declare function createProxy<SelfType extends object, ProxiedType extends object>(self: SelfType, proxied: ProxiedType): SelfType & ProxiedType;
 
 declare function isNull(value: any): boolean;
 declare function isUndefined(value: any): boolean;
@@ -2915,6 +3258,20 @@ declare function kebabToCamelCase(str?: string): string;
  * @returns An SVGElement promise
  */
 declare function fetchSvg(path: string): Promise<SVGElement>;
+
+declare class TurboWeakSet<Type extends object = object> {
+    private readonly _weakRefs;
+    constructor();
+    add(obj: Type): this;
+    has(obj: Type): boolean;
+    delete(obj: Type): boolean;
+    cleanup(): void;
+    toArray(): Type[];
+    get size(): number;
+    clear(): void;
+}
+
+declare function getEventPosition(e: Event): Point;
 
 /**
  * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
@@ -2972,4 +3329,4 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MarkingMenu, type MarkingMenuProperties, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type PartialRecord, Point, PopupFallbackMode, Range, type SVGTag, type SVGTagMap, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, Transition, type TransitionData, type TransitionEntry, TransitionHandler, type TransitionInterpolation, TransitionMode, type TransitionProperties, type TransitionStyles, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboDragEvent, TurboDragEventName, TurboDropdown, type TurboDropdownConfig, TurboDropdownEntry, type TurboDropdownEntryProperties, type TurboDropdownProperties, TurboElement, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidInputElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, css, define, div, dropdown, dropdownEntry, eachEqualToAny, element, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getFileExtension, h1, h2, h3, h4, h5, h6, icon, iconToggle, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, numericalInput, observe, p, parse, popup, select, selectEntry, selectWheel, setupTurboEventManagerBypassing, spacer, span, stringify, style, stylesheet, textToElement, textarea, transition, trim, turboInput, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboDragEvent, TurboDragEventName, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboIcon, type TurboIconConfig, type TurboIconProperties, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, dropdown, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, iconSwitch, iconToggle, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markingMenu, mod, numericalInput, observe, p, parse, popup, reifect, richElement, select, selectEntry, selectWheel, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turboInput, turbofy, updateChainingPropertiesInElementPrototype, video };

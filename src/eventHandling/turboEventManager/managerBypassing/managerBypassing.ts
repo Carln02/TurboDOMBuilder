@@ -4,10 +4,10 @@ import {TurboEventManagerStateProperties} from "../turboEventManager.types";
 import {callOnce} from "../../../domBuilding/decorators/callOnce";
 
 function setupTurboEventManagerBypassing(eventManager: TurboEventManager) {
-    HTMLElement.prototype.bypassTurboEventManagerOn = (e: Event) => true;
+    HTMLElement.prototype.lockTurboEventManagerOn = (e: Event) => false;
 
     const bypassManager = function (this: HTMLElement, e: Event) {
-        const bypassingResult: boolean | TurboEventManagerStateProperties = this.bypassTurboEventManagerOn(e);
+        const bypassingResult: boolean | TurboEventManagerStateProperties = this.lockTurboEventManagerOn(e);
 
         if (typeof bypassingResult == "boolean") eventManager.setLockState(this, {
             enabled: bypassingResult,

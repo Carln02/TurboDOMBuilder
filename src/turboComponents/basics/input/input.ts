@@ -1,87 +1,107 @@
 import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {TurboInputProperties, ValidInputElement} from "./input.types";
+import {TurboInputProperties} from "./input.types";
 import {element} from "../../../domBuilding/elementCreation/element";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {define} from "../../../domBuilding/decorators/define";
+import {TurboRichElement} from "../richElement/richElement";
+import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 
 @define("turbo-input")
-class TurboInput<InputTag extends "input" | "textarea"> extends TurboElement {
-    public readonly inputElement: ValidInputElement<InputTag>;
+class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string>
+    extends TurboElement {
     public readonly labelElement: HTMLLabelElement;
-
-    public readonly prefixElement: HTMLSpanElement;
-    public readonly suffixElement: HTMLSpanElement;
+    public readonly inputElement: TurboRichElement<InputTag>;
 
     public locked: boolean;
+
+    private lastValueWithInputCheck: string;
+    private lastValueWithBlurCheck: string;
 
     constructor(properties: TurboInputProperties<InputTag> = {}) {
         super(properties);
 
         this.locked = properties.locked || false;
+        this.lastValueWithInputCheck = "";
+        this.lastValueWithBlurCheck = "";
 
         if (properties.label) this.labelElement = element({tag: "label", text: properties.label, parent: this});
-
-        const flexElement = element({parent: this});
-
-        if (properties.prefix) this.prefixElement = element({
-            tag: "span",
-            text: properties.prefix,
-            parent: flexElement
-        });
-
-        this.inputElement = element({
-            ...properties.inputProperties,
-            tag: properties.inputTag,
-            parent: flexElement
-        }) as ValidInputElement<InputTag>;
-
-        if (properties.suffix) this.suffixElement = element({
-            tag: "span",
-            text: properties.suffix,
-            parent: flexElement
+        this.inputElement = new TurboRichElement({
+            ...properties,
+            elementTag: properties.elementTag || "input" as InputTag,
+            element: properties.element || element({tag: properties.elementTag || "input"} as TurboProperties<InputTag>),
+            parent: this
         });
 
         this.setupEvents(properties);
     }
 
     private setupEvents(properties: TurboInputProperties<InputTag>) {
-        if ("bypassTurboEventManager" in this.inputElement) this.inputElement.bypassTurboEventManager();
+        if ("bypassTurboEventManager" in this.inputElement.element) this.inputElement.element.bypassTurboEventManager();
 
-        if (properties.onClick) this.inputElement.addEventListener(DefaultEventName.click, (e: Event) => properties.onClick(e));
-        if (properties.onBlur) this.inputElement.addEventListener(DefaultEventName.blur, (e: Event) => properties.onBlur(e));
-
-        this.inputElement.addEventListener(DefaultEventName.focus, () => {
-            if (this.locked) this.inputElement.blur();
-            if (properties.selectTextOnFocus) this.inputElement.select();
+        this.inputElement.element.addListener(DefaultEventName.blur, (e: Event) => {
+            if (properties.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
+                this.stringValue = this.lastValueWithBlurCheck;
+            this.dispatchEvent(new FocusEvent(DefaultEventName.blur, e));
         });
 
-        this.inputElement.addEventListener(DefaultEventName.input, (e: Event) => {
+        this.inputElement.element.addListener(DefaultEventName.focus, (e: Event) => {
+            if (this.locked) this.inputElement.blur();
+            if (properties.selectTextOnFocus) this.inputElement.element.select();
+            this.dispatchEvent(new FocusEvent(DefaultEventName.focus, e));
+        });
+
+        this.inputElement.element.addListener(DefaultEventName.input, (e: Event) => {
             if (properties.dynamicVerticalResize) {
                 this.inputElement.style.height = "";
                 this.inputElement.style.height = this.inputElement.scrollHeight + "px";
             }
-            if (properties.regexCheck) {
-                const regex = properties.regexCheck instanceof RegExp
-                    ? properties.regexCheck
-                    : new RegExp(properties.regexCheck, "g");
-                this.value = this.value.toString().replace(regex, "");
+
+            if (properties.inputRegexCheck) {
+                const regex = new RegExp(properties.inputRegexCheck, "g");
+               if (!regex.test(this.stringValue)) this.stringValue = this.lastValueWithInputCheck;
             }
-            else this.value = this.value;
-            if (properties.onInput) properties.onInput(e);
+            this.lastValueWithInputCheck = this.stringValue;
+
+            if (properties.blurRegexCheck) {
+                const regex = new RegExp(properties.blurRegexCheck, "g");
+                if (regex.test(this.stringValue)) this.lastValueWithBlurCheck = this.stringValue;
+            }
+
+            if (this.stringValue.length == 0) {
+                this.lastValueWithInputCheck = "0";
+                this.lastValueWithBlurCheck = "0";
+            }
+
+            this.dispatchEvent(new InputEvent(DefaultEventName.input, e));
         });
     }
 
-    public get value(): string | number {
-        return this.inputElement.value;
+    protected set stringValue(value: string) {
+        this.inputElement.element.value = value;
     }
 
-    public set value(value: string | number) {
-        this.inputElement.value = value.toString();
+    protected get stringValue(): string {
+        return this.inputElement.element.value;
+    }
+
+    public get value(): ValueType {
+        const value = this.stringValue;
+        // if (typeof value === "string" && value.trim() !== "") {
+        //     if (typeof th === "number") {
+        //         return parseFloat(value) as ValueType;
+        //     }
+        // }
+        return value as ValueType;
+    }
+
+    public set value(value: string | ValueType) {
+        this.stringValue = value.toString();
     }
 }
 
-function turboInput<T extends ("input" | "textarea")>(properties: TurboInputProperties<T> = {}): TurboInput<T> {
-    return new TurboInput(properties);
+function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string>
+(properties: TurboInputProperties<InputTag> = {}): TurboInput<InputTag, ValueType> {
+    return new TurboInput<InputTag, ValueType>(properties);
 }
 
 export {TurboInput, turboInput};

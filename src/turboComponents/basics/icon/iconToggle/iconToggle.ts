@@ -1,11 +1,11 @@
 import {TurboIcon} from "../icon";
-import {define} from "../../../../domBuilding/decorators/define";
 import {TurboIconToggleProperties} from "./iconToggle.types";
+import {define} from "../../../../domBuilding/decorators/define";
 
-@define("turbo-icon-toggle")
+@define()
 class TurboIconToggle extends TurboIcon {
     private _toggled: boolean = false;
-    private readonly onToggle: (value: boolean, el: TurboIconToggle) => void;
+    private onToggle: (value: boolean, el: TurboIconToggle) => void;
 
     constructor(properties: TurboIconToggleProperties) {
         super(properties);

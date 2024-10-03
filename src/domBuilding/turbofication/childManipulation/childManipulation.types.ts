@@ -13,9 +13,10 @@ declare global {
 
         /**
          * @description The child handler object associated with the node. It is the node itself (if it is handling
-         * its children) or its shadow root (if defined).
+         * its children) or its shadow root (if defined). Set it to change the node where the children are added/
+         * removed/queried from when manipulating the node's children.
          */
-        readonly childHandler: ChildHandler;
+        childHandler: ChildHandler;
 
         /**
          * @description Static array of all the child nodes of the node.
@@ -38,6 +39,10 @@ declare global {
         readonly siblings: Element[];
 
         //Self manipulation
+
+        bringToFront(): this;
+
+        sendToBack(): this;
 
         /**
          * @description Removes the node from the document.

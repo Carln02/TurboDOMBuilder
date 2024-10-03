@@ -6,6 +6,14 @@ function areEqual<Type = any>(...entries: Type[]): boolean {
     return true;
 }
 
+function equalToAny<Type = any>(entry: Type, ...values: Type[]): boolean {
+    if (values.length < 1) return true;
+    for (const value of values) {
+        if (entry == value) return true;
+    }
+    return false;
+}
+
 function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]): boolean {
     if (entries.length < 1) return true;
     for (const entry of entries) {
@@ -18,4 +26,4 @@ function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]): boolean
     return true;
 }
 
-export {areEqual, eachEqualToAny};
+export {areEqual, equalToAny, eachEqualToAny};

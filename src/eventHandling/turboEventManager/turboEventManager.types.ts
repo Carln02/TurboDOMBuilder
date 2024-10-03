@@ -1,3 +1,5 @@
+import {Point} from "../../utils/datatypes/point/point";
+
 type TurboEventManagerStateProperties = {
     enabled?: boolean,
     preventDefaultWheel?: boolean,
@@ -19,6 +21,9 @@ type DisabledTurboEventTypes = {
 type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
     moveThreshold?: number,
     longPressDuration?: number,
+
+    authorizeEventScaling?: boolean | (() => boolean),
+    scaleEventPosition?: (position: Point) => Point,
 }
 
 type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {

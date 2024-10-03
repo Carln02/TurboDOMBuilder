@@ -1,9 +1,10 @@
-import {TurboElement} from "../../../../domBuilding/turboElement/turboElement";
 import {define} from "../../../../domBuilding/decorators/define";
 import {TurboSelectEntryConfig, TurboSelectEntryProperties} from "./selectEntry.types";
 import {input} from "../../../../domBuilding/elementCreation/basicElements";
 import {stringify} from "../../../../utils/dataManipulation/stringManipulation";
 import {auto} from "../../../../domBuilding/decorators/auto/auto";
+import {TurboRichElement} from "../../richElement/richElement";
+import {ValidTag} from "../../../../domBuilding/core.types";
 
 /**
  * @class TurboSelectEntry
@@ -12,16 +13,16 @@ import {auto} from "../../../../domBuilding/decorators/auto/auto";
  */
 
 @define("turbo-select-entry")
-class TurboSelectEntry<ValueType = string> extends TurboElement {
+class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> extends TurboRichElement<ElementTag> {
     private _value: ValueType;
     private _selected: boolean;
-    private _enabled: boolean;
 
     /**
      * @description The class(es) assigned to the dropdown entry when it is selected
      */
     public selectedClasses: string | string[] = "";
 
+    private readonly action: () => void;
     private readonly onSelected: (selected: boolean) => void;
     private readonly onEnabled: (enabled: boolean) => void;
 
@@ -33,14 +34,15 @@ class TurboSelectEntry<ValueType = string> extends TurboElement {
 
     /**
      * @description DropdownEntry constructor
-     * @param {TurboDropdownEntryProperties} properties - Properties for configuring the dropdown entry.
+     * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
      */
-    constructor(properties: TurboSelectEntryProperties<ValueType>) {
+    constructor(properties: TurboSelectEntryProperties<ValueType, ElementTag>) {
         super(properties);
 
         if (!properties.unsetDefaultClasses) this.addClass(TurboSelectEntry.config.defaultClasses);
         this.selectedClasses = properties.selectedClasses;
 
+        this.action = properties.action || (() => {});
         this.onSelected = properties.onSelected || (() => {});
         this.onEnabled = properties.onEnabled || (() => {});
 
@@ -69,7 +71,10 @@ class TurboSelectEntry<ValueType = string> extends TurboElement {
 
     public set value(value: ValueType) {
         this._value = value;
-        if (this.reflectedElement) this.reflectedElement.innerText = this.stringValue;
+        if (this.reflectedElement) {
+            if (this.reflectedElement instanceof TurboRichElement) this.reflectedElement.text = this.stringValue;
+            else this.reflectedElement.innerText = this.stringValue;
+        }
         if (this.inputElement) this.inputElement.value =  this.stringValue;
     }
 
@@ -89,6 +94,7 @@ class TurboSelectEntry<ValueType = string> extends TurboElement {
         this._selected = value;
 
         this.toggleClass(this.selectedClasses, value);
+        if (value) this.action();
         this.onSelected(value);
     }
 
@@ -96,7 +102,7 @@ class TurboSelectEntry<ValueType = string> extends TurboElement {
     public set enabled(value: boolean)  {
         if (!value && this.selected) this.selected = false;
 
-        this.transitions.enabled = value;
+        this.reifects.enabled = value;
         this.setStyle("visibility", value ? "" : "hidden");
         this.onEnabled(value);
     }
@@ -118,8 +124,9 @@ class TurboSelectEntry<ValueType = string> extends TurboElement {
     }
 }
 
-function selectEntry<ValueType = string>(properties: TurboSelectEntryProperties<ValueType>): TurboSelectEntry<ValueType> {
-    return new TurboSelectEntry<ValueType>(properties);
+function selectEntry<ValueType = string, ElementTag extends ValidTag = "p">
+(properties: TurboSelectEntryProperties<ValueType, ElementTag>): TurboSelectEntry<ValueType, ElementTag> {
+    return new TurboSelectEntry<ValueType, ElementTag>(properties);
 }
 
 export {TurboSelectEntry, selectEntry};

@@ -21,6 +21,7 @@ declare global {
 
     //Other interfaces
     interface ChildNode extends Node {}
+    interface ParentNode extends Node {}
     interface ProcessingInstruction extends Node {}
     interface DocumentType extends Node {}
 

@@ -1,19 +1,20 @@
-import {MarkingMenuProperties} from "./markingMenu.types";
+import {TurboMarkingMenuProperties} from "./markingMenu.types";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelect} from "../../basics/select/select";
 import {define} from "../../../domBuilding/decorators/define";
 import {Point} from "../../../utils/datatypes/point/point";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
-import {Transition, transition} from "../../../domBuilding/transition/transition";
-import {TransitionProperties} from "../../../domBuilding/transition/transition.types";
 import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/selectEntry.types";
+import {getEventPosition} from "../../../utils/events/events";
+import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
+import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 
 @define("turbo-marking-menu")
-class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = string>
-    extends TurboSelect<EntryType, ValueType> {
-    private readonly transition: Transition;
+class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any>
+    = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
+    private readonly transition: StatefulReifect<InOut>;
 
     public semiMajor: number;
     public semiMinor: number;
@@ -27,7 +28,7 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
     @auto({callBefore: (value) => value - Math.PI / 2})
     public set endAngle(value: number) {};
 
-    constructor(properties: MarkingMenuProperties<EntryType, ValueType> = {}) {
+    constructor(properties: TurboMarkingMenuProperties<ValueType, EntryType> = {}) {
         super({...properties});
         super.show(false);
 
@@ -38,14 +39,14 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
         this.semiMinor = properties.semiMinor ?? 45;
         this.minDragDistance = properties.minDragDistance ?? 20;
 
-        this.transition = properties.transition instanceof Transition ? properties.transition
+        this.transition = properties.transition instanceof StatefulReifect ? properties.transition
             : this.initializeTransition(properties.transition ?? {});
         this.transition.initialize(InOut.out, this.entries);
 
         this.setStyles({position: "fixed", top: 0, left: 0});
 
         this.showTransition = this.showTransition.clone();
-        this.showTransition.delay = {out: (index, totalCount) => 0.13 + totalCount * 0.02, in: 0};
+        this.showTransition.transitionDelay = {hidden: (index, totalCount) => 0.13 + totalCount * 0.02, visible: 0};
 
         this.initEvents();
     }
@@ -57,26 +58,29 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
     }
 
     private initEvents() {
-        const hideOnEvent = () => {
+        const hideOnEvent = (e: Event) => {
+            if ((e.target as Node).findInParents(this)) return;
             if (this.isShown) this.show(false);
         };
 
-        document.addEventListener(DefaultEventName.scroll, hideOnEvent);
-        // document.addEventListener(DefaultEventName.clickEnd, hideOnEvent);
-        document.addEventListener(DefaultEventName.dragStart, hideOnEvent);
+        document.addListener(DefaultEventName.scroll, hideOnEvent);
+        document.addListener(DefaultEventName.clickEnd, hideOnEvent);
+        document.addListener(DefaultEventName.dragStart, hideOnEvent);
     }
 
-    private initializeTransition(properties: TransitionProperties) {
-        if (!properties.properties) properties.properties = "opacity transform";
-        if (properties.duration == undefined) properties.duration = 0.1;
-        if (!properties.timingFunction) properties.timingFunction = {in: "ease-out", out: "ease-in"};
+    private initializeTransition(properties: StatefulReifectProperties<InOut>) {
+        properties.states = [InOut.in, InOut.out];
 
-        if (!properties.delay) properties.delay = {
+        if (!properties.transitionProperties) properties.transitionProperties = "opacity transform";
+        if (properties.transitionDuration == undefined) properties.transitionDuration = 0.1;
+        if (!properties.transitionTimingFunction) properties.transitionTimingFunction = {in: "ease-out", out: "ease-in"};
+
+        if (!properties.transitionDelay) properties.transitionDelay = {
             in: (index) => 0.01 + index * 0.02,
             out: (index, totalCount) => 0.01 + (totalCount - index) * 0.02
         };
 
-        if (!properties.defaultStyles) properties.defaultStyles = {
+        if (!properties.styles) properties.styles = {
             in: (index, totalCount) => {
                 //Compute angle of current entry (offset by 90 deg)
                 const angle = this.computeAngle(index, totalCount);
@@ -103,7 +107,7 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
             out: {opacity: 0, transform: `translate3d(-50%, -50%, 0)`}
         }
 
-        return transition(properties);
+        return statefulReifier(properties);
     }
 
     private computeAngle(index: number, totalCount: number): number {
@@ -117,7 +121,7 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
 
     protected addEntry(entry: TurboSelectEntryProperties<ValueType> | ValueType | EntryType): EntryType {
         entry = super.addEntry(entry);
-        this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry, true);
+        this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
         entry.setStyles({position: "absolute"});
         return entry;
     }
@@ -160,6 +164,44 @@ class MarkingMenu<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
 
         return closestEntry;
     }
+
+    public selectEntryInDirection(position: Point) {
+        this.select(this.getEntryInDirection(position));
+    }
+
+    public attachTo(element: Element,
+                    onClick: (e: Event) => void = (e: Event) => this.show(true, getEventPosition(e)),
+                    onDragStart: (e: Event) => void = (e: Event) => this.show(true, getEventPosition(e)),
+                    onDragEnd: (e: Event) => void = onDragStart
+                        ? (e: Event) => this.selectEntryInDirection(getEventPosition(e))
+                        : null) {
+        //Cancel default hide operation on click end
+        element.addListener(DefaultEventName.clickEnd, (e: Event) => e.stopImmediatePropagation());
+
+        //Setup click if defined
+        if (onClick) element.addListener(DefaultEventName.click, (e: Event) => {
+                e.stopImmediatePropagation();
+                onClick(e);
+            }, this);
+
+        //Cancel default hide operation on drag start
+        element.addListener(DefaultEventName.dragStart, (e: Event) => {
+            e.stopImmediatePropagation();
+            //Setup drag start if defined
+            if (onDragStart) onDragStart(e);
+        }, this);
+
+        //Setup drag end if defined
+        if (onDragEnd) element.addListener(DefaultEventName.dragEnd, (e: Event) => {
+            e.stopImmediatePropagation();
+            onDragEnd(e);
+        }, this);
+    }
 }
 
-export {MarkingMenu};
+function markingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(
+    properties: TurboMarkingMenuProperties<ValueType, EntryType> = {}): TurboMarkingMenu<ValueType, EntryType> {
+    return new TurboMarkingMenu<ValueType, EntryType>(properties);
+}
+
+export {TurboMarkingMenu, markingMenu};

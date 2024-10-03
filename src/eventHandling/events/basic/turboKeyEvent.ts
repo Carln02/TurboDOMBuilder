@@ -1,6 +1,7 @@
 import {TurboEvent} from "../turboEvent";
 import {ClickMode} from "../../turboEventManager/turboEventManager.types";
 import {TurboEventName, TurboEventNameEntry} from "../../eventNaming";
+import {Point} from "../../../utils/datatypes/point/point";
 
 /**
  * @class TurboKeyEvent
@@ -19,8 +20,10 @@ class TurboKeyEvent extends TurboEvent {
     public readonly keyReleased: string;
 
     constructor(keyPressed: string, keyReleased: string, clickMode: ClickMode, keys: string[],
-                eventName: TurboEventNameEntry = TurboEventName.keyPressed, eventInitDict?: EventInit) {
-        super(null, clickMode, keys, eventName, {bubbles: true, cancelable: true, ...eventInitDict});
+                eventName: TurboEventNameEntry = TurboEventName.keyPressed, authorizeScaling?: boolean
+            | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit) {
+        super(null, clickMode, keys, eventName, authorizeScaling, scalePosition,
+            {bubbles: true, cancelable: true, ...eventInitDict});
         this.keyPressed = keyPressed;
         this.keyReleased = keyReleased;
     }

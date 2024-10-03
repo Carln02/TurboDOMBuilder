@@ -30,19 +30,23 @@ function cache(options: CacheOptions = {}): Function {
 
         if (isGetter) {
             descriptor.get = function () {
-                if (!this[cacheKey]) {
-                    setupOptionsCallback.call(this, this);
-                    this[cacheKey] = originalMethod.apply(this);
-                    if (options.timeout) timeoutIds.push(setTimeout(() => deleteCallback.call(this), options.timeout));
-                    if (options.clearOnNextFrame) requestAnimationFrame(() => deleteCallback.call(this));
+                const instance = this || target;
+
+                if (!instance[cacheKey]) {
+                    setupOptionsCallback.call(instance, instance);
+                    instance[cacheKey] = originalMethod.apply(instance);
+                    if (options.timeout) timeoutIds.push(setTimeout(() => deleteCallback.call(instance), options.timeout));
+                    if (options.clearOnNextFrame) requestAnimationFrame(() => deleteCallback.call(instance));
                 }
-                return this[cacheKey];
+                return instance[cacheKey];
             };
         } else {
             descriptor.value = function (...args: any[]) {
-                if (!this[cacheKey]) {
-                    this[cacheKey] = new Map();
-                    setupOptionsCallback.call(this, this);
+                const instance = this || target;
+
+                if (!instance[cacheKey]) {
+                    instance[cacheKey] = new Map();
+                    setupOptionsCallback.call(instance, instance);
                 }
 
                 const key = args.length == 0 ? "__no_args__" : JSON.stringify(
@@ -53,14 +57,14 @@ function cache(options: CacheOptions = {}): Function {
                     })
                 );
 
-                if (this[cacheKey].has(key)) {
-                    return this[cacheKey].get(key);
+                if (instance[cacheKey].has(key)) {
+                    return instance[cacheKey].get(key);
                 } else {
-                    const result = originalMethod.apply(this, args);
-                    this[cacheKey].set(key, result);
+                    const result = originalMethod.apply(instance, args);
+                    instance[cacheKey].set(key, result);
 
-                    if (options.timeout) timeoutIds.push(setTimeout(() => this[cacheKey].delete(key), options.timeout));
-                    if (options.clearOnNextFrame) requestAnimationFrame(() => deleteCallback.call(this));
+                    if (options.timeout) timeoutIds.push(setTimeout(() => instance[cacheKey].delete(key), options.timeout));
+                    if (options.clearOnNextFrame) requestAnimationFrame(() => deleteCallback.call(instance));
                     return result;
                 }
             };
@@ -147,8 +151,6 @@ function clearCacheOnFieldChange(instance: any, fieldName: string, propertyKey: 
         console.warn(`No method ${propertyKey} found on target. It will be ignored.`);
         return;
     }
-
-    console.log(originalField);
 
     if (typeof originalField == "function") {
         instance[fieldName] = function (...args: any[]) {

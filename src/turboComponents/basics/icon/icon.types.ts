@@ -41,6 +41,7 @@ type TurboIconConfig = {
     defaultType?: string;
     defaultDirectory?: string;
     defaultClasses?: string | string[];
+    customLoaders?: Record<string, (path: string) => Promise<Element>>
 }
 
 export {TurboIconProperties, TurboIconConfig};

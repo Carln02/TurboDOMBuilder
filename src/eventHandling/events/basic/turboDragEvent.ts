@@ -28,8 +28,9 @@ class TurboDragEvent extends TurboEvent {
 
     constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>,
                 positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[],
-                eventName: TurboEventNameEntry = TurboEventName.drag, eventInitDict?: EventInit) {
-        super(positions.first, clickMode, keys, eventName,
+                eventName: TurboEventNameEntry = TurboEventName.drag,  authorizeScaling?: boolean | (() => boolean),
+                scalePosition?: (position: Point) => Point, eventInitDict?: EventInit) {
+        super(positions.first, clickMode, keys, eventName, authorizeScaling, scalePosition,
             {bubbles: true, cancelable: true, ...eventInitDict});
         this.origins = origins;
         this.previousPositions = previousPositions;
@@ -41,7 +42,7 @@ class TurboDragEvent extends TurboEvent {
      */
     @cache()
     public get scaledOrigins() {
-        if (!this.authorizeScaling()) return this.origins;
+        if (!this.scalingAuthorized) return this.origins;
         return this.scalePositionsMap(this.origins);
     }
 
@@ -50,7 +51,7 @@ class TurboDragEvent extends TurboEvent {
      */
     @cache()
     public get scaledPreviousPositions() {
-        if (!this.authorizeScaling()) return this.previousPositions;
+        if (!this.scalingAuthorized) return this.previousPositions;
         return this.scalePositionsMap(this.previousPositions);
     }
 
@@ -59,7 +60,7 @@ class TurboDragEvent extends TurboEvent {
      */
     @cache()
     public get scaledPositions() {
-        if (!this.authorizeScaling()) return this.positions;
+        if (!this.scalingAuthorized) return this.positions;
         return this.scalePositionsMap(this.positions);
     }
 

@@ -13,7 +13,8 @@ import {trim} from "../../../utils/computations/misc";
  * @extends TurboElement
  */
 @define("turbo-select")
-class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = string> extends TurboElement {
+class TurboSelect<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>
+    extends TurboElement {
     /**
      * The dropdown's entries.
      */
@@ -31,6 +32,8 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
     private readonly multiSelection: boolean = false;
     private readonly forceSelection: boolean = false;
 
+    private readonly onSelect: (b: boolean, entry: EntryType, index: number) => void;
+
     private readonly selectedEntryClasses: string | string[];
 
     public static readonly config: TurboSelectConfig = {};
@@ -39,7 +42,7 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
      * @description Dropdown constructor
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    constructor(properties: TurboSelectProperties<EntryType, ValueType>) {
+    constructor(properties: TurboSelectProperties<ValueType, EntryType>) {
         super(properties);
 
         if (!properties.unsetDefaultClasses) this.addClass(TurboSelect.config.defaultClasses);
@@ -50,6 +53,8 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
         this.forceSelection = properties.forceSelection ?? !this.multiSelection;
 
         this.inputName = properties.inputName;
+
+        this.onSelect = properties.onSelect || (() => {});
 
         this.selectedEntryClasses = properties.customSelectedEntryClasses || TurboSelect.config.defaultSelectedEntryClasses;
 
@@ -70,7 +75,7 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
         }
 
         if (!entry.selectedClasses) entry.selectedClasses = this.selectedEntryClasses;
-        entry.addEventListener(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
+        entry.addListener(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
         this.entriesParent.addChild(entry);
 
         this.entries.push(entry);
@@ -98,6 +103,7 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
         });
         if (!entry.selected && this.forceSelection && this.selectedEntries.length == 0) entry.toggle();
 
+        this.onSelect(entry.selected, entry, this.getIndex(entry));
         this.dispatchEvent(new TurboSelectInputEvent(entry, this.selectedValues));
         return this;
     }
@@ -113,6 +119,10 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
         => number = trim): this {
         index = preprocess(index, this.entries.length - 1, 0);
         return this.select(this.entries[index]);
+    }
+
+    public getIndex(entry: EntryType) {
+        return this.entries.indexOf(entry);
     }
 
     public deselectAll() {
@@ -193,9 +203,9 @@ class TurboSelect<EntryType extends TurboSelectEntry<ValueType>, ValueType = str
     }
 }
 
-function select<EntryType extends TurboSelectEntry<ValueType>, ValueType = string>
-(properties: TurboSelectProperties<EntryType, ValueType>): TurboSelect<EntryType, ValueType> {
-    return new TurboSelect<EntryType, ValueType>(properties);
+function select<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>
+(properties: TurboSelectProperties<ValueType, EntryType>): TurboSelect<ValueType, EntryType> {
+    return new TurboSelect<ValueType, EntryType>(properties);
 }
 
 export {TurboSelect, select};

@@ -1,22 +1,15 @@
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboRichElementProperties} from "../richElement/richElement.types";
 
-type ValidInputElement<Tag extends "input" | "textarea"> = Tag extends "input" ? HTMLInputElement : HTMLTextAreaElement;
-
-type TurboInputProperties<InputTag extends "input" | "textarea" = "input"> = TurboProperties & {
-    inputTag?: InputTag,
-    inputProperties?: TurboProperties<InputTag>,
+type TurboInputProperties<InputTag extends "input" | "textarea" = "input"> = TurboRichElementProperties<InputTag> & {
     label?: string,
-    prefix?: string
-    suffix?: string,
 
     locked?: boolean,
     dynamicVerticalResize?: boolean,
-    regexCheck?: RegExp | string,
+
+    inputRegexCheck?: RegExp | string,
+    blurRegexCheck?: RegExp | string,
 
     selectTextOnFocus?: boolean,
-    onClick?: (e: Event) => void,
-    onInput?: (e: Event) => void,
-    onBlur?: (e: Event) => void,
 };
 
-export {ValidInputElement, TurboInputProperties};
+export {TurboInputProperties};
