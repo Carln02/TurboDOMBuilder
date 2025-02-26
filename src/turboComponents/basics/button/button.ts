@@ -5,29 +5,37 @@ import {ValidTag} from "../../../domBuilding/core.types";
 import {TurboRichElement} from "../richElement/richElement";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {TurboRichElementProperties} from "../richElement/richElement.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
  * Button class for creating Turbo button elements.
  * @class TurboButton
  * @extends TurboElement
  */
-@define("turbo-button")
-class TurboButton<ElementTag extends ValidTag = "p"> extends TurboRichElement<ElementTag> {
+@define()
+class TurboButton<
+    ElementTag extends ValidTag = "p",
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType> {
 
-    static readonly config: TurboButtonConfig = {defaultTextTag: "h4"};
+    public static readonly config: TurboButtonConfig = {...TurboRichElement.config, defaultElementTag: "h4"};
 
     /**
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
-    constructor(properties: TurboRichElementProperties<ElementTag>) {
+    public constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
         super(properties);
+        if (!properties.unsetDefaultClasses) this.addClass(TurboButton.config.defaultClasses);
     }
 
     /**
      * @description The tag of the text element in the button
      */
-    @auto({callBefore: (value: ElementTag) => TurboRichElement.config.defaultElementTag || "h4"})
+    @auto({callBefore: (value: ElementTag) => TurboButton.config.defaultElementTag || "h4"})
     public set elementTag(value: ElementTag) {}
 }
 

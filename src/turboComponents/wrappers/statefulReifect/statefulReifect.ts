@@ -594,6 +594,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
             try {
                 object[field] = value;
             } catch (e: any) {
+                console.log(value);
                 console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
             }
         }

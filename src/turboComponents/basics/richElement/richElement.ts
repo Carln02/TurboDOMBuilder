@@ -6,30 +6,39 @@ import {ValidElement, ValidTag} from "../../../domBuilding/core.types";
 import {TurboRichElementChildren, TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
- * Button class for creating Turbo button elements.
+ * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
+ * its left and/or right).
  * @class TurboRichElement
  * @extends TurboElement
+ * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
 @define("turbo-rich-element")
-class TurboRichElement<ElementTag extends ValidTag = "h4"> extends TurboElement {
+class TurboRichElement<
+    ElementTag extends ValidTag = any,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboElement<ViewType, DataType, ModelType> {
     /**
-     * @description Object containing the children of the button.
+     * @description Object containing the children of the rich element.
      */
     private readonly elements: TurboRichElementChildren<ElementTag>;
 
-    public static readonly config: TurboRichElementConfig = {defaultElementTag: "h4"};
+    public static readonly config: TurboRichElementConfig = {...TurboElement.config, defaultElementTag: "h4"};
 
     /**
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
-    constructor(properties: TurboRichElementProperties<ElementTag>) {
+    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
         if (properties.text && !properties.element) properties.element = properties.text;
         super({...properties, text: null});
 
-        if (!properties.unsetDefaultClasses) this.addClass(TurboRichElement.config.defaultClasses);
+        if (!properties.unsetDefaultClasses) this.addClass((this.constructor as typeof TurboElement).config.defaultClasses);
         this.elementTag = properties.elementTag;
 
         this.elements = {
@@ -72,8 +81,7 @@ class TurboRichElement<ElementTag extends ValidTag = "h4"> extends TurboElement 
      * @description The tag of the text element in the button
      */
     @auto({callBefore: (value: ElementTag) => TurboRichElement.config.defaultElementTag || "h4"})
-    public set elementTag(value: ElementTag) {
-    }
+    public set elementTag(value: ElementTag) {}
 
     /**
      * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
@@ -257,9 +265,4 @@ class TurboRichElement<ElementTag extends ValidTag = "h4"> extends TurboElement 
     }
 }
 
-function richElement<ElementTag extends ValidTag = "h4">(properties: TurboRichElementProperties<ElementTag>)
-    : TurboRichElement<ElementTag> {
-    return new TurboRichElement<ElementTag>(properties);
-}
-
-export {TurboRichElement, richElement};
+export {TurboRichElement};

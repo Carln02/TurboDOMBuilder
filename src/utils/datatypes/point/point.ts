@@ -224,13 +224,46 @@ class Point {
     public div(x: number, y: number): Point
     /**
      * @description Divide coordinates of this point
-     * @param {Coordinate} p - The coordinates to divide
+     * @param {Coordinate} p - The coordinates to divide with
      * @returns A new Point object with the result
      */
     public div(p: Coordinate): Point
     public div(x: number | Coordinate, y?: number): Point {
         if (typeof x == "number") return new Point(this.x / x, this.y / (y || y == 0 ? y : x));
         return new Point(this.x / x.x, this.y / x.y);
+    }
+
+    /**
+     * @description Mod coordinates of this point
+     * @param {number} n - The value to mod both x and y
+     * @returns A new Point object with the result
+     */
+    public mod(n: number): Point
+    /**
+     * @description Mod coordinates of this point
+     * @param {number} x - The value to mod the x coordinate
+     * @param {number} y - The value to mod the y coordinate
+     * @returns A new Point object with the result
+     */
+    public mod(x: number, y: number): Point
+    /**
+     * @description Mod coordinates of this point
+     * @param {Coordinate} p - The coordinates to mod with
+     * @returns A new Point object with the result
+     */
+    public mod(p: Coordinate): Point
+    public mod(x: number | Coordinate, y?: number): Point {
+        const modDiv = typeof x == "number" ?
+            {x: x, y: (y || y == 0 ? y : x)} : {x: x.x, y: x.y};
+        const temp = this.object;
+
+        while (temp.x < 0) temp.x += modDiv.x;
+        while (temp.x >= modDiv.x) temp.x -= modDiv.x;
+
+        while (temp.y < 0) temp.y += modDiv.y;
+        while (temp.y >= modDiv.y) temp.y -= modDiv.y;
+
+        return new Point(temp);
     }
 
     /**

@@ -3,6 +3,15 @@ enum Direction {
     horizontal = "horizontal",
 }
 
+enum SideH {
+    left = "left",
+    right = "right",
+}
+
+enum SideV {
+    top = "top",
+    bottom = "bottom",
+}
 enum Side {
     top = "top",
     bottom = "bottom",
@@ -41,4 +50,4 @@ enum Range {
     max = "max",
 }
 
-export {Direction, Side, InOut, OnOff, Open, Shown, AccessLevel, Range};
+export {Direction, Side, SideV, SideH, InOut, OnOff, Open, Shown, AccessLevel, Range};

@@ -72,6 +72,8 @@ const DefaultEventName = {
 
     focus: "focus",
     blur: "blur",
+
+    resize: "resize"
 };
 
 type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventName];

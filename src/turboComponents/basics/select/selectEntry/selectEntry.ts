@@ -5,6 +5,8 @@ import {stringify} from "../../../../utils/dataManipulation/stringManipulation";
 import {auto} from "../../../../domBuilding/decorators/auto/auto";
 import {TurboRichElement} from "../../richElement/richElement";
 import {ValidTag} from "../../../../domBuilding/core.types";
+import {TurboView} from "../../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
 
 /**
  * @class TurboSelectEntry
@@ -12,19 +14,23 @@ import {ValidTag} from "../../../../domBuilding/core.types";
  * @extends TurboElement
  */
 
-@define("turbo-select-entry")
-class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> extends TurboRichElement<ElementTag> {
-    private _value: ValueType;
-    private _selected: boolean;
-
+@define()
+class TurboSelectEntry<
+    ValueType = string,
+    SecondaryValueType = string,
+    ElementTag extends ValidTag = "p",
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType> {
     /**
      * @description The class(es) assigned to the dropdown entry when it is selected
      */
     public selectedClasses: string | string[] = "";
 
     private readonly action: () => void;
-    private readonly onSelected: (selected: boolean) => void;
-    private readonly onEnabled: (enabled: boolean) => void;
+    public onSelected: (selected: boolean) => void;
+    public onEnabled: (enabled: boolean) => void;
 
     private readonly reflectedElement: HTMLElement;
 
@@ -36,7 +42,8 @@ class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> ex
      * @description DropdownEntry constructor
      * @param {TurboSelectEntryProperties} properties - Properties for configuring the dropdown entry.
      */
-    constructor(properties: TurboSelectEntryProperties<ValueType, ElementTag>) {
+    public constructor(properties: TurboSelectEntryProperties<ValueType, SecondaryValueType, ElementTag, ViewType,
+        DataType, ModelType>) {
         super(properties);
 
         if (!properties.unsetDefaultClasses) this.addClass(TurboSelectEntry.config.defaultClasses);
@@ -50,27 +57,20 @@ class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> ex
         this.inputName = properties.inputName;
 
         this.value = properties.value;
+        this.secondaryValue = properties.secondaryValue;
 
         this.selected = properties.selected || false;
         this.enabled = properties.enabled || true;
     }
 
-    /**
-     * @description Toggles the selection of this dropdown entry
-     */
-    public toggle() {
-        this.selected = !this.selected;
-    }
+    @auto()
+    public set secondaryValue(value: SecondaryValueType) {}
 
     /**
      * @description The value of the dropdown entry
      */
-    public get value(): ValueType {
-        return this._value;
-    }
-
+    @auto()
     public set value(value: ValueType) {
-        this._value = value;
         if (this.reflectedElement) {
             if (this.reflectedElement instanceof TurboRichElement) this.reflectedElement.text = this.stringValue;
             else this.reflectedElement.innerText = this.stringValue;
@@ -85,14 +85,8 @@ class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> ex
     /**
      * @description Whether or not the dropdown entry is selected
      */
-    public get selected() {
-        return this._selected;
-    }
-
+    @auto()
     public set selected(value: boolean) {
-        if (value == this.selected) return;
-        this._selected = value;
-
         this.toggleClass(this.selectedClasses, value);
         if (value) this.action();
         this.onSelected(value);
@@ -122,11 +116,13 @@ class TurboSelectEntry<ValueType = string, ElementTag extends ValidTag = "p"> ex
 
         else this.inputElement.name = value;
     }
+
+    /**
+     * @description Toggles the selection of this dropdown entry
+     */
+    public toggle() {
+        this.selected = !this.selected;
+    }
 }
 
-function selectEntry<ValueType = string, ElementTag extends ValidTag = "p">
-(properties: TurboSelectEntryProperties<ValueType, ElementTag>): TurboSelectEntry<ValueType, ElementTag> {
-    return new TurboSelectEntry<ValueType, ElementTag>(properties);
-}
-
-export {TurboSelectEntry, selectEntry};
+export {TurboSelectEntry};

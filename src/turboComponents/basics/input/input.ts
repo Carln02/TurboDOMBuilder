@@ -5,10 +5,17 @@ import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {define} from "../../../domBuilding/decorators/define";
 import {TurboRichElement} from "../richElement/richElement";
 import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 @define("turbo-input")
-class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string>
-    extends TurboElement {
+class TurboInput<
+    InputTag extends "input" | "textarea" = "input",
+    ValueType extends string | number = string,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboElement {
     public readonly labelElement: HTMLLabelElement;
     public readonly inputElement: TurboRichElement<InputTag>;
 
@@ -17,7 +24,7 @@ class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType exte
     private lastValueWithInputCheck: string;
     private lastValueWithBlurCheck: string;
 
-    constructor(properties: TurboInputProperties<InputTag> = {}) {
+    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType> = {}) {
         super(properties);
 
         this.locked = properties.locked || false;
@@ -35,7 +42,7 @@ class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType exte
         this.setupEvents(properties);
     }
 
-    private setupEvents(properties: TurboInputProperties<InputTag>) {
+    private setupEvents(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType>) {
         if ("bypassTurboEventManager" in this.inputElement.element) this.inputElement.element.bypassTurboEventManager();
 
         this.inputElement.element.addListener(DefaultEventName.blur, (e: Event) => {
@@ -99,9 +106,4 @@ class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType exte
     }
 }
 
-function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string>
-(properties: TurboInputProperties<InputTag> = {}): TurboInput<InputTag, ValueType> {
-    return new TurboInput<InputTag, ValueType>(properties);
-}
-
-export {TurboInput, turboInput};
+export {TurboInput};

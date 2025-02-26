@@ -8,6 +8,8 @@ import {img} from "../../../domBuilding/elementCreation/basicElements";
 import {cache} from "../../../domBuilding/decorators/cache/cache";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {equalToAny} from "../../../utils/computations/equity";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
  * Icon class for creating icon elements.
@@ -15,7 +17,11 @@ import {equalToAny} from "../../../utils/computations/equity";
  * @extends TurboElement
  */
 @define()
-class TurboIcon extends TurboElement {
+class TurboIcon<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboElement<ViewType, DataType, ModelType> {
     private _element: Element;
 
     private _type: string;
@@ -23,7 +29,7 @@ class TurboIcon extends TurboElement {
 
     public onLoaded: (element: Element) => void;
 
-    public static readonly config: TurboIconConfig = {defaultType: "svg", defaultDirectory: "", customLoaders: {}};
+    public static readonly config: TurboIconConfig = {...TurboElement.config, defaultType: "svg", defaultDirectory: "", customLoaders: {}};
 
     private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
         "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
@@ -32,9 +38,9 @@ class TurboIcon extends TurboElement {
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties) {
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>) {
         super(properties);
-        this.update(properties);
+        if (properties.icon) this.update(properties);
     }
 
     public update(properties: TurboIconProperties) {
@@ -46,8 +52,7 @@ class TurboIcon extends TurboElement {
 
         if (properties.iconColor) this.iconColor = properties.iconColor;
         if (properties.onLoaded) this.onLoaded = properties.onLoaded;
-
-        this.icon = properties.icon;
+        if (properties.icon) this.icon = properties.icon;
     }
 
     //Getters and setters
@@ -171,8 +176,12 @@ class TurboIcon extends TurboElement {
     }
 }
 
-function icon(properties: TurboIconProperties): TurboIcon {
-    return new TurboIcon(properties);
+function icon<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+>(properties: TurboIconProperties<ViewType, DataType, ModelType>): TurboIcon<ViewType, DataType, ModelType> {
+    return new TurboIcon<ViewType, DataType, ModelType>(properties);
 }
 
 export {TurboIcon, icon};

@@ -1,3 +1,268 @@
+/**
+ * @typedef {Object} AutoOptions
+ * @description Options for configuring the `auto` decorator.
+ * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
+ * current value. Defaults to `true`.
+ * @property {(value: Type) => Type} [callBefore] - Optional callback to execute on the value just before it is set.
+ * @property {boolean} [returnDefinedGetterValue] - If true and a getter is defined, will not modify the latter.
+ * @template Type
+ */
+
+/**
+ * @typedef {Object} CacheOptions
+ * @property {number} [timeout] - The duration (in milliseconds) after which the cache should expire.
+ * @property {string | string[]} [onEvent] - A string of one or more space-separated event names or an array of
+ * event names. The cache will be cleared when one of these events occur.
+ * @property {() => boolean | Promise<boolean>} [onCallback] - A callback function that returns a boolean or a
+ * promise resolving to a boolean. The cache will be cleared if the function returns true.
+ * @property {number} [onCallbackFrequency] - The frequency (in milliseconds) at which the onCallback function is called.
+ * @property {string | Function | (string | Function)[]} [onFieldChange] - The field or function names to watch for
+ * changes. The cache will be cleared when any of these change. Multiple field names can be provided in the same.
+ * @property {boolean} [clearOnNextFrame] - If set to true, the cache will be cleared on the next animation frame.
+ * space-separated string.
+ */
+
+/**
+ * @typedef {Object} TurboProperties
+ * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
+ * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
+ * properties if set.
+ * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
+ * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
+ * generic type, if needed). The type also has the following described custom properties:
+ *
+ * @property {string} [id] - The ID of the element.
+ * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
+ * space-separated classes or an array of class names).
+ * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
+ * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
+ * generate automatically a new style element in the element's corresponding root. Use the css literal function
+ * for autocompletion.
+ * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => void)>} [listeners]
+ * - An object containing event listeners to be applied to this element.
+ * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
+ * the created element.
+ * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
+ * as name.
+ * @property {string} [text] - The text content of the element (if any).
+ * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
+ *
+ * @property alt
+ * @property src
+ * @property href
+ * @property target
+ * @property action
+ * @property method
+ * @property type
+ * @property value
+ * @property placeholder
+ * @property name
+ * @property disabled
+ * @property checked
+ * @property selected
+ */
+
+/**
+ * @typedef {Object} StylesRoot
+ * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
+ */
+
+/**
+ * @typedef {Object} StylesType
+ * @description A type that represents types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
+ * method).
+ */
+
+/**
+ * @typedef {Object} ChildHandler
+ * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
+ */
+
+/**
+ * @typedef {Object} TurboButtonProperties
+ * @description Properties object for configuring a Button. Extends TurboElementProperties.
+ * @extends TurboProperties
+ *
+ * @property {string | Element} [buttonText] - The text content of the button.
+ * @property {string | Element} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {string | Element} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {Element | Element[]} [leftCustomElements] - Custom elements
+ * to be placed on the left side of the button (before the left icon).
+ * @property {Element | Element[]} [rightCustomElements] - Custom elements
+ * to be placed on the right side of the button (after the right icon).
+ * @property {"button" | "submit" | "reset"} [type] - The type of the button (Can be "button", "submit", or "reset").
+ * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * a string). If not specified, the default text tag specified in the Button class will be used.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
+ * to this instance of Button.
+ */
+
+/**
+ * @typedef {Object} ButtonChildren
+ * @description Holds references to the button's child elements for internal management.
+ *
+ * @property {Element | Element[] | null} leftCustomElements - Elements placed
+ * on the left side of the button.
+ * @property {Element | null} leftIcon - The icon placed on the left side of the button.
+ * @property {Element | null} text - The text element of the button.
+ * @property {Element | null} rightIcon - The icon placed on the right side of the button.
+ * @property {Element | Element[] | null} rightCustomElements - Elements placed
+ * on the right side of the button.
+ */
+
+/**
+ * @typedef {Object} TurboButtonConfig
+ * @description Configuration object for the Button class. Set it via TurboConfig.Button.
+ *
+ * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
+ * element in the button.
+ * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
+ */
+
+/**
+ * @typedef {Object} TurboIconProperties
+ * @description Properties object that extends TurboElementProperties with properties specific to icons.
+ * @extends TurboProperties
+ *
+ * @property {string} icon - The name of the icon.
+ * @property {string} [iconColor] - The color of the icon.
+ * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
+ * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
+ *
+ * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
+ * TurboIcon.config.type (whose default value is "svgManipulation").
+ * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
+ * TurboIcon.config.directory.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
+ * TurboIcon.config.defaultClasses to this instance of Icon.
+ */
+
+/**
+ * @typedef {Object} TurboIconConfig
+ * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
+ *
+ * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
+ * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
+ * directory once here to not type it again at every Icon generation.
+ * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
+ */
+
+/**
+ * @typedef {Object} TurboRichElementProperties
+ * @description Properties object for configuring a Button. Extends TurboElementProperties.
+ * @extends TurboProperties
+ *
+ * @property {string} [text] - The text to set to the rich element's main element.
+ *
+ * @property {Element | Element[]} [leftCustomElements] - Custom elements
+ * to be placed on the left side of the button (before the left icon).
+ * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
+ * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {Element | Element[]} [rightCustomElements] - Custom elements
+ * to be placed on the right side of the button (after the right icon).
+ *
+ * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * a string). If not specified, the default text tag specified in the Button class will be used.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
+ * to this instance of Button.
+ *
+ * @template {ValidTag} ElementTag="p"
+ */
+
+/**
+ * @typedef {Object} TurboRichElementChildren
+ * @description Holds references to the button's child elements for internal management.
+ *
+ * @property {Element | Element[] | null} leftCustomElements - Elements placed
+ * on the left side of the button.
+ * @property {Element | null} leftIcon - The icon placed on the left side of the button.
+ * @property {Element | null} text - The text element of the button.
+ * @property {Element | null} rightIcon - The icon placed on the right side of the button.
+ * @property {Element | Element[] | null} rightCustomElements - Elements placed
+ * on the right side of the button.
+ */
+
+/**
+ * @typedef {Object} TurboRichElementConfig
+ * @description Configuration object for the Button class. Set it via TurboConfig.Button.
+ *
+ * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
+ * element in the button.
+ * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
+ */
+
+/**
+ * @typedef {Object} TurboSelectEntryProperties
+ * @description Properties for configuring a DropdownEntry.
+ * @extends TurboProperties
+ *
+ * @property {string} value - The value associated with the dropdown entry.
+ * @property {boolean} [selected=false] - Indicates whether the entry is initially selected.
+ * @property {string | string[]} [selectedClasses=""] - CSS class(es) applied to the entry when it is selected.
+ */
+
+/**
+ * @typedef {Object} TurboDropdownProperties
+ * @description Properties for configuring a Dropdown.
+ * @extends TurboProperties
+ *
+ * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
+ * string is passed, a Button with the given string as text will be assigned as the selector.
+ * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
+ *
+ * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
+ *
+ * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
+ * default tag set in TurboConfig.Dropdown.
+ * @property {ValidTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
+ * default tag set in TurboConfig.Dropdown.
+ *
+ * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
+ * classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [customPopupClasses] - Custom CSS class(es) for the popup container. Overrides the
+ * default classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
+ * default classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
+ * the default classes set in TurboConfig.Dropdown.
+ */
+
+/**
+ * @typedef {Object} TurboDropdownConfig
+ * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
+ *
+ * @property {ValidTag} [defaultEntryTag] - The default HTML tag for the creation of generic
+ * dropdown entries.
+ * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
+ * element in generic selectors (which are Buttons).
+ *
+ * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
+ * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
+ * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
+ * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
+ * dropdown entries.
+ */
+
+/**
+ * @typedef {Object} FontProperties
+ * @description An object representing a local font, or a family of fonts.
+ *
+ * @property {string} name - The name of the font. The font's filename should also match.
+ * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
+ * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
+ * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
+ * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
+ * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
+ * @property {string} [format] - The format of the font. Defaults to "woff2".
+ * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
+ */
+
 'use strict';
 
 /**
@@ -827,28 +1092,49 @@ function stylesheet(styles, root = document.head) {
     root.addChild(stylesheet);
 }
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol */
+
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
 /**
  * @class TurboElement
  * @extends HTMLElement
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @template ViewType - TurboView
+ * @template DataType - object
+ * @template ModelType - TurboModel<DataType>
  */
 class TurboElement extends HTMLElement {
-    constructor(properties = {}) {
-        super();
-        if (properties.shadowDOM)
-            this.attachShadow({ mode: "open" });
-        this.setProperties(properties, true);
-    }
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (!newValue || newValue == oldValue)
-            return;
-        this[kebabToCamelCase(name)] = parse(newValue);
-    }
-    //Config
+    //STATIC CONFIG
     /**
      * @description Static configuration object.
      */
-    static config = { shadowDOM: false };
+    static config = { shadowDOM: false, defaultSelectedClass: "selected" };
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -858,6 +1144,248 @@ class TurboElement extends HTMLElement {
             if (val !== undefined)
                 this.config[key] = val;
         });
+    }
+    //ELEMENT
+    _model;
+    _view;
+    constructor(properties = {}) {
+        super();
+        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
+            this.attachShadow({ mode: "open" });
+        this.setProperties(properties, true);
+        if (properties.view)
+            this.setView(properties.view);
+        if (properties.model) {
+            this.setModel(properties.model);
+            if (properties.data)
+                this.model.data = properties.data;
+        }
+        this.generateMvc(properties.viewConstructor, properties.modelConstructor, properties.data, properties.initializeMvc);
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (!newValue || newValue == oldValue)
+            return;
+        this[kebabToCamelCase(name)] = parse(newValue);
+    }
+    get view() {
+        return this._view;
+    }
+    get model() {
+        return this._model;
+    }
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class on the element and update the UI.
+     */
+    set selected(value) {
+        const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
+        this.toggleClass(selectedClass, value);
+    }
+    setView(view) {
+        this._view = view;
+    }
+    setModel(model) {
+        this._model = model;
+        this.linkModelToView();
+    }
+    get data() {
+        return this.model?.data;
+    }
+    set data(data) {
+        if (this.model)
+            this.model.data = data;
+    }
+    get dataId() {
+        return this.model.dataId;
+    }
+    set dataId(value) {
+        this.model.dataId = value;
+    }
+    get dataIndex() {
+        return Number.parseInt(this.dataId);
+    }
+    set dataIndex(value) {
+        this.model.dataId = value.toString();
+    }
+    get dataSize() {
+        return this.model?.getSize();
+    }
+    generateMvc(viewConstructor, modelConstructor, data, initialize = true, force = false) {
+        if (modelConstructor && (!this.model || force))
+            this.setModel(new modelConstructor(data));
+        if (viewConstructor && (!this.view || force)) {
+            this.setView(new viewConstructor(this, this.model));
+            this.linkModelToView();
+        }
+        if (initialize)
+            this.initializeMvc();
+    }
+    initializeMvc() {
+        this.view?.initialize();
+        this.model?.initialize();
+    }
+    linkModelToView() {
+        if (!this.view || !this.model)
+            return;
+        this.view.model = this.model;
+        this.model.keyChangedCallback = (keyName, ...args) => this.view.fireChangedCallback(keyName, ...args);
+    }
+    getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
+        if (propertiesValue !== undefined && propertiesValue !== null)
+            return propertiesValue;
+        const configValue = this.constructor.config[configFieldName];
+        if (configValue !== undefined && configValue !== null)
+            return configValue;
+        return defaultValue;
+    }
+}
+__decorate([
+    auto()
+], TurboElement.prototype, "selected", null);
+
+class TurboModel {
+    dataMap = new Map();
+    idMap = new Map();
+    keyChangedCallback;
+    constructor(data) {
+        this.setDataBlock(data, undefined, this.defaultBlockKey, false);
+    }
+    get data() {
+        return this.getDataBlock();
+    }
+    set data(value) {
+        this.setDataBlock(value);
+    }
+    get dataId() {
+        return this.getDataBlockId();
+    }
+    set dataId(value) {
+        this.setDataBlockId(value);
+    }
+    set enabledCallbacks(value) { }
+    getData(key, blockKey) {
+        if (!blockKey)
+            return null;
+        return this.dataMap.get(blockKey)?.[key];
+    }
+    setData(key, value, blockKey) {
+        if (!blockKey)
+            return;
+        const block = this.dataMap.get(blockKey);
+        if (block)
+            block[key] = value;
+        if (this.enabledCallbacks)
+            this.fireKeyChangedCallback(key, blockKey);
+    }
+    getSize(blockKey = this.defaultBlockKey) {
+        const block = this.dataMap.get(blockKey);
+        return block ? Object.keys(block).length : 0;
+    }
+    getDataBlock(blockKey = this.defaultBlockKey) {
+        if (!this.dataMap.has(blockKey)) {
+            throw new Error(`Data block with key "${blockKey}" does not exist.`);
+        }
+        return this.dataMap.get(blockKey);
+    }
+    setDataBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
+        if (!value)
+            return;
+        this.dataMap.set(blockKey, value);
+        if (id)
+            this.dataMap.set(id, value);
+        if (initialize)
+            this.initialize(blockKey);
+    }
+    getDataBlockId(blockKey = this.defaultBlockKey) {
+        return this.idMap.get(blockKey);
+    }
+    setDataBlockId(value, blockKey = this.defaultBlockKey) {
+        if (!value)
+            return;
+        this.idMap.set(blockKey, value);
+    }
+    fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
+        this.keyChangedCallback(key, deleted ? undefined : this.getData(key, blockKey));
+    }
+    initialize(blockKey = this.defaultBlockKey) {
+        const block = this.getDataBlock(blockKey);
+        if (!block || !this.enabledCallbacks)
+            return;
+        Object.keys(block).forEach(key => this.fireKeyChangedCallback(key, blockKey));
+    }
+    clear(blockKey = this.defaultBlockKey) {
+    }
+    get defaultBlockKey() {
+        return this.dataMap.size > 1 ? null : this.dataMap.size > 0 ? this.dataMap.keys().next().value : "0";
+    }
+    getAllBlockKeys() {
+        return Array.from(this.dataMap.keys());
+    }
+    getAllIds(blockKey = this.defaultBlockKey) {
+        return Array.from(this.idMap.values());
+    }
+    getAllKeys(blockKey = this.defaultBlockKey) {
+        const output = [];
+        if (blockKey) {
+            const block = this.dataMap.get(blockKey);
+            if (block)
+                output.push(...Object.keys(block));
+        }
+        else {
+            for (const block of this.dataMap.values()) {
+                if (block)
+                    output.push(...Object.keys(block));
+            }
+        }
+        return output;
+    }
+    getAllData(blockKey = this.defaultBlockKey) {
+        const output = [];
+        if (blockKey) {
+            this.getAllKeys(blockKey)?.forEach(key => output.push(this.getData(key, blockKey)));
+        }
+        else {
+            for (const curBlockKey of this.dataMap.keys()) {
+                this.getAllKeys(curBlockKey)?.forEach(key => output.push(this.getData(key, curBlockKey)));
+            }
+        }
+        return output;
+    }
+}
+__decorate([
+    auto()
+], TurboModel.prototype, "enabledCallbacks", null);
+
+class TurboView {
+    element;
+    model;
+    callbackMap = new Map();
+    constructor(element, model) {
+        this.element = element;
+        if (model)
+            this.model = model;
+    }
+    initialize() {
+        this.setupChangedCallbacks();
+        this.setupUIElements();
+        this.setupUILayout();
+        this.setupUIListeners();
+    }
+    setupChangedCallbacks() {
+    }
+    setupUIElements() {
+    }
+    setupUILayout() {
+    }
+    setupUIListeners() {
+    }
+    fireChangedCallback(keyName, ...args) {
+        const callback = this.callbackMap.get(keyName);
+        if (callback && typeof callback == "function")
+            callback(...args);
+    }
+    setChangedCallback(keyName, callback) {
+        this.callbackMap.set(keyName, callback);
     }
 }
 
@@ -1025,6 +1553,8 @@ function addChildManipulationToElementPrototype() {
                 if (!Array.isArray(children))
                     children = [children];
                 children.forEach((child) => {
+                    if (!child)
+                        return;
                     this.childHandler.appendChild(child);
                     if (child["__outName"] && !this[child["__outName"]])
                         this[child["__outName"]] = child;
@@ -1046,9 +1576,12 @@ function addChildManipulationToElementPrototype() {
         // Try to remove every provided child (according to its type)
         try {
             if (!Array.isArray(children))
-                originalRemoveChild.call(this.childHandler, children);
-            else
-                children.forEach(child => originalRemoveChild.call(this.childHandler, child));
+                children = [children];
+            children.forEach(child => {
+                if (!child)
+                    return;
+                originalRemoveChild.call(this.childHandler, child);
+            });
         }
         catch (e) {
             console.error(e);
@@ -1069,12 +1602,13 @@ function addChildManipulationToElementPrototype() {
             return this.addChild(children);
         // Try to append every provided child (according to its type)
         try {
-            if (!Array.isArray(children)) {
-                this.childHandler.insertBefore(children, sibling);
-            }
-            else {
-                children.forEach((child) => this.childHandler.insertBefore(child, sibling));
-            }
+            if (!Array.isArray(children))
+                children = [children];
+            children.forEach((child) => {
+                if (!child)
+                    return;
+                this.childHandler.insertBefore(child, sibling);
+            });
         }
         catch (e) {
             console.error(e);
@@ -1605,6 +2139,16 @@ exports.Direction = void 0;
     Direction["vertical"] = "vertical";
     Direction["horizontal"] = "horizontal";
 })(exports.Direction || (exports.Direction = {}));
+exports.SideH = void 0;
+(function (SideH) {
+    SideH["left"] = "left";
+    SideH["right"] = "right";
+})(exports.SideH || (exports.SideH = {}));
+exports.SideV = void 0;
+(function (SideV) {
+    SideV["top"] = "top";
+    SideV["bottom"] = "bottom";
+})(exports.SideV || (exports.SideV = {}));
 exports.Side = void 0;
 (function (Side) {
     Side["top"] = "top";
@@ -2398,6 +2942,7 @@ class StatefulReifect {
                 object[field] = value;
             }
             catch (e) {
+                console.log(value);
                 console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
             }
         }
@@ -2807,35 +3352,7 @@ const DefaultEventName = {
     change: "change",
     focus: "focus",
     blur: "blur",
-};
-
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol */
-
-
-function __decorate(decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    resize: "resize"
 };
 
 exports.ClosestOrigin = void 0;
@@ -3047,6 +3564,20 @@ class Point {
         if (typeof x == "number")
             return new Point(this.x / x, this.y / (y || y == 0 ? y : x));
         return new Point(this.x / x.x, this.y / x.y);
+    }
+    mod(x, y) {
+        const modDiv = typeof x == "number" ?
+            { x: x, y: (y || y == 0 ? y : x) } : { x: x.x, y: x.y };
+        const temp = this.object;
+        while (temp.x < 0)
+            temp.x += modDiv.x;
+        while (temp.x >= modDiv.x)
+            temp.x -= modDiv.x;
+        while (temp.y < 0)
+            temp.y += modDiv.y;
+        while (temp.y >= modDiv.y)
+            temp.y -= modDiv.y;
+        return new Point(temp);
     }
     /**
      * @description Calculate the absolute value of the coordinates
@@ -3398,23 +3929,23 @@ exports.TurboEventManager = class TurboEventManager extends TurboElement {
                 this.applyEventNames(TurboKeyEventName);
             }
             if (!this.disabledEventTypes.disableWheelEvents) {
-                document.addListener("wheel", this.wheel, this, { passive: false });
+                document.body.addListener("wheel", this.wheel, this, { passive: false });
                 this.applyEventNames(TurboWheelEventName);
             }
             if (!this.disabledEventTypes.disableMoveEvent) {
                 this.applyEventNames(TurboMoveName);
             }
             if (!this.disabledEventTypes.disableMouseEvents) {
-                document.addListener("mousedown", this.pointerDown);
-                document.addListener("mousemove", this.pointerMove);
-                document.addListener("mouseup", this.pointerUp);
-                document.addListener("mouseleave", this.pointerLeave);
+                document.body.addListener("mousedown", this.pointerDown);
+                document.body.addListener("mousemove", this.pointerMove);
+                document.body.addListener("mouseup", this.pointerUp);
+                document.body.addListener("mouseleave", this.pointerLeave);
             }
             if (!this.disabledEventTypes.disableTouchEvents) {
-                document.addListener("touchstart", this.pointerDown, this, { passive: false });
-                document.addListener("touchmove", this.pointerMove, this, { passive: false });
-                document.addListener("touchend", this.pointerUp, this, { passive: false });
-                document.addListener("touchcancel", this.pointerUp, this, { passive: false });
+                document.body.addListener("touchstart", this.pointerDown, this, { passive: false });
+                document.body.addListener("touchmove", this.pointerMove, this, { passive: false });
+                document.body.addListener("touchend", this.pointerUp, this, { passive: false });
+                document.body.addListener("touchcancel", this.pointerUp, this, { passive: false });
             }
             if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {
                 if (!this.disabledEventTypes.disableClickEvents)
@@ -3804,8 +4335,8 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-styleInject(css_248z$1);
+var css_248z$2 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+styleInject(css_248z$2);
 
 /**
  * @description Converts a string of tags into an Element.
@@ -3876,7 +4407,7 @@ exports.TurboIcon = class TurboIcon extends TurboElement {
     _type;
     _directory;
     onLoaded;
-    static config = { defaultType: "svg", defaultDirectory: "", customLoaders: {} };
+    static config = { ...TurboElement.config, defaultType: "svg", defaultDirectory: "", customLoaders: {} };
     static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
         "PNG", "JPG", "JPEG", "GIF", "WEBP"];
     /**
@@ -3885,7 +4416,8 @@ exports.TurboIcon = class TurboIcon extends TurboElement {
      */
     constructor(properties) {
         super(properties);
-        this.update(properties);
+        if (properties.icon)
+            this.update(properties);
     }
     update(properties) {
         if (properties.unsetDefaultClasses)
@@ -3898,7 +4430,8 @@ exports.TurboIcon = class TurboIcon extends TurboElement {
             this.iconColor = properties.iconColor;
         if (properties.onLoaded)
             this.onLoaded = properties.onLoaded;
-        this.icon = properties.icon;
+        if (properties.icon)
+            this.icon = properties.icon;
     }
     //Getters and setters
     /**
@@ -4027,19 +4560,19 @@ function icon(properties) {
     return new exports.TurboIcon(properties);
 }
 
-var TurboRichElement_1;
 /**
- * Button class for creating Turbo button elements.
+ * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
+ * its left and/or right).
  * @class TurboRichElement
  * @extends TurboElement
+ * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
 exports.TurboRichElement = class TurboRichElement extends TurboElement {
-    static { TurboRichElement_1 = this; }
     /**
-     * @description Object containing the children of the button.
+     * @description Object containing the children of the rich element.
      */
     elements;
-    static config = { defaultElementTag: "h4" };
+    static config = { ...TurboElement.config, defaultElementTag: "h4" };
     /**
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
@@ -4049,7 +4582,7 @@ exports.TurboRichElement = class TurboRichElement extends TurboElement {
             properties.element = properties.text;
         super({ ...properties, text: null });
         if (!properties.unsetDefaultClasses)
-            this.addClass(TurboRichElement_1.config.defaultClasses);
+            this.addClass(this.constructor.config.defaultClasses);
         this.elementTag = properties.elementTag;
         this.elements = {
             leftCustomElements: null,
@@ -4088,8 +4621,7 @@ exports.TurboRichElement = class TurboRichElement extends TurboElement {
     /**
      * @description The tag of the text element in the button
      */
-    set elementTag(value) {
-    }
+    set elementTag(value) { }
     /**
      * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
      */
@@ -4255,26 +4787,27 @@ exports.TurboRichElement = class TurboRichElement extends TurboElement {
 __decorate([
     auto({ callBefore: (value) => exports.TurboRichElement.config.defaultElementTag || "h4" })
 ], exports.TurboRichElement.prototype, "elementTag", null);
-exports.TurboRichElement = TurboRichElement_1 = __decorate([
+exports.TurboRichElement = __decorate([
     define("turbo-rich-element")
 ], exports.TurboRichElement);
-function richElement(properties) {
-    return new exports.TurboRichElement(properties);
-}
 
+var TurboButton_1;
 /**
  * Button class for creating Turbo button elements.
  * @class TurboButton
  * @extends TurboElement
  */
 exports.TurboButton = class TurboButton extends exports.TurboRichElement {
-    static config = { defaultTextTag: "h4" };
+    static { TurboButton_1 = this; }
+    static config = { ...exports.TurboRichElement.config, defaultElementTag: "h4" };
     /**
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
     constructor(properties) {
         super(properties);
+        if (!properties.unsetDefaultClasses)
+            this.addClass(TurboButton_1.config.defaultClasses);
     }
     /**
      * @description The tag of the text element in the button
@@ -4282,33 +4815,43 @@ exports.TurboButton = class TurboButton extends exports.TurboRichElement {
     set elementTag(value) { }
 };
 __decorate([
-    auto({ callBefore: (value) => exports.TurboRichElement.config.defaultElementTag || "h4" })
+    auto({ callBefore: (value) => exports.TurboButton.config.defaultElementTag || "h4" })
 ], exports.TurboButton.prototype, "elementTag", null);
-exports.TurboButton = __decorate([
-    define("turbo-button")
+exports.TurboButton = TurboButton_1 = __decorate([
+    define()
 ], exports.TurboButton);
 function button(properties) {
     return new exports.TurboButton(properties);
 }
 
-class TurboIconSwitch extends exports.TurboIcon {
+exports.TurboIconSwitch = class TurboIconSwitch extends exports.TurboIcon {
     switchReifect;
+    /**
+     * Creates an instance of Icon.
+     * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
+     */
     constructor(properties) {
-        super(properties);
+        super({ ...properties, icon: undefined });
         if (properties.switchReifect instanceof StatefulReifect)
             this.switchReifect = properties.switchReifect;
         else
             this.switchReifect = new StatefulReifect(properties.switchReifect || {});
-        if (properties.appendStateToIconName || !properties.switchReifect.properties?.icon) {
-            this.switchReifect.properties.icon = {};
-            this.switchReifect.states.forEach(state => this.switchReifect.properties[state] = properties.icon + "-" + state.toString());
-        }
+        const reifectProperties = this.switchReifect.properties;
         this.switchReifect.attach(this);
+        if (properties.appendStateToIconName)
+            this.switchReifect.states.forEach(state => {
+                if (!reifectProperties[state])
+                    reifectProperties[state] = {};
+                reifectProperties[state].icon = properties.icon + "-" + state.toString();
+            });
+        this.update(properties.appendStateToIconName ? { ...properties, icon: undefined } : properties);
+        if (properties.defaultState)
+            this.switchReifect.apply(properties.defaultState, this);
     }
-}
-function iconSwitch(properties) {
-    return new TurboIconSwitch(properties);
-}
+};
+exports.TurboIconSwitch = __decorate([
+    define()
+], exports.TurboIconSwitch);
 
 exports.TurboIconToggle = class TurboIconToggle extends exports.TurboIcon {
     _toggled = false;
@@ -4333,9 +4876,6 @@ exports.TurboIconToggle = class TurboIconToggle extends exports.TurboIcon {
 exports.TurboIconToggle = __decorate([
     define()
 ], exports.TurboIconToggle);
-function iconToggle(properties) {
-    return new exports.TurboIconToggle(properties);
-}
 
 exports.TurboInput = class TurboInput extends TurboElement {
     labelElement;
@@ -4418,9 +4958,6 @@ exports.TurboInput = class TurboInput extends TurboElement {
 exports.TurboInput = __decorate([
     define("turbo-input")
 ], exports.TurboInput);
-function turboInput(properties = {}) {
-    return new exports.TurboInput(properties);
-}
 
 exports.TurboNumericalInput = class TurboNumericalInput extends exports.TurboInput {
     multiplier;
@@ -4459,200 +4996,6 @@ exports.TurboNumericalInput = class TurboNumericalInput extends exports.TurboInp
 exports.TurboNumericalInput = __decorate([
     define("turbo-numerical-input")
 ], exports.TurboNumericalInput);
-function numericalInput(properties = {}) {
-    return new exports.TurboNumericalInput(properties);
-}
-
-exports.PopupFallbackMode = void 0;
-(function (PopupFallbackMode) {
-    PopupFallbackMode["invert"] = "invert";
-    PopupFallbackMode["offset"] = "offset";
-    PopupFallbackMode["none"] = "none";
-})(exports.PopupFallbackMode || (exports.PopupFallbackMode = {}));
-
-var TurboPopup_1;
-exports.TurboPopup = class TurboPopup extends TurboElement {
-    static { TurboPopup_1 = this; }
-    _popupAnchor;
-    _parentAnchor;
-    _viewportMargin;
-    _offsetFromParent;
-    fallbackModes;
-    static config = {
-        defaultPopupAnchor: { x: 0, y: -100 },
-        defaultParentAnchor: { x: 0, y: 100 },
-        defaultViewportMargin: 4,
-        defaultOffsetFromParent: { x: 0, y: 4 }
-    };
-    constructor(properties = {}) {
-        super(properties);
-        this.setStyle("position", "fixed");
-        if (!properties.unsetDefaultClasses)
-            this.addClass(TurboPopup_1.config.defaultClasses);
-        this.popupAnchor = properties.popupAnchor || TurboPopup_1.config.defaultPopupAnchor || { x: 50, y: 0 };
-        this.parentAnchor = properties.parentAnchor || TurboPopup_1.config.defaultParentAnchor || { x: 50, y: 100 };
-        this.viewportMargin = properties.viewportMargin || TurboPopup_1.config.defaultViewportMargin || 0;
-        this.offsetFromParent = properties.offsetFromParent || TurboPopup_1.config.defaultOffsetFromParent || 0;
-        this.fallbackModes = properties.fallbackModes || {
-            x: Math.abs(this.parentAnchor.x - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
-            y: Math.abs(this.parentAnchor.y - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
-        };
-        this.addListeners();
-        this.show(false);
-    }
-    addListeners() {
-        document.addListener(DefaultEventName.scroll, () => this.show(false));
-        document.addListener(DefaultEventName.click, e => {
-            if (this.isShown && !this.contains(e.target))
-                this.show(false);
-        });
-    }
-    get popupAnchor() {
-        return this._popupAnchor;
-    }
-    set popupAnchor(value) {
-        this._popupAnchor = new Point(value).bound(0, 100);
-    }
-    get parentAnchor() {
-        return this._parentAnchor;
-    }
-    set parentAnchor(value) {
-        this._parentAnchor = new Point(value).bound(0, 100);
-    }
-    get viewportMargin() {
-        return this._viewportMargin;
-    }
-    set viewportMargin(value) {
-        this._viewportMargin = new Point(value);
-    }
-    get offsetFromParent() {
-        return this._offsetFromParent;
-    }
-    set offsetFromParent(value) {
-        this._offsetFromParent = new Point(value);
-    }
-    get rect() {
-        return this.getBoundingClientRect();
-    }
-    get parentRect() {
-        return this.parentElement.getBoundingClientRect();
-    }
-    get computedStyle() {
-        return window.getComputedStyle(this);
-    }
-    get parentComputedStyle() {
-        return window.getComputedStyle(this.parentElement);
-    }
-    recomputePosition() {
-        if (!this.parentElement)
-            return;
-        const top = this.recomputeSide(exports.Direction.vertical);
-        const left = this.recomputeSide(exports.Direction.horizontal);
-        this.recomputeMaxSize(top, exports.Direction.vertical);
-        this.recomputeMaxSize(left, exports.Direction.horizontal);
-    }
-    recomputeSide(direction) {
-        const params = this.generateDimensionParameters(direction);
-        const popupSizeWithMargins = this.rect[params.size] + this.offsetFromParent[params.coordinate]
-            + parseFloat(this.computedStyle[params.marginStart]) + parseFloat(this.computedStyle[params.marginEnd]);
-        const parentAnchorOffset = this.parentRect[params.size] * this.parentAnchor[params.coordinate] / 100;
-        const popupSizeOffset = popupSizeWithMargins * this.popupAnchor[params.coordinate] / 100;
-        const totalSizeOffset = parentAnchorOffset - popupSizeOffset;
-        const incrementSign = totalSizeOffset > 0 ? 1 : -1;
-        const offsetFromParent = this.offsetFromParent[params.coordinate] * incrementSign;
-        const viewportMargin = this.viewportMargin[params.coordinate] * incrementSign;
-        const totalSizeOffsetWithViewportMargin = totalSizeOffset + viewportMargin;
-        let offset = this.parentRect[params.side] + totalSizeOffset + offsetFromParent;
-        if (this.fallbackModes[params.coordinate] == exports.PopupFallbackMode.invert) {
-            const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-                + (popupSizeWithMargins - popupSizeOffset);
-            const inverseTotalSizeOffsetWithViewportMargin = inverseTotalSizeOffset - viewportMargin;
-            if ((totalSizeOffset >= 0
-                && window[params.innerSize] - this.parentRect[params.side] <
-                    popupSizeWithMargins + totalSizeOffsetWithViewportMargin
-                && this.parentRect[params.side] >= popupSizeWithMargins - inverseTotalSizeOffsetWithViewportMargin)
-                || (totalSizeOffset < 0
-                    && this.parentRect[params.side] < -totalSizeOffset - totalSizeOffsetWithViewportMargin
-                    && window[params.innerSize] - this.parentRect[params.side] >=
-                        inverseTotalSizeOffset + inverseTotalSizeOffsetWithViewportMargin)) {
-                offset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-            }
-        }
-        else if (this.fallbackModes[params.coordinate] == exports.PopupFallbackMode.offset) {
-            if (totalSizeOffset < 0) {
-                const outOfBoundsStart = this.parentRect[params.side] + totalSizeOffsetWithViewportMargin;
-                if (outOfBoundsStart < 0)
-                    offset -= outOfBoundsStart;
-            }
-            else {
-                const outOfBoundsEnd = (window[params.innerSize] - this.parentRect[params.side])
-                    - (popupSizeWithMargins + totalSizeOffsetWithViewportMargin);
-                if (outOfBoundsEnd > 0)
-                    offset -= outOfBoundsEnd;
-            }
-        }
-        this.style[params.side] = offset + "px";
-        return offset;
-    }
-    recomputeMaxSize(offset, direction) {
-        const params = this.generateDimensionParameters(direction);
-        const maxSize = window[params.innerSize] - offset - this.viewportMargin[params.coordinate]
-            - parseFloat(this.computedStyle[params.marginStart]) - parseFloat(this.computedStyle[params.marginEnd])
-            - parseFloat(this.parentComputedStyle[params.marginStart]) - parseFloat(this.parentComputedStyle[params.marginEnd]);
-        if (this.computedStyle[params.maxSize] && parseFloat(this.computedStyle[params.maxSize]) <= maxSize)
-            return;
-        this.style[params.maxSize] = maxSize + "px";
-    }
-    clearMaxDimensions() {
-        this.style.maxHeight = "";
-        this.style.maxWidth = "";
-    }
-    show(b) {
-        if (this.isShown == b)
-            return this;
-        requestAnimationFrame(() => {
-            if (b)
-                this.recomputePosition();
-            else
-                this.clearMaxDimensions();
-            super.show(b);
-        });
-        return this;
-    }
-    toggle() {
-        return this.show(!this.isShown);
-    }
-    generateDimensionParameters(direction) {
-        const isVertical = direction == exports.Direction.vertical;
-        return {
-            size: isVertical ? "height" : "width",
-            innerSize: isVertical ? "innerHeight" : "innerWidth",
-            maxSize: isVertical ? "maxHeight" : "maxWidth",
-            marginStart: isVertical ? "marginTop" : "marginLeft",
-            marginEnd: isVertical ? "marginBottom" : "marginRight",
-            side: isVertical ? "top" : "left",
-            coordinate: isVertical ? "y" : "x"
-        };
-    }
-};
-__decorate([
-    cache({ clearOnNextFrame: true })
-], exports.TurboPopup.prototype, "rect", null);
-__decorate([
-    cache({ clearOnNextFrame: true })
-], exports.TurboPopup.prototype, "parentRect", null);
-__decorate([
-    cache({ clearOnNextFrame: true })
-], exports.TurboPopup.prototype, "computedStyle", null);
-__decorate([
-    cache({ clearOnNextFrame: true })
-], exports.TurboPopup.prototype, "parentComputedStyle", null);
-exports.TurboPopup = TurboPopup_1 = __decorate([
-    define("turbo-popup")
-], exports.TurboPopup);
-function popup(properties = {}) {
-    return new exports.TurboPopup(properties);
-}
 
 var TurboSelectEntry_1;
 /**
@@ -4661,8 +5004,6 @@ var TurboSelectEntry_1;
  * @extends TurboElement
  */
 exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends exports.TurboRichElement {
-    _value;
-    _selected;
     /**
      * @description The class(es) assigned to the dropdown entry when it is selected
      */
@@ -4688,23 +5029,15 @@ exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends e
         this.reflectedElement = properties.reflectValueOn != undefined ? properties.reflectValueOn : this;
         this.inputName = properties.inputName;
         this.value = properties.value;
+        this.secondaryValue = properties.secondaryValue;
         this.selected = properties.selected || false;
         this.enabled = properties.enabled || true;
     }
-    /**
-     * @description Toggles the selection of this dropdown entry
-     */
-    toggle() {
-        this.selected = !this.selected;
-    }
+    set secondaryValue(value) { }
     /**
      * @description The value of the dropdown entry
      */
-    get value() {
-        return this._value;
-    }
     set value(value) {
-        this._value = value;
         if (this.reflectedElement) {
             if (this.reflectedElement instanceof exports.TurboRichElement)
                 this.reflectedElement.text = this.stringValue;
@@ -4720,13 +5053,7 @@ exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends e
     /**
      * @description Whether or not the dropdown entry is selected
      */
-    get selected() {
-        return this._selected;
-    }
     set selected(value) {
-        if (value == this.selected)
-            return;
-        this._selected = value;
         this.toggleClass(this.selectedClasses, value);
         if (value)
             this.action();
@@ -4755,16 +5082,28 @@ exports.TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends e
         else
             this.inputElement.name = value;
     }
+    /**
+     * @description Toggles the selection of this dropdown entry
+     */
+    toggle() {
+        this.selected = !this.selected;
+    }
 };
+__decorate([
+    auto()
+], exports.TurboSelectEntry.prototype, "secondaryValue", null);
+__decorate([
+    auto()
+], exports.TurboSelectEntry.prototype, "value", null);
+__decorate([
+    auto()
+], exports.TurboSelectEntry.prototype, "selected", null);
 __decorate([
     auto()
 ], exports.TurboSelectEntry.prototype, "enabled", null);
 exports.TurboSelectEntry = TurboSelectEntry_1 = __decorate([
-    define("turbo-select-entry")
+    define()
 ], exports.TurboSelectEntry);
-function selectEntry(properties) {
-    return new exports.TurboSelectEntry(properties);
-}
 
 class TurboSelectInputEvent extends TurboEvent {
     toggledEntry;
@@ -4815,10 +5154,13 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
         this.inputName = properties.inputName;
         this.onSelect = properties.onSelect || (() => { });
         this.selectedEntryClasses = properties.customSelectedEntryClasses || TurboSelect_1.config.defaultSelectedEntryClasses;
-        (properties.values ?? []).forEach(entry => {
-            entry = this.addEntry(entry);
-            if (properties.selectedValues?.includes(entry.value))
-                this.select(entry);
+        (properties.values ?? []).forEach(entry => this.addEntry(entry));
+        //TODO MAKE IT BETTER SOMEHOW (I WANT TO RUN IT AFTER CHILD CLASSES FINISH SETTING UP)
+        requestAnimationFrame(() => {
+            this.entries.forEach(entry => {
+                if (properties.selectedValues?.includes(entry.value))
+                    this.select(entry);
+            });
         });
     }
     addEntry(entry) {
@@ -4826,10 +5168,10 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
             if (typeof entry == "object" && "value" in entry) {
                 if (!entry.inputName)
                     entry.inputName = this.inputName;
-                entry = selectEntry(entry);
+                entry = new exports.TurboSelectEntry(entry);
             }
             else {
-                entry = selectEntry({ value: entry, inputName: this.inputName });
+                entry = new exports.TurboSelectEntry({ value: entry, inputName: this.inputName });
             }
         }
         if (!entry.selectedClasses)
@@ -4855,12 +5197,8 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
             entry = el;
         }
         if (!this.multiSelection)
-            this.selectedEntries.forEach(selectedEntry => {
-                if (entry != selectedEntry)
-                    selectedEntry.toggle();
-            });
-        if (!entry.selected && this.forceSelection && this.selectedEntries.length == 0)
-            entry.toggle();
+            this.selectedEntries.forEach(selectedEntry => selectedEntry.toggle());
+        entry.toggle();
         this.onSelect(entry.selected, entry, this.getIndex(entry));
         this.dispatchEvent(new TurboSelectInputEvent(entry, this.selectedValues));
         return this;
@@ -4892,11 +5230,20 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
     get enabledValues() {
         return this.enabledEntries.map(entry => entry.value);
     }
+    get enabledSecondaryValues() {
+        return this.enabledEntries.map(entry => entry.secondaryValue);
+    }
     find(value) {
         return this.entries.find((entry) => entry.value == value);
     }
+    findBySecondaryValue(value) {
+        return this.entries.find((entry) => entry.secondaryValue == value);
+    }
     findAll(...values) {
         return this.entries.filter(entry => values.includes(entry.value));
+    }
+    findAllBySecondaryValue(...values) {
+        return this.entries.filter((entry) => values.includes(entry.secondaryValue));
     }
     enable(b, ...entries) {
         entries.forEach(entry => {
@@ -4922,7 +5269,13 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
         return this.selectedEntries.map(entry => entry.value);
     }
     get selectedValue() {
-        return this.selectedEntry.value;
+        return this.selectedEntry?.value;
+    }
+    get selectedSecondaryValues() {
+        return this.selectedEntries.map(entry => entry.secondaryValue);
+    }
+    get selectedSecondaryValue() {
+        return this.selectedEntry?.secondaryValue;
     }
     get stringSelectedValue() {
         return this.selectedEntries.map(entry => entry.stringValue).join(", ");
@@ -4949,308 +5302,11 @@ exports.TurboSelect = class TurboSelect extends TurboElement {
     }
 };
 exports.TurboSelect = TurboSelect_1 = __decorate([
-    define("turbo-select")
+    define()
 ], exports.TurboSelect);
-function select(properties) {
-    return new exports.TurboSelect(properties);
-}
 
-var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-styleInject(css_248z);
-
-var TurboDropdown_1;
-/**
- * Dropdown class for creating Turbo button elements.
- * @class TurboDropdown
- * @extends TurboElement
- */
-exports.TurboDropdown = class TurboDropdown extends exports.TurboSelect {
-    static { TurboDropdown_1 = this; }
-    /**
-     * The dropdown's selector element.
-     */
-    selector;
-    /**
-     * The dropdown's popup element.
-     */
-    popup;
-    popupOpen = false;
-    //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
-    static config = { defaultEntryTag: "h4", defaultSelectorTag: "h4" };
-    /**
-     * @description Dropdown constructor
-     * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
-     */
-    constructor(properties) {
-        properties.entriesParent = properties.popup || popup();
-        super(properties);
-        this.selector = properties.selector instanceof HTMLElement ? properties.selector : button({ buttonText: "",
-            customTextTag: properties.customSelectorTag || TurboDropdown_1.config.defaultSelectorTag });
-        this.popup = properties.entriesParent;
-        this.initPopup(properties);
-        this.initSelector(properties);
-        document.addListener(DefaultEventName.click, e => {
-            if (this.popupOpen && !this.contains(e.target))
-                this.openPopup(false);
-        });
-    }
-    initSelector(properties) {
-        if (this.selector instanceof exports.TurboButton) {
-            if (typeof properties.selector == "string")
-                this.selector.text = properties.selector;
-            else {
-                const selectorText = this.entries[0]?.value;
-                if (typeof selectorText == "string")
-                    this.selector.text = selectorText;
-            }
-        }
-        this.selector.addListener(DefaultEventName.click, (e) => {
-            this.openPopup(!this.popupOpen);
-            e.stopImmediatePropagation();
-        });
-        this.addChild(this.selector);
-        this.selector.addClass(properties.customSelectorClasses
-            ? properties.customSelectorClasses
-            : TurboDropdown_1.config.defaultSelectorClasses);
-    }
-    initPopup(properties) {
-        this.addChild(this.popup);
-        this.popup.show(false);
-        this.popup.addClass(properties.customPopupClasses
-            ? properties.customPopupClasses
-            : TurboDropdown_1.config.defaultPopupClasses);
-    }
-    onEntryClick(entry) {
-        super.onEntryClick(entry);
-        this.openPopup(false);
-    }
-    select(entry) {
-        super.select(entry);
-        if (this.selector instanceof exports.TurboButton && typeof this.selectedValue == "string")
-            this.selector.text = this.selectedValue;
-        return this;
-    }
-    openPopup(b) {
-        if (this.popupOpen == b)
-            return;
-        this.popupOpen = b;
-        if (this.popup instanceof TurboElement)
-            this.popup.show(b);
-        else
-            this.popup.show(b);
-    }
-};
-exports.TurboDropdown = TurboDropdown_1 = __decorate([
-    define("turbo-dropdown")
-], exports.TurboDropdown);
-function dropdown(properties) {
-    return new exports.TurboDropdown(properties);
-}
-
-function getEventPosition(e) {
-    if (e instanceof TurboEvent)
-        return e.scaledPosition;
-    if (e instanceof PointerEvent)
-        return new Point(e.clientX, e.clientY);
-    return;
-}
-
-exports.TurboMarkingMenu = class TurboMarkingMenu extends exports.TurboSelect {
-    transition;
-    semiMajor;
-    semiMinor;
-    currentOrigin;
-    minDragDistance;
-    set startAngle(value) { }
-    ;
-    set endAngle(value) { }
-    ;
-    constructor(properties = {}) {
-        super({ ...properties });
-        super.show(false);
-        this.startAngle = 0;
-        this.endAngle = properties.endAngle ?? Math.PI * 2;
-        this.semiMajor = properties.semiMajor ?? 50;
-        this.semiMinor = properties.semiMinor ?? 45;
-        this.minDragDistance = properties.minDragDistance ?? 20;
-        this.transition = properties.transition instanceof StatefulReifect ? properties.transition
-            : this.initializeTransition(properties.transition ?? {});
-        this.transition.initialize(exports.InOut.out, this.entries);
-        this.setStyles({ position: "fixed", top: 0, left: 0 });
-        this.showTransition = this.showTransition.clone();
-        this.showTransition.transitionDelay = { hidden: (index, totalCount) => 0.13 + totalCount * 0.02, visible: 0 };
-        this.initEvents();
-    }
-    get totalAngle() {
-        let totalAngle = this.endAngle - this.startAngle;
-        while (totalAngle > Math.PI * 2)
-            totalAngle -= Math.PI * 2;
-        return totalAngle;
-    }
-    initEvents() {
-        const hideOnEvent = (e) => {
-            if (e.target.findInParents(this))
-                return;
-            if (this.isShown)
-                this.show(false);
-        };
-        document.addListener(DefaultEventName.scroll, hideOnEvent);
-        document.addListener(DefaultEventName.clickEnd, hideOnEvent);
-        document.addListener(DefaultEventName.dragStart, hideOnEvent);
-    }
-    initializeTransition(properties) {
-        properties.states = [exports.InOut.in, exports.InOut.out];
-        if (!properties.transitionProperties)
-            properties.transitionProperties = "opacity transform";
-        if (properties.transitionDuration == undefined)
-            properties.transitionDuration = 0.1;
-        if (!properties.transitionTimingFunction)
-            properties.transitionTimingFunction = { in: "ease-out", out: "ease-in" };
-        if (!properties.transitionDelay)
-            properties.transitionDelay = {
-                in: (index) => 0.01 + index * 0.02,
-                out: (index, totalCount) => 0.01 + (totalCount - index) * 0.02
-            };
-        if (!properties.styles)
-            properties.styles = {
-                in: (index, totalCount) => {
-                    //Compute angle of current entry (offset by 90 deg)
-                    const angle = this.computeAngle(index, totalCount);
-                    //Compute x and y
-                    const x = this.semiMajor * Math.cos(angle);
-                    const y = this.semiMinor * Math.sin(angle);
-                    //Translate the div to move its anchor as close as possible to the center
-                    //I.e., for x, the more it's close to 0, the more centered horizontally it gets,
-                    //and the farthest from 0, the closer it gets to the edge
-                    const translations = {
-                        x: -50 * (1 - x / this.semiMajor),
-                        y: -50 * (1 - y / this.semiMinor)
-                    };
-                    return {
-                        opacity: 1,
-                        top: y + "px",
-                        left: x + "px",
-                        transform: `translate3d(${translations.x}%, ${translations.y}%, 0)`
-                    };
-                },
-                out: { opacity: 0, transform: `translate3d(-50%, -50%, 0)` }
-            };
-        return statefulReifier(properties);
-    }
-    computeAngle(index, totalCount) {
-        const totalAngleEntriesCount = totalCount - (this.totalAngle < Math.PI * 2 ? 1 : 0);
-        let angle = this.totalAngle * index / totalAngleEntriesCount + this.startAngle;
-        angle += Math.sin((angle + (Math.PI / 2)) * 2) * 0.2;
-        while (angle < 0)
-            angle += Math.PI * 2;
-        while (angle >= Math.PI * 2)
-            angle -= Math.PI * 2;
-        return angle;
-    }
-    addEntry(entry) {
-        entry = super.addEntry(entry);
-        this.transition?.initialize(this.isShown ? exports.InOut.in : exports.InOut.out, entry);
-        entry.setStyles({ position: "absolute" });
-        return entry;
-    }
-    show(b = !this.isShown, position) {
-        if (position)
-            this.currentOrigin = position;
-        else
-            this.currentOrigin = new Point(this.offsetLeft, this.offsetTop);
-        if (position && b)
-            this.setStyle("transform", `translate3d(${position.x}px, ${position.y}px, 0)`);
-        this.transition.apply(b ? exports.InOut.in : exports.InOut.out, this.enabledEntries);
-        super.show(b);
-        return this;
-    }
-    getEntryInDirection(position) {
-        if (!this.currentOrigin)
-            return null;
-        if (Point.dist(position, this.currentOrigin) < this.minDragDistance)
-            return null;
-        let angle = Math.atan2(position.y - this.currentOrigin.y, position.x - this.currentOrigin.x);
-        if (angle < 0)
-            angle += Math.PI * 2;
-        // Find the closest entry based on the calculated angle
-        let closestEntry = null;
-        let smallestAngleDifference = Infinity;
-        this.enabledEntries.forEach((entry, index) => {
-            // Compute the angle of the current entry
-            const entryAngle = this.computeAngle(index, this.enabledEntries.length);
-            // Calculate the absolute difference between the entry angle and the position angle
-            const angleDifference = Math.abs(entryAngle - angle);
-            // Update the closest entry if this one is closer
-            if (angleDifference < smallestAngleDifference) {
-                smallestAngleDifference = angleDifference;
-                closestEntry = entry;
-            }
-        });
-        return closestEntry;
-    }
-    selectEntryInDirection(position) {
-        this.select(this.getEntryInDirection(position));
-    }
-    attachTo(element, onClick = (e) => this.show(true, getEventPosition(e)), onDragStart = (e) => this.show(true, getEventPosition(e)), onDragEnd = onDragStart
-        ? (e) => this.selectEntryInDirection(getEventPosition(e))
-        : null) {
-        //Cancel default hide operation on click end
-        element.addListener(DefaultEventName.clickEnd, (e) => e.stopImmediatePropagation());
-        //Setup click if defined
-        if (onClick)
-            element.addListener(DefaultEventName.click, (e) => {
-                e.stopImmediatePropagation();
-                onClick(e);
-            }, this);
-        //Cancel default hide operation on drag start
-        element.addListener(DefaultEventName.dragStart, (e) => {
-            e.stopImmediatePropagation();
-            //Setup drag start if defined
-            if (onDragStart)
-                onDragStart(e);
-        }, this);
-        //Setup drag end if defined
-        if (onDragEnd)
-            element.addListener(DefaultEventName.dragEnd, (e) => {
-                e.stopImmediatePropagation();
-                onDragEnd(e);
-            }, this);
-    }
-};
-__decorate([
-    auto({ callBefore: (value) => value - Math.PI / 2 })
-], exports.TurboMarkingMenu.prototype, "startAngle", null);
-__decorate([
-    auto({ callBefore: (value) => value - Math.PI / 2 })
-], exports.TurboMarkingMenu.prototype, "endAngle", null);
-exports.TurboMarkingMenu = __decorate([
-    define("turbo-marking-menu")
-], exports.TurboMarkingMenu);
-function markingMenu(properties = {}) {
-    return new exports.TurboMarkingMenu(properties);
-}
-
-/**
- * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
- * to go beyond [x1, x2].
- * @param x
- * @param x1
- * @param x2
- * @param y1
- * @param y2
- * @param strict
- */
-function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
-    if (strict) {
-        const xMax = Math.max(x1, x2);
-        const xMin = Math.min(x1, x2);
-        if (x > xMax)
-            x = xMax;
-        if (x < xMin)
-            x = xMin;
-    }
-    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
-}
+var css_248z$1 = ".turbo-drawer{align-items:center;display:inline-flex}.turbo-drawer.top-drawer,.turbo-drawer.top-drawer .turbo-drawer-panel-container{flex-direction:column}.turbo-drawer.bottom-drawer,.turbo-drawer.bottom-drawer .turbo-drawer-panel-container{flex-direction:column-reverse}.turbo-drawer.left-drawer,.turbo-drawer.left-drawer .turbo-drawer-panel-container{flex-direction:row}.turbo-drawer.right-drawer,.turbo-drawer.right-drawer .turbo-drawer-panel-container{flex-direction:row-reverse}.turbo-drawer>div:first-child{background-color:#fff;display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}.turbo-drawer>div:nth-child(2)>:first-child{background-color:#fff;display:block}";
+styleInject(css_248z$1);
 
 // @ts-nocheck
 /**
@@ -5446,6 +5502,752 @@ function reifect(properties) {
     return new Reifect(properties);
 }
 
+exports.TurboDrawer = class TurboDrawer extends TurboElement {
+    thumb;
+    panelContainer;
+    panel;
+    icon;
+    transition;
+    hideOverflow;
+    dragging = false;
+    animationOn = false;
+    _offset;
+    _translation = 0;
+    constructor(properties) {
+        super(properties);
+        this.addClass("turbo-drawer");
+        this.thumb = properties.thumb instanceof HTMLElement ? properties.thumb : div(properties.thumb);
+        this.panelContainer = div();
+        this.panel = properties.panel instanceof HTMLElement ? properties.panel : div(properties.panel);
+        this.thumb.addClass("turbo-drawer-thumb");
+        this.panelContainer.addClass("turbo-drawer-panel-container");
+        this.panel.addClass("turbo-drawer-panel");
+        this.addChild([this.thumb, this.panelContainer]);
+        this.panelContainer.addChild(this.panel);
+        this.hideOverflow = properties.hideOverflow ?? false;
+        if (this.hideOverflow)
+            this.panelContainer.setStyle("overflow", "hidden");
+        this.side = properties.side || exports.Side.bottom;
+        this.offset = { open: properties.offset?.open || 0, closed: properties.offset?.closed || 0 };
+        this.icon = this.generateIcon(properties);
+        this.thumb.addChild(this.icon);
+        this.childHandler = this.panel;
+        //Transition
+        this.transition = properties.transition ?? new Reifect({
+            transitionProperties: ["transform", this.isVertical ? "height" : "width"],
+            transitionDuration: 0.2,
+            transitionTimingFunction: "ease-out",
+            attachedObjects: [this, this.panelContainer]
+        });
+        this.initState(properties.initiallyOpen || false);
+        this.initEvents();
+    }
+    generateIcon(properties) {
+        if (properties.icon instanceof Element)
+            return properties.icon;
+        const attachSideToIconName = properties.attachSideToIconName ?? typeof properties.icon == "string";
+        const rotateIconBasedOnSide = properties.rotateIconBasedOnSide ?? !attachSideToIconName;
+        const iconProperties = typeof properties.icon == "object"
+            ? properties.icon : {
+            icon: properties.icon,
+            switchReifect: { states: Object.values(exports.Side) },
+            defaultState: this.open ? this.getOppositeSide() : this.side,
+            appendStateToIconName: attachSideToIconName,
+        };
+        const iconElement = new exports.TurboIconSwitch(iconProperties);
+        if (rotateIconBasedOnSide) {
+            iconElement.switchReifect.styles = {
+                top: "transform: rotate(180deg)",
+                bottom: "transform: rotate(0deg)",
+                left: "transform: rotate(90deg)",
+                right: "transform: rotate(270deg)",
+            };
+        }
+        return iconElement;
+    }
+    initEvents() {
+        this.thumb.addEventListener(DefaultEventName.click, (e) => {
+            e.stopImmediatePropagation();
+            this.open = !this.open;
+        });
+        this.thumb.addEventListener(TurboEventName.dragStart, (e) => {
+            e.stopImmediatePropagation();
+            this.dragging = true;
+            if (this.animationOn)
+                this.transition.enabled = false;
+        });
+        this.thumb.addEventListener(TurboEventName.drag, (e) => {
+            if (!this.dragging)
+                return;
+            e.stopImmediatePropagation();
+            this.translation += this.isVertical ? e.scaledDeltaPosition.y : e.scaledDeltaPosition.x;
+        });
+        this.thumb.addEventListener(TurboEventName.dragEnd, (e) => {
+            if (!this.dragging)
+                return;
+            e.stopImmediatePropagation();
+            this.dragging = false;
+            const delta = e.positions.first.sub(e.origins.first);
+            switch (this.side) {
+                case exports.Side.top:
+                    if (this.open && delta.y > 100)
+                        this.open = false;
+                    else if (!this.open && delta.y < -100)
+                        this.open = true;
+                    break;
+                case exports.Side.bottom:
+                    if (this.open && delta.y < -100)
+                        this.open = false;
+                    else if (!this.open && delta.y > 100)
+                        this.open = true;
+                    break;
+                case exports.Side.left:
+                    if (this.open && delta.x > 100)
+                        this.open = false;
+                    else if (!this.open && delta.x < -100)
+                        this.open = true;
+                    break;
+                case exports.Side.right:
+                    if (this.open && delta.x < -100)
+                        this.open = false;
+                    else if (!this.open && delta.x > 100)
+                        this.open = true;
+                    break;
+            }
+            this.refresh();
+        });
+    }
+    initState(isOpen) {
+        this.open = isOpen;
+        this.animationOn = true;
+    }
+    getOppositeSide(side = this.side) {
+        switch (side) {
+            case exports.Side.top:
+                return exports.Side.bottom;
+            case exports.Side.bottom:
+                return exports.Side.top;
+            case exports.Side.left:
+                return exports.Side.right;
+            case exports.Side.right:
+                return exports.Side.left;
+        }
+    }
+    getAdjacentSide(side = this.side) {
+        switch (side) {
+            case exports.Side.top:
+                return exports.Side.right;
+            case exports.Side.bottom:
+                return exports.Side.left;
+            case exports.Side.left:
+                return exports.Side.top;
+            case exports.Side.right:
+                return exports.Side.bottom;
+        }
+    }
+    set side(value) {
+        this.toggleClass("top-drawer", value == exports.Side.top);
+        this.toggleClass("bottom-drawer", value == exports.Side.bottom);
+        this.toggleClass("left-drawer", value == exports.Side.left);
+        this.toggleClass("right-drawer", value == exports.Side.right);
+    }
+    get offset() {
+        return this._offset;
+    }
+    set offset(value) {
+        if (typeof value == "number")
+            this._offset = { open: value, closed: value };
+        else
+            this._offset = { open: value?.open || 0, closed: value?.closed || 0 };
+    }
+    get isVertical() {
+        return this.side == exports.Side.top || this.side == exports.Side.bottom;
+    }
+    set open(value) {
+        this.refresh();
+    }
+    get translation() {
+        return this._translation;
+    }
+    set translation(value) {
+        this._translation = value;
+        switch (this.side) {
+            case exports.Side.top:
+                if (this.hideOverflow)
+                    this.panelContainer.setStyle("height", value + "px");
+                else
+                    this.setStyle("transform", `translateY(${-value}px)`);
+                break;
+            case exports.Side.bottom:
+                if (this.hideOverflow)
+                    this.panelContainer.setStyle("height", value + "px");
+                else
+                    this.setStyle("transform", `translateY(${-value}px)`);
+                break;
+            case exports.Side.left:
+                if (this.hideOverflow)
+                    this.panelContainer.setStyle("width", value + "px");
+                else
+                    this.setStyle("transform", `translateX(${-value}px)`);
+                break;
+            case exports.Side.right:
+                if (this.hideOverflow)
+                    this.panelContainer.setStyle("width", value + "px");
+                else
+                    this.setStyle("transform", `translateX(${-value}px)`);
+                break;
+        }
+    }
+    refresh() {
+        if (this.animationOn) {
+            this.transition.enabled = true;
+            this.transition.apply();
+        }
+        if (this.hideOverflow)
+            this.panel.setStyle("position", "absolute", true);
+        requestAnimationFrame(() => {
+            this.translation = (this.open ? this.offset.open : this.offset.closed)
+                + (this.open ? (this.isVertical ? this.panel.offsetHeight : this.panel.offsetWidth) : 0);
+            if (this.icon instanceof exports.TurboIconSwitch)
+                this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
+            if (this.hideOverflow)
+                this.panel.setStyle("position", "relative", true);
+        });
+    }
+};
+__decorate([
+    auto()
+], exports.TurboDrawer.prototype, "side", null);
+__decorate([
+    auto()
+], exports.TurboDrawer.prototype, "open", null);
+exports.TurboDrawer = __decorate([
+    define()
+], exports.TurboDrawer);
+
+exports.PopupFallbackMode = void 0;
+(function (PopupFallbackMode) {
+    PopupFallbackMode["invert"] = "invert";
+    PopupFallbackMode["offset"] = "offset";
+    PopupFallbackMode["none"] = "none";
+})(exports.PopupFallbackMode || (exports.PopupFallbackMode = {}));
+
+var TurboPopup_1;
+exports.TurboPopup = class TurboPopup extends TurboElement {
+    static { TurboPopup_1 = this; }
+    _popupAnchor;
+    _parentAnchor;
+    _viewportMargin;
+    _offsetFromParent;
+    fallbackModes;
+    static config = {
+        defaultPopupAnchor: { x: 0, y: -100 },
+        defaultParentAnchor: { x: 0, y: 100 },
+        defaultViewportMargin: 4,
+        defaultOffsetFromParent: { x: 0, y: 4 }
+    };
+    constructor(properties = {}) {
+        super(properties);
+        this.setStyle("position", "fixed");
+        if (!properties.unsetDefaultClasses)
+            this.addClass(TurboPopup_1.config.defaultClasses);
+        this.popupAnchor = properties.popupAnchor || TurboPopup_1.config.defaultPopupAnchor || { x: 50, y: 0 };
+        this.parentAnchor = properties.parentAnchor || TurboPopup_1.config.defaultParentAnchor || { x: 50, y: 100 };
+        this.viewportMargin = properties.viewportMargin || TurboPopup_1.config.defaultViewportMargin || 0;
+        this.offsetFromParent = properties.offsetFromParent || TurboPopup_1.config.defaultOffsetFromParent || 0;
+        this.fallbackModes = properties.fallbackModes || {
+            x: Math.abs(this.parentAnchor.x - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
+            y: Math.abs(this.parentAnchor.y - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
+        };
+        this.addListeners();
+        this.show(false);
+    }
+    addListeners() {
+        window.addEventListener(DefaultEventName.scroll, () => this.show(false));
+        window.addEventListener(DefaultEventName.resize, () => {
+            if (this.isShown)
+                this.recomputePosition();
+        });
+        document.addListener(DefaultEventName.click, e => {
+            if (this.isShown && !this.contains(e.target))
+                this.show(false);
+        });
+    }
+    get popupAnchor() {
+        return this._popupAnchor;
+    }
+    set popupAnchor(value) {
+        this._popupAnchor = new Point(value).bound(0, 100);
+    }
+    get parentAnchor() {
+        return this._parentAnchor;
+    }
+    set parentAnchor(value) {
+        this._parentAnchor = new Point(value).bound(0, 100);
+    }
+    get viewportMargin() {
+        return this._viewportMargin;
+    }
+    set viewportMargin(value) {
+        this._viewportMargin = new Point(value);
+    }
+    get offsetFromParent() {
+        return this._offsetFromParent;
+    }
+    set offsetFromParent(value) {
+        this._offsetFromParent = new Point(value);
+    }
+    get rect() {
+        return this.getBoundingClientRect();
+    }
+    get parentRect() {
+        return this.parentElement.getBoundingClientRect();
+    }
+    get computedStyle() {
+        return window.getComputedStyle(this);
+    }
+    get parentComputedStyle() {
+        return window.getComputedStyle(this.parentElement);
+    }
+    recomputePosition() {
+        if (!this.parentElement)
+            return;
+        this.clearMaxDimensions();
+        const availableHeight = window.innerHeight - (2 * this.viewportMargin.y);
+        const availableWidth = window.innerWidth - (2 * this.viewportMargin.x);
+        this.setStyle("maxHeight", `${availableHeight}px`);
+        this.setStyle("maxWidth", `${availableWidth}px`);
+        const top = this.recomputeSide(exports.Direction.vertical);
+        const left = this.recomputeSide(exports.Direction.horizontal);
+        this.recomputeMaxSize(top, exports.Direction.vertical);
+        this.recomputeMaxSize(left, exports.Direction.horizontal);
+    }
+    recomputeSide(direction) {
+        const params = this.generateDimensionParameters(direction);
+        const popupSizeWithMargins = this.rect[params.size] + this.offsetFromParent[params.coordinate]
+            + parseFloat(this.computedStyle[params.marginStart]) + parseFloat(this.computedStyle[params.marginEnd]);
+        const parentAnchorOffset = this.parentRect[params.size] * this.parentAnchor[params.coordinate] / 100;
+        const popupSizeOffset = popupSizeWithMargins * this.popupAnchor[params.coordinate] / 100;
+        const totalSizeOffset = parentAnchorOffset - popupSizeOffset;
+        const incrementSign = totalSizeOffset > 0 ? 1 : -1;
+        const offsetFromParent = this.offsetFromParent[params.coordinate] * incrementSign;
+        const viewportMargin = this.viewportMargin[params.coordinate] * incrementSign;
+        let offset = this.parentRect[params.side] + totalSizeOffset + offsetFromParent;
+        const maxOffset = window[params.innerSize] - popupSizeWithMargins - viewportMargin;
+        const minOffset = viewportMargin;
+        if (this.fallbackModes[params.coordinate] === exports.PopupFallbackMode.invert) {
+            const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
+                + (popupSizeWithMargins - popupSizeOffset);
+            if ((offset + popupSizeWithMargins > maxOffset) || (offset < minOffset)) {
+                const inverseOffset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
+                if (inverseOffset >= minOffset && (inverseOffset + popupSizeWithMargins) <= maxOffset) {
+                    offset = inverseOffset;
+                }
+            }
+        }
+        // Final boundary check
+        offset = Math.min(Math.max(offset, minOffset), maxOffset);
+        this.style[params.side] = `${offset}px`;
+        return offset;
+        // if (this.fallbackModes[params.coordinate] == PopupFallbackMode.invert) {
+        //     const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
+        //         + (popupSizeWithMargins - popupSizeOffset);
+        //     const inverseTotalSizeOffsetWithViewportMargin = inverseTotalSizeOffset - viewportMargin;
+        //
+        //     if ((totalSizeOffset >= 0
+        //             && window[params.innerSize] - this.parentRect[params.side] <
+        //             popupSizeWithMargins + totalSizeOffsetWithViewportMargin
+        //             && this.parentRect[params.side] >= popupSizeWithMargins - inverseTotalSizeOffsetWithViewportMargin)
+        //         || (totalSizeOffset < 0
+        //             && this.parentRect[params.side] < -totalSizeOffset - totalSizeOffsetWithViewportMargin
+        //             && window[params.innerSize] - this.parentRect[params.side] >=
+        //             inverseTotalSizeOffset + inverseTotalSizeOffsetWithViewportMargin)) {
+        //         offset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
+        //     }
+        // } else if (this.fallbackModes[params.coordinate] == PopupFallbackMode.offset) {
+        //     if (totalSizeOffset < 0) {
+        //         const outOfBoundsStart: number = this.parentRect[params.side] + totalSizeOffsetWithViewportMargin;
+        //         if (outOfBoundsStart < 0) offset -= outOfBoundsStart;
+        //     } else {
+        //         const outOfBoundsEnd: number = (window[params.innerSize] - this.parentRect[params.side])
+        //             - (popupSizeWithMargins + totalSizeOffsetWithViewportMargin);
+        //         if (outOfBoundsEnd > 0) offset -= outOfBoundsEnd;
+        //     }
+        // }
+        //
+        // this.style[params.side] = offset + "px";
+        // return offset;
+    }
+    recomputeMaxSize(offset, direction) {
+        const params = this.generateDimensionParameters(direction);
+        const totalMargins = parseFloat(this.computedStyle[params.marginStart])
+            + parseFloat(this.computedStyle[params.marginEnd])
+            + (2 * this.viewportMargin[params.coordinate]);
+        const maxSize = Math.min(window[params.innerSize] - totalMargins, // Total available space
+        window[params.innerSize] - offset - this.viewportMargin[params.coordinate] // Space from offset to edge
+        );
+        // Only set if we need to constrain the size
+        const currentMaxSize = this.computedStyle[params.maxSize]
+            ? parseFloat(this.computedStyle[params.maxSize])
+            : Infinity;
+        if (!currentMaxSize || currentMaxSize > maxSize)
+            this.style[params.maxSize] = `${maxSize}px`;
+        // const maxSize = window[params.innerSize] - offset - this.viewportMargin[params.coordinate]
+        //     - parseFloat(this.computedStyle[params.marginStart]) - parseFloat(this.computedStyle[params.marginEnd])
+        //     - parseFloat(this.parentComputedStyle[params.marginStart]) - parseFloat(this.parentComputedStyle[params.marginEnd]);
+        //
+        // if (this.computedStyle[params.maxSize] && parseFloat(this.computedStyle[params.maxSize]) <= maxSize) return;
+        // this.style[params.maxSize] = maxSize + "px";
+    }
+    clearMaxDimensions() {
+        this.setStyle("maxHeight", "", true);
+        this.setStyle("maxWidth", "", true);
+    }
+    show(b) {
+        if (this.isShown == b)
+            return this;
+        requestAnimationFrame(() => {
+            if (b)
+                this.recomputePosition();
+            else
+                this.clearMaxDimensions();
+            super.show(b);
+        });
+        return this;
+    }
+    toggle() {
+        return this.show(!this.isShown);
+    }
+    generateDimensionParameters(direction) {
+        const isVertical = direction == exports.Direction.vertical;
+        return {
+            size: isVertical ? "height" : "width",
+            innerSize: isVertical ? "innerHeight" : "innerWidth",
+            maxSize: isVertical ? "maxHeight" : "maxWidth",
+            marginStart: isVertical ? "marginTop" : "marginLeft",
+            marginEnd: isVertical ? "marginBottom" : "marginRight",
+            side: isVertical ? "top" : "left",
+            coordinate: isVertical ? "y" : "x"
+        };
+    }
+};
+__decorate([
+    cache({ clearOnNextFrame: true })
+], exports.TurboPopup.prototype, "rect", null);
+__decorate([
+    cache({ clearOnNextFrame: true })
+], exports.TurboPopup.prototype, "parentRect", null);
+__decorate([
+    cache({ clearOnNextFrame: true })
+], exports.TurboPopup.prototype, "computedStyle", null);
+__decorate([
+    cache({ clearOnNextFrame: true })
+], exports.TurboPopup.prototype, "parentComputedStyle", null);
+exports.TurboPopup = TurboPopup_1 = __decorate([
+    define()
+], exports.TurboPopup);
+
+var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+styleInject(css_248z);
+
+var TurboDropdown_1;
+/**
+ * Dropdown class for creating Turbo button elements.
+ * @class TurboDropdown
+ * @extends TurboElement
+ */
+exports.TurboDropdown = class TurboDropdown extends exports.TurboSelect {
+    static { TurboDropdown_1 = this; }
+    /**
+     * The dropdown's selector element.
+     */
+    selector;
+    /**
+     * The dropdown's popup element.
+     */
+    popup;
+    popupOpen = false;
+    //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
+    static config = { defaultEntryTag: "h4", defaultSelectorTag: "h4" };
+    /**
+     * @description Dropdown constructor
+     * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
+     */
+    constructor(properties) {
+        properties.entriesParent = properties.popup || new exports.TurboPopup();
+        super(properties);
+        this.selector = properties.selector instanceof HTMLElement ? properties.selector : button({ buttonText: "",
+            customTextTag: properties.customSelectorTag || TurboDropdown_1.config.defaultSelectorTag });
+        this.popup = properties.entriesParent;
+        this.initPopup(properties);
+        this.initSelector(properties);
+        requestAnimationFrame(() => document.addListener(DefaultEventName.click, e => {
+            if (this.popupOpen && !this.contains(e.target))
+                this.openPopup(false);
+        }));
+    }
+    initSelector(properties) {
+        if (this.selector instanceof exports.TurboButton) {
+            if (typeof properties.selector == "string")
+                this.selector.text = properties.selector;
+            else if (!properties.selector) {
+                const selectorText = this.entries[0]?.value;
+                if (typeof selectorText == "string" && !this.selector.text)
+                    this.selector.text = selectorText;
+            }
+        }
+        this.selector.addListener(DefaultEventName.click, (e) => {
+            this.openPopup(!this.popupOpen);
+            e.stopImmediatePropagation();
+        });
+        this.addChild(this.selector);
+        this.selector.addClass(properties.customSelectorClasses
+            ? properties.customSelectorClasses
+            : TurboDropdown_1.config.defaultSelectorClasses);
+    }
+    initPopup(properties) {
+        this.addChild(this.popup);
+        this.popup.show(false);
+        this.popup.addClass(properties.customPopupClasses
+            ? properties.customPopupClasses
+            : TurboDropdown_1.config.defaultPopupClasses);
+    }
+    onEntryClick(entry) {
+        super.onEntryClick(entry);
+        this.openPopup(false);
+    }
+    select(entry) {
+        super.select(entry);
+        if (this.selector instanceof exports.TurboButton)
+            this.selector.text = this.stringSelectedValue;
+        return this;
+    }
+    openPopup(b) {
+        if (this.popupOpen == b)
+            return;
+        this.popupOpen = b;
+        if (this.popup instanceof TurboElement)
+            this.popup.show(b);
+        else
+            this.popup.show(b);
+    }
+};
+exports.TurboDropdown = TurboDropdown_1 = __decorate([
+    define("turbo-dropdown")
+], exports.TurboDropdown);
+
+function getEventPosition(e) {
+    if (e instanceof TurboEvent)
+        return e.scaledPosition;
+    if (e instanceof PointerEvent)
+        return new Point(e.clientX, e.clientY);
+    return;
+}
+
+exports.TurboMarkingMenu = class TurboMarkingMenu extends exports.TurboSelect {
+    transition;
+    semiMajor;
+    semiMinor;
+    currentOrigin;
+    minDragDistance;
+    set startAngle(value) { }
+    ;
+    set endAngle(value) { }
+    ;
+    constructor(properties = {}) {
+        super({ ...properties });
+        super.show(false);
+        this.startAngle = 0;
+        this.endAngle = properties.endAngle ?? Math.PI * 2;
+        this.semiMajor = properties.semiMajor ?? 50;
+        this.semiMinor = properties.semiMinor ?? 45;
+        this.minDragDistance = properties.minDragDistance ?? 20;
+        this.transition = properties.transition instanceof StatefulReifect ? properties.transition
+            : this.initializeTransition(properties.transition ?? {});
+        this.transition.initialize(exports.InOut.out, this.entries);
+        this.setStyles({ position: "fixed", top: 0, left: 0 });
+        this.showTransition = this.showTransition.clone();
+        this.showTransition.transitionDelay = { hidden: (index, totalCount) => 0.13 + totalCount * 0.02, visible: 0 };
+        this.initEvents();
+    }
+    get totalAngle() {
+        let totalAngle = this.endAngle - this.startAngle;
+        while (totalAngle > Math.PI * 2)
+            totalAngle -= Math.PI * 2;
+        return totalAngle;
+    }
+    initEvents() {
+        const hideOnEvent = (e) => {
+            if (e.target.findInParents(this))
+                return;
+            if (this.isShown)
+                this.show(false);
+        };
+        document.addListener(DefaultEventName.scroll, hideOnEvent);
+        document.addListener(DefaultEventName.clickEnd, hideOnEvent);
+        document.addListener(DefaultEventName.dragStart, hideOnEvent);
+    }
+    initializeTransition(properties) {
+        properties.states = [exports.InOut.in, exports.InOut.out];
+        if (!properties.transitionProperties)
+            properties.transitionProperties = "opacity transform";
+        if (properties.transitionDuration == undefined)
+            properties.transitionDuration = 0.1;
+        if (!properties.transitionTimingFunction)
+            properties.transitionTimingFunction = {
+                in: "ease-out",
+                out: "ease-in"
+            };
+        if (!properties.transitionDelay)
+            properties.transitionDelay = {
+                in: (index) => 0.01 + index * 0.02,
+                out: (index, totalCount) => 0.01 + (totalCount - index) * 0.02
+            };
+        if (!properties.styles)
+            properties.styles = {
+                in: (index, totalCount) => {
+                    //Compute angle of current entry (offset by 90 deg)
+                    const angle = this.computeAngle(index, totalCount);
+                    //Compute x and y
+                    const x = this.semiMajor * Math.cos(angle);
+                    const y = this.semiMinor * Math.sin(angle);
+                    //Translate the div to move its anchor as close as possible to the center
+                    //I.e., for x, the more it's close to 0, the more centered horizontally it gets,
+                    //and the farthest from 0, the closer it gets to the edge
+                    const translations = {
+                        x: -50 * (1 - x / this.semiMajor),
+                        y: -50 * (1 - y / this.semiMinor)
+                    };
+                    return {
+                        opacity: 1,
+                        top: y + "px",
+                        left: x + "px",
+                        transform: `translate3d(${translations.x}%, ${translations.y}%, 0)`
+                    };
+                },
+                out: { opacity: 0, transform: `translate3d(-50%, -50%, 0)` }
+            };
+        return statefulReifier(properties);
+    }
+    computeAngle(index, totalCount) {
+        const totalAngleEntriesCount = totalCount - (this.totalAngle < Math.PI * 2 ? 1 : 0);
+        let angle = this.totalAngle * index / totalAngleEntriesCount + this.startAngle;
+        angle += Math.sin((angle + (Math.PI / 2)) * 2) * 0.2;
+        while (angle < 0)
+            angle += Math.PI * 2;
+        while (angle >= Math.PI * 2)
+            angle -= Math.PI * 2;
+        return angle;
+    }
+    addEntry(entry) {
+        entry = super.addEntry(entry);
+        this.transition?.initialize(this.isShown ? exports.InOut.in : exports.InOut.out, entry);
+        entry.setStyles({ position: "absolute" });
+        return entry;
+    }
+    show(b = !this.isShown, position) {
+        if (position)
+            this.currentOrigin = position;
+        else
+            this.currentOrigin = new Point(this.offsetLeft, this.offsetTop);
+        if (position && b)
+            this.setStyle("transform", `translate3d(${position.x}px, ${position.y}px, 0)`);
+        this.transition.apply(b ? exports.InOut.in : exports.InOut.out, this.enabledEntries);
+        super.show(b);
+        return this;
+    }
+    getEntryInDirection(position) {
+        if (!this.currentOrigin)
+            return null;
+        if (Point.dist(position, this.currentOrigin) < this.minDragDistance)
+            return null;
+        let angle = Math.atan2(position.y - this.currentOrigin.y, position.x - this.currentOrigin.x);
+        if (angle < 0)
+            angle += Math.PI * 2;
+        // Find the closest entry based on the calculated angle
+        let closestEntry = null;
+        let smallestAngleDifference = Infinity;
+        this.enabledEntries.forEach((entry, index) => {
+            // Compute the angle of the current entry
+            const entryAngle = this.computeAngle(index, this.enabledEntries.length);
+            // Calculate the absolute difference between the entry angle and the position angle
+            const angleDifference = Math.abs(entryAngle - angle);
+            // Update the closest entry if this one is closer
+            if (angleDifference < smallestAngleDifference) {
+                smallestAngleDifference = angleDifference;
+                closestEntry = entry;
+            }
+        });
+        return closestEntry;
+    }
+    selectEntryInDirection(position) {
+        this.select(this.getEntryInDirection(position));
+    }
+    attachTo(element, onClick = (e) => this.show(true, getEventPosition(e)), onDragStart = (e) => this.show(true, getEventPosition(e)), onDragEnd = onDragStart
+        ? (e) => this.selectEntryInDirection(getEventPosition(e))
+        : null) {
+        //Cancel default hide operation on click end
+        element.addListener(DefaultEventName.clickEnd, (e) => e.stopImmediatePropagation());
+        //Setup click if defined
+        if (onClick)
+            element.addListener(DefaultEventName.click, (e) => {
+                e.stopImmediatePropagation();
+                onClick(e);
+            }, this);
+        //Cancel default hide operation on drag start
+        element.addListener(DefaultEventName.dragStart, (e) => {
+            e.stopImmediatePropagation();
+            //Setup drag start if defined
+            if (onDragStart)
+                onDragStart(e);
+        }, this);
+        //Setup drag end if defined
+        if (onDragEnd)
+            element.addListener(DefaultEventName.dragEnd, (e) => {
+                e.stopImmediatePropagation();
+                onDragEnd(e);
+            }, this);
+    }
+};
+__decorate([
+    auto({ callBefore: (value) => value - Math.PI / 2 })
+], exports.TurboMarkingMenu.prototype, "startAngle", null);
+__decorate([
+    auto({ callBefore: (value) => value - Math.PI / 2 })
+], exports.TurboMarkingMenu.prototype, "endAngle", null);
+exports.TurboMarkingMenu = __decorate([
+    define("turbo-marking-menu")
+], exports.TurboMarkingMenu);
+
+/**
+ * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
+ * to go beyond [x1, x2].
+ * @param x
+ * @param x1
+ * @param x2
+ * @param y1
+ * @param y2
+ * @param strict
+ */
+function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
+    if (strict) {
+        const xMax = Math.max(x1, x2);
+        const xMin = Math.min(x1, x2);
+        if (x > xMax)
+            x = xMax;
+        if (x < xMin)
+            x = xMin;
+    }
+    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
+}
+
+/**
+ * @class TurboSelectWheel
+ * @extends TurboSelect
+ * @description Class to create a dynamic selection wheel.
+ * @template {string} ValueType
+ * @template {TurboSelectEntry<ValueType, any>} EntryType
+ */
 exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
     reifect;
     sizePerEntry = [];
@@ -5520,7 +6322,7 @@ exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
                 return;
             e.stopImmediatePropagation();
             this.dragging = false;
-            this.snapTo(this.trimmedIndex);
+            this.snapTo(Math.round(this.index));
             this.setOpenTimer();
         });
         document.addListener(DefaultEventName.click, () => this.open = false);
@@ -5528,54 +6330,61 @@ exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
     reloadStyles(reloadSizes = false) {
         const elements = this.reifect.getEnabledObjectsData();
         if (reloadSizes) {
+            this.sizePerEntry.length = 0;
             elements.forEach(entry => {
                 const object = entry.object.deref();
                 const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-                if (this.sizePerEntry[entry.objectIndex])
-                    this.sizePerEntry[entry.objectIndex] = size;
-                else
-                    this.sizePerEntry.push(size);
+                this.sizePerEntry.push(size);
             });
         }
         const firstEntrySize = this.sizePerEntry[0];
-        const halfFirstEntrySize = firstEntrySize / 2;
         const lastEntrySize = this.sizePerEntry[elements.length - 1];
-        const halfLastEntrySize = lastEntrySize / 2;
         const offsetSize = {
-            min: this.size.min + this.sizePerEntry[0] / 2,
-            max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
+            min: this.size.min - firstEntrySize / 2,
+            max: this.size.max + lastEntrySize / 2
         };
-        let currentIndex = Math.floor(this.index);
-        let currentElementOffset = -Math.abs(this.index - currentIndex)
-            * this.sizePerEntry[this.flooredTrimmedIndex];
+        let currentIndex = Math.round(this.index);
+        let currentElementOffset = -Math.abs(this.index - currentIndex) * this.sizePerEntry[currentIndex];
         let afterOffset = currentElementOffset;
         let beforeOffset = currentElementOffset;
-        while (currentIndex >= elements.length) {
-            currentElementOffset -= firstEntrySize;
-            beforeOffset -= firstEntrySize;
-            currentIndex--;
+        if (currentIndex < 0) {
+            const computedOffset = -currentIndex * firstEntrySize;
+            currentElementOffset -= computedOffset;
+            beforeOffset -= computedOffset;
+            currentIndex = 0;
         }
-        while (currentIndex < 0) {
-            currentElementOffset += lastEntrySize;
-            afterOffset += lastEntrySize;
-            currentIndex++;
+        if (currentIndex > elements.length - 1) {
+            const computedOffset = (currentIndex - elements.length + 1) * lastEntrySize;
+            currentElementOffset -= computedOffset;
+            beforeOffset -= computedOffset;
+            currentIndex = elements.length - 1;
         }
-        if (beforeOffset < this.size.min + halfFirstEntrySize)
-            beforeOffset = this.size.min + halfFirstEntrySize;
-        if (afterOffset > this.size.max + halfLastEntrySize)
-            afterOffset = this.size.max + halfLastEntrySize;
-        this.applyStyling(elements[currentIndex].object.deref(), currentElementOffset, offsetSize);
+        // while (currentIndex >= elements.length) {
+        //     const computedOffest = (currentIndex - elements.length)
+        //     currentElementOffset -= firstEntrySize;
+        //     beforeOffset -= firstEntrySize;
+        //     currentIndex--;
+        // }
+        //
+        // while (currentIndex < 0) {
+        //     currentElementOffset += lastEntrySize;
+        //     afterOffset += lastEntrySize;
+        //     currentIndex++;
+        // }
+        // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
+        // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
+        this.applyStyling(elements[currentIndex].object.deref(), currentElementOffset + this.sizePerEntry[currentIndex] / 2, offsetSize);
         for (let i = currentIndex - 1; i >= 0; i--) {
             beforeOffset -= this.sizePerEntry[i];
-            if (beforeOffset < this.size.min + halfFirstEntrySize)
-                beforeOffset = this.size.min + halfFirstEntrySize;
-            this.applyStyling(elements[i].object.deref(), beforeOffset, offsetSize);
+            // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
+            this.applyStyling(elements[i].object.deref(), beforeOffset
+                + this.sizePerEntry[i] / 2, offsetSize);
         }
         for (let i = currentIndex + 1; i < elements.length; i++) {
             afterOffset += this.sizePerEntry[i];
-            if (afterOffset > this.size.max + halfLastEntrySize)
-                afterOffset = this.size.max + halfLastEntrySize;
-            this.applyStyling(elements[i].object.deref(), afterOffset, offsetSize);
+            // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
+            this.applyStyling(elements[i].object.deref(), afterOffset
+                + this.sizePerEntry[i] / 2, offsetSize);
         }
     }
     applyStyling(element, translationValue, size = {
@@ -5657,9 +6466,6 @@ __decorate([
 exports.TurboSelectWheel = __decorate([
     define("turbo-select-wheel")
 ], exports.TurboSelectWheel);
-function selectWheel(properties) {
-    return new exports.TurboSelectWheel(properties);
-}
 
 class TurboWeakSet {
     _weakRefs;
@@ -5791,8 +6597,10 @@ function createFontFace(name, path, format, weight, style) {
     return css `
         @font-face {
             font-family: "${name}";
-            src: local("${name}"), url("${path}") format("${format}");
-            font-weight: "${weight}";
+            src: url("${path}") format("${format}"), 
+            url("${path}") format("woff"),
+            url("${path}") format("truetype");
+            font-weight: ${typeof weight == "string" ? "\"" + weight + "\"" : weight};
             font-style: "${style}";
         }`;
 }
@@ -5813,9 +6621,11 @@ function loadLocalFont(font) {
     if (font.extension[0] != ".")
         font.extension = "." + font.extension;
     stylesheet(Object.entries(font.stylesPerWeights).map(([weight, value]) => {
+        const weightNumber = Number.parseInt(weight);
+        const typedWeight = weightNumber ? weightNumber : weight;
         if (typeof value == "string")
-            return createFontFace(font.name, font.pathOrDirectory, font.format, weight, value);
-        return Object.entries(value).map(([weightName, style]) => createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`, font.format, weight, style)).join("\n");
+            return createFontFace(font.name, font.pathOrDirectory, font.format, typedWeight, value);
+        return Object.entries(value).map(([weightName, style]) => createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`, font.format, typedWeight, style)).join("\n");
     }).join("\n"));
 }
 
@@ -5835,12 +6645,13 @@ exports.TurboDragEventName = TurboDragEventName;
 exports.TurboElement = TurboElement;
 exports.TurboEvent = TurboEvent;
 exports.TurboEventName = TurboEventName;
-exports.TurboIconSwitch = TurboIconSwitch;
 exports.TurboKeyEvent = TurboKeyEvent;
 exports.TurboKeyEventName = TurboKeyEventName;
 exports.TurboMap = TurboMap;
+exports.TurboModel = TurboModel;
 exports.TurboMoveName = TurboMoveName;
 exports.TurboSelectInputEvent = TurboSelectInputEvent;
+exports.TurboView = TurboView;
 exports.TurboWeakSet = TurboWeakSet;
 exports.TurboWheelEvent = TurboWheelEvent;
 exports.TurboWheelEventName = TurboWheelEventName;
@@ -5868,7 +6679,6 @@ exports.createProxy = createProxy;
 exports.css = css;
 exports.define = define;
 exports.div = div;
-exports.dropdown = dropdown;
 exports.eachEqualToAny = eachEqualToAny;
 exports.element = element;
 exports.equalToAny = equalToAny;
@@ -5888,8 +6698,6 @@ exports.h4 = h4;
 exports.h5 = h5;
 exports.h6 = h6;
 exports.icon = icon;
-exports.iconSwitch = iconSwitch;
-exports.iconToggle = iconToggle;
 exports.img = img;
 exports.input = input;
 exports.isMathMLTag = isMathMLTag;
@@ -5901,18 +6709,11 @@ exports.linearInterpolation = linearInterpolation;
 exports.link = link;
 exports.loadLocalFont = loadLocalFont;
 exports.luminance = luminance;
-exports.markingMenu = markingMenu;
 exports.mod = mod;
-exports.numericalInput = numericalInput;
 exports.observe = observe;
 exports.p = p;
 exports.parse = parse;
-exports.popup = popup;
 exports.reifect = reifect;
-exports.richElement = richElement;
-exports.select = select;
-exports.selectEntry = selectEntry;
-exports.selectWheel = selectWheel;
 exports.setupTurboEventManagerBypassing = setupTurboEventManagerBypassing;
 exports.spacer = spacer;
 exports.span = span;
@@ -5923,7 +6724,6 @@ exports.stylesheet = stylesheet;
 exports.textToElement = textToElement;
 exports.textarea = textarea;
 exports.trim = trim;
-exports.turboInput = turboInput;
 exports.turbofy = turbofy;
 exports.updateChainingPropertiesInElementPrototype = updateChainingPropertiesInElementPrototype;
 exports.video = video;

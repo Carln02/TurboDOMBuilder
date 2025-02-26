@@ -1,4 +1,6 @@
 import {ValidElement, ValidTag} from "../core.types";
+import {TurboView} from "./turboView";
+import {TurboModel} from "./turboModel";
 
 /**
  * @description Ensures that non-function properties of an element are selected.
@@ -66,19 +68,41 @@ type ElementTagDefinition<Tag extends ValidTag> = {
  * @property checked
  * @property selected
  */
-type TurboProperties<Tag extends ValidTag = "div"> =
-    HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
+type TurboProperties<
+    Tag extends ValidTag = "div",
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel,
+> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
     id?: string;
     classes?: string | string[];
+
     style?: string;
     stylesheet?: string;
-    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>
-    children?: Element | Element[];
-    parent?: Element;
-    out?: string | Element;
-    text?: string;
     shadowDOM?: boolean;
+
+    parent?: Element;
+    children?: Element | Element[];
+    text?: string;
+
+    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>
+
+    data?: DataType,
+    view?: ViewType,
+    model?: ModelType,
+
+    viewConstructor?: new (element: Element, model: ModelType) => ViewType,
+    modelConstructor?: new (data?: DataType) => ModelType,
+    initializeMvc?: boolean
+
+    out?: string | Element;
     [key: string]: any;
 };
 
-export {TurboProperties};
+type TurboCustomProperties<
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel,
+> = TurboProperties<"div", ViewType, DataType, ModelType>;
+
+export {TurboProperties, TurboCustomProperties};

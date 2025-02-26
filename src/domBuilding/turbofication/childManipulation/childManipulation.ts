@@ -123,6 +123,7 @@ function addChildManipulationToElementPrototype() {
             // Try to append every provided child (according to its type)
             if (!Array.isArray(children)) children = [children];
             children.forEach((child: Element) => {
+                if (!child) return;
                 this.childHandler.appendChild(child);
                 if (child["__outName"] && !this[child["__outName"]]) this[child["__outName"]] = child;
             });
@@ -143,8 +144,11 @@ function addChildManipulationToElementPrototype() {
 
         // Try to remove every provided child (according to its type)
         try {
-            if (!Array.isArray(children)) originalRemoveChild.call(this.childHandler, children);
-            else children.forEach(child => originalRemoveChild.call(this.childHandler, child));
+            if (!Array.isArray(children)) children = [children];
+            children.forEach(child => {
+                if (!child) return;
+                originalRemoveChild.call(this.childHandler, child);
+            });
         } catch (e) {
             console.error(e);
         }
@@ -166,11 +170,11 @@ function addChildManipulationToElementPrototype() {
 
         // Try to append every provided child (according to its type)
         try {
-            if (!Array.isArray(children)) {
-                this.childHandler.insertBefore(children, sibling);
-            } else {
-                children.forEach((child: Element) => this.childHandler.insertBefore(child, sibling));
-            }
+            if (!Array.isArray(children)) children = [children];
+            children.forEach((child: Element) => {
+                if (!child) return;
+                this.childHandler.insertBefore(child, sibling);
+            });
         } catch (e) {
             console.error(e);
         }

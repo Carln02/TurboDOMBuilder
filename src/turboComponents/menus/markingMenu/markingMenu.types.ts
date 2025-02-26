@@ -3,9 +3,18 @@ import {TurboSelectProperties} from "../../basics/select/select.types";
 import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
 import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 
-type TurboMarkingMenuProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
-    = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
+type TurboMarkingMenuProperties<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel
+> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
     transition?: StatefulReifect<InOut> | StatefulReifectProperties<InOut>,
 
     startAngle?: number,

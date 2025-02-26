@@ -1,5 +1,7 @@
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {HTMLTag} from "../../../domBuilding/core.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
  * @type {TurboButtonProperties}
@@ -21,7 +23,11 @@ import {HTMLTag} from "../../../domBuilding/core.types";
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
  * to this instance of Button.
  */
-type TurboButtonProperties = TurboProperties & {
+type TurboButtonProperties<
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel,
+> = TurboCustomProperties<ViewType, DataType, ModelType> & {
     buttonText?: string | Element;
     leftIcon?: string | Element;
     rightIcon?: string | Element;
@@ -56,12 +62,12 @@ type ButtonChildren = {
  * @type {TurboButtonConfig}
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
- * @property {ValidTag} [defaultTextTag] - The default HTML tag for the creation of the text
+ * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
  * element in the button.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
  */
 type TurboButtonConfig = {
-    defaultTextTag?: HTMLTag;
+    defaultElementTag?: HTMLTag;
     defaultClasses?: string | string[];
 }
 

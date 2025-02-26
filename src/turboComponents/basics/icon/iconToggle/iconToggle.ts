@@ -1,13 +1,19 @@
 import {TurboIcon} from "../icon";
 import {TurboIconToggleProperties} from "./iconToggle.types";
 import {define} from "../../../../domBuilding/decorators/define";
+import {TurboView} from "../../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
 
 @define()
-class TurboIconToggle extends TurboIcon {
+class TurboIconToggle<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboIcon<ViewType, DataType, ModelType> {
     private _toggled: boolean = false;
-    private onToggle: (value: boolean, el: TurboIconToggle) => void;
+    private readonly onToggle: (value: boolean, el: TurboIconToggle) => void;
 
-    constructor(properties: TurboIconToggleProperties) {
+    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType>) {
         super(properties);
         this.toggled = properties.toggled;
         this.onToggle = properties.onToggle;
@@ -27,8 +33,4 @@ class TurboIconToggle extends TurboIcon {
     }
 }
 
-function iconToggle(properties: TurboIconToggleProperties): TurboIconToggle {
-    return new TurboIconToggle(properties);
-}
-
-export {TurboIconToggle, iconToggle};
+export {TurboIconToggle};

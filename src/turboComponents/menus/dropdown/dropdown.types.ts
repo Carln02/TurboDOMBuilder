@@ -1,6 +1,8 @@
 import {TurboSelectConfig, TurboSelectProperties} from "../../basics/select/select.types";
 import {HTMLTag} from "../../../domBuilding/core.types";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
  * @type {TurboDropdownProperties}
@@ -27,8 +29,14 @@ import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
  * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
  * the default classes set in TurboConfig.Dropdown.
  */
-type TurboDropdownProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
-    = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
+type TurboDropdownProperties<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<DataType>
+> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
 

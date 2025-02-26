@@ -10,10 +10,18 @@ import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/select
 import {getEventPosition} from "../../../utils/events/events";
 import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 @define("turbo-marking-menu")
-class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any>
-    = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
+class TurboMarkingMenu<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboSelect<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> {
     private readonly transition: StatefulReifect<InOut>;
 
     public semiMajor: number;
@@ -28,7 +36,8 @@ class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<Va
     @auto({callBefore: (value) => value - Math.PI / 2})
     public set endAngle(value: number) {};
 
-    constructor(properties: TurboMarkingMenuProperties<ValueType, EntryType> = {}) {
+    constructor(properties: TurboMarkingMenuProperties<ValueType, SecondaryValueType, EntryType, ViewType,
+        DataType, ModelType> = {}) {
         super({...properties});
         super.show(false);
 
@@ -73,7 +82,10 @@ class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<Va
 
         if (!properties.transitionProperties) properties.transitionProperties = "opacity transform";
         if (properties.transitionDuration == undefined) properties.transitionDuration = 0.1;
-        if (!properties.transitionTimingFunction) properties.transitionTimingFunction = {in: "ease-out", out: "ease-in"};
+        if (!properties.transitionTimingFunction) properties.transitionTimingFunction = {
+            in: "ease-out",
+            out: "ease-in"
+        };
 
         if (!properties.transitionDelay) properties.transitionDelay = {
             in: (index) => 0.01 + index * 0.02,
@@ -119,7 +131,7 @@ class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<Va
         return angle;
     }
 
-    protected addEntry(entry: TurboSelectEntryProperties<ValueType> | ValueType | EntryType): EntryType {
+    protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         entry = super.addEntry(entry);
         this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
         entry.setStyles({position: "absolute"});
@@ -180,9 +192,9 @@ class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<Va
 
         //Setup click if defined
         if (onClick) element.addListener(DefaultEventName.click, (e: Event) => {
-                e.stopImmediatePropagation();
-                onClick(e);
-            }, this);
+            e.stopImmediatePropagation();
+            onClick(e);
+        }, this);
 
         //Cancel default hide operation on drag start
         element.addListener(DefaultEventName.dragStart, (e: Event) => {
@@ -199,9 +211,4 @@ class TurboMarkingMenu<ValueType = string, EntryType extends TurboSelectEntry<Va
     }
 }
 
-function markingMenu<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(
-    properties: TurboMarkingMenuProperties<ValueType, EntryType> = {}): TurboMarkingMenu<ValueType, EntryType> {
-    return new TurboMarkingMenu<ValueType, EntryType>(properties);
-}
-
-export {TurboMarkingMenu, markingMenu};
+export {TurboMarkingMenu};

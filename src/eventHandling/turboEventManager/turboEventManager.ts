@@ -110,7 +110,7 @@ class TurboEventManager extends TurboElement {
             }
 
             if (!this.disabledEventTypes.disableWheelEvents) {
-                document.addListener("wheel", this.wheel, this, {passive: false});
+                document.body.addListener("wheel", this.wheel, this, {passive: false});
                 this.applyEventNames(TurboWheelEventName);
             }
 
@@ -119,17 +119,17 @@ class TurboEventManager extends TurboElement {
             }
 
             if (!this.disabledEventTypes.disableMouseEvents) {
-                document.addListener("mousedown", this.pointerDown);
-                document.addListener("mousemove", this.pointerMove);
-                document.addListener("mouseup", this.pointerUp);
-                document.addListener("mouseleave", this.pointerLeave);
+                document.body.addListener("mousedown", this.pointerDown);
+                document.body.addListener("mousemove", this.pointerMove);
+                document.body.addListener("mouseup", this.pointerUp);
+                document.body.addListener("mouseleave", this.pointerLeave);
             }
 
             if (!this.disabledEventTypes.disableTouchEvents) {
-                document.addListener("touchstart", this.pointerDown, this, {passive: false});
-                document.addListener("touchmove", this.pointerMove, this, {passive: false});
-                document.addListener("touchend", this.pointerUp, this, {passive: false});
-                document.addListener("touchcancel", this.pointerUp, this, {passive: false});
+                document.body.addListener("touchstart", this.pointerDown, this, {passive: false});
+                document.body.addListener("touchmove", this.pointerMove, this, {passive: false});
+                document.body.addListener("touchend", this.pointerUp, this, {passive: false});
+                document.body.addListener("touchcancel", this.pointerUp, this, {passive: false});
             }
 
             if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {

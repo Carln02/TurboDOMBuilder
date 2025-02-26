@@ -1,6 +1,8 @@
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboCustomProperties, TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {HTMLTag, ValidElement, ValidTag} from "../../../domBuilding/core.types";
 import {TurboIcon} from "../icon/icon";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
 /**
  * @type {TurboRichElementProperties}
@@ -26,7 +28,12 @@ import {TurboIcon} from "../icon/icon";
  *
  * @template {ValidTag} ElementTag="p"
  */
-type TurboRichElementProperties<ElementTag extends ValidTag = "p"> = TurboProperties & {
+type TurboRichElementProperties<
+    ElementTag extends ValidTag = "div",
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel,
+> = TurboCustomProperties<ViewType, DataType, ModelType> & {
     elementTag?: ElementTag,
     text?: string;
 
@@ -40,6 +47,18 @@ type TurboRichElementProperties<ElementTag extends ValidTag = "p"> = TurboProper
 
     unsetDefaultClasses?: boolean
 };
+
+type TurboRichElementData = {
+    leftCustomElements?: Element | Element[];
+    leftIcon?: string;
+    prefixEntry?: string;
+    text?: string;
+    suffixEntry?: string;
+    rightIcon?: string;
+    rightCustomElements?: Element | Element[];
+    elementTag?: string;
+};
+
 
 /**
  * @type {TurboRichElementChildren}
@@ -67,7 +86,7 @@ type TurboRichElementChildren<ElementTag extends ValidTag = "p"> = {
  * @type {TurboRichElementConfig}
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
- * @property {ValidTag} [defaultTextTag] - The default HTML tag for the creation of the text
+ * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
  * element in the button.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
  */
@@ -76,4 +95,4 @@ type TurboRichElementConfig = {
     defaultClasses?: string | string[],
 }
 
-export {TurboRichElementProperties, TurboRichElementConfig, TurboRichElementChildren};
+export {TurboRichElementProperties, TurboRichElementConfig, TurboRichElementChildren, TurboRichElementData};

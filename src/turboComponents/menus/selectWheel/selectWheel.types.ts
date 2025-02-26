@@ -4,9 +4,17 @@ import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
 import {PartialRecord} from "../../../domBuilding/core.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
-type TurboSelectWheelProperties<ValueType = string, EntryType extends TurboSelectEntry<ValueType>
-    = TurboSelectEntry<ValueType>> = TurboSelectProperties<ValueType, EntryType> & {
+type TurboSelectWheelProperties<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    ViewType extends TurboView = TurboView,
+    DataType extends object = object,
+    ModelType extends TurboModel = TurboModel
+> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
     direction?: Direction,
     styleReifect?: Reifect | StatelessReifectProperties,
 

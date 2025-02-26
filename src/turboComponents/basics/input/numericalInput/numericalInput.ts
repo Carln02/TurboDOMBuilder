@@ -2,16 +2,22 @@ import {TurboInput} from "../input";
 import {define} from "../../../../domBuilding/decorators/define";
 import {TurboInputProperties} from "../input.types";
 import {TurboNumericalInputProperties} from "./numericalInput.types";
+import {TurboView} from "../../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
 
 @define("turbo-numerical-input")
-class TurboNumericalInput extends TurboInput<"input", number> {
+class TurboNumericalInput<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboInput<"input", number, ViewType, DataType, ModelType> {
     public multiplier: number;
     public decimalPlaces: number;
 
     public min: number;
     public max: number;
 
-    constructor(properties: TurboInputProperties = {}) {
+    public constructor(properties: TurboInputProperties<"input", ViewType, DataType, ModelType> = {}) {
         //Only allow numbers (positive, negative, and decimal)
         properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
         properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
@@ -45,9 +51,5 @@ class TurboNumericalInput extends TurboInput<"input", number> {
     }
 }
 
-function numericalInput(properties: TurboNumericalInputProperties = {}): TurboNumericalInput {
-    return new TurboNumericalInput(properties);
-}
-
-export {TurboNumericalInput, numericalInput};
+export {TurboNumericalInput};
 

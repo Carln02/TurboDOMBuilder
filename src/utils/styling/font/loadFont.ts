@@ -19,12 +19,14 @@ const defaultFamilyWeights = {
 };
 
 
-function createFontFace(name: string, path: string, format: string, weight: string, style: string): string {
+function createFontFace(name: string, path: string, format: string, weight: string | number, style: string): string {
     return css`
         @font-face {
             font-family: "${name}";
-            src: local("${name}"), url("${path}") format("${format}");
-            font-weight: "${weight}";
+            src: url("${path}") format("${format}"), 
+            url("${path}") format("woff"),
+            url("${path}") format("truetype");
+            font-weight: ${typeof weight == "string" ? "\"" + weight + "\"" : weight};
             font-style: "${style}";
         }`;
 }
@@ -45,12 +47,15 @@ function loadLocalFont(font: FontProperties) {
 
     stylesheet(
         Object.entries(font.stylesPerWeights).map(([weight, value]) => {
+            const weightNumber = Number.parseInt(weight);
+            const typedWeight = weightNumber ? weightNumber : weight;
+
             if (typeof value == "string")
-                return createFontFace(font.name, font.pathOrDirectory, font.format, weight, value);
+                return createFontFace(font.name, font.pathOrDirectory, font.format, typedWeight, value);
 
             return Object.entries(value).map(([weightName, style]) =>
                 createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`,
-                    font.format, weight, style as string)
+                    font.format, typedWeight, style as string)
             ).join("\n");
         }).join("\n")
     );

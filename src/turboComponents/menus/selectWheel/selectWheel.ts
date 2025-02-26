@@ -13,10 +13,25 @@ import {Direction, InOut, Range} from "../../../utils/datatypes/basicDatatypes.t
 import {PartialRecord} from "../../../domBuilding/core.types";
 import {Reifect, reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
+import {TurboView} from "../../../domBuilding/turboElement/turboView";
+import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 
+/**
+ * @class TurboSelectWheel
+ * @extends TurboSelect
+ * @description Class to create a dynamic selection wheel.
+ * @template {string} ValueType
+ * @template {TurboSelectEntry<ValueType, any>} EntryType
+ */
 @define("turbo-select-wheel")
-class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<ValueType, any>
-    = TurboSelectEntry<ValueType, any>> extends TurboSelect<ValueType, EntryType> {
+class TurboSelectWheel<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboSelect<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> {
 
     private readonly reifect: Reifect;
 
@@ -40,7 +55,8 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
 
     private openTimer: NodeJS.Timeout;
 
-    public constructor(properties: TurboSelectWheelProperties<ValueType, EntryType>) {
+    public constructor(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType,
+        DataType, ModelType>) {
         properties.multiSelection = false;
         properties.forceSelection = true;
         super(properties);
@@ -104,6 +120,7 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             const currentEntrySize = this.sizePerEntry[this.flooredTrimmedIndex];
+
             if (currentEntrySize != 0) this.index -= e.scaledDeltaPosition[coordinate] / currentEntrySize;
             this.reloadStyles();
         });
@@ -112,7 +129,7 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.dragging = false;
-            this.snapTo(this.trimmedIndex);
+            this.snapTo(Math.round(this.index));
             this.setOpenTimer();
         });
 
@@ -123,14 +140,11 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
         const elements = this.reifect.getEnabledObjectsData();
 
         if (reloadSizes) {
-            let lastSize: number = 0;
+            this.sizePerEntry.length = 0;
             elements.forEach(entry => {
                 const object = entry.object.deref();
                 const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-
-                if (this.sizePerEntry[entry.objectIndex]) this.sizePerEntry[entry.objectIndex] = size;
-                else this.sizePerEntry.push(size);
-                lastSize += size;
+                this.sizePerEntry.push(size);
             });
         }
 
@@ -141,44 +155,61 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
         const halfLastEntrySize = lastEntrySize / 2;
 
         const offsetSize = {
-            min: this.size.min + this.sizePerEntry[0] / 2,
-            max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
+            min: this.size.min - firstEntrySize / 2,
+            max: this.size.max + lastEntrySize / 2
         };
 
-        let currentIndex = Math.floor(this.index);
+        let currentIndex = Math.round(this.index);
 
-        let currentElementOffset = -Math.abs(this.index - currentIndex)
-            * this.sizePerEntry[this.flooredTrimmedIndex];
+        let currentElementOffset = -Math.abs(this.index - currentIndex) * this.sizePerEntry[currentIndex];
         let afterOffset = currentElementOffset;
         let beforeOffset = currentElementOffset;
 
-        while (currentIndex >= elements.length) {
-            currentElementOffset -= firstEntrySize;
-            beforeOffset -= firstEntrySize;
-            currentIndex--;
+        if (currentIndex < 0) {
+            const computedOffset = -currentIndex * firstEntrySize;
+            currentElementOffset -= computedOffset;
+            beforeOffset -= computedOffset;
+            currentIndex = 0;
         }
 
-        while (currentIndex < 0) {
-            currentElementOffset += lastEntrySize;
-            afterOffset += lastEntrySize;
-            currentIndex++;
+        if (currentIndex > elements.length - 1) {
+            const computedOffset = (currentIndex - elements.length + 1) * lastEntrySize;
+            currentElementOffset -= computedOffset;
+            beforeOffset -= computedOffset;
+            currentIndex = elements.length - 1;
         }
 
-        if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-        if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
+        // while (currentIndex >= elements.length) {
+        //     const computedOffest = (currentIndex - elements.length)
+        //     currentElementOffset -= firstEntrySize;
+        //     beforeOffset -= firstEntrySize;
+        //     currentIndex--;
+        // }
+        //
+        // while (currentIndex < 0) {
+        //     currentElementOffset += lastEntrySize;
+        //     afterOffset += lastEntrySize;
+        //     currentIndex++;
+        // }
 
-        this.applyStyling(elements[currentIndex].object.deref() as HTMLElement, currentElementOffset, offsetSize);
+        // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
+        // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
+
+        this.applyStyling(elements[currentIndex].object.deref() as HTMLElement,
+            currentElementOffset + this.sizePerEntry[currentIndex] / 2, offsetSize);
 
         for (let i = currentIndex - 1; i >= 0; i--) {
             beforeOffset -= this.sizePerEntry[i];
-            if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-            this.applyStyling(elements[i].object.deref() as HTMLElement, beforeOffset, offsetSize);
+            // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
+            this.applyStyling(elements[i].object.deref() as HTMLElement, beforeOffset
+                + this.sizePerEntry[i] / 2, offsetSize);
         }
 
         for (let i = currentIndex + 1; i < elements.length; i++) {
             afterOffset += this.sizePerEntry[i];
-            if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
-            this.applyStyling(elements[i].object.deref() as HTMLElement, afterOffset, offsetSize);
+            // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
+            this.applyStyling(elements[i].object.deref() as HTMLElement, afterOffset
+                + this.sizePerEntry[i] / 2, offsetSize);
         }
     }
 
@@ -215,7 +246,7 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
         this.setOpenTimer();
     }
 
-    protected addEntry(entry: TurboSelectEntryProperties<ValueType> | ValueType | EntryType): EntryType {
+    protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         entry = super.addEntry(entry);
         entry.setStyles({position: "absolute"});
 
@@ -259,9 +290,4 @@ class TurboSelectWheel<ValueType = string, EntryType extends TurboSelectEntry<Va
     }
 }
 
-function selectWheel<ValueType = string, EntryType extends TurboSelectEntry<ValueType> = TurboSelectEntry<ValueType>>(
-    properties: TurboSelectProperties<ValueType, EntryType>): TurboSelectWheel<ValueType, EntryType> {
-    return new TurboSelectWheel<ValueType, EntryType>(properties);
-}
-
-export {TurboSelectWheel, selectWheel};
+export {TurboSelectWheel};
