@@ -1,6 +1,6 @@
 import {TurboInputProperties} from "../input.types";
-import {TurboView} from "../../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
 
 type TurboNumericalInputProperties<
     ViewType extends TurboView = TurboView,

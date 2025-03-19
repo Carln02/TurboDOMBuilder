@@ -1,19 +1,21 @@
 import {TurboIcon} from "../icon";
 import {TurboIconToggleProperties} from "./iconToggle.types";
 import {define} from "../../../../domBuilding/decorators/define";
-import {TurboView} from "../../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../../domBuilding/mvc/turboEmitter";
 
 @define()
 class TurboIconToggle<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboIcon<ViewType, DataType, ModelType> {
+    ModelType extends TurboModel<DataType> = TurboModel<any>,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     private _toggled: boolean = false;
     private readonly onToggle: (value: boolean, el: TurboIconToggle) => void;
 
-    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType>) {
+    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>) {
         super(properties);
         this.toggled = properties.toggled;
         this.onToggle = properties.onToggle;

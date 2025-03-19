@@ -1,8 +1,8 @@
 import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {TurboSelectEntry} from "./selectEntry/selectEntry";
 import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 type TurboSelectProperties<
     ValueType = string,

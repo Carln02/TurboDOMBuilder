@@ -1,25 +1,27 @@
-import {TurboCustomProperties} from "./turboElement.types";
+import {TurboProperties} from "./turboElement.types";
 import {kebabToCamelCase, parse} from "../../utils/dataManipulation/stringManipulation";
-import {auto} from "../decorators/auto/auto";
 import {TurboView} from "../mvc/turboView";
 import {TurboModel} from "../mvc/turboModel";
+import {auto} from "../decorators/auto/auto";
+import {ValidElement, ValidTag} from "../core.types";
+import {blindElement} from "../elementCreation/element";
 import {MvcHandler} from "../mvc/mvcHandler";
 import {TurboEmitter} from "../mvc/turboEmitter";
 
 /**
- * @class TurboElement
- * @extends HTMLElement
- * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @class TurboProxiedElement
+ * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
  * @template ViewType - TurboView
  * @template DataType - object
  * @template ModelType - TurboModel<DataType>
  */
-class TurboElement<
+class TurboProxiedElement<
+    ElementTag extends ValidTag = ValidTag,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends HTMLElement {
+> {
 
     //STATIC CONFIG
 
@@ -27,8 +29,6 @@ class TurboElement<
      * @description Static configuration object.
      */
     public static readonly config: any = {shadowDOM: false, defaultSelectedClass: "selected"};
-
-    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
 
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
@@ -42,10 +42,13 @@ class TurboElement<
 
     //ELEMENT
 
-    public constructor(properties: TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        super();
-        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.attachShadow({mode: "open"});
-        this.setProperties(properties, true);
+    public readonly element: ValidElement<ElementTag>;
+    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+
+    public constructor(properties: TurboProperties<ElementTag, ViewType, DataType, ModelType, EmitterType> =
+                       {} as TurboProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>) {
+        this.element = blindElement(properties);
+        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.element.attachShadow({mode: "open"});
         this.mvc = new MvcHandler({...properties, element: this});
     }
 
@@ -61,7 +64,7 @@ class TurboElement<
     @auto()
     public set selected(value: boolean) {
         const selectedClass = this.getPropertiesValue<string>(null, "defaultSelectedClass", "selected");
-        this.toggleClass(selectedClass, value);
+        this.element.toggleClass(selectedClass, value);
     }
 
     protected get view(): ViewType {
@@ -110,10 +113,10 @@ class TurboElement<
 
     protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
         if (propertiesValue !== undefined && propertiesValue !== null) return propertiesValue;
-        const configValue: Type = (this.constructor as typeof TurboElement).config[configFieldName];
+        const configValue: Type = (this.constructor as typeof TurboProxiedElement).config[configFieldName];
         if (configValue !== undefined && configValue !== null) return configValue;
         return defaultValue;
     }
 }
 
-export {TurboElement};
+export {TurboProxiedElement};

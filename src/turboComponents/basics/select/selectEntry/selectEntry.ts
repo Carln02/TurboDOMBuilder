@@ -5,8 +5,8 @@ import {stringify} from "../../../../utils/dataManipulation/stringManipulation";
 import {auto} from "../../../../domBuilding/decorators/auto/auto";
 import {TurboRichElement} from "../../richElement/richElement";
 import {ValidTag} from "../../../../domBuilding/core.types";
-import {TurboView} from "../../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
 
 /**
  * @class TurboSelectEntry

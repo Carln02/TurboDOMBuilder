@@ -1121,72 +1121,31 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
-/**
- * @class TurboElement
- * @extends HTMLElement
- * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
- */
-class TurboElement extends HTMLElement {
-    //STATIC CONFIG
-    /**
-     * @description Static configuration object.
-     */
-    static config = { shadowDOM: false, defaultSelectedClass: "selected" };
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value) {
-        Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined)
-                this.config[key] = val;
-        });
-    }
-    //ELEMENT
-    _model;
-    _view;
-    constructor(properties = {}) {
-        super();
-        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
-            this.attachShadow({ mode: "open" });
-        this.setProperties(properties, true);
+class MvcHandler {
+    element;
+    _controllers = new Map();
+    _handlers = new Map();
+    constructor(properties) {
+        if (properties.element)
+            this.element = properties.element;
         if (properties.view)
-            this.setView(properties.view);
+            this.view = properties.view;
         if (properties.model) {
-            this.setModel(properties.model);
+            this.model = properties.model;
             if (properties.data)
                 this.model.data = properties.data;
         }
-        this.generateMvc(properties.viewConstructor, properties.modelConstructor, properties.data, properties.initializeMvc);
+        if (properties.emitter)
+            this.emitter = properties.emitter;
+        if (properties.generate)
+            this.generate(properties);
     }
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (!newValue || newValue == oldValue)
-            return;
-        this[kebabToCamelCase(name)] = parse(newValue);
+    set view(view) {
     }
-    get view() {
-        return this._view;
-    }
-    get model() {
-        return this._model;
-    }
-    /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
-     */
-    set selected(value) {
-        const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
-        this.toggleClass(selectedClass, value);
-    }
-    setView(view) {
-        this._view = view;
-    }
-    setModel(model) {
-        this._model = model;
+    set model(model) {
         this.linkModelToView();
+    }
+    set emitter(emitter) {
     }
     get data() {
         return this.model?.data;
@@ -1196,31 +1155,64 @@ class TurboElement extends HTMLElement {
             this.model.data = data;
     }
     get dataId() {
-        return this.model.dataId;
+        return this.model?.dataId;
     }
     set dataId(value) {
-        this.model.dataId = value;
+        if (this.model)
+            this.model.dataId = value;
     }
     get dataIndex() {
         return Number.parseInt(this.dataId);
     }
     set dataIndex(value) {
-        this.model.dataId = value.toString();
+        if (this.model)
+            this.model.dataId = value.toString();
     }
     get dataSize() {
         return this.model?.getSize();
     }
-    generateMvc(viewConstructor, modelConstructor, data, initialize = true, force = false) {
-        if (modelConstructor && (!this.model || force))
-            this.setModel(new modelConstructor(data));
-        if (viewConstructor && (!this.view || force)) {
-            this.setView(new viewConstructor(this, this.model));
+    getController(key) {
+        return this._controllers.get(key);
+    }
+    addController(key, controller) {
+        this._controllers.set(key, controller);
+    }
+    getHandler(key) {
+        return this._handlers.get(key);
+    }
+    addHandler(key, handler) {
+        this._handlers.set(key, handler);
+    }
+    generate(properties = {}) {
+        if (properties.initialize == undefined)
+            properties.initialize = true;
+        if (properties.modelConstructor && (!this.model || properties.force)) {
+            this.model = new properties.modelConstructor(properties.data);
+        }
+        if (properties.viewConstructor && (!this.view || properties.force)) {
+            this.view = new properties.viewConstructor(this, this.model);
             this.linkModelToView();
         }
-        if (initialize)
-            this.initializeMvc();
+        if ((properties.emitterConstructor || properties.controllerConstructors)
+            && (!this.emitter || properties.force)) {
+            this.emitter = new properties.emitterConstructor();
+        }
+        if (properties.controllerConstructors) {
+            const controllerProperties = {
+                element: this.element,
+                view: this.view,
+                model: this.model,
+                emitter: this.emitter,
+            };
+            properties.controllerConstructors.forEach(controllerConstructor => this._controllers.set(controllerConstructor.name, new controllerConstructor(controllerProperties)));
+        }
+        if (properties.handlerConstructors) {
+            properties.handlerConstructors.forEach(handlerConstructor => this._handlers.set(handlerConstructor.name, new handlerConstructor(this.model)));
+        }
+        if (properties.initialize)
+            this.initialize();
     }
-    initializeMvc() {
+    initialize() {
         this.view?.initialize();
         this.model?.initialize();
     }
@@ -1230,24 +1222,70 @@ class TurboElement extends HTMLElement {
         this.view.model = this.model;
         this.model.keyChangedCallback = (keyName, ...args) => this.view.fireChangedCallback(keyName, ...args);
     }
-    getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
-        if (propertiesValue !== undefined && propertiesValue !== null)
-            return propertiesValue;
-        const configValue = this.constructor.config[configFieldName];
-        if (configValue !== undefined && configValue !== null)
-            return configValue;
-        return defaultValue;
-    }
 }
 __decorate([
     auto()
-], TurboElement.prototype, "selected", null);
+], MvcHandler.prototype, "view", null);
+__decorate([
+    auto()
+], MvcHandler.prototype, "model", null);
+__decorate([
+    auto()
+], MvcHandler.prototype, "emitter", null);
+
+class TurboController {
+    element;
+    view;
+    model;
+    emitter;
+    constructor(properties) {
+        this.element = properties.element;
+        this.view = properties.view;
+        this.model = properties.model;
+        this.emitter = properties.emitter;
+        this.attachEmitterCallbacks();
+    }
+    attachEmitterCallbacks() {
+    }
+}
+
+class TurboEmitter {
+    callbacks = new Map();
+    add(key, callback) {
+        if (!this.callbacks.has(key))
+            this.callbacks.set(key, []);
+        this.callbacks.get(key).push(callback);
+    }
+    remove(key, callback) {
+        if (!this.callbacks.has(key))
+            return;
+        if (callback == undefined)
+            this.callbacks.delete(key);
+        else {
+            const callbacks = this.callbacks.get(key);
+            const index = callbacks.indexOf(callback);
+            if (index >= 0)
+                callbacks.splice(index, 1);
+        }
+    }
+    fire(key) {
+        this.callbacks.get(key)?.forEach((callback) => callback());
+    }
+}
+
+class TurboHandler {
+    model;
+    constructor(model) {
+        this.model = model;
+    }
+}
 
 class TurboModel {
     dataMap = new Map();
     idMap = new Map();
     keyChangedCallback;
     constructor(data) {
+        this.enabledCallbacks = true;
         this.setDataBlock(data, undefined, this.defaultBlockKey, false);
     }
     get data() {
@@ -1282,9 +1320,6 @@ class TurboModel {
         return block ? Object.keys(block).length : 0;
     }
     getDataBlock(blockKey = this.defaultBlockKey) {
-        if (!this.dataMap.has(blockKey)) {
-            throw new Error(`Data block with key "${blockKey}" does not exist.`);
-        }
         return this.dataMap.get(blockKey);
     }
     setDataBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
@@ -1388,6 +1423,189 @@ class TurboView {
         this.callbackMap.set(keyName, callback);
     }
 }
+
+/**
+ * @class TurboElement
+ * @extends HTMLElement
+ * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @template ViewType - TurboView
+ * @template DataType - object
+ * @template ModelType - TurboModel<DataType>
+ */
+class TurboElement extends HTMLElement {
+    //STATIC CONFIG
+    /**
+     * @description Static configuration object.
+     */
+    static config = { shadowDOM: false, defaultSelectedClass: "selected" };
+    mvc;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value) {
+        Object.entries(value).forEach(([key, val]) => {
+            if (val !== undefined)
+                this.config[key] = val;
+        });
+    }
+    //ELEMENT
+    constructor(properties = {}) {
+        super();
+        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
+            this.attachShadow({ mode: "open" });
+        this.setProperties(properties, true);
+        this.mvc = new MvcHandler({ ...properties, element: this });
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (!newValue || newValue == oldValue)
+            return;
+        this[kebabToCamelCase(name)] = parse(newValue);
+    }
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class on the element and update the UI.
+     */
+    set selected(value) {
+        const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
+        this.toggleClass(selectedClass, value);
+    }
+    get view() {
+        return this.mvc.view;
+    }
+    set view(view) {
+        this.mvc.view = view;
+    }
+    get model() {
+        return this.mvc.model;
+    }
+    set model(model) {
+        this.mvc.model = model;
+    }
+    get data() {
+        return this.mvc.data;
+    }
+    set data(data) {
+        this.mvc.data = data;
+    }
+    get dataId() {
+        return this.mvc.dataId;
+    }
+    set dataId(value) {
+        this.mvc.dataId = value;
+    }
+    get dataIndex() {
+        return this.mvc.dataIndex;
+    }
+    set dataIndex(value) {
+        this.mvc.dataIndex = value;
+    }
+    get dataSize() {
+        return this.mvc.dataSize;
+    }
+    getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
+        if (propertiesValue !== undefined && propertiesValue !== null)
+            return propertiesValue;
+        const configValue = this.constructor.config[configFieldName];
+        if (configValue !== undefined && configValue !== null)
+            return configValue;
+        return defaultValue;
+    }
+}
+__decorate([
+    auto()
+], TurboElement.prototype, "selected", null);
+
+/**
+ * @class TurboProxiedElement
+ * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
+ * @template ViewType - TurboView
+ * @template DataType - object
+ * @template ModelType - TurboModel<DataType>
+ */
+class TurboProxiedElement {
+    //STATIC CONFIG
+    /**
+     * @description Static configuration object.
+     */
+    static config = { shadowDOM: false, defaultSelectedClass: "selected" };
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value) {
+        Object.entries(value).forEach(([key, val]) => {
+            if (val !== undefined)
+                this.config[key] = val;
+        });
+    }
+    //ELEMENT
+    element;
+    mvc;
+    constructor(properties = {}) {
+        this.element = blindElement(properties);
+        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
+            this.element.attachShadow({ mode: "open" });
+        this.mvc = new MvcHandler({ ...properties, element: this });
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (!newValue || newValue == oldValue)
+            return;
+        this[kebabToCamelCase(name)] = parse(newValue);
+    }
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class on the element and update the UI.
+     */
+    set selected(value) {
+        const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
+        this.element.toggleClass(selectedClass, value);
+    }
+    get view() {
+        return this.mvc.view;
+    }
+    set view(view) {
+        this.mvc.view = view;
+    }
+    get model() {
+        return this.mvc.model;
+    }
+    set model(model) {
+        this.mvc.model = model;
+    }
+    get data() {
+        return this.mvc.data;
+    }
+    set data(data) {
+        this.mvc.data = data;
+    }
+    get dataId() {
+        return this.mvc.dataId;
+    }
+    set dataId(value) {
+        this.mvc.dataId = value;
+    }
+    get dataIndex() {
+        return this.mvc.dataIndex;
+    }
+    set dataIndex(value) {
+        this.mvc.dataIndex = value;
+    }
+    get dataSize() {
+        return this.mvc.dataSize;
+    }
+    getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
+        if (propertiesValue !== undefined && propertiesValue !== null)
+            return propertiesValue;
+        const configValue = this.constructor.config[configFieldName];
+        if (configValue !== undefined && configValue !== null)
+            return configValue;
+        return defaultValue;
+    }
+}
+__decorate([
+    auto()
+], TurboProxiedElement.prototype, "selected", null);
 
 function updateChainingPropertiesInElementPrototype() {
     const originalSetAttribute = Element.prototype.setAttribute;
@@ -4335,8 +4553,8 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z$2 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-styleInject(css_248z$2);
+var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+styleInject(css_248z$3);
 
 /**
  * @description Converts a string of tags into an Element.
@@ -5305,8 +5523,8 @@ exports.TurboSelect = TurboSelect_1 = __decorate([
     define()
 ], exports.TurboSelect);
 
-var css_248z$1 = ".turbo-drawer{align-items:center;display:inline-flex}.turbo-drawer.top-drawer,.turbo-drawer.top-drawer .turbo-drawer-panel-container{flex-direction:column}.turbo-drawer.bottom-drawer,.turbo-drawer.bottom-drawer .turbo-drawer-panel-container{flex-direction:column-reverse}.turbo-drawer.left-drawer,.turbo-drawer.left-drawer .turbo-drawer-panel-container{flex-direction:row}.turbo-drawer.right-drawer,.turbo-drawer.right-drawer .turbo-drawer-panel-container{flex-direction:row-reverse}.turbo-drawer>div:first-child{background-color:#fff;display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}.turbo-drawer>div:nth-child(2)>:first-child{background-color:#fff;display:block}";
-styleInject(css_248z$1);
+var css_248z$2 = ".turbo-drawer{align-items:center;display:inline-flex}.turbo-drawer.top-drawer,.turbo-drawer.top-drawer .turbo-drawer-panel-container{flex-direction:column}.turbo-drawer.bottom-drawer,.turbo-drawer.bottom-drawer .turbo-drawer-panel-container{flex-direction:column-reverse}.turbo-drawer.left-drawer,.turbo-drawer.left-drawer .turbo-drawer-panel-container{flex-direction:row}.turbo-drawer.right-drawer,.turbo-drawer.right-drawer .turbo-drawer-panel-container{flex-direction:row-reverse}.turbo-drawer>div:first-child{background-color:#fff;display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}.turbo-drawer>div:nth-child(2)>:first-child{background-color:#fff;display:block}";
+styleInject(css_248z$2);
 
 // @ts-nocheck
 /**
@@ -5732,6 +5950,9 @@ exports.PopupFallbackMode = void 0;
     PopupFallbackMode["none"] = "none";
 })(exports.PopupFallbackMode || (exports.PopupFallbackMode = {}));
 
+var css_248z$1 = ".turbo-popup{display:block;position:fixed}";
+styleInject(css_248z$1);
+
 var TurboPopup_1;
 exports.TurboPopup = class TurboPopup extends TurboElement {
     static { TurboPopup_1 = this; }
@@ -5748,7 +5969,7 @@ exports.TurboPopup = class TurboPopup extends TurboElement {
     };
     constructor(properties = {}) {
         super(properties);
-        this.setStyle("position", "fixed");
+        this.addClass("turbo-popup");
         if (!properties.unsetDefaultClasses)
             this.addClass(TurboPopup_1.config.defaultClasses);
         this.popupAnchor = properties.popupAnchor || TurboPopup_1.config.defaultPopupAnchor || { x: 50, y: 0 };
@@ -5947,7 +6168,7 @@ exports.TurboPopup = TurboPopup_1 = __decorate([
     define()
 ], exports.TurboPopup);
 
-var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
 styleInject(css_248z);
 
 var TurboDropdown_1;
@@ -6633,6 +6854,7 @@ exports.DefaultEventName = DefaultEventName;
 exports.Delegate = Delegate;
 exports.MathMLNamespace = MathMLNamespace;
 exports.MathMLTagsDefinitions = MathMLTagsDefinitions;
+exports.MvcHandler = MvcHandler;
 exports.Point = Point;
 exports.Reifect = Reifect;
 exports.ReifectHandler = ReifectHandler;
@@ -6640,16 +6862,20 @@ exports.StatefulReifect = StatefulReifect;
 exports.SvgNamespace = SvgNamespace;
 exports.SvgTagsDefinitions = SvgTagsDefinitions;
 exports.TurboClickEventName = TurboClickEventName;
+exports.TurboController = TurboController;
 exports.TurboDragEvent = TurboDragEvent;
 exports.TurboDragEventName = TurboDragEventName;
 exports.TurboElement = TurboElement;
+exports.TurboEmitter = TurboEmitter;
 exports.TurboEvent = TurboEvent;
 exports.TurboEventName = TurboEventName;
+exports.TurboHandler = TurboHandler;
 exports.TurboKeyEvent = TurboKeyEvent;
 exports.TurboKeyEventName = TurboKeyEventName;
 exports.TurboMap = TurboMap;
 exports.TurboModel = TurboModel;
 exports.TurboMoveName = TurboMoveName;
+exports.TurboProxiedElement = TurboProxiedElement;
 exports.TurboSelectInputEvent = TurboSelectInputEvent;
 exports.TurboView = TurboView;
 exports.TurboWeakSet = TurboWeakSet;

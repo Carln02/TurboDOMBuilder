@@ -3,7 +3,7 @@ turbo-dropdown {
     display: inline-block;
 }
 
-turbo-dropdown > turbo-popup {
+turbo-dropdown > .turbo-popup {
     background-color: white;
 
     display: flex;
@@ -14,11 +14,11 @@ turbo-dropdown > turbo-popup {
     overflow: hidden;
 }
 
-turbo-dropdown > turbo-popup > turbo-select-entry {
+turbo-dropdown > .turbo-popup > turbo-select-entry {
     padding: 0.5em;
 }
 
-turbo-dropdown > turbo-popup > turbo-select-entry:not(:last-child) {
+turbo-dropdown > .turbo-popup > turbo-select-entry:not(:last-child) {
     border-bottom: solid 0.1em #bdbdbd;
 }
 

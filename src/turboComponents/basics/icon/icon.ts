@@ -8,8 +8,9 @@ import {img} from "../../../domBuilding/elementCreation/basicElements";
 import {cache} from "../../../domBuilding/decorators/cache/cache";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {equalToAny} from "../../../utils/computations/equity";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * Icon class for creating icon elements.
@@ -20,8 +21,9 @@ import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 class TurboIcon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement<ViewType, DataType, ModelType> {
+    ModelType extends TurboModel<DataType> = TurboModel<any>,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     private _element: Element;
 
     private _type: string;
@@ -38,7 +40,7 @@ class TurboIcon<
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>) {
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>) {
         super(properties);
         if (properties.icon) this.update(properties);
     }

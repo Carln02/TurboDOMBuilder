@@ -1,9 +1,8 @@
 import {TurboInput} from "../input";
 import {define} from "../../../../domBuilding/decorators/define";
 import {TurboInputProperties} from "../input.types";
-import {TurboNumericalInputProperties} from "./numericalInput.types";
-import {TurboView} from "../../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
 
 @define("turbo-numerical-input")
 class TurboNumericalInput<

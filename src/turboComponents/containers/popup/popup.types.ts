@@ -1,7 +1,7 @@
-import {TurboCustomProperties, TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 type TurboPopupProperties<
     ViewType extends TurboView = TurboView,

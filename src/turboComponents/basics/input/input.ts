@@ -5,8 +5,9 @@ import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {define} from "../../../domBuilding/decorators/define";
 import {TurboRichElement} from "../richElement/richElement";
 import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 @define("turbo-input")
 class TurboInput<
@@ -14,7 +15,8 @@ class TurboInput<
     ValueType extends string | number = string,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
+    ModelType extends TurboModel<DataType> = TurboModel<any>,
+    EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement {
     public readonly labelElement: HTMLLabelElement;
     public readonly inputElement: TurboRichElement<InputTag>;
@@ -24,7 +26,7 @@ class TurboInput<
     private lastValueWithInputCheck: string;
     private lastValueWithBlurCheck: string;
 
-    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType> = {}) {
+    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType> = {}) {
         super(properties);
 
         this.locked = properties.locked || false;

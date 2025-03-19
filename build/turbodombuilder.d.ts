@@ -174,51 +174,7 @@ declare class TurboModel<DataType extends object = any, DataKeyType extends stri
     getAllData(blockKey?: string): unknown[];
 }
 
-/**
- * @class TurboElement
- * @extends HTMLElement
- * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
- */
-declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends HTMLElement {
-    /**
-     * @description Static configuration object.
-     */
-    static readonly config: any;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
-    private _model;
-    private _view;
-    constructor(properties?: TurboCustomProperties<ViewType, DataType, ModelType>);
-    attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
-    protected get view(): ViewType;
-    protected get model(): ModelType;
-    /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
-     */
-    set selected(value: boolean);
-    setView(view: ViewType): void;
-    setModel(model: ModelType): void;
-    get data(): DataType;
-    set data(data: DataType);
-    get dataId(): string;
-    set dataId(value: string);
-    get dataIndex(): number;
-    set dataIndex(value: number);
-    get dataSize(): number;
-    protected generateMvc(viewConstructor: new (element: typeof this, model: ModelType) => ViewType, modelConstructor: new (data?: DataType) => ModelType, data?: DataType, initialize?: boolean, force?: boolean): void;
-    protected initializeMvc(): void;
-    private linkModelToView;
-    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
-}
-
-declare class TurboView<ElementType extends TurboElement = TurboElement, ModelType extends TurboModel = TurboModel> {
+declare class TurboView<ElementType extends object = object, ModelType extends TurboModel = TurboModel> {
     element: ElementType;
     model: ModelType;
     protected callbackMap: Map<string, (...args: any[]) => void>;
@@ -231,6 +187,58 @@ declare class TurboView<ElementType extends TurboElement = TurboElement, ModelTy
     fireChangedCallback(keyName: string, ...args: any[]): void;
     protected setChangedCallback(keyName: string, callback: (...args: any[]) => void): void;
 }
+
+declare class TurboEmitter {
+    protected readonly callbacks: Map<string, (() => void)[]>;
+    add(key: string, callback: () => void): void;
+    remove(key: string, callback?: () => void): void;
+    fire(key: string): void;
+}
+
+declare class TurboController<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+    protected readonly element: ElementType;
+    protected readonly view: ViewType;
+    protected readonly model: ModelType;
+    protected readonly emitter: EmitterType;
+    constructor(properties: MvcControllerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    protected attachEmitterCallbacks(): void;
+}
+
+declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
+    protected readonly model: ModelType;
+    constructor(model: ModelType);
+}
+
+type MvcHandlerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    element?: ElementType;
+    view?: ViewType;
+    model?: ModelType;
+    emitter?: EmitterType;
+    data?: DataType;
+    viewConstructor?: new (element: object, model: ModelType) => ViewType;
+    modelConstructor?: new (data?: DataType) => ModelType;
+    emitterConstructor?: new () => EmitterType;
+    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
+    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
+    generate?: boolean;
+    initialize?: boolean;
+};
+type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    viewConstructor?: new (element: object, model: ModelType) => ViewType;
+    modelConstructor?: new (data?: DataType) => ModelType;
+    emitterConstructor?: new () => EmitterType;
+    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
+    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
+    data?: DataType;
+    initialize?: boolean;
+    force?: boolean;
+};
+type MvcControllerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    element: ElementType;
+    view: ViewType;
+    model: ModelType;
+    emitter: EmitterType;
+};
 
 /**
  * @description Ensures that non-function properties of an element are selected.
@@ -294,7 +302,7 @@ type ElementTagDefinition<Tag extends ValidTag> = {
  * @property checked
  * @property selected
  */
-type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
+type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & Omit<MvcHandlerProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -304,16 +312,10 @@ type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = 
     children?: Element | Element[];
     text?: string;
     listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>;
-    data?: DataType;
-    view?: ViewType;
-    model?: ModelType;
-    viewConstructor?: new (element: Element, model: ModelType) => ViewType;
-    modelConstructor?: new (data?: DataType) => ModelType;
-    initializeMvc?: boolean;
     out?: string | Element;
     [key: string]: any;
 };
-type TurboCustomProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboProperties<"div", ViewType, DataType, ModelType>;
+type TurboCustomProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProperties<"div", ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @description returns a function that generates an HTML element with the provided tag that takes TurboProperties
@@ -562,6 +564,110 @@ declare function isSvgTag(tag?: string): boolean;
  * @return A boolean indicating whether the tag is in the MathML namespace or not.
  */
 declare function isMathMLTag(tag?: string): boolean;
+
+declare class MvcHandler<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+    private readonly element;
+    private readonly _controllers;
+    private readonly _handlers;
+    constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
+    set view(view: ViewType);
+    set model(model: ModelType);
+    set emitter(emitter: EmitterType);
+    get data(): DataType;
+    set data(data: DataType);
+    get dataId(): string;
+    set dataId(value: string);
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    get dataSize(): number;
+    getController(key: string): TurboController;
+    addController(key: string, controller: TurboController): void;
+    getHandler(key: string): TurboHandler;
+    addHandler(key: string, handler: TurboHandler): void;
+    generate(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): void;
+    initialize(): void;
+    private linkModelToView;
+}
+
+/**
+ * @class TurboElement
+ * @extends HTMLElement
+ * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @template ViewType - TurboView
+ * @template DataType - object
+ * @template ModelType - TurboModel<DataType>
+ */
+declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends HTMLElement {
+    /**
+     * @description Static configuration object.
+     */
+    static readonly config: any;
+    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value: typeof this.config): void;
+    constructor(properties?: TurboCustomProperties<ViewType, DataType, ModelType, EmitterType>);
+    attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class on the element and update the UI.
+     */
+    set selected(value: boolean);
+    protected get view(): ViewType;
+    protected set view(view: ViewType);
+    protected get model(): ModelType;
+    protected set model(model: ModelType);
+    get data(): DataType;
+    set data(data: DataType);
+    get dataId(): string;
+    set dataId(value: string);
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    get dataSize(): number;
+    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+}
+
+/**
+ * @class TurboProxiedElement
+ * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
+ * @template ViewType - TurboView
+ * @template DataType - object
+ * @template ModelType - TurboModel<DataType>
+ */
+declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+    /**
+     * @description Static configuration object.
+     */
+    static readonly config: any;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value: typeof this.config): void;
+    readonly element: ValidElement<ElementTag>;
+    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    constructor(properties?: TurboProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>);
+    attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class on the element and update the UI.
+     */
+    set selected(value: boolean);
+    protected get view(): ViewType;
+    protected set view(view: ViewType);
+    protected get model(): ModelType;
+    protected set model(model: ModelType);
+    get data(): DataType;
+    set data(data: DataType);
+    get dataId(): string;
+    set dataId(value: string);
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    get dataSize(): number;
+    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+}
 
 declare global {
     interface Node {
@@ -1853,7 +1959,7 @@ declare function setupTurboEventManagerBypassing(eventManager: TurboEventManager
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
  * to this instance of Button.
  */
-type TurboButtonProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+type TurboButtonProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     buttonText?: string | Element;
     leftIcon?: string | Element;
     rightIcon?: string | Element;
@@ -1911,7 +2017,7 @@ type TurboButtonConfig = {
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
  * TurboIcon.config.defaultClasses to this instance of Icon.
  */
-type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     type?: string;
     directory?: string;
     icon: string;
@@ -1940,7 +2046,7 @@ type TurboIconConfig = {
  * @class TurboIcon
  * @extends TurboElement
  */
-declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboElement<ViewType, DataType, ModelType> {
+declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     private _element;
     private _type;
     private _directory;
@@ -1951,7 +2057,7 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>);
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>);
     update(properties: TurboIconProperties): void;
     /**
      * @description The type of the icon.
@@ -2014,7 +2120,7 @@ declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType
  *
  * @template {ValidTag} ElementTag="p"
  */
-type TurboRichElementProperties<ElementTag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+type TurboRichElementProperties<ElementTag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     elementTag?: ElementTag;
     text?: string;
     leftCustomElements?: Element | Element[];
@@ -2077,7 +2183,7 @@ type TurboRichElementConfig = {
  * @extends TurboElement
  * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
-declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboElement<ViewType, DataType, ModelType> {
+declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     /**
      * @description Object containing the children of the rich element.
      */
@@ -2087,7 +2193,7 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
-    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>);
+    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>);
     /**
      * @description Adds a given element or elements to the button at a specified position.
      * @param {Element | Element[] | null} element - The element(s) to add.
@@ -2151,13 +2257,13 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
  * @class TurboButton
  * @extends TurboElement
  */
-declare class TurboButton<ElementTag extends ValidTag = "p", ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType> {
+declare class TurboButton<ElementTag extends ValidTag = "p", ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
     static readonly config: TurboButtonConfig;
     /**
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
-    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>);
+    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>);
     /**
      * @description The tag of the text element in the button
      */
@@ -2563,7 +2669,7 @@ declare class StatefulReifect<State extends string | number | symbol, ClassType 
 }
 declare function statefulReifier<State extends string | number | symbol, ClassType extends object = Element>(properties: StatefulReifectProperties<State, ClassType>): StatefulReifect<State, ClassType>;
 
-type TurboIconSwitchProperties<State extends string | number | symbol, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboIconProperties<ViewType, DataType, ModelType> & {
+type TurboIconSwitchProperties<State extends string | number | symbol, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
     switchReifect?: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>;
     defaultState?: State;
     appendStateToIconName?: boolean;
@@ -2613,30 +2719,30 @@ declare enum Range {
     max = "max"
 }
 
-declare class TurboIconSwitch<State extends string | number | symbol = OnOff, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboIcon<ViewType, DataType, ModelType> {
+declare class TurboIconSwitch<State extends string | number | symbol = OnOff, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     readonly switchReifect: StatefulReifect<State, TurboIcon>;
     /**
      * Creates an instance of Icon.
      * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType>);
+    constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>);
 }
 
-type TurboIconToggleProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboIconProperties<ViewType, DataType, ModelType> & {
+type TurboIconToggleProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
     toggled?: boolean;
     onToggle?: (value: boolean, el: TurboIconToggle) => void;
 };
 
-declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboIcon<ViewType, DataType, ModelType> {
+declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     private _toggled;
     private readonly onToggle;
-    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType>);
+    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>);
     get toggled(): boolean;
     set toggled(value: boolean);
     toggle(): void;
 }
 
-type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboRichElementProperties<InputTag, ViewType, DataType, ModelType> & {
+type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboRichElementProperties<InputTag, ViewType, DataType, ModelType, EmitterType> & {
     label?: string;
     locked?: boolean;
     dynamicVerticalResize?: boolean;
@@ -2645,13 +2751,13 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
     selectTextOnFocus?: boolean;
 };
 
-declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboElement {
+declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement {
     readonly labelElement: HTMLLabelElement;
     readonly inputElement: TurboRichElement<InputTag>;
     locked: boolean;
     private lastValueWithInputCheck;
     private lastValueWithBlurCheck;
-    constructor(properties?: TurboInputProperties<InputTag, ViewType, DataType, ModelType>);
+    constructor(properties?: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>);
     private setupEvents;
     protected set stringValue(value: string);
     protected get stringValue(): string;
@@ -3491,4 +3597,4 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcControllerProperties, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };

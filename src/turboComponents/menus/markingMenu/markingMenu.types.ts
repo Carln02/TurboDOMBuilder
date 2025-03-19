@@ -3,9 +3,8 @@ import {TurboSelectProperties} from "../../basics/select/select.types";
 import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
 import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 type TurboMarkingMenuProperties<
     ValueType = string,

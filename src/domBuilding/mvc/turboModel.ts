@@ -2,12 +2,12 @@ import {auto} from "../decorators/auto/auto";
 
 class TurboModel<
     DataType extends object = any,
-    DataKeyType extends string | number | symbol = any,
+    DataKeyType extends string | number | symbol = any
 > {
     protected readonly dataMap: Map<string, DataType> = new Map();
     protected readonly idMap: Map<string, string> = new Map();
 
-    public keyChangedCallback: (keyName: DataKeyType, ...args: any[]) => void;
+    public keyChangedCallback: (keyName: DataKeyType, blockKey: string, ...args: any[]) => void;
 
     protected constructor(data?: DataType) {
         this.enabledCallbacks = true;
@@ -71,7 +71,7 @@ class TurboModel<
     }
 
     protected fireKeyChangedCallback(key: DataKeyType, blockKey: string = this.defaultBlockKey, deleted: boolean = false) {
-        this.keyChangedCallback(key, deleted ? undefined : this.getData(key, blockKey));
+        this.keyChangedCallback(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
     }
 
     public initialize(blockKey: string = this.defaultBlockKey) {

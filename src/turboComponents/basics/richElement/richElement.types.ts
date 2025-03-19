@@ -1,8 +1,9 @@
 import {TurboCustomProperties, TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {HTMLTag, ValidElement, ValidTag} from "../../../domBuilding/core.types";
 import {TurboIcon} from "../icon/icon";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * @type {TurboRichElementProperties}
@@ -33,7 +34,8 @@ type TurboRichElementProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     elementTag?: ElementTag,
     text?: string;
 

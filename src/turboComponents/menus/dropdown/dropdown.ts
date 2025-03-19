@@ -6,9 +6,9 @@ import {define} from "../../../domBuilding/decorators/define";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelect} from "../../basics/select/select";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
 import {TurboPopup} from "../../containers/popup/popup";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 /**
  * Dropdown class for creating Turbo button elements.

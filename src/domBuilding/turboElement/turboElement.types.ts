@@ -1,6 +1,8 @@
 import {ValidElement, ValidTag} from "../core.types";
-import {TurboView} from "./turboView";
-import {TurboModel} from "./turboModel";
+import {TurboView} from "../mvc/turboView";
+import {TurboModel} from "../mvc/turboModel";
+import {MvcHandlerProperties} from "../mvc/mvc.types";
+import {TurboEmitter} from "../mvc/turboEmitter";
 
 /**
  * @description Ensures that non-function properties of an element are selected.
@@ -73,7 +75,10 @@ type TurboProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
+    EmitterType extends TurboEmitter = TurboEmitter
+> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag>
+    & Omit<MvcHandlerProperties<object, ViewType, DataType, ModelType, EmitterType>, "element">
+    & {
     id?: string;
     classes?: string | string[];
 
@@ -87,14 +92,6 @@ type TurboProperties<
 
     listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>
 
-    data?: DataType,
-    view?: ViewType,
-    model?: ModelType,
-
-    viewConstructor?: new (element: Element, model: ModelType) => ViewType,
-    modelConstructor?: new (data?: DataType) => ModelType,
-    initializeMvc?: boolean
-
     out?: string | Element;
     [key: string]: any;
 };
@@ -103,6 +100,7 @@ type TurboCustomProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboProperties<"div", ViewType, DataType, ModelType>;
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboProperties<"div", ViewType, DataType, ModelType, EmitterType>;
 
 export {TurboProperties, TurboCustomProperties};

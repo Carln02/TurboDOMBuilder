@@ -1,6 +1,7 @@
-import {TurboCustomProperties, TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * @type {TurboIconProperties}
@@ -23,7 +24,8 @@ type TurboIconProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     type?: string;
     directory?: string;
 

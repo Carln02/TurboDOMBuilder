@@ -6,8 +6,8 @@ import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 /**
  * Base class for creating a selection menu

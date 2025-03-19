@@ -10,8 +10,8 @@ import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/select
 import {getEventPosition} from "../../../utils/events/events";
 import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 @define("turbo-marking-menu")
 class TurboMarkingMenu<

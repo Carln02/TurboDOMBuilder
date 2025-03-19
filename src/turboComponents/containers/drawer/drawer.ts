@@ -1,8 +1,8 @@
 import {TurboDrawerProperties} from "./drawer.types";
 import "./drawer.css";
 import {define} from "../../../domBuilding/decorators/define";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 import {TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {Open, Side} from "../../../utils/datatypes/basicDatatypes.types";

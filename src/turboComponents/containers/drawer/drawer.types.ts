@@ -4,8 +4,8 @@ import {PartialRecord} from "../../../domBuilding/core.types";
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
 import {TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 
 type TurboDrawerProperties<
     ViewType extends TurboView = TurboView,

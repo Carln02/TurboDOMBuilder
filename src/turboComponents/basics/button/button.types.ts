@@ -1,7 +1,8 @@
 import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {HTMLTag} from "../../../domBuilding/core.types";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * @type {TurboButtonProperties}
@@ -27,7 +28,8 @@ type TurboButtonProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+    EmitterType extends TurboEmitter = TurboEmitter,
+> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
     buttonText?: string | Element;
     leftIcon?: string | Element;
     rightIcon?: string | Element;

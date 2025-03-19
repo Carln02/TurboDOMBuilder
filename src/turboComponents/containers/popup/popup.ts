@@ -1,5 +1,4 @@
 import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {DimensionProperties, PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
 import {Point} from "../../../utils/datatypes/point/point";
@@ -7,8 +6,9 @@ import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {Direction} from "../../../utils/datatypes/basicDatatypes.types";
 import {define} from "../../../domBuilding/decorators/define";
 import {cache} from "../../../domBuilding/decorators/cache/cache";
-import {TurboView} from "../../../domBuilding/turboElement/turboView";
-import {TurboModel} from "../../../domBuilding/turboElement/turboModel";
+import {TurboView} from "../../../domBuilding/mvc/turboView";
+import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import "./popup.css";
 
 @define()
 class TurboPopup<
@@ -33,7 +33,7 @@ class TurboPopup<
 
     constructor(properties: TurboPopupProperties<ViewType, DataType, ModelType> = {}) {
         super(properties);
-        this.setStyle("position", "fixed");
+        this.addClass("turbo-popup");
 
         if (!properties.unsetDefaultClasses) this.addClass(TurboPopup.config.defaultClasses);
 
