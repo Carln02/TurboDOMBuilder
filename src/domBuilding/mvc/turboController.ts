@@ -9,21 +9,25 @@ class TurboController<
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > {
+    public keyName: string;
+
     protected readonly element: ElementType;
     protected readonly view: ViewType;
     protected readonly model: ModelType;
-    protected readonly emitter: EmitterType
+    protected readonly emitter: EmitterType;
 
     public constructor(properties: MvcControllerProperties<ElementType, ViewType, ModelType, EmitterType>) {
         this.element = properties.element;
         this.view = properties.view;
         this.model = properties.model;
         this.emitter = properties.emitter;
-
-        this.attachEmitterCallbacks();
     }
 
-    protected attachEmitterCallbacks(): void {
+    public initialize(): void {
+        this.setupChangedCallbacks();
+    }
+
+    protected setupChangedCallbacks(): void {
     }
 }
 

@@ -76,7 +76,7 @@ class TurboSelect<
         });
     }
 
-    protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         if (!(entry instanceof TurboSelectEntry)) {
             if (typeof entry == "object" && "value" in entry) {
                 if (!entry.inputName) entry.inputName = this.inputName;
@@ -213,6 +213,11 @@ class TurboSelect<
         return this.selectedEntries.map(entry => entry.stringValue).join(", ");
     }
 
+    public clear(): void {
+        for (const entry of this.entries) entry.remove();
+        this.entries.splice(0, this.entries.length);
+    }
+
     /**
      * @description The dropdown's values. Setting it will update the dropdown accordingly.
      */
@@ -222,14 +227,12 @@ class TurboSelect<
 
     public set values(values: (ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType)[]) {
         const selectedEntriesIndices = [];
-        this.entries.forEach((entry, index) => {
-            if (entry.selected && index < values.length) selectedEntriesIndices.push(index);
-        });
+        this.entries.filter((entry, index) => entry.selected && index < values.length);
 
-        for (const entry of this.entries) entry.remove();
-        this.entries.splice(0, this.entries.length);
+        this.clear();
         for (const entry of values) this.addEntry(entry);
         for (const index of selectedEntriesIndices) this.select(this.entries[index]);
+        if (!this.selectedEntry && this.forceSelection) this.select(this.entries[0]);
     }
 }
 

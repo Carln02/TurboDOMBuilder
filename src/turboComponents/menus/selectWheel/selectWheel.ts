@@ -1,20 +1,20 @@
 import {TurboSelect} from "../../basics/select/select";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {define} from "../../../domBuilding/decorators/define";
-import {TurboSelectProperties} from "../../basics/select/select.types";
 import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/selectEntry.types";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboDragEvent} from "../../../eventHandling/events/basic/turboDragEvent";
 import {linearInterpolation} from "../../../utils/computations/interpolation";
 import {trim} from "../../../utils/computations/misc";
 import {auto} from "../../../domBuilding/decorators/auto/auto";
-import {TurboSelectWheelProperties} from "./selectWheel.types";
-import {Direction, InOut, Range} from "../../../utils/datatypes/basicDatatypes.types";
+import {TurboSelectWheelProperties, TurboSelectWheelStylingProperties} from "./selectWheel.types";
+import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
 import {PartialRecord} from "../../../domBuilding/core.types";
-import {Reifect, reifect} from "../../wrappers/reifect/reifect";
+import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
 import {TurboView} from "../../../domBuilding/mvc/turboView";
 import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {Point} from "../../../utils/datatypes/point/point";
 
 /**
  * @class TurboSelectWheel
@@ -32,28 +32,28 @@ class TurboSelectWheel<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel<any>
 > extends TurboSelect<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> {
+    private _currentPosition: number = 0;
+    private _reifect: Reifect;
+    private _size: Record<Range, number> = {max: 100, min: -100};
 
-    private readonly reifect: Reifect;
+    protected readonly sizePerEntry: number[] = [];
+    protected readonly positionPerEntry: number[] = [];
+    protected totalSize: number = 0;
 
-    private readonly sizePerEntry: number[] = [];
+    public dragLimitOffset: number = 30;
 
-    private readonly direction: Direction;
-
-    @auto({callBefore: (value) => trim(value, 1)})
-    public set opacity(value: Record<Range, number>) {}
-
-    public scale: Record<Range, number>;
-    public size: Record<Range, number>;
-
+    /**
+     * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
+     */
     public openTimeout: number = 3000;
+    public direction: Direction = Direction.horizontal;
+    public scale: Record<Range, number> = {max: 1, min: 0.5};
 
-    public generateCustomStyling: (element: HTMLElement, translationValue: number, size: Record<Range, number>,
-                                   defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>)
+    public generateCustomStyling: (properties: TurboSelectWheelStylingProperties)
         => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
 
-    private dragging: boolean;
-
-    private openTimer: NodeJS.Timeout;
+    protected dragging: boolean;
+    protected openTimer: NodeJS.Timeout;
 
     public constructor(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType,
         DataType, ModelType>) {
@@ -61,42 +61,78 @@ class TurboSelectWheel<
         properties.forceSelection = true;
         super(properties);
 
+        if (properties.scale) this.scale = properties.scale;
+        if (properties.direction) this.direction = properties.direction;
+
         this.opacity = properties.opacity ?? {max: 1, min: 0};
-        this.scale = properties.scale ?? {max: 1, min: 0.5};
-        this.size = typeof properties.size == "object" ? properties.size
-            : {max: properties.size ?? 100, min: -(properties.size ?? 100)};
-
+        this.size = properties.size;
         this.generateCustomStyling = properties.generateCustomStyling;
-
-        this.direction = properties.direction || Direction.horizontal;
-        this.reifect = properties.styleReifect instanceof Reifect ? properties.styleReifect
-            : this.initializeStyleReifect(properties.styleReifect);
+        this.reifect = properties.styleReifect;
 
         this.setStyles({display: "block", position: "relative"});
-        this.index = 0;
-        this.open = false;
+        this.alwaysOpen = properties.alwaysOpen ?? false;
 
-        this.initEvents();
-        requestAnimationFrame(() => {
-            this.reifect.apply(this.entries);
-            this.snapTo(0);
-        });
+        this.initializeUI();
+
+        if (properties.selectedValues?.length > 0) this.select(properties.selectedValues[0]);
+        requestAnimationFrame(() => this.refresh());
     }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        requestAnimationFrame(() => this.refresh());
+    }
+
+    @auto({callBefore: (value) => trim(value, 1)})
+    public set opacity(value: Record<Range, number>) {}
+
+    public get size(): Record<Range, number> {
+        return this._size;
+    }
+
+    public set size(value: Record<Range, number> | number) {
+        this._size = typeof value == "object" ? value : {max: value ?? 100, min: -(value ?? 100)};
+    }
+
+    public get reifect(): Reifect {
+        return this._reifect;
+    }
+
+    public set reifect(value: Reifect | StatelessReifectProperties) {
+        if (value instanceof Reifect) this._reifect = value;
+        else {
+            if (!value) value = {};
+            if (!value.transitionProperties) value.transitionProperties = "opacity transform";
+            if (value.transitionDuration == undefined) value.transitionDuration = 0.2;
+            if (!value.transitionTimingFunction) value.transitionTimingFunction = "ease-in-out";
+            this._reifect = new Reifect(value);
+        }
+        this._reifect.attachAll(...this.entries);
+    }
+
+    @auto()
+    public set alwaysOpen(value: boolean) {
+        if (value) document.removeListener(DefaultEventName.click, this.closeOnClick);
+        else document.addListener(DefaultEventName.click, this.closeOnClick);
+        this.open = value;
+    }
+
+    private readonly closeOnClick = () => this.open = false;
 
     public get isVertical() {
         return this.direction == Direction.vertical;
     }
 
-    @auto()
+    @auto({cancelIfUnchanged: false})
     public set index(value: number) {
         this.selectByIndex(this.trimmedIndex);
     }
 
-    private get trimmedIndex() {
+    protected get trimmedIndex() {
         return trim(Math.round(this.index), this.entries.length - 1);
     }
 
-    private get flooredTrimmedIndex() {
+    protected get flooredTrimmedIndex() {
         return trim(Math.floor(this.index), this.entries.length - 1);
     }
 
@@ -105,127 +141,85 @@ class TurboSelectWheel<
         this.setStyle("overflow", value ? "visible" : "hidden");
     }
 
-    private initializeStyleReifect(properties?: StatelessReifectProperties): Reifect {
-        if (!properties) properties = {};
-        if (!properties.transitionProperties) properties.transitionProperties = "opacity transform";
-        if (properties.transitionDuration == undefined) properties.transitionDuration = 0.2;
-        if (!properties.transitionTimingFunction) properties.transitionTimingFunction = "ease-in-out";
-        return reifect(properties);
+    public get currentPosition(): number {
+        return this._currentPosition;
     }
 
-    private initEvents() {
-        const coordinate = this.direction == Direction.vertical ? "y" : "x";
+    protected set currentPosition(value: number) {
+        const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
+        const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
 
-        this.addListener(DefaultEventName.drag, (e: TurboDragEvent) => {
+        if (value < min) value = min;
+        if (value > max) value = max;
+
+        this._currentPosition = value;
+        const elements = this.reifect.getEnabledObjectsData();
+        if (elements.length === 0) return;
+
+        elements.forEach((el, index) =>
+            this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
+    }
+
+    protected setupUIListeners() {
+        super.setupUIListeners();
+
+        document.addListener(DefaultEventName.drag, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
-            const currentEntrySize = this.sizePerEntry[this.flooredTrimmedIndex];
-
-            if (currentEntrySize != 0) this.index -= e.scaledDeltaPosition[coordinate] / currentEntrySize;
-            this.reloadStyles();
+            this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
         });
 
-        this.addListener(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
+        document.addListener(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.dragging = false;
-            this.snapTo(Math.round(this.index));
-            this.setOpenTimer();
+            this.recomputeIndex();
+            // this.snapTo(this.trimmedIndex);
+            if (!this.alwaysOpen) this.setOpenTimer();
         });
-
-        document.addListener(DefaultEventName.click, () => this.open = false);
     }
 
-    private reloadStyles(reloadSizes: boolean = false) {
-        const elements = this.reifect.getEnabledObjectsData();
-
-        if (reloadSizes) {
-            this.sizePerEntry.length = 0;
-            elements.forEach(entry => {
-                const object = entry.object.deref();
-                const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-                this.sizePerEntry.push(size);
-            });
-        }
-
-        const firstEntrySize = this.sizePerEntry[0];
-        const halfFirstEntrySize = firstEntrySize / 2;
-
-        const lastEntrySize = this.sizePerEntry[elements.length - 1];
-        const halfLastEntrySize = lastEntrySize / 2;
-
-        const offsetSize = {
-            min: this.size.min - firstEntrySize / 2,
-            max: this.size.max + lastEntrySize / 2
-        };
-
-        let currentIndex = Math.round(this.index);
-
-        let currentElementOffset = -Math.abs(this.index - currentIndex) * this.sizePerEntry[currentIndex];
-        let afterOffset = currentElementOffset;
-        let beforeOffset = currentElementOffset;
-
-        if (currentIndex < 0) {
-            const computedOffset = -currentIndex * firstEntrySize;
-            currentElementOffset -= computedOffset;
-            beforeOffset -= computedOffset;
-            currentIndex = 0;
-        }
-
-        if (currentIndex > elements.length - 1) {
-            const computedOffset = (currentIndex - elements.length + 1) * lastEntrySize;
-            currentElementOffset -= computedOffset;
-            beforeOffset -= computedOffset;
-            currentIndex = elements.length - 1;
-        }
-
-        // while (currentIndex >= elements.length) {
-        //     const computedOffest = (currentIndex - elements.length)
-        //     currentElementOffset -= firstEntrySize;
-        //     beforeOffset -= firstEntrySize;
-        //     currentIndex--;
-        // }
-        //
-        // while (currentIndex < 0) {
-        //     currentElementOffset += lastEntrySize;
-        //     afterOffset += lastEntrySize;
-        //     currentIndex++;
-        // }
-
-        // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-        // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
-
-        this.applyStyling(elements[currentIndex].object.deref() as HTMLElement,
-            currentElementOffset + this.sizePerEntry[currentIndex] / 2, offsetSize);
-
-        for (let i = currentIndex - 1; i >= 0; i--) {
-            beforeOffset -= this.sizePerEntry[i];
-            // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-            this.applyStyling(elements[i].object.deref() as HTMLElement, beforeOffset
-                + this.sizePerEntry[i] / 2, offsetSize);
-        }
-
-        for (let i = currentIndex + 1; i < elements.length; i++) {
-            afterOffset += this.sizePerEntry[i];
-            // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
-            this.applyStyling(elements[i].object.deref() as HTMLElement, afterOffset
-                + this.sizePerEntry[i] / 2, offsetSize);
-        }
+    protected computeDragValue(delta: Point): number {
+        return -delta[this.isVertical ? "y" : "x"];
     }
 
-    private applyStyling(element: HTMLElement, translationValue: number, size: Record<Range, number> = {
-        min: this.size.min + this.sizePerEntry[0] / 2,
-        max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
-    }) {
+    /**
+     * Recalculates the dimensions and positions of all entries
+     */
+    protected reloadEntrySizes() {
+        this.sizePerEntry.length = 0;
+        this.positionPerEntry.length = 0;
+        this.totalSize = 0;
+
+        this.reifect.getEnabledObjectsData().forEach(entry => {
+            const object = entry.object.deref();
+            const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+            this.sizePerEntry.push(size);
+            this.positionPerEntry.push(this.totalSize);
+            this.totalSize += size;
+        });
+        const flooredIndex = Math.floor(this.index);
+        const indexOffset = this.index - Math.floor(this.index);
+
+        this.currentPosition = 0;
+        if (this.index < 0) this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
+        else if (this.index >= this.sizePerEntry.length) this.currentPosition =
+            (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
+        else this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+    }
+
+    protected recomputeIndex() {
+        let index = 0;
+        while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition) index++;
+        if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2) index++;
+        this.index = index;
+    }
+
+    protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size: Record<Range, number> = this.size) {
         let opacityValue: number, scaleValue: number;
-
-        if (translationValue > 0) {
-            opacityValue = linearInterpolation(translationValue, 0, size.max, this.opacity.max, this.opacity.min);
-            scaleValue = linearInterpolation(translationValue, 0, size.max, this.scale.max, this.scale.min);
-        } else {
-            opacityValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.opacity.max, this.opacity.min));
-            scaleValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.scale.max, this.scale.min));
-        }
+        const bound = translationValue > 0 ? size.max : size.min;
+        opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+        scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
 
         let styles: string | PartialRecord<keyof CSSStyleDeclaration, string | number> = {
             left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
@@ -234,19 +228,42 @@ class TurboSelectWheel<
             0) scale3d(${scaleValue}, ${scaleValue}, 1)`
         };
 
-        if (this.generateCustomStyling) styles = this.generateCustomStyling(element, translationValue, size, styles);
+        if (this.generateCustomStyling) styles = this.generateCustomStyling({
+            element: element,
+            translationValue: translationValue,
+            opacityValue: opacityValue,
+            scaleValue: scaleValue,
+            size: size,
+            defaultComputedStyles: styles
+        });
+
         element.setStyles(styles);
+    }
+
+    public select(entry: ValueType | EntryType): this {
+        super.select(entry);
+        const index = this.getIndex(this.selectedEntry);
+        if (index != this.index) this.index = index;
+
+        if (this.reifect) {
+            this.reifect.enabled.transition = true;
+            this.reifect.apply();
+            this.reloadEntrySizes();
+        }
+
+        const computedStyle = getComputedStyle(this.selectedEntry);
+        this.setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
+        return this;
     }
 
     protected onEntryClick(entry: EntryType, e?: Event) {
         super.onEntryClick(entry, e);
         e.stopImmediatePropagation();
         this.open = true;
-        this.snapTo(this.entries.indexOf(entry));
-        this.setOpenTimer();
+        if (!this.alwaysOpen) this.setOpenTimer();
     }
 
-    protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         entry = super.addEntry(entry);
         entry.setStyles({position: "absolute"});
 
@@ -256,36 +273,51 @@ class TurboSelectWheel<
             this.open = true;
             this.dragging = true;
             this.reifect.enabled.transition = false;
-            this.reloadStyles(true);
+            this.reifect.apply();
+
+            this.reloadEntrySizes();
         });
 
+        let showTimer: NodeJS.Timeout;
+        entry.addListener("mouseover", () => {
+            clearTimeout(showTimer);
+            showTimer = setTimeout(() => this.open = true, 1000);
+        });
+        entry.addListener("mouseout", () => {
+            if (showTimer) clearTimeout(showTimer);
+            showTimer = null;
+        });
         if (this.reifect) {
             this.reifect.attach(entry);
             this.reifect.apply();
-            this.reloadStyles(true);
+            this.reloadEntrySizes();
         }
+
+        this.refresh();
         return entry;
     }
 
+    public clear(): void {
+        this.reifect.detach(...this.entries);
+        super.clear();
+    }
+
+    public refresh() {
+        if (this.selectedEntry) this.select(this.selectedEntry);
+        else this.reset();
+    }
+
     public reset() {
-        this.snapTo(0);
+        this.select(this.entries[0]);
     }
 
-    private snapTo(value: number) {
-        this.index = value;
-        this.reifect.enabled.transition = true;
-        this.reloadStyles(true);
-
-        const computedStyle = getComputedStyle(this.selectedEntry);
-        this.setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
-    }
-
-    private clearOpenTimer() {
+    protected clearOpenTimer() {
         if (this.openTimer) clearTimeout(this.openTimer);
     }
 
-    private setOpenTimer() {
+    protected setOpenTimer() {
         this.clearOpenTimer();
+        if (typeof this.openTimeout !== "number" || this.openTimeout < 0) return;
         this.openTimer = setTimeout(() => this.open = false, this.openTimeout);
     }
 }

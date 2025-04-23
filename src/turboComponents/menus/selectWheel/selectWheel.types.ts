@@ -18,13 +18,23 @@ type TurboSelectWheelProperties<
     direction?: Direction,
     styleReifect?: Reifect | StatelessReifectProperties,
 
-    generateCustomStyling?: (element: HTMLElement, translationValue: number, size: Record<Range, number>,
-                             defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>)
+    generateCustomStyling?: (properties: TurboSelectWheelStylingProperties)
         => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
 
     size?: number | Record<Range, number>,
     opacity?: Record<Range, number>,
     scale?: Record<Range, number>,
+
+    alwaysOpen?: boolean,
 }
 
-export {TurboSelectWheelProperties};
+type TurboSelectWheelStylingProperties = {
+    element: HTMLElement,
+    translationValue: number,
+    scaleValue: number,
+    opacityValue: number,
+    size: Record<Range, number>,
+    defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>
+};
+
+export {TurboSelectWheelProperties, TurboSelectWheelStylingProperties};

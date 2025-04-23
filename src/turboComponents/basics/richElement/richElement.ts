@@ -8,7 +8,6 @@ import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {TurboView} from "../../../domBuilding/mvc/turboView";
 import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
@@ -22,9 +21,8 @@ class TurboRichElement<
     ElementTag extends ValidTag = any,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
-    EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboElement<ViewType, DataType, ModelType> {
     /**
      * @description Object containing the children of the rich element.
      */
@@ -36,7 +34,7 @@ class TurboRichElement<
      * Initializes a new instance of the Button class.
      * @param {TurboButtonProperties} properties - Properties to configure the button.
      */
-    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>) {
+    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
         if (properties.text && !properties.element) properties.element = properties.text;
         super({...properties, text: null});
 

@@ -11,21 +11,21 @@ class MvcHandler<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter,
+    EmitterType extends TurboEmitter = TurboEmitter<any>,
 > {
     private readonly element: ElementType;
 
-    private readonly _controllers: Map<string, TurboController> = new Map();
-    private readonly _handlers: Map<string, TurboHandler> = new Map();
+    private readonly controllers: Map<string, TurboController> = new Map();
 
     public constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>) {
         if (properties.element) this.element = properties.element;
+        if (properties.emitter) this.emitter = properties.emitter;
         if (properties.view) this.view = properties.view;
         if (properties.model) {
             this.model = properties.model;
             if (properties.data) this.model.data = properties.data;
         }
-        if (properties.emitter) this.emitter = properties.emitter;
+
         if (properties.generate) this.generate(properties);
     }
 
@@ -72,19 +72,23 @@ class MvcHandler<
     }
 
     public getController(key: string): TurboController {
-        return this._controllers.get(key);
+        return this.controllers.get(key);
     }
 
-    public addController(key: string, controller: TurboController) {
-        this._controllers.set(key, controller);
+    public addController(controller: TurboController) {
+        if (!controller.keyName) controller.keyName =
+            this.extractClassEssenceName(controller.constructor as new (...args: any[]) => any);
+        this.controllers.set(controller.keyName, controller);
     }
 
     public getHandler(key: string): TurboHandler {
-        return this._handlers.get(key);
+        return this.model.getHandler(key);
     }
 
-    public addHandler(key: string, handler: TurboHandler) {
-        this._handlers.set(key, handler);
+    public addHandler(handler: TurboHandler) {
+        if (!handler.keyName) handler.keyName =
+            this.extractClassEssenceName(handler.constructor as new (...args: any[]) => any);
+        this.model.addHandler(handler.keyName, handler);
     }
 
     public generate(properties: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
@@ -94,15 +98,21 @@ class MvcHandler<
             this.model = new properties.modelConstructor(properties.data);
         }
 
-        if (properties.viewConstructor && (!this.view || properties.force)) {
-            this.view = new properties.viewConstructor(this, this.model);
-            this.linkModelToView();
-        }
-
         if ((properties.emitterConstructor || properties.modelConstructor || this.model)
             && (!this.emitter || properties.force)) {
-            this.emitter = new properties.emitterConstructor();
+            this.emitter = properties.emitterConstructor
+                ? new properties.emitterConstructor(this.model)
+                : new TurboEmitter(this.model) as any;
             this.linkModelToEmitter();
+        }
+
+        if (properties.viewConstructor && (!this.view || properties.force)) {
+            this.view = new properties.viewConstructor({
+                element: this.element,
+                model: this.model,
+                emitter: this.emitter
+            });
+            this.linkModelToView();
         }
 
         if (properties.controllerConstructors) {
@@ -110,16 +120,16 @@ class MvcHandler<
                 element: this.element,
                 view: this.view,
                 model: this.model,
-                emitter: this.emitter,
+                emitter: this.emitter
             };
 
             properties.controllerConstructors.forEach(controllerConstructor =>
-                this._controllers.set(controllerConstructor.name, new controllerConstructor(controllerProperties)));
+                this.addController(new controllerConstructor(controllerProperties)));
         }
 
         if (properties.handlerConstructors) {
             properties.handlerConstructors.forEach(handlerConstructor =>
-                this._handlers.set(handlerConstructor.name, new handlerConstructor(this.model)));
+                this.addHandler(new handlerConstructor(this.model)));
         }
 
         if (properties.initialize) this.initialize();
@@ -127,6 +137,7 @@ class MvcHandler<
 
     public initialize() {
         this.view?.initialize();
+        this.controllers.forEach((controller: TurboController) => controller.initialize());
         this.model?.initialize();
     }
 
@@ -137,9 +148,30 @@ class MvcHandler<
 
     private linkModelToEmitter() {
         if (!this.emitter || !this.model) return;
+        this.emitter.model = this.model;
         this.model.keyChangedCallback = (keyName: string, blockKey: string, ...args: any[]) =>
-            this.emitter.fire(keyName, blockKey, ...args);
+            this.emitter.fireWithBlock(keyName, blockKey, ...args);
     }
+
+    protected extractClassEssenceName(constructor: new (...args: any[]) => any): string {
+        let className = constructor.name;
+        let prototype = Object.getPrototypeOf(this.element);
+
+        while (prototype && prototype.constructor !== Object) {
+            const name = prototype.constructor.name;
+            if (className.startsWith(name)) {
+                className = className.slice(name.length);
+                break;
+            }
+            prototype = Object.getPrototypeOf(prototype);
+        }
+
+        if (className.endsWith("Handler")) className = className.slice(0, -("Handler".length));
+        else if (className.endsWith("Controller")) className = className.slice(0, -("Controller".length));
+
+        return className.charAt(0).toLowerCase() + className.slice(1);
+    }
+
 }
 
 export {MvcHandler};

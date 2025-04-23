@@ -131,7 +131,7 @@ class TurboMarkingMenu<
         return angle;
     }
 
-    protected addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         entry = super.addEntry(entry);
         this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
         entry.setStyles({position: "absolute"});

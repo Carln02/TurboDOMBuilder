@@ -15,8 +15,7 @@ class TurboInput<
     ValueType extends string | number = string,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
-    EmitterType extends TurboEmitter = TurboEmitter
+    ModelType extends TurboModel<DataType> = TurboModel<any>
 > extends TurboElement {
     public readonly labelElement: HTMLLabelElement;
     public readonly inputElement: TurboRichElement<InputTag>;
@@ -26,7 +25,7 @@ class TurboInput<
     private lastValueWithInputCheck: string;
     private lastValueWithBlurCheck: string;
 
-    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType> = {}) {
+    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType> = {}) {
         super(properties);
 
         this.locked = properties.locked || false;

@@ -23,9 +23,8 @@ import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 type TurboIconProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
-> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
+    ModelType extends TurboModel = TurboModel
+> = TurboCustomProperties<ViewType, DataType, ModelType> & {
     type?: string;
     directory?: string;
 

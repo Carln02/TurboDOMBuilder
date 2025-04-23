@@ -1122,13 +1122,70 @@ var Turbo = (function (exports) {
         return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
     };
 
+    class TurboEmitter {
+        callbacks = new Map();
+        model;
+        constructor(model) {
+            this.model = model;
+        }
+        getBlock(blockKey) {
+            return this.callbacks.get(blockKey);
+        }
+        getOrGenerateBlock(blockKey) {
+            if (!this.callbacks.has(blockKey))
+                this.callbacks.set(blockKey, new Map());
+            return this.callbacks.get(blockKey);
+        }
+        getKey(key, blockKey) {
+            const block = this.getBlock(blockKey);
+            if (!block)
+                return undefined;
+            return block.get(key);
+        }
+        getOrGenerateKey(key, blockKey) {
+            const block = this.getOrGenerateBlock(blockKey);
+            if (!block.has(key))
+                block.set(key, []);
+            return block.get(key);
+        }
+        addWithBlock(key, blockKey, callback) {
+            this.getOrGenerateKey(key, blockKey).push(callback);
+        }
+        add(key, callback) {
+            this.addWithBlock(key, this.model.defaultBlockKey, callback);
+        }
+        removeWithBlock(key, blockKey, callback) {
+            if (callback == undefined)
+                this.getBlock(blockKey)?.delete(key);
+            else {
+                const callbacks = this.getKey(key, blockKey);
+                const index = callbacks.indexOf(callback);
+                if (index >= 0)
+                    callbacks.splice(index, 1);
+            }
+        }
+        remove(key, callback) {
+            this.removeWithBlock(key, this.model.defaultBlockKey, callback);
+        }
+        fireWithBlock(key, blockKey, ...args) {
+            this.callbacks.get(blockKey)?.get(key)?.forEach((callback) => {
+                if (callback && typeof callback == "function")
+                    callback(...args);
+            });
+        }
+        fire(key, ...args) {
+            this.fireWithBlock(key, this.model.defaultBlockKey, ...args);
+        }
+    }
+
     class MvcHandler {
         element;
-        _controllers = new Map();
-        _handlers = new Map();
+        controllers = new Map();
         constructor(properties) {
             if (properties.element)
                 this.element = properties.element;
+            if (properties.emitter)
+                this.emitter = properties.emitter;
             if (properties.view)
                 this.view = properties.view;
             if (properties.model) {
@@ -1136,14 +1193,13 @@ var Turbo = (function (exports) {
                 if (properties.data)
                     this.model.data = properties.data;
             }
-            if (properties.emitter)
-                this.emitter = properties.emitter;
             if (properties.generate)
                 this.generate(properties);
         }
         set view(view) {
         }
         set model(model) {
+            this.linkModelToEmitter();
             this.linkModelToView();
         }
         set emitter(emitter) {
@@ -1173,16 +1229,22 @@ var Turbo = (function (exports) {
             return this.model?.getSize();
         }
         getController(key) {
-            return this._controllers.get(key);
+            return this.controllers.get(key);
         }
-        addController(key, controller) {
-            this._controllers.set(key, controller);
+        addController(controller) {
+            if (!controller.keyName)
+                controller.keyName =
+                    this.extractClassEssenceName(controller.constructor);
+            this.controllers.set(controller.keyName, controller);
         }
         getHandler(key) {
-            return this._handlers.get(key);
+            return this.model.getHandler(key);
         }
-        addHandler(key, handler) {
-            this._handlers.set(key, handler);
+        addHandler(handler) {
+            if (!handler.keyName)
+                handler.keyName =
+                    this.extractClassEssenceName(handler.constructor);
+            this.model.addHandler(handler.keyName, handler);
         }
         generate(properties = {}) {
             if (properties.initialize == undefined)
@@ -1190,38 +1252,68 @@ var Turbo = (function (exports) {
             if (properties.modelConstructor && (!this.model || properties.force)) {
                 this.model = new properties.modelConstructor(properties.data);
             }
-            if (properties.viewConstructor && (!this.view || properties.force)) {
-                this.view = new properties.viewConstructor(this, this.model);
-                this.linkModelToView();
-            }
-            if ((properties.emitterConstructor || properties.controllerConstructors)
+            if ((properties.emitterConstructor || properties.modelConstructor || this.model)
                 && (!this.emitter || properties.force)) {
-                this.emitter = new properties.emitterConstructor();
+                this.emitter = properties.emitterConstructor
+                    ? new properties.emitterConstructor(this.model)
+                    : new TurboEmitter(this.model);
+                this.linkModelToEmitter();
+            }
+            if (properties.viewConstructor && (!this.view || properties.force)) {
+                this.view = new properties.viewConstructor({
+                    element: this.element,
+                    model: this.model,
+                    emitter: this.emitter
+                });
+                this.linkModelToView();
             }
             if (properties.controllerConstructors) {
                 const controllerProperties = {
                     element: this.element,
                     view: this.view,
                     model: this.model,
-                    emitter: this.emitter,
+                    emitter: this.emitter
                 };
-                properties.controllerConstructors.forEach(controllerConstructor => this._controllers.set(controllerConstructor.name, new controllerConstructor(controllerProperties)));
+                properties.controllerConstructors.forEach(controllerConstructor => this.addController(new controllerConstructor(controllerProperties)));
             }
             if (properties.handlerConstructors) {
-                properties.handlerConstructors.forEach(handlerConstructor => this._handlers.set(handlerConstructor.name, new handlerConstructor(this.model)));
+                properties.handlerConstructors.forEach(handlerConstructor => this.addHandler(new handlerConstructor(this.model)));
             }
             if (properties.initialize)
                 this.initialize();
         }
         initialize() {
             this.view?.initialize();
+            this.controllers.forEach((controller) => controller.initialize());
             this.model?.initialize();
         }
         linkModelToView() {
             if (!this.view || !this.model)
                 return;
             this.view.model = this.model;
-            this.model.keyChangedCallback = (keyName, ...args) => this.view.fireChangedCallback(keyName, ...args);
+        }
+        linkModelToEmitter() {
+            if (!this.emitter || !this.model)
+                return;
+            this.emitter.model = this.model;
+            this.model.keyChangedCallback = (keyName, blockKey, ...args) => this.emitter.fireWithBlock(keyName, blockKey, ...args);
+        }
+        extractClassEssenceName(constructor) {
+            let className = constructor.name;
+            let prototype = Object.getPrototypeOf(this.element);
+            while (prototype && prototype.constructor !== Object) {
+                const name = prototype.constructor.name;
+                if (className.startsWith(name)) {
+                    className = className.slice(name.length);
+                    break;
+                }
+                prototype = Object.getPrototypeOf(prototype);
+            }
+            if (className.endsWith("Handler"))
+                className = className.slice(0, -("Handler".length));
+            else if (className.endsWith("Controller"))
+                className = className.slice(0, -("Controller".length));
+            return className.charAt(0).toLowerCase() + className.slice(1);
         }
     }
     __decorate([
@@ -1235,6 +1327,7 @@ var Turbo = (function (exports) {
     ], MvcHandler.prototype, "emitter", null);
 
     class TurboController {
+        keyName;
         element;
         view;
         model;
@@ -1244,37 +1337,16 @@ var Turbo = (function (exports) {
             this.view = properties.view;
             this.model = properties.model;
             this.emitter = properties.emitter;
-            this.attachEmitterCallbacks();
         }
-        attachEmitterCallbacks() {
+        initialize() {
+            this.setupChangedCallbacks();
         }
-    }
-
-    class TurboEmitter {
-        callbacks = new Map();
-        add(key, callback) {
-            if (!this.callbacks.has(key))
-                this.callbacks.set(key, []);
-            this.callbacks.get(key).push(callback);
-        }
-        remove(key, callback) {
-            if (!this.callbacks.has(key))
-                return;
-            if (callback == undefined)
-                this.callbacks.delete(key);
-            else {
-                const callbacks = this.callbacks.get(key);
-                const index = callbacks.indexOf(callback);
-                if (index >= 0)
-                    callbacks.splice(index, 1);
-            }
-        }
-        fire(key) {
-            this.callbacks.get(key)?.forEach((callback) => callback());
+        setupChangedCallbacks() {
         }
     }
 
     class TurboHandler {
+        keyName;
         model;
         constructor(model) {
             this.model = model;
@@ -1284,6 +1356,7 @@ var Turbo = (function (exports) {
     class TurboModel {
         dataMap = new Map();
         idMap = new Map();
+        handlers = new Map();
         keyChangedCallback;
         constructor(data) {
             this.enabledCallbacks = true;
@@ -1321,6 +1394,8 @@ var Turbo = (function (exports) {
             return block ? Object.keys(block).length : 0;
         }
         getDataBlock(blockKey = this.defaultBlockKey) {
+            if (!blockKey)
+                return null;
             return this.dataMap.get(blockKey);
         }
         setDataBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
@@ -1333,6 +1408,8 @@ var Turbo = (function (exports) {
                 this.initialize(blockKey);
         }
         getDataBlockId(blockKey = this.defaultBlockKey) {
+            if (!blockKey)
+                return null;
             return this.idMap.get(blockKey);
         }
         setDataBlockId(value, blockKey = this.defaultBlockKey) {
@@ -1341,7 +1418,15 @@ var Turbo = (function (exports) {
             this.idMap.set(blockKey, value);
         }
         fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
-            this.keyChangedCallback(key, deleted ? undefined : this.getData(key, blockKey));
+            if (blockKey == undefined)
+                blockKey = this.dataMap.keys().next().value;
+            this.keyChangedCallback(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
+        }
+        fireCallback(key, ...args) {
+            this.keyChangedCallback(key, this.defaultBlockKey, ...args);
+        }
+        fireBlockCallback(key, blockKey = this.defaultBlockKey, ...args) {
+            this.keyChangedCallback(key, blockKey, ...args);
         }
         initialize(blockKey = this.defaultBlockKey) {
             const block = this.getDataBlock(blockKey);
@@ -1352,15 +1437,18 @@ var Turbo = (function (exports) {
         clear(blockKey = this.defaultBlockKey) {
         }
         get defaultBlockKey() {
-            return this.dataMap.size > 1 ? null : this.dataMap.size > 0 ? this.dataMap.keys().next().value : "0";
+            return "__turbo_default_block_key__";
+        }
+        get defaultComputationBlockKey() {
+            return this.dataMap.size > 1 ? null : this.defaultBlockKey;
         }
         getAllBlockKeys() {
             return Array.from(this.dataMap.keys());
         }
-        getAllIds(blockKey = this.defaultBlockKey) {
+        getAllIds() {
             return Array.from(this.idMap.values());
         }
-        getAllKeys(blockKey = this.defaultBlockKey) {
+        getAllKeys(blockKey = this.defaultComputationBlockKey) {
             const output = [];
             if (blockKey) {
                 const block = this.dataMap.get(blockKey);
@@ -1375,7 +1463,7 @@ var Turbo = (function (exports) {
             }
             return output;
         }
-        getAllData(blockKey = this.defaultBlockKey) {
+        getAllData(blockKey = this.defaultComputationBlockKey) {
             const output = [];
             if (blockKey) {
                 this.getAllKeys(blockKey)?.forEach(key => output.push(this.getData(key, blockKey)));
@@ -1387,6 +1475,12 @@ var Turbo = (function (exports) {
             }
             return output;
         }
+        getHandler(key) {
+            return this.handlers.get(key);
+        }
+        addHandler(key, handler) {
+            this.handlers.set(key, handler);
+        }
     }
     __decorate([
         auto()
@@ -1395,11 +1489,11 @@ var Turbo = (function (exports) {
     class TurboView {
         element;
         model;
-        callbackMap = new Map();
-        constructor(element, model) {
-            this.element = element;
-            if (model)
-                this.model = model;
+        emitter;
+        constructor(properties) {
+            this.element = properties.element;
+            this.emitter = properties.emitter;
+            this.model = properties.model;
         }
         initialize() {
             this.setupChangedCallbacks();
@@ -1414,14 +1508,6 @@ var Turbo = (function (exports) {
         setupUILayout() {
         }
         setupUIListeners() {
-        }
-        fireChangedCallback(keyName, ...args) {
-            const callback = this.callbackMap.get(keyName);
-            if (callback && typeof callback == "function")
-                callback(...args);
-        }
-        setChangedCallback(keyName, callback) {
-            this.callbackMap.set(keyName, callback);
         }
     }
 
@@ -1458,10 +1544,30 @@ var Turbo = (function (exports) {
             this.setProperties(properties, true);
             this.mvc = new MvcHandler({ ...properties, element: this });
         }
+        connectedCallback() {
+        }
+        disconnectedCallback() {
+        }
+        adoptedCallback() {
+        }
         attributeChangedCallback(name, oldValue, newValue) {
             if (!newValue || newValue == oldValue)
                 return;
             this[kebabToCamelCase(name)] = parse(newValue);
+        }
+        initializeUI() {
+            this.setupChangedCallbacks();
+            this.setupUIElements();
+            this.setupUILayout();
+            this.setupUIListeners();
+        }
+        setupChangedCallbacks() {
+        }
+        setupUIElements() {
+        }
+        setupUILayout() {
+        }
+        setupUIListeners() {
         }
         /**
          * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
@@ -1553,6 +1659,20 @@ var Turbo = (function (exports) {
             if (!newValue || newValue == oldValue)
                 return;
             this[kebabToCamelCase(name)] = parse(newValue);
+        }
+        initializeUI() {
+            this.setupChangedCallbacks();
+            this.setupUIElements();
+            this.setupUILayout();
+            this.setupUIListeners();
+        }
+        setupChangedCallbacks() {
+        }
+        setupUIElements() {
+        }
+        setupUILayout() {
+        }
+        setupUIListeners() {
         }
         /**
          * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
@@ -2985,7 +3105,7 @@ var Turbo = (function (exports) {
                 if (options.recomputeProperties || !data.resolvedValues)
                     this.processRawProperties(data, options.propertiesOverride);
                 data.lastState = state;
-                this.applyResolvedValues(data, data.lastState, true);
+                this.applyResolvedValues(data, data.lastState, true, options?.applyStylesInstantly);
                 if (data.onSwitch)
                     data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
             });
@@ -3002,7 +3122,7 @@ var Turbo = (function (exports) {
                 const handler = data.object.deref()?.reifects;
                 if (handler)
                     handler.reloadTransitions();
-                this.applyResolvedValues(data);
+                this.applyResolvedValues(data, data.lastState, false, options?.applyStylesInstantly);
                 if (data.onSwitch)
                     data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
             });
@@ -3121,7 +3241,7 @@ var Turbo = (function (exports) {
             return this.states[0];
         }
         //Property setting methods
-        applyResolvedValues(data, state = data.lastState, skipTransition = false) {
+        applyResolvedValues(data, state = data.lastState, skipTransition = false, applyStylesInstantly = false) {
             if (this.enabled.transition && data.enabled.transition && !skipTransition)
                 this.applyTransition(data, state);
             if (this.enabled.replaceWith && data.enabled.replaceWith)
@@ -3131,7 +3251,7 @@ var Turbo = (function (exports) {
             if (this.enabled.classes && data.enabled.classes)
                 this.applyClasses(data, state);
             if (this.enabled.styles && data.enabled.styles)
-                this.applyStyles(data, state);
+                this.applyStyles(data, state, applyStylesInstantly);
         }
         replaceObject(data, state = data.lastState) {
             const newObject = data.resolvedValues.replaceWith[state];
@@ -3177,11 +3297,11 @@ var Turbo = (function (exports) {
                 object.toggleClass(value, state == key);
             }
         }
-        applyStyles(data, state = data.lastState) {
+        applyStyles(data, state = data.lastState, applyStylesInstantly = false) {
             const object = data.object.deref();
             if (!object || !(object instanceof Element))
                 return;
-            object.setStyles(data.resolvedValues.styles[state]);
+            object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
         }
         applyTransition(data, state = data.lastState) {
             const object = data.object.deref();
@@ -5073,25 +5193,34 @@ var Turbo = (function (exports) {
     ], exports.TurboIconSwitch);
 
     exports.TurboIconToggle = class TurboIconToggle extends exports.TurboIcon {
-        _toggled = false;
         onToggle;
         constructor(properties) {
             super(properties);
-            this.toggled = properties.toggled;
+            this.toggled = properties.toggled ?? false;
             this.onToggle = properties.onToggle;
-        }
-        get toggled() {
-            return this._toggled;
+            this.toggleOnClick = properties.toggleOnClick ?? false;
         }
         set toggled(value) {
-            this._toggled = value;
             if (this.onToggle)
                 this.onToggle(value, this);
+        }
+        set toggleOnClick(value) {
+            if (value)
+                this.addListener(DefaultEventName.click, this.clickListener);
+            else
+                this.removeListener(DefaultEventName.click, this.clickListener);
         }
         toggle() {
             this.toggled = !this.toggled;
         }
+        clickListener = () => this.toggle();
     };
+    __decorate([
+        auto({ cancelIfUnchanged: true })
+    ], exports.TurboIconToggle.prototype, "toggled", null);
+    __decorate([
+        auto({ cancelIfUnchanged: true })
+    ], exports.TurboIconToggle.prototype, "toggleOnClick", null);
     exports.TurboIconToggle = __decorate([
         define()
     ], exports.TurboIconToggle);
@@ -5245,7 +5374,7 @@ var Turbo = (function (exports) {
             this.action = properties.action || (() => { });
             this.onSelected = properties.onSelected || (() => { });
             this.onEnabled = properties.onEnabled || (() => { });
-            this.reflectedElement = properties.reflectValueOn != undefined ? properties.reflectValueOn : this;
+            this.reflectedElement = properties.reflectValueOn != undefined && !properties.element ? properties.reflectValueOn : this;
             this.inputName = properties.inputName;
             this.value = properties.value;
             this.secondaryValue = properties.secondaryValue;
@@ -5499,6 +5628,11 @@ var Turbo = (function (exports) {
         get stringSelectedValue() {
             return this.selectedEntries.map(entry => entry.stringValue).join(", ");
         }
+        clear() {
+            for (const entry of this.entries)
+                entry.remove();
+            this.entries.splice(0, this.entries.length);
+        }
         /**
          * @description The dropdown's values. Setting it will update the dropdown accordingly.
          */
@@ -5507,17 +5641,14 @@ var Turbo = (function (exports) {
         }
         set values(values) {
             const selectedEntriesIndices = [];
-            this.entries.forEach((entry, index) => {
-                if (entry.selected && index < values.length)
-                    selectedEntriesIndices.push(index);
-            });
-            for (const entry of this.entries)
-                entry.remove();
-            this.entries.splice(0, this.entries.length);
+            this.entries.filter((entry, index) => entry.selected && index < values.length);
+            this.clear();
             for (const entry of values)
                 this.addEntry(entry);
             for (const index of selectedEntriesIndices)
                 this.select(this.entries[index]);
+            if (!this.selectedEntry && this.forceSelection)
+                this.select(this.entries[0]);
         }
     };
     exports.TurboSelect = TurboSelect_1 = __decorate([
@@ -6471,13 +6602,19 @@ var Turbo = (function (exports) {
      * @template {TurboSelectEntry<ValueType, any>} EntryType
      */
     exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
-        reifect;
+        _currentPosition = 0;
+        _reifect;
+        _size = { max: 100, min: -100 };
         sizePerEntry = [];
-        direction;
-        set opacity(value) { }
-        scale;
-        size;
+        positionPerEntry = [];
+        totalSize = 0;
+        dragLimitOffset = 30;
+        /**
+         * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
+         */
         openTimeout = 3000;
+        direction = exports.Direction.horizontal;
+        scale = { max: 1, min: 0.5 };
         generateCustomStyling;
         dragging;
         openTimer;
@@ -6485,23 +6622,59 @@ var Turbo = (function (exports) {
             properties.multiSelection = false;
             properties.forceSelection = true;
             super(properties);
+            if (properties.scale)
+                this.scale = properties.scale;
+            if (properties.direction)
+                this.direction = properties.direction;
             this.opacity = properties.opacity ?? { max: 1, min: 0 };
-            this.scale = properties.scale ?? { max: 1, min: 0.5 };
-            this.size = typeof properties.size == "object" ? properties.size
-                : { max: properties.size ?? 100, min: -(properties.size ?? 100) };
+            this.size = properties.size;
             this.generateCustomStyling = properties.generateCustomStyling;
-            this.direction = properties.direction || exports.Direction.horizontal;
-            this.reifect = properties.styleReifect instanceof Reifect ? properties.styleReifect
-                : this.initializeStyleReifect(properties.styleReifect);
+            this.reifect = properties.styleReifect;
             this.setStyles({ display: "block", position: "relative" });
-            this.index = 0;
-            this.open = false;
-            this.initEvents();
-            requestAnimationFrame(() => {
-                this.reifect.apply(this.entries);
-                this.snapTo(0);
-            });
+            this.alwaysOpen = properties.alwaysOpen ?? false;
+            this.initializeUI();
+            if (properties.selectedValues?.length > 0)
+                this.select(properties.selectedValues[0]);
+            requestAnimationFrame(() => this.refresh());
         }
+        connectedCallback() {
+            super.connectedCallback();
+            requestAnimationFrame(() => this.refresh());
+        }
+        set opacity(value) { }
+        get size() {
+            return this._size;
+        }
+        set size(value) {
+            this._size = typeof value == "object" ? value : { max: value ?? 100, min: -(value ?? 100) };
+        }
+        get reifect() {
+            return this._reifect;
+        }
+        set reifect(value) {
+            if (value instanceof Reifect)
+                this._reifect = value;
+            else {
+                if (!value)
+                    value = {};
+                if (!value.transitionProperties)
+                    value.transitionProperties = "opacity transform";
+                if (value.transitionDuration == undefined)
+                    value.transitionDuration = 0.2;
+                if (!value.transitionTimingFunction)
+                    value.transitionTimingFunction = "ease-in-out";
+                this._reifect = new Reifect(value);
+            }
+            this._reifect.attachAll(...this.entries);
+        }
+        set alwaysOpen(value) {
+            if (value)
+                document.removeListener(DefaultEventName.click, this.closeOnClick);
+            else
+                document.addListener(DefaultEventName.click, this.closeOnClick);
+            this.open = value;
+        }
+        closeOnClick = () => this.open = false;
         get isVertical() {
             return this.direction == exports.Direction.vertical;
         }
@@ -6517,111 +6690,82 @@ var Turbo = (function (exports) {
         set open(value) {
             this.setStyle("overflow", value ? "visible" : "hidden");
         }
-        initializeStyleReifect(properties) {
-            if (!properties)
-                properties = {};
-            if (!properties.transitionProperties)
-                properties.transitionProperties = "opacity transform";
-            if (properties.transitionDuration == undefined)
-                properties.transitionDuration = 0.2;
-            if (!properties.transitionTimingFunction)
-                properties.transitionTimingFunction = "ease-in-out";
-            return reifect(properties);
+        get currentPosition() {
+            return this._currentPosition;
         }
-        initEvents() {
-            const coordinate = this.direction == exports.Direction.vertical ? "y" : "x";
-            this.addListener(DefaultEventName.drag, (e) => {
+        set currentPosition(value) {
+            const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
+            const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
+            if (value < min)
+                value = min;
+            if (value > max)
+                value = max;
+            this._currentPosition = value;
+            const elements = this.reifect.getEnabledObjectsData();
+            if (elements.length === 0)
+                return;
+            elements.forEach((el, index) => this.computeAndApplyStyling(el.object.deref(), this.positionPerEntry[index] - value));
+        }
+        setupUIListeners() {
+            super.setupUIListeners();
+            document.addListener(DefaultEventName.drag, (e) => {
                 if (!this.dragging)
                     return;
                 e.stopImmediatePropagation();
-                const currentEntrySize = this.sizePerEntry[this.flooredTrimmedIndex];
-                if (currentEntrySize != 0)
-                    this.index -= e.scaledDeltaPosition[coordinate] / currentEntrySize;
-                this.reloadStyles();
+                this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
             });
-            this.addListener(DefaultEventName.dragEnd, (e) => {
+            document.addListener(DefaultEventName.dragEnd, (e) => {
                 if (!this.dragging)
                     return;
                 e.stopImmediatePropagation();
                 this.dragging = false;
-                this.snapTo(Math.round(this.index));
-                this.setOpenTimer();
+                this.recomputeIndex();
+                // this.snapTo(this.trimmedIndex);
+                if (!this.alwaysOpen)
+                    this.setOpenTimer();
             });
-            document.addListener(DefaultEventName.click, () => this.open = false);
         }
-        reloadStyles(reloadSizes = false) {
-            const elements = this.reifect.getEnabledObjectsData();
-            if (reloadSizes) {
-                this.sizePerEntry.length = 0;
-                elements.forEach(entry => {
-                    const object = entry.object.deref();
-                    const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-                    this.sizePerEntry.push(size);
-                });
-            }
-            const firstEntrySize = this.sizePerEntry[0];
-            const lastEntrySize = this.sizePerEntry[elements.length - 1];
-            const offsetSize = {
-                min: this.size.min - firstEntrySize / 2,
-                max: this.size.max + lastEntrySize / 2
-            };
-            let currentIndex = Math.round(this.index);
-            let currentElementOffset = -Math.abs(this.index - currentIndex) * this.sizePerEntry[currentIndex];
-            let afterOffset = currentElementOffset;
-            let beforeOffset = currentElementOffset;
-            if (currentIndex < 0) {
-                const computedOffset = -currentIndex * firstEntrySize;
-                currentElementOffset -= computedOffset;
-                beforeOffset -= computedOffset;
-                currentIndex = 0;
-            }
-            if (currentIndex > elements.length - 1) {
-                const computedOffset = (currentIndex - elements.length + 1) * lastEntrySize;
-                currentElementOffset -= computedOffset;
-                beforeOffset -= computedOffset;
-                currentIndex = elements.length - 1;
-            }
-            // while (currentIndex >= elements.length) {
-            //     const computedOffest = (currentIndex - elements.length)
-            //     currentElementOffset -= firstEntrySize;
-            //     beforeOffset -= firstEntrySize;
-            //     currentIndex--;
-            // }
-            //
-            // while (currentIndex < 0) {
-            //     currentElementOffset += lastEntrySize;
-            //     afterOffset += lastEntrySize;
-            //     currentIndex++;
-            // }
-            // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-            // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
-            this.applyStyling(elements[currentIndex].object.deref(), currentElementOffset + this.sizePerEntry[currentIndex] / 2, offsetSize);
-            for (let i = currentIndex - 1; i >= 0; i--) {
-                beforeOffset -= this.sizePerEntry[i];
-                // if (beforeOffset < this.size.min + halfFirstEntrySize) beforeOffset = this.size.min + halfFirstEntrySize;
-                this.applyStyling(elements[i].object.deref(), beforeOffset
-                    + this.sizePerEntry[i] / 2, offsetSize);
-            }
-            for (let i = currentIndex + 1; i < elements.length; i++) {
-                afterOffset += this.sizePerEntry[i];
-                // if (afterOffset > this.size.max + halfLastEntrySize) afterOffset = this.size.max + halfLastEntrySize;
-                this.applyStyling(elements[i].object.deref(), afterOffset
-                    + this.sizePerEntry[i] / 2, offsetSize);
-            }
+        computeDragValue(delta) {
+            return -delta[this.isVertical ? "y" : "x"];
         }
-        applyStyling(element, translationValue, size = {
-            min: this.size.min + this.sizePerEntry[0] / 2,
-            max: this.size.max - this.sizePerEntry[this.sizePerEntry.length - 1] / 2
-        }) {
+        /**
+         * Recalculates the dimensions and positions of all entries
+         */
+        reloadEntrySizes() {
+            this.sizePerEntry.length = 0;
+            this.positionPerEntry.length = 0;
+            this.totalSize = 0;
+            this.reifect.getEnabledObjectsData().forEach(entry => {
+                const object = entry.object.deref();
+                const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+                this.sizePerEntry.push(size);
+                this.positionPerEntry.push(this.totalSize);
+                this.totalSize += size;
+            });
+            const flooredIndex = Math.floor(this.index);
+            const indexOffset = this.index - Math.floor(this.index);
+            this.currentPosition = 0;
+            if (this.index < 0)
+                this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
+            else if (this.index >= this.sizePerEntry.length)
+                this.currentPosition =
+                    (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
+            else
+                this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+        }
+        recomputeIndex() {
+            let index = 0;
+            while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition)
+                index++;
+            if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2)
+                index++;
+            this.index = index;
+        }
+        computeAndApplyStyling(element, translationValue, size = this.size) {
             let opacityValue, scaleValue;
-            if (translationValue > 0) {
-                opacityValue = linearInterpolation(translationValue, 0, size.max, this.opacity.max, this.opacity.min);
-                scaleValue = linearInterpolation(translationValue, 0, size.max, this.scale.max, this.scale.min);
-            }
-            else {
-                opacityValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.opacity.max, this.opacity.min));
-                scaleValue = Math.abs(linearInterpolation(translationValue, 0, size.min, this.scale.max, this.scale.min));
-            }
+            const bound = translationValue > 0 ? size.max : size.min;
+            opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+            scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
             let styles = {
                 left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
             calc(${!this.isVertical ? translationValue : 0}px - 50%), 
@@ -6629,15 +6773,36 @@ var Turbo = (function (exports) {
             0) scale3d(${scaleValue}, ${scaleValue}, 1)`
             };
             if (this.generateCustomStyling)
-                styles = this.generateCustomStyling(element, translationValue, size, styles);
+                styles = this.generateCustomStyling({
+                    element: element,
+                    translationValue: translationValue,
+                    opacityValue: opacityValue,
+                    scaleValue: scaleValue,
+                    size: size,
+                    defaultComputedStyles: styles
+                });
             element.setStyles(styles);
+        }
+        select(entry) {
+            super.select(entry);
+            const index = this.getIndex(this.selectedEntry);
+            if (index != this.index)
+                this.index = index;
+            if (this.reifect) {
+                this.reifect.enabled.transition = true;
+                this.reifect.apply();
+                this.reloadEntrySizes();
+            }
+            const computedStyle = getComputedStyle(this.selectedEntry);
+            this.setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
+            return this;
         }
         onEntryClick(entry, e) {
             super.onEntryClick(entry, e);
             e.stopImmediatePropagation();
             this.open = true;
-            this.snapTo(this.entries.indexOf(entry));
-            this.setOpenTimer();
+            if (!this.alwaysOpen)
+                this.setOpenTimer();
         }
         addEntry(entry) {
             entry = super.addEntry(entry);
@@ -6648,24 +6813,35 @@ var Turbo = (function (exports) {
                 this.open = true;
                 this.dragging = true;
                 this.reifect.enabled.transition = false;
-                this.reloadStyles(true);
+                this.reifect.apply();
+                this.reloadEntrySizes();
+            });
+            let showTimer;
+            entry.addListener("mouseover", () => {
+                clearTimeout(showTimer);
+                showTimer = setTimeout(() => this.open = true, 1000);
+            });
+            entry.addListener("mouseout", () => {
+                if (showTimer)
+                    clearTimeout(showTimer);
+                showTimer = null;
             });
             if (this.reifect) {
                 this.reifect.attach(entry);
                 this.reifect.apply();
-                this.reloadStyles(true);
+                this.reloadEntrySizes();
             }
+            this.refresh();
             return entry;
         }
-        reset() {
-            this.snapTo(0);
+        refresh() {
+            if (this.selectedEntry)
+                this.select(this.selectedEntry);
+            else
+                this.reset();
         }
-        snapTo(value) {
-            this.index = value;
-            this.reifect.enabled.transition = true;
-            this.reloadStyles(true);
-            const computedStyle = getComputedStyle(this.selectedEntry);
-            this.setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
+        reset() {
+            this.select(this.entries[0]);
         }
         clearOpenTimer() {
             if (this.openTimer)
@@ -6673,6 +6849,8 @@ var Turbo = (function (exports) {
         }
         setOpenTimer() {
             this.clearOpenTimer();
+            if (typeof this.openTimeout !== "number" || this.openTimeout < 0)
+                return;
             this.openTimer = setTimeout(() => this.open = false, this.openTimeout);
         }
     };
@@ -6681,6 +6859,9 @@ var Turbo = (function (exports) {
     ], exports.TurboSelectWheel.prototype, "opacity", null);
     __decorate([
         auto()
+    ], exports.TurboSelectWheel.prototype, "alwaysOpen", null);
+    __decorate([
+        auto({ cancelIfUnchanged: false })
     ], exports.TurboSelectWheel.prototype, "index", null);
     __decorate([
         auto()

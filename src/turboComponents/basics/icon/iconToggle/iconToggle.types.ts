@@ -7,10 +7,10 @@ import {TurboEmitter} from "../../../../domBuilding/mvc/turboEmitter";
 type TurboIconToggleProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter,
-> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
+    ModelType extends TurboModel = TurboModel
+> = TurboIconProperties<ViewType, DataType, ModelType> & {
     toggled?: boolean,
+    toggleOnClick?: boolean,
     onToggle?: (value: boolean, el: TurboIconToggle) => void,
 }
 

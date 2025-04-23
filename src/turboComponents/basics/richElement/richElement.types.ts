@@ -33,9 +33,8 @@ type TurboRichElementProperties<
     ElementTag extends ValidTag = "div",
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
-> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
+    ModelType extends TurboModel = TurboModel
+> = TurboCustomProperties<ViewType, DataType, ModelType> & {
     elementTag?: ElementTag,
     text?: string;
 

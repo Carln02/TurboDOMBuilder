@@ -66,10 +66,10 @@ class TurboEventManager extends TurboElement {
     //Duration to reach long press
     private readonly longPressDuration: number;
 
-    private readonly authorizeEventScaling: boolean | (() => boolean);
-    private readonly scaleEventPosition: (position: Point) => Point;
+    public authorizeEventScaling: boolean | (() => boolean);
+    public scaleEventPosition: (position: Point) => Point;
 
-    constructor(properties: TurboEventManagerProperties = {}) {
+    public constructor(properties: TurboEventManagerProperties = {}) {
         super({parent: document.body});
         this.onInputDeviceChange = new Delegate<(device: InputDevice) => void>();
         this.authorizeEventScaling = properties.authorizeEventScaling;

@@ -93,6 +93,7 @@ type ReifectAppliedOptions<State extends string | number | symbol, ClassType ext
     executeForAll?: boolean
     recomputeIndices?: boolean,
     recomputeProperties?: boolean,
+    applyStylesInstantly?: boolean,
     propertiesOverride?: StatefulReifectCoreProperties<State, ClassType>
 }
 

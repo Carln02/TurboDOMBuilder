@@ -3,36 +3,40 @@ import {TurboIconToggleProperties} from "./iconToggle.types";
 import {define} from "../../../../domBuilding/decorators/define";
 import {TurboView} from "../../../../domBuilding/mvc/turboView";
 import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../../domBuilding/mvc/turboEmitter";
+import {auto} from "../../../../domBuilding/decorators/auto/auto";
+import {DefaultEventName} from "../../../../eventHandling/eventNaming";
 
 @define()
 class TurboIconToggle<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
-    EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    private _toggled: boolean = false;
-    private readonly onToggle: (value: boolean, el: TurboIconToggle) => void;
+    ModelType extends TurboModel<DataType> = TurboModel
+> extends TurboIcon<ViewType, DataType, ModelType> {
+    public onToggle: (value: boolean, el: TurboIconToggle) => void;
 
-    constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>) {
+    public constructor(properties: TurboIconToggleProperties<ViewType, DataType, ModelType>) {
         super(properties);
-        this.toggled = properties.toggled;
+        this.toggled = properties.toggled ?? false;
         this.onToggle = properties.onToggle;
+        this.toggleOnClick = properties.toggleOnClick ?? false;
     }
 
-    public get toggled() {
-        return this._toggled;
-    }
-
+    @auto({cancelIfUnchanged: true})
     public set toggled(value: boolean) {
-        this._toggled = value;
         if (this.onToggle) this.onToggle(value, this);
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set toggleOnClick(value: boolean) {
+        if (value) this.addListener(DefaultEventName.click, this.clickListener);
+        else this.removeListener(DefaultEventName.click, this.clickListener);
     }
 
     public toggle() {
         this.toggled = !this.toggled;
     }
+
+    private clickListener = () => this.toggle();
 }
 
 export {TurboIconToggle};

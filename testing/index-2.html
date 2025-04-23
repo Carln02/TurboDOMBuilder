@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        turbo-select-entry {
+            padding: 6px;
+        }
+
+        .icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+        }
+
+        .icon > svg {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+        }
+    </style>
+</head>
+<body>
+<script src="../build/turbodombuilder.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        Turbo.turbofy();
+        Turbo.TurboIcon.config.defaultDirectory = "assets";
+        Turbo.TurboIcon.config.defaultClasses = "icon";
+        new Turbo.TurboEventManager();
+
+        document.body.style.height = "100vh";
+        document.body.style.display = "flex";
+        document.body.style.flexDirection = "column";
+        document.body.style.alignItems = "center";
+
+        let el = document.createElement("div");
+        el.innerText = "HIII";
+        document.body.appendChild(el);
+
+        const xxxx = new Turbo.TurboSelectWheel({values: ["one", "two", "three", "four"], selectedValues: ["two"], parent: document.body}).setStyle("marginTop", "100px");
+        const xxxx2 = new Turbo.TurboSelectWheel({values: ["one", "two"], direction: "vertical", parent: document.body}).setStyle("marginTop", "200px");
+
+        let k = 0;
+        const elementVisibilityReifect = new Turbo.StatefulReifect({
+            states: ["hidden", "shown"],
+            styles: {
+                shown: "opacity: 1",
+                hidden: (state) => {
+                    console.log(state);
+                    k++;
+                    if (k < 3) return "opacity: 0";
+                    return "opacity: 0.5";
+                }
+            }
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key !== " ") return;
+            elementVisibilityReifect.toggle([xxxx, xxxx2]);
+        });
+    })
+
+
+</script>
+</body>
+</html>

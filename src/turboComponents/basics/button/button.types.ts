@@ -27,9 +27,8 @@ import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 type TurboButtonProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter,
-> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
+    ModelType extends TurboModel = TurboModel
+> = TurboCustomProperties<ViewType, DataType, ModelType> & {
     buttonText?: string | Element;
     leftIcon?: string | Element;
     rightIcon?: string | Element;

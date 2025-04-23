@@ -1,5 +1,13 @@
-class TurboEmitter {
+import {TurboModel} from "./turboModel";
+
+class TurboEmitter<ModelType extends TurboModel = TurboModel> {
     protected readonly callbacks: Map<string, Map<string, ((...args: any[]) => void)[]>> = new Map();
+
+    public model: ModelType;
+
+    public constructor(model: ModelType) {
+        this.model = model;
+    }
 
     protected getBlock(blockKey?: string) {
         return this.callbacks.get(blockKey);
@@ -22,11 +30,15 @@ class TurboEmitter {
         return block.get(key);
     }
 
-    public add(key: string, callback: (...args: any[]) => void, blockKey?: string): void {
+    public addWithBlock(key: string, blockKey: string, callback: (...args: any[]) => void): void {
         this.getOrGenerateKey(key, blockKey).push(callback);
     }
 
-    public remove(key: string, callback?: (...args: any[]) => void, blockKey?: string): void {
+    public add(key: string, callback: (...args: any[]) => void): void {
+        this.addWithBlock(key, this.model.defaultBlockKey, callback);
+    }
+
+    public removeWithBlock(key: string, blockKey: string, callback?: (...args: any[]) => void): void {
         if (callback == undefined) this.getBlock(blockKey)?.delete(key);
         else {
             const callbacks = this.getKey(key, blockKey);
@@ -35,10 +47,18 @@ class TurboEmitter {
         }
     }
 
-    public fire(key: string, blockKey: string, ...args: any[]): void {
+    public remove(key: string, callback?: (...args: any[]) => void): void {
+        this.removeWithBlock(key, this.model.defaultBlockKey, callback);
+    }
+
+    public fireWithBlock(key: string, blockKey: string, ...args: any[]): void {
         this.callbacks.get(blockKey)?.get(key)?.forEach((callback) => {
             if (callback && typeof callback == "function") callback(...args);
         });
+    }
+
+    public fire(key: string, ...args: any[]): void {
+        this.fireWithBlock(key, this.model.defaultBlockKey, ...args);
     }
 }
 

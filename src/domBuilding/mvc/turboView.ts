@@ -1,6 +1,7 @@
 import {TurboModel} from "./turboModel";
 import {TurboEmitter} from "./turboEmitter";
 import {MvcViewProperties} from "./mvc.types";
+import {TurboHandler} from "./turboHandler";
 
 
 class TurboView<
@@ -15,7 +16,7 @@ class TurboView<
     public constructor(properties: MvcViewProperties<ElementType, ModelType, EmitterType>) {
         this.element = properties.element;
         this.emitter = properties.emitter;
-        if (properties.model) this.model = properties.model;
+        this.model = properties.model;
     }
 
     public initialize(): void {

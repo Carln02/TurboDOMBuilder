@@ -6,7 +6,6 @@ import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/state
 import {define} from "../../../../domBuilding/decorators/define";
 import {TurboView} from "../../../../domBuilding/mvc/turboView";
 import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../../domBuilding/mvc/turboEmitter";
 
 @define()
 class TurboIconSwitch<
@@ -14,15 +13,14 @@ class TurboIconSwitch<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel<any>,
-    EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    public readonly switchReifect: StatefulReifect<State, TurboIcon>;
+> extends TurboIcon<ViewType, DataType, ModelType> {
+    public switchReifect: StatefulReifect<State, TurboIcon>;
 
     /**
      * Creates an instance of Icon.
      * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>) {
+    constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType>) {
         super({...properties, icon: undefined});
 
         if (properties.switchReifect instanceof StatefulReifect) this.switchReifect = properties.switchReifect;

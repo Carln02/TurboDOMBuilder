@@ -416,7 +416,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
                 this.processRawProperties(data, options.propertiesOverride);
             data.lastState = state;
 
-            this.applyResolvedValues(data, data.lastState, true);
+            this.applyResolvedValues(data, data.lastState, true, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
@@ -436,7 +436,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
             const handler = (data.object.deref() as Node)?.reifects;
             if (handler) handler.reloadTransitions();
 
-            this.applyResolvedValues(data);
+            this.applyResolvedValues(data, data.lastState, false, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
@@ -560,12 +560,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     //Property setting methods
 
     public applyResolvedValues(data: ReifectObjectData<State, ClassType>, state: State = data.lastState,
-                               skipTransition: boolean = false) {
+                               skipTransition: boolean = false, applyStylesInstantly: boolean = false) {
         if (this.enabled.transition && data.enabled.transition && !skipTransition) this.applyTransition(data, state);
         if (this.enabled.replaceWith && data.enabled.replaceWith) this.replaceObject(data, state);
         if (this.enabled.properties && data.enabled.properties) this.setProperties(data, state);
         if (this.enabled.classes && data.enabled.classes) this.applyClasses(data, state);
-        if (this.enabled.styles && data.enabled.styles) this.applyStyles(data, state);
+        if (this.enabled.styles && data.enabled.styles) this.applyStyles(data, state, applyStylesInstantly);
     }
 
     public replaceObject(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
@@ -612,10 +612,11 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         }
     }
 
-    public applyStyles(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+    public applyStyles(data: ReifectObjectData<State, ClassType>, state: State = data.lastState,
+                       applyStylesInstantly: boolean = false) {
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
-        object.setStyles(data.resolvedValues.styles[state]);
+        object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
 
     public applyTransition(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {

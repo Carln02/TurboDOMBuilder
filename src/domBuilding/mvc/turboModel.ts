@@ -1,4 +1,5 @@
 import {auto} from "../decorators/auto/auto";
+import {TurboHandler} from "./turboHandler";
 
 class TurboModel<
     DataType extends object = any,
@@ -7,9 +8,11 @@ class TurboModel<
     protected readonly dataMap: Map<string, DataType> = new Map();
     protected readonly idMap: Map<string, string> = new Map();
 
+    protected readonly handlers: Map<string, TurboHandler> = new Map();
+
     public keyChangedCallback: (keyName: DataKeyType, blockKey: string, ...args: any[]) => void;
 
-    protected constructor(data?: DataType) {
+    public constructor(data?: DataType) {
         this.enabledCallbacks = true;
         this.setDataBlock(data, undefined, this.defaultBlockKey, false);
     }
@@ -51,6 +54,7 @@ class TurboModel<
     }
 
     protected getDataBlock(blockKey: string = this.defaultBlockKey): DataType {
+        if (!blockKey) return null;
         return this.dataMap.get(blockKey);
     }
 
@@ -62,6 +66,7 @@ class TurboModel<
     }
 
     protected getDataBlockId(blockKey: string = this.defaultBlockKey): string {
+        if (!blockKey) return null;
         return this.idMap.get(blockKey);
     }
 
@@ -71,7 +76,16 @@ class TurboModel<
     }
 
     protected fireKeyChangedCallback(key: DataKeyType, blockKey: string = this.defaultBlockKey, deleted: boolean = false) {
+        if (blockKey == undefined) blockKey = this.dataMap.keys().next().value;
         this.keyChangedCallback(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
+    }
+
+    protected fireCallback(key: string | DataKeyType, ...args: any[]) {
+        this.keyChangedCallback(key as DataKeyType, this.defaultBlockKey, ...args);
+    }
+
+    protected fireBlockCallback(key: string | DataKeyType, blockKey: string = this.defaultBlockKey, ...args: any[]) {
+        this.keyChangedCallback(key as DataKeyType, blockKey, ...args);
     }
 
     public initialize(blockKey: string = this.defaultBlockKey) {
@@ -84,18 +98,22 @@ class TurboModel<
     }
 
     public get defaultBlockKey(): string {
-        return this.dataMap.size > 1 ? null : this.dataMap.size > 0 ? this.dataMap.keys().next().value : "0";
+        return "__turbo_default_block_key__";
+    }
+
+    protected get defaultComputationBlockKey(): string {
+        return this.dataMap.size > 1 ? null : this.defaultBlockKey;
     }
 
     public getAllBlockKeys(): string[] {
         return Array.from(this.dataMap.keys());
     }
 
-    public getAllIds(blockKey: string = this.defaultBlockKey): string[] {
+    public getAllIds(): string[] {
         return Array.from(this.idMap.values());
     }
 
-    public getAllKeys(blockKey: string = this.defaultBlockKey): DataKeyType[] {
+    public getAllKeys(blockKey: string = this.defaultComputationBlockKey): DataKeyType[] {
         const output: DataKeyType[] = [];
         if (blockKey) {
             const block = this.dataMap.get(blockKey);
@@ -108,7 +126,7 @@ class TurboModel<
         return output;
     }
 
-    public getAllData(blockKey: string = this.defaultBlockKey): unknown[] {
+    public getAllData(blockKey: string = this.defaultComputationBlockKey): unknown[] {
         const output = [];
         if (blockKey) {
             this.getAllKeys(blockKey)?.forEach(key => output.push(this.getData(key, blockKey)));
@@ -118,6 +136,14 @@ class TurboModel<
             }
         }
         return output;
+    }
+
+    public getHandler(key: string): TurboHandler {
+        return this.handlers.get(key);
+    }
+
+    public addHandler(key: string, handler: TurboHandler) {
+        this.handlers.set(key, handler);
     }
 }
 

@@ -20,7 +20,7 @@ class TurboProxiedElement<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
+    EmitterType extends TurboEmitter = TurboEmitter<any>
 > {
 
     //STATIC CONFIG
@@ -55,6 +55,25 @@ class TurboProxiedElement<
     public attributeChangedCallback(name: string, oldValue: string, newValue: string) {
         if (!newValue || newValue == oldValue) return;
         this[kebabToCamelCase(name)] = parse(newValue);
+    }
+
+    public initializeUI(): void {
+        this.setupChangedCallbacks();
+        this.setupUIElements();
+        this.setupUILayout();
+        this.setupUIListeners();
+    }
+
+    protected setupChangedCallbacks(): void {
+    }
+
+    protected setupUIElements(): void {
+    }
+
+    protected setupUILayout(): void {
+    }
+
+    protected setupUIListeners(): void {
     }
 
     /**

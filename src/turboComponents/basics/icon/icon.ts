@@ -21,9 +21,8 @@ import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 class TurboIcon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
-    EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    ModelType extends TurboModel<DataType> = TurboModel<any>
+> extends TurboElement<ViewType, DataType, ModelType> {
     private _element: Element;
 
     private _type: string;
@@ -40,7 +39,7 @@ class TurboIcon<
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>) {
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>) {
         super(properties);
         if (properties.icon) this.update(properties);
     }
@@ -181,7 +180,7 @@ class TurboIcon<
 function icon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
+    ModelType extends TurboModel<DataType> = TurboModel<any>,
 >(properties: TurboIconProperties<ViewType, DataType, ModelType>): TurboIcon<ViewType, DataType, ModelType> {
     return new TurboIcon<ViewType, DataType, ModelType>(properties);
 }
