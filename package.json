@@ -1,6 +1,6 @@
 {
   "name": "turbodombuilder",
-  "version": "0.8.54",
+  "version": "0.8.67",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
   "type": "module",
   "main": "build/turbodombuilder.cjs.js",

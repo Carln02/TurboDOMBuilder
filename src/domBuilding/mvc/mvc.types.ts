@@ -20,7 +20,7 @@ type MvcHandlerProperties<
     data?: DataType,
 
     viewConstructor?: new (properties: MvcViewProperties) => ViewType,
-    modelConstructor?: new (data?: DataType) => ModelType,
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType,
     emitterConstructor?: new (model: ModelType) => EmitterType,
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[],
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[],
@@ -36,7 +36,7 @@ type MvcGenerationProperties<
     EmitterType extends TurboEmitter = TurboEmitter
 > = {
     viewConstructor?: new (properties: MvcViewProperties) => ViewType,
-    modelConstructor?: new (data?: DataType) => ModelType,
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType,
     emitterConstructor?: new (model: ModelType) => EmitterType,
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[],
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[],
@@ -65,4 +65,27 @@ type MvcControllerProperties<
     view: ViewType,
 };
 
-export {MvcHandlerProperties, MvcGenerationProperties, MvcControllerProperties, MvcViewProperties};
+type MvcDataBlock<
+    DataType = any,
+    IdType extends string | number | symbol = any
+> = {
+    id: IdType,
+    data: DataType,
+};
+
+type MvcBlocksType<
+    Type extends "array" | "map" = "map",
+    BlockType extends MvcDataBlock = MvcDataBlock
+> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+
+type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+
+export {
+    MvcHandlerProperties,
+    MvcGenerationProperties,
+    MvcControllerProperties,
+    MvcViewProperties,
+    MvcDataBlock,
+    MvcBlocksType,
+    MvcBlockKeyType
+};

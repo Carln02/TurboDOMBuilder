@@ -621,7 +621,10 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
     public applyTransition(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
         const object = data.object.deref();
-        if (!object || !(object instanceof Element)) return;
+        if (!object || !(object instanceof Element) || !data.resolvedValues) return;
+        if (!state) state = this.states[0];
+        if (!data.lastState) data.lastState = state;
+        if (!state) return;
         object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
 

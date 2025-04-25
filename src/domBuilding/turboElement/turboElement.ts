@@ -30,6 +30,10 @@ class TurboElement<
 
     protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
 
+    public onAttach: () => void = () => {};
+    public onDetach: () => void = () => {};
+    public onAdopt: () => void = () => {};
+
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -50,12 +54,15 @@ class TurboElement<
     }
 
     public connectedCallback() {
+        this.onAttach?.();
     }
 
     public disconnectedCallback() {
+        this.onDetach?.();
     }
 
     public adoptedCallback() {
+        this.onAdopt?.();
     }
 
     public attributeChangedCallback(name: string, oldValue: string, newValue: string) {

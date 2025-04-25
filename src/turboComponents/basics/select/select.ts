@@ -88,8 +88,9 @@ class TurboSelect<
 
         if (!entry.selectedClasses) entry.selectedClasses = this.selectedEntryClasses;
         entry.addListener(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
-        this.entriesParent.addChild(entry);
+        entry.onAttach = () => requestAnimationFrame(() => this.select(this.selectedEntry));
 
+        this.entriesParent.addChild(entry);
         this.entries.push(entry);
         return entry;
     }
@@ -104,6 +105,7 @@ class TurboSelect<
      * @return {TurboSelect} - This Dropdown for chaining.
      */
     public select(entry: ValueType | EntryType): this {
+        if (entry === undefined || entry === null) return this;
         if (!(entry instanceof TurboSelectEntry)) {
             let el = this.enabledEntries.find(el => el.value == entry);
             if (!el) return this;
@@ -233,6 +235,7 @@ class TurboSelect<
         for (const entry of values) this.addEntry(entry);
         for (const index of selectedEntriesIndices) this.select(this.entries[index]);
         if (!this.selectedEntry && this.forceSelection) this.select(this.entries[0]);
+        this.select(this.selectedEntry);
     }
 }
 

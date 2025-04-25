@@ -154,52 +154,19 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
     constructor(model: ModelType);
 }
 
-declare class TurboModel<DataType extends object = any, DataKeyType extends string | number | symbol = any> {
-    protected readonly dataMap: Map<string, DataType>;
-    protected readonly idMap: Map<string, string>;
-    protected readonly handlers: Map<string, TurboHandler>;
-    keyChangedCallback: (keyName: DataKeyType, blockKey: string, ...args: any[]) => void;
-    constructor(data?: DataType);
-    get data(): DataType;
-    set data(value: DataType);
-    get dataId(): string;
-    set dataId(value: string);
-    set enabledCallbacks(value: boolean);
-    protected getData(key: DataKeyType, blockKey?: string): unknown;
-    protected setData(key: DataKeyType, value: unknown, blockKey?: string): void;
-    getSize(blockKey?: string): number;
-    protected getDataBlock(blockKey?: string): DataType;
-    protected setDataBlock(value: DataType, id?: string, blockKey?: string, initialize?: boolean): void;
-    protected getDataBlockId(blockKey?: string): string;
-    protected setDataBlockId(value: string, blockKey?: string): void;
-    protected fireKeyChangedCallback(key: DataKeyType, blockKey?: string, deleted?: boolean): void;
-    protected fireCallback(key: string | DataKeyType, ...args: any[]): void;
-    protected fireBlockCallback(key: string | DataKeyType, blockKey?: string, ...args: any[]): void;
-    initialize(blockKey?: string): void;
-    clear(blockKey?: string): void;
-    get defaultBlockKey(): string;
-    protected get defaultComputationBlockKey(): string;
-    getAllBlockKeys(): string[];
-    getAllIds(): string[];
-    getAllKeys(blockKey?: string): DataKeyType[];
-    getAllData(blockKey?: string): unknown[];
-    getHandler(key: string): TurboHandler;
-    addHandler(key: string, handler: TurboHandler): void;
-}
-
 declare class TurboEmitter<ModelType extends TurboModel = TurboModel> {
     protected readonly callbacks: Map<string, Map<string, ((...args: any[]) => void)[]>>;
     model: ModelType;
     constructor(model: ModelType);
-    protected getBlock(blockKey?: string): Map<string, ((...args: any[]) => void)[]>;
-    protected getOrGenerateBlock(blockKey?: string): Map<string, ((...args: any[]) => void)[]>;
-    protected getKey(key: string, blockKey?: string): ((...args: any[]) => void)[];
-    protected getOrGenerateKey(key: string, blockKey?: string): ((...args: any[]) => void)[];
-    addWithBlock(key: string, blockKey: string, callback: (...args: any[]) => void): void;
+    protected getBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    protected getOrGenerateBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    protected getKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    protected getOrGenerateKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    addWithBlock(key: string, blockKey: number | string, callback: (...args: any[]) => void): void;
     add(key: string, callback: (...args: any[]) => void): void;
-    removeWithBlock(key: string, blockKey: string, callback?: (...args: any[]) => void): void;
+    removeWithBlock(key: string, blockKey: number | string, callback?: (...args: any[]) => void): void;
     remove(key: string, callback?: (...args: any[]) => void): void;
-    fireWithBlock(key: string, blockKey: string, ...args: any[]): void;
+    fireWithBlock(key: string, blockKey: string | number, ...args: any[]): void;
     fire(key: string, ...args: any[]): void;
 }
 
@@ -221,7 +188,7 @@ type MvcHandlerProperties<ElementType extends object = object, ViewType extends 
     emitter?: EmitterType;
     data?: DataType;
     viewConstructor?: new (properties: MvcViewProperties) => ViewType;
-    modelConstructor?: new (data?: DataType) => ModelType;
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
     emitterConstructor?: new (model: ModelType) => EmitterType;
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
@@ -230,7 +197,7 @@ type MvcHandlerProperties<ElementType extends object = object, ViewType extends 
 };
 type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
     viewConstructor?: new (properties: MvcViewProperties) => ViewType;
-    modelConstructor?: new (data?: DataType) => ModelType;
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
     emitterConstructor?: new (model: ModelType) => EmitterType;
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
@@ -246,6 +213,50 @@ type MvcViewProperties<ElementType extends object = object, ModelType extends Tu
 type MvcControllerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcViewProperties<ElementType, ModelType, EmitterType> & {
     view: ViewType;
 };
+type MvcDataBlock<DataType = any, IdType extends string | number | symbol = any> = {
+    id: IdType;
+    data: DataType;
+};
+type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends MvcDataBlock = MvcDataBlock> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+
+declare class TurboModel<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, BlocksType extends "array" | "map" = "array" | "map", BlockType extends MvcDataBlock<DataType, IdType> = MvcDataBlock<DataType, IdType>> {
+    protected readonly isDataBlocksArray: boolean;
+    protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
+    protected readonly handlers: Map<string, TurboHandler>;
+    keyChangedCallback: (keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void;
+    constructor(data?: DataType, dataBlocksType?: BlocksType);
+    get data(): DataType;
+    set data(value: DataType);
+    get dataId(): IdType;
+    set dataId(value: IdType);
+    set enabledCallbacks(value: boolean);
+    protected getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): unknown;
+    protected setData(key: KeyType, value: unknown, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    getSize(blockKey?: MvcBlockKeyType<BlocksType>): number;
+    protected getBlock(blockKey?: MvcBlockKeyType<BlocksType>): BlockType | null;
+    protected createBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>): BlockType;
+    protected setBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
+    protected hasBlock(blockKey: MvcBlockKeyType<BlocksType>): boolean;
+    addBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
+    protected getBlockData(blockKey?: MvcBlockKeyType<BlocksType>): DataType | null;
+    protected getBlockId(blockKey?: MvcBlockKeyType<BlocksType>): IdType | null;
+    protected setBlockId(value: IdType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    protected fireKeyChangedCallback(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>, deleted?: boolean): void;
+    protected fireCallback(key: string | KeyType, ...args: any[]): void;
+    protected fireBlockCallback(key: string | KeyType, blockKey?: MvcBlockKeyType<BlocksType>, ...args: any[]): void;
+    initialize(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    clear(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    get defaultBlockKey(): MvcBlockKeyType<BlocksType>;
+    protected get defaultComputationBlockKey(): MvcBlockKeyType<BlocksType>;
+    getAllBlockKeys(): MvcBlockKeyType<BlocksType>[];
+    getAllIds(): IdType[];
+    protected getAllBlocks(blockKey?: MvcBlockKeyType<BlocksType>): BlockType[];
+    getAllKeys(blockKey?: MvcBlockKeyType<BlocksType>): KeyType[];
+    getAllData(blockKey?: MvcBlockKeyType<BlocksType>): unknown[];
+    getHandler(key: string): TurboHandler;
+    addHandler(key: string, handler: TurboHandler): void;
+}
 
 declare class TurboView<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
     element: ElementType;
@@ -623,6 +634,9 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
      */
     static readonly config: any;
     protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    onAttach: () => void;
+    onDetach: () => void;
+    onAdopt: () => void;
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -3405,6 +3419,7 @@ declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, 
     select(entry: ValueType | EntryType): this;
     protected onEntryClick(entry: EntryType, e?: Event): void;
     addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType;
+    clear(): void;
     refresh(): void;
     reset(): void;
     protected clearOpenTimer(): void;
@@ -3663,4 +3678,4 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcControllerProperties, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcBlockKeyType, type MvcBlocksType, type MvcControllerProperties, type MvcDataBlock, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };

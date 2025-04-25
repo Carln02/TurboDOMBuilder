@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Turbo Reifect Demo</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #121212;
+            font-family: sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        turbo-select-entry {
+            padding: 6px;
+        }
+
+        .icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+        }
+
+        .icon > svg {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+        }
+
+        .grid {
+            display: flex;
+            gap: 1em;
+        }
+    </style>
+</head>
+<body>
+
+<script src="../build/turbodombuilder.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        Turbo.turbofy();
+        Turbo.TurboIcon.config.defaultDirectory = "assets";
+        Turbo.TurboIcon.config.defaultClasses = "icon";
+        new Turbo.TurboEventManager();
+
+        // Main grid container
+        const boxContainer = Turbo.div({
+            class: "grid",
+            parent: document.body
+        });
+
+        // Colored boxes
+        const boxes = [
+            "#e74c3c", "#27ae60", "#3498db", "#f39c12", "#9b59b6"
+        ].map(color =>
+            Turbo.div({
+                style: `width: 80px; height: 80px; background-color: ${color}; border-radius: 12px`,
+                parent: boxContainer
+            })
+        );
+
+        // Transition 1 — Slide In/Out
+        const slideTransition = new Turbo.StatefulReifect({
+            states: ["in", "out"],
+            transitionProperties: "transform",
+            transitionDuration: 0.3,
+            transitionTimingFunction: "cubic-bezier(0.33, 1, 0.68, 1)",
+            transitionDelay: (state, index, total) => 0.2 * (total - index) / total,
+            styles: {
+                in: "transform: translateX(150px)",
+                out: "transform: translateX(0px)"
+            }
+        });
+
+        // Transition 2 — Fade In/Out
+        const fadeTransition = new Turbo.StatefulReifect({
+            states: ["visible", "hidden"],
+            transitionProperties: "opacity",
+            transitionDuration: 0.4,
+            transitionTimingFunction: "ease-in-out",
+            styles: {
+                visible: "opacity: 1",
+                hidden: "opacity: 0.1"
+            }
+        });
+
+        // Attach both transitions to all boxes
+        boxes.forEach(box => {
+            box.reifects.attach(slideTransition, fadeTransition);
+        });
+
+        let toggled = false;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === " ") {
+                toggled = !toggled;
+                slideTransition.apply(toggled ? "in" : "out", boxes);
+                fadeTransition.apply(toggled ? "visible" : "hidden", boxes);
+            }
+
+            if (e.key === "f") {
+                fadeTransition.toggle(boxes);
+            }
+
+            if (e.key === "s") {
+                slideTransition.toggle(boxes);
+            }
+        });
+    });
+</script>
+</body>
+</html>

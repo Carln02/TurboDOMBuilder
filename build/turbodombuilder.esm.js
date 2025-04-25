@@ -1126,12 +1126,12 @@ class TurboEmitter {
         this.model = model;
     }
     getBlock(blockKey) {
-        return this.callbacks.get(blockKey);
+        return this.callbacks.get(blockKey.toString());
     }
     getOrGenerateBlock(blockKey) {
-        if (!this.callbacks.has(blockKey))
-            this.callbacks.set(blockKey, new Map());
-        return this.callbacks.get(blockKey);
+        if (!this.callbacks.has(blockKey.toString()))
+            this.callbacks.set(blockKey.toString(), new Map());
+        return this.callbacks.get(blockKey.toString());
     }
     getKey(key, blockKey) {
         const block = this.getBlock(blockKey);
@@ -1165,7 +1165,7 @@ class TurboEmitter {
         this.removeWithBlock(key, this.model.defaultBlockKey, callback);
     }
     fireWithBlock(key, blockKey, ...args) {
-        this.callbacks.get(blockKey)?.get(key)?.forEach((callback) => {
+        this.callbacks.get(blockKey.toString())?.get(key)?.forEach((callback) => {
             if (callback && typeof callback == "function")
                 callback(...args);
         });
@@ -1351,72 +1351,122 @@ class TurboHandler {
 }
 
 class TurboModel {
-    dataMap = new Map();
-    idMap = new Map();
+    isDataBlocksArray = false;
+    dataBlocks;
     handlers = new Map();
     keyChangedCallback;
-    constructor(data) {
+    constructor(data, dataBlocksType) {
+        if (dataBlocksType === "array") {
+            this.isDataBlocksArray = true;
+            this.dataBlocks = [];
+        }
+        else {
+            this.isDataBlocksArray = false;
+            this.dataBlocks = new Map();
+        }
         this.enabledCallbacks = true;
-        this.setDataBlock(data, undefined, this.defaultBlockKey, false);
+        this.setBlock(data, undefined, this.defaultBlockKey, false);
     }
     get data() {
-        return this.getDataBlock();
+        return this.getBlockData();
     }
     set data(value) {
-        this.setDataBlock(value);
+        this.setBlock(value);
     }
     get dataId() {
-        return this.getDataBlockId();
+        return this.getBlockId();
     }
     set dataId(value) {
-        this.setDataBlockId(value);
+        this.setBlockId(value);
     }
     set enabledCallbacks(value) { }
     getData(key, blockKey) {
-        if (!blockKey)
+        if (!blockKey === undefined)
             return null;
-        return this.dataMap.get(blockKey)?.[key];
+        return this.getBlockData(blockKey)?.[key];
     }
     setData(key, value, blockKey) {
-        if (!blockKey)
+        if (!blockKey === undefined)
             return;
-        const block = this.dataMap.get(blockKey);
-        if (block)
-            block[key] = value;
+        const data = this.getBlockData(blockKey);
+        if (data)
+            data[key] = value;
         if (this.enabledCallbacks)
             this.fireKeyChangedCallback(key, blockKey);
     }
     getSize(blockKey = this.defaultBlockKey) {
-        const block = this.dataMap.get(blockKey);
-        return block ? Object.keys(block).length : 0;
+        return this.getAllKeys(blockKey)?.length ?? 0;
     }
-    getDataBlock(blockKey = this.defaultBlockKey) {
-        if (!blockKey)
+    getBlock(blockKey = this.defaultBlockKey) {
+        if (blockKey === undefined)
             return null;
-        return this.dataMap.get(blockKey);
+        if (this.isDataBlocksArray) {
+            const index = Number(blockKey);
+            return Number.isInteger(index) && index >= 0
+                ? this.dataBlocks[index] ?? null
+                : null;
+        }
+        else {
+            return this.dataBlocks.get(blockKey.toString()) ?? null;
+        }
     }
-    setDataBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
-        if (!value)
+    createBlock(value, id, blockKey = this.defaultBlockKey) {
+        return { id: id ?? null, data: value };
+    }
+    setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
+        if (!value || !blockKey)
             return;
-        this.dataMap.set(blockKey, value);
-        if (id)
-            this.dataMap.set(id, value);
+        const block = this.createBlock(value, id, blockKey);
+        if (this.isDataBlocksArray) {
+            const index = Number(blockKey);
+            if (Number.isInteger(index) && index >= 0) {
+                this.dataBlocks[index] = block;
+            }
+        }
+        else {
+            this.dataBlocks.set(blockKey.toString(), block);
+        }
         if (initialize)
             this.initialize(blockKey);
     }
-    getDataBlockId(blockKey = this.defaultBlockKey) {
-        if (!blockKey)
-            return null;
-        return this.idMap.get(blockKey);
+    hasBlock(blockKey) {
+        if (this.isDataBlocksArray) {
+            const index = Number(blockKey);
+            return Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length;
+        }
+        return this.dataBlocks.has(blockKey.toString());
     }
-    setDataBlockId(value, blockKey = this.defaultBlockKey) {
+    addBlock(value, id, blockKey, initialize = true) {
         if (!value)
             return;
-        this.idMap.set(blockKey, value);
+        if (!this.isDataBlocksArray)
+            return this.setBlock(value, id, blockKey, initialize);
+        const block = this.createBlock(value, id, blockKey);
+        let index = Number(blockKey);
+        if (!Number.isInteger(index) || index < 0)
+            index = this.dataBlocks.length;
+        this.dataBlocks.splice(index, 0, block);
+        if (initialize)
+            this.initialize(index);
+    }
+    getBlockData(blockKey = this.defaultBlockKey) {
+        const block = this.getBlock(blockKey);
+        return block ? block.data : null;
+    }
+    getBlockId(blockKey = this.defaultBlockKey) {
+        const block = this.getBlock(blockKey);
+        return block ? block.id : null;
+    }
+    setBlockId(value, blockKey = this.defaultBlockKey) {
+        if (!value)
+            return;
+        const block = this.getBlock(blockKey);
+        if (block)
+            block.id = value;
     }
     fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
-        if (blockKey == undefined)
-            blockKey = this.dataMap.keys().next().value;
+        if (blockKey === undefined)
+            blockKey = this.getAllBlockKeys()[0];
         this.keyChangedCallback(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
     }
     fireCallback(key, ...args) {
@@ -1426,51 +1476,55 @@ class TurboModel {
         this.keyChangedCallback(key, blockKey, ...args);
     }
     initialize(blockKey = this.defaultBlockKey) {
-        const block = this.getDataBlock(blockKey);
-        if (!block || !this.enabledCallbacks)
+        const keys = this.getAllKeys(blockKey);
+        if (!keys || !this.enabledCallbacks)
             return;
-        Object.keys(block).forEach(key => this.fireKeyChangedCallback(key, blockKey));
+        keys.forEach(key => this.fireKeyChangedCallback(key, blockKey));
     }
     clear(blockKey = this.defaultBlockKey) {
     }
     get defaultBlockKey() {
-        return "__turbo_default_block_key__";
+        return (this.isDataBlocksArray ? 0 : "__turbo_default_block_key__");
     }
     get defaultComputationBlockKey() {
-        return this.dataMap.size > 1 ? null : this.defaultBlockKey;
+        const size = this.isDataBlocksArray
+            ? this.dataBlocks.length
+            : this.dataBlocks.size;
+        return size > 1 ? null : this.defaultBlockKey;
     }
     getAllBlockKeys() {
-        return Array.from(this.dataMap.keys());
+        if (this.isDataBlocksArray)
+            return this.dataBlocks.map((_, index) => index);
+        else
+            return Array.from(this.dataBlocks.keys());
     }
     getAllIds() {
-        return Array.from(this.idMap.values());
+        if (this.isDataBlocksArray)
+            return this.dataBlocks.map(entry => entry.id);
+        else
+            return Array.from(this.dataBlocks.values()).map(entry => entry.id);
+    }
+    getAllBlocks(blockKey = this.defaultComputationBlockKey) {
+        const output = [];
+        if (blockKey !== null) {
+            const block = this.getBlock(blockKey);
+            if (block)
+                output.push(block);
+        }
+        else {
+            for (const key of this.getAllBlockKeys()) {
+                const block = this.getBlock(key);
+                if (block)
+                    output.push(block);
+            }
+        }
+        return output;
     }
     getAllKeys(blockKey = this.defaultComputationBlockKey) {
-        const output = [];
-        if (blockKey) {
-            const block = this.dataMap.get(blockKey);
-            if (block)
-                output.push(...Object.keys(block));
-        }
-        else {
-            for (const block of this.dataMap.values()) {
-                if (block)
-                    output.push(...Object.keys(block));
-            }
-        }
-        return output;
+        return this.getAllBlocks(blockKey).flatMap(block => Object.keys(block.data));
     }
     getAllData(blockKey = this.defaultComputationBlockKey) {
-        const output = [];
-        if (blockKey) {
-            this.getAllKeys(blockKey)?.forEach(key => output.push(this.getData(key, blockKey)));
-        }
-        else {
-            for (const curBlockKey of this.dataMap.keys()) {
-                this.getAllKeys(curBlockKey)?.forEach(key => output.push(this.getData(key, curBlockKey)));
-            }
-        }
-        return output;
+        return this.getAllBlocks(blockKey).flatMap(block => Object.values(block.data));
     }
     getHandler(key) {
         return this.handlers.get(key);
@@ -1523,6 +1577,9 @@ class TurboElement extends HTMLElement {
      */
     static config = { shadowDOM: false, defaultSelectedClass: "selected" };
     mvc;
+    onAttach = () => { };
+    onDetach = () => { };
+    onAdopt = () => { };
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -1542,10 +1599,13 @@ class TurboElement extends HTMLElement {
         this.mvc = new MvcHandler({ ...properties, element: this });
     }
     connectedCallback() {
+        this.onAttach?.();
     }
     disconnectedCallback() {
+        this.onDetach?.();
     }
     adoptedCallback() {
+        this.onAdopt?.();
     }
     attributeChangedCallback(name, oldValue, newValue) {
         if (!newValue || newValue == oldValue)
@@ -3302,7 +3362,13 @@ class StatefulReifect {
     }
     applyTransition(data, state = data.lastState) {
         const object = data.object.deref();
-        if (!object || !(object instanceof Element))
+        if (!object || !(object instanceof Element) || !data.resolvedValues)
+            return;
+        if (!state)
+            state = this.states[0];
+        if (!data.lastState)
+            data.lastState = state;
+        if (!state)
             return;
         object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
@@ -5522,6 +5588,7 @@ let TurboSelect = class TurboSelect extends TurboElement {
         if (!entry.selectedClasses)
             entry.selectedClasses = this.selectedEntryClasses;
         entry.addListener(DefaultEventName.click, (e) => this.onEntryClick(entry, e));
+        entry.onAttach = () => requestAnimationFrame(() => this.select(this.selectedEntry));
         this.entriesParent.addChild(entry);
         this.entries.push(entry);
         return entry;
@@ -5535,6 +5602,8 @@ let TurboSelect = class TurboSelect extends TurboElement {
      * @return {TurboSelect} - This Dropdown for chaining.
      */
     select(entry) {
+        if (entry === undefined || entry === null)
+            return this;
         if (!(entry instanceof TurboSelectEntry)) {
             let el = this.enabledEntries.find(el => el.value == entry);
             if (!el)
@@ -5646,6 +5715,7 @@ let TurboSelect = class TurboSelect extends TurboElement {
             this.select(this.entries[index]);
         if (!this.selectedEntry && this.forceSelection)
             this.select(this.entries[0]);
+        this.select(this.selectedEntry);
     }
 };
 TurboSelect = TurboSelect_1 = __decorate([
@@ -6782,6 +6852,8 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
     }
     select(entry) {
         super.select(entry);
+        if (entry === undefined || entry === null)
+            return this;
         const index = this.getIndex(this.selectedEntry);
         if (index != this.index)
             this.index = index;
@@ -6830,6 +6902,10 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
         }
         this.refresh();
         return entry;
+    }
+    clear() {
+        this.reifect.detach(...this.entries);
+        super.clear();
     }
     refresh() {
         if (this.selectedEntry)

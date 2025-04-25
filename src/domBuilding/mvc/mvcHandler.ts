@@ -149,7 +149,7 @@ class MvcHandler<
     private linkModelToEmitter() {
         if (!this.emitter || !this.model) return;
         this.emitter.model = this.model;
-        this.model.keyChangedCallback = (keyName: string, blockKey: string, ...args: any[]) =>
+        this.model.keyChangedCallback = (keyName: string, blockKey: any, ...args: any[]) =>
             this.emitter.fireWithBlock(keyName, blockKey, ...args);
     }
 

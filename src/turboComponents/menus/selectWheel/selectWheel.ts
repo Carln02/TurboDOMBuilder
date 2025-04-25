@@ -242,6 +242,8 @@ class TurboSelectWheel<
 
     public select(entry: ValueType | EntryType): this {
         super.select(entry);
+        if (entry === undefined || entry === null) return this;
+
         const index = this.getIndex(this.selectedEntry);
         if (index != this.index) this.index = index;
 
