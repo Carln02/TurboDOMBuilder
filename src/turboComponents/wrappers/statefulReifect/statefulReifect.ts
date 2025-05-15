@@ -3,13 +3,14 @@ import {
     StatefulReifectCoreProperties,
     ReifectObjectData,
     PropertyConfig,
-    ReifectAppliedOptions, ReifectEnabledState, StateSpecificProperty
+    ReifectAppliedOptions, ReifectEnabledObject, StateSpecificProperty, BasicPropertyConfig
 } from "./statefulReifect.types";
 import {PartialRecord} from "../../../domBuilding/core.types";
 import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
 import {isNull} from "../../../utils/dataManipulation/misc";
 import {eachEqualToAny} from "../../../utils/computations/equity";
 import {mod} from "../../../utils/computations/misc";
+import {auto} from "../../../domBuilding/decorators/auto/auto";
 
 /**
  * @class StatefulReifect
@@ -20,11 +21,12 @@ import {mod} from "../../../utils/computations/misc";
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
 class StatefulReifect<State extends string | number | symbol, ClassType extends object = Node> {
-    //List of attached objects
-    protected readonly attachedObjects: ReifectObjectData<State, ClassType>[];
+    protected readonly timeRegex: RegExp = /^(\d+(?:\.\d+)?)(ms|s)?$/i;
 
-    private _states: State[];
-    private readonly _enabled: ReifectEnabledState;
+    //List of attached objects
+    protected readonly attachedObjects: ReifectObjectData<State, ClassType>[] = [];
+
+    protected _states: State[];
 
     protected readonly values: StatefulReifectCoreProperties<State, ClassType>;
 
@@ -32,38 +34,42 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @description Creates an instance of StatefulReifier.
      * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
      */
-    constructor(properties: StatefulReifectProperties<State, ClassType>) {
-        this.attachedObjects = [];
-        if (properties.attachedObjects) this.attachAll(...properties.attachedObjects);
-
+    public constructor(properties: StatefulReifectProperties<State, ClassType>) {
         //Initializing enabled state
-        this._enabled = {
+        this.enable({
             global: true, properties: true, classes: true, styles: true,
             replaceWith: true, transition: true
-        };
+        });
 
-        this.values = {
-            properties: properties.properties || {},
-            classes: properties.classes || {},
-            styles: properties.styles || {},
-            replaceWith: properties.replaceWith || {},
+        this.properties = properties.properties || {};
+        this.classes = properties.classes || {};
+        this.styles = properties.styles || {};
+        this.replaceWith = properties.replaceWith || {};
 
-            transitionProperties: properties.transitionProperties || ["all"],
-            transitionDuration: properties.transitionDuration || 0,
-            transitionTimingFunction: properties.transitionTimingFunction || "linear",
-            transitionDelay: properties.transitionDelay || 0,
-        };
-
+        this.transition = properties.transition ?? "all 0s linear 0s";
+        if (properties.transitionProperties) this.transitionProperties = properties.transitionProperties;
+        if (properties.transitionDuration !== undefined) this.transitionDuration = properties.transitionDuration;
+        if (properties.transitionTimingFunction) this.transitionTimingFunction = properties.transitionTimingFunction;
+        if (properties.transitionDelay !== undefined) this.transitionDelay = properties.transitionDelay;
 
         //Disable transition if undefined
-        if (!properties.transitionProperties && !properties.transitionDuration
+        if (!properties.transition && !properties.transitionProperties && !properties.transitionDuration
             && !properties.transitionTimingFunction && !properties.transitionDelay)
-            this.enabled.transition = false;
+            this.transitionEnabled = false;
 
-        this.states = properties.states;
+        if (properties.states) this.states = properties.states;
+        if (properties.attachedObjects) this.attachAll(...properties.attachedObjects);
     }
 
-    //Attached objects management
+    /*
+     *
+     * *********************************
+     *
+     * Attached objects management
+     *
+     * *********************************
+     *
+     */
 
     /**
      * @function attach
@@ -135,6 +141,48 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     /**
+     * @protected
+     * @function attachObject
+     * @description Function used to generate a data entry for the given object, and add it to the attached list at
+     * the provided index (if any).
+     * @param {ClassType} object - The object to attach
+     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+     * attached list.
+     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * callback fired when the reifier is applied to the object. The callback takes as parameters:
+     * - `state: State`: The state being applied to the object.
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
+     */
+    protected attachObject(object: ClassType, index?: number, onSwitch?:
+    (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType> {
+        if (index == undefined || isNaN(index)) index = this.attachedObjects.length;
+        if (index < 0) index = 0;
+
+        const data = this.generateNewData(object, onSwitch);
+        this.attachedObjects.splice(index!, 0, data);
+        (object as Node).reifects?.attach(this as StatefulReifect<any>);
+
+        data.lastState = this.stateOf(object);
+        this.applyResolvedValues(data, false, true);
+        // this.applyTransition(data);
+
+        return data;
+    }
+
+    /**
+     * @protected
+     * @function detachObject
+     * @description Function used to remove a data entry from the attached objects list.
+     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
+     */
+    protected detachObject(data: ReifectObjectData<State, ClassType>) {
+        this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
+    }
+
+    /**
      * @function getData
      * @description Retrieve the data entry of a given object.
      * @param {ClassType} object - The object to find the data of.
@@ -161,35 +209,15 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         return object || null;
     }
 
-    /**
-     * @function getEnabledState
-     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to get the state of.
-     * @returns {ReifectEnabledState} - The corresponding enabled state.
+    /*
+     *
+     * *********************************
+     *
+     * States stuff
+     *
+     * *********************************
+     *
      */
-    public getEnabledState(object: ClassType): ReifectEnabledState {
-        return this.getData(object)?.enabled;
-    }
-
-    /**
-     * @function setEnabledState
-     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to set the state of.
-     * @param {boolean | ReifectEnabledState} value - The value to set/update with. Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
-     */
-    public setEnabledState(object: ClassType, value: boolean | ReifectEnabledState) {
-        const data = this.getData(object);
-        if (!data) return;
-
-        if (typeof value == "boolean") data.enabled.global = value;
-        else if (!value) return;
-        else for (const [key, state] of Object.entries(value)) {
-                data.enabled[key] = state;
-            }
-    }
-
-    //Getters and setters
 
     /**
      * @description All possible states.
@@ -203,22 +231,154 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         else this._states = value;
     }
 
+    /**
+     * @function stateOf
+     * @description Determine the current state of the reifect on the provided object.
+     * @param {ClassType} object - The object to determine the state for.
+     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+     */
+    public stateOf(object: ClassType): State {
+        if (!object) return undefined;
+        const data = this.getData(object);
+
+        if (!data) return undefined;
+        if (data.lastState) return data.lastState;
+        if (!(object instanceof HTMLElement)) return this.states[0];
+
+        if (!data.resolvedValues) this.processRawProperties(data);
+        for (const state of this.states) {
+            if (!data.resolvedValues?.styles?.[state]) continue;
+            let matches: boolean = true;
+
+            for (const [property, value] of Object.entries(data.resolvedValues.styles[state])) {
+                if (object.style[property] != value) {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (!matches) continue;
+            data.lastState = state;
+            return state;
+        }
+
+        return this.states[0];
+    }
+
+    public getAllStates(): State[] {
+        const states: State[] = [...this.states];
+        for (const values of [this.properties,
+            this.classes, this.styles, this.replaceWith]) {
+            if (typeof values != "object") continue;
+            for (const state of Object.keys(values)) {
+                if (!states.includes(state as State)) states.push(state as State);
+            }
+        }
+        if (states.length == 0) console.warn("No states found for this particular reifect:", this);
+        return states;
+    }
 
     /**
-     * @description The enabled state of the reifier (as a {@link ReifectEnabledState}). Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
+     * @protected
+     * @function parseState
+     * @description Parses a boolean into the corresponding state value.
+     * @param {State | boolean} value - The value to parse.
+     * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
      */
-    public get enabled(): ReifectEnabledState {
-        return this._enabled;
+    protected parseState(value: State | boolean): State {
+        if (typeof value != "boolean") return this.states.includes(value) ? value : this.states[0];
+        else for (const str of value ? ["true", "on", "in", "enabled", "shown"]
+            : ["false", "off", "out", "disabled", "hidden"]) {
+            if (!this.states.includes(str as State)) continue;
+            return str as State;
+        }
+        return this.states[0];
     }
 
-    public set enabled(value: boolean | ReifectEnabledState) {
-        if (typeof value == "boolean") this._enabled.global = value;
-        else if (!value) return;
-        else for (const [key, state] of Object.entries(value)) {
-                this._enabled[key] = state;
-            }
+    /*
+     *
+     * *********************************
+     *
+     * Enabled stuff
+     *
+     * *********************************
+     *
+     */
+
+    @auto()
+    public set enabled(value: boolean) {
+        this.refreshResolvedValues();
     }
+
+    @auto()
+    public set propertiesEnabled(value: boolean) {
+        this.refreshProperties();
+    }
+
+    @auto()
+    public set stylesEnabled(value: boolean) {
+        this.refreshStyles();
+    }
+
+    @auto()
+    public set classesEnabled(value: boolean) {
+        this.refreshClasses();
+    }
+
+    @auto()
+    public set replaceWithEnabled(value: boolean) {
+        this.refreshReplaceWith();
+    }
+
+    @auto()
+    public set transitionEnabled(value: boolean) {
+        this.refreshTransition();
+    }
+
+    /**
+     * @function enable
+     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to set the state of.
+     * @param {boolean | ReifectEnabledObject} value - The value to set/update with. Setting it to a boolean will
+     * accordingly update the value of `enabled.global`.
+     */
+    public enable(value: boolean | ReifectEnabledObject, object?: ClassType) {
+        if (typeof value === "boolean") this.enabled = value;
+        else if (!value) return;
+        else Object.entries(value).forEach(([key, value]) => {
+                if (key == "global") this.enabled = value;
+                else this[key + "Enabled"] = value
+            });
+    }
+
+    public enableObject(object: ClassType, value: boolean | ReifectEnabledObject) {
+        const data = this.getData(object);
+        if (!data) return;
+
+        if (typeof value == "boolean") data.enabled.global = value;
+        else if (!value) return;
+        else Object.entries(value).forEach(([key, value]) => data.enabled[key] = value);
+    }
+
+    /**
+     * @function getObjectEnabledState
+     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to get the state of.
+     * @returns {ReifectEnabledObject} - The corresponding enabled state.
+     */
+    public getObjectEnabledState(object: ClassType): ReifectEnabledObject {
+        return this.getData(object)?.enabled;
+    }
+
+    /*
+     *
+     * *********************************
+     *
+     * Properties stuff
+     *
+     * *********************************
+     *
+     */
 
     /**
      * @description The properties to be assigned to the objects. It could take:
@@ -234,12 +394,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get properties(): PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType> {
-        return this.values.properties;
-    }
-
+    @auto()
     public set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>) {
-        this.values.properties = value;
     }
 
     /**
@@ -256,12 +412,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get styles(): PropertyConfig<StylesType, State, ClassType> {
-        return this.values.styles;
-    }
-
+    @auto()
     public set styles(value: PropertyConfig<StylesType, State, ClassType>) {
-        this.values.styles = value;
     }
 
     /**
@@ -280,12 +432,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get classes(): PropertyConfig<string | string[], State, ClassType> {
-        return this.values.classes;
-    }
-
+    @auto()
     public set classes(value: PropertyConfig<string | string[], State, ClassType>) {
-        this.values.classes = value;
     }
 
     /**
@@ -302,12 +450,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get replaceWith(): PropertyConfig<ClassType, State, ClassType> {
-        return this.values.replaceWith;
-    }
-
+    @auto()
     public set replaceWith(value: PropertyConfig<ClassType, State, ClassType>) {
-        this.values.replaceWith = value;
     }
 
     /**
@@ -327,12 +471,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get transitionProperties(): PropertyConfig<string | string[], State, ClassType> {
-        return this.values.transitionProperties;
-    }
-
+    @auto()
     public set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>) {
-        this.values.transitionProperties = value;
     }
 
     /**
@@ -349,12 +489,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get transitionDuration(): PropertyConfig<number, State, ClassType> {
-        return this.values.transitionDuration;
-    }
-
+    @auto()
     public set transitionDuration(value: PropertyConfig<number, State, ClassType>) {
-        this.values.transitionDuration = value;
     }
 
     /**
@@ -372,12 +508,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get transitionTimingFunction(): PropertyConfig<string, State, ClassType> {
-        return this.values.transitionTimingFunction;
-    }
-
+    @auto()
     public set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>) {
-        this.values.transitionTimingFunction = value;
     }
 
     /**
@@ -394,64 +526,135 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    public get transitionDelay(): PropertyConfig<number, State, ClassType> {
-        return this.values.transitionDelay;
-    }
-
+    @auto()
     public set transitionDelay(value: PropertyConfig<number, State, ClassType>) {
-        this.values.transitionDelay = value;
     }
 
-    //Usage methods
+    @auto()
+    public set transition(value: BasicPropertyConfig<string, State>) {
+        if (!value) return;
+        const object = typeof value === "string"
+            ? this.processTransitionString(value)
+            : this.processTransitionObject(value);
+
+        if (object.transitionProperties !== undefined) this.transitionProperties = object.transitionProperties;
+        if (object.transitionDuration !== undefined) this.transitionDuration = object.transitionDuration;
+        if (object.transitionDelay !== undefined) this.transitionDelay = object.transitionDelay;
+        if (object.transitionTimingFunction !== undefined) this.transitionTimingFunction = object.transitionTimingFunction;
+    }
+
+    protected processTransitionObject(transitionObject: BasicPropertyConfig<string, State>): StatefulReifectCoreProperties<State, ClassType> {
+        const transitionValues: StatefulReifectCoreProperties<State, ClassType> = {};
+        for (const [state, entry] of Object.entries(transitionObject)) {
+            if (!this.states.includes(state as any)) continue;
+            if (typeof entry !== "string") continue;
+            const object = this.processTransitionString(entry);
+            if (object.transitionProperties !== undefined) transitionValues.transitionProperties[state as any] = object.transitionProperties;
+            if (object.transitionDuration !== undefined) transitionValues.transitionDuration[state as any] = object.transitionDuration;
+            if (object.transitionDelay !== undefined) transitionValues.transitionDelay[state as any] = object.transitionDelay;
+            if (object.transitionTimingFunction !== undefined) transitionValues.transitionTimingFunction[state as any] = object.transitionTimingFunction;
+        }
+        return transitionValues;
+    }
+
+    protected processTransitionString(transitionString: string): StatefulReifectCoreProperties<State, ClassType> {
+        // Normalize commas → spaces, split & filter
+        const tokens = transitionString.trim().replace(/,/g, " ").split(/\s+/).filter(t => t.length > 0);
+        const object: StatefulReifectCoreProperties<State, ClassType> = {transitionProperties: []};
+        let i = 0;
+
+        //Properties
+        while (i < tokens.length && !this.timeRegex.test(tokens[i])) {
+            (object.transitionProperties as Array<string>).push(tokens[i]);
+            i++;
+        }
+        //Duration
+        if (i < tokens.length) {
+            const duration = this.parseTime(tokens[i]);
+            if (!isNaN(duration)) object.transitionDuration = duration;
+            i++;
+        }
+        //Timing function
+        if (i < tokens.length) {
+            object.transitionTimingFunction = tokens[i];
+            i++;
+        }
+        //Delay
+        if (i < tokens.length) {
+            const delay = this.parseTime(tokens[i]);
+            if (!isNaN(delay)) object.transitionDelay = delay;
+            i++;
+        }
+
+        return object;
+    }
+
+    /**
+     * @function getTransitionString
+     * @description Gets the CSS transition string for the specified direction.
+     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
+     * @param state
+     * @returns {string} The CSS transition string.
+     */
+    private getTransitionString(data: ReifectObjectData<State, ClassType>, state: State = data.lastState): string {
+        let transitionString = "";
+        data.resolvedValues.transitionProperties[state].forEach(property => transitionString
+            += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
+            + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
+            + (data.resolvedValues.transitionDelay[state] || 0) + "s");
+
+        return transitionString.substring(2);
+    }
+
+    /*
+     *
+     * *********************************
+     *
+     * Usage methods
+     *
+     * *********************************
+     *
+     */
 
     public initialize(state: State | boolean, objects?: ClassType | ClassType[],
                       options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled.global) return;
+        if (!this.enabled) return;
 
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
 
         this.getEnabledObjectsData(objects, options).forEach(data => {
-            if (options.recomputeProperties || !data.resolvedValues)
-                this.processRawProperties(data, options.propertiesOverride);
+            if (options.recomputeProperties || !data.resolvedValues) this.processRawProperties(data, options.propertiesOverride);
             data.lastState = state;
-
-            this.applyResolvedValues(data, data.lastState, true, options?.applyStylesInstantly);
+            this.applyResolvedValues(data, true, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
 
     public apply(state: State | boolean, objects?: ClassType | ClassType[],
                  options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled.global) return;
+        if (!this.enabled) return;
 
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
 
         this.getEnabledObjectsData(objects, options).forEach(data => {
-            if (options.recomputeProperties || !data.resolvedValues)
-                this.processRawProperties(data, options.propertiesOverride);
-
+            if (options.recomputeProperties || !data.resolvedValues) this.processRawProperties(data, options.propertiesOverride);
             data.lastState = state;
-            const handler = (data.object.deref() as Node)?.reifects;
-            if (handler) handler.reloadTransitions();
-
-            this.applyResolvedValues(data, data.lastState, false, options?.applyStylesInstantly);
+            this.applyResolvedValues(data, false, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
 
     public toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled.global) return;
+        if (!this.enabled) return;
 
         if (!objects) objects = [];
         else if (objects instanceof HTMLCollection) objects = [...objects] as ClassType[];
         else if (!Array.isArray(objects)) objects = [objects];
 
         const previousState = this.getData(objects[0])?.lastState;
-        const nextStateIndex = mod(previousState != undefined
-            ? this.states.indexOf(previousState) + 1 : 0, this.states.length);
-
+        const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
         this.apply(this.states[nextStateIndex], objects, options);
     }
 
@@ -463,28 +666,26 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @returns {this} Itself for method chaining.
      */
     public reloadFor(object: ClassType): this {
-        if (!this.enabled.global) return this;
+        if (!this.enabled) return this;
 
         const data = this.getData(object);
         if (!data || !data.enabled || !data.enabled.global) return this;
 
-        this.applyResolvedValues(data, data.lastState);
+        this.applyResolvedValues(data);
         return this;
     }
 
     public reloadTransitionFor(object: ClassType): this {
-        if (!this.enabled.global) return this;
-
+        if (!this.enabled || !this.transitionEnabled) return this;
         const data = this.getData(object);
-        if (!data || !data.enabled || !data.enabled.global) return this;
-
-        if (this.enabled.transition && data.enabled.transition) this.applyTransition(data, data.lastState);
+        if (!data || !data.enabled || !data.enabled.global || !data.enabled.transition) return this;
+        this.applyTransition(data, data.lastState);
         return this;
     }
 
     public getEnabledObjectsData(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>)
         : ReifectObjectData<State, ClassType>[] {
-        if (!this.enabled.global) {
+        if (!this.enabled) {
             console.warn("The reifier object you are trying to access is disabled.");
             return [];
         }
@@ -523,52 +724,68 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         return enabledObjectsData;
     }
 
-    /**
-     * @function stateOf
-     * @description Determine the current state of the reifect on the provided object.
-     * @param {ClassType} object - The object to determine the state for.
-     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+    /*
+     *
+     * *********************************
+     *
+     * Property setting stuff
+     *
+     * *********************************
+     *
      */
-    public stateOf(object: ClassType): State {
-        if (!object) return undefined;
-        const data = this.getData(object);
 
-        if (!data) return undefined;
-        if (data.lastState) return data.lastState;
-        if (!(object instanceof HTMLElement)) return this.states[0];
+    public applyResolvedValues(data: ReifectObjectData<State, ClassType>, skipTransition: boolean = false,
+                               applyStylesInstantly: boolean = false) {
+        this.applyStyles(data, data.lastState, applyStylesInstantly);
 
-        if (!data.resolvedValues) this.processRawProperties(data);
-        for (const state of this.states) {
-            if (!data.resolvedValues.styles[state]) continue;
-            let matches: boolean = true;
-
-            for (const [property, value] of Object.entries(data.resolvedValues.styles[state])) {
-                if (object.style[property] != value) {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if (!matches) continue;
-            data.lastState = state;
-            return state;
+        if (!skipTransition) {
+            const handler = (data.object.deref() as Node)?.reifects;
+            if (this.attachedObjects.includes(data) && handler) handler.reloadTransitions();
+            else this.applyTransition(data, data.lastState);
         }
 
-        return this.states[0];
+        this.applyReplaceWith(data, data.lastState);
+        this.applyProperties(data, data.lastState);
+        this.applyClasses(data, data.lastState);
     }
 
-    //Property setting methods
-
-    public applyResolvedValues(data: ReifectObjectData<State, ClassType>, state: State = data.lastState,
-                               skipTransition: boolean = false, applyStylesInstantly: boolean = false) {
-        if (this.enabled.transition && data.enabled.transition && !skipTransition) this.applyTransition(data, state);
-        if (this.enabled.replaceWith && data.enabled.replaceWith) this.replaceObject(data, state);
-        if (this.enabled.properties && data.enabled.properties) this.setProperties(data, state);
-        if (this.enabled.classes && data.enabled.classes) this.applyClasses(data, state);
-        if (this.enabled.styles && data.enabled.styles) this.applyStyles(data, state, applyStylesInstantly);
+    public refreshResolvedValues() {
+        this.refreshProperties();
+        this.refreshStyles();
+        this.refreshClasses();
+        this.refreshReplaceWith();
+        this.refreshTransition();
     }
 
-    public replaceObject(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+    public applyProperties(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+        if (!this.enabled || !this.propertiesEnabled) return;
+        if (!data.enabled.global || !data.enabled.properties) return;
+
+        const properties = data.resolvedValues?.properties?.[state];
+        if (!properties) return;
+
+        const object = data.object.deref();
+        if (!object) return;
+
+        for (const [field, value] of Object.entries(properties)) {
+            if (!field || value == undefined) continue;
+            try {
+                object[field] = value;
+            } catch (e: any) {
+                console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
+            }
+        }
+    }
+
+    public refreshProperties() {
+        if (!this.enabled || !this.propertiesEnabled) return;
+        this.attachedObjects.forEach(data => this.applyProperties(data));
+    }
+
+    public applyReplaceWith(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+        if (!this.enabled || !this.replaceWithEnabled) return;
+        if (!data.enabled.global || !data.enabled.replaceWith) return;
+
         const newObject = data.resolvedValues.replaceWith[state];
         if (!newObject) return;
 
@@ -582,25 +799,15 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         }
     }
 
-    public setProperties(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
-        const properties = data.resolvedValues.properties[state];
-        if (!properties) return;
-
-        const object = data.object.deref();
-        if (!object) return;
-
-        for (const [field, value] of Object.entries(properties)) {
-            if (!field || value == undefined) continue;
-            try {
-                object[field] = value;
-            } catch (e: any) {
-                console.log(value);
-                console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
-            }
-        }
+    public refreshReplaceWith() {
+        if (!this.enabled || !this.replaceWithEnabled) return;
+        this.attachedObjects.forEach(data => this.applyReplaceWith(data));
     }
 
     public applyClasses(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+        if (!this.enabled || !this.classesEnabled) return;
+        if (!data.enabled.global || !data.enabled.classes) return;
+
         const classes = data.resolvedValues.classes;
         if (!classes) return;
 
@@ -612,59 +819,43 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         }
     }
 
+    public refreshClasses() {
+        if (!this.enabled || !this.classesEnabled) return;
+        this.attachedObjects.forEach(data => this.applyClasses(data));
+    }
+
     public applyStyles(data: ReifectObjectData<State, ClassType>, state: State = data.lastState,
                        applyStylesInstantly: boolean = false) {
+        if (!this.enabled || !this.stylesEnabled) return;
+        if (!data.enabled.global || !data.enabled.styles) return;
+
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
         object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
 
+    public refreshStyles() {
+        if (!this.enabled || !this.stylesEnabled) return;
+        this.attachedObjects.forEach(data => this.applyStyles(data));
+    }
+
     public applyTransition(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
+        if (!this.enabled || !this.transitionEnabled) return;
+        if (!data.enabled.global || !data.enabled.transition) return;
+
         const object = data.object.deref();
         if (!object || !(object instanceof Element) || !data.resolvedValues) return;
-        if (!state) state = this.states[0];
-        if (!data.lastState) data.lastState = state;
-        if (!state) return;
         object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
 
+    public refreshTransition() {
+        for (const data of this.attachedObjects) {
+            const handler = (data.object?.deref() as Node)?.reifects;
+            if (handler) handler.reloadTransitions();
+        }
+    }
+
     //General methods (to be overridden for custom functionalities)
-
-    /**
-     * @protected
-     * @function attachObject
-     * @description Function used to generate a data entry for the given object, and add it to the attached list at
-     * the provided index (if any).
-     * @param {ClassType} object - The object to attach
-     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
-     * attached list.
-     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
-     * callback fired when the reifier is applied to the object. The callback takes as parameters:
-     * - `state: State`: The state being applied to the object.
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
-     */
-    protected attachObject(object: ClassType, index?: number, onSwitch?:
-        (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType> {
-        if (index == undefined || isNaN(index)) index = this.attachedObjects.length;
-        if (index < 0) index = 0;
-
-        const data = this.generateNewData(object, onSwitch);
-        this.attachedObjects.splice(index, 0, data);
-        return data;
-    }
-
-    /**
-     * @protected
-     * @function detachObject
-     * @description Function used to remove a data entry from the attached objects list.
-     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
-     */
-    protected detachObject(data: ReifectObjectData<State, ClassType>) {
-        this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
-    }
 
     protected filterEnabledObjects(data: ReifectObjectData<State, ClassType>): boolean {
         if (!data.enabled || !data.enabled.global) {
@@ -676,19 +867,6 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     //Utilities
-
-    public getAllStates(): State[] {
-        const states: State[] = [...this.states];
-        for (const values of [this.properties,
-            this.classes, this.styles, this.replaceWith]) {
-            if (typeof values != "object") continue;
-            for (const state of Object.keys(values)) {
-                if (!states.includes(state as State)) states.push(state as State);
-            }
-        }
-        if (states.length == 0) console.warn("No states found for this particular reifect:", this);
-        return states;
-    }
 
     protected processRawProperties(data: ReifectObjectData<State, ClassType>,
                                    override?: StatefulReifectCoreProperties<State, ClassType>) {
@@ -741,23 +919,16 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     private generateNewData(object: ClassType, onSwitch?:
-        (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType> {
+    (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType> {
         return {
             object: new WeakRef(object),
-            enabled: {
-                global: true,
-                properties: true,
-                classes: true,
-                styles: true,
-                replaceWith: true,
-                transition: true
-            },
+            enabled: {global: true, properties: true, classes: true, styles: true, replaceWith: true, transition: true},
             lastState: this.stateOf(object),
             onSwitch: onSwitch
         };
     }
 
-    private initializeOptions(options?: ReifectAppliedOptions<State, ClassType>,  objects?: ClassType | ClassType[])
+    private initializeOptions(options?: ReifectAppliedOptions<State, ClassType>, objects?: ClassType | ClassType[])
         : ReifectAppliedOptions<State, ClassType> {
         if (!objects) objects = [];
         else if (objects instanceof HTMLCollection) objects = [...objects] as ClassType[];
@@ -791,39 +962,6 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         });
     }
 
-    /**
-     * @protected
-     * @function parseState
-     * @description Parses a boolean into the corresponding state value.
-     * @param {State | boolean} value - The value to parse.
-     * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
-     */
-    protected parseState(value: State | boolean): State {
-        if (typeof value != "boolean") return value;
-        else for (const str of value ? ["true", "on", "in", "enabled", "shown"]
-            : ["false", "off", "out", "disabled", "hidden"]) {
-            if (!this.states.includes(str as State)) continue;
-            return str as State;
-        }
-    }
-
-    /**
-     * @function getTransitionString
-     * @description Gets the CSS transition string for the specified direction.
-     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
-     * @param state
-     * @returns {string} The CSS transition string.
-     */
-    private getTransitionString(data: ReifectObjectData<State, ClassType>, state: State = data.lastState): string {
-        let transitionString = "";
-        data.resolvedValues.transitionProperties[state].forEach(property => transitionString
-            += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
-            + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
-            + (data.resolvedValues.transitionDelay[state] || 0) + "s");
-
-        return transitionString.substring(2);
-    }
-
     protected processRawPropertyForState<Type>(data: ReifectObjectData<State, ClassType>,
                                                field: keyof StatefulReifectCoreProperties<State, ClassType>,
                                                value: PropertyConfig<Type, State, ClassType>,
@@ -840,7 +978,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
             if (typeof currentValue == "function")
                 resolvedValue = currentValue(data.objectIndex, data.totalObjectCount, object);
-           else resolvedValue = currentValue as Type;
+            else resolvedValue = currentValue as Type;
         } else resolvedValue = value as Type;
 
         if ((field == "properties" || field == "transitionProperties") && typeof resolvedValue == "string") {
@@ -866,6 +1004,20 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         }
 
         (data.resolvedValues[field][state] as Type) = resolvedValue;
+    }
+
+    /**
+     * @description Processes string durations like "200ms" or "0.3s", or even "100".
+     * @param value
+     * @private
+     */
+    private parseTime(value: string): number {
+        const matches = value.match(this.timeRegex);
+        if (!matches) return NaN;
+
+        const num = parseFloat(matches[1]);
+        const unit = matches[2]?.toLowerCase() ?? "s";
+        return unit === "ms" ? num / 1000 : num;
     }
 }
 

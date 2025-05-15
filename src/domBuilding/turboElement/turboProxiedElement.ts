@@ -11,9 +11,10 @@ import {TurboEmitter} from "../mvc/turboEmitter";
 /**
  * @class TurboProxiedElement
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  */
 class TurboProxiedElement<
     ElementTag extends ValidTag = ValidTag,
@@ -22,9 +23,6 @@ class TurboProxiedElement<
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter<any>
 > {
-
-    //STATIC CONFIG
-
     /**
      * @description Static configuration object.
      */
@@ -40,9 +38,15 @@ class TurboProxiedElement<
         });
     }
 
-    //ELEMENT
-
+    /**
+     * @description The HTML (or other) element wrapped inside this instance.
+     */
     public readonly element: ValidElement<ElementTag>;
+
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
     protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
 
     public constructor(properties: TurboProperties<ElementTag, ViewType, DataType, ModelType, EmitterType> =
@@ -78,7 +82,7 @@ class TurboProxiedElement<
 
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
      */
     @auto()
     public set selected(value: boolean) {
@@ -86,22 +90,32 @@ class TurboProxiedElement<
         this.element.toggleClass(selectedClass, value);
     }
 
-    protected get view(): ViewType {
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    public get view(): ViewType {
         return this.mvc.view;
     }
 
-    protected set view(view: ViewType) {
+    public set view(view: ViewType) {
         this.mvc.view = view;
     }
 
-    protected get model(): ModelType {
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    public get model(): ModelType {
         return this.mvc.model;
     }
 
-    protected set model(model: ModelType) {
+    public set model(model: ModelType) {
         this.mvc.model = model;
     }
 
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     public get data(): DataType {
         return this.mvc.data;
     }
@@ -110,6 +124,10 @@ class TurboProxiedElement<
         this.mvc.data = data;
     }
 
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     public get dataId(): string {
         return this.mvc.dataId;
     }
@@ -118,6 +136,10 @@ class TurboProxiedElement<
         this.mvc.dataId = value;
     }
 
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     public get dataIndex(): number {
         return this.mvc.dataIndex;
     }
@@ -126,10 +148,24 @@ class TurboProxiedElement<
         this.mvc.dataIndex = value;
     }
 
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     public get dataSize(): number {
         return this.mvc.dataSize;
     }
 
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
     protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
         if (propertiesValue !== undefined && propertiesValue !== null) return propertiesValue;
         const configValue: Type = (this.constructor as typeof TurboProxiedElement).config[configFieldName];

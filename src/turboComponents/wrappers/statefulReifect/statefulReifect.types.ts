@@ -45,12 +45,21 @@ type StateSpecificProperty<Type, ClassType extends object = Element> =
  * @template State
  * @template ClassType
  */
+type BasicPropertyConfig<Type, State extends string | number | symbol> = PartialRecord<State, Type> | Type;
+
+/**
+ * @description A configuration type for properties based on states or interpolated values.
+ *
+ * @template Type
+ * @template State
+ * @template ClassType
+ */
 type PropertyConfig<Type, State extends string | number | symbol, ClassType extends object = Element> =
     PartialRecord<State, StateSpecificProperty<Type, ClassType>> | Type | StateInterpolator<Type, State, ClassType>;
 
 type ReifectObjectData<State extends string | number | symbol, ClassType extends object = Element> = {
     object: WeakRef<ClassType>,
-    enabled: ReifectEnabledState,
+    enabled: ReifectEnabledObject,
     lastState?: State,
     resolvedValues?: ReifectObjectComputedProperties<State, ClassType>,
     objectIndex?: number,
@@ -86,6 +95,7 @@ type StatefulReifectProperties<State extends string | number | symbol, ClassType
     StatefulReifectCoreProperties<State, ClassType> & {
     states?: State[],
     attachedObjects?: ClassType[],
+    transition?: BasicPropertyConfig<string, State>
 };
 
 type ReifectAppliedOptions<State extends string | number | symbol, ClassType extends object = Element> = {
@@ -97,7 +107,7 @@ type ReifectAppliedOptions<State extends string | number | symbol, ClassType ext
     propertiesOverride?: StatefulReifectCoreProperties<State, ClassType>
 }
 
-type ReifectEnabledState = {
+type ReifectEnabledObject = {
     global?: boolean,
     properties?: boolean,
     styles?: boolean,
@@ -106,5 +116,5 @@ type ReifectEnabledState = {
     transition?: boolean,
 }
 
-export {ReifectObjectData, ReifectInterpolator, StateInterpolator, StateSpecificProperty, PropertyConfig, StatefulReifectProperties,
-    StatefulReifectCoreProperties, ReifectAppliedOptions, ReifectEnabledState};
+export {ReifectObjectData, ReifectInterpolator, StateInterpolator, StateSpecificProperty, BasicPropertyConfig,
+    PropertyConfig, StatefulReifectProperties, StatefulReifectCoreProperties, ReifectAppliedOptions, ReifectEnabledObject};

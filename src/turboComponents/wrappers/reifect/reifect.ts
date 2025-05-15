@@ -1,9 +1,14 @@
 // @ts-nocheck
 import {StatefulReifect} from "../statefulReifect/statefulReifect";
 import {StatelessPropertyConfig, StatelessReifectProperties} from "./reifect.types";
-import {ReifectAppliedOptions, StatefulReifectProperties} from "../statefulReifect/statefulReifect.types";
+import {
+    BasicPropertyConfig,
+    ReifectAppliedOptions,
+    StatefulReifectProperties
+} from "../statefulReifect/statefulReifect.types";
 import {PartialRecord} from "../../../domBuilding/core.types";
 import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
+import {auto} from "../../../domBuilding/decorators/auto/auto";
 
 /**
  * @class Reifect
@@ -17,11 +22,9 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * @description Creates an instance of StatefulReifier.
      * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
      */
-    constructor(properties: StatelessReifectProperties<ClassType>) {
-        const statefulProperties: StatefulReifectProperties<"", ClassType> = properties;
-
-        statefulProperties.states = [""];
-        super(statefulProperties);
+    public constructor(properties: StatelessReifectProperties<ClassType>) {
+        properties.states = [""];
+        super(properties);
     }
 
     /**
@@ -103,6 +106,10 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
 
     public set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>) {
         super.replaceWith = value;
+    }
+
+    public set transition(value: string) {
+        super.transition = value;
     }
 
     /**

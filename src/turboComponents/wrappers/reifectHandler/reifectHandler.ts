@@ -1,5 +1,5 @@
 import {StatefulReifect} from "../statefulReifect/statefulReifect";
-import {ReifectAppliedOptions, ReifectEnabledState} from "../statefulReifect/statefulReifect.types";
+import {ReifectAppliedOptions, ReifectEnabledObject} from "../statefulReifect/statefulReifect.types";
 
 /**
  * @class ReifectHandler
@@ -10,7 +10,7 @@ class ReifectHandler<ClassType extends object = Node> {
     private readonly attachedNode: ClassType;
     private readonly reifects: WeakRef<StatefulReifect<any, ClassType>>[];
 
-    private readonly _enabled: ReifectEnabledState;
+    private readonly _enabled: ReifectEnabledObject;
 
     /**
      * @constructor
@@ -144,27 +144,25 @@ class ReifectHandler<ClassType extends object = Node> {
     //State management
 
     /**
-     * @description The enabled state of the reifect (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * @description The enabled state of the reifect (as a {@link ReifectEnabledObject}). Setting it to a boolean will
      * accordingly update the value of `enabled.global`.
      */
-    public get enabled(): ReifectEnabledState {
+    public get enabled(): ReifectEnabledObject {
         return this._enabled;
     }
 
-    public set enabled(value: boolean | ReifectEnabledState) {
+    public set enabled(value: boolean | ReifectEnabledObject) {
         if (typeof value == "boolean") this._enabled.global = value;
         else if (!value) return;
-        else for (const [key, state] of Object.entries(value)) {
-                this._enabled[key] = state;
-            }
+        else for (const [key, state] of Object.entries(value)) this._enabled[key] = state;
     }
 
-    public getEnabledState(reifect: StatefulReifect<any, ClassType>) {
-        return reifect.getEnabledState(this.attachedNode);
+    public getReifectEnabledState(reifect: StatefulReifect<any, ClassType>) {
+        return reifect.getObjectEnabledState(this.attachedNode);
     }
 
-    public setEnabledState(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledState) {
-        reifect.setEnabledState(this.attachedNode, value);
+    public enableReifect(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledObject) {
+        reifect.enableObject(this.attachedNode, value);
     }
 }
 

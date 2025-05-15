@@ -23,9 +23,34 @@
  */
 
 /**
+ * @typedef {Object} ElementTagDefinition
+ * @template {ValidTag} Tag
+ * @description Represents an element's definition of its tag and its namespace (both optional).
+ *
+ * @property {Tag} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
+ * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
+ * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
+ */
+
+/**
+ * @typedef {Object} TurboHeadlessProperties
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+
+/**
  * @typedef {Object} TurboProperties
- * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
- * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
+ * @template {ValidTag} Tag - The HTML (or other) tag of the element, if passing it as a property. Defaults to "div".
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ *
+ * @description Object containing properties for configuring a TurboElement, or any Element. A tag (and
+ * possibly a namespace) can be provided for TurboProxiedElements for element creation. TurboElements will ignore these
  * properties if set.
  * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
  * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
@@ -42,11 +67,11 @@
  * - An object containing event listeners to be applied to this element.
  * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
  * the created element.
- * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {Element} [parent] - The parent element to which the created element will be appended.
  * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
  * as name.
  * @property {string} [text] - The text content of the element (if any).
- * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
+ * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
  *
  * @property alt
  * @property src
@@ -61,6 +86,18 @@
  * @property disabled
  * @property checked
  * @property selected
+ */
+
+/**
+ * @typedef {Object} TurboCustomProperties
+ * @extends TurboProperties
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ *
+ * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
+ * without the tag.
  */
 
 /**
@@ -1119,38 +1156,100 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
 
+/**
+ * @class TurboEmitter
+ * @template {TurboModel} ModelType -The element's MVC model type.
+ * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
+ * MVC structure to fire events or listen to some, with various methods.
+ */
 class TurboEmitter {
+    /**
+     * @description Map containing all callbacks.
+     * @protected
+     */
     callbacks = new Map();
+    /**
+     * @description The attached MVC model.
+     */
     model;
     constructor(model) {
         this.model = model;
     }
+    /**
+     * @function getBlock
+     * @description Retrieves the callback block by the given blockKey.
+     * @param {number | string} [blockKey] - The key of the block to retrieve.
+     * @protected
+     */
     getBlock(blockKey) {
-        return this.callbacks.get(blockKey.toString());
+        return this.callbacks.get(blockKey?.toString());
     }
+    /**
+     * @function getOrGenerateBlock
+     * @description Retrieves or creates a callback map for a given blockKey.
+     * @param {number | string} [blockKey] - The block key.
+     * @returns {Map<string, ((...args: any[]) => void)[]>} - The ensured callback map.
+     * @protected
+     */
     getOrGenerateBlock(blockKey) {
         if (!this.callbacks.has(blockKey.toString()))
             this.callbacks.set(blockKey.toString(), new Map());
         return this.callbacks.get(blockKey.toString());
     }
+    /**
+     * @function getKey
+     * @description Gets all callbacks for a given event key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} [blockKey] - The block in which the event is scoped.
+     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
+     * @protected
+     */
     getKey(key, blockKey) {
         const block = this.getBlock(blockKey);
-        if (!block)
-            return undefined;
-        return block.get(key);
+        return block ? block.get(key) : [];
     }
+    /**
+     * @function getOrGenerateKey
+     * @description Ensures and returns the array of callbacks for a given event key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} [blockKey] - The block in which the event is scoped.
+     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
+     * @protected
+     */
     getOrGenerateKey(key, blockKey) {
         const block = this.getOrGenerateBlock(blockKey);
         if (!block.has(key))
             block.set(key, []);
         return block.get(key);
     }
+    /**
+     * @function addWithBlock
+     * @description Registers a callback for an event key within a specified block -- usually for the corresponding
+     * data block in the model.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block to register the event in.
+     * @param {(...args: any[]) => void} callback - The callback function to invoke when the event is fired.
+     */
     addWithBlock(key, blockKey, callback) {
         this.getOrGenerateKey(key, blockKey).push(callback);
     }
+    /**
+     * @function add
+     * @description Registers a callback for an event key in the default block.
+     * @param {string} key - The event name.
+     * @param {(...args: any[]) => void} callback - The callback function.
+     */
     add(key, callback) {
         this.addWithBlock(key, this.model.defaultBlockKey, callback);
     }
+    /**
+     * @function removeWithBlock
+     * @description Removes a specific callback or all callbacks for a key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block from which to remove the event.
+     * @param {(...args: any[]) => void} [callback] - The specific callback to remove. If undefined, all callbacks
+     * for the key are removed.
+     */
     removeWithBlock(key, blockKey, callback) {
         if (callback == undefined)
             this.getBlock(blockKey)?.delete(key);
@@ -1161,22 +1260,51 @@ class TurboEmitter {
                 callbacks.splice(index, 1);
         }
     }
+    /**
+     * @function remove
+     * @description Removes a specific callback or all callbacks for a key in the default block.
+     * @param {string} key - The event name.
+     * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
+     */
     remove(key, callback) {
         this.removeWithBlock(key, this.model.defaultBlockKey, callback);
     }
+    /**
+     * @function fireWithBlock
+     * @description Triggers all callbacks associated with an event key in a specified block.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block in which the event is scoped.
+     * @param {...any[]} args - Arguments passed to each callback.
+     */
     fireWithBlock(key, blockKey, ...args) {
         this.callbacks.get(blockKey.toString())?.get(key)?.forEach((callback) => {
             if (callback && typeof callback == "function")
                 callback(...args);
         });
     }
+    /**
+     * @function fire
+     * @description Triggers all callbacks associated with an event key in the default block.
+     * @param {string} key - The event name.
+     * @param {...any[]} args - Arguments passed to the callback.
+     */
     fire(key, ...args) {
         this.fireWithBlock(key, this.model.defaultBlockKey, ...args);
     }
 }
 
+/**
+ * @class MvcHandler
+ * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
+ * @template {object} ElementType - The type of the object that will be turned into MVC.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
 class MvcHandler {
     element;
+    _model;
     controllers = new Map();
     constructor(properties) {
         if (properties.element)
@@ -1193,14 +1321,36 @@ class MvcHandler {
         if (properties.generate)
             this.generate(properties);
     }
-    set view(view) {
+    /**
+     * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new view.
+     */
+    set view(value) {
+        this.linkModelToView();
+    }
+    /**
+     * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
+     * the new one to the current view (if any) and emitter (if any).
+     */
+    get model() {
+        return this._model;
     }
     set model(model) {
+        this.deLinkModelFromEmitter();
+        this._model = model;
         this.linkModelToEmitter();
         this.linkModelToView();
     }
+    /**
+     * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new emitter.
+     */
     set emitter(emitter) {
+        this.linkModelToEmitter();
     }
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any).
+     */
     get data() {
         return this.model?.data;
     }
@@ -1208,6 +1358,9 @@ class MvcHandler {
         if (this.model)
             this.model.data = data;
     }
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataId() {
         return this.model?.dataId;
     }
@@ -1215,6 +1368,9 @@ class MvcHandler {
         if (this.model)
             this.model.dataId = value;
     }
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataIndex() {
         return Number.parseInt(this.dataId);
     }
@@ -1222,27 +1378,64 @@ class MvcHandler {
         if (this.model)
             this.model.dataId = value.toString();
     }
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataSize() {
         return this.model?.getSize();
     }
+    /**
+     * @function getController
+     * @description Retrieves the attached MVC controller with the given key.
+     * By default, unless manually defined in the controller, if the element's class name is MyElement
+     * and the controller's class name is MyElementSomethingController, the key would be "something".
+     * @param {string} key - The controller's key.
+     * @return {TurboController} - The controller.
+     */
     getController(key) {
         return this.controllers.get(key);
     }
+    /**
+     * @function addController
+     * @description Adds the given controller to the MVC structure.
+     * @param {TurboController} controller - The controller to add.
+     */
     addController(controller) {
         if (!controller.keyName)
             controller.keyName =
                 this.extractClassEssenceName(controller.constructor);
         this.controllers.set(controller.keyName, controller);
     }
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
     getHandler(key) {
         return this.model.getHandler(key);
     }
+    /**
+     * @function addHandler
+     * @description Adds the given handler to the MVC structure.
+     * @param {TurboHandler} handler - The handler to add.
+     */
     addHandler(handler) {
         if (!handler.keyName)
             handler.keyName =
                 this.extractClassEssenceName(handler.constructor);
         this.model.addHandler(handler.keyName, handler);
     }
+    /**
+     * @function generate
+     * @description Generates the MVC structure based on the provided properties.
+     * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
+     * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
+     * to generate the MVC structure.
+     */
     generate(properties = {}) {
         if (properties.initialize == undefined)
             properties.initialize = true;
@@ -1254,7 +1447,6 @@ class MvcHandler {
             this.emitter = properties.emitterConstructor
                 ? new properties.emitterConstructor(this.model)
                 : new TurboEmitter(this.model);
-            this.linkModelToEmitter();
         }
         if (properties.viewConstructor && (!this.view || properties.force)) {
             this.view = new properties.viewConstructor({
@@ -1262,7 +1454,6 @@ class MvcHandler {
                 model: this.model,
                 emitter: this.emitter
             });
-            this.linkModelToView();
         }
         if (properties.controllerConstructors) {
             const controllerProperties = {
@@ -1279,6 +1470,11 @@ class MvcHandler {
         if (properties.initialize)
             this.initialize();
     }
+    /**
+     * @function initialize
+     * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
+     * initialized last to allow for the view and controllers to setup their change callbacks.
+     */
     initialize() {
         this.view?.initialize();
         this.controllers.forEach((controller) => controller.initialize());
@@ -1289,11 +1485,17 @@ class MvcHandler {
             return;
         this.view.model = this.model;
     }
+    emitterFireCallback = (keyName, blockKey, ...args) => this.emitter.fireWithBlock(keyName, blockKey, ...args);
+    deLinkModelFromEmitter() {
+        if (!this.emitter || !this.model)
+            return;
+        this.model.keyChangedCallback.remove(this.emitterFireCallback);
+    }
     linkModelToEmitter() {
         if (!this.emitter || !this.model)
             return;
         this.emitter.model = this.model;
-        this.model.keyChangedCallback = (keyName, blockKey, ...args) => this.emitter.fireWithBlock(keyName, blockKey, ...args);
+        this.model.keyChangedCallback.add(this.emitterFireCallback);
     }
     extractClassEssenceName(constructor) {
         let className = constructor.name;
@@ -1318,16 +1520,45 @@ __decorate([
 ], MvcHandler.prototype, "view", null);
 __decorate([
     auto()
-], MvcHandler.prototype, "model", null);
-__decorate([
-    auto()
 ], MvcHandler.prototype, "emitter", null);
 
+/**
+ * @class TurboController
+ * @description The MVC base controller class. Its main job is to handle  (some part of or all of) the logic of the
+ * component. It has access to the element, the model to read and write data, the view to update the UI, and the
+ * emitter to listen for changes in the model. It can only communicate with other controllers via the emitter
+ * (by firing or listening for changes on a certain key).
+ * @template {object} ElementType - The type of the main component.
+ * @template {TurboView} ViewType - The element's MVC view type.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
+ */
 class TurboController {
+    /**
+     * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+     * default to "something".
+     */
     keyName;
+    /**
+     * @description A reference to the component.
+     * @protected
+     */
     element;
+    /**
+     * @description A reference to the MVC view.
+     * @protected
+     */
     view;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
     model;
+    /**
+     * @description A reference to the MVC emitter.
+     * @protected
+     */
     emitter;
     constructor(properties) {
         this.element = properties.element;
@@ -1335,27 +1566,109 @@ class TurboController {
         this.model = properties.model;
         this.emitter = properties.emitter;
     }
+    /**
+     * @function initialize
+     * @description Initializes the controller. Specifically, it will setup the change callbacks.
+     */
     initialize() {
         this.setupChangedCallbacks();
     }
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks.
+     * @protected
+     */
     setupChangedCallbacks() {
     }
 }
 
+/**
+ * @class TurboHandler
+ * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
+ * functions to manipulate the model's data.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ */
 class TurboHandler {
+    /**
+     * @description The key of the handler. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the handler's class name is MyElementSomethingHandler, the key would
+     * default to "something".
+     */
     keyName;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
     model;
     constructor(model) {
         this.model = model;
     }
 }
 
+class Delegate {
+    callbacks = new Set();
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback) {
+        this.callbacks.add(callback);
+    }
+    /**
+     * @description Removes a callback from the list.
+     * @param callback - The callback function to remove.
+     * @returns A boolean indicating whether the callback was found and removed.
+     */
+    remove(callback) {
+        return this.callbacks.delete(callback);
+    }
+    /**
+     * @description Invokes all callbacks with the provided arguments.
+     * @param args - The arguments to pass to the callbacks.
+     */
+    fire(...args) {
+        for (const callback of this.callbacks) {
+            try {
+                callback(...args);
+            }
+            catch (error) {
+                console.error("Error invoking callback:", error);
+            }
+        }
+    }
+    /**
+     * @description Clears added callbacks
+     */
+    clear() {
+        this.callbacks.clear();
+    }
+}
+
+/**
+ * @class TurboModel
+ * @template DataType - The type of the data stored in each block.
+ * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
+ * @template {string | number | symbol} IdType - The type of the block IDs.
+ * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
+ * @template {MvcDataBlock<DataType, IdType>} BlockType - The structure of each data block.
+ * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
+ * propagation.
+ */
 class TurboModel {
     isDataBlocksArray = false;
     dataBlocks;
     handlers = new Map();
+    /**
+     * @description Delegate triggered when a key changes.
+     */
     keyChangedCallback;
+    /**
+     * @constructor
+     * @param {DataType} [data] - Initial data. Not initialized if provided
+     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+     */
     constructor(data, dataBlocksType) {
+        this.keyChangedCallback = new Delegate();
         if (dataBlocksType === "array") {
             this.isDataBlocksArray = true;
             this.dataBlocks = [];
@@ -1367,26 +1680,50 @@ class TurboModel {
         this.enabledCallbacks = true;
         this.setBlock(data, undefined, this.defaultBlockKey, false);
     }
+    /**
+     * @description The data of the default block.
+     */
     get data() {
         return this.getBlockData();
     }
     set data(value) {
         this.setBlock(value);
     }
+    /**
+     * @description The ID of the default block.
+     */
     get dataId() {
         return this.getBlockId();
     }
     set dataId(value) {
         this.setBlockId(value);
     }
+    /**
+     * @description Whether callbacks are enabled or disabled.
+     */
     set enabledCallbacks(value) { }
-    getData(key, blockKey) {
-        if (!blockKey === undefined)
+    /**
+     * @function getData
+     * @description Retrieves the value associated with a given key in the specified block.
+     * @param {KeyType} key - The key to retrieve.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
+     * data.
+     * @returns {unknown} The value associated with the key, or null if not found.
+     */
+    getData(key, blockKey = this.defaultBlockKey) {
+        if (!this.isValidBlockKey(blockKey))
             return null;
         return this.getBlockData(blockKey)?.[key];
     }
-    setData(key, value, blockKey) {
-        if (!blockKey === undefined)
+    /**
+     * @function setData
+     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @param {KeyType} key - The key to update.
+     * @param {unknown} value - The value to assign.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     */
+    setData(key, value, blockKey = this.defaultBlockKey) {
+        if (!this.isValidBlockKey(blockKey))
             return;
         const data = this.getBlockData(blockKey);
         if (data)
@@ -1394,11 +1731,23 @@ class TurboModel {
         if (this.enabledCallbacks)
             this.fireKeyChangedCallback(key, blockKey);
     }
+    /**
+     * @function getSize
+     * @description Returns the size of the specified block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
+     * @returns {number} The size.
+     */
     getSize(blockKey = this.defaultBlockKey) {
         return this.getAllKeys(blockKey)?.length ?? 0;
     }
+    /**
+     * @function getBlock
+     * @description Retrieves the data block for the given blockKey.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key to retrieve.
+     * @returns {BlockType | null} The block or null if it doesn't exist.
+     */
     getBlock(blockKey = this.defaultBlockKey) {
-        if (blockKey === undefined)
+        if (!this.isValidBlockKey(blockKey))
             return null;
         if (this.isDataBlocksArray) {
             const index = Number(blockKey);
@@ -1410,11 +1759,28 @@ class TurboModel {
             return this.dataBlocks.get(blockKey.toString()) ?? null;
         }
     }
+    /**
+     * @function createBlock
+     * @description Creates a data block entry.
+     * @param {DataType} value - The data of the block.
+     * @param {IdType} [id] - The optional ID of the data.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+     * @protected
+     * @return {BlockType} - The created block.
+     */
     createBlock(value, id, blockKey = this.defaultBlockKey) {
         return { id: id ?? null, data: value };
     }
+    /**
+     * @function setBlock
+     * @description Creates and sets a data block at the specified key.
+     * @param {DataType} value - The data to set.
+     * @param {IdType} [id] - Optional block ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+     * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
+     */
     setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
-        if (!value || !blockKey)
+        if (!this.isValidBlockKey(blockKey) || value === null || value === undefined)
             return;
         const block = this.createBlock(value, id, blockKey);
         if (this.isDataBlocksArray) {
@@ -1429,6 +1795,12 @@ class TurboModel {
         if (initialize)
             this.initialize(blockKey);
     }
+    /**
+     * @function hasBlock
+     * @description Check if a block exists at the given key.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key.
+     * @return {boolean} - Whether the block exists or not.
+     */
     hasBlock(blockKey) {
         if (this.isDataBlocksArray) {
             const index = Number(blockKey);
@@ -1436,6 +1808,14 @@ class TurboModel {
         }
         return this.dataBlocks.has(blockKey.toString());
     }
+    /**
+     * @function addBlock
+     * @description Adds a new block into the structure. Appends or inserts based on key if using array.
+     * @param {DataType} value - The block data.
+     * @param {IdType} [id] - Optional block ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
+     * @param {boolean} [initialize=true] - Whether to initialize after adding.
+     */
     addBlock(value, id, blockKey, initialize = true) {
         if (!value)
             return;
@@ -1449,14 +1829,32 @@ class TurboModel {
         if (initialize)
             this.initialize(index);
     }
+    /**
+     * @function getBlockData
+     * @description Retrieves the data from a specific block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @returns {DataType | null} The block's data or  if it doesn't exist.
+     */
     getBlockData(blockKey = this.defaultBlockKey) {
         const block = this.getBlock(blockKey);
         return block ? block.data : null;
     }
+    /**
+     * @function getBlockId
+     * @description Retrieves the ID from a specific block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @returns {IdType | null} The block ID or null.
+     */
     getBlockId(blockKey = this.defaultBlockKey) {
         const block = this.getBlock(blockKey);
         return block ? block.id : null;
     }
+    /**
+     * @function setBlockId
+     * @description Sets the ID for a specific block.
+     * @param {IdType} value - The new ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
+     */
     setBlockId(value, blockKey = this.defaultBlockKey) {
         if (!value)
             return;
@@ -1464,46 +1862,111 @@ class TurboModel {
         if (block)
             block.id = value;
     }
+    /**
+     * @function fireKeyChangedCallback
+     * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
+     * @param {KeyType} key - The key that changed.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
+     * @param {boolean} [deleted=false] - Whether the key was deleted.
+     */
     fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
-        if (blockKey === undefined)
+        if (!this.isValidBlockKey(blockKey))
             blockKey = this.getAllBlockKeys()[0];
-        this.keyChangedCallback(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
+        this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
     }
+    /**
+     * @function fireCallback
+     * @description Fires the emitter's change callback for the given key in the default blocks.
+     * @param {string | KeyType} key - The key to fire for.
+     * @param {...any[]} args - Additional arguments.
+     */
     fireCallback(key, ...args) {
-        this.keyChangedCallback(key, this.defaultBlockKey, ...args);
+        this.keyChangedCallback.fire(key, this.defaultBlockKey, ...args);
     }
+    /**
+     * @function fireBlockCallback
+     * @description Fires the emitter's change callback for the given key in a specific block with custom arguments.
+     * @param {string | KeyType} key - The key to fire for.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
+     * @param {...any[]} args - Additional arguments.
+     */
     fireBlockCallback(key, blockKey = this.defaultBlockKey, ...args) {
-        this.keyChangedCallback(key, blockKey, ...args);
+        if (!this.isValidBlockKey(blockKey))
+            blockKey = this.getAllBlockKeys()[0];
+        this.keyChangedCallback.fire(key, blockKey, ...args);
     }
+    /**
+     * @function initialize
+     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     */
     initialize(blockKey = this.defaultBlockKey) {
         const keys = this.getAllKeys(blockKey);
         if (!keys || !this.enabledCallbacks)
             return;
         keys.forEach(key => this.fireKeyChangedCallback(key, blockKey));
     }
+    /**
+     * @function clear
+     * @description Clears the block data at the given key.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     */
     clear(blockKey = this.defaultBlockKey) {
     }
+    /**
+     * @description The default block key based on whether the data structure is an array or map.
+     */
     get defaultBlockKey() {
         return (this.isDataBlocksArray ? 0 : "__turbo_default_block_key__");
     }
+    /**
+     * @description The default block key if there's only one block, otherwise null.
+     */
     get defaultComputationBlockKey() {
         const size = this.isDataBlocksArray
             ? this.dataBlocks.length
             : this.dataBlocks.size;
         return size > 1 ? null : this.defaultBlockKey;
     }
+    /**
+     * @function isValidBlockKey
+     * @description Checks if the block key is a valid string or number.
+     * @param {MvcBlockKeyType<BlocksType>} blockKey - The block key to validate.
+     * @returns {boolean} True if valid, false otherwise.
+     */
+    isValidBlockKey(blockKey) {
+        return blockKey !== undefined && blockKey !== null
+            && ((typeof blockKey === "string" && blockKey.length !== 0)
+                || typeof blockKey === "number");
+    }
+    /**
+     * @function getAllBlockKeys
+     * @description Retrieves all block keys in the model.
+     * @returns {MvcBlockKeyType<BlocksType>[]} Array of block keys.
+     */
     getAllBlockKeys() {
         if (this.isDataBlocksArray)
             return this.dataBlocks.map((_, index) => index);
         else
             return Array.from(this.dataBlocks.keys());
     }
+    /**
+     * @function getAllIds
+     * @description Retrieves all block (data) IDs in the model.
+     * @returns {IdType[]} Array of IDs.
+     */
     getAllIds() {
         if (this.isDataBlocksArray)
             return this.dataBlocks.map(entry => entry.id);
         else
             return Array.from(this.dataBlocks.values()).map(entry => entry.id);
     }
+    /**
+     * @function getAllBlocks
+     * @description Retrieves all blocks or a specific one if blockKey is defined.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {BlockType[]} Array of blocks.
+     */
     getAllBlocks(blockKey = this.defaultComputationBlockKey) {
         const output = [];
         if (blockKey !== null) {
@@ -1520,15 +1983,41 @@ class TurboModel {
         }
         return output;
     }
+    /**
+     * @function getAllKeys
+     * @description Retrieves all keys within the given block(s).
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {KeyType[]} Array of keys.
+     */
     getAllKeys(blockKey = this.defaultComputationBlockKey) {
         return this.getAllBlocks(blockKey).flatMap(block => Object.keys(block.data));
     }
+    /**
+     * @function getAllData
+     * @description Retrieves all values across block(s).
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {unknown[]} Array of values.
+     */
     getAllData(blockKey = this.defaultComputationBlockKey) {
         return this.getAllBlocks(blockKey).flatMap(block => Object.values(block.data));
     }
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
     getHandler(key) {
         return this.handlers.get(key);
     }
+    /**
+     * @function addHandler
+     * @description Registers a TurboHandler for the given key.
+     * @param {string} key - The identifier for the handler.
+     * @param {TurboHandler} handler - The handler instance to register.
+     */
     addHandler(key, handler) {
         this.handlers.set(key, handler);
     }
@@ -1537,27 +2026,72 @@ __decorate([
     auto()
 ], TurboModel.prototype, "enabledCallbacks", null);
 
+/**
+ * @class TurboView
+ * @template {object} ElementType - The type of the element attached to the view.
+ * @template {TurboModel} ModelType - The model type used in this view.
+ * @template {TurboEmitter} EmitterType - The emitter type used in this view.
+ * @description A base view class for MVC elements, providing structure for initializing and managing UI setup and
+ * event listeners. Designed to be devoid of logic and only handle direct UI changes.
+ */
 class TurboView {
+    /**
+     * @description The main component this view is attached to.
+     */
     element;
+    /**
+     * @description The model instance this view is bound to.
+     */
     model;
+    /**
+     * @description The emitter instance used for event communication.
+     */
     emitter;
+    /**
+     * @constructor
+     * @param {MvcViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
+     */
     constructor(properties) {
         this.element = properties.element;
         this.emitter = properties.emitter;
         this.model = properties.model;
     }
+    /**
+     * @function initialize
+     * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
+     */
     initialize() {
         this.setupChangedCallbacks();
         this.setupUIElements();
         this.setupUILayout();
         this.setupUIListeners();
     }
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method for initializing data/model change listeners and associated UI logic.
+     * @protected
+     */
     setupChangedCallbacks() {
     }
+    /**
+     * @function setupUIElements
+     * @description Setup method for initializing and storing sub-elements of the UI.
+     * @protected
+     */
     setupUIElements() {
     }
+    /**
+     * @function setupUILayout
+     * @description Setup method for creating the layout structure and injecting sub-elements into the DOM tree.
+     * @protected
+     */
     setupUILayout() {
     }
+    /**
+     * @function setupUIListeners
+     * @description Setup method for defining DOM and input event listeners.
+     * @protected
+     */
     setupUIListeners() {
     }
 }
@@ -1566,20 +2100,33 @@ class TurboView {
  * @class TurboElement
  * @extends HTMLElement
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
- */
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
 class TurboElement extends HTMLElement {
-    //STATIC CONFIG
     /**
      * @description Static configuration object.
      */
     static config = { shadowDOM: false, defaultSelectedClass: "selected" };
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
     mvc;
-    onAttach = () => { };
-    onDetach = () => { };
-    onAdopt = () => { };
+    /**
+     * @description Delegate fired when the element is attached to DOM.
+     */
+    onAttach = new Delegate();
+    /**
+     * @description Delegate fired when the element is detached from the DOM.
+     */
+    onDetach = new Delegate();
+    /**
+     * @description Delegate fired when the element is adopted by a new parent in the DOM.
+     */
+    onAdopt = new Delegate();
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -1590,7 +2137,6 @@ class TurboElement extends HTMLElement {
                 this.config[key] = val;
         });
     }
-    //ELEMENT
     constructor(properties = {}) {
         super();
         if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
@@ -1599,74 +2145,133 @@ class TurboElement extends HTMLElement {
         this.mvc = new MvcHandler({ ...properties, element: this });
     }
     connectedCallback() {
-        this.onAttach?.();
+        this.onAttach.fire();
     }
     disconnectedCallback() {
-        this.onDetach?.();
+        this.onDetach.fire();
     }
     adoptedCallback() {
-        this.onAdopt?.();
+        this.onAdopt.fire();
     }
     attributeChangedCallback(name, oldValue, newValue) {
         if (!newValue || newValue == oldValue)
             return;
         this[kebabToCamelCase(name)] = parse(newValue);
     }
+    /**
+     * @function initializeUI
+     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
+     * setupUIElements, setupUILayout, setupUIListeners).
+     */
     initializeUI() {
         this.setupChangedCallbacks();
         this.setupUIElements();
         this.setupUILayout();
         this.setupUIListeners();
     }
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks.
+     * @protected
+     */
     setupChangedCallbacks() {
     }
+    /**
+     * @function setupUIElements
+     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+     * them in fields.
+     * @protected
+     */
     setupUIElements() {
     }
+    /**
+     * @function setupUILayout
+     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+     * this element's child tree.
+     * @protected
+     */
     setupUILayout() {
     }
+    /**
+     * @function setupUIListeners
+     * @description Setup method to initialize and define all input/DOM event listeners of the element.
+     * @protected
+     */
     setupUIListeners() {
     }
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
      */
     set selected(value) {
         const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
         this.toggleClass(selectedClass, value);
     }
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
     get view() {
         return this.mvc.view;
     }
     set view(view) {
         this.mvc.view = view;
     }
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
     get model() {
         return this.mvc.model;
     }
     set model(model) {
         this.mvc.model = model;
     }
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get data() {
         return this.mvc.data;
     }
     set data(data) {
         this.mvc.data = data;
     }
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get dataId() {
         return this.mvc.dataId;
     }
     set dataId(value) {
         this.mvc.dataId = value;
     }
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataIndex() {
         return this.mvc.dataIndex;
     }
     set dataIndex(value) {
         this.mvc.dataIndex = value;
     }
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataSize() {
         return this.mvc.dataSize;
     }
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
     getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
         if (propertiesValue !== undefined && propertiesValue !== null)
             return propertiesValue;
@@ -1681,14 +2286,128 @@ __decorate([
 ], TurboElement.prototype, "selected", null);
 
 /**
+ * @class TurboHeadlessElement
+ * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ */
+class TurboHeadlessElement {
+    /**
+     * @description Static configuration object.
+     */
+    static config = {};
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value) {
+        Object.entries(value).forEach(([key, val]) => {
+            if (val !== undefined)
+                this.config[key] = val;
+        });
+    }
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
+    mvc;
+    constructor(properties = {}) {
+        this.mvc = new MvcHandler({ ...properties, element: this });
+    }
+    /**
+     * @description Whether the element is selected or not.
+     */
+    set selected(value) {
+    }
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    get view() {
+        return this.mvc.view;
+    }
+    set view(view) {
+        this.mvc.view = view;
+    }
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    get model() {
+        return this.mvc.model;
+    }
+    set model(model) {
+        this.mvc.model = model;
+    }
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get data() {
+        return this.mvc.data;
+    }
+    set data(data) {
+        this.mvc.data = data;
+    }
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get dataId() {
+        return this.mvc.dataId;
+    }
+    set dataId(value) {
+        this.mvc.dataId = value;
+    }
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataIndex() {
+        return this.mvc.dataIndex;
+    }
+    set dataIndex(value) {
+        this.mvc.dataIndex = value;
+    }
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataSize() {
+        return this.mvc.dataSize;
+    }
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
+    getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
+        if (propertiesValue !== undefined && propertiesValue !== null)
+            return propertiesValue;
+        const configValue = this.constructor.config[configFieldName];
+        if (configValue !== undefined && configValue !== null)
+            return configValue;
+        return defaultValue;
+    }
+}
+__decorate([
+    auto()
+], TurboHeadlessElement.prototype, "selected", null);
+
+/**
  * @class TurboProxiedElement
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  */
 class TurboProxiedElement {
-    //STATIC CONFIG
     /**
      * @description Static configuration object.
      */
@@ -1703,8 +2422,14 @@ class TurboProxiedElement {
                 this.config[key] = val;
         });
     }
-    //ELEMENT
+    /**
+     * @description The HTML (or other) element wrapped inside this instance.
+     */
     element;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
     mvc;
     constructor(properties = {}) {
         this.element = blindElement(properties);
@@ -1733,45 +2458,77 @@ class TurboProxiedElement {
     }
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
      */
     set selected(value) {
         const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
         this.element.toggleClass(selectedClass, value);
     }
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
     get view() {
         return this.mvc.view;
     }
     set view(view) {
         this.mvc.view = view;
     }
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
     get model() {
         return this.mvc.model;
     }
     set model(model) {
         this.mvc.model = model;
     }
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get data() {
         return this.mvc.data;
     }
     set data(data) {
         this.mvc.data = data;
     }
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get dataId() {
         return this.mvc.dataId;
     }
     set dataId(value) {
         this.mvc.dataId = value;
     }
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataIndex() {
         return this.mvc.dataIndex;
     }
     set dataIndex(value) {
         this.mvc.dataIndex = value;
     }
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataSize() {
         return this.mvc.dataSize;
     }
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
     getPropertiesValue(propertiesValue, configFieldName, defaultValue) {
         if (propertiesValue !== undefined && propertiesValue !== null)
             return propertiesValue;
@@ -2708,7 +3465,7 @@ class ReifectHandler {
     }
     //State management
     /**
-     * @description The enabled state of the reifect (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * @description The enabled state of the reifect (as a {@link ReifectEnabledObject}). Setting it to a boolean will
      * accordingly update the value of `enabled.global`.
      */
     get enabled() {
@@ -2720,15 +3477,14 @@ class ReifectHandler {
         else if (!value)
             return;
         else
-            for (const [key, state] of Object.entries(value)) {
+            for (const [key, state] of Object.entries(value))
                 this._enabled[key] = state;
-            }
     }
-    getEnabledState(reifect) {
-        return reifect.getEnabledState(this.attachedNode);
+    getReifectEnabledState(reifect) {
+        return reifect.getObjectEnabledState(this.attachedNode);
     }
-    setEnabledState(reifect, value) {
-        reifect.setEnabledState(this.attachedNode, value);
+    enableReifect(reifect, value) {
+        reifect.enableObject(this.attachedNode, value);
     }
 }
 
@@ -2796,41 +3552,52 @@ function mod(value, modValue = 0) {
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
 class StatefulReifect {
+    timeRegex = /^(\d+(?:\.\d+)?)(ms|s)?$/i;
     //List of attached objects
-    attachedObjects;
+    attachedObjects = [];
     _states;
-    _enabled;
     values;
     /**
      * @description Creates an instance of StatefulReifier.
      * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
      */
     constructor(properties) {
-        this.attachedObjects = [];
-        if (properties.attachedObjects)
-            this.attachAll(...properties.attachedObjects);
         //Initializing enabled state
-        this._enabled = {
+        this.enable({
             global: true, properties: true, classes: true, styles: true,
             replaceWith: true, transition: true
-        };
-        this.values = {
-            properties: properties.properties || {},
-            classes: properties.classes || {},
-            styles: properties.styles || {},
-            replaceWith: properties.replaceWith || {},
-            transitionProperties: properties.transitionProperties || ["all"],
-            transitionDuration: properties.transitionDuration || 0,
-            transitionTimingFunction: properties.transitionTimingFunction || "linear",
-            transitionDelay: properties.transitionDelay || 0,
-        };
+        });
+        this.properties = properties.properties || {};
+        this.classes = properties.classes || {};
+        this.styles = properties.styles || {};
+        this.replaceWith = properties.replaceWith || {};
+        this.transition = properties.transition ?? "all 0s linear 0s";
+        if (properties.transitionProperties)
+            this.transitionProperties = properties.transitionProperties;
+        if (properties.transitionDuration !== undefined)
+            this.transitionDuration = properties.transitionDuration;
+        if (properties.transitionTimingFunction)
+            this.transitionTimingFunction = properties.transitionTimingFunction;
+        if (properties.transitionDelay !== undefined)
+            this.transitionDelay = properties.transitionDelay;
         //Disable transition if undefined
-        if (!properties.transitionProperties && !properties.transitionDuration
+        if (!properties.transition && !properties.transitionProperties && !properties.transitionDuration
             && !properties.transitionTimingFunction && !properties.transitionDelay)
-            this.enabled.transition = false;
-        this.states = properties.states;
+            this.transitionEnabled = false;
+        if (properties.states)
+            this.states = properties.states;
+        if (properties.attachedObjects)
+            this.attachAll(...properties.attachedObjects);
     }
-    //Attached objects management
+    /*
+     *
+     * *********************************
+     *
+     * Attached objects management
+     *
+     * *********************************
+     *
+     */
     /**
      * @function attach
      * @description Attaches an object to the reifier.
@@ -2900,6 +3667,44 @@ class StatefulReifect {
         return this;
     }
     /**
+     * @protected
+     * @function attachObject
+     * @description Function used to generate a data entry for the given object, and add it to the attached list at
+     * the provided index (if any).
+     * @param {ClassType} object - The object to attach
+     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
+     * attached list.
+     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * callback fired when the reifier is applied to the object. The callback takes as parameters:
+     * - `state: State`: The state being applied to the object.
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
+     */
+    attachObject(object, index, onSwitch) {
+        if (index == undefined || isNaN(index))
+            index = this.attachedObjects.length;
+        if (index < 0)
+            index = 0;
+        const data = this.generateNewData(object, onSwitch);
+        this.attachedObjects.splice(index, 0, data);
+        object.reifects?.attach(this);
+        data.lastState = this.stateOf(object);
+        this.applyResolvedValues(data, false, true);
+        // this.applyTransition(data);
+        return data;
+    }
+    /**
+     * @protected
+     * @function detachObject
+     * @description Function used to remove a data entry from the attached objects list.
+     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
+     */
+    detachObject(data) {
+        this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
+    }
+    /**
      * @function getData
      * @description Retrieve the data entry of a given object.
      * @param {ClassType} object - The object to find the data of.
@@ -2927,36 +3732,15 @@ class StatefulReifect {
         const object = data.object.deref();
         return object || null;
     }
-    /**
-     * @function getEnabledState
-     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to get the state of.
-     * @returns {ReifectEnabledState} - The corresponding enabled state.
+    /*
+     *
+     * *********************************
+     *
+     * States stuff
+     *
+     * *********************************
+     *
      */
-    getEnabledState(object) {
-        return this.getData(object)?.enabled;
-    }
-    /**
-     * @function setEnabledState
-     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to set the state of.
-     * @param {boolean | ReifectEnabledState} value - The value to set/update with. Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
-     */
-    setEnabledState(object, value) {
-        const data = this.getData(object);
-        if (!data)
-            return;
-        if (typeof value == "boolean")
-            data.enabled.global = value;
-        else if (!value)
-            return;
-        else
-            for (const [key, state] of Object.entries(value)) {
-                data.enabled[key] = state;
-            }
-    }
-    //Getters and setters
     /**
      * @description All possible states.
      */
@@ -2970,22 +3754,150 @@ class StatefulReifect {
             this._states = value;
     }
     /**
-     * @description The enabled state of the reifier (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * @function stateOf
+     * @description Determine the current state of the reifect on the provided object.
+     * @param {ClassType} object - The object to determine the state for.
+     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+     */
+    stateOf(object) {
+        if (!object)
+            return undefined;
+        const data = this.getData(object);
+        if (!data)
+            return undefined;
+        if (data.lastState)
+            return data.lastState;
+        if (!(object instanceof HTMLElement))
+            return this.states[0];
+        if (!data.resolvedValues)
+            this.processRawProperties(data);
+        for (const state of this.states) {
+            if (!data.resolvedValues?.styles?.[state])
+                continue;
+            let matches = true;
+            for (const [property, value] of Object.entries(data.resolvedValues.styles[state])) {
+                if (object.style[property] != value) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (!matches)
+                continue;
+            data.lastState = state;
+            return state;
+        }
+        return this.states[0];
+    }
+    getAllStates() {
+        const states = [...this.states];
+        for (const values of [this.properties,
+            this.classes, this.styles, this.replaceWith]) {
+            if (typeof values != "object")
+                continue;
+            for (const state of Object.keys(values)) {
+                if (!states.includes(state))
+                    states.push(state);
+            }
+        }
+        if (states.length == 0)
+            console.warn("No states found for this particular reifect:", this);
+        return states;
+    }
+    /**
+     * @protected
+     * @function parseState
+     * @description Parses a boolean into the corresponding state value.
+     * @param {State | boolean} value - The value to parse.
+     * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
+     */
+    parseState(value) {
+        if (typeof value != "boolean")
+            return this.states.includes(value) ? value : this.states[0];
+        else
+            for (const str of value ? ["true", "on", "in", "enabled", "shown"]
+                : ["false", "off", "out", "disabled", "hidden"]) {
+                if (!this.states.includes(str))
+                    continue;
+                return str;
+            }
+        return this.states[0];
+    }
+    /*
+     *
+     * *********************************
+     *
+     * Enabled stuff
+     *
+     * *********************************
+     *
+     */
+    set enabled(value) {
+        this.refreshResolvedValues();
+    }
+    set propertiesEnabled(value) {
+        this.refreshProperties();
+    }
+    set stylesEnabled(value) {
+        this.refreshStyles();
+    }
+    set classesEnabled(value) {
+        this.refreshClasses();
+    }
+    set replaceWithEnabled(value) {
+        this.refreshReplaceWith();
+    }
+    set transitionEnabled(value) {
+        this.refreshTransition();
+    }
+    /**
+     * @function enable
+     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to set the state of.
+     * @param {boolean | ReifectEnabledObject} value - The value to set/update with. Setting it to a boolean will
      * accordingly update the value of `enabled.global`.
      */
-    get enabled() {
-        return this._enabled;
-    }
-    set enabled(value) {
-        if (typeof value == "boolean")
-            this._enabled.global = value;
+    enable(value, object) {
+        if (typeof value === "boolean")
+            this.enabled = value;
         else if (!value)
             return;
         else
-            for (const [key, state] of Object.entries(value)) {
-                this._enabled[key] = state;
-            }
+            Object.entries(value).forEach(([key, value]) => {
+                if (key == "global")
+                    this.enabled = value;
+                else
+                    this[key + "Enabled"] = value;
+            });
     }
+    enableObject(object, value) {
+        const data = this.getData(object);
+        if (!data)
+            return;
+        if (typeof value == "boolean")
+            data.enabled.global = value;
+        else if (!value)
+            return;
+        else
+            Object.entries(value).forEach(([key, value]) => data.enabled[key] = value);
+    }
+    /**
+     * @function getObjectEnabledState
+     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to get the state of.
+     * @returns {ReifectEnabledObject} - The corresponding enabled state.
+     */
+    getObjectEnabledState(object) {
+        return this.getData(object)?.enabled;
+    }
+    /*
+     *
+     * *********************************
+     *
+     * Properties stuff
+     *
+     * *********************************
+     *
+     */
     /**
      * @description The properties to be assigned to the objects. It could take:
      * - A record of `{key: value}` pairs.
@@ -3000,11 +3912,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get properties() {
-        return this.values.properties;
-    }
     set properties(value) {
-        this.values.properties = value;
     }
     /**
      * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
@@ -3020,11 +3928,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get styles() {
-        return this.values.styles;
-    }
     set styles(value) {
-        this.values.styles = value;
     }
     /**
      * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
@@ -3042,11 +3946,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get classes() {
-        return this.values.classes;
-    }
     set classes(value) {
-        this.values.classes = value;
     }
     /**
      * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
@@ -3062,11 +3962,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get replaceWith() {
-        return this.values.replaceWith;
-    }
     set replaceWith(value) {
-        this.values.replaceWith = value;
     }
     /**
      * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
@@ -3085,11 +3981,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get transitionProperties() {
-        return this.values.transitionProperties;
-    }
     set transitionProperties(value) {
-        this.values.transitionProperties = value;
     }
     /**
      * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
@@ -3105,11 +3997,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get transitionDuration() {
-        return this.values.transitionDuration;
-    }
     set transitionDuration(value) {
-        this.values.transitionDuration = value;
     }
     /**
      * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
@@ -3126,11 +4014,7 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get transitionTimingFunction() {
-        return this.values.transitionTimingFunction;
-    }
     set transitionTimingFunction(value) {
-        this.values.transitionTimingFunction = value;
     }
     /**
      * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
@@ -3146,15 +4030,99 @@ class StatefulReifect {
      * - `total: number`: the total number of objects in the applied list.
      * - `object: ClassType`: the object itself.
      */
-    get transitionDelay() {
-        return this.values.transitionDelay;
-    }
     set transitionDelay(value) {
-        this.values.transitionDelay = value;
     }
-    //Usage methods
+    set transition(value) {
+        if (!value)
+            return;
+        const object = typeof value === "string"
+            ? this.processTransitionString(value)
+            : this.processTransitionObject(value);
+        if (object.transitionProperties !== undefined)
+            this.transitionProperties = object.transitionProperties;
+        if (object.transitionDuration !== undefined)
+            this.transitionDuration = object.transitionDuration;
+        if (object.transitionDelay !== undefined)
+            this.transitionDelay = object.transitionDelay;
+        if (object.transitionTimingFunction !== undefined)
+            this.transitionTimingFunction = object.transitionTimingFunction;
+    }
+    processTransitionObject(transitionObject) {
+        const transitionValues = {};
+        for (const [state, entry] of Object.entries(transitionObject)) {
+            if (!this.states.includes(state))
+                continue;
+            if (typeof entry !== "string")
+                continue;
+            const object = this.processTransitionString(entry);
+            if (object.transitionProperties !== undefined)
+                transitionValues.transitionProperties[state] = object.transitionProperties;
+            if (object.transitionDuration !== undefined)
+                transitionValues.transitionDuration[state] = object.transitionDuration;
+            if (object.transitionDelay !== undefined)
+                transitionValues.transitionDelay[state] = object.transitionDelay;
+            if (object.transitionTimingFunction !== undefined)
+                transitionValues.transitionTimingFunction[state] = object.transitionTimingFunction;
+        }
+        return transitionValues;
+    }
+    processTransitionString(transitionString) {
+        // Normalize commas → spaces, split & filter
+        const tokens = transitionString.trim().replace(/,/g, " ").split(/\s+/).filter(t => t.length > 0);
+        const object = { transitionProperties: [] };
+        let i = 0;
+        //Properties
+        while (i < tokens.length && !this.timeRegex.test(tokens[i])) {
+            object.transitionProperties.push(tokens[i]);
+            i++;
+        }
+        //Duration
+        if (i < tokens.length) {
+            const duration = this.parseTime(tokens[i]);
+            if (!isNaN(duration))
+                object.transitionDuration = duration;
+            i++;
+        }
+        //Timing function
+        if (i < tokens.length) {
+            object.transitionTimingFunction = tokens[i];
+            i++;
+        }
+        //Delay
+        if (i < tokens.length) {
+            const delay = this.parseTime(tokens[i]);
+            if (!isNaN(delay))
+                object.transitionDelay = delay;
+            i++;
+        }
+        return object;
+    }
+    /**
+     * @function getTransitionString
+     * @description Gets the CSS transition string for the specified direction.
+     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
+     * @param state
+     * @returns {string} The CSS transition string.
+     */
+    getTransitionString(data, state = data.lastState) {
+        let transitionString = "";
+        data.resolvedValues.transitionProperties[state].forEach(property => transitionString
+            += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
+                + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
+                + (data.resolvedValues.transitionDelay[state] || 0) + "s");
+        return transitionString.substring(2);
+    }
+    /*
+     *
+     * *********************************
+     *
+     * Usage methods
+     *
+     * *********************************
+     *
+     */
     initialize(state, objects, options) {
-        if (!this.enabled.global)
+        if (!this.enabled)
             return;
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
@@ -3162,13 +4130,13 @@ class StatefulReifect {
             if (options.recomputeProperties || !data.resolvedValues)
                 this.processRawProperties(data, options.propertiesOverride);
             data.lastState = state;
-            this.applyResolvedValues(data, data.lastState, true, options?.applyStylesInstantly);
+            this.applyResolvedValues(data, true, options?.applyStylesInstantly);
             if (data.onSwitch)
                 data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
     apply(state, objects, options) {
-        if (!this.enabled.global)
+        if (!this.enabled)
             return;
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
@@ -3176,16 +4144,13 @@ class StatefulReifect {
             if (options.recomputeProperties || !data.resolvedValues)
                 this.processRawProperties(data, options.propertiesOverride);
             data.lastState = state;
-            const handler = data.object.deref()?.reifects;
-            if (handler)
-                handler.reloadTransitions();
-            this.applyResolvedValues(data, data.lastState, false, options?.applyStylesInstantly);
+            this.applyResolvedValues(data, false, options?.applyStylesInstantly);
             if (data.onSwitch)
                 data.onSwitch(state, data.objectIndex, data.totalObjectCount, this.getObject(data));
         });
     }
     toggle(objects, options) {
-        if (!this.enabled.global)
+        if (!this.enabled)
             return;
         if (!objects)
             objects = [];
@@ -3194,8 +4159,7 @@ class StatefulReifect {
         else if (!Array.isArray(objects))
             objects = [objects];
         const previousState = this.getData(objects[0])?.lastState;
-        const nextStateIndex = mod(previousState != undefined
-            ? this.states.indexOf(previousState) + 1 : 0, this.states.length);
+        const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
         this.apply(this.states[nextStateIndex], objects, options);
     }
     /**
@@ -3206,26 +4170,25 @@ class StatefulReifect {
      * @returns {this} Itself for method chaining.
      */
     reloadFor(object) {
-        if (!this.enabled.global)
+        if (!this.enabled)
             return this;
         const data = this.getData(object);
         if (!data || !data.enabled || !data.enabled.global)
             return this;
-        this.applyResolvedValues(data, data.lastState);
+        this.applyResolvedValues(data);
         return this;
     }
     reloadTransitionFor(object) {
-        if (!this.enabled.global)
+        if (!this.enabled || !this.transitionEnabled)
             return this;
         const data = this.getData(object);
-        if (!data || !data.enabled || !data.enabled.global)
+        if (!data || !data.enabled || !data.enabled.global || !data.enabled.transition)
             return this;
-        if (this.enabled.transition && data.enabled.transition)
-            this.applyTransition(data, data.lastState);
+        this.applyTransition(data, data.lastState);
         return this;
     }
     getEnabledObjectsData(objects, options) {
-        if (!this.enabled.global) {
+        if (!this.enabled) {
             console.warn("The reifier object you are trying to access is disabled.");
             return [];
         }
@@ -3262,55 +4225,67 @@ class StatefulReifect {
         });
         return enabledObjectsData;
     }
-    /**
-     * @function stateOf
-     * @description Determine the current state of the reifect on the provided object.
-     * @param {ClassType} object - The object to determine the state for.
-     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+    /*
+     *
+     * *********************************
+     *
+     * Property setting stuff
+     *
+     * *********************************
+     *
      */
-    stateOf(object) {
-        if (!object)
-            return undefined;
-        const data = this.getData(object);
-        if (!data)
-            return undefined;
-        if (data.lastState)
-            return data.lastState;
-        if (!(object instanceof HTMLElement))
-            return this.states[0];
-        if (!data.resolvedValues)
-            this.processRawProperties(data);
-        for (const state of this.states) {
-            if (!data.resolvedValues.styles[state])
-                continue;
-            let matches = true;
-            for (const [property, value] of Object.entries(data.resolvedValues.styles[state])) {
-                if (object.style[property] != value) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (!matches)
-                continue;
-            data.lastState = state;
-            return state;
+    applyResolvedValues(data, skipTransition = false, applyStylesInstantly = false) {
+        this.applyStyles(data, data.lastState, applyStylesInstantly);
+        if (!skipTransition) {
+            const handler = data.object.deref()?.reifects;
+            if (this.attachedObjects.includes(data) && handler)
+                handler.reloadTransitions();
+            else
+                this.applyTransition(data, data.lastState);
         }
-        return this.states[0];
+        this.applyReplaceWith(data, data.lastState);
+        this.applyProperties(data, data.lastState);
+        this.applyClasses(data, data.lastState);
     }
-    //Property setting methods
-    applyResolvedValues(data, state = data.lastState, skipTransition = false, applyStylesInstantly = false) {
-        if (this.enabled.transition && data.enabled.transition && !skipTransition)
-            this.applyTransition(data, state);
-        if (this.enabled.replaceWith && data.enabled.replaceWith)
-            this.replaceObject(data, state);
-        if (this.enabled.properties && data.enabled.properties)
-            this.setProperties(data, state);
-        if (this.enabled.classes && data.enabled.classes)
-            this.applyClasses(data, state);
-        if (this.enabled.styles && data.enabled.styles)
-            this.applyStyles(data, state, applyStylesInstantly);
+    refreshResolvedValues() {
+        this.refreshProperties();
+        this.refreshStyles();
+        this.refreshClasses();
+        this.refreshReplaceWith();
+        this.refreshTransition();
     }
-    replaceObject(data, state = data.lastState) {
+    applyProperties(data, state = data.lastState) {
+        if (!this.enabled || !this.propertiesEnabled)
+            return;
+        if (!data.enabled.global || !data.enabled.properties)
+            return;
+        const properties = data.resolvedValues?.properties?.[state];
+        if (!properties)
+            return;
+        const object = data.object.deref();
+        if (!object)
+            return;
+        for (const [field, value] of Object.entries(properties)) {
+            if (!field || value == undefined)
+                continue;
+            try {
+                object[field] = value;
+            }
+            catch (e) {
+                console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
+            }
+        }
+    }
+    refreshProperties() {
+        if (!this.enabled || !this.propertiesEnabled)
+            return;
+        this.attachedObjects.forEach(data => this.applyProperties(data));
+    }
+    applyReplaceWith(data, state = data.lastState) {
+        if (!this.enabled || !this.replaceWithEnabled)
+            return;
+        if (!data.enabled.global || !data.enabled.replaceWith)
+            return;
         const newObject = data.resolvedValues.replaceWith[state];
         if (!newObject)
             return;
@@ -3324,26 +4299,16 @@ class StatefulReifect {
             console.error(`Unable to replace object: ${e.message}`);
         }
     }
-    setProperties(data, state = data.lastState) {
-        const properties = data.resolvedValues.properties[state];
-        if (!properties)
+    refreshReplaceWith() {
+        if (!this.enabled || !this.replaceWithEnabled)
             return;
-        const object = data.object.deref();
-        if (!object)
-            return;
-        for (const [field, value] of Object.entries(properties)) {
-            if (!field || value == undefined)
-                continue;
-            try {
-                object[field] = value;
-            }
-            catch (e) {
-                console.log(value);
-                console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
-            }
-        }
+        this.attachedObjects.forEach(data => this.applyReplaceWith(data));
     }
     applyClasses(data, state = data.lastState) {
+        if (!this.enabled || !this.classesEnabled)
+            return;
+        if (!data.enabled.global || !data.enabled.classes)
+            return;
         const classes = data.resolvedValues.classes;
         if (!classes)
             return;
@@ -3354,59 +4319,44 @@ class StatefulReifect {
             object.toggleClass(value, state == key);
         }
     }
+    refreshClasses() {
+        if (!this.enabled || !this.classesEnabled)
+            return;
+        this.attachedObjects.forEach(data => this.applyClasses(data));
+    }
     applyStyles(data, state = data.lastState, applyStylesInstantly = false) {
+        if (!this.enabled || !this.stylesEnabled)
+            return;
+        if (!data.enabled.global || !data.enabled.styles)
+            return;
         const object = data.object.deref();
         if (!object || !(object instanceof Element))
             return;
         object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
+    refreshStyles() {
+        if (!this.enabled || !this.stylesEnabled)
+            return;
+        this.attachedObjects.forEach(data => this.applyStyles(data));
+    }
     applyTransition(data, state = data.lastState) {
+        if (!this.enabled || !this.transitionEnabled)
+            return;
+        if (!data.enabled.global || !data.enabled.transition)
+            return;
         const object = data.object.deref();
         if (!object || !(object instanceof Element) || !data.resolvedValues)
             return;
-        if (!state)
-            state = this.states[0];
-        if (!data.lastState)
-            data.lastState = state;
-        if (!state)
-            return;
         object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
+    refreshTransition() {
+        for (const data of this.attachedObjects) {
+            const handler = data.object?.deref()?.reifects;
+            if (handler)
+                handler.reloadTransitions();
+        }
+    }
     //General methods (to be overridden for custom functionalities)
-    /**
-     * @protected
-     * @function attachObject
-     * @description Function used to generate a data entry for the given object, and add it to the attached list at
-     * the provided index (if any).
-     * @param {ClassType} object - The object to attach
-     * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
-     * attached list.
-     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
-     * callback fired when the reifier is applied to the object. The callback takes as parameters:
-     * - `state: State`: The state being applied to the object.
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
-     */
-    attachObject(object, index, onSwitch) {
-        if (index == undefined || isNaN(index))
-            index = this.attachedObjects.length;
-        if (index < 0)
-            index = 0;
-        const data = this.generateNewData(object, onSwitch);
-        this.attachedObjects.splice(index, 0, data);
-        return data;
-    }
-    /**
-     * @protected
-     * @function detachObject
-     * @description Function used to remove a data entry from the attached objects list.
-     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
-     */
-    detachObject(data) {
-        this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
-    }
     filterEnabledObjects(data) {
         if (!data.enabled || !data.enabled.global) {
             console.warn("The reified properties instance you are trying to set on an object is " +
@@ -3416,21 +4366,6 @@ class StatefulReifect {
         return true;
     }
     //Utilities
-    getAllStates() {
-        const states = [...this.states];
-        for (const values of [this.properties,
-            this.classes, this.styles, this.replaceWith]) {
-            if (typeof values != "object")
-                continue;
-            for (const state of Object.keys(values)) {
-                if (!states.includes(state))
-                    states.push(state);
-            }
-        }
-        if (states.length == 0)
-            console.warn("No states found for this particular reifect:", this);
-        return states;
-    }
     processRawProperties(data, override) {
         if (!data.resolvedValues)
             data.resolvedValues = {
@@ -3472,14 +4407,7 @@ class StatefulReifect {
     generateNewData(object, onSwitch) {
         return {
             object: new WeakRef(object),
-            enabled: {
-                global: true,
-                properties: true,
-                classes: true,
-                styles: true,
-                replaceWith: true,
-                transition: true
-            },
+            enabled: { global: true, properties: true, classes: true, styles: true, replaceWith: true, transition: true },
             lastState: this.stateOf(object),
             onSwitch: onSwitch
         };
@@ -3514,39 +4442,6 @@ class StatefulReifect {
             transitionTimingFunction: this.transitionTimingFunction,
             transitionDelay: this.transitionDelay,
         });
-    }
-    /**
-     * @protected
-     * @function parseState
-     * @description Parses a boolean into the corresponding state value.
-     * @param {State | boolean} value - The value to parse.
-     * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
-     */
-    parseState(value) {
-        if (typeof value != "boolean")
-            return value;
-        else
-            for (const str of value ? ["true", "on", "in", "enabled", "shown"]
-                : ["false", "off", "out", "disabled", "hidden"]) {
-                if (!this.states.includes(str))
-                    continue;
-                return str;
-            }
-    }
-    /**
-     * @function getTransitionString
-     * @description Gets the CSS transition string for the specified direction.
-     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
-     * @param state
-     * @returns {string} The CSS transition string.
-     */
-    getTransitionString(data, state = data.lastState) {
-        let transitionString = "";
-        data.resolvedValues.transitionProperties[state].forEach(property => transitionString
-            += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
-                + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
-                + (data.resolvedValues.transitionDelay[state] || 0) + "s");
-        return transitionString.substring(2);
     }
     processRawPropertyForState(data, field, value, state) {
         let resolvedValue;
@@ -3587,7 +4482,65 @@ class StatefulReifect {
         }
         data.resolvedValues[field][state] = resolvedValue;
     }
+    /**
+     * @description Processes string durations like "200ms" or "0.3s", or even "100".
+     * @param value
+     * @private
+     */
+    parseTime(value) {
+        const matches = value.match(this.timeRegex);
+        if (!matches)
+            return NaN;
+        const num = parseFloat(matches[1]);
+        const unit = matches[2]?.toLowerCase() ?? "s";
+        return unit === "ms" ? num / 1000 : num;
+    }
 }
+__decorate([
+    auto()
+], StatefulReifect.prototype, "enabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "propertiesEnabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "stylesEnabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "classesEnabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "replaceWithEnabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transitionEnabled", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "properties", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "styles", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "classes", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "replaceWith", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transitionProperties", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transitionDuration", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transitionTimingFunction", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transitionDelay", null);
+__decorate([
+    auto()
+], StatefulReifect.prototype, "transition", null);
 function statefulReifier(properties) {
     return new StatefulReifect(properties);
 }
@@ -3658,45 +4611,6 @@ function turbofy() {
     addStylesManipulationToElementPrototype();
     updateChainingPropertiesInElementPrototype();
     addReifectManagementToNodePrototype();
-}
-
-class Delegate {
-    callbacks = new Set();
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback) {
-        this.callbacks.add(callback);
-    }
-    /**
-     * @description Removes a callback from the list.
-     * @param callback - The callback function to remove.
-     * @returns A boolean indicating whether the callback was found and removed.
-     */
-    remove(callback) {
-        return this.callbacks.delete(callback);
-    }
-    /**
-     * @description Invokes all callbacks with the provided arguments.
-     * @param args - The arguments to pass to the callbacks.
-     */
-    fire(...args) {
-        for (const callback of this.callbacks) {
-            try {
-                callback(...args);
-            }
-            catch (error) {
-                console.error("Error invoking callback:", error);
-            }
-        }
-    }
-    /**
-     * @description Clears added callbacks
-     */
-    clear() {
-        this.callbacks.clear();
-    }
 }
 
 const TurboKeyEventName = {
@@ -4874,7 +5788,9 @@ let TurboIcon = class TurboIcon extends TurboElement {
      * Setting it will update the icon accordingly.
      */
     set icon(value) {
-        this.type = getFileExtension(value).substring(1);
+        const ext = getFileExtension(value).substring(1);
+        if (ext)
+            this.type = ext;
         this.generateIcon();
     }
     /**
@@ -4908,6 +5824,8 @@ let TurboIcon = class TurboIcon extends TurboElement {
             return;
         }
         this.clear();
+        if (!this.icon)
+            return;
         const element = this.getLoader()(this.path);
         if (element instanceof Element)
             this.setupLoadedElement(element);
@@ -5233,24 +6151,30 @@ let TurboIconSwitch = class TurboIconSwitch extends TurboIcon {
      * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
      */
     constructor(properties) {
-        super({ ...properties, icon: undefined });
+        super({ ...properties });
         if (properties.switchReifect instanceof StatefulReifect)
             this.switchReifect = properties.switchReifect;
         else
             this.switchReifect = new StatefulReifect(properties.switchReifect || {});
-        const reifectProperties = this.switchReifect.properties;
         this.switchReifect.attach(this);
-        if (properties.appendStateToIconName)
-            this.switchReifect.states.forEach(state => {
-                if (!reifectProperties[state])
-                    reifectProperties[state] = {};
-                reifectProperties[state].icon = properties.icon + "-" + state.toString();
-            });
-        this.update(properties.appendStateToIconName ? { ...properties, icon: undefined } : properties);
+        this.appendStateToIconName = properties.appendStateToIconName;
         if (properties.defaultState)
             this.switchReifect.apply(properties.defaultState, this);
     }
+    set appendStateToIconName(value) {
+        if (value) {
+            const reifectProperties = this.switchReifect.properties;
+            this.switchReifect.states.forEach(state => {
+                if (!reifectProperties[state])
+                    reifectProperties[state] = {};
+                reifectProperties[state].icon = this.icon + "-" + state.toString();
+            });
+        }
+    }
 };
+__decorate([
+    auto()
+], TurboIconSwitch.prototype, "appendStateToIconName", null);
 TurboIconSwitch = __decorate([
     define()
 ], TurboIconSwitch);
@@ -5437,7 +6361,7 @@ let TurboSelectEntry = TurboSelectEntry_1 = class TurboSelectEntry extends Turbo
         this.action = properties.action || (() => { });
         this.onSelected = properties.onSelected || (() => { });
         this.onEnabled = properties.onEnabled || (() => { });
-        this.reflectedElement = properties.reflectValueOn != undefined && !properties.element ? properties.reflectValueOn : this;
+        this.reflectedElement = properties.reflectValueOn ? properties.reflectValueOn : !properties.element ? this : undefined;
         this.inputName = properties.inputName;
         this.value = properties.value;
         this.secondaryValue = properties.secondaryValue;
@@ -5574,7 +6498,7 @@ let TurboSelect = class TurboSelect extends TurboElement {
             });
         });
     }
-    addEntry(entry) {
+    createEntry(entry) {
         if (!(entry instanceof TurboSelectEntry)) {
             if (typeof entry == "object" && "value" in entry) {
                 if (!entry.inputName)
@@ -5585,12 +6509,34 @@ let TurboSelect = class TurboSelect extends TurboElement {
                 entry = new TurboSelectEntry({ value: entry, inputName: this.inputName });
             }
         }
+        return entry;
+    }
+    addEntry(entry, index = this.entries.length) {
+        entry = this.createEntry(entry);
+        if (index === undefined || typeof index !== "number" || index > this.entries.length)
+            index = this.entries.length;
+        if (index < 0)
+            index = 0;
         if (!entry.selectedClasses)
             entry.selectedClasses = this.selectedEntryClasses;
         entry.addListener(DefaultEventName.click, (e) => this.onEntryClick(entry, e));
-        entry.onAttach = () => requestAnimationFrame(() => this.select(this.selectedEntry));
-        this.entriesParent.addChild(entry);
-        this.entries.push(entry);
+        entry.onAttach.add(() => {
+            if (!this.entries.includes(entry)) {
+                const domIndex = this.entriesParent.indexOfChild(entry);
+                const insertionIndex = Math.max(0, Math.min(domIndex, this.entries.length));
+                this.entries.splice(insertionIndex, 0, entry);
+            }
+            requestAnimationFrame(() => this.select(this.selectedEntry));
+        });
+        entry.onDetach.add(() => {
+            const i = this.entries.indexOf(entry);
+            if (i !== -1)
+                this.entries.splice(i, 1);
+            if (entry.selected)
+                entry.toggle();
+        });
+        this.entries.splice(index, 0, entry);
+        this.entriesParent.addChild(entry, index);
         return entry;
     }
     onEntryClick(entry, e) {
@@ -5599,9 +6545,10 @@ let TurboSelect = class TurboSelect extends TurboElement {
     /**
      * @description Select an entry.
      * @param {string | EntryType} entry - The DropdownEntry (or its string value) to select.
+     * @param selected
      * @return {TurboSelect} - This Dropdown for chaining.
      */
-    select(entry) {
+    select(entry, selected = true) {
         if (entry === undefined || entry === null)
             return this;
         if (!(entry instanceof TurboSelectEntry)) {
@@ -5610,9 +6557,13 @@ let TurboSelect = class TurboSelect extends TurboElement {
                 return this;
             entry = el;
         }
+        if (entry.selected === selected)
+            return this;
         if (!this.multiSelection)
-            this.selectedEntries.forEach(selectedEntry => selectedEntry.toggle());
-        entry.toggle();
+            this.selectedEntries.forEach(selectedEntry => selectedEntry.selected = false);
+        entry.selected = selected;
+        if (this.selectedEntries.length === 0 && this.forceSelection)
+            this.select(this.enabledEntries[0]);
         this.onSelect(entry.selected, entry, this.getIndex(entry));
         this.dispatchEvent(new TurboSelectInputEvent(entry, this.selectedValues));
         return this;
@@ -5739,9 +6690,8 @@ class Reifect extends StatefulReifect {
      * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
      */
     constructor(properties) {
-        const statefulProperties = properties;
-        statefulProperties.states = [""];
-        super(statefulProperties);
+        properties.states = [""];
+        super(properties);
     }
     /**
      * @description The properties to be assigned to the objects. It could take:
@@ -5823,6 +6773,9 @@ class Reifect extends StatefulReifect {
     }
     set replaceWith(value) {
         super.replaceWith = value;
+    }
+    set transition(value) {
+        super.transition = value;
     }
     /**
      * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
@@ -5923,13 +6876,13 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
     thumb;
     panelContainer;
     panel;
-    icon;
-    transition;
-    hideOverflow;
-    dragging = false;
-    animationOn = false;
+    _icon;
     _offset;
     _translation = 0;
+    transition;
+    dragging = false;
+    animationOn = false;
+    resizeObserver;
     constructor(properties) {
         super(properties);
         this.addClass("turbo-drawer");
@@ -5942,12 +6895,11 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
         this.addChild([this.thumb, this.panelContainer]);
         this.panelContainer.addChild(this.panel);
         this.hideOverflow = properties.hideOverflow ?? false;
-        if (this.hideOverflow)
-            this.panelContainer.setStyle("overflow", "hidden");
         this.side = properties.side || Side.bottom;
         this.offset = { open: properties.offset?.open || 0, closed: properties.offset?.closed || 0 };
-        this.icon = this.generateIcon(properties);
-        this.thumb.addChild(this.icon);
+        this.attachSideToIconName = properties.attachSideToIconName;
+        this.rotateIconBasedOnSide = properties.rotateIconBasedOnSide;
+        this.icon = properties.icon;
         this.childHandler = this.panel;
         //Transition
         this.transition = properties.transition ?? new Reifect({
@@ -5956,31 +6908,48 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
             transitionTimingFunction: "ease-out",
             attachedObjects: [this, this.panelContainer]
         });
-        this.initState(properties.initiallyOpen || false);
+        let pending = false;
+        this.resizeObserver = new ResizeObserver(entries => {
+            if (!this.open || this.dragging)
+                return;
+            if (pending)
+                return;
+            pending = true;
+            requestAnimationFrame(() => {
+                const size = Array.isArray(entries[0].borderBoxSize)
+                    ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
+                this.translation = (this.open ? this.offset.open : this.offset.closed)
+                    + (this.isVertical ? size.blockSize : size.inlineSize);
+                pending = false;
+            });
+        });
+        this.open = properties.initiallyOpen || false;
+        this.animationOn = true;
         this.initEvents();
     }
-    generateIcon(properties) {
-        if (properties.icon instanceof Element)
-            return properties.icon;
-        const attachSideToIconName = properties.attachSideToIconName ?? typeof properties.icon == "string";
-        const rotateIconBasedOnSide = properties.rotateIconBasedOnSide ?? !attachSideToIconName;
-        const iconProperties = typeof properties.icon == "object"
-            ? properties.icon : {
-            icon: properties.icon,
-            switchReifect: { states: Object.values(Side) },
-            defaultState: this.open ? this.getOppositeSide() : this.side,
-            appendStateToIconName: attachSideToIconName,
-        };
-        const iconElement = new TurboIconSwitch(iconProperties);
-        if (rotateIconBasedOnSide) {
-            iconElement.switchReifect.styles = {
-                top: "transform: rotate(180deg)",
-                bottom: "transform: rotate(0deg)",
-                left: "transform: rotate(90deg)",
-                right: "transform: rotate(270deg)",
-            };
+    get icon() {
+        return this._icon;
+    }
+    set icon(value) {
+        if (this.icon?.parentElement === this.thumb)
+            this.thumb.removeChild(this.icon);
+        if (value instanceof Element) {
+            this._icon = value;
+            return;
         }
-        return iconElement;
+        let attachSideToIconName = this.attachSideToIconName;
+        if (typeof value === "string" && !attachSideToIconName && !this.rotateIconBasedOnSide)
+            attachSideToIconName = true;
+        this._icon = new TurboIconSwitch(typeof value == "object"
+            ? value
+            : {
+                icon: value,
+                switchReifect: { states: Object.values(Side) },
+                defaultState: this.open ? this.getOppositeSide() : this.side,
+                appendStateToIconName: attachSideToIconName,
+            });
+        this.thumb.addChild(this.icon);
+        this.attachSideToIconName = attachSideToIconName;
     }
     initEvents() {
         this.thumb.addEventListener(DefaultEventName.click, (e) => {
@@ -6034,10 +7003,6 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
             this.refresh();
         });
     }
-    initState(isOpen) {
-        this.open = isOpen;
-        this.animationOn = true;
-    }
     getOppositeSide(side = this.side) {
         switch (side) {
             case Side.top:
@@ -6062,11 +7027,32 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
                 return Side.bottom;
         }
     }
+    set hideOverflow(value) {
+        this.panelContainer.setStyle("overflow", value ? "hidden" : "");
+    }
+    set attachSideToIconName(value) {
+        if (this.icon instanceof TurboIconSwitch)
+            this.icon.appendStateToIconName = value;
+        if (value)
+            this.rotateIconBasedOnSide = false;
+    }
+    set rotateIconBasedOnSide(value) {
+        if (value)
+            this.attachSideToIconName = false;
+        if (this.icon instanceof TurboIconSwitch)
+            this.icon.switchReifect.styles = {
+                top: "transform: rotate(180deg)",
+                bottom: "transform: rotate(0deg)",
+                left: "transform: rotate(90deg)",
+                right: "transform: rotate(270deg)",
+            };
+    }
     set side(value) {
         this.toggleClass("top-drawer", value == Side.top);
         this.toggleClass("bottom-drawer", value == Side.bottom);
         this.toggleClass("left-drawer", value == Side.left);
         this.toggleClass("right-drawer", value == Side.right);
+        this.refresh();
     }
     get offset() {
         return this._offset;
@@ -6081,6 +7067,10 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
         return this.side == Side.top || this.side == Side.bottom;
     }
     set open(value) {
+        if (value)
+            this.resizeObserver.observe(this.panel, { box: "border-box" });
+        else
+            this.resizeObserver.unobserve(this.panel);
         this.refresh();
     }
     get translation() {
@@ -6122,16 +7112,25 @@ let TurboDrawer = class TurboDrawer extends TurboElement {
         }
         if (this.hideOverflow)
             this.panel.setStyle("position", "absolute", true);
+        if (this.icon instanceof TurboIconSwitch)
+            this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
         requestAnimationFrame(() => {
             this.translation = (this.open ? this.offset.open : this.offset.closed)
                 + (this.open ? (this.isVertical ? this.panel.offsetHeight : this.panel.offsetWidth) : 0);
-            if (this.icon instanceof TurboIconSwitch)
-                this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
             if (this.hideOverflow)
                 this.panel.setStyle("position", "relative", true);
         });
     }
 };
+__decorate([
+    auto()
+], TurboDrawer.prototype, "hideOverflow", null);
+__decorate([
+    auto()
+], TurboDrawer.prototype, "attachSideToIconName", null);
+__decorate([
+    auto()
+], TurboDrawer.prototype, "rotateIconBasedOnSide", null);
 __decorate([
     auto()
 ], TurboDrawer.prototype, "side", null);
@@ -6436,8 +7435,8 @@ let TurboDropdown = class TurboDropdown extends TurboSelect {
         super.onEntryClick(entry);
         this.openPopup(false);
     }
-    select(entry) {
-        super.select(entry);
+    select(entry, selected = true) {
+        super.select(entry, selected);
         if (this.selector instanceof TurboButton)
             this.selector.text = this.stringSelectedValue;
         return this;
@@ -6475,7 +7474,7 @@ let TurboMarkingMenu = class TurboMarkingMenu extends TurboSelect {
     set endAngle(value) { }
     ;
     constructor(properties = {}) {
-        super({ ...properties });
+        super(properties);
         super.show(false);
         this.startAngle = 0;
         this.endAngle = properties.endAngle ?? Math.PI * 2;
@@ -6559,8 +7558,8 @@ let TurboMarkingMenu = class TurboMarkingMenu extends TurboSelect {
             angle -= Math.PI * 2;
         return angle;
     }
-    addEntry(entry) {
-        entry = super.addEntry(entry);
+    addEntry(entry, index = this.entries.length) {
+        entry = super.addEntry(entry, index);
         this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
         entry.setStyles({ position: "absolute" });
         return entry;
@@ -6799,6 +7798,8 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
      * Recalculates the dimensions and positions of all entries
      */
     reloadEntrySizes() {
+        if (!this.reifect)
+            return;
         this.sizePerEntry.length = 0;
         this.positionPerEntry.length = 0;
         this.totalSize = 0;
@@ -6850,16 +7851,15 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
             });
         element.setStyles(styles);
     }
-    select(entry) {
-        super.select(entry);
+    select(entry, selected = true) {
+        super.select(entry, selected);
         if (entry === undefined || entry === null)
             return this;
         const index = this.getIndex(this.selectedEntry);
         if (index != this.index)
             this.index = index;
         if (this.reifect) {
-            this.reifect.enabled.transition = true;
-            this.reifect.apply();
+            this.reifect.transitionEnabled = true;
             this.reloadEntrySizes();
         }
         const computedStyle = getComputedStyle(this.selectedEntry);
@@ -6873,16 +7873,21 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
         if (!this.alwaysOpen)
             this.setOpenTimer();
     }
-    addEntry(entry) {
-        entry = super.addEntry(entry);
+    addEntry(entry, index = this.entries.length) {
+        entry = this.createEntry(entry);
+        entry.onDetach.add(() => this.reifect?.detach(entry));
+        entry.onAttach.add(() => {
+            this.reifect?.attach(entry);
+            this.reloadEntrySizes();
+        });
+        entry = super.addEntry(entry, index);
         entry.setStyles({ position: "absolute" });
         entry.addListener(DefaultEventName.dragStart, (e) => {
             e.stopImmediatePropagation();
             this.clearOpenTimer();
             this.open = true;
             this.dragging = true;
-            this.reifect.enabled.transition = false;
-            this.reifect.apply();
+            this.reifect.transitionEnabled = false;
             this.reloadEntrySizes();
         });
         let showTimer;
@@ -6895,11 +7900,6 @@ let TurboSelectWheel = class TurboSelectWheel extends TurboSelect {
                 clearTimeout(showTimer);
             showTimer = null;
         });
-        if (this.reifect) {
-            this.reifect.attach(entry);
-            this.reifect.apply();
-            this.reloadEntrySizes();
-        }
         this.refresh();
         return entry;
     }
@@ -7105,4 +8105,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { AccessLevel, ActionMode, ClickMode, ClosestOrigin, DefaultEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTagsDefinitions, MvcHandler, OnOff, Open, Point, PopupFallbackMode, Range, Reifect, ReifectHandler, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTagsDefinitions, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveName, TurboNumericalInput, TurboPopup, TurboProxiedElement, TurboRichElement, TurboSelect, TurboSelectEntry, TurboSelectInputEvent, TurboSelectWheel, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, ClickMode, ClosestOrigin, DefaultEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTagsDefinitions, MvcHandler, OnOff, Open, Point, PopupFallbackMode, Range, Reifect, ReifectHandler, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTagsDefinitions, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveName, TurboNumericalInput, TurboPopup, TurboProxiedElement, TurboRichElement, TurboSelect, TurboSelectEntry, TurboSelectInputEvent, TurboSelectWheel, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };

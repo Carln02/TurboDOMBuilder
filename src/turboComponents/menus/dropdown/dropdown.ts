@@ -95,8 +95,8 @@ class TurboDropdown<
         this.openPopup(false);
     }
 
-    public select(entry: ValueType | EntryType): this {
-        super.select(entry);
+    public select(entry: ValueType | EntryType, selected: boolean = true): this {
+        super.select(entry, selected);
         if (this.selector instanceof TurboButton) this.selector.text = this.stringSelectedValue;
         return this;
     }

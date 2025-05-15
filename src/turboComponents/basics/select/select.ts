@@ -76,7 +76,7 @@ class TurboSelect<
         });
     }
 
-    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
+    public createEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
         if (!(entry instanceof TurboSelectEntry)) {
             if (typeof entry == "object" && "value" in entry) {
                 if (!entry.inputName) entry.inputName = this.inputName;
@@ -85,13 +85,36 @@ class TurboSelect<
                 entry = new TurboSelectEntry({value: entry, inputName: this.inputName}) as EntryType;
             }
         }
+        return entry;
+    }
+
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType,
+                    index: number = this.entries.length): EntryType {
+        entry = this.createEntry(entry);
+        if (index === undefined || typeof index !== "number" || index > this.entries.length) index = this.entries.length;
+        if (index < 0) index = 0;
 
         if (!entry.selectedClasses) entry.selectedClasses = this.selectedEntryClasses;
         entry.addListener(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
-        entry.onAttach = () => requestAnimationFrame(() => this.select(this.selectedEntry));
 
-        this.entriesParent.addChild(entry);
-        this.entries.push(entry);
+        entry.onAttach.add(() => {
+            if (!this.entries.includes(entry)) {
+                const domIndex = this.entriesParent.indexOfChild(entry);
+                const insertionIndex = Math.max(0, Math.min(domIndex, this.entries.length));
+                this.entries.splice(insertionIndex, 0, entry);
+            }
+            requestAnimationFrame(() => this.select(this.selectedEntry));
+        });
+
+        entry.onDetach.add(() => {
+            const i = this.entries.indexOf(entry);
+            if (i !== -1) this.entries.splice(i, 1);
+            if (entry.selected) entry.toggle();
+        });
+
+        this.entries.splice(index, 0, entry);
+        this.entriesParent.addChild(entry, index);
+
         return entry;
     }
 
@@ -102,9 +125,10 @@ class TurboSelect<
     /**
      * @description Select an entry.
      * @param {string | EntryType} entry - The DropdownEntry (or its string value) to select.
+     * @param selected
      * @return {TurboSelect} - This Dropdown for chaining.
      */
-    public select(entry: ValueType | EntryType): this {
+    public select(entry: ValueType | EntryType, selected: boolean = true): this {
         if (entry === undefined || entry === null) return this;
         if (!(entry instanceof TurboSelectEntry)) {
             let el = this.enabledEntries.find(el => el.value == entry);
@@ -112,8 +136,11 @@ class TurboSelect<
             entry = el;
         }
 
-        if (!this.multiSelection) this.selectedEntries.forEach(selectedEntry => selectedEntry.toggle());
-        entry.toggle();
+        if (entry.selected === selected) return this;
+        if (!this.multiSelection) this.selectedEntries.forEach(selectedEntry => selectedEntry.selected = false);
+        entry.selected = selected;
+
+        if (this.selectedEntries.length === 0 && this.forceSelection) this.select(this.enabledEntries[0]);
 
         this.onSelect(entry.selected, entry, this.getIndex(entry));
         this.dispatchEvent(new TurboSelectInputEvent<ValueType, SecondaryValueType>(entry, this.selectedValues));

@@ -99,7 +99,8 @@ class TurboIcon<
     @observe
     @auto()
     public set icon(value: string) {
-        this.type = getFileExtension(value).substring(1);
+        const ext = getFileExtension(value).substring(1);
+        if (ext) this.type = ext;
         this.generateIcon();
     }
 
@@ -143,6 +144,8 @@ class TurboIcon<
         }
 
         this.clear();
+        if (!this.icon) return;
+
         const element = this.getLoader()(this.path);
         if (element instanceof Element) this.setupLoadedElement(element);
         else element.then(element => this.setupLoadedElement(element))

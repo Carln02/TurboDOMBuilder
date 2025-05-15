@@ -24,19 +24,18 @@ class TurboDrawer<
     public readonly panelContainer: HTMLElement;
     public readonly panel: HTMLElement;
 
-    public readonly icon: TurboIconSwitch<Side> | Element;
+    private _icon: TurboIconSwitch<Side> | Element;
+    private _offset: PartialRecord<Open, number>;
+    private _translation: number = 0;
 
     public readonly transition: Reifect;
-
-    private readonly hideOverflow: boolean;
 
     private dragging: boolean = false;
     private animationOn: boolean = false;
 
-    private _offset: PartialRecord<Open, number>;
-    private _translation: number = 0;
+    protected resizeObserver: ResizeObserver;
 
-    constructor(properties: TurboDrawerProperties<ViewType, DataType, ModelType>) {
+    public constructor(properties: TurboDrawerProperties<ViewType, DataType, ModelType>) {
         super(properties);
         this.addClass("turbo-drawer");
 
@@ -52,13 +51,13 @@ class TurboDrawer<
         this.panelContainer.addChild(this.panel);
 
         this.hideOverflow = properties.hideOverflow ?? false;
-        if (this.hideOverflow) this.panelContainer.setStyle("overflow", "hidden");
 
         this.side = properties.side || Side.bottom;
         this.offset = {open: properties.offset?.open || 0, closed: properties.offset?.closed || 0};
 
-        this.icon = this.generateIcon(properties);
-        this.thumb.addChild(this.icon);
+        this.attachSideToIconName = properties.attachSideToIconName;
+        this.rotateIconBasedOnSide = properties.rotateIconBasedOnSide;
+        this.icon = properties.icon;
 
         this.childHandler = this.panel;
 
@@ -70,36 +69,53 @@ class TurboDrawer<
             attachedObjects: [this, this.panelContainer]
         });
 
-        this.initState(properties.initiallyOpen || false);
+        let pending = false;
+        this.resizeObserver = new ResizeObserver(entries => {
+            if (!this.open || this.dragging) return;
+            if (pending) return;
+            pending = true;
+
+            requestAnimationFrame(() => {
+                const size = Array.isArray(entries[0].borderBoxSize)
+                    ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
+                this.translation = (this.open ? this.offset.open : this.offset.closed)
+                    + (this.isVertical ? size.blockSize : size.inlineSize);
+                pending = false;
+            });
+        });
+
+        this.open = properties.initiallyOpen || false;
+        this.animationOn = true;
         this.initEvents();
     }
 
-    private generateIcon(properties: TurboDrawerProperties<ViewType, DataType, ModelType>) {
-        if (properties.icon instanceof Element) return properties.icon;
+    public get icon(): TurboIconSwitch<Side> | Element {
+        return this._icon;
+    }
 
-        const attachSideToIconName = properties.attachSideToIconName ?? typeof properties.icon == "string";
-        const rotateIconBasedOnSide = properties.rotateIconBasedOnSide ?? !attachSideToIconName;
+    public set icon(value: string | Element | TurboIconSwitchProperties<Side> | TurboIconSwitch<Side>) {
+        if (this.icon?.parentElement === this.thumb) this.thumb.removeChild(this.icon);
 
-        const iconProperties: TurboIconSwitchProperties<Side> = typeof properties.icon == "object"
-            ? properties.icon : {
-                icon: properties.icon,
-                switchReifect: {states: Object.values(Side)},
-                defaultState: this.open ? this.getOppositeSide() : this.side,
-                appendStateToIconName: attachSideToIconName,
-            };
-
-        const iconElement: TurboIconSwitch<Side> = new TurboIconSwitch(iconProperties);
-
-        if (rotateIconBasedOnSide) {
-            iconElement.switchReifect.styles = {
-                top: "transform: rotate(180deg)",
-                bottom: "transform: rotate(0deg)",
-                left: "transform: rotate(90deg)",
-                right: "transform: rotate(270deg)",
-            };
+        if (value instanceof Element) {
+            this._icon = value;
+            return;
         }
 
-        return iconElement;
+        let attachSideToIconName = this.attachSideToIconName;
+        if (typeof value === "string" && !attachSideToIconName && !this.rotateIconBasedOnSide) attachSideToIconName = true;
+
+        this._icon = new TurboIconSwitch(
+            typeof value == "object"
+                ? value
+                : {
+                    icon: value,
+                    switchReifect: {states: Object.values(Side)},
+                    defaultState: this.open ? this.getOppositeSide() : this.side,
+                    appendStateToIconName: attachSideToIconName,
+                });
+
+        this.thumb.addChild(this.icon);
+        this.attachSideToIconName = attachSideToIconName;
     }
 
     private initEvents() {
@@ -148,11 +164,6 @@ class TurboDrawer<
         });
     }
 
-    private initState(isOpen: boolean) {
-        this.open = isOpen;
-        this.animationOn = true;
-    }
-
     public getOppositeSide(side: Side = this.side): Side {
         switch (side) {
             case Side.top:
@@ -180,11 +191,34 @@ class TurboDrawer<
     }
 
     @auto()
+    public set hideOverflow(value: boolean) {
+        this.panelContainer.setStyle("overflow", value ? "hidden" : "");
+    }
+
+    @auto()
+    public set attachSideToIconName(value: boolean) {
+        if (this.icon instanceof TurboIconSwitch) this.icon.appendStateToIconName = value;
+        if (value) this.rotateIconBasedOnSide = false;
+    }
+
+    @auto()
+    public set rotateIconBasedOnSide(value: boolean) {
+        if (value) this.attachSideToIconName = false;
+        if (this.icon instanceof TurboIconSwitch) this.icon.switchReifect.styles = {
+            top: "transform: rotate(180deg)",
+            bottom: "transform: rotate(0deg)",
+            left: "transform: rotate(90deg)",
+            right: "transform: rotate(270deg)",
+        };
+    }
+
+    @auto()
     public set side(value: Side) {
         this.toggleClass("top-drawer", value == Side.top);
         this.toggleClass("bottom-drawer", value == Side.bottom);
         this.toggleClass("left-drawer", value == Side.left);
         this.toggleClass("right-drawer", value == Side.right);
+        this.refresh();
     }
 
     public get offset(): PartialRecord<Open, number> {
@@ -202,6 +236,8 @@ class TurboDrawer<
 
     @auto()
     public set open(value: boolean) {
+        if (value) this.resizeObserver.observe(this.panel, {box: "border-box"});
+        else this.resizeObserver.unobserve(this.panel);
         this.refresh();
     }
 
@@ -240,12 +276,13 @@ class TurboDrawer<
 
         if (this.hideOverflow) this.panel.setStyle("position", "absolute", true);
 
+        if (this.icon instanceof TurboIconSwitch)
+            this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
+
         requestAnimationFrame(() => {
-            this.translation =  (this.open ? this.offset.open : this.offset.closed)
+            this.translation = (this.open ? this.offset.open : this.offset.closed)
                 + (this.open ? (this.isVertical ? this.panel.offsetHeight : this.panel.offsetWidth) : 0);
 
-            if (this.icon instanceof TurboIconSwitch)
-                this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
             if (this.hideOverflow) this.panel.setStyle("position", "relative", true);
         });
     }

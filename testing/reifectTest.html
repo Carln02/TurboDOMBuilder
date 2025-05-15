@@ -58,14 +58,14 @@
             "#e74c3c", "#27ae60", "#3498db", "#f39c12", "#9b59b6"
         ].map(color =>
             Turbo.div({
-                style: `width: 80px; height: 80px; background-color: ${color}; border-radius: 12px`,
+                style: `width: 80px; height: 80px; background-color: ${color}; border-radius: 12px; opacity: 0.5; margin-bottom: 10px;`,
                 parent: boxContainer
             })
         );
 
         // Transition 1 — Slide In/Out
         const slideTransition = new Turbo.StatefulReifect({
-            states: ["in", "out"],
+            states: ["out", "in"],
             transitionProperties: "transform",
             transitionDuration: 0.3,
             transitionTimingFunction: "cubic-bezier(0.33, 1, 0.68, 1)",
@@ -83,7 +83,10 @@
             transitionDuration: 0.4,
             transitionTimingFunction: "ease-in-out",
             styles: {
-                visible: "opacity: 1",
+                visible: () => {
+                    console.log("visible");
+                    return "opacity: 1"
+                },
                 hidden: "opacity: 0.1"
             }
         });

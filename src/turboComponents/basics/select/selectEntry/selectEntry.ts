@@ -53,7 +53,7 @@ class TurboSelectEntry<
         this.onSelected = properties.onSelected || (() => {});
         this.onEnabled = properties.onEnabled || (() => {});
 
-        this.reflectedElement = properties.reflectValueOn != undefined && !properties.element ? properties.reflectValueOn : this;
+        this.reflectedElement = properties.reflectValueOn ? properties.reflectValueOn : !properties.element ? this : undefined;
         this.inputName = properties.inputName;
 
         this.value = properties.value;

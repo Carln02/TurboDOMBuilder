@@ -36,9 +36,9 @@ class TurboMarkingMenu<
     @auto({callBefore: (value) => value - Math.PI / 2})
     public set endAngle(value: number) {};
 
-    constructor(properties: TurboMarkingMenuProperties<ValueType, SecondaryValueType, EntryType, ViewType,
+    public constructor(properties: TurboMarkingMenuProperties<ValueType, SecondaryValueType, EntryType, ViewType,
         DataType, ModelType> = {}) {
-        super({...properties});
+        super(properties);
         super.show(false);
 
         this.startAngle = 0;
@@ -131,8 +131,9 @@ class TurboMarkingMenu<
         return angle;
     }
 
-    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
-        entry = super.addEntry(entry);
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType
+                    , index: number = this.entries.length): EntryType {
+        entry = super.addEntry(entry, index);
         this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
         entry.setStyles({position: "absolute"});
         return entry;

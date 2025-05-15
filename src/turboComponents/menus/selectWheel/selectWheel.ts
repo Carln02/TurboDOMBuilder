@@ -187,6 +187,8 @@ class TurboSelectWheel<
      * Recalculates the dimensions and positions of all entries
      */
     protected reloadEntrySizes() {
+        if (!this.reifect) return;
+
         this.sizePerEntry.length = 0;
         this.positionPerEntry.length = 0;
         this.totalSize = 0;
@@ -240,16 +242,15 @@ class TurboSelectWheel<
         element.setStyles(styles);
     }
 
-    public select(entry: ValueType | EntryType): this {
-        super.select(entry);
+    public select(entry: ValueType | EntryType, selected: boolean = true): this {
+        super.select(entry, selected);
         if (entry === undefined || entry === null) return this;
 
         const index = this.getIndex(this.selectedEntry);
         if (index != this.index) this.index = index;
 
         if (this.reifect) {
-            this.reifect.enabled.transition = true;
-            this.reifect.apply();
+            this.reifect.transitionEnabled = true;
             this.reloadEntrySizes();
         }
 
@@ -265,8 +266,16 @@ class TurboSelectWheel<
         if (!this.alwaysOpen) this.setOpenTimer();
     }
 
-    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType {
-        entry = super.addEntry(entry);
+    public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType,
+                    index: number = this.entries.length): EntryType {
+        entry = this.createEntry(entry);
+        entry.onDetach.add(() => this.reifect?.detach(entry as TurboSelectEntry));
+        entry.onAttach.add(() => {
+            this.reifect?.attach(entry as TurboSelectEntry);
+            this.reloadEntrySizes();
+        });
+
+        entry = super.addEntry(entry, index);
         entry.setStyles({position: "absolute"});
 
         entry.addListener(DefaultEventName.dragStart, (e: Event) => {
@@ -274,9 +283,7 @@ class TurboSelectWheel<
             this.clearOpenTimer();
             this.open = true;
             this.dragging = true;
-            this.reifect.enabled.transition = false;
-            this.reifect.apply();
-
+            this.reifect.transitionEnabled = false;
             this.reloadEntrySizes();
         });
 
@@ -289,11 +296,6 @@ class TurboSelectWheel<
             if (showTimer) clearTimeout(showTimer);
             showTimer = null;
         });
-        if (this.reifect) {
-            this.reifect.attach(entry);
-            this.reifect.apply();
-            this.reloadEntrySizes();
-        }
 
         this.refresh();
         return entry;

@@ -148,36 +148,175 @@ declare const define: (elementName?: string) => (constructor: any) => void;
  */
 declare function observe(target: HTMLElement, propertyKey: string): void;
 
+/**
+ * @class TurboHandler
+ * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
+ * functions to manipulate the model's data.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ */
 declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
+    /**
+     * @description The key of the handler. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the handler's class name is MyElementSomethingHandler, the key would
+     * default to "something".
+     */
     keyName: string;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
     protected readonly model: ModelType;
     constructor(model: ModelType);
 }
 
+/**
+ * @class TurboEmitter
+ * @template {TurboModel} ModelType -The element's MVC model type.
+ * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
+ * MVC structure to fire events or listen to some, with various methods.
+ */
 declare class TurboEmitter<ModelType extends TurboModel = TurboModel> {
+    /**
+     * @description Map containing all callbacks.
+     * @protected
+     */
     protected readonly callbacks: Map<string, Map<string, ((...args: any[]) => void)[]>>;
+    /**
+     * @description The attached MVC model.
+     */
     model: ModelType;
     constructor(model: ModelType);
+    /**
+     * @function getBlock
+     * @description Retrieves the callback block by the given blockKey.
+     * @param {number | string} [blockKey] - The key of the block to retrieve.
+     * @protected
+     */
     protected getBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    /**
+     * @function getOrGenerateBlock
+     * @description Retrieves or creates a callback map for a given blockKey.
+     * @param {number | string} [blockKey] - The block key.
+     * @returns {Map<string, ((...args: any[]) => void)[]>} - The ensured callback map.
+     * @protected
+     */
     protected getOrGenerateBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    /**
+     * @function getKey
+     * @description Gets all callbacks for a given event key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} [blockKey] - The block in which the event is scoped.
+     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
+     * @protected
+     */
     protected getKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    /**
+     * @function getOrGenerateKey
+     * @description Ensures and returns the array of callbacks for a given event key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} [blockKey] - The block in which the event is scoped.
+     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
+     * @protected
+     */
     protected getOrGenerateKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    /**
+     * @function addWithBlock
+     * @description Registers a callback for an event key within a specified block -- usually for the corresponding
+     * data block in the model.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block to register the event in.
+     * @param {(...args: any[]) => void} callback - The callback function to invoke when the event is fired.
+     */
     addWithBlock(key: string, blockKey: number | string, callback: (...args: any[]) => void): void;
+    /**
+     * @function add
+     * @description Registers a callback for an event key in the default block.
+     * @param {string} key - The event name.
+     * @param {(...args: any[]) => void} callback - The callback function.
+     */
     add(key: string, callback: (...args: any[]) => void): void;
+    /**
+     * @function removeWithBlock
+     * @description Removes a specific callback or all callbacks for a key within a block.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block from which to remove the event.
+     * @param {(...args: any[]) => void} [callback] - The specific callback to remove. If undefined, all callbacks
+     * for the key are removed.
+     */
     removeWithBlock(key: string, blockKey: number | string, callback?: (...args: any[]) => void): void;
+    /**
+     * @function remove
+     * @description Removes a specific callback or all callbacks for a key in the default block.
+     * @param {string} key - The event name.
+     * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
+     */
     remove(key: string, callback?: (...args: any[]) => void): void;
+    /**
+     * @function fireWithBlock
+     * @description Triggers all callbacks associated with an event key in a specified block.
+     * @param {string} key - The event name.
+     * @param {number | string} blockKey - The block in which the event is scoped.
+     * @param {...any[]} args - Arguments passed to each callback.
+     */
     fireWithBlock(key: string, blockKey: string | number, ...args: any[]): void;
+    /**
+     * @function fire
+     * @description Triggers all callbacks associated with an event key in the default block.
+     * @param {string} key - The event name.
+     * @param {...any[]} args - Arguments passed to the callback.
+     */
     fire(key: string, ...args: any[]): void;
 }
 
+/**
+ * @class TurboController
+ * @description The MVC base controller class. Its main job is to handle  (some part of or all of) the logic of the
+ * component. It has access to the element, the model to read and write data, the view to update the UI, and the
+ * emitter to listen for changes in the model. It can only communicate with other controllers via the emitter
+ * (by firing or listening for changes on a certain key).
+ * @template {object} ElementType - The type of the main component.
+ * @template {TurboView} ViewType - The element's MVC view type.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
+ */
 declare class TurboController<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+    /**
+     * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+     * default to "something".
+     */
     keyName: string;
+    /**
+     * @description A reference to the component.
+     * @protected
+     */
     protected readonly element: ElementType;
+    /**
+     * @description A reference to the MVC view.
+     * @protected
+     */
     protected readonly view: ViewType;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
     protected readonly model: ModelType;
+    /**
+     * @description A reference to the MVC emitter.
+     * @protected
+     */
     protected readonly emitter: EmitterType;
     constructor(properties: MvcControllerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    /**
+     * @function initialize
+     * @description Initializes the controller. Specifically, it will setup the change callbacks.
+     */
     initialize(): void;
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks.
+     * @protected
+     */
     protected setupChangedCallbacks(): void;
 }
 
@@ -220,53 +359,310 @@ type MvcDataBlock<DataType = any, IdType extends string | number | symbol = any>
 type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends MvcDataBlock = MvcDataBlock> = Type extends "map" ? Map<string, BlockType> : BlockType[];
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
 
+declare class Delegate<CallbackType extends (...args: any[]) => any> {
+    private callbacks;
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback: CallbackType): void;
+    /**
+     * @description Removes a callback from the list.
+     * @param callback - The callback function to remove.
+     * @returns A boolean indicating whether the callback was found and removed.
+     */
+    remove(callback: CallbackType): boolean;
+    /**
+     * @description Invokes all callbacks with the provided arguments.
+     * @param args - The arguments to pass to the callbacks.
+     */
+    fire(...args: Parameters<CallbackType>): void;
+    /**
+     * @description Clears added callbacks
+     */
+    clear(): void;
+}
+
+/**
+ * @class TurboModel
+ * @template DataType - The type of the data stored in each block.
+ * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
+ * @template {string | number | symbol} IdType - The type of the block IDs.
+ * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
+ * @template {MvcDataBlock<DataType, IdType>} BlockType - The structure of each data block.
+ * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
+ * propagation.
+ */
 declare class TurboModel<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, BlocksType extends "array" | "map" = "array" | "map", BlockType extends MvcDataBlock<DataType, IdType> = MvcDataBlock<DataType, IdType>> {
     protected readonly isDataBlocksArray: boolean;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
     protected readonly handlers: Map<string, TurboHandler>;
-    keyChangedCallback: (keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void;
+    /**
+     * @description Delegate triggered when a key changes.
+     */
+    keyChangedCallback: Delegate<(keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void>;
+    /**
+     * @constructor
+     * @param {DataType} [data] - Initial data. Not initialized if provided
+     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+     */
     constructor(data?: DataType, dataBlocksType?: BlocksType);
+    /**
+     * @description The data of the default block.
+     */
     get data(): DataType;
     set data(value: DataType);
+    /**
+     * @description The ID of the default block.
+     */
     get dataId(): IdType;
     set dataId(value: IdType);
+    /**
+     * @description Whether callbacks are enabled or disabled.
+     */
     set enabledCallbacks(value: boolean);
-    protected getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): unknown;
-    protected setData(key: KeyType, value: unknown, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @function getData
+     * @description Retrieves the value associated with a given key in the specified block.
+     * @param {KeyType} key - The key to retrieve.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
+     * data.
+     * @returns {unknown} The value associated with the key, or null if not found.
+     */
+    getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): unknown;
+    /**
+     * @function setData
+     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @param {KeyType} key - The key to update.
+     * @param {unknown} value - The value to assign.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     */
+    setData(key: KeyType, value: unknown, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @function getSize
+     * @description Returns the size of the specified block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
+     * @returns {number} The size.
+     */
     getSize(blockKey?: MvcBlockKeyType<BlocksType>): number;
-    protected getBlock(blockKey?: MvcBlockKeyType<BlocksType>): BlockType | null;
+    /**
+     * @function getBlock
+     * @description Retrieves the data block for the given blockKey.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key to retrieve.
+     * @returns {BlockType | null} The block or null if it doesn't exist.
+     */
+    getBlock(blockKey?: MvcBlockKeyType<BlocksType>): BlockType | null;
+    /**
+     * @function createBlock
+     * @description Creates a data block entry.
+     * @param {DataType} value - The data of the block.
+     * @param {IdType} [id] - The optional ID of the data.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+     * @protected
+     * @return {BlockType} - The created block.
+     */
     protected createBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>): BlockType;
-    protected setBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
-    protected hasBlock(blockKey: MvcBlockKeyType<BlocksType>): boolean;
+    /**
+     * @function setBlock
+     * @description Creates and sets a data block at the specified key.
+     * @param {DataType} value - The data to set.
+     * @param {IdType} [id] - Optional block ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+     * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
+     */
+    setBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
+    /**
+     * @function hasBlock
+     * @description Check if a block exists at the given key.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key.
+     * @return {boolean} - Whether the block exists or not.
+     */
+    hasBlock(blockKey: MvcBlockKeyType<BlocksType>): boolean;
+    /**
+     * @function addBlock
+     * @description Adds a new block into the structure. Appends or inserts based on key if using array.
+     * @param {DataType} value - The block data.
+     * @param {IdType} [id] - Optional block ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
+     * @param {boolean} [initialize=true] - Whether to initialize after adding.
+     */
     addBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
-    protected getBlockData(blockKey?: MvcBlockKeyType<BlocksType>): DataType | null;
-    protected getBlockId(blockKey?: MvcBlockKeyType<BlocksType>): IdType | null;
-    protected setBlockId(value: IdType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @function getBlockData
+     * @description Retrieves the data from a specific block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @returns {DataType | null} The block's data or  if it doesn't exist.
+     */
+    getBlockData(blockKey?: MvcBlockKeyType<BlocksType>): DataType | null;
+    /**
+     * @function getBlockId
+     * @description Retrieves the ID from a specific block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @returns {IdType | null} The block ID or null.
+     */
+    getBlockId(blockKey?: MvcBlockKeyType<BlocksType>): IdType | null;
+    /**
+     * @function setBlockId
+     * @description Sets the ID for a specific block.
+     * @param {IdType} value - The new ID.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
+     */
+    setBlockId(value: IdType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @function fireKeyChangedCallback
+     * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
+     * @param {KeyType} key - The key that changed.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
+     * @param {boolean} [deleted=false] - Whether the key was deleted.
+     */
     protected fireKeyChangedCallback(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>, deleted?: boolean): void;
+    /**
+     * @function fireCallback
+     * @description Fires the emitter's change callback for the given key in the default blocks.
+     * @param {string | KeyType} key - The key to fire for.
+     * @param {...any[]} args - Additional arguments.
+     */
     protected fireCallback(key: string | KeyType, ...args: any[]): void;
+    /**
+     * @function fireBlockCallback
+     * @description Fires the emitter's change callback for the given key in a specific block with custom arguments.
+     * @param {string | KeyType} key - The key to fire for.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
+     * @param {...any[]} args - Additional arguments.
+     */
     protected fireBlockCallback(key: string | KeyType, blockKey?: MvcBlockKeyType<BlocksType>, ...args: any[]): void;
+    /**
+     * @function initialize
+     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     */
     initialize(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @function clear
+     * @description Clears the block data at the given key.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     */
     clear(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    /**
+     * @description The default block key based on whether the data structure is an array or map.
+     */
     get defaultBlockKey(): MvcBlockKeyType<BlocksType>;
+    /**
+     * @description The default block key if there's only one block, otherwise null.
+     */
     protected get defaultComputationBlockKey(): MvcBlockKeyType<BlocksType>;
+    /**
+     * @function isValidBlockKey
+     * @description Checks if the block key is a valid string or number.
+     * @param {MvcBlockKeyType<BlocksType>} blockKey - The block key to validate.
+     * @returns {boolean} True if valid, false otherwise.
+     */
+    protected isValidBlockKey(blockKey: MvcBlockKeyType<BlocksType>): boolean;
+    /**
+     * @function getAllBlockKeys
+     * @description Retrieves all block keys in the model.
+     * @returns {MvcBlockKeyType<BlocksType>[]} Array of block keys.
+     */
     getAllBlockKeys(): MvcBlockKeyType<BlocksType>[];
+    /**
+     * @function getAllIds
+     * @description Retrieves all block (data) IDs in the model.
+     * @returns {IdType[]} Array of IDs.
+     */
     getAllIds(): IdType[];
-    protected getAllBlocks(blockKey?: MvcBlockKeyType<BlocksType>): BlockType[];
+    /**
+     * @function getAllBlocks
+     * @description Retrieves all blocks or a specific one if blockKey is defined.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {BlockType[]} Array of blocks.
+     */
+    getAllBlocks(blockKey?: MvcBlockKeyType<BlocksType>): BlockType[];
+    /**
+     * @function getAllKeys
+     * @description Retrieves all keys within the given block(s).
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {KeyType[]} Array of keys.
+     */
     getAllKeys(blockKey?: MvcBlockKeyType<BlocksType>): KeyType[];
+    /**
+     * @function getAllData
+     * @description Retrieves all values across block(s).
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+     * @returns {unknown[]} Array of values.
+     */
     getAllData(blockKey?: MvcBlockKeyType<BlocksType>): unknown[];
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
     getHandler(key: string): TurboHandler;
+    /**
+     * @function addHandler
+     * @description Registers a TurboHandler for the given key.
+     * @param {string} key - The identifier for the handler.
+     * @param {TurboHandler} handler - The handler instance to register.
+     */
     addHandler(key: string, handler: TurboHandler): void;
 }
 
+/**
+ * @class TurboView
+ * @template {object} ElementType - The type of the element attached to the view.
+ * @template {TurboModel} ModelType - The model type used in this view.
+ * @template {TurboEmitter} EmitterType - The emitter type used in this view.
+ * @description A base view class for MVC elements, providing structure for initializing and managing UI setup and
+ * event listeners. Designed to be devoid of logic and only handle direct UI changes.
+ */
 declare class TurboView<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+    /**
+     * @description The main component this view is attached to.
+     */
     element: ElementType;
+    /**
+     * @description The model instance this view is bound to.
+     */
     model: ModelType;
+    /**
+     * @description The emitter instance used for event communication.
+     */
     emitter: EmitterType;
+    /**
+     * @constructor
+     * @param {MvcViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
+     */
     constructor(properties: MvcViewProperties<ElementType, ModelType, EmitterType>);
+    /**
+     * @function initialize
+     * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
+     */
     initialize(): void;
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method for initializing data/model change listeners and associated UI logic.
+     * @protected
+     */
     protected setupChangedCallbacks(): void;
+    /**
+     * @function setupUIElements
+     * @description Setup method for initializing and storing sub-elements of the UI.
+     * @protected
+     */
     protected setupUIElements(): void;
+    /**
+     * @function setupUILayout
+     * @description Setup method for creating the layout structure and injecting sub-elements into the DOM tree.
+     * @protected
+     */
     protected setupUILayout(): void;
+    /**
+     * @function setupUIListeners
+     * @description Setup method for defining DOM and input event listeners.
+     * @protected
+     */
     protected setupUIListeners(): void;
 }
 
@@ -281,21 +677,40 @@ type HTMLElementNonFunctions<Tag extends ValidTag = ValidTag> = {
  */
 type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> = Omit<Partial<Pick<ValidElement<Tag>, HTMLElementNonFunctions<Tag>>>, "children" | "className" | "style">;
 /**
+ * @type {ElementTagDefinition}
+ * @template {ValidTag} Tag
  * @description Represents an element's definition of its tag and its namespace (both optional).
  *
  * @property {Tag} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
  * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
  * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
- * @template {ValidTag} Tag
  */
 type ElementTagDefinition<Tag extends ValidTag> = {
     tag?: Tag;
     namespace?: string;
 };
 /**
+ * @type {TurboHeadlessProperties}
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<MvcHandlerProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+    out?: string | Element;
+    [key: string]: any;
+};
+/**
  * @type {TurboProperties}
- * @description Object containing properties for configuring a TurboWrapper, a TurboElement, or any Element. A tag (and
- * possibly a namespace) can be provided for TurboWrappers or for element creation. TurboElements will ignore these
+ * @template {ValidTag} Tag - The HTML (or other) tag of the element, if passing it as a property. Defaults to "div".
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ *
+ * @description Object containing properties for configuring a TurboElement, or any Element. A tag (and
+ * possibly a namespace) can be provided for TurboProxiedElements for element creation. TurboElements will ignore these
  * properties if set.
  * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
  * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
@@ -312,11 +727,11 @@ type ElementTagDefinition<Tag extends ValidTag> = {
  * - An object containing event listeners to be applied to this element.
  * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
  * the created element.
- * @property {Element} [parent] - The parent element or wrapper to which the created element will be appended.
+ * @property {Element} [parent] - The parent element to which the created element will be appended.
  * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
  * as name.
  * @property {string} [text] - The text content of the element (if any).
- * @property {boolean} [shadowDOM] - If true, indicate that the element or wrapper will be created under a shadow root.
+ * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
  *
  * @property alt
  * @property src
@@ -332,7 +747,7 @@ type ElementTagDefinition<Tag extends ValidTag> = {
  * @property checked
  * @property selected
  */
-type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & Omit<MvcHandlerProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -342,9 +757,18 @@ type TurboProperties<Tag extends ValidTag = "div", ViewType extends TurboView = 
     children?: Element | Element[];
     text?: string;
     listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>;
-    out?: string | Element;
-    [key: string]: any;
 };
+/**
+ * @type {TurboCustomProperties}
+ * @extends TurboProperties
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ *
+ * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
+ * without the tag.
+ */
 type TurboCustomProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProperties<"div", ViewType, DataType, ModelType, EmitterType>;
 
 /**
@@ -595,27 +1019,103 @@ declare function isSvgTag(tag?: string): boolean;
  */
 declare function isMathMLTag(tag?: string): boolean;
 
+/**
+ * @class MvcHandler
+ * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
+ * @template {object} ElementType - The type of the object that will be turned into MVC.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
 declare class MvcHandler<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
     private readonly element;
+    private _model;
     private readonly controllers;
     constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
-    set view(view: ViewType);
+    /**
+     * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new view.
+     */
+    set view(value: ViewType);
+    /**
+     * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
+     * the new one to the current view (if any) and emitter (if any).
+     */
+    get model(): ModelType;
     set model(model: ModelType);
+    /**
+     * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new emitter.
+     */
     set emitter(emitter: EmitterType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any).
+     */
     get data(): DataType;
     set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataId(): string;
     set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataIndex(): number;
     set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     */
     get dataSize(): number;
+    /**
+     * @function getController
+     * @description Retrieves the attached MVC controller with the given key.
+     * By default, unless manually defined in the controller, if the element's class name is MyElement
+     * and the controller's class name is MyElementSomethingController, the key would be "something".
+     * @param {string} key - The controller's key.
+     * @return {TurboController} - The controller.
+     */
     getController(key: string): TurboController;
+    /**
+     * @function addController
+     * @description Adds the given controller to the MVC structure.
+     * @param {TurboController} controller - The controller to add.
+     */
     addController(controller: TurboController): void;
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
     getHandler(key: string): TurboHandler;
+    /**
+     * @function addHandler
+     * @description Adds the given handler to the MVC structure.
+     * @param {TurboHandler} handler - The handler to add.
+     */
     addHandler(handler: TurboHandler): void;
+    /**
+     * @function generate
+     * @description Generates the MVC structure based on the provided properties.
+     * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
+     * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
+     * to generate the MVC structure.
+     */
     generate(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): void;
+    /**
+     * @function initialize
+     * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
+     * initialized last to allow for the view and controllers to setup their change callbacks.
+     */
     initialize(): void;
     private linkModelToView;
+    private emitterFireCallback;
+    private deLinkModelFromEmitter;
     private linkModelToEmitter;
     protected extractClassEssenceName(constructor: new (...args: any[]) => any): string;
 }
@@ -624,19 +1124,33 @@ declare class MvcHandler<ElementType extends object = object, ViewType extends T
  * @class TurboElement
  * @extends HTMLElement
  * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
- */
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
 declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends HTMLElement {
     /**
      * @description Static configuration object.
      */
     static readonly config: any;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
     protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
-    onAttach: () => void;
-    onDetach: () => void;
-    onAdopt: () => void;
+    /**
+     * @description Delegate fired when the element is attached to DOM.
+     */
+    readonly onAttach: Delegate<() => void>;
+    /**
+     * @description Delegate fired when the element is detached from the DOM.
+     */
+    readonly onDetach: Delegate<() => void>;
+    /**
+     * @description Delegate fired when the element is adopted by a new parent in the DOM.
+     */
+    readonly onAdopt: Delegate<() => void>;
     /**
      * @description Update the class's static configurations. Will only overwrite the set properties.
      * @property {typeof this.config} value - The object containing the new configurations.
@@ -647,36 +1161,170 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
     disconnectedCallback(): void;
     adoptedCallback(): void;
     attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
+    /**
+     * @function initializeUI
+     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
+     * setupUIElements, setupUILayout, setupUIListeners).
+     */
     initializeUI(): void;
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks.
+     * @protected
+     */
     protected setupChangedCallbacks(): void;
+    /**
+     * @function setupUIElements
+     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+     * them in fields.
+     * @protected
+     */
     protected setupUIElements(): void;
+    /**
+     * @function setupUILayout
+     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+     * this element's child tree.
+     * @protected
+     */
     protected setupUILayout(): void;
+    /**
+     * @function setupUIListeners
+     * @description Setup method to initialize and define all input/DOM event listeners of the element.
+     * @protected
+     */
     protected setupUIListeners(): void;
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
      */
     set selected(value: boolean);
-    protected get view(): ViewType;
-    protected set view(view: ViewType);
-    protected get model(): ModelType;
-    protected set model(model: ModelType);
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    get view(): ViewType;
+    set view(view: ViewType);
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    get model(): ModelType;
+    set model(model: ModelType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get data(): DataType;
     set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get dataId(): string;
     set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataIndex(): number;
     set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataSize(): number;
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
+    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+}
+
+/**
+ * @class TurboHeadlessElement
+ * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ */
+declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
+    /**
+     * @description Static configuration object.
+     */
+    static readonly config: any;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value: typeof this.config): void;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
+    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    constructor(properties?: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>);
+    /**
+     * @description Whether the element is selected or not.
+     */
+    set selected(value: boolean);
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    get view(): ViewType;
+    set view(view: ViewType);
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    get model(): ModelType;
+    set model(model: ModelType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get data(): DataType;
+    set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get dataId(): string;
+    set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataSize(): number;
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
     protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
 }
 
 /**
  * @class TurboProxiedElement
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
- * @template ViewType - TurboView
- * @template DataType - object
- * @template ModelType - TurboModel<DataType>
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  */
 declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
     /**
@@ -688,7 +1336,14 @@ declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewTy
      * @property {typeof this.config} value - The object containing the new configurations.
      */
     static configure(value: typeof this.config): void;
+    /**
+     * @description The HTML (or other) element wrapped inside this instance.
+     */
     readonly element: ValidElement<ElementTag>;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
     protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
     constructor(properties?: TurboProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>);
     attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
@@ -699,20 +1354,52 @@ declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewTy
     protected setupUIListeners(): void;
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class on the element and update the UI.
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
      */
     set selected(value: boolean);
-    protected get view(): ViewType;
-    protected set view(view: ViewType);
-    protected get model(): ModelType;
-    protected set model(model: ModelType);
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    get view(): ViewType;
+    set view(view: ViewType);
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    get model(): ModelType;
+    set model(model: ModelType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get data(): DataType;
     set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
     get dataId(): string;
     set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataIndex(): number;
     set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
     get dataSize(): number;
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
     protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
 }
 
@@ -1413,30 +2100,6 @@ declare global {
 }
 
 declare function turbofy(): void;
-
-declare class Delegate<CallbackType extends (...args: any[]) => any> {
-    private callbacks;
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback: CallbackType): void;
-    /**
-     * @description Removes a callback from the list.
-     * @param callback - The callback function to remove.
-     * @returns A boolean indicating whether the callback was found and removed.
-     */
-    remove(callback: CallbackType): boolean;
-    /**
-     * @description Invokes all callbacks with the provided arguments.
-     * @param args - The arguments to pass to the callbacks.
-     */
-    fire(...args: Parameters<CallbackType>): void;
-    /**
-     * @description Clears added callbacks
-     */
-    clear(): void;
-}
 
 declare const TurboKeyEventName: {
     readonly keyPressed: "turbo-key-pressed";
@@ -2356,10 +3019,18 @@ type StateSpecificProperty<Type, ClassType extends object = Element> = Type | Re
  * @template State
  * @template ClassType
  */
+type BasicPropertyConfig<Type, State extends string | number | symbol> = PartialRecord<State, Type> | Type;
+/**
+ * @description A configuration type for properties based on states or interpolated values.
+ *
+ * @template Type
+ * @template State
+ * @template ClassType
+ */
 type PropertyConfig<Type, State extends string | number | symbol, ClassType extends object = Element> = PartialRecord<State, StateSpecificProperty<Type, ClassType>> | Type | StateInterpolator<Type, State, ClassType>;
 type ReifectObjectData<State extends string | number | symbol, ClassType extends object = Element> = {
     object: WeakRef<ClassType>;
-    enabled: ReifectEnabledState;
+    enabled: ReifectEnabledObject;
     lastState?: State;
     resolvedValues?: ReifectObjectComputedProperties<State, ClassType>;
     objectIndex?: number;
@@ -2389,6 +3060,7 @@ type StatefulReifectCoreProperties<State extends string | number | symbol, Class
 type StatefulReifectProperties<State extends string | number | symbol, ClassType extends object = Element> = StatefulReifectCoreProperties<State, ClassType> & {
     states?: State[];
     attachedObjects?: ClassType[];
+    transition?: BasicPropertyConfig<string, State>;
 };
 type ReifectAppliedOptions<State extends string | number | symbol, ClassType extends object = Element> = {
     attachObjects?: boolean;
@@ -2398,7 +3070,7 @@ type ReifectAppliedOptions<State extends string | number | symbol, ClassType ext
     applyStylesInstantly?: boolean;
     propertiesOverride?: StatefulReifectCoreProperties<State, ClassType>;
 };
-type ReifectEnabledState = {
+type ReifectEnabledObject = {
     global?: boolean;
     properties?: boolean;
     styles?: boolean;
@@ -2416,9 +3088,9 @@ type ReifectEnabledState = {
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
 declare class StatefulReifect<State extends string | number | symbol, ClassType extends object = Node> {
+    protected readonly timeRegex: RegExp;
     protected readonly attachedObjects: ReifectObjectData<State, ClassType>[];
-    private _states;
-    private readonly _enabled;
+    protected _states: State[];
     protected readonly values: StatefulReifectCoreProperties<State, ClassType>;
     /**
      * @description Creates an instance of StatefulReifier.
@@ -2464,206 +3136,6 @@ declare class StatefulReifect<State extends string | number | symbol, ClassType 
      */
     detach(...objects: ClassType[]): this;
     /**
-     * @function getData
-     * @description Retrieve the data entry of a given object.
-     * @param {ClassType} object - The object to find the data of.
-     * @returns {ReifectObjectData<State, ClassType>} - The corresponding data, or `null` if was not found.
-     */
-    getData(object: ClassType): ReifectObjectData<State, ClassType>;
-    /**
-     * @function getObject
-     * @description Retrieves the object attached to the given data entry.
-     * @param {ReifectObjectData<State, ClassType>} data - The data entry to get the corresponding object of.
-     * @returns {ClassType} The corresponding object, or `null` if was garbage collected.
-     */
-    getObject(data: ReifectObjectData<State, ClassType>): ClassType;
-    /**
-     * @function getEnabledState
-     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to get the state of.
-     * @returns {ReifectEnabledState} - The corresponding enabled state.
-     */
-    getEnabledState(object: ClassType): ReifectEnabledState;
-    /**
-     * @function setEnabledState
-     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to set the state of.
-     * @param {boolean | ReifectEnabledState} value - The value to set/update with. Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
-     */
-    setEnabledState(object: ClassType, value: boolean | ReifectEnabledState): void;
-    /**
-     * @description All possible states.
-     */
-    get states(): State[];
-    set states(value: State[]);
-    /**
-     * @description The enabled state of the reifier (as a {@link ReifectEnabledState}). Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
-     */
-    get enabled(): ReifectEnabledState;
-    set enabled(value: boolean | ReifectEnabledState);
-    /**
-     * @description The properties to be assigned to the objects. It could take:
-     * - A record of `{key: value}` pairs.
-     * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
-     * {key: value} pairs}`.
-     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get properties(): PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>;
-    set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>);
-    /**
-     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
-     * - A record of `{CSS property: value}` pairs.
-     * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
-     * {key: value} pairs}`.
-     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get styles(): PropertyConfig<StylesType, State, ClassType>;
-    set styles(value: PropertyConfig<StylesType, State, ClassType>);
-    /**
-     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
-     * - A string of space-separated classes.
-     * - An array of classes.
-     * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
-     * return any of the latter}`.
-     * - An interpolation function that would return a string of space-separated classes or an array of classes based
-     * on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get classes(): PropertyConfig<string | string[], State, ClassType>;
-    set classes(value: PropertyConfig<string | string[], State, ClassType>);
-    /**
-     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
-     * - The object to be replaced with.
-     * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
-     * to be replaced with}`.
-     * - An interpolation function that would return the object to be replaced with based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get replaceWith(): PropertyConfig<ClassType, State, ClassType>;
-    set replaceWith(value: PropertyConfig<ClassType, State, ClassType>);
-    /**
-     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-     * could take:
-     * - A string of space-separated CSS properties.
-     * - An array of CSS properties.
-     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
-     * function that would return any of the latter}`.
-     * - An interpolation function that would return a string of space-separated CSS properties or an array of
-     * CSS properties based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionProperties(): PropertyConfig<string | string[], State, ClassType>;
-    set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>);
-    /**
-     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
-     * (number in seconds)}`.
-     * - An interpolation function that would return a duration (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionDuration(): PropertyConfig<number, State, ClassType>;
-    set transitionDuration(value: PropertyConfig<number, State, ClassType>);
-    /**
-     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-     * It could take:
-     * - A string representing the timing function to apply.
-     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
-     * function (string)}`.
-     * - An interpolation function that would return a timing function (string) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionTimingFunction(): PropertyConfig<string, State, ClassType>;
-    set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>);
-    /**
-     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
-     * (number in seconds)}`.
-     * - An interpolation function that would return a delay (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionDelay(): PropertyConfig<number, State, ClassType>;
-    set transitionDelay(value: PropertyConfig<number, State, ClassType>);
-    initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
-    apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
-    toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
-    /**
-     * @function reloadFor
-     * @description Generates the transition CSS string for the provided transition with the correct interpolation
-     * information.
-     * @param {ClassType} object - The element to apply the string to.
-     * @returns {this} Itself for method chaining.
-     */
-    reloadFor(object: ClassType): this;
-    reloadTransitionFor(object: ClassType): this;
-    getEnabledObjectsData(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ReifectObjectData<State, ClassType>[];
-    /**
-     * @function stateOf
-     * @description Determine the current state of the reifect on the provided object.
-     * @param {ClassType} object - The object to determine the state for.
-     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
-     */
-    stateOf(object: ClassType): State;
-    applyResolvedValues(data: ReifectObjectData<State, ClassType>, state?: State, skipTransition?: boolean, applyStylesInstantly?: boolean): void;
-    replaceObject(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    setProperties(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    applyClasses(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    applyStyles(data: ReifectObjectData<State, ClassType>, state?: State, applyStylesInstantly?: boolean): void;
-    applyTransition(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    /**
      * @protected
      * @function attachObject
      * @description Function used to generate a data entry for the given object, and add it to the attached list at
@@ -2687,16 +3159,33 @@ declare class StatefulReifect<State extends string | number | symbol, ClassType 
      * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
      */
     protected detachObject(data: ReifectObjectData<State, ClassType>): void;
-    protected filterEnabledObjects(data: ReifectObjectData<State, ClassType>): boolean;
-    getAllStates(): State[];
-    protected processRawProperties(data: ReifectObjectData<State, ClassType>, override?: StatefulReifectCoreProperties<State, ClassType>): void;
-    private generateNewData;
-    private initializeOptions;
     /**
-     * @description Clone the reifect to create a new copy with the same properties but no attached objects.
-     * @returns {StatefulReifect<State, ClassType>} - The new reifect.
+     * @function getData
+     * @description Retrieve the data entry of a given object.
+     * @param {ClassType} object - The object to find the data of.
+     * @returns {ReifectObjectData<State, ClassType>} - The corresponding data, or `null` if was not found.
      */
-    clone(): StatefulReifect<State, ClassType>;
+    getData(object: ClassType): ReifectObjectData<State, ClassType>;
+    /**
+     * @function getObject
+     * @description Retrieves the object attached to the given data entry.
+     * @param {ReifectObjectData<State, ClassType>} data - The data entry to get the corresponding object of.
+     * @returns {ClassType} The corresponding object, or `null` if was garbage collected.
+     */
+    getObject(data: ReifectObjectData<State, ClassType>): ClassType;
+    /**
+     * @description All possible states.
+     */
+    get states(): State[];
+    set states(value: State[]);
+    /**
+     * @function stateOf
+     * @description Determine the current state of the reifect on the provided object.
+     * @param {ClassType} object - The object to determine the state for.
+     * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
+     */
+    stateOf(object: ClassType): State;
+    getAllStates(): State[];
     /**
      * @protected
      * @function parseState
@@ -2705,6 +3194,157 @@ declare class StatefulReifect<State extends string | number | symbol, ClassType 
      * @returns {State} The parsed value, or `null` if the boolean could not be parsed.
      */
     protected parseState(value: State | boolean): State;
+    set enabled(value: boolean);
+    set propertiesEnabled(value: boolean);
+    set stylesEnabled(value: boolean);
+    set classesEnabled(value: boolean);
+    set replaceWithEnabled(value: boolean);
+    set transitionEnabled(value: boolean);
+    /**
+     * @function enable
+     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to set the state of.
+     * @param {boolean | ReifectEnabledObject} value - The value to set/update with. Setting it to a boolean will
+     * accordingly update the value of `enabled.global`.
+     */
+    enable(value: boolean | ReifectEnabledObject, object?: ClassType): void;
+    enableObject(object: ClassType, value: boolean | ReifectEnabledObject): void;
+    /**
+     * @function getObjectEnabledState
+     * @description Returns the `enabled` value corresponding to the provided object for this reifier.
+     * @param {ClassType} object - The object to get the state of.
+     * @returns {ReifectEnabledObject} - The corresponding enabled state.
+     */
+    getObjectEnabledState(object: ClassType): ReifectEnabledObject;
+    /**
+     * @description The properties to be assigned to the objects. It could take:
+     * - A record of `{key: value}` pairs.
+     * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>);
+    /**
+     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A record of `{CSS property: value}` pairs.
+     * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set styles(value: PropertyConfig<StylesType, State, ClassType>);
+    /**
+     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A string of space-separated classes.
+     * - An array of classes.
+     * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
+     * return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated classes or an array of classes based
+     * on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set classes(value: PropertyConfig<string | string[], State, ClassType>);
+    /**
+     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+     * - The object to be replaced with.
+     * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
+     * to be replaced with}`.
+     * - An interpolation function that would return the object to be replaced with based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set replaceWith(value: PropertyConfig<ClassType, State, ClassType>);
+    /**
+     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+     * could take:
+     * - A string of space-separated CSS properties.
+     * - An array of CSS properties.
+     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
+     * function that would return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated CSS properties or an array of
+     * CSS properties based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>);
+    /**
+     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
+     * (number in seconds)}`.
+     * - An interpolation function that would return a duration (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set transitionDuration(value: PropertyConfig<number, State, ClassType>);
+    /**
+     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+     * It could take:
+     * - A string representing the timing function to apply.
+     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
+     * function (string)}`.
+     * - An interpolation function that would return a timing function (string) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>);
+    /**
+     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
+     * (number in seconds)}`.
+     * - An interpolation function that would return a delay (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    set transitionDelay(value: PropertyConfig<number, State, ClassType>);
+    set transition(value: BasicPropertyConfig<string, State>);
+    protected processTransitionObject(transitionObject: BasicPropertyConfig<string, State>): StatefulReifectCoreProperties<State, ClassType>;
+    protected processTransitionString(transitionString: string): StatefulReifectCoreProperties<State, ClassType>;
     /**
      * @function getTransitionString
      * @description Gets the CSS transition string for the specified direction.
@@ -2713,7 +3353,47 @@ declare class StatefulReifect<State extends string | number | symbol, ClassType 
      * @returns {string} The CSS transition string.
      */
     private getTransitionString;
+    initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    /**
+     * @function reloadFor
+     * @description Generates the transition CSS string for the provided transition with the correct interpolation
+     * information.
+     * @param {ClassType} object - The element to apply the string to.
+     * @returns {this} Itself for method chaining.
+     */
+    reloadFor(object: ClassType): this;
+    reloadTransitionFor(object: ClassType): this;
+    getEnabledObjectsData(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ReifectObjectData<State, ClassType>[];
+    applyResolvedValues(data: ReifectObjectData<State, ClassType>, skipTransition?: boolean, applyStylesInstantly?: boolean): void;
+    refreshResolvedValues(): void;
+    applyProperties(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    refreshProperties(): void;
+    applyReplaceWith(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    refreshReplaceWith(): void;
+    applyClasses(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    refreshClasses(): void;
+    applyStyles(data: ReifectObjectData<State, ClassType>, state?: State, applyStylesInstantly?: boolean): void;
+    refreshStyles(): void;
+    applyTransition(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    refreshTransition(): void;
+    protected filterEnabledObjects(data: ReifectObjectData<State, ClassType>): boolean;
+    protected processRawProperties(data: ReifectObjectData<State, ClassType>, override?: StatefulReifectCoreProperties<State, ClassType>): void;
+    private generateNewData;
+    private initializeOptions;
+    /**
+     * @description Clone the reifect to create a new copy with the same properties but no attached objects.
+     * @returns {StatefulReifect<State, ClassType>} - The new reifect.
+     */
+    clone(): StatefulReifect<State, ClassType>;
     protected processRawPropertyForState<Type>(data: ReifectObjectData<State, ClassType>, field: keyof StatefulReifectCoreProperties<State, ClassType>, value: PropertyConfig<Type, State, ClassType>, state: State): void;
+    /**
+     * @description Processes string durations like "200ms" or "0.3s", or even "100".
+     * @param value
+     * @private
+     */
+    private parseTime;
 }
 declare function statefulReifier<State extends string | number | symbol, ClassType extends object = Element>(properties: StatefulReifectProperties<State, ClassType>): StatefulReifect<State, ClassType>;
 
@@ -2774,6 +3454,7 @@ declare class TurboIconSwitch<State extends string | number | symbol = OnOff, Vi
      * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
      */
     constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType>);
+    set appendStateToIconName(value: boolean);
 }
 
 type TurboIconToggleProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboIconProperties<ViewType, DataType, ModelType> & {
@@ -2939,14 +3620,16 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
     constructor(properties: TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType>);
-    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType;
+    createEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType;
+    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType, index?: number): EntryType;
     protected onEntryClick(entry: EntryType, e?: Event): void;
     /**
      * @description Select an entry.
      * @param {string | EntryType} entry - The DropdownEntry (or its string value) to select.
+     * @param selected
      * @return {TurboSelect} - This Dropdown for chaining.
      */
-    select(entry: ValueType | EntryType): this;
+    select(entry: ValueType | EntryType, selected?: boolean): this;
     /**
      * @description Select an entry.
      * @param {number} index - The index of the entry to select
@@ -3077,6 +3760,7 @@ declare class Reifect<ClassType extends object = Node> extends StatefulReifect<"
      */
     get replaceWith(): StatelessPropertyConfig<ClassType, ClassType>;
     set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>);
+    set transition(value: string);
     /**
      * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
      * could take:
@@ -3151,19 +3835,22 @@ declare class TurboDrawer<ViewType extends TurboView = TurboView<any, any>, Data
     readonly thumb: HTMLElement;
     readonly panelContainer: HTMLElement;
     readonly panel: HTMLElement;
-    readonly icon: TurboIconSwitch<Side> | Element;
-    readonly transition: Reifect;
-    private readonly hideOverflow;
-    private dragging;
-    private animationOn;
+    private _icon;
     private _offset;
     private _translation;
+    readonly transition: Reifect;
+    private dragging;
+    private animationOn;
+    protected resizeObserver: ResizeObserver;
     constructor(properties: TurboDrawerProperties<ViewType, DataType, ModelType>);
-    private generateIcon;
+    get icon(): TurboIconSwitch<Side> | Element;
+    set icon(value: string | Element | TurboIconSwitchProperties<Side> | TurboIconSwitch<Side>);
     private initEvents;
-    private initState;
     getOppositeSide(side?: Side): Side;
     getAdjacentSide(side?: Side): Side;
+    set hideOverflow(value: boolean);
+    set attachSideToIconName(value: boolean);
+    set rotateIconBasedOnSide(value: boolean);
     set side(value: Side);
     get offset(): PartialRecord<Open, number>;
     set offset(value: number | PartialRecord<Open, number>);
@@ -3317,7 +4004,7 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
     private initSelector;
     private initPopup;
     protected onEntryClick(entry: EntryType): void;
-    select(entry: ValueType | EntryType): this;
+    select(entry: ValueType | EntryType, selected?: boolean): this;
     private openPopup;
 }
 
@@ -3343,7 +4030,7 @@ declare class TurboMarkingMenu<ValueType = string, SecondaryValueType = string, 
     private initEvents;
     private initializeTransition;
     private computeAngle;
-    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType;
+    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType, index?: number): EntryType;
     show(b?: boolean, position?: Point): this;
     getEntryInDirection(position: Point): EntryType | null;
     selectEntryInDirection(position: Point): void;
@@ -3416,9 +4103,9 @@ declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, 
     protected reloadEntrySizes(): void;
     protected recomputeIndex(): void;
     protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size?: Record<Range, number>): void;
-    select(entry: ValueType | EntryType): this;
+    select(entry: ValueType | EntryType, selected?: boolean): this;
     protected onEntryClick(entry: EntryType, e?: Event): void;
-    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType): EntryType;
+    addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType, index?: number): EntryType;
     clear(): void;
     refresh(): void;
     reset(): void;
@@ -3506,13 +4193,13 @@ declare class ReifectHandler<ClassType extends object = Node> {
      */
     reloadTransitions(): void;
     /**
-     * @description The enabled state of the reifect (as a {@link ReifectEnabledState}). Setting it to a boolean will
+     * @description The enabled state of the reifect (as a {@link ReifectEnabledObject}). Setting it to a boolean will
      * accordingly update the value of `enabled.global`.
      */
-    get enabled(): ReifectEnabledState;
-    set enabled(value: boolean | ReifectEnabledState);
-    getEnabledState(reifect: StatefulReifect<any, ClassType>): ReifectEnabledState;
-    setEnabledState(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledState): void;
+    get enabled(): ReifectEnabledObject;
+    set enabled(value: boolean | ReifectEnabledObject);
+    getReifectEnabledState(reifect: StatefulReifect<any, ClassType>): ReifectEnabledObject;
+    enableReifect(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledObject): void;
 }
 
 declare global {
@@ -3678,4 +4365,4 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { AccessLevel, ActionMode, type AutoOptions, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcBlockKeyType, type MvcBlocksType, type MvcControllerProperties, type MvcDataBlock, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledState, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, type AutoOptions, type BasicPropertyConfig, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcBlockKeyType, type MvcBlocksType, type MvcControllerProperties, type MvcDataBlock, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
