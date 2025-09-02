@@ -3,6 +3,7 @@ import {TurboModel} from "./turboModel";
 import {TurboController} from "./turboController";
 import {TurboHandler} from "./turboHandler";
 import {TurboEmitter} from "./turboEmitter";
+import {TurboInteractor} from "./turboInteractor";
 
 type MvcHandlerProperties<
     ElementType extends object = object,
@@ -24,6 +25,7 @@ type MvcHandlerProperties<
     emitterConstructor?: new (model: ModelType) => EmitterType,
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[],
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[],
+    interactorConstructors?: (new (properties: MvcInteractorProperties) => TurboInteractor)[],
 
     generate?: boolean,
     initialize?: boolean
@@ -40,6 +42,7 @@ type MvcGenerationProperties<
     emitterConstructor?: new (model: ModelType) => EmitterType,
     controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[],
     handlerConstructors?: (new (model: ModelType) => TurboHandler)[],
+    interactorConstructors?: (new (properties: MvcInteractorProperties) => TurboInteractor)[],
 
     data?: DataType,
     initialize?: boolean,
@@ -65,6 +68,12 @@ type MvcControllerProperties<
     view: ViewType,
 };
 
+type MvcInteractorProperties<
+    ElementType extends object = object,
+    ViewType extends TurboView = TurboView<any, any>,
+    ModelType extends TurboModel = TurboModel,
+> = Omit<MvcControllerProperties<ElementType, ViewType, ModelType>, "emitter">;
+
 type MvcDataBlock<
     DataType = any,
     IdType extends string | number | symbol = any
@@ -84,6 +93,7 @@ export {
     MvcHandlerProperties,
     MvcGenerationProperties,
     MvcControllerProperties,
+    MvcInteractorProperties,
     MvcViewProperties,
     MvcDataBlock,
     MvcBlocksType,

@@ -110,7 +110,7 @@ class TurboEventManager extends TurboElement {
             }
 
             if (!this.disabledEventTypes.disableWheelEvents) {
-                document.body.addListener("wheel", this.wheel, this, {passive: false});
+                document.body.addListener("wheel", this.wheel, this, {passive: false, propagate: true});
                 this.applyEventNames(TurboWheelEventName);
             }
 
@@ -119,17 +119,17 @@ class TurboEventManager extends TurboElement {
             }
 
             if (!this.disabledEventTypes.disableMouseEvents) {
-                document.body.addListener("mousedown", this.pointerDown);
-                document.body.addListener("mousemove", this.pointerMove);
-                document.body.addListener("mouseup", this.pointerUp);
-                document.body.addListener("mouseleave", this.pointerLeave);
+                document.addListener("mousedown", this.pointerDown, this, {propagate: true});
+                document.addListener("mousemove", this.pointerMove, this, {propagate: true});
+                document.addListener("mouseup", this.pointerUp, this, {propagate: true});
+                document.addListener("mouseleave", this.pointerLeave, this, {propagate: true});
             }
 
             if (!this.disabledEventTypes.disableTouchEvents) {
-                document.body.addListener("touchstart", this.pointerDown, this, {passive: false});
-                document.body.addListener("touchmove", this.pointerMove, this, {passive: false});
-                document.body.addListener("touchend", this.pointerUp, this, {passive: false});
-                document.body.addListener("touchcancel", this.pointerUp, this, {passive: false});
+                document.addListener("touchstart", this.pointerDown, this, {passive: false, propagate: true});
+                document.addListener("touchmove", this.pointerMove, this, {passive: false, propagate: true});
+                document.addListener("touchend", this.pointerUp, this, {passive: false, propagate: true});
+                document.addListener("touchcancel", this.pointerUp, this, {passive: false, propagate: true});
             }
 
             if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {

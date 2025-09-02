@@ -4,6 +4,8 @@ import {TurboModel} from "../mvc/turboModel";
 import {auto} from "../decorators/auto/auto";
 import {MvcHandler} from "../mvc/mvcHandler";
 import {TurboEmitter} from "../mvc/turboEmitter";
+import {TurboEvent} from "../../eventHandling/events/turboEvent";
+import {Tool} from "../../toolManagement/tool/tool";
 
 /**
  * @class TurboHeadlessElement
@@ -115,6 +117,14 @@ class TurboHeadlessElement<
      */
     public get dataSize(): number {
         return this.mvc.dataSize;
+    }
+
+    public propagatesUp(e: TurboEvent, tool: Tool<any>): boolean {
+        return this.mvc.propagatesUp(e, tool);
+    }
+
+    public interact(e: TurboEvent, tool: Tool<any>): boolean {
+        return this.mvc.interact(e, tool);
     }
 
     /**

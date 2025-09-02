@@ -5,6 +5,9 @@ import {TurboController} from "./turboController";
 import {TurboHandler} from "./turboHandler";
 import {TurboEmitter} from "./turboEmitter";
 import {auto} from "../decorators/auto/auto";
+import {TurboInteractor} from "./turboInteractor";
+import {TurboEvent} from "../../eventHandling/events/turboEvent";
+import {Tool} from "../../toolManagement/tool/tool";
 
 /**
  * @class MvcHandler
@@ -26,6 +29,7 @@ class MvcHandler<
     private _model: ModelType;
 
     private readonly controllers: Map<string, TurboController> = new Map();
+    private readonly interactors: Map<string, TurboInteractor> = new Map();
 
     public constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>) {
         if (properties.element) this.element = properties.element;
@@ -113,6 +117,36 @@ class MvcHandler<
         return this.model?.getSize();
     }
 
+    protected findInteractor(tool: Tool<any>): TurboInteractor {
+        for (const [key, interactor] of this.interactors) {
+            if (!interactor.tool || interactor.tool !== tool.name) continue;
+            return interactor;
+        }
+    }
+
+    public propagatesUp(e: TurboEvent, tool: Tool<any>): boolean {
+        const interactor = this.findInteractor(tool);
+        if (!interactor) return undefined;
+        switch (typeof interactor.propagateUp) {
+            case "boolean": return interactor.propagateUp;
+            case "function": return interactor.propagateUp(e);
+            case "object":
+                const propagateUpEntry = interactor.propagateUp[e.eventName];
+                switch (typeof propagateUpEntry) {
+                    case "undefined": return false;
+                    case "boolean": return propagateUpEntry;
+                    case "function": return propagateUpEntry(e);
+                }
+        }
+    }
+
+    public interact(e: TurboEvent, tool: Tool<any>): boolean {
+        const interactor = this.findInteractor(tool);
+        if (!interactor) return undefined;
+        interactor.interact(e, tool);
+        return true;
+    }
+
     /**
      * @function getController
      * @description Retrieves the attached MVC controller with the given key.
@@ -134,6 +168,29 @@ class MvcHandler<
         if (!controller.keyName) controller.keyName =
             this.extractClassEssenceName(controller.constructor as new (...args: any[]) => any);
         this.controllers.set(controller.keyName, controller);
+    }
+
+    /**
+     * @function getInteractor
+     * @description Retrieves the attached MVC interactor with the given key.
+     * By default, unless manually defined in the interactor, if the element's class name is MyElement
+     * and the interactor's class name is MyElementSomethingInteractor, the key would be "something".
+     * @param {string} key - The interactor's key.
+     * @return {TurboInteractor} - The interactor.
+     */
+    public getInteractor(key: string): TurboInteractor {
+        return this.interactors.get(key);
+    }
+
+    /**
+     * @function addInteractor
+     * @description Adds the given interactor to the MVC structure.
+     * @param {TurboInteractor} interactor - The interactor to add.
+     */
+    public addInteractor(interactor: TurboInteractor) {
+        if (!interactor.keyName) interactor.keyName =
+            this.extractClassEssenceName(interactor.constructor as new (...args: any[]) => any);
+        this.interactors.set(interactor.keyName, interactor);
     }
 
     /**
@@ -201,6 +258,17 @@ class MvcHandler<
                 this.addController(new controllerConstructor(controllerProperties)));
         }
 
+        if (properties.interactorConstructors) {
+            const interactorProperties = {
+                element: this.element,
+                view: this.view,
+                model: this.model,
+            };
+
+            properties.interactorConstructors.forEach(interactorConstructor =>
+                this.addInteractor(new interactorConstructor(interactorProperties)));
+        }
+
         if (properties.handlerConstructors) {
             properties.handlerConstructors.forEach(handlerConstructor =>
                 this.addHandler(new handlerConstructor(this.model)));
@@ -218,6 +286,7 @@ class MvcHandler<
         this.view?.initialize();
         this.controllers.forEach((controller: TurboController) => controller.initialize());
         this.model?.initialize();
+        this.interactors.forEach((interactor: TurboInteractor) => interactor.initialize());
     }
 
     private linkModelToView() {
@@ -258,7 +327,6 @@ class MvcHandler<
 
         return className.charAt(0).toLowerCase() + className.slice(1);
     }
-
 }
 
 export {MvcHandler};

@@ -10,6 +10,11 @@ import {cache} from "../../domBuilding/decorators/cache/cache";
  */
 class TurboEvent extends Event {
     /**
+     * @description The name of the event.
+     */
+    public readonly eventName: TurboEventNameEntry;
+
+    /**
      * @description The click mode of the fired event
      */
     public readonly clickMode: ClickMode;
@@ -44,6 +49,7 @@ class TurboEvent extends Event {
         this.authorizeScaling = authorizeScaling ?? true;
         this.scalePosition = scalePosition ?? ((position: Point) => position);
 
+        this.eventName = eventName;
         this.clickMode = clickMode;
         this.keys = keys;
         this.position = position;
@@ -57,14 +63,17 @@ class TurboEvent extends Event {
      * @param from
      */
     @cache()
-    public closest<T extends Element>(type: new (...args: any[]) => T, strict: boolean = true,
+    public closest<T extends Element>(type: new (...args: any[]) => T, strict: Element | boolean = true,
                                       from: ClosestOrigin = ClosestOrigin.target): T | null {
         const elements = from == ClosestOrigin.target ? [this.target]
             : document.elementsFromPoint(this.position.x, this.position.y);
 
+        const strictElement = strict instanceof Element ? strict : null;
+        const isStrict = strict === true || strictElement !== null;
+
         for (let element of elements) {
             while (element && !((element instanceof type)
-                && (!strict || this.isPositionInsideElement(this.position, element as Element))
+                && (!isStrict || this.isPositionInsideElement(this.position, strictElement ?? element))
             )) element = element.parentElement;
 
             if (element) return element as T;

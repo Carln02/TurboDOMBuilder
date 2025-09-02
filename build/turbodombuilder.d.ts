@@ -320,44 +320,458 @@ declare class TurboController<ElementType extends object = object, ViewType exte
     protected setupChangedCallbacks(): void;
 }
 
-type MvcHandlerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
-    element?: ElementType;
-    view?: ViewType;
-    model?: ModelType;
-    emitter?: EmitterType;
-    data?: DataType;
-    viewConstructor?: new (properties: MvcViewProperties) => ViewType;
-    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
-    emitterConstructor?: new (model: ModelType) => EmitterType;
-    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
-    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
-    generate?: boolean;
-    initialize?: boolean;
+type Coordinate<Type = number> = {
+    x: Type;
+    y: Type;
 };
-type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
-    viewConstructor?: new (properties: MvcViewProperties) => ViewType;
-    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
-    emitterConstructor?: new (model: ModelType) => EmitterType;
-    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
-    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
-    data?: DataType;
-    initialize?: boolean;
-    force?: boolean;
+
+declare class Point {
+    readonly x: number;
+    readonly y: number;
+    /**
+     * @description Create a point with coordinates (0, 0)
+     */
+    constructor();
+    /**
+     * @description Create a point with coordinates (n, n)
+     * @param {number} n - The input value
+     */
+    constructor(n: number);
+    /**
+     * @description Create a point with coordinates (x, y)
+     * @param {number} x - The x coordinate
+     * @param {number} y - The y coordinate
+     */
+    constructor(x: number, y: number);
+    /**
+     * @description Create a point with the clientX/clientY values. Useful for events.
+     * @param {{clientX: number, clientY: number}} e - The coordinates
+     */
+    constructor(e: {
+        clientX: number;
+        clientY: number;
+    });
+    /**
+     * @description Create a point with the provided coordinates
+     * @param {Coordinate} p - The coordinates (or Point)
+     */
+    constructor(p: Coordinate);
+    /**
+     * @description Create a point with the provided [x, y] values.
+     * @param {[number, number]} arr - The array of size 2.
+     */
+    constructor(arr: [number, number]);
+    constructor(x: number | Coordinate | {
+        clientX: number;
+        clientY: number;
+    } | [number, number]);
+    /**
+     * @description Calculate the distance between two Position2D points.
+     * @param {Point} p1 - First point
+     * @param {Point} p2 - Second point
+     */
+    static dist(p1: Coordinate, p2: Coordinate): number;
+    /**
+     * @description Calculate the mid-point from the provided points
+     * @param {Point[]} arr - Undetermined number of point parameters
+     */
+    static midPoint(...arr: Coordinate[]): Point;
+    /**
+     * @description Calculate the max on both x and y from the provided points
+     * @param {Point[]} arr - Undetermined number of point parameters
+     */
+    static max(...arr: Coordinate[]): Point;
+    /**
+     * @description Calculate the min on both x and y from the provided points
+     * @param {Point[]} arr - Undetermined number of point parameters
+     */
+    static min(...arr: Coordinate[]): Point;
+    get object(): Coordinate;
+    /**
+     * @description Determine whether this point is equal to the provided coordinates
+     * @param {Coordinate} p - The coordinates to compare it to
+     * @return A boolean indicating whether they are equal
+     */
+    equals(p: Coordinate): boolean;
+    /**
+     * @description Determine whether this point is equal to the provided coordinates
+     * @param {number} x - The x coordinate
+     * @param {number} y - The y coordinate
+     * @return A boolean indicating whether they are equal
+     */
+    equals(x: number, y: number): boolean;
+    boundX(x1: number, x2: number): number;
+    boundY(y1: number, y2: number): number;
+    bound(n1: number, n2: number): Point;
+    /**
+     * @description Add coordinates to this point
+     * @param {number} n - The value to add to both x and y
+     * @returns A new Point object with the result
+     */
+    add(n: number): Point;
+    /**
+     * @description Add coordinates to this point
+     * @param {number} x - The value to add to the x coordinate
+     * @param {number} y - The value to add to the y coordinate
+     * @returns A new Point object with the result
+     */
+    add(x: number, y: number): Point;
+    /**
+     * @description Add coordinates to this point
+     * @param {Coordinate} p - The coordinates to add
+     * @returns A new Point object with the result
+     */
+    add(p: Coordinate): Point;
+    /**
+     * @description Subtract coordinates from this point
+     * @param {number} n - The value to subtract from both x and y
+     * @returns A new Point object with the result
+     */
+    sub(n: number): Point;
+    /**
+     * @description Subtract coordinates from this point
+     * @param {number} x - The value to subtract from the x coordinate
+     * @param {number} y - The value to subtract from the y coordinate
+     * @returns A new Point object with the result
+     */
+    sub(x: number, y: number): Point;
+    /**
+     * @description Subtract coordinates from this point
+     * @param {Coordinate} p - The coordinates to subtract
+     * @returns A new Point object with the result
+     */
+    sub(p: Coordinate): Point;
+    /**
+     * @description Multiply coordinates of this point
+     * @param {number} n - The value to multiply both x and y
+     * @returns A new Point object with the result
+     */
+    mul(n: number): Point;
+    /**
+     * @description Multiply coordinates of this point
+     * @param {number} x - The value to multiply the x coordinate
+     * @param {number} y - The value to multiply the y coordinate
+     * @returns A new Point object with the result
+     */
+    mul(x: number, y: number): Point;
+    /**
+     * @description Multiply coordinates of this point
+     * @param {Coordinate} p - The coordinates to multiply
+     * @returns A new Point object with the result
+     */
+    mul(p: Coordinate): Point;
+    /**
+     * @description Divide coordinates of this point
+     * @param {number} n - The value to divide both x and y
+     * @returns A new Point object with the result
+     */
+    div(n: number): Point;
+    /**
+     * @description Divide coordinates of this point
+     * @param {number} x - The value to divide the x coordinate
+     * @param {number} y - The value to divide the y coordinate
+     * @returns A new Point object with the result
+     */
+    div(x: number, y: number): Point;
+    /**
+     * @description Divide coordinates of this point
+     * @param {Coordinate} p - The coordinates to divide with
+     * @returns A new Point object with the result
+     */
+    div(p: Coordinate): Point;
+    /**
+     * @description Mod coordinates of this point
+     * @param {number} n - The value to mod both x and y
+     * @returns A new Point object with the result
+     */
+    mod(n: number): Point;
+    /**
+     * @description Mod coordinates of this point
+     * @param {number} x - The value to mod the x coordinate
+     * @param {number} y - The value to mod the y coordinate
+     * @returns A new Point object with the result
+     */
+    mod(x: number, y: number): Point;
+    /**
+     * @description Mod coordinates of this point
+     * @param {Coordinate} p - The coordinates to mod with
+     * @returns A new Point object with the result
+     */
+    mod(p: Coordinate): Point;
+    /**
+     * @description Calculate the absolute value of the coordinates
+     * @returns A new Point object with the absolute values
+     */
+    abs(): Point;
+    /**
+     * @description Get the maximum value between x and y coordinates
+     * @returns The maximum value
+     */
+    max(): number;
+    /**
+     * @description Get the minimum value between x and y coordinates
+     * @returns The minimum value
+     */
+    min(): number;
+    /**
+     * @description Create a copy of the current point
+     * @returns A new Point object with the same coordinates
+     */
+    copy(): Point;
+    /**
+     * @description Get the coordinates as an array
+     * @returns An array with x and y coordinates
+     */
+    arr(): number[];
+}
+
+type TurboEventManagerStateProperties = {
+    enabled?: boolean;
+    preventDefaultWheel?: boolean;
+    preventDefaultMouse?: boolean;
+    preventDefaultTouch?: boolean;
 };
-type MvcViewProperties<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
-    element: ElementType;
-    model: ModelType;
-    emitter: EmitterType;
+type DisabledTurboEventTypes = {
+    disableKeyEvents?: boolean;
+    disableWheelEvents?: boolean;
+    disableMouseEvents?: boolean;
+    disableTouchEvents?: boolean;
+    disableClickEvents?: boolean;
+    disableDragEvents?: boolean;
+    disableMoveEvent?: boolean;
 };
-type MvcControllerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcViewProperties<ElementType, ModelType, EmitterType> & {
-    view: ViewType;
+type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
+    moveThreshold?: number;
+    longPressDuration?: number;
+    authorizeEventScaling?: boolean | (() => boolean);
+    scaleEventPosition?: (position: Point) => Point;
 };
-type MvcDataBlock<DataType = any, IdType extends string | number | symbol = any> = {
-    id: IdType;
-    data: DataType;
+type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
+    lockOrigin?: Element;
 };
-type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends MvcDataBlock = MvcDataBlock> = Type extends "map" ? Map<string, BlockType> : BlockType[];
-type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+declare enum ActionMode {
+    none = 0,
+    click = 1,
+    longPress = 2,
+    drag = 3
+}
+declare enum ClickMode {
+    none = 0,
+    left = 1,
+    right = 2,
+    middle = 3,
+    other = 4,
+    key = 5
+}
+declare enum InputDevice {
+    unknown = 0,
+    mouse = 1,
+    trackpad = 2,
+    touch = 3
+}
+
+declare enum ClosestOrigin {
+    target = "target",
+    position = "position"
+}
+
+declare class TurboMap<KeyType, ValueType> extends Map<KeyType, ValueType> {
+    enforceImmutability: boolean;
+    set(key: KeyType, value: ValueType): any;
+    get(key: KeyType): ValueType;
+    get first(): ValueType | null;
+    get last(): ValueType | null;
+    keysArray(): KeyType[];
+    valuesArray(): ValueType[];
+    private copy;
+    mapKeys<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<C, ValueType>;
+    mapValues<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<KeyType, C>;
+    filter(callback: (key: KeyType, value: ValueType) => boolean): TurboMap<KeyType, ValueType>;
+    merge(map: Map<KeyType, ValueType>): TurboMap<KeyType, ValueType>;
+}
+
+declare const TurboKeyEventName: {
+    readonly keyPressed: "turbo-key-pressed";
+    readonly keyReleased: "turbo-key-released";
+};
+declare const TurboClickEventName: {
+    readonly click: "turbo-click";
+    readonly clickStart: "turbo-click-start";
+    readonly clickEnd: "turbo-click-end";
+    readonly longPress: "turbo-long-press";
+};
+declare const TurboMoveName: {
+    readonly move: "turbo-move";
+};
+declare const TurboDragEventName: {
+    readonly drag: "turbo-drag";
+    readonly dragStart: "turbo-drag-start";
+    readonly dragEnd: "turbo-drag-end";
+};
+declare const TurboWheelEventName: {
+    readonly trackpadScroll: "turbo-trackpad-scroll";
+    readonly trackpadPinch: "turbo-trackpad-pinch";
+    readonly mouseWheel: "turbo-mouse-wheel";
+};
+declare const TurboEventName: {
+    readonly selectInput: "turbo-select-input";
+    readonly trackpadScroll: "turbo-trackpad-scroll";
+    readonly trackpadPinch: "turbo-trackpad-pinch";
+    readonly mouseWheel: "turbo-mouse-wheel";
+    readonly drag: "turbo-drag";
+    readonly dragStart: "turbo-drag-start";
+    readonly dragEnd: "turbo-drag-end";
+    readonly move: "turbo-move";
+    readonly keyPressed: "turbo-key-pressed";
+    readonly keyReleased: "turbo-key-released";
+    readonly click: "turbo-click";
+    readonly clickStart: "turbo-click-start";
+    readonly clickEnd: "turbo-click-end";
+    readonly longPress: "turbo-long-press";
+};
+/**
+ * @description Object containing the names of events fired by default by the turboComponents. Modifying it (prior to
+ * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
+ */
+declare const DefaultEventName: {
+    keyPressed: string;
+    keyReleased: string;
+    click: string;
+    clickStart: string;
+    clickEnd: string;
+    longPress: "turbo-long-press";
+    move: string;
+    drag: "turbo-drag";
+    dragStart: "turbo-drag-start";
+    dragEnd: "turbo-drag-end";
+    wheel: string;
+    trackpadScroll: string;
+    trackpadPinch: string;
+    mouseWheel: string;
+    scroll: string;
+    input: string;
+    change: string;
+    focus: string;
+    blur: string;
+    resize: string;
+};
+type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventName];
+type TurboEventNameEntry = typeof TurboEventName[keyof typeof TurboEventName];
+
+/**
+ * Generic turbo event
+ */
+declare class TurboEvent extends Event {
+    /**
+     * @description The name of the event.
+     */
+    readonly eventName: TurboEventNameEntry;
+    /**
+     * @description The click mode of the fired event
+     */
+    readonly clickMode: ClickMode;
+    /**
+     * @description The keys pressed when the event was fired
+     */
+    readonly keys: string[];
+    /**
+     * @description The screen position from where the event was fired
+     */
+    readonly position: Point;
+    /**
+     * @description Callback function (or boolean) to be overridden to specify when to allow transformation
+     * and/or scaling.
+     */
+    authorizeScaling: boolean | (() => boolean);
+    /**
+     * @description Callback function to be overridden to specify how to transform a position from screen to
+     * document space.
+     */
+    scalePosition: (position: Point) => Point;
+    constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
+    /**
+     * @description Returns the closest element of the provided type to the target (Searches through the element and
+     * all its parents to find one of matching type).
+     * @param type
+     * @param strict
+     * @param from
+     */
+    closest<T extends Element>(type: new (...args: any[]) => T, strict?: Element | boolean, from?: ClosestOrigin): T | null;
+    /**
+     * @description Checks if the position is inside the given element's bounding box.
+     * @param position
+     * @param element
+     */
+    private isPositionInsideElement;
+    /**
+     * @description The target of the event (as an Element - or the document)
+     */
+    get target(): Element | Document;
+    /**
+     * @description The position of the fired event transformed and/or scaled using the class's scalePosition().
+     */
+    get scaledPosition(): Point;
+    /**
+     * @description Specifies whether to allow transformation and/or scaling.
+     */
+    get scalingAuthorized(): boolean;
+    /**
+     * @private
+     * @description Takes a map of points and returns a new map where each point is transformed accordingly.
+     * @param positions
+     */
+    protected scalePositionsMap(positions?: TurboMap<number, Point>): TurboMap<number, Point>;
+}
+
+/**
+ * @class TurboDragEvent
+ * @extends TurboEvent
+ * @description Turbo drag event class, fired on turbo-drag, turbo-drag-start, turbo-drag-end, etc.
+ */
+declare class TurboDragEvent extends TurboEvent {
+    /**
+     * @description Map containing the origins of the dragging points
+     */
+    readonly origins: TurboMap<number, Point>;
+    /**
+     * @description Map containing the previous positions of the dragging points
+     */
+    readonly previousPositions: TurboMap<number, Point>;
+    /**
+     * @description Map containing the positions of the dragging points
+     */
+    readonly positions: TurboMap<number, Point>;
+    constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>, positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
+    /**
+     * @description Map of the origins mapped to the current canvas translation and scale
+     */
+    get scaledOrigins(): TurboMap<number, Point>;
+    /**
+     * @description Map of the previous positions mapped to the current canvas translation and scale
+     */
+    get scaledPreviousPositions(): TurboMap<number, Point>;
+    /**
+     * @description Map of the positions mapped to the current canvas translation and scale
+     */
+    get scaledPositions(): TurboMap<number, Point>;
+    get deltaPositions(): TurboMap<number, Point>;
+    get deltaPosition(): Point;
+    get scaledDeltaPositions(): TurboMap<number, Point>;
+    get scaledDeltaPosition(): Point;
+}
+
+/**
+ * @description Object representing options passed to the ToolManager's setTool() function.
+ * @property select - Indicate whether to visually select the tool on all toolbars, defaults to true
+ * @property activate - Indicate whether to fire activation on the tool when setting it, defaults to true
+ * @property setAsNoAction - Indicate whether the tool will also be set as the tool for ClickMode == none, defaults
+ * to true if the click mode is left.
+ */
+type SetToolOptions = {
+    select?: boolean;
+    activate?: boolean;
+    setAsNoAction?: boolean;
+};
 
 declare class Delegate<CallbackType extends (...args: any[]) => any> {
     private callbacks;
@@ -383,6 +797,494 @@ declare class Delegate<CallbackType extends (...args: any[]) => any> {
     clear(): void;
 }
 
+declare class ToolModel<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, BlocksType extends "array" | "map" = "array" | "map", BlockType extends MvcDataBlock<DataType, IdType> = MvcDataBlock<DataType, IdType>> extends TurboModel<DataType, KeyType, IdType, BlocksType, BlockType> {
+    set selected(value: boolean);
+}
+
+declare class ToolView<ElementType extends Tool = Tool<any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboView<ElementType, ModelType, EmitterType> {
+    protected textElement: HTMLHeadingElement;
+    protected setupUIElements(): void;
+    protected setupUILayout(): void;
+    protected setupChangedCallbacks(): void;
+    protected setupUIListeners(): void;
+}
+
+type ToolProperties<ToolType = string, ViewType extends ToolView = ToolView<any, any>, DataType extends object = object, ModelType extends ToolModel = ToolModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> & {
+    toolManager?: ToolManager<ToolType>;
+    name?: ToolType;
+    key?: string;
+    forceNewModel?: boolean;
+};
+
+/**
+ * @description Manages (ideally) all the tools in the application
+ */
+declare class ToolManager<ToolType = string> {
+    private readonly tools;
+    private readonly mappedKeysToTool;
+    private readonly currentTools;
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    readonly onToolChange: Delegate<(oldTool: Tool<ToolType>, newTool: Tool<ToolType>, type: ClickMode) => void>;
+    constructor();
+    protected interactWithObject(e: TurboEvent): void;
+    private initEvents;
+    /**
+     * @description Returns all created tools as an array
+     */
+    getToolsArray(): Tool<ToolType>[];
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     */
+    getToolsByName(name: ToolType): Tool<ToolType>[];
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     * @param predicate
+     */
+    getToolByName(name: ToolType, predicate?: (tool: Tool<ToolType>) => boolean): Tool<ToolType>;
+    /**
+     * @description Returns the tools associated with the given key
+     * @param key
+     */
+    getToolsByKey(key: string): Tool<ToolType>[];
+    /**
+     * @description Returns the tool associated with the given key
+     * @param key
+     * @param predicate
+     */
+    getToolByKey(key: string, predicate?: (tool: Tool<ToolType>) => boolean): Tool<ToolType>;
+    /**
+     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
+     * @param tool
+     * @param key
+     */
+    addTool(tool: Tool<ToolType>, key?: string): void;
+    createTool(properties: ToolProperties<ToolType>): Tool<ToolType>;
+    /**
+     * @description Returns the tool currently held by the provided click mode
+     * @param mode
+     */
+    getTool(mode: ClickMode): Tool<ToolType>;
+    getFiredTool(e: TurboEvent): Tool<ToolType>;
+    /**
+     * @description Sets the provided tool as a current tool associated with the provided type
+     * @param tool
+     * @param type
+     * @param options
+     */
+    setTool(tool: Tool<ToolType>, type: ClickMode, options?: SetToolOptions): void;
+    /**
+     * @description Sets tool associated with the provided key as the current tool for the key mode
+     * @param key
+     */
+    setToolByKey(key: string): boolean;
+}
+
+/**
+ * @class MvcHandler
+ * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
+ * @template {object} ElementType - The type of the object that will be turned into MVC.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
+declare class MvcHandler<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
+    private readonly element;
+    private _model;
+    private readonly controllers;
+    private readonly interactors;
+    constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
+    /**
+     * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new view.
+     */
+    set view(value: ViewType);
+    /**
+     * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
+     * the new one to the current view (if any) and emitter (if any).
+     */
+    get model(): ModelType;
+    set model(model: ModelType);
+    /**
+     * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
+     * to this new emitter.
+     */
+    set emitter(emitter: EmitterType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any).
+     */
+    get data(): DataType;
+    set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any).
+     */
+    get dataId(): string;
+    set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     */
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     */
+    get dataSize(): number;
+    protected findInteractor(tool: Tool<any>): TurboInteractor;
+    propagatesUp(e: TurboEvent, tool: Tool<any>): boolean;
+    interact(e: TurboEvent, tool: Tool<any>): boolean;
+    /**
+     * @function getController
+     * @description Retrieves the attached MVC controller with the given key.
+     * By default, unless manually defined in the controller, if the element's class name is MyElement
+     * and the controller's class name is MyElementSomethingController, the key would be "something".
+     * @param {string} key - The controller's key.
+     * @return {TurboController} - The controller.
+     */
+    getController(key: string): TurboController;
+    /**
+     * @function addController
+     * @description Adds the given controller to the MVC structure.
+     * @param {TurboController} controller - The controller to add.
+     */
+    addController(controller: TurboController): void;
+    /**
+     * @function getInteractor
+     * @description Retrieves the attached MVC interactor with the given key.
+     * By default, unless manually defined in the interactor, if the element's class name is MyElement
+     * and the interactor's class name is MyElementSomethingInteractor, the key would be "something".
+     * @param {string} key - The interactor's key.
+     * @return {TurboInteractor} - The interactor.
+     */
+    getInteractor(key: string): TurboInteractor;
+    /**
+     * @function addInteractor
+     * @description Adds the given interactor to the MVC structure.
+     * @param {TurboInteractor} interactor - The interactor to add.
+     */
+    addInteractor(interactor: TurboInteractor): void;
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
+    getHandler(key: string): TurboHandler;
+    /**
+     * @function addHandler
+     * @description Adds the given handler to the MVC structure.
+     * @param {TurboHandler} handler - The handler to add.
+     */
+    addHandler(handler: TurboHandler): void;
+    /**
+     * @function generate
+     * @description Generates the MVC structure based on the provided properties.
+     * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
+     * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
+     * to generate the MVC structure.
+     */
+    generate(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): void;
+    /**
+     * @function initialize
+     * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
+     * initialized last to allow for the view and controllers to setup their change callbacks.
+     */
+    initialize(): void;
+    private linkModelToView;
+    private emitterFireCallback;
+    private deLinkModelFromEmitter;
+    private linkModelToEmitter;
+    protected extractClassEssenceName(constructor: new (...args: any[]) => any): string;
+}
+
+/**
+ * @class TurboElement
+ * @extends HTMLElement
+ * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * */
+declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends HTMLElement {
+    /**
+     * @description Static configuration object.
+     */
+    static readonly config: any;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
+    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    /**
+     * @description Delegate fired when the element is attached to DOM.
+     */
+    readonly onAttach: Delegate<() => void>;
+    /**
+     * @description Delegate fired when the element is detached from the DOM.
+     */
+    readonly onDetach: Delegate<() => void>;
+    /**
+     * @description Delegate fired when the element is adopted by a new parent in the DOM.
+     */
+    readonly onAdopt: Delegate<() => void>;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value: typeof this.config): void;
+    constructor(properties?: TurboCustomProperties<ViewType, DataType, ModelType, EmitterType>);
+    connectedCallback(): void;
+    disconnectedCallback(): void;
+    adoptedCallback(): void;
+    attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
+    /**
+     * @function initializeUI
+     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
+     * setupUIElements, setupUILayout, setupUIListeners).
+     */
+    initializeUI(): void;
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks.
+     * @protected
+     */
+    protected setupChangedCallbacks(): void;
+    /**
+     * @function setupUIElements
+     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+     * them in fields.
+     * @protected
+     */
+    protected setupUIElements(): void;
+    /**
+     * @function setupUILayout
+     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+     * this element's child tree.
+     * @protected
+     */
+    protected setupUILayout(): void;
+    /**
+     * @function setupUIListeners
+     * @description Setup method to initialize and define all input/DOM event listeners of the element.
+     * @protected
+     */
+    protected setupUIListeners(): void;
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
+     */
+    set selected(value: boolean);
+    /**
+     * @description The view (if any) of the element. Only when initializing MVC.
+     */
+    get view(): ViewType;
+    set view(view: ViewType);
+    /**
+     * @description The model (if any) of the element. Only when initializing MVC.
+     */
+    get model(): ModelType;
+    set model(model: ModelType);
+    /**
+     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get data(): DataType;
+    set data(data: DataType);
+    /**
+     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
+     * initializing MVC.
+     */
+    get dataId(): string;
+    set dataId(value: string);
+    /**
+     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataIndex(): number;
+    set dataIndex(value: number);
+    /**
+     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * Only when initializing MVC.
+     */
+    get dataSize(): number;
+    propagatesUp(e: TurboEvent, tool: Tool<any>): boolean;
+    interact(e: TurboEvent, tool: Tool<any>): boolean;
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
+    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+}
+
+/**
+ * @description General Tool class that defines basic behaviors and "abstract" functions tools could use to handle events
+ */
+declare class Tool<ToolType = string, ViewType extends ToolView = ToolView<any, any>, DataType extends object = object, ModelType extends ToolModel = ToolModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter<any>> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    /**
+     * @description The name of the tool
+     */
+    readonly name: ToolType;
+    private readonly _toolManager;
+    constructor(properties: ToolProperties<ToolType, ViewType, DataType, ModelType, EmitterType>);
+    get toolManager(): ToolManager<ToolType>;
+    /**
+     * @description Fired when the tool is picked up
+     */
+    activate(): void;
+    /**
+     * Fired when tool is put down (deselected)
+     */
+    deactivate(): void;
+    /**
+     * @description Marks whether the tool is selected or not. Accurately reflected on its instances
+     */
+    get selected(): boolean;
+    set selected(value: boolean);
+}
+
+declare class TurboInteractor<ToolType = string, ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel> {
+    /**
+     * @description The key of the interactor. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the interactor's class name is MyElementSomethingInteractor, the key would
+     * default to "something".
+     */
+    keyName: string;
+    propagateUp: boolean | ((e: TurboEvent) => boolean) | PartialRecord<DefaultEventNameEntry, boolean | ((e: TurboEvent) => boolean)>;
+    target: object;
+    readonly tool: ToolType;
+    /**
+     * @description A reference to the component.
+     * @protected
+     */
+    protected readonly element: ElementType;
+    /**
+     * @description A reference to the MVC view.
+     * @protected
+     */
+    protected readonly view: ViewType;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
+    protected readonly model: ModelType;
+    constructor(properties: MvcInteractorProperties<ElementType, ViewType, ModelType>);
+    protected readonly reverseTurboEventName: {
+        "turbo-key-pressed": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-key-released": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-click": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-click-start": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-click-end": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-long-press": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-move": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-drag": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-drag-start": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-drag-end": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-trackpad-scroll": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-trackpad-pinch": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-mouse-wheel": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+        "turbo-select-input": "click" | "keyPressed" | "keyReleased" | "clickStart" | "clickEnd" | "longPress" | "move" | "drag" | "dragStart" | "dragEnd" | "trackpadScroll" | "trackpadPinch" | "mouseWheel" | "selectInput";
+    };
+    interact(e: TurboEvent, tool: Tool<ToolType>): void;
+    initialize(): void;
+    /**
+     * @description Fired on click start
+     * @param e
+     * @param tool
+     */
+    clickStart(e: TurboEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on click
+     * @param e
+     * @param tool
+     */
+    click(e: TurboEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on click end
+     * @param e
+     * @param tool
+     */
+    clickEnd(e: TurboEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on pointer move
+     * @param e
+     * @param tool
+     */
+    move(e: TurboDragEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on drag start
+     * @param e
+     * @param tool
+     */
+    dragStart(e: TurboDragEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on drag
+     * @param e
+     * @param tool
+     */
+    drag(e: TurboDragEvent, tool: Tool<ToolType>): void;
+    /**
+     * @description Fired on drag end
+     * @param e
+     * @param tool
+     */
+    dragEnd(e: TurboDragEvent, tool: Tool<ToolType>): void;
+}
+
+type MvcHandlerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    element?: ElementType;
+    view?: ViewType;
+    model?: ModelType;
+    emitter?: EmitterType;
+    data?: DataType;
+    viewConstructor?: new (properties: MvcViewProperties) => ViewType;
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
+    emitterConstructor?: new (model: ModelType) => EmitterType;
+    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
+    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
+    interactorConstructors?: (new (properties: MvcInteractorProperties) => TurboInteractor)[];
+    generate?: boolean;
+    initialize?: boolean;
+};
+type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    viewConstructor?: new (properties: MvcViewProperties) => ViewType;
+    modelConstructor?: new (data?: any, dataBlocksType?: "map" | "array") => ModelType;
+    emitterConstructor?: new (model: ModelType) => EmitterType;
+    controllerConstructors?: (new (properties: MvcControllerProperties) => TurboController)[];
+    handlerConstructors?: (new (model: ModelType) => TurboHandler)[];
+    interactorConstructors?: (new (properties: MvcInteractorProperties) => TurboInteractor)[];
+    data?: DataType;
+    initialize?: boolean;
+    force?: boolean;
+};
+type MvcViewProperties<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    element: ElementType;
+    model: ModelType;
+    emitter: EmitterType;
+};
+type MvcControllerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcViewProperties<ElementType, ModelType, EmitterType> & {
+    view: ViewType;
+};
+type MvcInteractorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel> = Omit<MvcControllerProperties<ElementType, ViewType, ModelType>, "emitter">;
+type MvcDataBlock<DataType = any, IdType extends string | number | symbol = any> = {
+    id: IdType;
+    data: DataType;
+};
+type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends MvcDataBlock = MvcDataBlock> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+
 /**
  * @class TurboModel
  * @template DataType - The type of the data stored in each block.
@@ -403,7 +1305,7 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
     keyChangedCallback: Delegate<(keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void>;
     /**
      * @constructor
-     * @param {DataType} [data] - Initial data. Not initialized if provided
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
      * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
     constructor(data?: DataType, dataBlocksType?: BlocksType);
@@ -1020,231 +1922,6 @@ declare function isSvgTag(tag?: string): boolean;
 declare function isMathMLTag(tag?: string): boolean;
 
 /**
- * @class MvcHandler
- * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
- * @template {object} ElementType - The type of the object that will be turned into MVC.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * */
-declare class MvcHandler<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
-    private readonly element;
-    private _model;
-    private readonly controllers;
-    constructor(properties: MvcHandlerProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
-    /**
-     * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
-     * to this new view.
-     */
-    set view(value: ViewType);
-    /**
-     * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
-     * the new one to the current view (if any) and emitter (if any).
-     */
-    get model(): ModelType;
-    set model(model: ModelType);
-    /**
-     * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
-     * to this new emitter.
-     */
-    set emitter(emitter: EmitterType);
-    /**
-     * @description The main data block (if any) attached to the element, taken from its model (if any).
-     */
-    get data(): DataType;
-    set data(data: DataType);
-    /**
-     * @description The ID of the main data block (if any) of the element, taken from its model (if any).
-     */
-    get dataId(): string;
-    set dataId(value: string);
-    /**
-     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
-     */
-    get dataIndex(): number;
-    set dataIndex(value: number);
-    /**
-     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
-     */
-    get dataSize(): number;
-    /**
-     * @function getController
-     * @description Retrieves the attached MVC controller with the given key.
-     * By default, unless manually defined in the controller, if the element's class name is MyElement
-     * and the controller's class name is MyElementSomethingController, the key would be "something".
-     * @param {string} key - The controller's key.
-     * @return {TurboController} - The controller.
-     */
-    getController(key: string): TurboController;
-    /**
-     * @function addController
-     * @description Adds the given controller to the MVC structure.
-     * @param {TurboController} controller - The controller to add.
-     */
-    addController(controller: TurboController): void;
-    /**
-     * @function getHandler
-     * @description Retrieves the attached MVC handler with the given key.
-     * By default, unless manually defined in the handler, if the element's class name is MyElement
-     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
-     * @param {string} key - The handler's key.
-     * @return {TurboHandler} - The handler.
-     */
-    getHandler(key: string): TurboHandler;
-    /**
-     * @function addHandler
-     * @description Adds the given handler to the MVC structure.
-     * @param {TurboHandler} handler - The handler to add.
-     */
-    addHandler(handler: TurboHandler): void;
-    /**
-     * @function generate
-     * @description Generates the MVC structure based on the provided properties.
-     * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
-     * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
-     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
-     * to generate the MVC structure.
-     */
-    generate(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): void;
-    /**
-     * @function initialize
-     * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
-     * initialized last to allow for the view and controllers to setup their change callbacks.
-     */
-    initialize(): void;
-    private linkModelToView;
-    private emitterFireCallback;
-    private deLinkModelFromEmitter;
-    private linkModelToEmitter;
-    protected extractClassEssenceName(constructor: new (...args: any[]) => any): string;
-}
-
-/**
- * @class TurboElement
- * @extends HTMLElement
- * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * */
-declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends HTMLElement {
-    /**
-     * @description Static configuration object.
-     */
-    static readonly config: any;
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
-    /**
-     * @description Delegate fired when the element is attached to DOM.
-     */
-    readonly onAttach: Delegate<() => void>;
-    /**
-     * @description Delegate fired when the element is detached from the DOM.
-     */
-    readonly onDetach: Delegate<() => void>;
-    /**
-     * @description Delegate fired when the element is adopted by a new parent in the DOM.
-     */
-    readonly onAdopt: Delegate<() => void>;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
-    constructor(properties?: TurboCustomProperties<ViewType, DataType, ModelType, EmitterType>);
-    connectedCallback(): void;
-    disconnectedCallback(): void;
-    adoptedCallback(): void;
-    attributeChangedCallback(name: string, oldValue: string, newValue: string): void;
-    /**
-     * @function initializeUI
-     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
-     * setupUIElements, setupUILayout, setupUIListeners).
-     */
-    initializeUI(): void;
-    /**
-     * @function setupChangedCallbacks
-     * @description Setup method intended to initialize change listeners and callbacks.
-     * @protected
-     */
-    protected setupChangedCallbacks(): void;
-    /**
-     * @function setupUIElements
-     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
-     * them in fields.
-     * @protected
-     */
-    protected setupUIElements(): void;
-    /**
-     * @function setupUILayout
-     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
-     * this element's child tree.
-     * @protected
-     */
-    protected setupUILayout(): void;
-    /**
-     * @function setupUIListeners
-     * @description Setup method to initialize and define all input/DOM event listeners of the element.
-     * @protected
-     */
-    protected setupUIListeners(): void;
-    /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class (or whichever default selected class was set in the config) on the element and update the UI.
-     */
-    set selected(value: boolean);
-    /**
-     * @description The view (if any) of the element. Only when initializing MVC.
-     */
-    get view(): ViewType;
-    set view(view: ViewType);
-    /**
-     * @description The model (if any) of the element. Only when initializing MVC.
-     */
-    get model(): ModelType;
-    set model(model: ModelType);
-    /**
-     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
-     * initializing MVC.
-     */
-    get data(): DataType;
-    set data(data: DataType);
-    /**
-     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
-     * initializing MVC.
-     */
-    get dataId(): string;
-    set dataId(value: string);
-    /**
-     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
-     * Only when initializing MVC.
-     */
-    get dataIndex(): number;
-    set dataIndex(value: number);
-    /**
-     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
-     * Only when initializing MVC.
-     */
-    get dataSize(): number;
-    /**
-     * @function getPropertiesValue
-     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
-     * @param {Type} propertiesValue - The actual value; could be null.
-     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
-     * if the actual value is null.
-     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
-     * config values are null.
-     * @protected
-     */
-    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
-}
-
-/**
  * @class TurboHeadlessElement
  * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.
@@ -1305,6 +1982,8 @@ declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, a
      * Only when initializing MVC.
      */
     get dataSize(): number;
+    propagatesUp(e: TurboEvent, tool: Tool<any>): boolean;
+    interact(e: TurboEvent, tool: Tool<any>): boolean;
     /**
      * @function getPropertiesValue
      * @description Returns the value with some fallback mechanisms on the static config field and a default value.
@@ -1390,6 +2069,8 @@ declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewTy
      * Only when initializing MVC.
      */
     get dataSize(): number;
+    propagatesUp(e: TurboEvent, tool: Tool<any>): boolean;
+    interact(e: TurboEvent, tool: Tool<any>): boolean;
     /**
      * @function getPropertiesValue
      * @description Returns the value with some fallback mechanisms on the static config field and a default value.
@@ -1653,6 +2334,9 @@ type ListenerEntry = {
     listener: EventListenerOrEventListenerObject;
     options?: boolean | AddEventListenerOptions;
 };
+type ListenerOptions = AddEventListenerOptions & {
+    propagate?: boolean;
+};
 declare global {
     interface Node {
         /**
@@ -1670,7 +2354,7 @@ declare global {
          * about the event listener.
          * @returns {this} Itself, allowing for method chaining.
          */
-        addListener<Type extends Node>(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Type) => void), boundTo?: Node, options?: boolean | AddEventListenerOptions): Type;
+        addListener<Type extends Node>(type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Type) => void), boundTo?: Node, options?: boolean | ListenerOptions): Type;
         /**
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
@@ -2100,442 +2784,6 @@ declare global {
 }
 
 declare function turbofy(): void;
-
-declare const TurboKeyEventName: {
-    readonly keyPressed: "turbo-key-pressed";
-    readonly keyReleased: "turbo-key-released";
-};
-declare const TurboClickEventName: {
-    readonly click: "turbo-click";
-    readonly clickStart: "turbo-click-start";
-    readonly clickEnd: "turbo-click-end";
-    readonly longPress: "turbo-long-press";
-};
-declare const TurboMoveName: {
-    readonly move: "turbo-move";
-};
-declare const TurboDragEventName: {
-    readonly drag: "turbo-drag";
-    readonly dragStart: "turbo-drag-start";
-    readonly dragEnd: "turbo-drag-end";
-};
-declare const TurboWheelEventName: {
-    readonly trackpadScroll: "turbo-trackpad-scroll";
-    readonly trackpadPinch: "turbo-trackpad-pinch";
-    readonly mouseWheel: "turbo-mouse-wheel";
-};
-declare const TurboEventName: {
-    readonly selectInput: "turbo-select-input";
-    readonly trackpadScroll: "turbo-trackpad-scroll";
-    readonly trackpadPinch: "turbo-trackpad-pinch";
-    readonly mouseWheel: "turbo-mouse-wheel";
-    readonly drag: "turbo-drag";
-    readonly dragStart: "turbo-drag-start";
-    readonly dragEnd: "turbo-drag-end";
-    readonly move: "turbo-move";
-    readonly keyPressed: "turbo-key-pressed";
-    readonly keyReleased: "turbo-key-released";
-    readonly click: "turbo-click";
-    readonly clickStart: "turbo-click-start";
-    readonly clickEnd: "turbo-click-end";
-    readonly longPress: "turbo-long-press";
-};
-/**
- * @description Object containing the names of events fired by default by the turboComponents. Modifying it (prior to
- * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
- */
-declare const DefaultEventName: {
-    keyPressed: string;
-    keyReleased: string;
-    click: string;
-    clickStart: string;
-    clickEnd: string;
-    longPress: "turbo-long-press";
-    move: string;
-    drag: "turbo-drag";
-    dragStart: "turbo-drag-start";
-    dragEnd: "turbo-drag-end";
-    wheel: string;
-    trackpadScroll: string;
-    trackpadPinch: string;
-    mouseWheel: string;
-    scroll: string;
-    input: string;
-    change: string;
-    focus: string;
-    blur: string;
-    resize: string;
-};
-type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventName];
-type TurboEventNameEntry = typeof TurboEventName[keyof typeof TurboEventName];
-
-type Coordinate<Type = number> = {
-    x: Type;
-    y: Type;
-};
-
-declare class Point {
-    readonly x: number;
-    readonly y: number;
-    /**
-     * @description Create a point with coordinates (0, 0)
-     */
-    constructor();
-    /**
-     * @description Create a point with coordinates (n, n)
-     * @param {number} n - The input value
-     */
-    constructor(n: number);
-    /**
-     * @description Create a point with coordinates (x, y)
-     * @param {number} x - The x coordinate
-     * @param {number} y - The y coordinate
-     */
-    constructor(x: number, y: number);
-    /**
-     * @description Create a point with the clientX/clientY values. Useful for events.
-     * @param {{clientX: number, clientY: number}} e - The coordinates
-     */
-    constructor(e: {
-        clientX: number;
-        clientY: number;
-    });
-    /**
-     * @description Create a point with the provided coordinates
-     * @param {Coordinate} p - The coordinates (or Point)
-     */
-    constructor(p: Coordinate);
-    /**
-     * @description Create a point with the provided [x, y] values.
-     * @param {[number, number]} arr - The array of size 2.
-     */
-    constructor(arr: [number, number]);
-    constructor(x: number | Coordinate | {
-        clientX: number;
-        clientY: number;
-    } | [number, number]);
-    /**
-     * @description Calculate the distance between two Position2D points.
-     * @param {Point} p1 - First point
-     * @param {Point} p2 - Second point
-     */
-    static dist(p1: Coordinate, p2: Coordinate): number;
-    /**
-     * @description Calculate the mid-point from the provided points
-     * @param {Point[]} arr - Undetermined number of point parameters
-     */
-    static midPoint(...arr: Coordinate[]): Point;
-    /**
-     * @description Calculate the max on both x and y from the provided points
-     * @param {Point[]} arr - Undetermined number of point parameters
-     */
-    static max(...arr: Coordinate[]): Point;
-    /**
-     * @description Calculate the min on both x and y from the provided points
-     * @param {Point[]} arr - Undetermined number of point parameters
-     */
-    static min(...arr: Coordinate[]): Point;
-    get object(): Coordinate;
-    /**
-     * @description Determine whether this point is equal to the provided coordinates
-     * @param {Coordinate} p - The coordinates to compare it to
-     * @return A boolean indicating whether they are equal
-     */
-    equals(p: Coordinate): boolean;
-    /**
-     * @description Determine whether this point is equal to the provided coordinates
-     * @param {number} x - The x coordinate
-     * @param {number} y - The y coordinate
-     * @return A boolean indicating whether they are equal
-     */
-    equals(x: number, y: number): boolean;
-    boundX(x1: number, x2: number): number;
-    boundY(y1: number, y2: number): number;
-    bound(n1: number, n2: number): Point;
-    /**
-     * @description Add coordinates to this point
-     * @param {number} n - The value to add to both x and y
-     * @returns A new Point object with the result
-     */
-    add(n: number): Point;
-    /**
-     * @description Add coordinates to this point
-     * @param {number} x - The value to add to the x coordinate
-     * @param {number} y - The value to add to the y coordinate
-     * @returns A new Point object with the result
-     */
-    add(x: number, y: number): Point;
-    /**
-     * @description Add coordinates to this point
-     * @param {Coordinate} p - The coordinates to add
-     * @returns A new Point object with the result
-     */
-    add(p: Coordinate): Point;
-    /**
-     * @description Subtract coordinates from this point
-     * @param {number} n - The value to subtract from both x and y
-     * @returns A new Point object with the result
-     */
-    sub(n: number): Point;
-    /**
-     * @description Subtract coordinates from this point
-     * @param {number} x - The value to subtract from the x coordinate
-     * @param {number} y - The value to subtract from the y coordinate
-     * @returns A new Point object with the result
-     */
-    sub(x: number, y: number): Point;
-    /**
-     * @description Subtract coordinates from this point
-     * @param {Coordinate} p - The coordinates to subtract
-     * @returns A new Point object with the result
-     */
-    sub(p: Coordinate): Point;
-    /**
-     * @description Multiply coordinates of this point
-     * @param {number} n - The value to multiply both x and y
-     * @returns A new Point object with the result
-     */
-    mul(n: number): Point;
-    /**
-     * @description Multiply coordinates of this point
-     * @param {number} x - The value to multiply the x coordinate
-     * @param {number} y - The value to multiply the y coordinate
-     * @returns A new Point object with the result
-     */
-    mul(x: number, y: number): Point;
-    /**
-     * @description Multiply coordinates of this point
-     * @param {Coordinate} p - The coordinates to multiply
-     * @returns A new Point object with the result
-     */
-    mul(p: Coordinate): Point;
-    /**
-     * @description Divide coordinates of this point
-     * @param {number} n - The value to divide both x and y
-     * @returns A new Point object with the result
-     */
-    div(n: number): Point;
-    /**
-     * @description Divide coordinates of this point
-     * @param {number} x - The value to divide the x coordinate
-     * @param {number} y - The value to divide the y coordinate
-     * @returns A new Point object with the result
-     */
-    div(x: number, y: number): Point;
-    /**
-     * @description Divide coordinates of this point
-     * @param {Coordinate} p - The coordinates to divide with
-     * @returns A new Point object with the result
-     */
-    div(p: Coordinate): Point;
-    /**
-     * @description Mod coordinates of this point
-     * @param {number} n - The value to mod both x and y
-     * @returns A new Point object with the result
-     */
-    mod(n: number): Point;
-    /**
-     * @description Mod coordinates of this point
-     * @param {number} x - The value to mod the x coordinate
-     * @param {number} y - The value to mod the y coordinate
-     * @returns A new Point object with the result
-     */
-    mod(x: number, y: number): Point;
-    /**
-     * @description Mod coordinates of this point
-     * @param {Coordinate} p - The coordinates to mod with
-     * @returns A new Point object with the result
-     */
-    mod(p: Coordinate): Point;
-    /**
-     * @description Calculate the absolute value of the coordinates
-     * @returns A new Point object with the absolute values
-     */
-    abs(): Point;
-    /**
-     * @description Get the maximum value between x and y coordinates
-     * @returns The maximum value
-     */
-    max(): number;
-    /**
-     * @description Get the minimum value between x and y coordinates
-     * @returns The minimum value
-     */
-    min(): number;
-    /**
-     * @description Create a copy of the current point
-     * @returns A new Point object with the same coordinates
-     */
-    copy(): Point;
-    /**
-     * @description Get the coordinates as an array
-     * @returns An array with x and y coordinates
-     */
-    arr(): number[];
-}
-
-type TurboEventManagerStateProperties = {
-    enabled?: boolean;
-    preventDefaultWheel?: boolean;
-    preventDefaultMouse?: boolean;
-    preventDefaultTouch?: boolean;
-};
-type DisabledTurboEventTypes = {
-    disableKeyEvents?: boolean;
-    disableWheelEvents?: boolean;
-    disableMouseEvents?: boolean;
-    disableTouchEvents?: boolean;
-    disableClickEvents?: boolean;
-    disableDragEvents?: boolean;
-    disableMoveEvent?: boolean;
-};
-type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
-    moveThreshold?: number;
-    longPressDuration?: number;
-    authorizeEventScaling?: boolean | (() => boolean);
-    scaleEventPosition?: (position: Point) => Point;
-};
-type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
-    lockOrigin?: Element;
-};
-declare enum ActionMode {
-    none = 0,
-    click = 1,
-    longPress = 2,
-    drag = 3
-}
-declare enum ClickMode {
-    none = 0,
-    left = 1,
-    right = 2,
-    middle = 3,
-    other = 4,
-    key = 5
-}
-declare enum InputDevice {
-    unknown = 0,
-    mouse = 1,
-    trackpad = 2,
-    touch = 3
-}
-
-declare enum ClosestOrigin {
-    target = "target",
-    position = "position"
-}
-
-declare class TurboMap<KeyType, ValueType> extends Map<KeyType, ValueType> {
-    enforceImmutability: boolean;
-    set(key: KeyType, value: ValueType): any;
-    get(key: KeyType): ValueType;
-    get first(): ValueType | null;
-    get last(): ValueType | null;
-    keysArray(): KeyType[];
-    valuesArray(): ValueType[];
-    private copy;
-    mapKeys<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<C, ValueType>;
-    mapValues<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<KeyType, C>;
-    filter(callback: (key: KeyType, value: ValueType) => boolean): TurboMap<KeyType, ValueType>;
-    merge(map: Map<KeyType, ValueType>): TurboMap<KeyType, ValueType>;
-}
-
-/**
- * Generic turbo event
- */
-declare class TurboEvent extends Event {
-    /**
-     * @description The click mode of the fired event
-     */
-    readonly clickMode: ClickMode;
-    /**
-     * @description The keys pressed when the event was fired
-     */
-    readonly keys: string[];
-    /**
-     * @description The screen position from where the event was fired
-     */
-    readonly position: Point;
-    /**
-     * @description Callback function (or boolean) to be overridden to specify when to allow transformation
-     * and/or scaling.
-     */
-    authorizeScaling: boolean | (() => boolean);
-    /**
-     * @description Callback function to be overridden to specify how to transform a position from screen to
-     * document space.
-     */
-    scalePosition: (position: Point) => Point;
-    constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
-    /**
-     * @description Returns the closest element of the provided type to the target (Searches through the element and
-     * all its parents to find one of matching type).
-     * @param type
-     * @param strict
-     * @param from
-     */
-    closest<T extends Element>(type: new (...args: any[]) => T, strict?: boolean, from?: ClosestOrigin): T | null;
-    /**
-     * @description Checks if the position is inside the given element's bounding box.
-     * @param position
-     * @param element
-     */
-    private isPositionInsideElement;
-    /**
-     * @description The target of the event (as an Element - or the document)
-     */
-    get target(): Element | Document;
-    /**
-     * @description The position of the fired event transformed and/or scaled using the class's scalePosition().
-     */
-    get scaledPosition(): Point;
-    /**
-     * @description Specifies whether to allow transformation and/or scaling.
-     */
-    get scalingAuthorized(): boolean;
-    /**
-     * @private
-     * @description Takes a map of points and returns a new map where each point is transformed accordingly.
-     * @param positions
-     */
-    protected scalePositionsMap(positions?: TurboMap<number, Point>): TurboMap<number, Point>;
-}
-
-/**
- * @class TurboDragEvent
- * @extends TurboEvent
- * @description Turbo drag event class, fired on turbo-drag, turbo-drag-start, turbo-drag-end, etc.
- */
-declare class TurboDragEvent extends TurboEvent {
-    /**
-     * @description Map containing the origins of the dragging points
-     */
-    readonly origins: TurboMap<number, Point>;
-    /**
-     * @description Map containing the previous positions of the dragging points
-     */
-    readonly previousPositions: TurboMap<number, Point>;
-    /**
-     * @description Map containing the positions of the dragging points
-     */
-    readonly positions: TurboMap<number, Point>;
-    constructor(origins: TurboMap<number, Point>, previousPositions: TurboMap<number, Point>, positions: TurboMap<number, Point>, clickMode: ClickMode, keys: string[], eventName?: TurboEventNameEntry, authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point, eventInitDict?: EventInit);
-    /**
-     * @description Map of the origins mapped to the current canvas translation and scale
-     */
-    get scaledOrigins(): TurboMap<number, Point>;
-    /**
-     * @description Map of the previous positions mapped to the current canvas translation and scale
-     */
-    get scaledPreviousPositions(): TurboMap<number, Point>;
-    /**
-     * @description Map of the positions mapped to the current canvas translation and scale
-     */
-    get scaledPositions(): TurboMap<number, Point>;
-    get deltaPositions(): TurboMap<number, Point>;
-    get deltaPosition(): Point;
-    get scaledDeltaPositions(): TurboMap<number, Point>;
-    get scaledDeltaPosition(): Point;
-}
 
 /**
  * @class TurboKeyEvent
@@ -4365,4 +4613,4 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { AccessLevel, ActionMode, type AutoOptions, type BasicPropertyConfig, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcBlockKeyType, type MvcBlocksType, type MvcControllerProperties, type MvcDataBlock, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };
+export { AccessLevel, ActionMode, type AutoOptions, type BasicPropertyConfig, type ButtonChildren, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultEventName, type DefaultEventNameEntry, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, MathMLNamespace, type MathMLTag, MathMLTagsDefinitions, type MvcBlockKeyType, type MvcBlocksType, type MvcControllerProperties, type MvcDataBlock, type MvcGenerationProperties, MvcHandler, type MvcHandlerProperties, type MvcInteractorProperties, type MvcViewProperties, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, SvgNamespace, SvgTagsDefinitions, Tool, ToolManager, ToolModel, type ToolProperties, ToolView, TurboButton, type TurboButtonConfig, type TurboButtonProperties, TurboClickEventName, TurboController, type TurboCustomProperties, TurboDragEvent, TurboDragEventName, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, TurboRichElement, type TurboRichElementChildren, type TurboRichElementConfig, type TurboRichElementData, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectEntry, type TurboSelectEntryConfig, type TurboSelectEntryProperties, TurboSelectInputEvent, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, a, addChildManipulationToElementPrototype, addClassManipulationToElementPrototype, addElementManipulationToElementPrototype, addListenerManipulationToElementPrototype, addReifectManagementToNodePrototype, addStylesManipulationToElementPrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, createProxy, css, define, div, eachEqualToAny, element, equalToAny, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, h1, h2, h3, h4, h5, h6, icon, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, mod, observe, p, parse, reifect, setupTurboEventManagerBypassing, spacer, span, statefulReifier, stringify, style, stylesheet, textToElement, textarea, trim, turbofy, updateChainingPropertiesInElementPrototype, video };

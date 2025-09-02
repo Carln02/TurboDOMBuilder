@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Turbo Reifect Demo</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        turbo-select-entry {
+            padding: 6px;
+        }
+
+        .icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+        }
+
+        .icon > svg {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+        }
+
+        .grid {
+            display: flex;
+            gap: 1em;
+        }
+    </style>
+</head>
+<body>
+
+<script src="../build/turbodombuilder.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        Turbo.turbofy();
+        Turbo.TurboIcon.config.defaultDirectory = "assets";
+        Turbo.TurboIcon.config.defaultClasses = "icon";
+        new Turbo.TurboEventManager();
+
+        const popup = new Turbo.TurboPopup({parent: document.body});
+        const input = new Turbo.TurboInput({parent: popup});
+
+        popup.show(true)
+
+    });
+</script>
+</body>
+</html>

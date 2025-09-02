@@ -6,6 +6,10 @@ type ListenerEntry = {
     options?: boolean | AddEventListenerOptions,
 }
 
+type ListenerOptions = AddEventListenerOptions & {
+    propagate?: boolean
+};
+
 declare global {
     interface Node {
         /**
@@ -26,7 +30,7 @@ declare global {
          */
         addListener<Type extends Node>(
             type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Type) => void),
-            boundTo?: Node, options?: boolean | AddEventListenerOptions): Type;
+            boundTo?: Node, options?: boolean | ListenerOptions): Type;
 
         /**
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
@@ -56,4 +60,4 @@ declare global {
     }
 }
 
-export {ListenerEntry};
+export {ListenerEntry, ListenerOptions};

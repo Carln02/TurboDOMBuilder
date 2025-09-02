@@ -1308,6 +1308,7 @@ class MvcHandler {
     element;
     _model;
     controllers = new Map();
+    interactors = new Map();
     constructor(properties) {
         if (properties.element)
             this.element = properties.element;
@@ -1386,6 +1387,36 @@ class MvcHandler {
     get dataSize() {
         return this.model?.getSize();
     }
+    findInteractor(tool) {
+        for (const [key, interactor] of this.interactors) {
+            if (!interactor.tool || interactor.tool !== tool.name)
+                continue;
+            return interactor;
+        }
+    }
+    propagatesUp(e, tool) {
+        const interactor = this.findInteractor(tool);
+        if (!interactor)
+            return undefined;
+        switch (typeof interactor.propagateUp) {
+            case "boolean": return interactor.propagateUp;
+            case "function": return interactor.propagateUp(e);
+            case "object":
+                const propagateUpEntry = interactor.propagateUp[e.eventName];
+                switch (typeof propagateUpEntry) {
+                    case "undefined": return false;
+                    case "boolean": return propagateUpEntry;
+                    case "function": return propagateUpEntry(e);
+                }
+        }
+    }
+    interact(e, tool) {
+        const interactor = this.findInteractor(tool);
+        if (!interactor)
+            return undefined;
+        interactor.interact(e, tool);
+        return true;
+    }
     /**
      * @function getController
      * @description Retrieves the attached MVC controller with the given key.
@@ -1407,6 +1438,28 @@ class MvcHandler {
             controller.keyName =
                 this.extractClassEssenceName(controller.constructor);
         this.controllers.set(controller.keyName, controller);
+    }
+    /**
+     * @function getInteractor
+     * @description Retrieves the attached MVC interactor with the given key.
+     * By default, unless manually defined in the interactor, if the element's class name is MyElement
+     * and the interactor's class name is MyElementSomethingInteractor, the key would be "something".
+     * @param {string} key - The interactor's key.
+     * @return {TurboInteractor} - The interactor.
+     */
+    getInteractor(key) {
+        return this.interactors.get(key);
+    }
+    /**
+     * @function addInteractor
+     * @description Adds the given interactor to the MVC structure.
+     * @param {TurboInteractor} interactor - The interactor to add.
+     */
+    addInteractor(interactor) {
+        if (!interactor.keyName)
+            interactor.keyName =
+                this.extractClassEssenceName(interactor.constructor);
+        this.interactors.set(interactor.keyName, interactor);
     }
     /**
      * @function getHandler
@@ -1466,6 +1519,14 @@ class MvcHandler {
             };
             properties.controllerConstructors.forEach(controllerConstructor => this.addController(new controllerConstructor(controllerProperties)));
         }
+        if (properties.interactorConstructors) {
+            const interactorProperties = {
+                element: this.element,
+                view: this.view,
+                model: this.model,
+            };
+            properties.interactorConstructors.forEach(interactorConstructor => this.addInteractor(new interactorConstructor(interactorProperties)));
+        }
         if (properties.handlerConstructors) {
             properties.handlerConstructors.forEach(handlerConstructor => this.addHandler(new handlerConstructor(this.model)));
         }
@@ -1481,6 +1542,7 @@ class MvcHandler {
         this.view?.initialize();
         this.controllers.forEach((controller) => controller.initialize());
         this.model?.initialize();
+        this.interactors.forEach((interactor) => interactor.initialize());
     }
     linkModelToView() {
         if (!this.view || !this.model)
@@ -1607,6 +1669,154 @@ class TurboHandler {
     }
 }
 
+const TurboKeyEventName = {
+    keyPressed: "turbo-key-pressed",
+    keyReleased: "turbo-key-released"
+};
+const TurboClickEventName = {
+    click: "turbo-click",
+    clickStart: "turbo-click-start",
+    clickEnd: "turbo-click-end",
+    longPress: "turbo-long-press"
+};
+const TurboMoveName = {
+    move: "turbo-move"
+};
+const TurboDragEventName = {
+    drag: "turbo-drag",
+    dragStart: "turbo-drag-start",
+    dragEnd: "turbo-drag-end"
+};
+const TurboWheelEventName = {
+    trackpadScroll: "turbo-trackpad-scroll",
+    trackpadPinch: "turbo-trackpad-pinch",
+    mouseWheel: "turbo-mouse-wheel"
+};
+const TurboEventName = {
+    ...TurboClickEventName,
+    ...TurboKeyEventName,
+    ...TurboMoveName,
+    ...TurboDragEventName,
+    ...TurboWheelEventName,
+    selectInput: "turbo-select-input",
+};
+/**
+ * @description Object containing the names of events fired by default by the turboComponents. Modifying it (prior to
+ * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
+ */
+const DefaultEventName = {
+    keyPressed: "keydown",
+    keyReleased: "keyup",
+    click: "click",
+    clickStart: "mousedown",
+    clickEnd: "mouseup",
+    longPress: TurboEventName.longPress,
+    move: "mousemove",
+    drag: TurboEventName.drag,
+    dragStart: TurboEventName.dragStart,
+    dragEnd: TurboEventName.dragEnd,
+    wheel: "wheel",
+    trackpadScroll: "wheel",
+    trackpadPinch: "wheel",
+    mouseWheel: "wheel",
+    scroll: "scroll",
+    input: "input",
+    change: "change",
+    focus: "focus",
+    blur: "blur",
+    resize: "resize"
+};
+
+class TurboInteractor {
+    /**
+     * @description The key of the interactor. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the interactor's class name is MyElementSomethingInteractor, the key would
+     * default to "something".
+     */
+    keyName;
+    propagateUp;
+    target;
+    tool;
+    /**
+     * @description A reference to the component.
+     * @protected
+     */
+    element;
+    /**
+     * @description A reference to the MVC view.
+     * @protected
+     */
+    view;
+    /**
+     * @description A reference to the MVC model.
+     * @protected
+     */
+    model;
+    constructor(properties) {
+        this.element = properties.element;
+        this.view = properties.view;
+        this.model = properties.model;
+        this.target = this.element;
+        this.propagateUp = false;
+    }
+    reverseTurboEventName = Object.fromEntries(Object.entries(TurboEventName).map(([k, v]) => [v, k]));
+    interact(e, tool) {
+        const eventKey = this.reverseTurboEventName[e.eventName];
+        if (eventKey && typeof this[eventKey] === "function")
+            this[eventKey](e, tool);
+    }
+    initialize() { }
+    /**
+     * @description Fired on click start
+     * @param e
+     * @param tool
+     */
+    clickStart(e, tool) {
+    }
+    /**
+     * @description Fired on click
+     * @param e
+     * @param tool
+     */
+    click(e, tool) {
+    }
+    /**
+     * @description Fired on click end
+     * @param e
+     * @param tool
+     */
+    clickEnd(e, tool) {
+    }
+    /**
+     * @description Fired on pointer move
+     * @param e
+     * @param tool
+     */
+    move(e, tool) {
+    }
+    /**
+     * @description Fired on drag start
+     * @param e
+     * @param tool
+     */
+    dragStart(e, tool) {
+    }
+    /**
+     * @description Fired on drag
+     * @param e
+     * @param tool
+     */
+    drag(e, tool) {
+    }
+    /**
+     * @description Fired on drag end
+     * @param e
+     * @param tool
+     */
+    dragEnd(e, tool) {
+    }
+}
+
 class Delegate {
     callbacks = new Set();
     /**
@@ -1666,7 +1876,7 @@ class TurboModel {
     keyChangedCallback;
     /**
      * @constructor
-     * @param {DataType} [data] - Initial data. Not initialized if provided
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
      * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
     constructor(data, dataBlocksType) {
@@ -2264,6 +2474,12 @@ class TurboElement extends HTMLElement {
     get dataSize() {
         return this.mvc.dataSize;
     }
+    propagatesUp(e, tool) {
+        return this.mvc.propagatesUp(e, tool);
+    }
+    interact(e, tool) {
+        return this.mvc.interact(e, tool);
+    }
     /**
      * @function getPropertiesValue
      * @description Returns the value with some fallback mechanisms on the static config field and a default value.
@@ -2377,6 +2593,12 @@ class TurboHeadlessElement {
      */
     get dataSize() {
         return this.mvc.dataSize;
+    }
+    propagatesUp(e, tool) {
+        return this.mvc.propagatesUp(e, tool);
+    }
+    interact(e, tool) {
+        return this.mvc.interact(e, tool);
     }
     /**
      * @function getPropertiesValue
@@ -2520,6 +2742,12 @@ class TurboProxiedElement {
      */
     get dataSize() {
         return this.mvc.dataSize;
+    }
+    propagatesUp(e, tool) {
+        return this.mvc.propagatesUp(e, tool);
+    }
+    interact(e, tool) {
+        return this.mvc.interact(e, tool);
     }
     /**
      * @function getPropertiesValue
@@ -3107,6 +3335,10 @@ function addListenerManipulationToElementPrototype() {
      */
     Node.prototype.addListener = function _addListener(type, listener, boundTo = this, options) {
         const wrappedListener = ((e) => {
+            if (!(this instanceof Document && this === document) &&
+                !(this instanceof HTMLElement && this === document.body) &&
+                !(typeof options === "object" && options.propagate))
+                e.stopPropagation();
             if (typeof listener === "object" && listener.handleEvent)
                 listener.handleEvent(e);
             if (typeof listener === "function")
@@ -4615,64 +4847,6 @@ function turbofy() {
     addReifectManagementToNodePrototype();
 }
 
-const TurboKeyEventName = {
-    keyPressed: "turbo-key-pressed",
-    keyReleased: "turbo-key-released"
-};
-const TurboClickEventName = {
-    click: "turbo-click",
-    clickStart: "turbo-click-start",
-    clickEnd: "turbo-click-end",
-    longPress: "turbo-long-press"
-};
-const TurboMoveName = {
-    move: "turbo-move"
-};
-const TurboDragEventName = {
-    drag: "turbo-drag",
-    dragStart: "turbo-drag-start",
-    dragEnd: "turbo-drag-end"
-};
-const TurboWheelEventName = {
-    trackpadScroll: "turbo-trackpad-scroll",
-    trackpadPinch: "turbo-trackpad-pinch",
-    mouseWheel: "turbo-mouse-wheel"
-};
-const TurboEventName = {
-    ...TurboClickEventName,
-    ...TurboKeyEventName,
-    ...TurboMoveName,
-    ...TurboDragEventName,
-    ...TurboWheelEventName,
-    selectInput: "turbo-select-input",
-};
-/**
- * @description Object containing the names of events fired by default by the turboComponents. Modifying it (prior to
- * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
- */
-const DefaultEventName = {
-    keyPressed: "keydown",
-    keyReleased: "keyup",
-    click: "click",
-    clickStart: "mousedown",
-    clickEnd: "mouseup",
-    longPress: TurboEventName.longPress,
-    move: "mousemove",
-    drag: TurboEventName.drag,
-    dragStart: TurboEventName.dragStart,
-    dragEnd: TurboEventName.dragEnd,
-    wheel: "wheel",
-    trackpadScroll: "wheel",
-    trackpadPinch: "wheel",
-    mouseWheel: "wheel",
-    scroll: "scroll",
-    input: "input",
-    change: "change",
-    focus: "focus",
-    blur: "blur",
-    resize: "resize"
-};
-
 exports.ClosestOrigin = void 0;
 (function (ClosestOrigin) {
     ClosestOrigin["target"] = "target";
@@ -4683,6 +4857,10 @@ exports.ClosestOrigin = void 0;
  * Generic turbo event
  */
 class TurboEvent extends Event {
+    /**
+     * @description The name of the event.
+     */
+    eventName;
     /**
      * @description The click mode of the fired event
      */
@@ -4709,6 +4887,7 @@ class TurboEvent extends Event {
         super(eventName, { bubbles: true, cancelable: true, ...eventInitDict });
         this.authorizeScaling = authorizeScaling ?? true;
         this.scalePosition = scalePosition ?? ((position) => position);
+        this.eventName = eventName;
         this.clickMode = clickMode;
         this.keys = keys;
         this.position = position;
@@ -4723,9 +4902,11 @@ class TurboEvent extends Event {
     closest(type, strict = true, from = exports.ClosestOrigin.target) {
         const elements = from == exports.ClosestOrigin.target ? [this.target]
             : document.elementsFromPoint(this.position.x, this.position.y);
+        const strictElement = strict instanceof Element ? strict : null;
+        const isStrict = strict === true || strictElement !== null;
         for (let element of elements) {
             while (element && !((element instanceof type)
-                && (!strict || this.isPositionInsideElement(this.position, element))))
+                && (!isStrict || this.isPositionInsideElement(this.position, strictElement ?? element))))
                 element = element.parentElement;
             if (element)
                 return element;
@@ -5247,23 +5428,23 @@ exports.TurboEventManager = class TurboEventManager extends TurboElement {
                 this.applyEventNames(TurboKeyEventName);
             }
             if (!this.disabledEventTypes.disableWheelEvents) {
-                document.body.addListener("wheel", this.wheel, this, { passive: false });
+                document.body.addListener("wheel", this.wheel, this, { passive: false, propagate: true });
                 this.applyEventNames(TurboWheelEventName);
             }
             if (!this.disabledEventTypes.disableMoveEvent) {
                 this.applyEventNames(TurboMoveName);
             }
             if (!this.disabledEventTypes.disableMouseEvents) {
-                document.body.addListener("mousedown", this.pointerDown);
-                document.body.addListener("mousemove", this.pointerMove);
-                document.body.addListener("mouseup", this.pointerUp);
-                document.body.addListener("mouseleave", this.pointerLeave);
+                document.addListener("mousedown", this.pointerDown, this, { propagate: true });
+                document.addListener("mousemove", this.pointerMove, this, { propagate: true });
+                document.addListener("mouseup", this.pointerUp, this, { propagate: true });
+                document.addListener("mouseleave", this.pointerLeave, this, { propagate: true });
             }
             if (!this.disabledEventTypes.disableTouchEvents) {
-                document.body.addListener("touchstart", this.pointerDown, this, { passive: false });
-                document.body.addListener("touchmove", this.pointerMove, this, { passive: false });
-                document.body.addListener("touchend", this.pointerUp, this, { passive: false });
-                document.body.addListener("touchcancel", this.pointerUp, this, { passive: false });
+                document.addListener("touchstart", this.pointerDown, this, { passive: false, propagate: true });
+                document.addListener("touchmove", this.pointerMove, this, { passive: false, propagate: true });
+                document.addListener("touchend", this.pointerUp, this, { passive: false, propagate: true });
+                document.addListener("touchcancel", this.pointerUp, this, { passive: false, propagate: true });
             }
             if (!this.disabledEventTypes.disableMouseEvents || !this.disabledEventTypes.disableTouchEvents) {
                 if (!this.disabledEventTypes.disableClickEvents)
@@ -5625,6 +5806,269 @@ exports.TurboEventManager = class TurboEventManager extends TurboElement {
 exports.TurboEventManager = __decorate([
     define()
 ], exports.TurboEventManager);
+
+class ToolModel extends TurboModel {
+    set selected(value) {
+        this.fireCallback("selected", value);
+    }
+}
+__decorate([
+    auto()
+], ToolModel.prototype, "selected", null);
+
+class ToolView extends TurboView {
+    textElement;
+    setupUIElements() {
+        super.setupUIElements();
+        this.textElement = h4({ text: this.element.name });
+        this.element.addClass("card clickable");
+    }
+    setupUILayout() {
+        super.setupUILayout();
+        this.element.addChild(this.textElement);
+    }
+    setupChangedCallbacks() {
+        super.setupChangedCallbacks();
+        this.emitter.add("selected", (value) => this.element.toggleClass(exports.Tool.config.defaultSelectedClass, value));
+    }
+    setupUIListeners() {
+        super.setupUIListeners();
+        this.element.addEventListener(DefaultEventName.click, (e) => {
+            this.element.toolManager.setTool(this.element, exports.ClickMode.left);
+            e.stopImmediatePropagation();
+        });
+    }
+}
+
+/**
+ * @description General Tool class that defines basic behaviors and "abstract" functions tools could use to handle events
+ */
+exports.Tool = class Tool extends TurboElement {
+    /**
+     * @description The name of the tool
+     */
+    name;
+    _toolManager;
+    constructor(properties) {
+        if (!properties.modelConstructor)
+            properties.modelConstructor = ToolModel;
+        if (!properties.viewConstructor)
+            properties.viewConstructor = ToolView;
+        if (!properties.forceNewModel && !properties.model)
+            properties.model =
+                properties.toolManager.getToolByName(properties.name)?.model;
+        super(properties);
+        this.name = properties.name;
+        this._toolManager = properties.toolManager;
+        if (properties.generate === undefined)
+            this.mvc.generate(properties);
+        this.toolManager.addTool(this, properties.key);
+    }
+    get toolManager() {
+        return this._toolManager;
+    }
+    /**
+     * @description Fired when the tool is picked up
+     */
+    activate() { }
+    /**
+     * Fired when tool is put down (deselected)
+     */
+    deactivate() { }
+    /**
+     * @description Marks whether the tool is selected or not. Accurately reflected on its instances
+     */
+    get selected() {
+        return this.model.selected;
+    }
+    set selected(value) {
+        this.model.selected = value;
+    }
+};
+exports.Tool = __decorate([
+    define("turbo-tool")
+], exports.Tool);
+
+//TODO handle key combinations maybe? Also fix the issue with 2-finger navigation on mobile when app starts
+/**
+ * @description Manages (ideally) all the tools in the application
+ */
+class ToolManager {
+    //All created tools
+    tools = new Map();
+    //Tools mapped to keys
+    mappedKeysToTool = new Map();
+    //Tools currently held by the user (one - or none - per each click button/mode)
+    currentTools = new Map();
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    onToolChange = new Delegate();
+    constructor() {
+        //Initialization
+        this.initEvents();
+    }
+    interactWithObject(e) {
+        const tool = this.getFiredTool(e);
+        if (!tool)
+            return;
+        const interactors = [];
+        let target = e.closest(Element, true, exports.ClosestOrigin.position);
+        while (target) {
+            if (typeof target["interact"] === "function" && typeof target["propagatesUp"] === "function") {
+                interactors.push(target);
+                const shouldPropagate = target["propagatesUp"](e, tool);
+                if (shouldPropagate === false)
+                    break;
+            }
+            target = target.parentElement;
+        }
+        // Reverse and interact
+        for (let i = interactors.length - 1; i >= 0; i--) {
+            interactors[i]["interact"](e, tool);
+        }
+    }
+    initEvents() {
+        //On key press --> set corresponding tool as key mode
+        document.addEventListener(TurboEventName.keyPressed, (e) => this.setToolByKey(e.keyPressed));
+        //On key release --> clear set tool on key mode
+        document.addEventListener(TurboEventName.keyReleased, () => this.setTool(null, exports.ClickMode.key, { select: false }));
+        //Listen for all custom events on the document and accordingly execute the corresponding function on the
+        //current tool. The tool will manage its actions and what object to interact with
+        document.addListener(TurboEventName.clickStart, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.click, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.clickEnd, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.move, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.dragStart, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.drag, (e) => this.interactWithObject(e), document, { propagate: true });
+        document.addListener(TurboEventName.dragEnd, (e) => this.interactWithObject(e), document, { propagate: true });
+    }
+    /**
+     * @description Returns all created tools as an array
+     */
+    getToolsArray() {
+        return [...this.tools.values()].flat();
+    }
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     */
+    getToolsByName(name) {
+        return this.tools.get(name) || [];
+    }
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     * @param predicate
+     */
+    getToolByName(name, predicate) {
+        const tools = this.getToolsByName(name);
+        return predicate ? tools?.find(predicate) : tools?.[0];
+    }
+    /**
+     * @description Returns the tools associated with the given key
+     * @param key
+     */
+    getToolsByKey(key) {
+        const toolName = this.mappedKeysToTool.get(key);
+        if (!toolName)
+            return null;
+        return this.tools.get(toolName) || [];
+    }
+    /**
+     * @description Returns the tool associated with the given key
+     * @param key
+     * @param predicate
+     */
+    getToolByKey(key, predicate) {
+        const tools = this.getToolsByKey(key);
+        return predicate ? tools?.find(predicate) : tools?.[0];
+    }
+    /**
+     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
+     * @param tool
+     * @param key
+     */
+    addTool(tool, key) {
+        if (!this.tools.has(tool.name))
+            this.tools.set(tool.name, []);
+        const tools = this.tools.get(tool.name);
+        if (!tools.includes(tool))
+            tools.push(tool);
+        if (key)
+            this.mappedKeysToTool.set(key, tool.name);
+    }
+    createTool(properties) {
+        return new exports.Tool({ ...properties, toolManager: this });
+    }
+    /**
+     * @description Returns the tool currently held by the provided click mode
+     * @param mode
+     */
+    getTool(mode) {
+        return this.currentTools.get(mode);
+    }
+    //Utility callback to get the current tool based on the fired event's information
+    getFiredTool(e) {
+        let tool;
+        //If keys are pressed --> try to get the tool assigned to key mode
+        if (e.keys.length > 0)
+            tool = this.getTool(exports.ClickMode.key);
+        //If tool still null --> get tool assigned to event's click mode
+        if (!tool)
+            tool = this.getTool(e.clickMode);
+        return tool;
+    }
+    /**
+     * @description Sets the provided tool as a current tool associated with the provided type
+     * @param tool
+     * @param type
+     * @param options
+     */
+    setTool(tool, type, options = {}) {
+        //Initialize undefined options
+        if (options.select == undefined)
+            options.select = true;
+        if (options.activate == undefined)
+            options.activate = true;
+        if (options.setAsNoAction == undefined)
+            options.setAsNoAction = type == exports.ClickMode.left;
+        //Get previous tool
+        const previousTool = this.currentTools.get(type);
+        if (previousTool) {
+            //Return if it's the same
+            if (previousTool == tool)
+                return;
+            //Deselect and deactivate previous tool
+            if (options.select)
+                previousTool.selected = false;
+            if (options.activate)
+                previousTool.deactivate();
+        }
+        //Select new tool (and maybe set it as the tool for no click mode)
+        this.currentTools.set(type, tool);
+        if (options.setAsNoAction)
+            this.currentTools.set(exports.ClickMode.none, tool);
+        //Select and activate the tool
+        if (options.select && tool)
+            tool.selected = true;
+        if (options.activate && tool)
+            tool.activate();
+        //Fire tool changed
+        this.onToolChange.fire(previousTool, tool, type);
+    }
+    /**
+     * @description Sets tool associated with the provided key as the current tool for the key mode
+     * @param key
+     */
+    setToolByKey(key) {
+        const tool = this.getToolByKey(key);
+        if (!tool)
+            return false;
+        this.setTool(tool, exports.ClickMode.key, { select: false });
+        return true;
+    }
+}
 
 function styleInject(css, ref) {
   if ( ref === void 0 ) ref = {};
@@ -7776,13 +8220,13 @@ exports.TurboSelectWheel = class TurboSelectWheel extends exports.TurboSelect {
     }
     setupUIListeners() {
         super.setupUIListeners();
-        document.addListener(DefaultEventName.drag, (e) => {
+        document.body.addListener(DefaultEventName.drag, (e) => {
             if (!this.dragging)
                 return;
             e.stopImmediatePropagation();
             this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
         });
-        document.addListener(DefaultEventName.dragEnd, (e) => {
+        document.body.addListener(DefaultEventName.dragEnd, (e) => {
             if (!this.dragging)
                 return;
             e.stopImmediatePropagation();
@@ -8118,6 +8562,9 @@ exports.ReifectHandler = ReifectHandler;
 exports.StatefulReifect = StatefulReifect;
 exports.SvgNamespace = SvgNamespace;
 exports.SvgTagsDefinitions = SvgTagsDefinitions;
+exports.ToolManager = ToolManager;
+exports.ToolModel = ToolModel;
+exports.ToolView = ToolView;
 exports.TurboClickEventName = TurboClickEventName;
 exports.TurboController = TurboController;
 exports.TurboDragEvent = TurboDragEvent;
@@ -8128,6 +8575,7 @@ exports.TurboEvent = TurboEvent;
 exports.TurboEventName = TurboEventName;
 exports.TurboHandler = TurboHandler;
 exports.TurboHeadlessElement = TurboHeadlessElement;
+exports.TurboInteractor = TurboInteractor;
 exports.TurboKeyEvent = TurboKeyEvent;
 exports.TurboKeyEventName = TurboKeyEventName;
 exports.TurboMap = TurboMap;

@@ -1,5 +1,5 @@
 import "./listenerManipulation.types";
-import {ListenerEntry} from "./listenerManipulation.types";
+import {ListenerEntry, ListenerOptions} from "./listenerManipulation.types";
 
 function addListenerManipulationToElementPrototype() {
     /**
@@ -25,14 +25,21 @@ function addListenerManipulationToElementPrototype() {
      */
     Node.prototype.addListener = function _addListener<Type extends Node>
     (this: Type, type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Type) => void),
-     boundTo: Node = this, options?: boolean | AddEventListenerOptions): Type {
+     boundTo: Node = this, options?: boolean | ListenerOptions): Type {
         const wrappedListener = ((e: Event) => {
+            if (
+                !(this instanceof Document && this === document) &&
+                !(this instanceof HTMLElement && this === document.body) &&
+                !(typeof options === "object" && options.propagate)
+            ) e.stopPropagation();
             if (typeof listener === "object" && listener.handleEvent) listener.handleEvent(e);
             if (typeof listener === "function") listener(e, this);
         }) as EventListenerOrEventListenerObject;
 
         boundTo.boundListeners.add({
             target: this,
+
+
             type: type,
             originalListener: listener,
             listener: wrappedListener,

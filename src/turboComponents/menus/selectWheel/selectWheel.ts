@@ -163,13 +163,13 @@ class TurboSelectWheel<
     protected setupUIListeners() {
         super.setupUIListeners();
 
-        document.addListener(DefaultEventName.drag, (e: TurboDragEvent) => {
+        document.body.addListener(DefaultEventName.drag, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
         });
 
-        document.addListener(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
+        document.body.addListener(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.dragging = false;

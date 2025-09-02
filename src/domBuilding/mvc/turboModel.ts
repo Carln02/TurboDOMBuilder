@@ -32,7 +32,7 @@ class TurboModel<
 
     /**
      * @constructor
-     * @param {DataType} [data] - Initial data. Not initialized if provided
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
      * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
     public constructor(data?: DataType, dataBlocksType?: BlocksType) {

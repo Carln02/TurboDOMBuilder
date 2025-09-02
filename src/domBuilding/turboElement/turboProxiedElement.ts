@@ -7,6 +7,8 @@ import {ValidElement, ValidTag} from "../core.types";
 import {blindElement} from "../elementCreation/element";
 import {MvcHandler} from "../mvc/mvcHandler";
 import {TurboEmitter} from "../mvc/turboEmitter";
+import {TurboEvent} from "../../eventHandling/events/turboEvent";
+import {Tool} from "../../toolManagement/tool/tool";
 
 /**
  * @class TurboProxiedElement
@@ -154,6 +156,14 @@ class TurboProxiedElement<
      */
     public get dataSize(): number {
         return this.mvc.dataSize;
+    }
+
+    public propagatesUp(e: TurboEvent, tool: Tool<any>): boolean {
+        return this.mvc.propagatesUp(e, tool);
+    }
+
+    public interact(e: TurboEvent, tool: Tool<any>): boolean {
+        return this.mvc.interact(e, tool);
     }
 
     /**
