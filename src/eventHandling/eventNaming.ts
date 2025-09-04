@@ -3,6 +3,11 @@ const TurboKeyEventName = {
     keyReleased: "turbo-key-released"
 } as const;
 
+const DefaultKeyEventName = {
+    keyPressed: "keydown",
+    keyReleased: "keyup",
+} as const;
+
 const TurboClickEventName = {
     click: "turbo-click",
     clickStart: "turbo-click-start",
@@ -11,14 +16,32 @@ const TurboClickEventName = {
     longPress: "turbo-long-press"
 } as const;
 
-const TurboMoveName = {
+const DefaultClickEventName = {
+    click: "click",
+    clickStart: "mousedown",
+    clickEnd: "mouseup",
+
+    longPress: TurboClickEventName.longPress
+} as const;
+
+const TurboMoveEventName = {
     move: "turbo-move"
+} as const;
+
+const DefaultMoveEventName = {
+    move: "mousemove"
 } as const;
 
 const TurboDragEventName = {
     drag: "turbo-drag",
     dragStart: "turbo-drag-start",
     dragEnd: "turbo-drag-end"
+} as const;
+
+const DefaultDragEventName = {
+    drag: TurboDragEventName.drag,
+    dragStart: TurboDragEventName.dragStart,
+    dragEnd: TurboDragEventName.dragEnd,
 } as const;
 
 const TurboWheelEventName = {
@@ -28,10 +51,17 @@ const TurboWheelEventName = {
     mouseWheel: "turbo-mouse-wheel"
 } as const;
 
+const DefaultWheelEventName = {
+    trackpadScroll: "wheel",
+    trackpadPinch: "wheel",
+
+    mouseWheel: "wheel"
+} as const;
+
 const TurboEventName = {
     ...TurboClickEventName,
     ...TurboKeyEventName,
-    ...TurboMoveName,
+    ...TurboMoveEventName,
     ...TurboDragEventName,
     ...TurboWheelEventName,
 
@@ -43,28 +73,12 @@ const TurboEventName = {
  * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
  */
 const DefaultEventName = {
-    keyPressed: "keydown",
-    keyReleased: "keyup",
-
-    click: "click",
-    clickStart: "mousedown",
-    clickEnd: "mouseup",
-
-    longPress: TurboEventName.longPress,
-
-    move: "mousemove",
-
-    drag: TurboEventName.drag,
-    dragStart: TurboEventName.dragStart,
-    dragEnd: TurboEventName.dragEnd,
-
+    ...DefaultKeyEventName,
+    ...DefaultClickEventName,
+    ...DefaultMoveEventName,
+    ...DefaultDragEventName,
+    ...DefaultWheelEventName,
     wheel: "wheel",
-
-    trackpadScroll: "wheel",
-    trackpadPinch: "wheel",
-
-    mouseWheel: "wheel",
-
     scroll: "scroll",
 
     input: "input",
@@ -81,9 +95,14 @@ type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventNa
 type TurboEventNameEntry = typeof TurboEventName[keyof typeof TurboEventName];
 
 export {
+    DefaultKeyEventName,
+    DefaultMoveEventName,
+    DefaultWheelEventName,
+    DefaultClickEventName,
+    DefaultDragEventName,
     TurboKeyEventName,
     TurboClickEventName,
-    TurboMoveName,
+    TurboMoveEventName,
     TurboDragEventName,
     TurboWheelEventName,
     DefaultEventName,
