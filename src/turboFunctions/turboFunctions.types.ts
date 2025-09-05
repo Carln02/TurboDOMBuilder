@@ -1,6 +1,6 @@
 import {TurboSelector} from "./turboFunctions";
 
-type Turbo<Type extends Node> = TurboSelector<Type> & Type;
+type Turbo<Type extends Node = Node> = TurboSelector<Type> & Type;
 
 type TurbofyOptions = {
     excludeHierarchyFunctions?: boolean,
@@ -12,6 +12,7 @@ type TurbofyOptions = {
 };
 
 declare module "./turboFunctions" {
+    //@ts-ignore
     interface TurboSelector extends Node {
     }
 }

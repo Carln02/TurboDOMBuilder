@@ -1,95 +1,74 @@
 import {
-    ActionMode,
     ClickMode,
-    DisabledTurboEventTypes,
-    InputDevice,
-    TurboEventManagerLockStateProperties,
+    InputDevice, SetToolOptions,
     TurboEventManagerProperties,
     TurboEventManagerStateProperties
 } from "./turboEventManager.types";
 import {Delegate} from "../delegate/delegate";
-import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
 import {Point} from "../../utils/datatypes/point/point";
-import {TurboEvent} from "../events/turboEvent";
-import {setupTurboEventManagerBypassing} from "./managerBypassing/managerBypassing";
 import {
     DefaultClickEventName, DefaultDragEventName,
-    DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName,
+    DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName,
     TurboClickEventName,
     TurboDragEventName,
-    TurboEventName,
     TurboEventNameEntry,
     TurboKeyEventName,
     TurboMoveEventName,
     TurboWheelEventName
 } from "../eventNaming";
 import {$} from "../../turboFunctions/turboFunctions";
-import {clearCache} from "../../decorators/cache/cache";
 import {auto} from "../../decorators/auto/auto";
-import {TurboKeyEvent} from "../events/turboKeyEvent";
-import {TurboWheelEvent} from "../events/turboWheelEvent";
-import {TurboDragEvent} from "../events/turboDragEvent";
-import {TurboDragEventProperties, TurboEventProperties, TurboRawEventProperties} from "../events/turboEvent.types";
+import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement";
+import {TurboEventManagerModel} from "./turboEventManager.model";
+import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
+import {TurboEventManagerWheelController} from "./controllers/turboEventManager.wheelController";
+import {TurboEventManagerPointerController} from "./controllers/turboEventManager.pointerController";
+import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
+import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
 
 /**
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
  * easier management of input.
  */
-class TurboEventManager {
-    private _inputDevice: InputDevice = InputDevice.unknown;
+class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
+    protected static managers: TurboEventManager[] = [];
 
-    //Delegate fired when the input device changes
-    public readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>;
+    public static get instance(): TurboEventManager {
+        if (TurboEventManager.managers.length > 0) return TurboEventManager.managers[0];
+        else return new TurboEventManager();
+    }
 
-    //Manager states
-    public readonly defaultState: TurboEventManagerStateProperties = {};
-    private readonly lockState: TurboEventManagerLockStateProperties = {};
+    public static get allManagers(): TurboEventManager[] {
+        return [...this.managers];
+    }
 
-    //Input events states
-    protected readonly currentKeys: string[] = [];
-    protected currentAction: ActionMode = ActionMode.none;
-    protected currentClick: ClickMode = ClickMode.none;
-    private wasRecentlyTrackpad: boolean = false;
-
-    //Saved values (Maps to account for different touch points and their IDs)
-    private readonly origins: TurboMap<number, Point>;
-    private readonly previousPositions: TurboMap<number, Point>;
-    private positions: TurboMap<number, Point>;
-
-    private lastTargetOrigin: Node;
-
-    //Single timer instance --> easily cancel it and set it again
-    private readonly timerMap: TurboMap<string, NodeJS.Timeout>;
-
-    //Threshold differentiating a click from a drag
-    private readonly moveThreshold: number;
-    //Duration to reach long press
-    private readonly longPressDuration: number;
-
-    public authorizeEventScaling: boolean | (() => boolean);
-    public scaleEventPosition: (position: Point) => Point;
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    public readonly onToolChange: Delegate<(oldTool: ToolType, newTool: ToolType, type: ClickMode) => void> = new Delegate();
 
     public constructor(properties: TurboEventManagerProperties = {}) {
-        this.onInputDeviceChange = new Delegate<(device: InputDevice) => void>();
-        this.authorizeEventScaling = properties.authorizeEventScaling;
-        this.scaleEventPosition = properties.scaleEventPosition;
+        super();
+        this.mvc.generate({
+            modelConstructor: TurboEventManagerModel,
+            controllerConstructors: [
+                TurboEventManagerKeyController,
+                TurboEventManagerWheelController,
+                TurboEventManagerPointerController,
+                TurboEventManagerDispatchController
+            ]
+        });
+        this.model.authorizeEventScaling = properties.authorizeEventScaling;
+        this.model.scaleEventPosition = properties.scaleEventPosition;
 
-        this.defaultState = {
-            enabled: properties.enabled ?? true,
-            preventDefaultWheel: properties.preventDefaultWheel ?? true,
-            preventDefaultMouse: properties.preventDefaultMouse ?? true,
-            preventDefaultTouch: properties.preventDefaultTouch ?? true,
-        };
-        this.resetLockState();
+         this.model.state.enabled = properties.enabled ?? true;
+         this.model.state.preventDefaultMouse = properties.preventDefaultMouse ?? true;
+         this.model.state.preventDefaultTouch = properties.preventDefaultTouch ?? true;
+         this.model.state.preventDefaultWheel = properties.preventDefaultWheel ?? true;
+         this.unlock();
 
-        this.moveThreshold = properties.moveThreshold || 10;
-        this.longPressDuration = properties.longPressDuration || 500;
-
-        //Init positions
-        this.origins = new TurboMap<number, Point>();
-        this.previousPositions = new TurboMap<number, Point>();
-
-        this.timerMap = new TurboMap<TurboEventNameEntry, NodeJS.Timeout>();
+        this.model.moveThreshold = properties.moveThreshold || 10;
+        this.model.longPressDuration = properties.longPressDuration || 500;
 
         if (!properties.disableKeyEvents) this.keyEventsEnabled = true;
         if (!properties.disableWheelEvents) this.wheelEventsEnabled = true;
@@ -99,452 +78,384 @@ class TurboEventManager {
         if (!properties.disableClickEvents) this.clickEventEnabled = true;
         if (!properties.disableMoveEvent) this.moveEventsEnabled = true;
 
-        setupTurboEventManagerBypassing(this);
+        TurboEventManager.managers.push(this);
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set keyEventsEnabled(value: boolean) {
-        if (value) {
-            $(document).on("keydown", this.keyDown);
-            $(document).on("keyup", this.keyUp);
-        } else {
-            $(document).removeListener("keydown", this.keyDown);
-            $(document).removeListener("keyup", this.keyUp);
-        }
-        this.applyEventNames(value ? TurboKeyEventName : DefaultKeyEventName);
+    protected get keyController(): TurboEventManagerKeyController {
+        return this.mvc.getController("key") as TurboEventManagerKeyController;
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set wheelEventsEnabled(value: boolean) {
-        if (value) $(document.body).on("wheel", this.wheel, document, {passive: false, propagate: true});
-        else $(document).removeListener("wheel", this.wheel);
-        this.applyEventNames(value ? TurboWheelEventName : DefaultWheelEventName);
+    protected get wheelController(): TurboEventManagerWheelController {
+        return this.mvc.getController("wheel") as TurboEventManagerWheelController;
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set moveEventsEnabled(value: boolean) {
-        this.applyEventNames(value ? TurboMoveEventName : DefaultMoveEventName);
+    protected get pointerController(): TurboEventManagerPointerController {
+        return this.mvc.getController("pointer") as TurboEventManagerPointerController;
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set mouseEventsEnabled(value: boolean) {
-        if (value) {
-            $(document).on("mousedown", this.pointerDown, document, {propagate: true});
-            $(document).on("mousemove", this.pointerMove, document, {propagate: true});
-            $(document).on("mouseup", this.pointerUp, document, {propagate: true});
-            $(document).on("mouseleave", this.pointerLeave, document, {propagate: true});
-        } else {
-            $(document).removeListener("mousedown", this.pointerDown);
-            $(document).removeListener("mousemove", this.pointerMove);
-            $(document).removeListener("mouseup", this.pointerUp);
-            $(document).removeListener("mouseleave", this.pointerLeave);
-        }
+    protected get dispatchController(): TurboEventManagerDispatchController {
+        return this.mvc.getController("dispatch") as TurboEventManagerDispatchController;
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set touchEventsEnabled(value: boolean) {
-        if (value) {
-            $(document).on("touchstart", this.pointerDown, document, {passive: false, propagate: true});
-            $(document).on("touchmove", this.pointerMove, document, {passive: false, propagate: true});
-            $(document).on("touchend", this.pointerUp, document, {passive: false, propagate: true});
-            $(document).on("touchcancel", this.pointerUp, document, {passive: false, propagate: true});
-        } else {
-            $(document).removeListener("touchstart", this.pointerDown);
-            $(document).removeListener("touchmove", this.pointerMove);
-            $(document).removeListener("touchend", this.pointerUp);
-            $(document).removeListener("touchcancel", this.pointerUp);
-        }
-    }
-
-    @auto({cancelIfUnchanged: true})
-    public set clickEventEnabled(value: boolean) {
-        this.applyEventNames(value ? TurboClickEventName : DefaultClickEventName);
-    }
-
-    @auto({cancelIfUnchanged: true})
-    public set dragEventEnabled(value: boolean) {
-        this.applyEventNames(value ? TurboDragEventName : DefaultDragEventName);
-    }
+    /*
+     *
+     *
+     * Getters and setters
+     *
+     *
+     *
+     */
 
     /**
      * @description The currently identified input device. It is not 100% accurate, especially when differentiating
      * between mouse and trackpad.
      */
     public get inputDevice() {
-        return this._inputDevice;
+        return this.model.inputDevice;
     }
 
-    private set inputDevice(value: InputDevice) {
-        if (this.inputDevice == value) return;
-        if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true;
-        this._inputDevice = value;
-        this.onInputDeviceChange.fire(value);
+    //Delegate fired when the input device changes
+    public get onInputDeviceChange(): Delegate<(device: InputDevice) => void> {
+        return this.model.onInputDeviceChange;
     }
+
+    public get authorizeEventScaling(): boolean | (() => boolean) {
+        return this.model.authorizeEventScaling;
+    }
+
+    public set authorizeEventScaling(value: boolean | (() => boolean)) {
+        this.model.authorizeEventScaling = value;
+    }
+
+    public get scaleEventPosition(): (position: Point) => Point {
+        return this.model.scaleEventPosition;
+    }
+
+    public set scaleEventPosition(value: (position: Point) => Point) {
+        this.model.scaleEventPosition = value;
+    }
+
+    public get moveThreshold(): number {
+        return this.model.moveThreshold;
+    }
+
+    public set moveThreshold(value: number) {
+        this.model.moveThreshold = value;
+    }
+
+    public get longPressDuration(): number {
+        return this.model.longPressDuration;
+    }
+
+    public set longPressDuration(value: number) {
+        this.model.longPressDuration = value;
+    }
+
+    /*
+     *
+     *
+     * Enabling events setters
+     *
+     *
+     *
+     */
+
+    @auto({cancelIfUnchanged: true})
+    public set keyEventsEnabled(value: boolean) {
+        const doc = $(document);
+        if (value) {
+            doc.on("keydown", this.keyController.keyDown);
+            doc.on("keyup", this.keyController.keyUp);
+        } else {
+            doc.removeListener("keydown", this.keyController.keyDown);
+            doc.removeListener("keyup", this.keyController.keyUp);
+        }
+        this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set wheelEventsEnabled(value: boolean) {
+        if (value) $(document.body).on("wheel", this.wheelController.wheel, document, {
+            passive: false,
+            propagate: true
+        });
+        else $(document).removeListener("wheel", this.wheelController.wheel);
+        this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set moveEventsEnabled(value: boolean) {
+        this.applyAndHookEvents(TurboMoveEventName, DefaultMoveEventName, value);
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set mouseEventsEnabled(value: boolean) {
+        const doc = $(document);
+        if (value) {
+            doc.on("mousedown", this.pointerController.pointerDown, document, {propagate: true});
+            doc.on("mousemove", this.pointerController.pointerMove, document, {propagate: true});
+            doc.on("mouseup", this.pointerController.pointerUp, document, {propagate: true});
+            doc.on("mouseleave", this.pointerController.pointerLeave, document, {propagate: true});
+        } else {
+            doc.removeListener("mousedown", this.pointerController.pointerDown);
+            doc.removeListener("mousemove", this.pointerController.pointerMove);
+            doc.removeListener("mouseup", this.pointerController.pointerUp);
+            doc.removeListener("mouseleave", this.pointerController.pointerLeave);
+        }
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set touchEventsEnabled(value: boolean) {
+        const doc = $(document);
+        if (value) {
+            doc.on("touchstart", this.pointerController.pointerDown, document, {passive: false, propagate: true});
+            doc.on("touchmove", this.pointerController.pointerMove, document, {passive: false, propagate: true});
+            doc.on("touchend", this.pointerController.pointerUp, document, {passive: false, propagate: true});
+            doc.on("touchcancel", this.pointerController.pointerUp, document, {passive: false, propagate: true});
+        } else {
+            doc.removeListener("touchstart", this.pointerController.pointerDown);
+            doc.removeListener("touchmove", this.pointerController.pointerMove);
+            doc.removeListener("touchend", this.pointerController.pointerUp);
+            doc.removeListener("touchcancel", this.pointerController.pointerUp);
+        }
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set clickEventEnabled(value: boolean) {
+        this.applyAndHookEvents(TurboClickEventName, DefaultClickEventName, value);
+    }
+
+    @auto({cancelIfUnchanged: true})
+    public set dragEventEnabled(value: boolean) {
+        this.applyAndHookEvents(TurboDragEventName, DefaultDragEventName, value);
+    }
+
+    /*
+     *
+     *
+     * State and lock management
+     *
+     *
+     *
+     */
 
     /**
      * @description Sets the lock state for the event manager.
      * @param origin - The element that initiated the lock state.
      * @param value - The state properties to set.
      */
-    public setLockState(origin: Element, value: TurboEventManagerStateProperties) {
-        this.lockState.lockOrigin = origin;
-        for (const key in value) this.lockState[key] = value[key];
+    public lock(origin: Element, value: TurboEventManagerStateProperties) {
+        this.unlock();
+        this.model.lockState.lockOrigin = origin;
+        for (const key in value) this.model.lockState[key] = value[key];
     }
 
     /**
      * @description Resets the lock state to the default values.
      */
-    public resetLockState() {
-        this.lockState.enabled = this.defaultState.enabled;
-        this.lockState.preventDefaultWheel = this.defaultState.preventDefaultWheel;
-        this.lockState.preventDefaultMouse = this.defaultState.preventDefaultMouse;
-        this.lockState.preventDefaultTouch = this.defaultState.preventDefaultTouch;
-        this.lockState.lockOrigin = document.body;
+    public unlock() {
+        const s = this.model.state;
+        const l = this.model.lockState;
+
+        l.enabled = s.enabled;
+        l.preventDefaultMouse = s.preventDefaultMouse;
+        l.preventDefaultTouch = s.preventDefaultTouch;
+        l.preventDefaultWheel = s.preventDefaultWheel;
+        l.lockOrigin = document.body;
     }
 
     public get enabled() {
-        return this.defaultState.enabled && this.lockState.enabled;
+        return this.model.state.enabled && this.model.lockState.enabled;
+    }
+
+    public set enabled(value: boolean) {
+        this.model.state.enabled = value;
     }
 
     public get preventDefaultWheel() {
-        return this.defaultState.preventDefaultWheel && this.lockState.preventDefaultWheel;
+        return this.model.state.preventDefaultWheel && this.model.lockState.preventDefaultWheel;
+    }
+
+    public set preventDefaultWheel(value: boolean) {
+        this.model.state.preventDefaultWheel = value;
     }
 
     public get preventDefaultMouse() {
-        return this.defaultState.preventDefaultMouse && this.lockState.preventDefaultMouse;
+        return this.model.state.preventDefaultMouse && this.model.lockState.preventDefaultMouse;
+    }
+
+    public set preventDefaultMouse(value: boolean) {
+        this.model.state.preventDefaultMouse = value;
     }
 
     public get preventDefaultTouch() {
-        return this.defaultState.preventDefaultTouch && this.lockState.preventDefaultTouch;
+        return this.model.state.preventDefaultTouch && this.model.lockState.preventDefaultTouch;
     }
 
-    //Key Events
-
-    private keyDown = (e: KeyboardEvent) => {
-        if (!this.enabled) return;
-        //Return if key already pressed
-        if (this.currentKeys.includes(e.key)) return;
-        //Add key to currentKeys
-        this.currentKeys.push(e.key);
-        //Fire a keyPressed event (only once)
-        this.dispatchEvent(document, TurboKeyEvent, {eventName: TurboKeyEventName.keyPressed, keyPressed: e.key});
+    public set preventDefaultTouch(value: boolean) {
+        this.model.state.preventDefaultTouch = value;
     }
 
-    private keyUp = (e: KeyboardEvent) => {
-        if (!this.enabled) return;
-        //Return if key not pressed
-        if (!this.currentKeys.includes(e.key)) return;
-        //Remove key from currentKeys
-        this.currentKeys.splice(this.currentKeys.indexOf(e.key), 1);
-        //Fire a keyReleased event
-        this.dispatchEvent(document, TurboKeyEvent, {eventName: TurboKeyEventName.keyReleased, keyReleased: e.key});
-    }
-
-    //Wheel Event
-
-    private wheel = (e: WheelEvent) => {
-        if (!this.enabled) return;
-        //Prevent default scroll behavior
-        if (this.preventDefaultWheel) e.preventDefault();
-
-        //Most likely trackpad
-        if (Math.abs(e.deltaY) <= 40 || e.deltaX != 0) this.inputDevice = InputDevice.trackpad;
-        //Set input device to mouse if it wasn't trackpad recently
-        if (!this.wasRecentlyTrackpad) this.inputDevice = InputDevice.mouse;
-
-        //Reset trackpad timer
-        this.clearTimer("recentlyTrackpadTimer");
-        //Set timer to clear recently trackpad boolean after a delay
-        this.setTimer("recentlyTrackpadTimer", () => {
-            if (this.inputDevice == InputDevice.trackpad) this.wasRecentlyTrackpad = false;
-        }, 800);
-
-        //Get name of event according to input type
-        let eventName: TurboEventNameEntry;
-        //Trackpad pinching (for some reason Ctrl key is marked as pressed in the WheelEvent)
-        if (this.inputDevice == InputDevice.trackpad && e.ctrlKey) eventName = TurboEventName.trackpadPinch;
-        //Trackpad zooming
-        else if (this.inputDevice == InputDevice.trackpad) eventName = TurboEventName.trackpadScroll;
-        //Mouse scrolling
-        else eventName = TurboEventName.mouseWheel;
-
-        this.dispatchEvent(document, TurboWheelEvent, {delta: new Point(e.deltaX, e.deltaY), eventName: eventName});
-    };
-
-    //Mouse and Touch Events
-
-    private pointerDown = (e: MouseEvent | TouchEvent) => {
-        if (!e.composedPath().includes(this.lockState.lockOrigin)) {
-            (document.activeElement as HTMLElement)?.blur();
-            this.resetLockState();
-        }
-        if (!this.enabled) return;
-
-        //Check if it's touch
-        const isTouch = e instanceof TouchEvent;
-
-        //Prevent default actions (especially useful for touch events on iOS and iPadOS)
-        if (this.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.preventDefaultTouch && isTouch) e.preventDefault();
-
-        //Update the input device
-        if (isTouch) this.inputDevice = InputDevice.touch;
-        else if (this.inputDevice == InputDevice.unknown || this.inputDevice == InputDevice.touch)
-            this.inputDevice = InputDevice.mouse;
-
-        //Touch start initialization
-        if (isTouch) {
-            //Loop on all changed touch points (new ones) and initialize them
-            Array.from((e as TouchEvent).changedTouches).forEach(touchPoint => {
-                const position = new Point(touchPoint);
-                this.origins.set(touchPoint.identifier, position);
-                this.previousPositions.set(touchPoint.identifier, position);
-            });
-            //Update click mode according to number of current touch points
-            this.setClickMode((e as TouchEvent).touches.length, true);
-        }
-
-        //Mouse down initialization
-        else {
-            //Initialize origin and previous position
-            const position = new Point(e as MouseEvent);
-            this.origins.set(0, position);
-            this.previousPositions.set(0, position);
-            //Update click mode
-            this.setClickMode((e as MouseEvent).button);
-        }
-
-        //Return if click events are disabled
-        if (!this.clickEventEnabled) return;
-
-        //Fire click start
-        this.fireClick(this.origins.first, TurboEventName.clickStart);
-        this.currentAction = ActionMode.click;
-
-        //Set long press timer
-        this.setTimer(TurboEventName.longPress, () => {
-            if (this.currentAction != ActionMode.click) return;
-            //Turn a click into long press
-            this.currentAction = ActionMode.longPress;
-            //Fire long press
-            this.fireClick(this.origins.first, TurboEventName.longPress);
-        }, this.longPressDuration);
-    };
-
-    private pointerMove = (e: MouseEvent | TouchEvent) => {
-        if (!this.enabled) return;
-        if (!this.moveEventsEnabled && !this.dragEventEnabled) return;
-
-        //Check if is touch
-        const isTouch = e instanceof TouchEvent;
-
-        //Prevent default actions
-        if (this.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.preventDefaultTouch && isTouch) e.preventDefault();
-
-        //Initialize a new positions map
-        this.positions = new TurboMap<number, Point>();
-
-        //Get current position(s) for touch (or mouse)
-        if (isTouch) {
-            Array.from(e.touches).forEach(touchPoint =>
-                this.positions.set(touchPoint.identifier, new Point(touchPoint)));
-        } else {
-            this.positions.set(0, new Point(e.clientX, e.clientY));
-        }
-
-        //Clear cached target origin if not dragging
-        if (this.currentAction != ActionMode.drag) this.lastTargetOrigin = null;
-
-        //Fire move event if enabled
-        if (this.moveEventsEnabled) this.fireDrag(this.positions, TurboEventName.move);
-
-        //If drag events are enabled and user is interacting
-        if (this.currentAction != ActionMode.none && this.dragEventEnabled) {
-            //Initialize drag
-            if (this.currentAction != ActionMode.drag) {
-                //Loop on saved origins points and check if any point's distance from its origin is greater than the threshold
-                if (!Array.from(this.origins.entries()).some(([key, origin]) => {
-                    const position = this.positions.get(key);
-                    return position && Point.dist(position, origin) > this.moveThreshold;
-                })) return;
-                //If didn't return --> fire drag start and set action to drag
-                clearCache(this);
-                this.fireDrag(this.origins, TurboEventName.dragStart);
-                this.currentAction = ActionMode.drag;
-            }
-
-            //Fire drag and update previous points
-            this.fireDrag(this.positions);
-        }
-
-        //Update previous positions
-        this.positions.forEach((position, key) => this.previousPositions.set(key, position));
-    };
-
-    private pointerUp = (e: MouseEvent | TouchEvent) => {
-        if (!this.enabled) return;
-
-        //Check if is touch
-        const isTouch = e instanceof TouchEvent;
-
-        //Prevent default actions
-        if (this.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.preventDefaultTouch && isTouch) e.preventDefault();
-
-        //Clear any timer set
-        this.clearTimer(TurboEventName.longPress);
-
-        //Initialize a new positions map
-        this.positions = new TurboMap<number, Point>();
-
-        //Get current position(s) for touch (or mouse)
-        if (isTouch) {
-            Array.from((e as TouchEvent).changedTouches).forEach(touchPoint => {
-                this.positions.set(touchPoint.identifier, new Point(touchPoint));
-            });
-        } else {
-            this.positions.set(0, new Point(e as MouseEvent));
-        }
-
-        //If action was drag --> fire drag end
-        if (this.currentAction == ActionMode.drag && this.dragEventEnabled)
-            this.fireDrag(this.positions, TurboEventName.dragEnd);
-
-        //If click events are enabled
-        if (this.clickEventEnabled) {
-            //If action is click --> fire click
-            if (this.currentAction == ActionMode.click) {
-                this.fireClick(this.positions.first, TurboEventName.click);
-            }
-
-            //Fire click end
-            this.fireClick(this.origins.first, TurboEventName.clickEnd);
-        }
-
-        //Clear saved positions (or removed lifted touch points)
-        if (isTouch) {
-            Array.from((e as TouchEvent).changedTouches).forEach(touchPoint => {
-                this.origins.delete(touchPoint.identifier);
-                this.previousPositions.delete(touchPoint.identifier);
-            });
-        } else {
-            this.origins.clear();
-            this.previousPositions.clear();
-        }
-
-        //Reset click mode and action
-        this.currentAction = ActionMode.none;
-        this.currentClick = ClickMode.none;
-    };
-
-    private pointerLeave = () => {
-        if (!this.enabled) return;
-        if (this.currentAction == ActionMode.none) return;
-        //Clear any timer set
-        this.clearTimer(TurboEventName.longPress);
-
-        //If not drag --> fire click end
-        if (this.currentAction != ActionMode.drag) {
-            this.fireClick(this.origins.first, TurboEventName.clickEnd);
-            this.currentAction = ActionMode.none;
-        }
-    }
-
-    private getFireOrigin(positions?: TurboMap<number, Point>, reload: boolean = false): Node {
-        if (!this.lastTargetOrigin || reload) {
-            const origin = this.origins.first ? this.origins.first : positions.first;
-            this.lastTargetOrigin = document.elementFromPoint(origin.x, origin.y) as Node;
-        }
-        return this.lastTargetOrigin;
-    }
-
-    //Event triggering
+    /*
+     *
+     *
+     * Tool management
+     *
+     *
+     *
+     */
 
     /**
-     * @description Fires a custom Turbo click event at the click target with the click position
-     * @param p
-     * @param eventName
-     * @private
+     * @description All attached tools in an array
      */
-    private fireClick(p: Point, eventName: TurboEventNameEntry = TurboEventName.click) {
-        if (!p) return;
-        const target = document.elementFromPoint(p.x, p.y) as Element || document;
-        this.dispatchEvent(target, TurboEvent, {position: p, eventName: eventName});
+    public get toolsArray(): Element[] {
+        const array: Element[] = [];
+        for (const tools of this.model.tools.values()) array.push(...tools.toArray());
+        return array;
     }
 
     /**
-     * @description Fires a custom Turbo drag event at the target with the origin of the drag, the last drag position, and the current position
-     * @param positions
-     * @param eventName
-     * @private
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
      */
-    private fireDrag(positions: TurboMap<number, Point>, eventName: TurboEventNameEntry = TurboEventName.drag) {
-        if (!positions) return;
-        this.dispatchEvent(this.getFireOrigin(positions), TurboDragEvent, {
-            positions: positions,
-            previousPositions: this.previousPositions,
-            origins: this.origins,
-            eventName: eventName
+    public getToolsByName(name: ToolType): Element[] {
+        return this.model.tools.get(name)?.toArray() || [];
+    }
+
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     * @param predicate
+     */
+    public getToolByName(name: ToolType, predicate?: (tool: Element) => boolean): Element {
+        const tools = this.getToolsByName(name);
+        return predicate ? tools?.find(predicate) : tools?.[0];
+    }
+
+    /**
+     * @description Returns the tools associated with the given key
+     * @param key
+     */
+    public getToolsByKey(key: string): Element[] {
+        const toolName = this.model.mappedKeysToTool.get(key) as ToolType;
+        if (!toolName) return [];
+        return this.getToolsByName(toolName);
+    }
+
+    /**
+     * @description Returns the tool associated with the given key
+     * @param key
+     * @param predicate
+     */
+    public getToolByKey(key: string, predicate?: (tool: Element) => boolean): Element {
+        const tools = this.getToolsByKey(key);
+        return predicate ? tools?.find(predicate) : tools?.[0];
+    }
+
+    /**
+     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
+     * @param toolName
+     * @param tool
+     * @param key
+     */
+    public addTool(toolName: ToolType, tool: Element, key?: string) {
+        if (!this.model.tools.has(toolName)) this.model.tools.set(toolName, new TurboWeakSet());
+        const tools = this.model.tools.get(toolName);
+        if (!tools.has(tool)) tools.add(tool);
+        if (key) this.model.mappedKeysToTool.set(key, toolName);
+    }
+
+    /**
+     * @description Returns the name of the tool currently held by the provided click mode
+     * @param mode
+     */
+    public getToolName(mode: ClickMode = this.model.currentClick): ToolType {
+        return this.model.currentTools.get(mode) as ToolType;
+    }
+
+    /**
+     * @description Returns the tool currently held by the provided click mode
+     * @param mode
+     */
+    public getTool(mode: ClickMode = this.model.currentClick): Element {
+        return this.getToolByName(this.getToolName(mode));
+    }
+
+    /**
+     * @description Sets the provided tool as a current tool associated with the provided type
+     * @param toolName
+     * @param type
+     * @param options
+     */
+    public setTool(toolName: ToolType, type: ClickMode, options: SetToolOptions = {}) {
+        //Initialize undefined options
+        if (options.select == undefined) options.select = true;
+        if (options.activate == undefined) options.activate = true;
+        if (options.setAsNoAction == undefined) options.setAsNoAction = type == ClickMode.left;
+
+        //Get previous tool
+        const previousToolName = this.model.currentTools.get(type) as ToolType;
+        if (previousToolName) {
+            //Return if it's the same
+            if (previousToolName === toolName) return;
+
+            //Deselect and deactivate previous tool
+            (this.getToolsByName(previousToolName) || []).forEach(tool => {
+                if (options.select) this.model.utils.selectTool(tool, false);
+                if (options.activate) this.model.utils.activateTool(tool, false);
+            });
+        }
+
+        //Select new tool (and maybe set it as the tool for no click mode)
+        this.model.currentTools.set(type, toolName);
+        if (options.setAsNoAction) this.model.currentTools.set(ClickMode.none, toolName);
+
+        //Select and activate the tool
+        (this.getToolsByName(toolName) || []).forEach(tool => {
+            if (options.select) this.model.utils.selectTool(tool, true);
+            if (options.activate) this.model.utils.activateTool(tool, true);
         });
+
+        //Fire tool changed
+        this.onToolChange.fire(previousToolName, toolName, type);
     }
 
-    protected dispatchEvent<
-        EventType extends TurboEvent = TurboEvent,
-        PropertiesType extends TurboRawEventProperties = TurboEventProperties
-    >(target: Node, eventType: new (properties: PropertiesType) => EventType, properties: Partial<PropertiesType>) {
-        properties.clickMode = this.currentClick;
-        properties.keys = this.currentKeys;
-        properties.eventManager = this;
-        properties.authorizeScaling = this.authorizeEventScaling;
-        properties.scalePosition = this.scaleEventPosition;
-        target.dispatchEvent(new eventType(properties as any));
+    /**
+     * @description Sets tool associated with the provided key as the current tool for the key mode
+     * @param key
+     */
+    public setToolByKey(key: string): boolean {
+        const toolName = this.model.mappedKeysToTool.get(key) as ToolType;
+        if (!toolName) return false;
+        this.setTool(toolName, ClickMode.key, {select: false});
+        return true;
     }
 
-    //Timer
+    /*
+     *
+     *
+     * Utils
+     *
+     *
+     */
 
-    //Sets a timer function associated with a certain event name, with its duration
-    private setTimer(timerName: string, callback: () => void, duration: number) {
-        this.clearTimer(timerName);
-        this.timerMap.set(timerName, setTimeout(() => {
-            callback();
-            this.clearTimer(timerName);
-        }, duration));
-    }
-
-    //Clears timer associated with the provided event name
-    private clearTimer(timerName: string) {
-        const timer = this.timerMap.get(timerName);
-        if (!timer) return;
-        clearTimeout(timer);
-        this.timerMap.delete(timerName);
-    }
-
-    //Click mode
-
-    private setClickMode(button: number, isTouch: boolean = false): ClickMode {
-        if (isTouch) button--;
-        switch (button) {
-            case -1:
-                this.currentClick = ClickMode.none;
-                return;
-            case 0:
-                this.currentClick = ClickMode.left;
-                return;
-            case 1:
-                this.currentClick = ClickMode.middle;
-                return;
-            case 2:
-                this.currentClick = ClickMode.right;
-                return;
-            default:
-                this.currentClick = ClickMode.other;
-                return;
+    protected applyAndHookEvents(turboEventNames: Record<string, string>,
+                                 defaultEventNames: Record<string, string>, applyTurboEvents: boolean) {
+        this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
+        for (const name in turboEventNames) {
+            if (applyTurboEvents) this.dispatchController.hookToolHandling(name as TurboEventNameEntry);
+            else this.dispatchController.unhookToolHandling(name as TurboEventNameEntry);
         }
     }
 
-    private applyEventNames(eventNames: Record<string, string>) {
-        for (const eventName in eventNames) DefaultEventName[eventName] = eventNames[eventName];
+    public destroy() {
+        this.keyEventsEnabled = false;
+        this.wheelEventsEnabled = false;
+        this.mouseEventsEnabled = false;
+        this.touchEventsEnabled = false;
+        this.dragEventEnabled = false;
+        this.clickEventEnabled = false;
+        this.onToolChange.clear();
     }
 }
 

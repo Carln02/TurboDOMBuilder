@@ -5,7 +5,6 @@ import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
 import {TurboEventNameEntry} from "../eventNaming";
 import {cache} from "../../decorators/cache/cache";
 import {TurboEventManager} from "../turboEventManager/turboEventManager";
-import {TurboEventToolManager} from "../turboEventManager/turboEventToolManager";
 
 /**
  * Generic turbo event
@@ -71,7 +70,7 @@ class TurboEvent extends Event {
      * @description The tool (if any) associated with this event.
      */
     public get tool(): Element {
-        if (!this.toolName || !(this.eventManager instanceof TurboEventToolManager)) return null;
+        if (!this.toolName || !(this.eventManager instanceof TurboEventManager)) return null;
         return this.eventManager.getToolByName(this.toolName);
     }
 

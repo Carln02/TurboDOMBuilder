@@ -42,8 +42,8 @@ import {setupTurboEventManagerBypassing} from "./eventHandling/turboEventManager
 export {setupTurboEventManagerBypassing};
 import {} from "./eventHandling/turboEventManager/managerBypassing/managerBypassing.types";
 export {};
-import {TurboEventManager} from "./eventHandling/turboEventManager/turboEventManager";
-export {TurboEventManager};
+import {EeeturboEventManager} from "./eventHandling/turboEventManager/eeeturboEventManager";
+export {EeeturboEventManager};
 import {TurboEventManagerProperties,DisabledTurboEventTypes,TurboEventManagerStateProperties,TurboEventManagerLockStateProperties,ActionMode,ClickMode,InputDevice} from "./eventHandling/turboEventManager/turboEventManager.types";
 export {TurboEventManagerProperties,DisabledTurboEventTypes,TurboEventManagerStateProperties,TurboEventManagerLockStateProperties,ActionMode,ClickMode,InputDevice};
 import {ToolModel} from "./toolManagement/tool/tool.model";
