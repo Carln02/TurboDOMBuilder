@@ -1,11 +1,13 @@
 import "./listenerManipulation.types";
-import {ListenerEntry, ListenerOptions} from "./event.types";
+import {BasicInputEvents, ListenerEntry, ListenerOptions, NonPassiveEvents, PreventDefaultOptions} from "./event.types";
 import {$, TurboSelector} from "../turboFunctions";
 import {Turbo} from "../turboFunctions.types";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
-import {callOnce} from "../../decorators/callOnce";
 import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
+import {EventFunctionsUtils} from "./event.utils";
+
+const utils = new EventFunctionsUtils();
 
 function setupEventFunctions() {
     /**
@@ -13,151 +15,281 @@ function setupEventFunctions() {
      * listeners.
      */
     Object.defineProperty(TurboSelector.prototype, "boundListeners", {
-        value: new Set<ListenerEntry>(),
+        value: new Map<string, Set<ListenerEntry>>(),
         writable: false,
         configurable: true,
         enumerable: true
     });
 
+    /**
+     * @description If you want the element to bypass the event manager and allow native events to seep through,
+     * you can set this field to a predicate that defines when to bypass the manager.
+     * @param {TurboEvent} e The event.
+     */
     Object.defineProperty(TurboSelector.prototype, "bypassManagerOn", {
-        get: function() {
-            return this.getValue("bypassCallback");
+        get: function () {
+            return utils.data(this)["bypassCallback"];
         },
         set: function (value: (e: TurboEvent) => boolean | TurboEventManagerStateProperties) {
-            let bypassCallback = this.getValue("bypassCallback");
+            let bypassCallback = utils.data(this)["bypassCallback"];
             const setupListeners = !bypassCallback;
-            this.setValue("bypassCallback", value);
+            utils.data(this)["bypassCallback"] = value;
             bypassCallback = value;
 
             if (setupListeners) {
                 this.addEventListener("mousedown", (e: TurboEvent) => TurboEventManager.allManagers
-                    .forEach(manager => bypassManager(this, manager, bypassCallback(e))));
+                    .forEach(manager => utils.bypassManager(this, manager, bypassCallback(e))));
                 this.addEventListener("touchstart", (e: TurboEvent) => TurboEventManager.allManagers
-                    .forEach(manager => bypassManager(this, manager, bypassCallback(e))));
+                    .forEach(manager => utils.bypassManager(this, manager, bypassCallback(e))));
             }
         },
         configurable: true,
         enumerable: true
     });
 
-    function bypassManager(element: Element, eventManager: TurboEventManager,
-                           bypassResults:  boolean | TurboEventManagerStateProperties) {
-        if (typeof bypassResults == "boolean") eventManager.lock(element, {
-            enabled: bypassResults,
-            preventDefaultWheel: bypassResults,
-            preventDefaultMouse: bypassResults,
-            preventDefaultTouch: bypassResults
+    /**
+     * @description Adds an event listener to the element.
+     * @param {string} type - The type of the event.
+     * @param toolName - The name of the tool. Set to null or undefined to check for listeners not bound to a tool.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerOptions} [options] - An options object that specifies characteristics
+     * about the event listener.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    TurboSelector.prototype.onTool = function _onTool<Type extends Node>(
+        this: Turbo<Type>, type: string, toolName: string, listener: ((e: Event, el: Turbo<Type>) => void),
+        options?: ListenerOptions, manager: TurboEventManager = TurboEventManager.instance
+    ): Turbo<Type> {
+        if (this.hasToolListener(type, toolName, listener)) return this;
+
+        manager.setupCustomDispatcher(type);
+        utils.getBoundListenersSet(this, type).add({
+            target: this,
+            type: type,
+            toolName: toolName,
+            listener: listener,
+            options: options,
+            manager: manager
         });
 
-        else eventManager.lock(element, {
-            enabled: bypassResults.enabled || false,
-            preventDefaultWheel: bypassResults.preventDefaultWheel || false,
-            preventDefaultMouse: bypassResults.preventDefaultMouse || false,
-            preventDefaultTouch: bypassResults.preventDefaultTouch || false,
-        });
-    }
+        return this;
+    };
 
     /**
      * @description Adds an event listener to the element.
      * @param {string} type - The type of the event.
-     * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener - The function
-     * or object that receives a notification.
-     * @param {Node} [boundTo=this] - The element or node to which the listener is bound. Defaults to the element itself.
-     * @param {boolean | AddEventListenerOptions} [options] - An options object that specifies characteristics about
-     * the event listener.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerOptions} [options] - An options object that specifies characteristics
+     * about the event listener.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.on = function _on<Type extends Node>
-    (this: Turbo<Type>, type: string, listener: EventListenerOrEventListenerObject | ((e: Event, el: Turbo<Type>) => void),
-     boundTo: Node = this, options?: boolean | ListenerOptions): Turbo<Type> {
-        if (this.hasListener(type, listener, options)) return this;
-
-        const wrappedListener = ((e: Event) => {
-            if (
-                !(this.element instanceof Document && this.element === document) &&
-                !(this.element instanceof HTMLElement && this.element === document.body) &&
-                !(typeof options === "object" && options.propagate)
-            ) e.stopPropagation();
-            if (typeof listener === "object" && listener.handleEvent) listener.handleEvent(e);
-            if (typeof listener === "function") listener(e, this);
-        }) as EventListenerOrEventListenerObject;
-
-        if (boundTo && typeof options === "object" && !options?.temporary) {
-            const boundSelector = boundTo instanceof TurboSelector ? boundTo : $(boundTo);
-            boundSelector.boundListeners.add({
-                target: this,
-                type: type,
-                originalListener: listener,
-                listener: wrappedListener,
-                options: options
-            });
-        }
-
-        this.addEventListener(type, wrappedListener, options);
-        return this;
+    TurboSelector.prototype.on = function _on<Type extends Node>(
+        this: Turbo<Type>, type: string, listener: ((e: Event, el: Turbo<Type>) => void),
+        options?: ListenerOptions, manager: TurboEventManager = TurboEventManager.instance
+    ): Turbo<Type> {
+        return this.onTool(type, undefined, listener, options, manager);
     };
 
-    TurboSelector.prototype.hasListener = function _hasListener
-    (this: Turbo, type: string, listener: EventListenerOrEventListenerObject |
-        ((e: Event, el: Turbo) => void), options?: boolean | EventListenerOptions) {
-        for (let entry of this.boundListeners) {
-            if (entry.type === type && entry.originalListener === listener && entry.options === options) return true;
+    TurboSelector.prototype.executeAction = function _executeAction(
+        this: TurboSelector, type: string, toolName: string, event: Event,
+        options?: ListenerOptions, manager?: TurboEventManager): boolean {
+        let passed: boolean = false;
+
+        const boundListeners = utils.getBoundListenersSet(this, type);
+
+        const boundListenersWithTool =
+            utils.getBoundListeners(this, type, toolName, options, manager);
+        if (boundListenersWithTool.length > 0) {
+            passed = true;
+            boundListenersWithTool.forEach(entry => {
+                entry.listener(event, this);
+                if (entry.options?.once) boundListeners.delete(entry);
+                if (entry.options?.propagate) passed = false;
+            });
+        } else {
+            const tool = manager.getTool();
+            if (tool && $(tool).applyTool(this, type, event, manager)) {
+                passed = true;
+            } else {
+                const boundListenersWithoutTool =
+                    utils.getBoundListeners(this, type, undefined, options, manager);
+                if (boundListenersWithoutTool.length > 0) {
+                    passed = true;
+                    boundListenersWithoutTool.forEach(entry => {
+                        entry.listener(event, this);
+                        if (entry.options?.once) boundListeners.delete(entry);
+                        if (entry.options?.propagate) passed = false;
+                    });
+                }
+            }
         }
-        return false;
+
+        return passed;
+    }
+    /**
+     * @description Checks if the given event listener is bound to the element (in its boundListeners list).
+     * @param {string} type - The type of the event. Set to null or undefined to get all event types.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
+     * @returns {boolean} - Whether the element has the given listener.
+     */
+    TurboSelector.prototype.hasListener = function _hasListener(
+        this: Turbo, type: string, listener: ((e: Event, el: Turbo) => void),
+        manager: TurboEventManager = TurboEventManager.instance): boolean {
+        return this.hasToolListener(type, null, listener, manager);
+    }
+
+    /**
+     * @description Checks if the given event listener is bound to the element (in its boundListeners list).
+     * @param {string} type - The type of the event. Set to null or undefined to get all event types.
+     * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
+     * to check for listeners not bound to a tool.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
+     * @returns {boolean} - Whether the element has the given listener.
+     */
+    TurboSelector.prototype.hasToolListener = function _hasToolListener(
+        this: Turbo, type: string, toolName: string, listener: ((e: Event, el: Turbo) => void),
+        manager: TurboEventManager = TurboEventManager.instance): boolean {
+        return utils.getBoundListeners(this, type, toolName, undefined, manager)
+            .filter(entry => entry.listener === listener).length > 0;
+    }
+
+    /**
+     * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
+     * @param {string} type - The type of the event. Set to null or undefined to get all event types.
+     * @param {string} toolName - The name of the tool to consider (if any). Set to null or undefined
+     * to check for listeners not bound to a tool.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
+     * @returns {boolean} - Whether the element has the given listener.
+     */
+    TurboSelector.prototype.hasListenersByType = function _hasListenersByType(
+        type: string, toolName?: string, manager: TurboEventManager = TurboEventManager.instance): boolean {
+        return utils.getBoundListeners(this, type, toolName, undefined, manager).length > 0;
     }
 
     /**
      * @description Removes an event listener that is bound to the element (in its boundListeners list).
      * @param {string} type - The type of the event.
-     * @param {EventListenerOrEventListenerObject | (e: Event, el: this) => void} listener - The function
-     * or object that receives a notification.
-     * @param {boolean | EventListenerOptions} [options] - An options object that specifies characteristics about the
-     * event listener.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.removeListener = function _removeListener<Type extends Node>
-    (this: Turbo<Type>, type: string, listener: EventListenerOrEventListenerObject |
-         ((e: Event, el: Turbo<Type>) => void), options?: boolean | EventListenerOptions): Turbo<Type> {
-        for (let entry of this.boundListeners) {
-            if (entry.type === type && entry.originalListener === listener && entry.options === options) {
-                entry.target.removeEventListener(type, entry.listener, options);
-                this.boundListeners.delete(entry);
-                break;
-            }
-        }
+    TurboSelector.prototype.removeListener = function _removeListener<Type extends Node>(
+        this: Turbo<Type>, type: string, listener: ((e: Event, el: Turbo<Type>) => void),
+        manager: TurboEventManager = TurboEventManager.instance
+    ): Turbo<Type> {
+        return this.removeToolListener(type, null, listener, manager);
+    };
 
+    /**
+     * @description Removes an event listener that is bound to the element (in its boundListeners list).
+     * @param {string} type - The type of the event.
+     * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
+     * to check for listeners not bound to a tool.
+     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    TurboSelector.prototype.removeToolListener = function _removeToolListener<Type extends Node>(
+        this: Turbo<Type>, type: string, toolName: string, listener: ((e: Event, el: Turbo<Type>) => void),
+        manager: TurboEventManager = TurboEventManager.instance): Turbo<Type> {
+        const boundListeners = utils.getBoundListenersSet(this, type);
+        utils.getBoundListeners(this, type, toolName, undefined, manager)
+            .filter(entry => entry.listener === listener)
+            .forEach(entry => boundListeners.delete(entry));
         return this;
     };
 
     /**
      * @description Removes all event listeners bound to the element (in its boundListeners list) assigned to the
      * specified type.
-     * @param {string} type - The type of the event.
+     * @param {string} type - The type of the event. Set to null or undefined to consider all types.
+     * @param {string} toolName - The name of the tool associated (if any). Set to null or undefined
+     * to check for listeners not bound to a tool.
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.removeListenersByType = function _removeListenersByType(this: TurboSelector, type: string): TurboSelector {
-        for (let entry of this.boundListeners) {
-            if (entry.type === type) {
-                this.element.removeEventListener(type, entry.listener, entry.options);
-                this.boundListeners.delete(entry);
-            }
-        }
-
+    TurboSelector.prototype.removeListenersByType = function _removeListenersByType(
+        this: Turbo, type: string, toolName?: string, manager: TurboEventManager = TurboEventManager.instance
+    ): TurboSelector {
+        const boundListeners = utils.getBoundListenersSet(this, type);
+        utils.getBoundListeners(this, type, toolName, undefined, manager)
+            .forEach(entry => boundListeners.delete(entry));
         return this;
     };
 
     /**
      * @description Removes all event listeners bound to the element (in its boundListeners list).
+     * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
+     * or a new instantiated one if none already exist.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.removeAllListeners = function _removeListeners(this: TurboSelector): TurboSelector {
-        for (let entry of this.boundListeners) {
-            this.element.removeEventListener(entry.type, entry.listener, entry.options);
-            this.boundListeners.delete(entry);
-        }
+    TurboSelector.prototype.removeAllListeners = function _removeListeners
+    (this: TurboSelector, manager: TurboEventManager = TurboEventManager.instance): TurboSelector {
+        this.boundListeners.forEach(set => {
+            [...set]
+                .filter(entry => entry.manager === manager)
+                .forEach(entry => set.delete(entry));
+        });
 
+        const listeners = utils.getSingleListeners(this.element, manager);
+        if (listeners && typeof listeners === "object") Object.entries(listeners)
+            .forEach(([type, listener]: [string, (e: Event) => void]) => {
+                this.element.removeEventListener(type, listener);
+                delete listeners[type];
+            });
         return this;
     };
+
+    /**
+     * @description Prevent default browser behavior on the provided event types. By default, all basic input events
+     * will be processed.
+     * @param {PreventDefaultOptions} options - An options object to customize the behavior of the function.
+     */
+    TurboSelector.prototype.preventDefault = function _preventDefault
+    (this: Turbo, options?: PreventDefaultOptions): void {
+        if (!options) options = {};
+        const types = options.types ?? BasicInputEvents;
+        const phase = options.phase ?? "capture";
+        const stop = options.stop ?? false;
+
+        utils.data(this.element).preventDefaultOn = options.preventDefaultOn
+            ?? utils.data(this.element).preventDefaultOn ?? (() => true);
+        const preventDefaultListeners = utils.getPreventDefaultListeners(this);
+
+        if (options.clearPreviousListeners)
+            for (const [type, listener] of Object.entries(preventDefaultListeners)) {
+                this.removeListener(type, listener);
+                delete preventDefaultListeners[type];
+            }
+
+        const shouldNotBePassive = new Set<string>(NonPassiveEvents);
+
+        for (const type of new Set(types)) {
+            const handler = (event: Event) => {
+                if (!utils.data(this.element).preventDefaultOn(type, event)) return;
+                event.preventDefault?.();
+                if (stop === "immediate") event.stopImmediatePropagation?.();
+                else if (stop === "stop") event.stopPropagation?.();
+            }
+            preventDefaultListeners[type] = handler;
+            const options: Record<string, boolean> = {};
+            if (phase === "capture") options.capture = true;
+            if (shouldNotBePassive.has(type)) options.passive = false;
+            this.on(type, handler, options);
+        }
+    }
 }
 
 export {setupEventFunctions};

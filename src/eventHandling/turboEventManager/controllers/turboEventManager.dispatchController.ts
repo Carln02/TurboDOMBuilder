@@ -4,11 +4,11 @@ import {TurboEventManager} from "../turboEventManager";
 import {ClickMode} from "../turboEventManager.types";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
-import {TurboEventNameEntry, TurboKeyEventName} from "../../eventNaming";
+import {TurboKeyEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
 
 export class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
-    private boundHooks: Map<TurboEventNameEntry, (e: TurboEvent) => void> = new Map();
+    private boundHooks: Map<string, (e: Event) => void> = new Map();
 
     protected setupChangedCallbacks() {
         super.setupChangedCallbacks();
@@ -34,38 +34,43 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
         target.dispatchEvent(new eventType(properties as PropertiesType));
     }
 
-    public hookToolHandling(type: TurboEventNameEntry): void {
-        if (this.boundHooks.has(type)) return;
-        const hook = (e: Event) => {
+    private getToolHandlingCallback(type: string, e: Event) {
+        return () => {
+            const toolName = this.element.getToolName(this.model.currentClick);
+            const tool = this.element.getTool(this.model.currentClick);
+            if (!tool || !$(tool).hasToolBehavior(type)) return;
+
             const path = e.composedPath?.() || [];
-            const targetEl = path.find(n => n instanceof Element) as Element;
-            if (!targetEl) return;
 
-            $(targetEl).on(type, (e: Event) =>
-                this.recurInteractionCheck(targetEl, type, e, this.element.getToolName()),
-                null, {capture: true, once: true});
+            for (let i = path.length - 1; i >= 0; i--) {
+                if (!(path[i] instanceof Node)) continue;
+                if ($(path[i] as Node).executeAction(type, toolName, e, {capture: true}, this.element)) {
+                    e.stopPropagation();
+                    break;
+                }
+            }
+
+            for (let i = 0; i < path.length; i++) {
+                if (!(path[i] instanceof Node)) continue;
+                if ($(path[i] as Node).executeAction(type, toolName, e, undefined, this.element)) {
+                    e.stopPropagation();
+                    break;
+                }
+            }
         };
-
-        this.boundHooks.set(type, hook);
-        $(document).on(type, hook, document, {capture: true});
     }
 
-    public unhookToolHandling(type: TurboEventNameEntry): void {
+    public setupCustomDispatcher(type: string): void {
+        if (this.boundHooks.has(type)) return;
+        const hook = (e: Event) => this.getToolHandlingCallback(type, e);
+        this.boundHooks.set(type, hook);
+        $(document).on(type, hook, {capture: true});
+    }
+
+    public removeCustomDispatcher(type: string): void {
         const hook = this.boundHooks.get(type);
         if (!hook) return;
-        $(document).removeListener(type, hook, {capture: true});
+        $(document).removeListener(type, hook);
         this.boundHooks.delete(type);
-    }
-
-    private recurInteractionCheck(element: Element, eventType: string, event: Event, toolName?: string) {
-        if (!element) return;
-        const el = $(element);
-        if (el.hasListenersByType(eventType, toolName)) return;
-        if (toolName && $(this.element.getToolByName(toolName))?.applyTool(element, eventType, event, this.element)) {
-            event.stopPropagation();
-            return;
-        }
-        if (el.hasListenersByType(eventType)) return;
-        this.recurInteractionCheck(element.parentElement, eventType, event, toolName);
     }
 }

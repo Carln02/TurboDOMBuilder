@@ -1,5 +1,5 @@
 import {ValidTag} from "../../core.types";
-import {TurboProperties} from "../../domBuilding/turboElement/turboElement.types";
+import {TurboProperties} from "../../turboElement/turboElement.types";
 
 declare module "../turboFunctions" {
     interface TurboSelector {

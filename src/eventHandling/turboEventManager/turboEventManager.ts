@@ -7,11 +7,10 @@ import {
 import {Delegate} from "../delegate/delegate";
 import {Point} from "../../utils/datatypes/point/point";
 import {
-    DefaultClickEventName, DefaultDragEventName,
+    DefaultClickEventName, DefaultDragEventName, DefaultEventNameEntry,
     DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName,
     TurboClickEventName,
-    TurboDragEventName,
-    TurboEventNameEntry,
+    TurboDragEventName, TurboEventNameEntry,
     TurboKeyEventName,
     TurboMoveEventName,
     TurboWheelEventName
@@ -31,6 +30,15 @@ import {TurboEventManagerDispatchController} from "./controllers/turboEventManag
  * easier management of input.
  */
 class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
+
+    /*
+     *
+     *
+     * Static stuff
+     *
+     *
+     */
+
     protected static managers: TurboEventManager[] = [];
 
     public static get instance(): TurboEventManager {
@@ -42,10 +50,13 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         return [...this.managers];
     }
 
-    /**
-     * @description Delegate fired when a tool is changed on a certain click button/mode
+    /*
+     *
+     *
+     * Constructor
+     *
+     *
      */
-    public readonly onToolChange: Delegate<(oldTool: ToolType, newTool: ToolType, type: ClickMode) => void> = new Delegate();
 
     public constructor(properties: TurboEventManagerProperties = {}) {
         super();
@@ -80,6 +91,14 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
 
         TurboEventManager.managers.push(this);
     }
+
+    /*
+     *
+     *
+     * Controllers & handlers
+     *
+     *
+     */
 
     protected get keyController(): TurboEventManagerKeyController {
         return this.mvc.getController("key") as TurboEventManagerKeyController;
@@ -117,6 +136,13 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     //Delegate fired when the input device changes
     public get onInputDeviceChange(): Delegate<(device: InputDevice) => void> {
         return this.model.onInputDeviceChange;
+    }
+
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    public get onToolChange(): Delegate<(oldTool: ToolType, newTool: ToolType, type: ClickMode) => void> {
+        return this.model.onToolChange;
     }
 
     public get authorizeEventScaling(): boolean | (() => boolean) {
@@ -175,7 +201,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
 
     @auto({cancelIfUnchanged: true})
     public set wheelEventsEnabled(value: boolean) {
-        if (value) $(document.body).on("wheel", this.wheelController.wheel, document, {
+        if (value) $(document.body).on("wheel", this.wheelController.wheel, {
             passive: false,
             propagate: true
         });
@@ -192,10 +218,10 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     public set mouseEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
-            doc.on("mousedown", this.pointerController.pointerDown, document, {propagate: true});
-            doc.on("mousemove", this.pointerController.pointerMove, document, {propagate: true});
-            doc.on("mouseup", this.pointerController.pointerUp, document, {propagate: true});
-            doc.on("mouseleave", this.pointerController.pointerLeave, document, {propagate: true});
+            doc.on("mousedown", this.pointerController.pointerDown, {propagate: true});
+            doc.on("mousemove", this.pointerController.pointerMove, {propagate: true});
+            doc.on("mouseup", this.pointerController.pointerUp, {propagate: true});
+            doc.on("mouseleave", this.pointerController.pointerLeave, {propagate: true});
         } else {
             doc.removeListener("mousedown", this.pointerController.pointerDown);
             doc.removeListener("mousemove", this.pointerController.pointerMove);
@@ -208,10 +234,10 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     public set touchEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
-            doc.on("touchstart", this.pointerController.pointerDown, document, {passive: false, propagate: true});
-            doc.on("touchmove", this.pointerController.pointerMove, document, {passive: false, propagate: true});
-            doc.on("touchend", this.pointerController.pointerUp, document, {passive: false, propagate: true});
-            doc.on("touchcancel", this.pointerController.pointerUp, document, {passive: false, propagate: true});
+            doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
+            doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
+            doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
+            doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
         } else {
             doc.removeListener("touchstart", this.pointerController.pointerDown);
             doc.removeListener("touchmove", this.pointerController.pointerMove);
@@ -308,8 +334,8 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     /**
      * @description All attached tools in an array
      */
-    public get toolsArray(): Element[] {
-        const array: Element[] = [];
+    public get toolsArray(): Node[] {
+        const array: Node[] = [];
         for (const tools of this.model.tools.values()) array.push(...tools.toArray());
         return array;
     }
@@ -318,16 +344,16 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @description Returns the tool with the given name (or undefined)
      * @param name
      */
-    public getToolsByName(name: ToolType): Element[] {
+    public getToolsByName(name: ToolType): Node[] {
         return this.model.tools.get(name)?.toArray() || [];
     }
 
     /**
-     * @description Returns the tool with the given name (or undefined)
+     * @description Returns the first tool with the given name (or undefined)
      * @param name
      * @param predicate
      */
-    public getToolByName(name: ToolType, predicate?: (tool: Element) => boolean): Element {
+    public getToolByName(name: ToolType, predicate?: (tool: Node) => boolean): Node {
         const tools = this.getToolsByName(name);
         return predicate ? tools?.find(predicate) : tools?.[0];
     }
@@ -336,18 +362,18 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @description Returns the tools associated with the given key
      * @param key
      */
-    public getToolsByKey(key: string): Element[] {
+    public getToolsByKey(key: string): Node[] {
         const toolName = this.model.mappedKeysToTool.get(key) as ToolType;
         if (!toolName) return [];
         return this.getToolsByName(toolName);
     }
 
     /**
-     * @description Returns the tool associated with the given key
+     * @description Returns the first tool associated with the given key
      * @param key
      * @param predicate
      */
-    public getToolByKey(key: string, predicate?: (tool: Element) => boolean): Element {
+    public getToolByKey(key: string, predicate?: (tool: Element) => boolean): Node {
         const tools = this.getToolsByKey(key);
         return predicate ? tools?.find(predicate) : tools?.[0];
     }
@@ -358,7 +384,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @param tool
      * @param key
      */
-    public addTool(toolName: ToolType, tool: Element, key?: string) {
+    public addTool(toolName: ToolType, tool: Node, key?: string) {
         if (!this.model.tools.has(toolName)) this.model.tools.set(toolName, new TurboWeakSet());
         const tools = this.model.tools.get(toolName);
         if (!tools.has(tool)) tools.add(tool);
@@ -374,10 +400,14 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     /**
-     * @description Returns the tool currently held by the provided click mode
+     * @description Returns the instances of the tool currently held by the provided click mode
      * @param mode
      */
-    public getTool(mode: ClickMode = this.model.currentClick): Element {
+    public getTools(mode: ClickMode = this.model.currentClick): Node[] {
+        return this.getToolsByName(this.getToolName(mode));
+    }
+
+    public getTool(mode: ClickMode = this.model.currentClick): Node {
         return this.getToolByName(this.getToolName(mode));
     }
 
@@ -439,12 +469,16 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      *
      */
 
+    public setupCustomDispatcher(type: string) {
+        return this.dispatchController.setupCustomDispatcher(type);
+    }
+
     protected applyAndHookEvents(turboEventNames: Record<string, string>,
                                  defaultEventNames: Record<string, string>, applyTurboEvents: boolean) {
         this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
         for (const name in turboEventNames) {
-            if (applyTurboEvents) this.dispatchController.hookToolHandling(name as TurboEventNameEntry);
-            else this.dispatchController.unhookToolHandling(name as TurboEventNameEntry);
+            if (applyTurboEvents) this.dispatchController.setupCustomDispatcher(name as TurboEventNameEntry);
+            else this.dispatchController.removeCustomDispatcher(name as TurboEventNameEntry);
         }
     }
 

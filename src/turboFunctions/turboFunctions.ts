@@ -7,9 +7,9 @@ import {setupClassFunctions} from "./class/class";
 import {setupElementFunctions} from "./element/element";
 import {setupEventFunctions} from "./event/event";
 import {setupStyleFunctions} from "./style/style";
+import {setupToolFunctions} from "./tool/tool";
 
 let turbofied: boolean = false;
-const dataMap: WeakMap<Node, Record<string, any>> = new WeakMap();
 
 class TurboSelector<Type extends Node = Node> {
     public element: Type;
@@ -43,30 +43,11 @@ class TurboSelector<Type extends Node = Node> {
             }
         });
     }
-
-    get #data() {
-        if (!this.element) return null;
-        let data = dataMap.get(this.element);
-        if (!data) {
-            data = {};
-            dataMap.set(this.element, data);
-        }
-        return data;
-    }
-
-    public getValue(key: string): any {
-        if (!this.element) return null;
-        return this.#data[key];
-    }
-
-    public setValue(key: string, value: any) {
-        if (!this.element) return;
-        this.#data[key] = value;
-    }
 }
 
 function $<Type extends Node = Node>(element: Type): Turbo<Type> {
     if (!turbofied) turbofy();
+    if (element instanceof TurboSelector) return element;
     const turboSelector = new TurboSelector<Type>();
     turboSelector.element = element;
     return turboSelector as Turbo<Type>;
@@ -74,6 +55,7 @@ function $<Type extends Node = Node>(element: Type): Turbo<Type> {
 
 function t<Type extends Node = Node>(element: Type): Turbo<Type> {
     if (!turbofied) turbofy();
+    if (element instanceof TurboSelector) return element;
     const turboSelector = new TurboSelector<Type>();
     turboSelector.element = element;
     return turboSelector as Turbo<Type>;
@@ -81,6 +63,7 @@ function t<Type extends Node = Node>(element: Type): Turbo<Type> {
 
 function turbo<Type extends Node = Node>(element: Type): Turbo<Type> {
     if (!turbofied) turbofy();
+    if (element instanceof TurboSelector) return element;
     const turboSelector = new TurboSelector<Type>();
     turboSelector.element = element;
     return turboSelector as Turbo<Type>;
@@ -94,6 +77,7 @@ function turbofy(options: TurbofyOptions = {}) {
     if (!options.excludeElementFunctions) setupElementFunctions();
     if (!options.excludeEventFunctions) setupEventFunctions();
     if (!options.excludeStyleFunctions) setupStyleFunctions();
+    if (!options.excludeToolFunctions) setupToolFunctions();
     addReifectManagementToNodePrototype();
 }
 

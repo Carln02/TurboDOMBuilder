@@ -1,29 +1,10 @@
 import "./class.types";
 import {TurboSelector} from "../turboFunctions";
+import {ClassFunctionsUtils} from "./class.utils";
+
+const utils = new ClassFunctionsUtils();
 
 function setupClassFunctions() {
-    /**
-     * @description Utility function to operate on the provided classes
-     * @param selector
-     * @param classes
-     * @param callback
-     */
-    function operateOnClasses(selector: TurboSelector, classes?: string | string[],
-                              callback: (classEntry: string) => void = (() => {})): TurboSelector {
-        if (!selector || !classes || !selector.element) return selector;
-
-        try {
-            // If string provided --> split by spaces
-            if (typeof classes === "string") classes = classes.split(" ");
-            classes.filter(entry => entry.trim().length > 0)
-                .forEach(entry => callback(entry));
-        } catch (e) {
-            console.error(e);
-        }
-
-        return selector;
-    }
-
     /**
      * @description Add one or more CSS classes to the element.
      * @param {string | string[]} [classes] - String of classes separated by spaces, or array of strings.
@@ -31,7 +12,7 @@ function setupClassFunctions() {
      */
     TurboSelector.prototype.addClass = function _addClass(this: TurboSelector, classes?: string | string[]): TurboSelector {
         if (!(this.element instanceof Element)) return this;
-        return operateOnClasses(this, classes, entry => (this.element as Element).classList.add(entry));
+        return utils.operateOnClasses(this, classes, entry => (this.element as Element).classList.add(entry));
     };
 
     /**
@@ -41,7 +22,7 @@ function setupClassFunctions() {
      */
     TurboSelector.prototype.removeClass = function _removeClass(this: TurboSelector, classes?: string | string[]): TurboSelector {
         if (!(this.element instanceof Element)) return this;
-        return operateOnClasses(this, classes, entry => (this.element as Element).classList.remove(entry));
+        return utils.operateOnClasses(this, classes, entry => (this.element as Element).classList.remove(entry));
     };
 
     /**
@@ -54,7 +35,7 @@ function setupClassFunctions() {
     TurboSelector.prototype.toggleClass = function _toggleClass
     (this: TurboSelector, classes?: string | string[], force?: boolean): TurboSelector {
         if (!(this.element instanceof Element)) return this;
-        return operateOnClasses(this, classes, entry => (this.element as Element).classList.toggle(entry, force));
+        return utils.operateOnClasses(this, classes, entry => (this.element as Element).classList.toggle(entry, force));
     };
 
     /**

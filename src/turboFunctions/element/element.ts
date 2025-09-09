@@ -1,8 +1,8 @@
 import "./element.types";
 import {$, TurboSelector} from "../turboFunctions";
 import {ValidElement, ValidTag} from "../../core.types";
-import {TurboProperties} from "../../domBuilding/turboElement/turboElement.types";
-import {stylesheet} from "../../domBuilding/elementCreation/miscElements";
+import {TurboProperties} from "../../turboElement/turboElement.types";
+import {stylesheet} from "../../elementCreation/miscElements";
 
 function setupElementFunctions() {
     /**
@@ -48,7 +48,7 @@ function setupElementFunctions() {
                     return;
                 case "listeners":
                     Object.keys(properties.listeners).forEach(listenerType =>
-                        this.addListener(listenerType, properties.listeners[listenerType], this as Node));
+                        this.on(listenerType, properties.listeners[listenerType], this as Node));
                     return;
                 case "children":
                     this.addChild(properties.children);

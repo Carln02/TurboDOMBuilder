@@ -13,12 +13,19 @@ import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsH
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 
 export class TurboEventManagerModel extends TurboModel {
+    private _inputDevice: InputDevice;
+
     public readonly state: TurboEventManagerStateProperties = {};
     public readonly lockState: TurboEventManagerLockStateProperties = {};
 
     //Delegate fired when the input device changes
     public readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>
         = new Delegate<(device: InputDevice) => void>();
+
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    public readonly onToolChange: Delegate<(oldTool: string, newTool: string, type: ClickMode) => void> = new Delegate();
 
     //Input events states
     public readonly currentKeys: string[] = [];
@@ -45,14 +52,12 @@ export class TurboEventManagerModel extends TurboModel {
     public readonly timerMap: TurboMap<string, NodeJS.Timeout> = new TurboMap();
 
     //All created tools
-    public readonly tools: Map<string, TurboWeakSet<Element>> = new Map();
+    public readonly tools: Map<string, TurboWeakSet<Node>> = new Map();
     //Tools mapped to keys
     public readonly mappedKeysToTool: Map<string, string> = new Map();
 
     //Tools currently held by the user (one - or none - per each click button/mode)
     public readonly currentTools: Map<ClickMode, string> = new Map();
-
-    private _inputDevice: InputDevice;
 
     public get inputDevice(): InputDevice {
         return this._inputDevice;

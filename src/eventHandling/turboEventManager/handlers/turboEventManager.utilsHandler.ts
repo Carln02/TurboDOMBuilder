@@ -47,11 +47,11 @@ export class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManage
         this.model.timerMap.delete(timerName);
     }
 
-    public selectTool(element: Element, value: boolean) {
+    public selectTool(element: Node, value: boolean) {
         if ("selected" in element && typeof element["selected"] === "boolean") element["selected"] = value;
     }
 
-    public activateTool(element: Element, value: boolean) {
+    public activateTool(element: Node, value: boolean) {
         if (value) $(element).onToolActivation?.fire();
         else $(element).onToolDeactivation?.fire();
     }

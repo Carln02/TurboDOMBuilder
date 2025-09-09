@@ -2,41 +2,11 @@ import "./styleManipulation.types";
 import {StylesType} from "./style.types";
 import {TurboSelector} from "../turboFunctions";
 import {PartialRecord} from "../../core.types";
+import {StyleFunctionsUtils} from "./style.utils";
+
+const utils = new StyleFunctionsUtils();
 
 function setupStyleFunctions() {
-    function setStyle(selector: TurboSelector<HTMLElement | SVGElement>, attribute: keyof CSSStyleDeclaration,
-                      value: string | number, instant: boolean = false, apply: boolean = true): void {
-        if (instant) {
-            (selector.element.style as any)[attribute] = value.toString();
-            return;
-        }
-
-        let pendingStyles = selector.getValue("pendingStyles");
-        if (!pendingStyles || typeof pendingStyles !== "object") {
-            pendingStyles = {};
-            selector.setValue("pendingStyles", pendingStyles);
-        }
-
-        pendingStyles[attribute] = value;
-        if (apply) applyStyles(this as TurboSelector<HTMLElement | SVGElement>);
-        return;
-    }
-
-    /**
-     * @description Apply the pending styles to the element.
-     */
-    function applyStyles(selector: TurboSelector<HTMLElement | SVGElement>): void {
-        const pendingStyles = selector.getValue("pendingStyles");
-        if (!pendingStyles || typeof pendingStyles !== "object") return;
-        requestAnimationFrame(() => {
-            for (const property in pendingStyles) {
-                if (property == "cssText") selector.element.style.cssText += ";" + pendingStyles["cssText"];
-                else selector.element.style[property] = pendingStyles[property];
-            }
-            selector.setValue("pendingStyles", {});
-        });
-    }
-
     /**
      * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
      */
@@ -66,7 +36,7 @@ function setupStyleFunctions() {
                                                           value: string | number, instant: boolean = false): TurboSelector {
         if (!attribute || value == undefined) return this;
         if (!(this.element instanceof HTMLElement) && !(this.element instanceof SVGElement)) return this;
-        setStyle(this as TurboSelector<HTMLElement | SVGElement>, attribute, value, instant);
+        utils.setStyle(this as TurboSelector<HTMLElement | SVGElement>, attribute, value, instant);
         return this;
     };
 
@@ -85,7 +55,7 @@ function setupStyleFunctions() {
         if (!(this.element instanceof HTMLElement) && !(this.element instanceof SVGElement)) return this;
         const currentStyle = (this.element.style[attribute] || "") as string;
         separator = currentStyle.length > 0 ? separator : "";
-        setStyle(this as TurboSelector<HTMLElement | SVGElement>, attribute, currentStyle + separator + value, instant);
+        utils.setStyle(this as TurboSelector<HTMLElement | SVGElement>, attribute, currentStyle + separator + value, instant);
         return this;
     };
 
@@ -112,8 +82,8 @@ function setupStyleFunctions() {
         }
 
         Object.entries(stylesObject).forEach(([key, value]) =>
-            setStyle(this as TurboSelector<HTMLElement | SVGElement>, key as keyof CSSStyleDeclaration, value, instant, false));
-        if (!instant) applyStyles(this as TurboSelector<HTMLElement | SVGElement>);
+            utils.setStyle(this as TurboSelector<HTMLElement | SVGElement>, key as keyof CSSStyleDeclaration, value, instant, false));
+        if (!instant) utils.applyStyles(this as TurboSelector<HTMLElement | SVGElement>);
         return this;
     };
 }

@@ -8,11 +8,11 @@ type TurbofyOptions = {
     excludeClassFunctions?: boolean,
     excludeElementFunctions?: boolean,
     excludeEventFunctions?: boolean,
+    excludeToolFunctions?: boolean,
     excludeMiscFunctions?: boolean,
 };
 
 declare module "./turboFunctions" {
-    //@ts-ignore
     interface TurboSelector extends Node {
     }
 }

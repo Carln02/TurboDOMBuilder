@@ -7,7 +7,6 @@ import {ValidElement, ValidTag} from "../../core.types";
 type ChildHandler = Node | ShadowRoot;
 
 declare module "../turboFunctions" {
-    // @ts-ignore
     interface TurboSelector {
 
         //Readonly fields
@@ -69,7 +68,7 @@ declare module "../turboFunctions" {
          * @param {Node | Node[]} [children] - Array of (or single) child nodes.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeChild(children?: Node | Node[]): this;
+        remChild(children?: Node | Node[]): this;
 
         /**
          * @description Add one or more children to the referenced parent node before the provided sibling. If the

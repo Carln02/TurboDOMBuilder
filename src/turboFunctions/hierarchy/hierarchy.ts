@@ -1,6 +1,9 @@
 import "./hierarchy.types";
 import {ValidElement, ValidTag} from "../../core.types";
 import {$, TurboSelector} from "../turboFunctions";
+import {HierarchyFunctionsUtils} from "./hierarchy.utils";
+
+const utils = new HierarchyFunctionsUtils();
 
 function setupHierarchyFunctions() {
     //Readonly fields
@@ -13,10 +16,10 @@ function setupHierarchyFunctions() {
     Object.defineProperty(TurboSelector.prototype, "childHandler", {
         set: function (value?: Node) {
             if (value instanceof TurboSelector) value = value.element;
-            this.setValue("childHandler", value);
+            utils.data(this).childHandler = value;
         },
         get: function () {
-            const childHandler = this.getValue("childHandler");
+            const childHandler = utils.data(this).childHandler;
             if (childHandler) return childHandler;
             if (this.element instanceof Element && this.element.shadowRoot) return this.element.shadowRoot;
             return this.element;
@@ -139,7 +142,7 @@ function setupHierarchyFunctions() {
      * @param {Node | Node[]} [children] - Array of (or single) child nodes.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.removeChild = function _removeChild(this: TurboSelector, children?: Node | Node[]): TurboSelector {
+    TurboSelector.prototype.remChild = function _remChild(this: TurboSelector, children?: Node | Node[]): TurboSelector {
         if (!this || !children) return this;
 
         // Try to remove every provided child (according to its type)
