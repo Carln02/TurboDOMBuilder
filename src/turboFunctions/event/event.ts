@@ -94,42 +94,141 @@ function setupEventFunctions() {
         return this.onTool(type, undefined, listener, options, manager);
     };
 
+    // TurboSelector.prototype.executeAction = function _executeAction(
+    //     this: TurboSelector, type: string, toolName: string, event: Event,
+    //     options?: ListenerOptions, manager?: TurboEventManager): boolean {
+    //     let passed: boolean = false;
+    //
+    //     const boundListeners = utils.getBoundListenersSet(this, type);
+    //
+    //     const boundListenersWithTool =
+    //         utils.getBoundListeners(this, type, toolName, options, manager);
+    //     if (boundListenersWithTool.length > 0) {
+    //         passed = true;
+    //         boundListenersWithTool.forEach(entry => {
+    //             entry.listener(event, this);
+    //             if (entry.options?.once) boundListeners.delete(entry);
+    //             if (entry.options?.propagate) passed = false;
+    //         });
+    //     } else {
+    //         const currentToolName = manager.getCurrentToolName();
+    //         if ($(this).applyTool(currentToolName, type, event, manager)) passed = true;
+    //         else {
+    //             const embeddedTarget = $(this).getEmbeddedToolTarget(manager);
+    //             if (embeddedTarget && $(this).getToolNames(manager).includes(currentToolName)
+    //                 && $(embeddedTarget).applyTool(currentToolName, type, event, manager)) passed = true;
+    //             else {
+    //                 const boundListenersWithoutTool =
+    //                     utils.getBoundListeners(this, type, undefined, options, manager);
+    //                 if (boundListenersWithoutTool.length > 0) {
+    //                     passed = true;
+    //                     boundListenersWithoutTool.forEach(entry => {
+    //                         entry.listener(event, this);
+    //                         if (entry.options?.once) boundListeners.delete(entry);
+    //                         if (entry.options?.propagate) passed = false;
+    //                     });
+    //                 }
+    //             }
+    //         }
+    //     }
+    //
+    //     return passed;
+    // }
+
+
+    // TurboSelector.prototype.executeAction = function _executeAction(
+    //     this: TurboSelector,
+    //     type: string,
+    //     toolName: string,
+    //     event: Event,
+    //     options?: ListenerOptions,
+    //     manager: TurboEventManager = TurboEventManager.instance
+    // ): boolean {
+    //     if (!type) return false;
+    //     const boundSet = utils.getBoundListenersSet(this, type);
+    //     const activeTool = toolName ?? manager.getCurrentToolName();
+    //
+    //     const run = (entries: ReturnType<typeof utils.getBoundListeners>): boolean => {
+    //         if (entries.length === 0) return false;
+    //         let propagate = false;
+    //         for (const entry of entries) {
+    //             entry.listener(event, this);
+    //             if (entry.options?.once) boundSet.delete(entry);
+    //             if (entry.options?.propagate) propagate = true;
+    //         }
+    //         return !propagate;
+    //     };
+    //
+    //     if (activeTool && run(utils.getBoundListeners(this, type, activeTool, options, manager))) return true;
+    //     if (activeTool && this.applyTool(activeTool, type, event, manager)) return true;
+    //
+    //     const embeddedTarget = this.getEmbeddedToolTarget(manager);
+    //     if (embeddedTarget) {
+    //         let ret = false;
+    //         for (const toolName of this.getToolNames(manager)) {
+    //             if (run(utils.getBoundListeners(embeddedTarget, type, toolName, options, manager))) ret = true;
+    //         }
+    //         if (ret) return true;
+    //         for (const toolName of this.getToolNames(manager)) {
+    //             if ($(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
+    //         }
+    //         if (ret) return true;
+    //     }
+    //     return run(utils.getBoundListeners(this, type, undefined, options, manager));
+    // };
+
     TurboSelector.prototype.executeAction = function _executeAction(
-        this: TurboSelector, type: string, toolName: string, event: Event,
-        options?: ListenerOptions, manager?: TurboEventManager): boolean {
-        let passed: boolean = false;
+        this: TurboSelector,
+        type: string,
+        toolName: string,
+        event: Event,
+        options?: ListenerOptions,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): boolean {
+        if (!type) return false;
+        const activeTool = toolName ?? manager.getCurrentToolName();
 
-        const boundListeners = utils.getBoundListenersSet(this, type);
+        const run = (target: Node, tool?: string): boolean => {
+            const ts = target instanceof TurboSelector ? target : $(target);
+            const boundSet = utils.getBoundListenersSet(target, type);
+            const entries = utils.getBoundListeners(target, type, tool, options, manager);
+            if (entries.length === 0) return false;
 
-        const boundListenersWithTool =
-            utils.getBoundListeners(this, type, toolName, options, manager);
-        if (boundListenersWithTool.length > 0) {
-            passed = true;
-            boundListenersWithTool.forEach(entry => {
-                entry.listener(event, this);
-                if (entry.options?.once) boundListeners.delete(entry);
-                if (entry.options?.propagate) passed = false;
-            });
-        } else {
-            const tool = manager.getTool();
-            if (tool && $(tool).applyTool(this, type, event, manager)) {
-                passed = true;
-            } else {
-                const boundListenersWithoutTool =
-                    utils.getBoundListeners(this, type, undefined, options, manager);
-                if (boundListenersWithoutTool.length > 0) {
-                    passed = true;
-                    boundListenersWithoutTool.forEach(entry => {
-                        entry.listener(event, this);
-                        if (entry.options?.once) boundListeners.delete(entry);
-                        if (entry.options?.propagate) passed = false;
-                    });
+            let propagate = false;
+            for (const entry of entries) {
+                try { entry.listener(event, ts); }
+                finally {
+                    if (entry.options?.once) boundSet.delete(entry);
+                    if (entry.options?.propagate) propagate = true;
                 }
             }
+            return !propagate;
+        };
+
+        if (activeTool && run(this, activeTool)) return true;
+        if (activeTool && this.applyTool(activeTool, type, event, manager)) return true;
+
+        const embeddedTarget = this.getEmbeddedToolTarget(manager);
+        if (embeddedTarget) {
+            const objectTools = this.getToolNames(manager);
+
+            let ret = false;
+            for (const toolName of objectTools) {
+                if (run(embeddedTarget, toolName)) ret = true;
+            }
+            if (ret) return true;
+
+            for (const toolName of objectTools) {
+                if ($(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
+            }
+            if (ret) return true;
         }
 
-        return passed;
-    }
+        return run(this, undefined);
+    };
+
+
+
     /**
      * @description Checks if the given event listener is bound to the element (in its boundListeners list).
      * @param {string} type - The type of the event. Set to null or undefined to get all event types.
@@ -237,11 +336,9 @@ function setupEventFunctions() {
      */
     TurboSelector.prototype.removeAllListeners = function _removeListeners
     (this: TurboSelector, manager: TurboEventManager = TurboEventManager.instance): TurboSelector {
-        this.boundListeners.forEach(set => {
-            [...set]
+        this.boundListeners.forEach(set => [...set]
                 .filter(entry => entry.manager === manager)
-                .forEach(entry => set.delete(entry));
-        });
+                .forEach(entry => set.delete(entry)));
 
         const listeners = utils.getSingleListeners(this.element, manager);
         if (listeners && typeof listeners === "object") Object.entries(listeners)

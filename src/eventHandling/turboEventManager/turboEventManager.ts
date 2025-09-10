@@ -395,7 +395,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @description Returns the name of the tool currently held by the provided click mode
      * @param mode
      */
-    public getToolName(mode: ClickMode = this.model.currentClick): ToolType {
+    public getCurrentToolName(mode: ClickMode = this.model.currentClick): ToolType {
         return this.model.currentTools.get(mode) as ToolType;
     }
 
@@ -403,12 +403,12 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @description Returns the instances of the tool currently held by the provided click mode
      * @param mode
      */
-    public getTools(mode: ClickMode = this.model.currentClick): Node[] {
-        return this.getToolsByName(this.getToolName(mode));
+    public getCurrentTools(mode: ClickMode = this.model.currentClick): Node[] {
+        return this.getToolsByName(this.getCurrentToolName(mode));
     }
 
-    public getTool(mode: ClickMode = this.model.currentClick): Node {
-        return this.getToolByName(this.getToolName(mode));
+    public getCurrentTool(mode: ClickMode = this.model.currentClick): Node {
+        return this.getToolByName(this.getCurrentToolName(mode));
     }
 
     /**

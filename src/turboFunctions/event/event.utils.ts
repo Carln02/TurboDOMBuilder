@@ -29,18 +29,6 @@ export class EventFunctionsUtils {
         return map;
     }
 
-    // public unsetSingleListenerIfEmpty(element: Node, type: string, manager: TurboEventManager) {
-    //     const singleListeners = this.getSingleListeners(element, manager);
-    //     if (!singleListeners) return;
-    //     if (![...this.getBoundListenersByType(element, type)]
-    //         .some(e => e.type === type && e.manager === manager)) {
-    //         if (singleListeners[type]) {
-    //             (element as Element).removeEventListener(type, singleListeners[type]);
-    //             delete singleListeners[type];
-    //         }
-    //     }
-    // }
-
     public bypassManager(element: Element, eventManager: TurboEventManager,
                            bypassResults: boolean | TurboEventManagerStateProperties) {
         if (typeof bypassResults == "boolean") eventManager.lock(element, {
@@ -80,52 +68,4 @@ export class EventFunctionsUtils {
                 return true;
             });
     }
-
-    // public setupSingleEventListener(element: Node, type: string, manager: TurboEventManager) {
-    //     const singleListeners = this.getSingleListeners(element, manager);
-    //     if (singleListeners[type]) return;
-    //
-    //     singleListeners[type] = (e: Event) => {
-    //         const toolName = manager.getToolName();
-    //         const listeners: ListenerEntry[] = [];
-    //
-    //         let stopImmediatePropagation = false;
-    //         let stopPropagation = false;
-    //
-    //         const boundListeners = this.getBoundListenersByType(element, type);
-    //         for (const entry of boundListeners) {
-    //             if (entry.type === type && entry.toolName === toolName && entry.manager === manager) listeners.push(entry);
-    //         }
-    //
-    //         if (listeners.length > 0) {
-    //             stopImmediatePropagation = true;
-    //             listeners.forEach(entry => {
-    //                 entry.listener(e, element);
-    //                 if (entry.options?.once) boundListeners.delete(entry);
-    //                 if (entry.options?.propagate) stopImmediatePropagation = false;
-    //             });
-    //         } else {
-    //             const tool = manager.getTool();
-    //             if (tool && $(tool).applyTool(element, type, e, manager)) {
-    //                 stopImmediatePropagation = true;
-    //             } else {
-    //                 for (const entry of boundListeners) {
-    //                     if (entry.type === type && !entry.toolName && entry.manager === manager) listeners.push(entry);
-    //                 }
-    //                 if (listeners.length > 0) {
-    //                     stopPropagation = true;
-    //                     listeners.forEach(entry => {
-    //                         entry.listener(e, element);
-    //                         if (entry.options?.once) boundListeners.delete(entry);
-    //                         if (entry.options?.propagate) stopPropagation = false;
-    //                     });
-    //                 }
-    //             }
-    //         }
-    //
-    //         if (stopImmediatePropagation) e.stopImmediatePropagation();
-    //         else if (stopPropagation) e.stopPropagation();
-    //     }
-    //     element.addEventListener(type, singleListeners[type]);
-    // }
 }

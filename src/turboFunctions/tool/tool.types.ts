@@ -12,24 +12,60 @@ type MakeToolOptions = {
     manager?: TurboEventManager
 };
 
+type ToolBehaviorCallback = (event: Event, target: Node, options?: any) => boolean;
+
+type ToolBehaviorOptions = {
+    isEmbedded?: boolean,
+    embeddedTarget?: Node,//TODO
+}
+
 declare module "../turboFunctions" {
     interface TurboSelector {
         readonly onToolActivation: Delegate<() => void>;
         readonly onToolDeactivation: Delegate<() => void>;
 
+        /*
+         *
+         *
+         * Basic tool manipulation
+         *
+         *
+         */
+
         makeTool(toolName: string, options?: MakeToolOptions): void;
 
         isTool(manager?: TurboEventManager): boolean;
 
+        getToolNames(manager?: TurboEventManager): string[];
+
         getToolName(manager?: TurboEventManager): string;
 
-        addToolBehavior(eventName: DefaultEventNameEntry, callback: (event: Event, target: Node) => void, manager?: TurboEventManager): void;
+        /*
+         *
+         *
+         * Tool behavior manipulation
+         *
+         *
+         */
 
-        hasToolBehavior(eventName: DefaultEventNameEntry, manager?: TurboEventManager): boolean;
+        addToolBehavior(type: string, callback: ToolBehaviorCallback, toolName?: string,
+                        manager?: TurboEventManager): void;
 
-        applyTool(target: Node, eventType: string, event: Event, manager?: TurboEventManager): boolean;
+        hasToolBehavior(type: string, toolName?: string, manager?: TurboEventManager): boolean;
 
-        embedTool(toolName: string, target: Node, manager?: TurboEventManager): void;
+        removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): void;
+
+        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): boolean;
+
+        /*
+         *
+         *
+         * Embedded tool manipulation
+         *
+         *
+         */
+
+        embedTool(target: Node, manager?: TurboEventManager): void;
 
         isEmbeddedTool(manager?: TurboEventManager): boolean;
 
@@ -37,4 +73,4 @@ declare module "../turboFunctions" {
     }
 }
 
-export {MakeToolOptions};
+export {MakeToolOptions, ToolBehaviorCallback, ToolBehaviorOptions};
