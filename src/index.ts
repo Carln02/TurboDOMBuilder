@@ -22,8 +22,8 @@ import {flexCol, flexColCenter, flexRow, flexRowCenter, spacer} from "./elementC
 export {flexCol, flexColCenter, flexRow, flexRowCenter, spacer};
 import {stylesheet} from "./elementCreation/miscElements";
 export {stylesheet};
-import {SvgNamespace, MathMLNamespace, SvgTagsDefinitions, MathMLTagsDefinitions, isSvgTag, isMathMLTag} from "./elementCreation/namespaceIdentification";
-export {SvgNamespace, MathMLNamespace, SvgTagsDefinitions, MathMLTagsDefinitions, isSvgTag, isMathMLTag};
+import {SvgNamespace, MathMLNamespace, SvgTags, MathMLTagsDefinitions, isSvgTag, isMathMLTag} from "./elementCreation/namespaceIdentification";
+export {SvgNamespace, MathMLNamespace, SvgTags, MathMLTagsDefinitions, isSvgTag, isMathMLTag};
 import {Delegate} from "./eventHandling/delegate/delegate";
 export {Delegate};
 import {TurboKeyEventName,TurboClickEventName,TurboMoveEventName,TurboDragEventName,TurboWheelEventName,DefaultEventName,DefaultEventNameEntry,TurboEventName,TurboEventNameEntry} from "./eventHandling/eventNaming";

@@ -5,6 +5,8 @@ import {DefaultEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
 
 export class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManagerModel> {
+    public keyName: string = "utils";
+
     public setClickMode(button: number, isTouch: boolean = false): ClickMode {
         if (isTouch) button--;
         switch (button) {

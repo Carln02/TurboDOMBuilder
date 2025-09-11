@@ -13,13 +13,6 @@ export class EventFunctionsUtils {
         return this.dataMap.get(element);
     }
 
-    public getSingleListeners(element: Node, manager: TurboEventManager) {
-        if (!this.data(element).managers) this.data(element).managers = new WeakMap<TurboEventManager, Record<string, any>>();
-        const managers = this.data(element).managers;
-        if (!managers.get(manager)) managers.set(manager, {});
-        return managers.get(manager);
-    }
-
     public getPreventDefaultListeners(element: Node): Record<string, (e: Event) => void> {
         let map = this.data(element).preventDefaultListeners;
         if (!map) {
@@ -30,7 +23,7 @@ export class EventFunctionsUtils {
     }
 
     public bypassManager(element: Element, eventManager: TurboEventManager,
-                           bypassResults: boolean | TurboEventManagerStateProperties) {
+                         bypassResults: boolean | TurboEventManagerStateProperties) {
         if (typeof bypassResults == "boolean") eventManager.lock(element, {
             enabled: bypassResults,
             preventDefaultWheel: bypassResults,
@@ -59,9 +52,10 @@ export class EventFunctionsUtils {
     public getBoundListeners(element: Node, type: string, toolName: string, options?: ListenerOptions,
                              manager: TurboEventManager = TurboEventManager.instance): ListenerEntry[] {
         if (!options) options = {};
-            return [...this.getBoundListenersSet(element, type).values()].
-            filter(entry => entry.manager === manager && (entry.toolName === toolName || !toolName))
+        return [...this.getBoundListenersSet(element, type)]
+            .filter(entry => entry.manager === manager && entry.toolName === toolName)
             .filter(entry => {
+                if (!options) return true;
                 for (const [option, value] of Object.entries(options)) {
                     if (entry.options[option] !== value) return false;
                 }

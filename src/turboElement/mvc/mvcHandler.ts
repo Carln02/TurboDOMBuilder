@@ -167,6 +167,7 @@ class MvcHandler<
     public addController(controller: TurboController) {
         if (!controller.keyName) controller.keyName =
             this.extractClassEssenceName(controller.constructor as new (...args: any[]) => any);
+
         this.controllers.set(controller.keyName, controller);
     }
 
@@ -314,7 +315,7 @@ class MvcHandler<
         let prototype = Object.getPrototypeOf(this.element);
 
         while (prototype && prototype.constructor !== Object) {
-            const name = prototype.constructor.name;
+            const name = prototype.constructor.name.replaceAll("_", "");
             if (className.startsWith(name)) {
                 className = className.slice(name.length);
                 break;

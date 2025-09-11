@@ -10,7 +10,11 @@ import {TurboEvent} from "../../events/turboEvent";
 import {TurboDragEvent} from "../../events/turboDragEvent";
 
 export class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
-    public pointerDown = (e: MouseEvent | TouchEvent) => {
+    public keyName: string = "pointer";
+
+    public pointerDown = (e: MouseEvent | TouchEvent) => this.pointerDownFn(e);
+
+    protected pointerDownFn(e: MouseEvent | TouchEvent) {
         if (!e.composedPath().includes(this.model.lockState.lockOrigin)) {
             (document.activeElement as HTMLElement)?.blur?.();
             this.element.unlock();
@@ -68,7 +72,9 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         }, this.model.longPressDuration);
     };
 
-    public pointerMove = (e: MouseEvent | TouchEvent) => {
+    public pointerMove = (e: MouseEvent | TouchEvent) => this.pointerMoveFn(e);
+
+    protected pointerMoveFn(e: MouseEvent | TouchEvent) {
         if (!this.element.enabled) return;
         if (!this.element.moveEventsEnabled && !this.element.dragEventEnabled) return;
 
@@ -119,7 +125,9 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         this.model.positions.forEach((position, key) => this.model.previousPositions.set(key, position));
     };
 
-    public pointerUp = (e: MouseEvent | TouchEvent) => {
+    public pointerUp = (e: MouseEvent | TouchEvent) => this.pointerUpFn(e);
+
+    protected pointerUpFn(e: MouseEvent | TouchEvent) {
         if (!this.element.enabled) return;
 
         //Check if is touch
@@ -175,7 +183,9 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         this.model.currentClick = ClickMode.none;
     };
 
-    public pointerLeave = () => {
+    public pointerLeave = () => this.pointerLeaveFn();
+
+    protected pointerLeaveFn()  {
         if (!this.element.enabled) return;
         if (this.model.currentAction == ActionMode.none) return;
         //Clear any timer set

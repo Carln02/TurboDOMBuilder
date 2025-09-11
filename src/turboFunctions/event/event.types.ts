@@ -20,7 +20,8 @@ type PreventDefaultOptions = {
     phase?: "capture" | "bubble",
     stop?: false | "stop" | "immediate",
     preventDefaultOn?: (type: string, e: Event) => boolean,
-    clearPreviousListeners?: boolean
+    clearPreviousListeners?: boolean,
+    manager?: TurboEventManager
 };
 
 const BasicInputEvents = [

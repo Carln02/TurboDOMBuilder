@@ -116,7 +116,7 @@ type TurboProperties<
     children?: Element | Element[];
     text?: string;
 
-    listeners?: Record<string, EventListenerOrEventListenerObject | ((e: Event, el: ValidElement<Tag>) => void)>
+    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => void)>
 };
 
 /**

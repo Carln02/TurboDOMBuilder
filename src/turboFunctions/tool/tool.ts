@@ -40,7 +40,8 @@ function setupToolFunctions() {
         else {
             options.activationEvent ??= DefaultEventName.click;
             options.clickMode ??= ClickMode.left;
-            this.on(options.activationEvent, () => options.manager.setTool(toolName, options.clickMode));
+            this.on(options.activationEvent, () => options.manager.setTool(toolName, options.clickMode),
+                undefined, options.manager);
         }
         utils.saveTool(this, toolName, options.manager);
 
@@ -72,21 +73,21 @@ function setupToolFunctions() {
     TurboSelector.prototype.addToolBehavior = function _addToolBehavior
     (this: TurboSelector, type: string, callback: ToolBehaviorCallback, toolName: string = this.getToolName(),
      manager: TurboEventManager = TurboEventManager.instance): void {
-        if (!type || !toolName || !this.isTool(manager)) return;
+        if (!type || !toolName) return;
         utils.addToolBehavior(toolName, type, callback, manager);
     }
 
     TurboSelector.prototype.hasToolBehavior = function _hasToolBehavior
     (this: TurboSelector, type: string, toolName: string = this.getToolName(),
      manager: TurboEventManager = TurboEventManager.instance): boolean {
-        if (!type || !toolName || !this.isTool(manager)) return false;
+        if (!type || !toolName) return false;
         return utils.getToolBehaviors(toolName, type, manager).length > 0;
     }
 
     TurboSelector.prototype.removeToolBehaviors = function _removeToolBehaviors
     (this: TurboSelector, type: string, toolName: string = this.getToolName(),
      manager: TurboEventManager = TurboEventManager.instance) {
-        if (!type || !toolName || !this.isTool(manager)) return;
+        if (!type || !toolName) return;
         utils.removeToolBehaviors(toolName, type, manager);
     }
 

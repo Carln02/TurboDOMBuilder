@@ -1,4 +1,3 @@
-import "./listenerManipulation.types";
 import {BasicInputEvents, ListenerEntry, ListenerOptions, NonPassiveEvents, PreventDefaultOptions} from "./event.types";
 import {$, TurboSelector} from "../turboFunctions";
 import {Turbo} from "../turboFunctions.types";
@@ -59,12 +58,16 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.onTool = function _onTool<Type extends Node>(
-        this: Turbo<Type>, type: string, toolName: string, listener: ((e: Event, el: Turbo<Type>) => void),
-        options?: ListenerOptions, manager: TurboEventManager = TurboEventManager.instance
+        this: Turbo<Type>,
+        type: string,
+        toolName: string,
+        listener: ((e: Event, el: Turbo<Type>) => void),
+        options?: ListenerOptions,
+        manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
-        if (this.hasToolListener(type, toolName, listener)) return this;
+        if (this.hasToolListener(type, toolName, listener, manager)) return this;
 
-        manager.setupCustomDispatcher(type);
+        manager.setupCustomDispatcher?.(type);
         utils.getBoundListenersSet(this, type).add({
             target: this,
             type: type,
@@ -88,94 +91,14 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.on = function _on<Type extends Node>(
-        this: Turbo<Type>, type: string, listener: ((e: Event, el: Turbo<Type>) => void),
-        options?: ListenerOptions, manager: TurboEventManager = TurboEventManager.instance
+        this: Turbo<Type>,
+        type: string,
+        listener: ((e: Event, el: Turbo<Type>) => void),
+        options?: ListenerOptions,
+        manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         return this.onTool(type, undefined, listener, options, manager);
     };
-
-    // TurboSelector.prototype.executeAction = function _executeAction(
-    //     this: TurboSelector, type: string, toolName: string, event: Event,
-    //     options?: ListenerOptions, manager?: TurboEventManager): boolean {
-    //     let passed: boolean = false;
-    //
-    //     const boundListeners = utils.getBoundListenersSet(this, type);
-    //
-    //     const boundListenersWithTool =
-    //         utils.getBoundListeners(this, type, toolName, options, manager);
-    //     if (boundListenersWithTool.length > 0) {
-    //         passed = true;
-    //         boundListenersWithTool.forEach(entry => {
-    //             entry.listener(event, this);
-    //             if (entry.options?.once) boundListeners.delete(entry);
-    //             if (entry.options?.propagate) passed = false;
-    //         });
-    //     } else {
-    //         const currentToolName = manager.getCurrentToolName();
-    //         if ($(this).applyTool(currentToolName, type, event, manager)) passed = true;
-    //         else {
-    //             const embeddedTarget = $(this).getEmbeddedToolTarget(manager);
-    //             if (embeddedTarget && $(this).getToolNames(manager).includes(currentToolName)
-    //                 && $(embeddedTarget).applyTool(currentToolName, type, event, manager)) passed = true;
-    //             else {
-    //                 const boundListenersWithoutTool =
-    //                     utils.getBoundListeners(this, type, undefined, options, manager);
-    //                 if (boundListenersWithoutTool.length > 0) {
-    //                     passed = true;
-    //                     boundListenersWithoutTool.forEach(entry => {
-    //                         entry.listener(event, this);
-    //                         if (entry.options?.once) boundListeners.delete(entry);
-    //                         if (entry.options?.propagate) passed = false;
-    //                     });
-    //                 }
-    //             }
-    //         }
-    //     }
-    //
-    //     return passed;
-    // }
-
-
-    // TurboSelector.prototype.executeAction = function _executeAction(
-    //     this: TurboSelector,
-    //     type: string,
-    //     toolName: string,
-    //     event: Event,
-    //     options?: ListenerOptions,
-    //     manager: TurboEventManager = TurboEventManager.instance
-    // ): boolean {
-    //     if (!type) return false;
-    //     const boundSet = utils.getBoundListenersSet(this, type);
-    //     const activeTool = toolName ?? manager.getCurrentToolName();
-    //
-    //     const run = (entries: ReturnType<typeof utils.getBoundListeners>): boolean => {
-    //         if (entries.length === 0) return false;
-    //         let propagate = false;
-    //         for (const entry of entries) {
-    //             entry.listener(event, this);
-    //             if (entry.options?.once) boundSet.delete(entry);
-    //             if (entry.options?.propagate) propagate = true;
-    //         }
-    //         return !propagate;
-    //     };
-    //
-    //     if (activeTool && run(utils.getBoundListeners(this, type, activeTool, options, manager))) return true;
-    //     if (activeTool && this.applyTool(activeTool, type, event, manager)) return true;
-    //
-    //     const embeddedTarget = this.getEmbeddedToolTarget(manager);
-    //     if (embeddedTarget) {
-    //         let ret = false;
-    //         for (const toolName of this.getToolNames(manager)) {
-    //             if (run(utils.getBoundListeners(embeddedTarget, type, toolName, options, manager))) ret = true;
-    //         }
-    //         if (ret) return true;
-    //         for (const toolName of this.getToolNames(manager)) {
-    //             if ($(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
-    //         }
-    //         if (ret) return true;
-    //     }
-    //     return run(utils.getBoundListeners(this, type, undefined, options, manager));
-    // };
 
     TurboSelector.prototype.executeAction = function _executeAction(
         this: TurboSelector,
@@ -191,7 +114,7 @@ function setupEventFunctions() {
         const run = (target: Node, tool?: string): boolean => {
             const ts = target instanceof TurboSelector ? target : $(target);
             const boundSet = utils.getBoundListenersSet(target, type);
-            const entries = utils.getBoundListeners(target, type, tool, options, manager);
+            const entries = [...utils.getBoundListeners(target, type, tool, options, manager)];
             if (entries.length === 0) return false;
 
             let propagate = false;
@@ -209,9 +132,9 @@ function setupEventFunctions() {
         if (activeTool && this.applyTool(activeTool, type, event, manager)) return true;
 
         const embeddedTarget = this.getEmbeddedToolTarget(manager);
-        if (embeddedTarget) {
-            const objectTools = this.getToolNames(manager);
+        const objectTools = this.getToolNames(manager);
 
+        if (embeddedTarget && objectTools.length > 0) {
             let ret = false;
             for (const toolName of objectTools) {
                 if (run(embeddedTarget, toolName)) ret = true;
@@ -227,8 +150,6 @@ function setupEventFunctions() {
         return run(this, undefined);
     };
 
-
-
     /**
      * @description Checks if the given event listener is bound to the element (in its boundListeners list).
      * @param {string} type - The type of the event. Set to null or undefined to get all event types.
@@ -238,9 +159,12 @@ function setupEventFunctions() {
      * @returns {boolean} - Whether the element has the given listener.
      */
     TurboSelector.prototype.hasListener = function _hasListener(
-        this: Turbo, type: string, listener: ((e: Event, el: Turbo) => void),
-        manager: TurboEventManager = TurboEventManager.instance): boolean {
-        return this.hasToolListener(type, null, listener, manager);
+        this: Turbo,
+        type: string,
+        listener: ((e: Event, el: Turbo) => void),
+        manager: TurboEventManager = TurboEventManager.instance
+    ): boolean {
+        return this.hasToolListener(type, undefined, listener, manager);
     }
 
     /**
@@ -254,8 +178,12 @@ function setupEventFunctions() {
      * @returns {boolean} - Whether the element has the given listener.
      */
     TurboSelector.prototype.hasToolListener = function _hasToolListener(
-        this: Turbo, type: string, toolName: string, listener: ((e: Event, el: Turbo) => void),
-        manager: TurboEventManager = TurboEventManager.instance): boolean {
+        this: Turbo,
+        type: string,
+        toolName: string,
+        listener: ((e: Event, el: Turbo) => void),
+        manager: TurboEventManager = TurboEventManager.instance
+    ): boolean {
         return utils.getBoundListeners(this, type, toolName, undefined, manager)
             .filter(entry => entry.listener === listener).length > 0;
     }
@@ -270,7 +198,10 @@ function setupEventFunctions() {
      * @returns {boolean} - Whether the element has the given listener.
      */
     TurboSelector.prototype.hasListenersByType = function _hasListenersByType(
-        type: string, toolName?: string, manager: TurboEventManager = TurboEventManager.instance): boolean {
+        type: string,
+        toolName?: string,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): boolean {
         return utils.getBoundListeners(this, type, toolName, undefined, manager).length > 0;
     }
 
@@ -283,10 +214,12 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeListener = function _removeListener<Type extends Node>(
-        this: Turbo<Type>, type: string, listener: ((e: Event, el: Turbo<Type>) => void),
+        this: Turbo<Type>,
+        type: string,
+        listener: ((e: Event, el: Turbo<Type>) => void),
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
-        return this.removeToolListener(type, null, listener, manager);
+        return this.removeToolListener(type, undefined, listener, manager);
     };
 
     /**
@@ -300,8 +233,12 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeToolListener = function _removeToolListener<Type extends Node>(
-        this: Turbo<Type>, type: string, toolName: string, listener: ((e: Event, el: Turbo<Type>) => void),
-        manager: TurboEventManager = TurboEventManager.instance): Turbo<Type> {
+        this: Turbo<Type>,
+        type: string,
+        toolName: string,
+        listener: ((e: Event, el: Turbo<Type>) => void),
+        manager: TurboEventManager = TurboEventManager.instance
+    ): Turbo<Type> {
         const boundListeners = utils.getBoundListenersSet(this, type);
         utils.getBoundListeners(this, type, toolName, undefined, manager)
             .filter(entry => entry.listener === listener)
@@ -320,7 +257,10 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeListenersByType = function _removeListenersByType(
-        this: Turbo, type: string, toolName?: string, manager: TurboEventManager = TurboEventManager.instance
+        this: Turbo,
+        type: string,
+        toolName?: string,
+        manager: TurboEventManager = TurboEventManager.instance
     ): TurboSelector {
         const boundListeners = utils.getBoundListenersSet(this, type);
         utils.getBoundListeners(this, type, toolName, undefined, manager)
@@ -334,18 +274,20 @@ function setupEventFunctions() {
      * or a new instantiated one if none already exist.
      * @returns {this} Itself, allowing for method chaining.
      */
-    TurboSelector.prototype.removeAllListeners = function _removeListeners
-    (this: TurboSelector, manager: TurboEventManager = TurboEventManager.instance): TurboSelector {
+    TurboSelector.prototype.removeAllListeners = function _removeListeners(
+        this: TurboSelector,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): TurboSelector {
         this.boundListeners.forEach(set => [...set]
                 .filter(entry => entry.manager === manager)
                 .forEach(entry => set.delete(entry)));
 
-        const listeners = utils.getSingleListeners(this.element, manager);
-        if (listeners && typeof listeners === "object") Object.entries(listeners)
-            .forEach(([type, listener]: [string, (e: Event) => void]) => {
-                this.element.removeEventListener(type, listener);
-                delete listeners[type];
-            });
+        // const listeners = utils.getSingleListeners(this.element, manager);
+        // if (listeners && typeof listeners === "object") Object.entries(listeners)
+        //     .forEach(([type, listener]: [string, (e: Event) => void]) => {
+        //         this.element.removeEventListener(type, listener);
+        //         delete listeners[type];
+        //     });
         return this;
     };
 
@@ -354,9 +296,9 @@ function setupEventFunctions() {
      * will be processed.
      * @param {PreventDefaultOptions} options - An options object to customize the behavior of the function.
      */
-    TurboSelector.prototype.preventDefault = function _preventDefault
-    (this: Turbo, options?: PreventDefaultOptions): void {
+    TurboSelector.prototype.preventDefault = function _preventDefault(this: Turbo, options?: PreventDefaultOptions): void {
         if (!options) options = {};
+        const manager = options.manager ?? TurboEventManager.instance;
         const types = options.types ?? BasicInputEvents;
         const phase = options.phase ?? "capture";
         const stop = options.stop ?? false;
@@ -384,7 +326,7 @@ function setupEventFunctions() {
             const options: Record<string, boolean> = {};
             if (phase === "capture") options.capture = true;
             if (shouldNotBePassive.has(type)) options.passive = false;
-            this.on(type, handler, options);
+            this.on(type, handler, options, manager);
         }
     }
 }

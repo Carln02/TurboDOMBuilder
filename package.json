@@ -17,7 +17,7 @@
     }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "build": "gulp build",
     "doc": "typedoc src/**/*.ts",
     "clean": "rm -rf dist"
@@ -52,13 +52,15 @@
     "del": "^7.1.0",
     "gulp": "^5.0.0",
     "gulp-insert": "^0.5.0",
+    "jsdom": "^26.1.0",
     "rollup": "^4.13.2",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-postcss": "^4.0.2",
     "through2": "^4.0.2",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.12",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@types/ungap__structured-clone": "^1.2.0",

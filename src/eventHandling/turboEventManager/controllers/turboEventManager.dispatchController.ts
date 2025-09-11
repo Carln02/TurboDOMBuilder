@@ -8,6 +8,8 @@ import {TurboKeyEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
 
 export class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+    public keyName: string = "dispatch";
+
     private boundHooks: Map<string, (e: Event) => void> = new Map();
 
     protected setupChangedCallbacks() {
@@ -15,10 +17,10 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
         this.emitter.add("dispatchEvent", this.dispatchEvent);
     }
 
-    protected dispatchEvent<
+    protected dispatchEvent = <
         EventType extends TurboEvent = TurboEvent,
         PropertiesType extends TurboRawEventProperties = TurboRawEventProperties
-    >(target: Node, eventType: new (properties: PropertiesType) => EventType, properties: Partial<PropertiesType>) {
+    >(target: Node, eventType: new (properties: PropertiesType) => EventType, properties: Partial<PropertiesType>) => {
         properties.keys = this.model.currentKeys;
         properties.toolName = this.element.getCurrentToolName(this.model.currentClick) as string;
         properties.clickMode = this.model.currentClick;
@@ -29,7 +31,7 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
         properties.scalePosition = this.element.scaleEventPosition;
 
         if (properties.eventName === TurboKeyEventName.keyPressed) this.element.setToolByKey(properties["keyPressed"]);
-        else if (properties.eventName === TurboKeyEventName.keyReleased) this.element.setTool(null, ClickMode.key, {select: false});
+        else if (properties.eventName === TurboKeyEventName.keyReleased) this.element.setTool(undefined, ClickMode.key, {select: false});
 
         target.dispatchEvent(new eventType(properties as PropertiesType));
     }

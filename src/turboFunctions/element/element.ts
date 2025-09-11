@@ -30,12 +30,12 @@ function setupElementFunctions() {
                 case "shadowDOM":
                     return;
                 case "text":
-                    if (!(this instanceof HTMLElement)) return;
-                    this.innerText = properties.text;
+                    if (!(this.element instanceof HTMLElement)) return;
+                    this.element.innerText = properties.text;
                     return;
                 case "style":
-                    if (!(this instanceof HTMLElement || this instanceof SVGElement)) return;
-                    this.style.cssText += properties.style;
+                    if (!(this.element instanceof HTMLElement || this.element instanceof SVGElement)) return;
+                    this.element.style.cssText += properties.style;
                     return;
                 case "stylesheet":
                     stylesheet(properties.stylesheet, this.closestRoot);
@@ -48,7 +48,7 @@ function setupElementFunctions() {
                     return;
                 case "listeners":
                     Object.keys(properties.listeners).forEach(listenerType =>
-                        this.on(listenerType, properties.listeners[listenerType], this as Node));
+                        this.on(listenerType, properties.listeners[listenerType]));
                     return;
                 case "children":
                     this.addChild(properties.children);
@@ -60,9 +60,13 @@ function setupElementFunctions() {
                 default:
                     if (setOnlyBaseProperties) return;
                     try {
-                        (this as any)[property] = properties[property];
+                        this.element[property] = properties[property];
                     } catch (e) {
-                        console.error(e);
+                        try {
+                            this.setAttribute(property, properties[property]);
+                        } catch (e) {
+                            console.error(e);
+                        }
                     }
                     return;
             }

@@ -5,9 +5,14 @@ import {TurboController} from "../../../turboElement/mvc/turboController";
 import {TurboEventManager} from "../turboEventManager";
 
 export class TurboEventManagerKeyController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
-    public keyDown = (e: KeyboardEvent) => {
+    public keyName: string = "key";
+
+    public keyDown = (e: KeyboardEvent) => this.keyDownFn(e);
+
+    protected keyDownFn(e: KeyboardEvent) {
         if (!this.element.enabled) return;
         //Return if key already pressed
+
         if (this.model.currentKeys.includes(e.key)) return;
         //Add key to currentKeys
         this.model.currentKeys.push(e.key);
@@ -15,7 +20,9 @@ export class TurboEventManagerKeyController extends TurboController<TurboEventMa
         this.emitter.fire("dispatchEvent", document, TurboKeyEvent, {eventName: TurboKeyEventName.keyPressed, keyPressed: e.key});
     }
 
-    public keyUp = (e: KeyboardEvent) => {
+    public keyUp = (e: KeyboardEvent) => this.keyUpFn(e);
+
+    protected keyUpFn(e: KeyboardEvent) {
         if (!this.element.enabled) return;
         //Return if key not pressed
         if (!this.model.currentKeys.includes(e.key)) return;

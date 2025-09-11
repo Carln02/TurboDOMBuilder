@@ -1,4 +1,3 @@
-import "./styleManipulation.types";
 import {StylesType} from "./style.types";
 import {TurboSelector} from "../turboFunctions";
 import {PartialRecord} from "../../core.types";
@@ -77,7 +76,7 @@ function setupStyleFunctions() {
             styles.split(";").forEach(entry => {
                 const [property, value] = entry.split(":").map(part => part.trim());
                 if (!property || !value) return;
-                styles[property] = value;
+                stylesObject[property] = value;
             });
         }
 

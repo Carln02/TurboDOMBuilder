@@ -7,6 +7,8 @@ import {TurboWheelEvent} from "../../events/turboWheelEvent";
 import {Point} from "../../../utils/datatypes/point/point";
 
 export class TurboEventManagerWheelController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+    public keyName: string = "wheel";
+
     public wheel = (e: WheelEvent) => {
         if (!this.element.enabled) return;
         //Prevent default scroll behavior

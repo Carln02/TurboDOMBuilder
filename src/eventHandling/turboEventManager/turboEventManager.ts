@@ -24,6 +24,8 @@ import {TurboEventManagerWheelController} from "./controllers/turboEventManager.
 import {TurboEventManagerPointerController} from "./controllers/turboEventManager.pointerController";
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
+import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
+import {controller} from "../../decorators/controller";
 
 /**
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
@@ -50,6 +52,10 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         return [...this.managers];
     }
 
+    public static set allManagers(managers: TurboEventManager[]) {
+        this.managers = managers;
+    }
+
     /*
      *
      *
@@ -67,8 +73,12 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
                 TurboEventManagerWheelController,
                 TurboEventManagerPointerController,
                 TurboEventManagerDispatchController
-            ]
+            ],
+            handlerConstructors: [TurboEventManagerUtilsHandler]
         });
+
+        TurboEventManager.managers.push(this);
+
         this.model.authorizeEventScaling = properties.authorizeEventScaling;
         this.model.scaleEventPosition = properties.scaleEventPosition;
 
@@ -88,8 +98,6 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         if (!properties.disableDragEvents) this.dragEventEnabled = true;
         if (!properties.disableClickEvents) this.clickEventEnabled = true;
         if (!properties.disableMoveEvent) this.moveEventsEnabled = true;
-
-        TurboEventManager.managers.push(this);
     }
 
     /*
@@ -112,9 +120,8 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         return this.mvc.getController("pointer") as TurboEventManagerPointerController;
     }
 
-    protected get dispatchController(): TurboEventManagerDispatchController {
-        return this.mvc.getController("dispatch") as TurboEventManagerDispatchController;
-    }
+    @controller("dispatch")
+    protected dispatchController: TurboEventManagerDispatchController;
 
     /*
      *

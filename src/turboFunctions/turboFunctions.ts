@@ -1,6 +1,5 @@
 import "./turboFunctions.types";
 import {Turbo, TurbofyOptions} from "./turboFunctions.types";
-import {addReifectManagementToNodePrototype} from "../turboComponents/wrappers/reifectManipulation/reifectManipulation";
 import {setupHierarchyFunctions} from "./hierarchy/hierarchy";
 import {setupMiscFunctions} from "./misc/misc";
 import {setupClassFunctions} from "./class/class";
@@ -78,7 +77,7 @@ function turbofy(options: TurbofyOptions = {}) {
     if (!options.excludeEventFunctions) setupEventFunctions();
     if (!options.excludeStyleFunctions) setupStyleFunctions();
     if (!options.excludeToolFunctions) setupToolFunctions();
-    addReifectManagementToNodePrototype();
+    //todo addReifectManagementToNodePrototype();
 }
 
 export {TurboSelector, $, t, turbo, turbofy};
