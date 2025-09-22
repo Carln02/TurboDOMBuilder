@@ -55,21 +55,23 @@ class TurboEvent extends Event {
     public constructor(properties: TurboEventProperties) {
         super(properties.eventName, {bubbles: true, cancelable: true, ...properties.eventInitDict});
 
+        this.eventManager = properties.eventManager ?? TurboEventManager.instance;
+
         this.authorizeScaling = properties.authorizeScaling ?? true;
         this.scalePosition = properties.scalePosition ?? ((position: Point) => position);
 
+        this.clickMode = properties.clickMode ?? TurboEventManager.instance.currentClick;
+        this.keys = properties.keys ?? TurboEventManager.instance.currentKeys;
+
         this.eventName = properties.eventName;
-        this.clickMode = properties.clickMode;
-        this.keys = properties.keys;
         this.position = properties.position;
-        this.eventManager = properties.eventManager;
         this.toolName = properties.toolName;
     }
 
     /**
      * @description The tool (if any) associated with this event.
      */
-    public get tool(): Element {
+    public get tool(): Node {
         if (!this.toolName || !(this.eventManager instanceof TurboEventManager)) return null;
         return this.eventManager.getToolByName(this.toolName);
     }

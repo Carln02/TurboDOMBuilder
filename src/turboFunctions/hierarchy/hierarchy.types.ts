@@ -6,7 +6,7 @@ import {ValidElement, ValidTag} from "../../core.types";
  */
 type ChildHandler = Node | ShadowRoot;
 
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
 
         //Readonly fields

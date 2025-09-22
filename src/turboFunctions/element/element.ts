@@ -1,8 +1,9 @@
 import "./element.types";
-import {$, TurboSelector} from "../turboFunctions";
+import {TurboSelector} from "../turboSelector";
 import {ValidElement, ValidTag} from "../../core.types";
-import {TurboProperties} from "../../turboElement/turboElement.types";
+import {TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
+import {$} from "../turboFunctions";
 
 function setupElementFunctions() {
     /**

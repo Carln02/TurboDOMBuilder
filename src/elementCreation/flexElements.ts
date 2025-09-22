@@ -1,7 +1,7 @@
 import {element} from "./element";
-import {TurboProperties} from "../turboElement/turboElement.types";
 import {HTMLTag, ValidHTMLElement} from "../core.types";
 import {$} from "../turboFunctions/turboFunctions";
+import {TurboProperties} from "../turboFunctions/element/element.types";
 
 /**
  * @description Create a flex column element.

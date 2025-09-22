@@ -27,7 +27,7 @@ type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTu
 }
 
 type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
-    lockOrigin?: Element,
+    lockOrigin?: Node,
 }
 
 /**

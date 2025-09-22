@@ -50,4 +50,15 @@ enum Range {
     max = "max",
 }
 
-export {Direction, Side, SideV, SideH, InOut, OnOff, Open, Shown, AccessLevel, Range};
+type FlexRect = {
+    top?: number,
+    bottom?: number,
+    left?: number,
+    right?: number,
+    x?: number,
+    y?: number,
+    width?: number,
+    height?: number
+};
+
+export {Direction, Side, SideV, SideH, InOut, OnOff, Open, Shown, AccessLevel, Range, FlexRect};

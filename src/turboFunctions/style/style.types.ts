@@ -13,7 +13,7 @@ type StylesRoot = ShadowRoot | HTMLHeadElement;
  */
 type StylesType = string | number | PartialRecord<keyof CSSStyleDeclaration, string | number>
 
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
         /**
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).

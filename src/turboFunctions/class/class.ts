@@ -1,5 +1,5 @@
 import "./class.types";
-import {TurboSelector} from "../turboFunctions";
+import {TurboSelector} from "../turboSelector";
 import {ClassFunctionsUtils} from "./class.utils";
 
 const utils = new ClassFunctionsUtils();

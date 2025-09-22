@@ -1,20 +1,21 @@
 import {TurboSelect} from "../../basics/select/select";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
-import {define} from "../../../domBuilding/decorators/define";
 import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/selectEntry.types";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {TurboDragEvent} from "../../../eventHandling/events/basic/turboDragEvent";
 import {linearInterpolation} from "../../../utils/computations/interpolation";
 import {trim} from "../../../utils/computations/misc";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {TurboSelectWheelProperties, TurboSelectWheelStylingProperties} from "./selectWheel.types";
 import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
-import {PartialRecord} from "../../../domBuilding/core.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 import {Point} from "../../../utils/datatypes/point/point";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {PartialRecord} from "../../../core.types";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {auto} from "../../../decorators/auto/auto";
+import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
 
 /**
  * @class TurboSelectWheel
@@ -69,7 +70,7 @@ class TurboSelectWheel<
         this.generateCustomStyling = properties.generateCustomStyling;
         this.reifect = properties.styleReifect;
 
-        this.setStyles({display: "block", position: "relative"});
+        $(this).setStyles({display: "block", position: "relative"});
         this.alwaysOpen = properties.alwaysOpen ?? false;
 
         this.initializeUI();
@@ -79,7 +80,7 @@ class TurboSelectWheel<
     }
 
     public connectedCallback() {
-        super.connectedCallback();
+        //TODO super.connectedCallback();
         requestAnimationFrame(() => this.refresh());
     }
 
@@ -112,8 +113,8 @@ class TurboSelectWheel<
 
     @auto()
     public set alwaysOpen(value: boolean) {
-        if (value) document.removeListener(DefaultEventName.click, this.closeOnClick);
-        else document.addListener(DefaultEventName.click, this.closeOnClick);
+        if (value) $(document).removeListener(DefaultEventName.click, this.closeOnClick);
+        else $(document).on(DefaultEventName.click, this.closeOnClick);
         this.open = value;
     }
 
@@ -138,7 +139,7 @@ class TurboSelectWheel<
 
     @auto()
     public set open(value: boolean) {
-        this.setStyle("overflow", value ? "visible" : "hidden");
+        $(this).setStyle("overflow", value ? "visible" : "hidden");
     }
 
     public get currentPosition(): number {
@@ -163,13 +164,13 @@ class TurboSelectWheel<
     protected setupUIListeners() {
         super.setupUIListeners();
 
-        document.body.addListener(DefaultEventName.drag, (e: TurboDragEvent) => {
+        $(document.body).on(DefaultEventName.drag, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
         });
 
-        document.body.addListener(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
+        $(document.body).on(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             e.stopImmediatePropagation();
             this.dragging = false;
@@ -239,7 +240,7 @@ class TurboSelectWheel<
             defaultComputedStyles: styles
         });
 
-        element.setStyles(styles);
+        $(element).setStyles(styles);
     }
 
     public select(entry: ValueType | EntryType, selected: boolean = true): this {
@@ -255,7 +256,7 @@ class TurboSelectWheel<
         }
 
         const computedStyle = getComputedStyle(this.selectedEntry);
-        this.setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
+        $(this).setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
         return this;
     }
 
@@ -276,9 +277,9 @@ class TurboSelectWheel<
         });
 
         entry = super.addEntry(entry, index);
-        entry.setStyles({position: "absolute"});
+        $(entry).setStyles({position: "absolute"});
 
-        entry.addListener(DefaultEventName.dragStart, (e: Event) => {
+        $(entry).on(DefaultEventName.dragStart, (e: Event) => {
             e.stopImmediatePropagation();
             this.clearOpenTimer();
             this.open = true;
@@ -288,11 +289,11 @@ class TurboSelectWheel<
         });
 
         let showTimer: NodeJS.Timeout;
-        entry.addListener("mouseover", () => {
+        $(entry).on("mouseover", () => {
             clearTimeout(showTimer);
             showTimer = setTimeout(() => this.open = true, 1000);
         });
-        entry.addListener("mouseout", () => {
+        $(entry).on("mouseout", () => {
             if (showTimer) clearTimeout(showTimer);
             showTimer = null;
         });

@@ -1,5 +1,5 @@
-import {PartialRecord} from "../../../domBuilding/core.types";
-import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
+import {PartialRecord} from "../../../core.types";
+import {StylesType} from "../../../turboFunctions/style/style.types";
 
 /**
  * @description A function type that interpolates a value based on the index, total count, and the object.

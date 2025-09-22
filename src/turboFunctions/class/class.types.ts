@@ -1,4 +1,4 @@
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
         /**
          * @description Add one or more CSS classes to the element.

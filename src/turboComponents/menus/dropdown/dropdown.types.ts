@@ -1,8 +1,8 @@
 import {TurboSelectConfig, TurboSelectProperties} from "../../basics/select/select.types";
-import {HTMLTag} from "../../../domBuilding/core.types";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {HTMLTag} from "../../../core.types";
 
 /**
  * @type {TurboDropdownProperties}

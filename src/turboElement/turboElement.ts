@@ -1,11 +1,22 @@
-import {TurboCustomProperties} from "./turboElement.types";
-import {auto} from "../decorators/auto/auto";
-import {TurboView} from "./mvc/turboView";
-import {TurboModel} from "./mvc/turboModel";
-import {Delegate, kebabToCamelCase, Tool, TurboEmitter, TurboEvent} from "..";
-import {MvcHandler} from "./mvc/mvcHandler";
+import {TurboElementProperties} from "./turboElement.types";
 import {$} from "../turboFunctions/turboFunctions";
-import {parse} from "@ungap/structured-clone/json";
+import {Mvc} from "../mvc/mvc";
+import {TurboEmitter} from "../mvc/core/emitter";
+import {TurboModel} from "../mvc/core/model";
+import {TurboView} from "../mvc/core/view";
+import {defineDefaultProperties} from "./setup/default/default";
+import {defineMvcAccessors} from "./setup/mvc/mvc";
+import {defineUIPrototype} from "./setup/ui/ui";
+import { Delegate } from "../eventHandling/delegate/delegate";
+
+let isSetup: boolean = false;
+function setup() {
+    if (isSetup) return;
+    defineDefaultProperties(TurboElement);
+    defineMvcAccessors(TurboElement);
+    defineUIPrototype(TurboElement);
+}
+
 /**
  * @class TurboElement
  * @extends HTMLElement
@@ -30,7 +41,7 @@ class TurboElement<
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
      */
-    protected mvc: MvcHandler<this, ViewType, DataType, ModelType, EmitterType>;
+    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
 
     /**
      * @description Delegate fired when the element is attached to DOM.
@@ -57,40 +68,12 @@ class TurboElement<
         });
     }
 
-    public constructor(properties: TurboCustomProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
+    public constructor(properties: TurboElementProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
+        setup();
         super();
         if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.attachShadow({mode: "open"});
         $(this).setProperties(properties, true);
-        this.mvc = new MvcHandler({...properties, element: this});
-    }
-
-    public connectedCallback() {
-        this.onAttach.fire();
-    }
-
-    public disconnectedCallback() {
-        this.onDetach.fire();
-    }
-
-    public adoptedCallback() {
-        this.onAdopt.fire();
-    }
-
-    public attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-        if (!newValue || newValue == oldValue) return;
-        this[kebabToCamelCase(name)] = parse(newValue);
-    }
-
-    /**
-     * @function initializeUI
-     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
-     * setupUIElements, setupUILayout, setupUIListeners).
-     */
-    public initializeUI(): void {
-        this.setupChangedCallbacks();
-        this.setupUIElements();
-        this.setupUILayout();
-        this.setupUIListeners();
+        this.mvc = new Mvc({...properties, element: this});
     }
 
     /**
@@ -127,105 +110,16 @@ class TurboElement<
     protected setupUIListeners(): void {
     }
 
-    /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class (or whichever default selected class was set in the config) on the element and update the UI.
-     */
-    @auto()
-    public set selected(value: boolean) {
-        const selectedClass = this.getPropertiesValue<string>(null, "defaultSelectedClass", "selected");
-        $(this).toggleClass(selectedClass, value);
+    public connectedCallback() {
+        this.onAttach.fire();
     }
 
-    /**
-     * @description The view (if any) of the element. Only when initializing MVC.
-     */
-    public get view(): ViewType {
-        return this.mvc.view;
+    public disconnectedCallback() {
+        this.onDetach.fire();
     }
 
-    public set view(view: ViewType) {
-        this.mvc.view = view;
-    }
-
-    /**
-     * @description The model (if any) of the element. Only when initializing MVC.
-     */
-    public get model(): ModelType {
-        return this.mvc.model;
-    }
-
-    public set model(model: ModelType) {
-        this.mvc.model = model;
-    }
-
-    /**
-     * @description The main data block (if any) attached to the element, taken from its model (if any). Only when
-     * initializing MVC.
-     */
-    public get data(): DataType {
-        return this.mvc.data;
-    }
-
-    public set data(data: DataType) {
-        this.mvc.data = data;
-    }
-
-    /**
-     * @description The ID of the main data block (if any) of the element, taken from its model (if any). Only when
-     * initializing MVC.
-     */
-    public get dataId(): string {
-        return this.mvc.dataId;
-    }
-
-    public set dataId(value: string) {
-        this.mvc.dataId = value;
-    }
-
-    /**
-     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
-     * Only when initializing MVC.
-     */
-    public get dataIndex(): number {
-        return this.mvc.dataIndex;
-    }
-
-    public set dataIndex(value: number) {
-        this.mvc.dataIndex = value;
-    }
-
-    /**
-     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
-     * Only when initializing MVC.
-     */
-    public get dataSize(): number {
-        return this.mvc.dataSize;
-    }
-
-    public propagatesUp(e: TurboEvent, tool: Tool<any>): boolean {
-        return this.mvc.propagatesUp(e, tool);
-    }
-
-    public interact(e: TurboEvent, tool: Tool<any>): boolean {
-        return this.mvc.interact(e, tool);
-    }
-
-    /**
-     * @function getPropertiesValue
-     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
-     * @param {Type} propertiesValue - The actual value; could be null.
-     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
-     * if the actual value is null.
-     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
-     * config values are null.
-     * @protected
-     */
-    protected getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
-        if (propertiesValue !== undefined && propertiesValue !== null) return propertiesValue;
-        const configValue: Type = (this.constructor as typeof TurboElement).config[configFieldName];
-        if (configValue !== undefined && configValue !== null) return configValue;
-        return defaultValue;
+    public adoptedCallback() {
+        this.onAdopt.fire();
     }
 }
 

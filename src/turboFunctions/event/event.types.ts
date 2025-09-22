@@ -1,12 +1,12 @@
-import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
+import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 
 type ListenerEntry = {
     target: Node,
     type: string,
     toolName?: string,
     listener: ((e: Event, el: Node) => void),
+    bundledListener: ((e: Event) => void),
     options?: ListenerOptions,
     manager: TurboEventManager,
 }
@@ -36,19 +36,19 @@ const NonPassiveEvents = [
     "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup",
 ] as const;
 
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
         /**
-         * @description Readonly map of listeners bound to this node.
+         * @description Readonly set of listeners bound to this node.
          */
-        readonly boundListeners: Map<string, Set<ListenerEntry>>;
+        readonly boundListeners: Set<ListenerEntry>;
 
         /**
          * @description If you want the element to bypass the event manager and allow native events to seep through,
          * you can set this field to a predicate that defines when to bypass the manager.
          * @param {TurboEvent} e The event.
          */
-        bypassManagerOn: (e: TurboEvent) => boolean | TurboEventManagerStateProperties;
+        bypassManagerOn: (e: Event) => boolean | TurboEventManagerStateProperties;
 
         /**
          * @description Adds an event listener to the element.

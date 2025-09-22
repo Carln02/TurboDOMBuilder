@@ -17,7 +17,6 @@ import {
 } from "../eventNaming";
 import {$} from "../../turboFunctions/turboFunctions";
 import {auto} from "../../decorators/auto/auto";
-import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement";
 import {TurboEventManagerModel} from "./turboEventManager.model";
 import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
 import {TurboEventManagerWheelController} from "./controllers/turboEventManager.wheelController";
@@ -26,6 +25,11 @@ import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {controller} from "../../decorators/controller";
+import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
+
+//TODO Create merged events maybe --> fire event x when "mousedown" | "touchstart" | "mousemove" etc.
+//ToDO Create "interaction" event --> when element interacted with
+//TODO GO from toolname to tool --> each tool instance can have different data --> different behavior (+ maybe tool has some attached data)
 
 /**
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
@@ -59,6 +63,19 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     /*
      *
      *
+     * Controllers & handlers
+     *
+     *
+     */
+
+    @controller() protected keyController: TurboEventManagerKeyController;
+    @controller() protected wheelController: TurboEventManagerWheelController;
+    @controller() protected pointerController: TurboEventManagerPointerController;
+    @controller() protected dispatchController: TurboEventManagerDispatchController;
+
+    /*
+     *
+     *
      * Constructor
      *
      *
@@ -67,14 +84,14 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     public constructor(properties: TurboEventManagerProperties = {}) {
         super();
         this.mvc.generate({
-            modelConstructor: TurboEventManagerModel,
-            controllerConstructors: [
+            model: TurboEventManagerModel,
+            controllers: [
                 TurboEventManagerKeyController,
                 TurboEventManagerWheelController,
                 TurboEventManagerPointerController,
                 TurboEventManagerDispatchController
             ],
-            handlerConstructors: [TurboEventManagerUtilsHandler]
+            handlers: [TurboEventManagerUtilsHandler]
         });
 
         TurboEventManager.managers.push(this);
@@ -98,30 +115,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         if (!properties.disableDragEvents) this.dragEventEnabled = true;
         if (!properties.disableClickEvents) this.clickEventEnabled = true;
         if (!properties.disableMoveEvent) this.moveEventsEnabled = true;
+
+        //TODO
+        this.dispatchController.setupCustomDispatcher("mousedown");
+        this.dispatchController.setupCustomDispatcher("touchstart");
     }
-
-    /*
-     *
-     *
-     * Controllers & handlers
-     *
-     *
-     */
-
-    protected get keyController(): TurboEventManagerKeyController {
-        return this.mvc.getController("key") as TurboEventManagerKeyController;
-    }
-
-    protected get wheelController(): TurboEventManagerWheelController {
-        return this.mvc.getController("wheel") as TurboEventManagerWheelController;
-    }
-
-    protected get pointerController(): TurboEventManagerPointerController {
-        return this.mvc.getController("pointer") as TurboEventManagerPointerController;
-    }
-
-    @controller("dispatch")
-    protected dispatchController: TurboEventManagerDispatchController;
 
     /*
      *
@@ -143,6 +141,14 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     //Delegate fired when the input device changes
     public get onInputDeviceChange(): Delegate<(device: InputDevice) => void> {
         return this.model.onInputDeviceChange;
+    }
+
+    public get currentClick(): ClickMode {
+        return this.model.currentClick;
+    }
+
+    public get currentKeys(): string[] {
+        return this.model.currentKeys;
     }
 
     /**
@@ -277,7 +283,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @param origin - The element that initiated the lock state.
      * @param value - The state properties to set.
      */
-    public lock(origin: Element, value: TurboEventManagerStateProperties) {
+    public lock(origin: Node, value: TurboEventManagerStateProperties) {
         this.unlock();
         this.model.lockState.lockOrigin = origin;
         for (const key in value) this.model.lockState[key] = value[key];
@@ -437,9 +443,9 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
             if (previousToolName === toolName) return;
 
             //Deselect and deactivate previous tool
-            (this.getToolsByName(previousToolName) || []).forEach(tool => {
-                if (options.select) this.model.utils.selectTool(tool, false);
-                if (options.activate) this.model.utils.activateTool(tool, false);
+            (this.getToolsByName(previousToolName) || []).forEach(element => {
+                if (options.select) this.model.utils.selectTool(element, false);
+                if (options.activate) this.model.utils.activateTool(element, previousToolName, false);
             });
         }
 
@@ -448,9 +454,9 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         if (options.setAsNoAction) this.model.currentTools.set(ClickMode.none, toolName);
 
         //Select and activate the tool
-        (this.getToolsByName(toolName) || []).forEach(tool => {
-            if (options.select) this.model.utils.selectTool(tool, true);
-            if (options.activate) this.model.utils.activateTool(tool, true);
+        (this.getToolsByName(toolName) || []).forEach(element => {
+            if (options.activate) this.model.utils.activateTool(element, toolName, true);
+            if (options.select) this.model.utils.selectTool(element, true);
         });
 
         //Fire tool changed

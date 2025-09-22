@@ -3,10 +3,10 @@ import {TurboIconSwitchProperties} from "./iconSwitch.types";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
 import {OnOff} from "../../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
-import {define} from "../../../../domBuilding/decorators/define";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import { auto } from "../../../../domBuilding/decorators/auto/auto";
+import {define} from "../../../../decorators/define/define";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
+import {auto} from "../../../../decorators/auto/auto";
 
 @define()
 class TurboIconSwitch<

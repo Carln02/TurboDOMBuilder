@@ -1,8 +1,8 @@
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {TurboKeyEvent} from "../../events/turboKeyEvent";
 import {TurboKeyEventName} from "../../eventNaming";
-import {TurboController} from "../../../turboElement/mvc/turboController";
 import {TurboEventManager} from "../turboEventManager";
+import {TurboController} from "../../../mvc/logic/controller";
 
 export class TurboEventManagerKeyController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "key";

@@ -2,8 +2,8 @@ import {TurboIconProperties} from "../icon.types";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboIcon} from "../icon";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
+import {TurboModel} from "../../../../mvc/core/model";
+import {TurboView} from "../../../../mvc/core/view";
 
 type TurboIconSwitchProperties<
     State extends string | number | symbol,

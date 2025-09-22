@@ -1,8 +1,7 @@
 import {TurboIconProperties} from "../icon.types";
 import {TurboIconToggle} from "./iconToggle";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../../domBuilding/mvc/turboEmitter";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
 
 type TurboIconToggleProperties<
     ViewType extends TurboView = TurboView,

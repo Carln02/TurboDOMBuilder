@@ -90,9 +90,11 @@ const DefaultEventName = {
     resize: "resize"
 };
 
-type DefaultEventNameEntry = typeof DefaultEventName[keyof typeof DefaultEventName];
+type DefaultEventNameKey = keyof typeof DefaultEventName;
+type DefaultEventNameEntry = typeof DefaultEventName[DefaultEventNameKey];
 
-type TurboEventNameEntry = typeof TurboEventName[keyof typeof TurboEventName];
+type TurboEventNameKey = keyof typeof TurboEventName;
+type TurboEventNameEntry = typeof TurboEventName[TurboEventNameKey];
 
 export {
     DefaultKeyEventName,
@@ -108,5 +110,7 @@ export {
     DefaultEventName,
     DefaultEventNameEntry,
     TurboEventName,
-    TurboEventNameEntry
+    TurboEventNameEntry,
+    DefaultEventNameKey,
+    TurboEventNameKey
 };

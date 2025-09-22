@@ -1,7 +1,7 @@
-import {$, TurboSelector} from "../turboFunctions";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {ListenerEntry, ListenerOptions} from "./event.types";
+import {TurboSelector} from "../turboSelector";
 
 export class EventFunctionsUtils {
     private dataMap = new WeakMap<Node, Record<string, any>>;
@@ -13,6 +13,15 @@ export class EventFunctionsUtils {
         return this.dataMap.get(element);
     }
 
+    public getBoundListenersSet(element: Node): Set<ListenerEntry> {
+        let set = this.data(element).boundListeners;
+        if (!set) {
+            set = new Set();
+            this.data(element).boundListeners = set;
+        }
+        return set;
+    }
+
     public getPreventDefaultListeners(element: Node): Record<string, (e: Event) => void> {
         let map = this.data(element).preventDefaultListeners;
         if (!map) {
@@ -22,7 +31,7 @@ export class EventFunctionsUtils {
         return map;
     }
 
-    public bypassManager(element: Element, eventManager: TurboEventManager,
+    public bypassManager(element: Node, eventManager: TurboEventManager,
                          bypassResults: boolean | TurboEventManagerStateProperties) {
         if (typeof bypassResults == "boolean") eventManager.lock(element, {
             enabled: bypassResults,
@@ -39,23 +48,13 @@ export class EventFunctionsUtils {
         });
     }
 
-    public getBoundListenersSet(element: Node, type: string): Set<ListenerEntry> {
-        const selector = element instanceof TurboSelector ? element : $(element);
-        let set = selector.boundListeners?.get(type);
-        if (!set) {
-            set = new Set();
-            selector.boundListeners.set(type, set);
-        }
-        return set;
-    }
-
     public getBoundListeners(element: Node, type: string, toolName: string, options?: ListenerOptions,
                              manager: TurboEventManager = TurboEventManager.instance): ListenerEntry[] {
         if (!options) options = {};
-        return [...this.getBoundListenersSet(element, type)]
-            .filter(entry => entry.manager === manager && entry.toolName === toolName)
+        return [...this.getBoundListenersSet(element)]
+            .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)
             .filter(entry => {
-                if (!options) return true;
+                if (!options || !entry.options) return true;
                 for (const [option, value] of Object.entries(options)) {
                     if (entry.options[option] !== value) return false;
                 }

@@ -7,13 +7,16 @@ import {
 } from "./turboEventManager.types";
 import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
 import {Point} from "../../utils/datatypes/point/point";
-import {TurboModel} from "../../turboElement/mvc/turboModel";
 import {Delegate} from "../delegate/delegate";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
+import {handler} from "../../decorators/controller";
+import {TurboModel} from "../../mvc/core/model";
 
 export class TurboEventManagerModel extends TurboModel {
     private _inputDevice: InputDevice;
+
+    @handler() public utils: TurboEventManagerUtilsHandler;
 
     public readonly state: TurboEventManagerStateProperties = {};
     public readonly lockState: TurboEventManagerLockStateProperties = {};
@@ -68,9 +71,5 @@ export class TurboEventManagerModel extends TurboModel {
         if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true;
         this._inputDevice = value;
         this.onInputDeviceChange.fire(value);
-    }
-
-    public get utils(): TurboEventManagerUtilsHandler {
-        return this.getHandler("utils") as TurboEventManagerUtilsHandler;
     }
 }

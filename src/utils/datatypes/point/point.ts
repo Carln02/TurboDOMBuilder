@@ -270,7 +270,7 @@ class Point {
      * @description Calculate the absolute value of the coordinates
      * @returns A new Point object with the absolute values
      */
-    public abs(): Point {
+    public get abs(): Point {
         return new Point(Math.abs(this.x), Math.abs(this.y));
     }
 
@@ -278,7 +278,7 @@ class Point {
      * @description Get the maximum value between x and y coordinates
      * @returns The maximum value
      */
-    public max(): number {
+    public get max(): number {
         return Math.max(this.x, this.y);
     }
 
@@ -286,8 +286,20 @@ class Point {
      * @description Get the minimum value between x and y coordinates
      * @returns The minimum value
      */
-    public min(): number {
+    public get min(): number {
         return Math.min(this.x, this.y);
+    }
+
+    public get length2(): number {
+        return this.x * this.x + this.y * this.y;
+    }
+
+    public get length(): number {
+        return Math.sqrt(this.length2)
+    }
+
+    public dot(p: Point): number {
+        return this.x * p.x + this.y + p.y;
     }
 
     /**

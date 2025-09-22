@@ -1,10 +1,10 @@
 import {BasicInputEvents, ListenerEntry, ListenerOptions, NonPassiveEvents, PreventDefaultOptions} from "./event.types";
-import {$, TurboSelector} from "../turboFunctions";
+import {$} from "../turboFunctions";
 import {Turbo} from "../turboFunctions.types";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
-import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {EventFunctionsUtils} from "./event.utils";
+import {TurboSelector} from "../turboSelector";
 
 const utils = new EventFunctionsUtils();
 
@@ -14,8 +14,9 @@ function setupEventFunctions() {
      * listeners.
      */
     Object.defineProperty(TurboSelector.prototype, "boundListeners", {
-        value: new Map<string, Set<ListenerEntry>>(),
-        writable: false,
+        get: function (): Set<ListenerEntry> {
+            return utils.getBoundListenersSet(this);
+        },
         configurable: true,
         enumerable: true
     });
@@ -23,24 +24,14 @@ function setupEventFunctions() {
     /**
      * @description If you want the element to bypass the event manager and allow native events to seep through,
      * you can set this field to a predicate that defines when to bypass the manager.
-     * @param {TurboEvent} e The event.
+     * @param {Event} e The event.
      */
     Object.defineProperty(TurboSelector.prototype, "bypassManagerOn", {
         get: function () {
             return utils.data(this)["bypassCallback"];
         },
-        set: function (value: (e: TurboEvent) => boolean | TurboEventManagerStateProperties) {
-            let bypassCallback = utils.data(this)["bypassCallback"];
-            const setupListeners = !bypassCallback;
+        set: function (value: (e: Event) => boolean | TurboEventManagerStateProperties) {
             utils.data(this)["bypassCallback"] = value;
-            bypassCallback = value;
-
-            if (setupListeners) {
-                this.addEventListener("mousedown", (e: TurboEvent) => TurboEventManager.allManagers
-                    .forEach(manager => utils.bypassManager(this, manager, bypassCallback(e))));
-                this.addEventListener("touchstart", (e: TurboEvent) => TurboEventManager.allManagers
-                    .forEach(manager => utils.bypassManager(this, manager, bypassCallback(e))));
-            }
         },
         configurable: true,
         enumerable: true
@@ -66,17 +57,11 @@ function setupEventFunctions() {
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         if (this.hasToolListener(type, toolName, listener, manager)) return this;
+        const bundledListener = (e: Event) => listener(e, this);
 
         manager.setupCustomDispatcher?.(type);
-        utils.getBoundListenersSet(this, type).add({
-            target: this,
-            type: type,
-            toolName: toolName,
-            listener: listener,
-            options: options,
-            manager: manager
-        });
-
+        utils.getBoundListenersSet(this).add({target: this, type, toolName, listener, bundledListener, options, manager});
+        this.element.addEventListener(type, bundledListener, options);
         return this;
     };
 
@@ -100,6 +85,14 @@ function setupEventFunctions() {
         return this.onTool(type, undefined, listener, options, manager);
     };
 
+    /**
+     * @description
+     * @param type
+     * @param toolName
+     * @param event
+     * @param options
+     * @param manager
+     */
     TurboSelector.prototype.executeAction = function _executeAction(
         this: TurboSelector,
         type: string,
@@ -109,11 +102,14 @@ function setupEventFunctions() {
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
         if (!type) return false;
+        if (!options) options = {};
         const activeTool = toolName ?? manager.getCurrentToolName();
+
+        if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
 
         const run = (target: Node, tool?: string): boolean => {
             const ts = target instanceof TurboSelector ? target : $(target);
-            const boundSet = utils.getBoundListenersSet(target, type);
+            const boundSet = utils.getBoundListenersSet(target);
             const entries = [...utils.getBoundListeners(target, type, tool, options, manager)];
             if (entries.length === 0) return false;
 
@@ -129,7 +125,7 @@ function setupEventFunctions() {
         };
 
         if (activeTool && run(this, activeTool)) return true;
-        if (activeTool && this.applyTool(activeTool, type, event, manager)) return true;
+        if (!options.capture && activeTool && this.applyTool(activeTool, type, event, manager)) return true;
 
         const embeddedTarget = this.getEmbeddedToolTarget(manager);
         const objectTools = this.getToolNames(manager);
@@ -239,10 +235,13 @@ function setupEventFunctions() {
         listener: ((e: Event, el: Turbo<Type>) => void),
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
-        const boundListeners = utils.getBoundListenersSet(this, type);
+        const boundListeners = utils.getBoundListenersSet(this);
         utils.getBoundListeners(this, type, toolName, undefined, manager)
             .filter(entry => entry.listener === listener)
-            .forEach(entry => boundListeners.delete(entry));
+            .forEach(entry => {
+                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
+                boundListeners.delete(entry);
+            });
         return this;
     };
 
@@ -262,9 +261,12 @@ function setupEventFunctions() {
         toolName?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): TurboSelector {
-        const boundListeners = utils.getBoundListenersSet(this, type);
+        const boundListeners = utils.getBoundListenersSet(this);
         utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .forEach(entry => boundListeners.delete(entry));
+            .forEach(entry => {
+                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
+                boundListeners.delete(entry);
+            });
         return this;
     };
 
@@ -278,16 +280,12 @@ function setupEventFunctions() {
         this: TurboSelector,
         manager: TurboEventManager = TurboEventManager.instance
     ): TurboSelector {
-        this.boundListeners.forEach(set => [...set]
-                .filter(entry => entry.manager === manager)
-                .forEach(entry => set.delete(entry)));
-
-        // const listeners = utils.getSingleListeners(this.element, manager);
-        // if (listeners && typeof listeners === "object") Object.entries(listeners)
-        //     .forEach(([type, listener]: [string, (e: Event) => void]) => {
-        //         this.element.removeEventListener(type, listener);
-        //         delete listeners[type];
-        //     });
+        const set = this.boundListeners;
+        [...set].filter(entry => entry.manager === manager)
+                .forEach(entry => {
+                    entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
+                    set.delete(entry);
+                });
         return this;
     };
 

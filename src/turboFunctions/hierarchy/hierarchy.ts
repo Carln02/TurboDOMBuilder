@@ -1,7 +1,8 @@
 import "./hierarchy.types";
 import {ValidElement, ValidTag} from "../../core.types";
-import {$, TurboSelector} from "../turboFunctions";
+import {$} from "../turboFunctions";
 import {HierarchyFunctionsUtils} from "./hierarchy.utils";
+import {TurboSelector} from "../turboSelector";
 
 const utils = new HierarchyFunctionsUtils();
 

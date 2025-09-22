@@ -1,13 +1,13 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
 import {TurboInputProperties} from "./input.types";
-import {element} from "../../../domBuilding/elementCreation/element";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {define} from "../../../domBuilding/decorators/define";
 import {TurboRichElement} from "../richElement/richElement";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {element} from "../../../elementCreation/element";
+import {TurboProperties} from "../../../turboFunctions/element/element.types";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 @define("turbo-input")
 class TurboInput<
@@ -44,21 +44,21 @@ class TurboInput<
     }
 
     private setupEvents(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType>) {
-        if ("bypassTurboEventManager" in this.inputElement.element) this.inputElement.element.bypassTurboEventManager();
+        //TODO $(this.inputElement.element).bypassManagerOn = () => true;
 
-        this.inputElement.element.addListener(DefaultEventName.blur, (e: Event) => {
+        $(this.inputElement).on(DefaultEventName.blur, (e: Event) => {
             if (properties.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
                 this.stringValue = this.lastValueWithBlurCheck;
             this.dispatchEvent(new FocusEvent(DefaultEventName.blur, e));
         });
 
-        this.inputElement.element.addListener(DefaultEventName.focus, (e: Event) => {
+        $(this.inputElement).on(DefaultEventName.focus, (e: Event) => {
             if (this.locked) this.inputElement.blur();
             if (properties.selectTextOnFocus) this.inputElement.element.select();
             this.dispatchEvent(new FocusEvent(DefaultEventName.focus, e));
         });
 
-        this.inputElement.element.addListener(DefaultEventName.input, (e: Event) => {
+        $(this.inputElement).on(DefaultEventName.input, (e: Event) => {
             if (properties.dynamicVerticalResize) {
                 this.inputElement.style.height = "";
                 this.inputElement.style.height = this.inputElement.scrollHeight + "px";

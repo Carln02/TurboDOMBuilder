@@ -1,13 +1,13 @@
-import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 
 type TurboPopupProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+> = TurboElementProperties<ViewType, DataType, ModelType> & {
     popupAnchor?: Coordinate,
     parentAnchor?: Coordinate,
     fallbackModes?: Coordinate<PopupFallbackMode>,

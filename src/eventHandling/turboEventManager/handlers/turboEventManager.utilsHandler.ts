@@ -1,8 +1,8 @@
-import {TurboHandler} from "../../../turboElement/mvc/turboHandler";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ClickMode} from "../turboEventManager.types";
 import {DefaultEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
+import {TurboHandler} from "../../../mvc/logic/handler";
 
 export class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManagerModel> {
     public keyName: string = "utils";
@@ -53,8 +53,8 @@ export class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManage
         if ("selected" in element && typeof element["selected"] === "boolean") element["selected"] = value;
     }
 
-    public activateTool(element: Node, value: boolean) {
-        if (value) $(element).onToolActivation?.fire();
-        else $(element).onToolDeactivation?.fire();
+    public activateTool(element: Node, toolName: string, value: boolean) {
+        if (value) $(element).onToolActivate(toolName).fire();
+        else $(element).onToolDeactivate(toolName).fire();
     }
 }

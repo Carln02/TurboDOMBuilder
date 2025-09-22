@@ -1,7 +1,7 @@
 import {css} from "../css";
 import {FontProperties} from "./font.types";
 import {getFileExtension} from "../../dataManipulation/stringManipulation";
-import {stylesheet} from "../../../domBuilding/elementCreation/miscElements";
+import {stylesheet} from "../../../elementCreation/miscElements";
 
 /**
  * @description Default font weights, sub-names, and styles when loading a font family.

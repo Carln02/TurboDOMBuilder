@@ -1,16 +1,16 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
 import {TurboIconProperties, TurboIconConfig} from "./icon.types";
 import {fetchSvg} from "../../../utils/dataManipulation/svgManipulation";
 import {getFileExtension} from "../../../utils/dataManipulation/stringManipulation";
-import {observe} from "../../../domBuilding/decorators/observe";
-import {define} from "../../../domBuilding/decorators/define";
-import {img} from "../../../domBuilding/elementCreation/basicElements";
-import {cache} from "../../../domBuilding/decorators/cache/cache";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {observe} from "../../../decorators/observe";
+import {auto} from "../../../decorators/auto/auto";
+import {cache} from "../../../decorators/cache/cache";
+import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 
 /**
  * Icon class for creating icon elements.
@@ -45,8 +45,8 @@ class TurboIcon<
     }
 
     public update(properties: TurboIconProperties) {
-        if (properties.unsetDefaultClasses) this.removeClass(TurboIcon.config.defaultClasses);
-        else this.addClass(TurboIcon.config.defaultClasses);
+        if (properties.unsetDefaultClasses) $(this).removeClass(TurboIcon.config.defaultClasses);
+        else $(this).addClass(TurboIcon.config.defaultClasses);
 
         this.type = properties.type;
         this.directory = properties.directory;
@@ -167,7 +167,7 @@ class TurboIcon<
         if (this.element || !element) return;
         if (element.parentElement) element = element.cloneNode(true) as Element;
 
-        this.addChild(element);
+        $(this).addChild(element);
         if (this.iconColor && element instanceof SVGElement) element.style.fill = this.iconColor;
         if (this.onLoaded) this.onLoaded(element);
 
@@ -175,7 +175,7 @@ class TurboIcon<
     }
 
     private clear() {
-        this.element?.destroy();
+        $(this.element).destroy();
         this.element = null;
     }
 }

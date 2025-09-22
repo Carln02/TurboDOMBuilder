@@ -1,12 +1,13 @@
 import {TurboButtonConfig} from "./button.types";
 import "./button.css";
-import {define} from "../../../domBuilding/decorators/define";
-import {ValidTag} from "../../../domBuilding/core.types";
 import {TurboRichElement} from "../richElement/richElement";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {TurboRichElementProperties} from "../richElement/richElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {define} from "../../../decorators/define/define";
+import {ValidTag} from "../../../core.types";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {auto} from "../../../decorators/auto/auto";
 
 /**
  * Button class for creating Turbo button elements.
@@ -29,7 +30,7 @@ class TurboButton<
      */
     public constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
         super(properties);
-        if (!properties.unsetDefaultClasses) this.addClass(TurboButton.config.defaultClasses);
+        if (!properties.unsetDefaultClasses) $(this).addClass(TurboButton.config.defaultClasses);
     }
 
     /**

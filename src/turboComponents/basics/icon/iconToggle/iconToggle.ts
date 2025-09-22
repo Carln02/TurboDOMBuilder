@@ -1,10 +1,11 @@
 import {TurboIcon} from "../icon";
 import {TurboIconToggleProperties} from "./iconToggle.types";
-import {define} from "../../../../domBuilding/decorators/define";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import {auto} from "../../../../domBuilding/decorators/auto/auto";
 import {DefaultEventName} from "../../../../eventHandling/eventNaming";
+import {define} from "../../../../decorators/define/define";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
+import {auto} from "../../../../decorators/auto/auto";
+import {$} from "../../../../turboFunctions/turboFunctions";
 
 @define()
 class TurboIconToggle<
@@ -28,8 +29,8 @@ class TurboIconToggle<
 
     @auto({cancelIfUnchanged: true})
     public set toggleOnClick(value: boolean) {
-        if (value) this.addListener(DefaultEventName.click, this.clickListener);
-        else this.removeListener(DefaultEventName.click, this.clickListener);
+        if (value) $(this).on(DefaultEventName.click, this.clickListener);
+        else $(this).removeListener(DefaultEventName.click, this.clickListener);
     }
 
     public toggle() {

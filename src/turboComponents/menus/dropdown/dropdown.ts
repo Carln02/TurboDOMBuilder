@@ -1,14 +1,15 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
 import {button, TurboButton} from "../../basics/button/button";
 import {TurboDropdownConfig, TurboDropdownProperties} from "./dropdown.types";
 import "./dropdown.css";
-import {define} from "../../../domBuilding/decorators/define";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelect} from "../../basics/select/select";
 import {TurboPopup} from "../../containers/popup/popup";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {TurboElement} from "../../../turboElement/turboElement";
 
 /**
  * Dropdown class for creating Turbo button elements.
@@ -55,7 +56,7 @@ class TurboDropdown<
         this.initPopup(properties);
         this.initSelector(properties);
 
-        requestAnimationFrame(() =>  document.addListener(DefaultEventName.click, e => {
+        requestAnimationFrame(() =>  $(document).on(DefaultEventName.click, e => {
             if (this.popupOpen && !this.contains(e.target as Node)) this.openPopup(false);
         }));
     }
@@ -70,22 +71,22 @@ class TurboDropdown<
             }
         }
 
-        this.selector.addListener(DefaultEventName.click, (e) => {
+        $(this.selector).on(DefaultEventName.click, (e) => {
             this.openPopup(!this.popupOpen);
             e.stopImmediatePropagation();
         });
 
-        this.addChild(this.selector);
-        this.selector.addClass(properties.customSelectorClasses
+        $(this).addChild(this.selector);
+        $(this.selector).addClass(properties.customSelectorClasses
             ? properties.customSelectorClasses
             : TurboDropdown.config.defaultSelectorClasses);
     }
 
     private initPopup(properties: TurboDropdownProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType,
         ModelType>) {
-        this.addChild(this.popup);
-        this.popup.show(false);
-        this.popup.addClass(properties.customPopupClasses
+        $(this).addChild(this.popup);
+        $(this.popup).show(false);
+        $(this.popup).addClass(properties.customPopupClasses
             ? properties.customPopupClasses
             : TurboDropdown.config.defaultPopupClasses);
     }

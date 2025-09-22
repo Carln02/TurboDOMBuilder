@@ -15,9 +15,12 @@ import {Turbo} from "../turboFunctions.types";
  * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults to `TurboEventManager.instance`.
  */
 type MakeToolOptions = {
+    onActivate?: () => void,
+    onDeactivate?: () => void,
+
     activationEvent?: DefaultEventNameEntry,
     clickMode?: ClickMode,
-    activateOn?: ((el: Turbo, manager: TurboEventManager) => void),
+    customActivation?: (element: Turbo, manager: TurboEventManager) => void,
     key?: string,
     manager?: TurboEventManager
 };
@@ -43,18 +46,8 @@ type ToolBehaviorOptions = {
     embeddedTarget?: Node,
 }
 
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
-        /**
-         * @description Delegate fired when this tool is activated (selected + activated by the manager).
-         */
-        readonly onToolActivation: Delegate<() => void>;
-
-        /**
-         * @description Delegate fired when this tool is deactivated.
-         */
-        readonly onToolDeactivation: Delegate<() => void>;
-
         /*
          *
          *
@@ -69,7 +62,7 @@ declare module "../turboFunctions" {
          * @param {MakeToolOptions} [options] - Tool creation options (activation, click mode, key mapping, manager).
          * @returns {void}
          */
-        makeTool(toolName: string, options?: MakeToolOptions): void;
+        makeTool(toolName: string, options?: MakeToolOptions): this;
 
         /**
          * @description Whether this element is registered as a tool for the provided manager.
@@ -94,6 +87,22 @@ declare module "../turboFunctions" {
 
         /*
          *
+         * Tool activation manipulation
+         *
+         */
+
+        /**
+         * @description Delegate fired when this tool is activated (selected + activated by the manager).
+         */
+        onToolActivate(toolName: string, manager?: TurboEventManager): Delegate<() => void>;
+
+        /**
+         * @description Delegate fired when this tool is deactivated.
+         */
+        onToolDeactivate(toolName: string, manager?: TurboEventManager): Delegate<() => void>;
+
+        /*
+         *
          *
          * Tool behavior manipulation
          *
@@ -109,7 +118,7 @@ declare module "../turboFunctions" {
          * @returns {void}
          */
         addToolBehavior(type: string, callback: ToolBehaviorCallback, toolName?: string,
-                        manager?: TurboEventManager): void;
+                        manager?: TurboEventManager): this;
 
         /**
          * @description Checks whether there is at least one behavior for `(type, toolName)`.
@@ -127,7 +136,7 @@ declare module "../turboFunctions" {
          * @param {TurboEventManager} [manager] - The associated manager.
          * @returns {void}
          */
-        removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): void;
+        removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): this;
 
         /**
          * @description Executes all behaviors registered for `(toolName, type)` against this element.
@@ -138,6 +147,8 @@ declare module "../turboFunctions" {
          * @return {boolean} True if at least one behavior returned `true` (consumed).
          */
         applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): boolean;
+
+        clearToolBehaviors(manager?: TurboEventManager): this;
 
         /*
          *
@@ -153,7 +164,7 @@ declare module "../turboFunctions" {
          * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
          * @returns {void}
          */
-        embedTool(target: Node, manager?: TurboEventManager): void;
+        embedTool(target: Node, manager?: TurboEventManager): this;
 
         /**
          * @description Whether this tool is embedded under the provided manager.

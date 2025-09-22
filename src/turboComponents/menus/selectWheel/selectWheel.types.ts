@@ -1,11 +1,11 @@
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelectProperties} from "../../basics/select/select.types";
 import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
-import {PartialRecord} from "../../../domBuilding/core.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {PartialRecord} from "../../../core.types";
 
 type TurboSelectWheelProperties<
     ValueType = string,

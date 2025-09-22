@@ -1,6 +1,6 @@
-import {TurboProperties} from "../turboElement/turboElement.types";
 import {element} from "./element";
 import {ValidElement, ValidTag} from "../core.types";
+import {TurboProperties} from "../turboFunctions/element/element.types";
 
 /**
  * @description returns a function that generates an HTML element with the provided tag that takes TurboProperties

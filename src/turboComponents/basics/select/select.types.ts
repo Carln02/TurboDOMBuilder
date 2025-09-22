@@ -1,8 +1,10 @@
-import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {TurboSelectEntry} from "./selectEntry/selectEntry";
 import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import { TurboElementProperties } from "../../../turboElement/turboElement.types";
+import {TurboEvent} from "../../../eventHandling/events/turboEvent";
+import {TurboRawEventProperties} from "../../../eventHandling/events/turboEvent.types";
 
 type TurboSelectProperties<
     ValueType = string,
@@ -11,7 +13,7 @@ type TurboSelectProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+> = TurboElementProperties<ViewType, DataType, ModelType> & {
     unsetDefaultClasses?: boolean,
     customSelectedEntryClasses?: string,
 
@@ -31,4 +33,13 @@ type TurboSelectConfig = {
     defaultSelectedEntryClasses?: string | string[]
 };
 
-export {TurboSelectProperties, TurboSelectConfig};
+type TurboSelectInputEventProperties<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>
+> = TurboRawEventProperties & {
+    toggledEntry: EntryType,
+    values: ValueType[]
+};
+
+export {TurboSelectProperties, TurboSelectConfig, TurboSelectInputEventProperties};

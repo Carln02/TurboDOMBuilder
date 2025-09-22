@@ -1,5 +1,5 @@
 import {StylesType} from "./style.types";
-import {TurboSelector} from "../turboFunctions";
+import {TurboSelector} from "../turboSelector";
 import {PartialRecord} from "../../core.types";
 import {StyleFunctionsUtils} from "./style.utils";
 

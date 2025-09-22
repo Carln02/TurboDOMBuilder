@@ -10,10 +10,10 @@ enum ClosestOrigin {
 }
 
 type TurboRawEventProperties = {
-    clickMode: ClickMode,
-    keys: string[],
-    eventName: TurboEventNameEntry,
-    eventManager: TurboEventManager,
+    clickMode?: ClickMode,
+    keys?: string[],
+    eventName?: TurboEventNameEntry,
+    eventManager?: TurboEventManager,
     toolName?: string,
     authorizeScaling?: boolean | (() => boolean),
     scalePosition?: (position: Point) => Point,
@@ -21,22 +21,22 @@ type TurboRawEventProperties = {
 };
 
 type TurboEventProperties = TurboRawEventProperties & {
-    position: Point,
+    position?: Point,
 };
 
 type TurboDragEventProperties = TurboRawEventProperties & {
-    origins: TurboMap<number, Point>,
-    previousPositions: TurboMap<number, Point>,
-    positions: TurboMap<number, Point>,
+    origins?: TurboMap<number, Point>,
+    previousPositions?: TurboMap<number, Point>,
+    positions?: TurboMap<number, Point>,
 }
 
 type TurboKeyEventProperties = TurboRawEventProperties & {
-    keyPressed: string,
-    keyReleased: string
+    keyPressed?: string,
+    keyReleased?: string
 };
 
 type TurboWheelEventProperties = TurboRawEventProperties & {
-    delta: Point
+    delta?: Point
 };
 
 export {

@@ -1,4 +1,3 @@
-import "./turboFunctions.types";
 import {Turbo, TurbofyOptions} from "./turboFunctions.types";
 import {setupHierarchyFunctions} from "./hierarchy/hierarchy";
 import {setupMiscFunctions} from "./misc/misc";
@@ -7,48 +6,18 @@ import {setupElementFunctions} from "./element/element";
 import {setupEventFunctions} from "./event/event";
 import {setupStyleFunctions} from "./style/style";
 import {setupToolFunctions} from "./tool/tool";
+import {setupSubstrateFunctions} from "./substrate/substrate";
+import {TurboSelector} from "./turboSelector";
 
 let turbofied: boolean = false;
 
-class TurboSelector<Type extends Node = Node> {
-    public element: Type;
-
-    public constructor() {
-        return this.#generateProxy();
-    }
-
-    #generateProxy() {
-        return new Proxy(this, {
-            get(target, prop, receiver) {
-                if (prop in target) return Reflect.get(target, prop, receiver);
-                const value = target.element?.[prop];
-                return typeof value === "function" ? value.bind(target.element) : value;
-            },
-            set(target, prop, value, receiver) {
-                if (prop in target) return Reflect.set(target, prop, value, receiver);
-                target.element[prop] = value;
-                return true;
-            },
-            has(target, prop) {
-                return prop in target || prop in target.element;
-            },
-            ownKeys(target) {
-                return Array.from([...Reflect.ownKeys(target), ...Reflect.ownKeys(target.element)]);
-            },
-            getOwnPropertyDescriptor(target, prop) {
-                return Reflect.getOwnPropertyDescriptor(target, prop)
-                    || Object.getOwnPropertyDescriptor(target.element, prop)
-                    || undefined;
-            }
-        });
-    }
-}
-
-function $<Type extends Node = Node>(element: Type): Turbo<Type> {
+function $<Type extends Node = Node>(element?: Type | object): Turbo<Type> {
     if (!turbofied) turbofy();
+    if (!element) return new TurboSelector<Type>() as Turbo<Type>;
     if (element instanceof TurboSelector) return element;
     const turboSelector = new TurboSelector<Type>();
-    turboSelector.element = element;
+    if (element instanceof Node) turboSelector.element = element;
+    else if (element["element"] && element["element"] as any instanceof Node) turboSelector.element = element["element"];
     return turboSelector as Turbo<Type>;
 }
 
@@ -77,7 +46,9 @@ function turbofy(options: TurbofyOptions = {}) {
     if (!options.excludeEventFunctions) setupEventFunctions();
     if (!options.excludeStyleFunctions) setupStyleFunctions();
     if (!options.excludeToolFunctions) setupToolFunctions();
+    if (!options.excludeSubstrateFunctions) setupSubstrateFunctions();
+
     //todo addReifectManagementToNodePrototype();
 }
 
-export {TurboSelector, $, t, turbo, turbofy};
+export {$, t, turbo, turbofy};

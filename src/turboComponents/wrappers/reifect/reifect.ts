@@ -1,4 +1,4 @@
-// @ts-nocheck
+//@ts-nocheck
 import {StatefulReifect} from "../statefulReifect/statefulReifect";
 import {StatelessPropertyConfig, StatelessReifectProperties} from "./reifect.types";
 import {
@@ -6,9 +6,8 @@ import {
     ReifectAppliedOptions,
     StatefulReifectProperties
 } from "../statefulReifect/statefulReifect.types";
-import {PartialRecord} from "../../../domBuilding/core.types";
-import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
+import {PartialRecord} from "../../../core.types";
+import {StylesType} from "../../../turboFunctions/style/style.types";
 
 /**
  * @class Reifect

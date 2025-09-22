@@ -1,4 +1,3 @@
-import {TurboController} from "../../../turboElement/mvc/turboController";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {TurboEventManager} from "../turboEventManager";
 import {ClickMode} from "../turboEventManager.types";
@@ -6,6 +5,7 @@ import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
 import {TurboKeyEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
+import {TurboController} from "../../../mvc/logic/controller";
 
 export class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "dispatch";
@@ -37,42 +37,41 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
     }
 
     private getToolHandlingCallback(type: string, e: Event) {
-        return () => {
-            const toolName = this.element.getCurrentToolName(this.model.currentClick);
-            const tool = this.element.getCurrentTool(this.model.currentClick);
-            if (!tool || !$(tool).hasToolBehavior(type)) return;
+        const toolName = this.element.getCurrentToolName(this.model.currentClick);
+        const tool = this.element.getCurrentTool(this.model.currentClick);
 
-            const path = e.composedPath?.() || [];
+        if (!tool || !$(tool).hasToolBehavior(type)) return;
 
-            for (let i = path.length - 1; i >= 0; i--) {
-                if (!(path[i] instanceof Node)) continue;
-                if ($(path[i] as Node).executeAction(type, toolName, e, {capture: true}, this.element)) {
-                    e.stopPropagation();
-                    break;
-                }
+        const path = e.composedPath?.() || [];
+
+        for (let i = path.length - 1; i >= 0; i--) {
+            if (!(path[i] instanceof Node)) continue;
+            if ($(path[i] as Node).executeAction(type, toolName, e, {capture: true}, this.element)) {
+                e.stopPropagation();
+                break;
             }
+        }
 
-            for (let i = 0; i < path.length; i++) {
-                if (!(path[i] instanceof Node)) continue;
-                if ($(path[i] as Node).executeAction(type, toolName, e, undefined, this.element)) {
-                    e.stopPropagation();
-                    break;
-                }
+        for (let i = 0; i < path.length; i++) {
+            if (!(path[i] instanceof Node)) continue;
+            if ($(path[i] as Node).executeAction(type, toolName, e, undefined, this.element)) {
+                e.stopPropagation();
+                break;
             }
-        };
+        }
     }
 
     public setupCustomDispatcher(type: string): void {
         if (this.boundHooks.has(type)) return;
         const hook = (e: Event) => this.getToolHandlingCallback(type, e);
         this.boundHooks.set(type, hook);
-        $(document).on(type, hook, {capture: true});
+        document.addEventListener(type, hook, {capture: true});
     }
 
     public removeCustomDispatcher(type: string): void {
         const hook = this.boundHooks.get(type);
         if (!hook) return;
-        $(document).removeListener(type, hook);
+        document.removeEventListener(type, hook, {capture: true});
         this.boundHooks.delete(type);
     }
 }

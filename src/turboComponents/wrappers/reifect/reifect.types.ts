@@ -1,6 +1,6 @@
-import {PartialRecord} from "../../../domBuilding/core.types";
-import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
 import {ReifectInterpolator} from "../statefulReifect/statefulReifect.types";
+import {PartialRecord} from "../../../core.types";
+import {StylesType} from "../../../turboFunctions/style/style.types";
 
 /**
  * @description A configuration type for properties based on states or interpolated values.

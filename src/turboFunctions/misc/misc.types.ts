@@ -1,4 +1,4 @@
-declare module "../turboFunctions" {
+declare module "../turboSelector" {
     interface TurboSelector {
         /**
          * @description Execute a callback on the node while still benefiting from chaining.

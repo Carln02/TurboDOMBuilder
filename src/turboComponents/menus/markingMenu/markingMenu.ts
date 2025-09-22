@@ -1,17 +1,18 @@
 import {TurboMarkingMenuProperties} from "./markingMenu.types";
 import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelect} from "../../basics/select/select";
-import {define} from "../../../domBuilding/decorators/define";
 import {Point} from "../../../utils/datatypes/point/point";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
 import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {TurboSelectEntryProperties} from "../../basics/select/selectEntry/selectEntry.types";
 import {getEventPosition} from "../../../utils/events/events";
 import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {define} from "../../../decorators/define/define";
+import {TurboModel} from "../../../mvc/core/model";
+import {auto} from "../../../decorators/auto/auto";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 @define("turbo-marking-menu")
 class TurboMarkingMenu<
@@ -52,7 +53,7 @@ class TurboMarkingMenu<
             : this.initializeTransition(properties.transition ?? {});
         this.transition.initialize(InOut.out, this.entries);
 
-        this.setStyles({position: "fixed", top: 0, left: 0});
+        $(this).setStyles({position: "fixed", top: 0, left: 0});
 
         this.showTransition = this.showTransition.clone();
         this.showTransition.transitionDelay = {hidden: (index, totalCount) => 0.13 + totalCount * 0.02, visible: 0};
@@ -68,13 +69,13 @@ class TurboMarkingMenu<
 
     private initEvents() {
         const hideOnEvent = (e: Event) => {
-            if ((e.target as Node).findInParents(this)) return;
-            if (this.isShown) this.show(false);
+            if ($(e.target).findInParents(this)) return;
+            if (this.isShown) $(this).show(false);
         };
 
-        document.addListener(DefaultEventName.scroll, hideOnEvent);
-        document.addListener(DefaultEventName.clickEnd, hideOnEvent);
-        document.addListener(DefaultEventName.dragStart, hideOnEvent);
+        $(document).on(DefaultEventName.scroll, hideOnEvent);
+        $(document).on(DefaultEventName.clickEnd, hideOnEvent);
+        $(document).on(DefaultEventName.dragStart, hideOnEvent);
     }
 
     private initializeTransition(properties: StatefulReifectProperties<InOut>) {
@@ -135,7 +136,7 @@ class TurboMarkingMenu<
                     , index: number = this.entries.length): EntryType {
         entry = super.addEntry(entry, index);
         this.transition?.initialize(this.isShown ? InOut.in : InOut.out, entry);
-        entry.setStyles({position: "absolute"});
+        $(entry).setStyles({position: "absolute"});
         return entry;
     }
 
@@ -143,7 +144,7 @@ class TurboMarkingMenu<
         if (position) this.currentOrigin = position;
         else this.currentOrigin = new Point(this.offsetLeft, this.offsetTop);
 
-        if (position && b) this.setStyle("transform", `translate3d(${position.x}px, ${position.y}px, 0)`);
+        if (position && b) $(this).setStyle("transform", `translate3d(${position.x}px, ${position.y}px, 0)`);
         this.transition.apply(b ? InOut.in : InOut.out, this.enabledEntries);
 
         super.show(b);
@@ -189,23 +190,23 @@ class TurboMarkingMenu<
                         ? (e: Event) => this.selectEntryInDirection(getEventPosition(e))
                         : null) {
         //Cancel default hide operation on click end
-        element.addListener(DefaultEventName.clickEnd, (e: Event) => e.stopImmediatePropagation());
+        $(element).on(DefaultEventName.clickEnd, (e: Event) => e.stopImmediatePropagation());
 
         //Setup click if defined
-        if (onClick) element.addListener(DefaultEventName.click, (e: Event) => {
+        if (onClick) $(element).on(DefaultEventName.click, (e: Event) => {
             e.stopImmediatePropagation();
             onClick(e);
         }, this);
 
         //Cancel default hide operation on drag start
-        element.addListener(DefaultEventName.dragStart, (e: Event) => {
+        $(element).on(DefaultEventName.dragStart, (e: Event) => {
             e.stopImmediatePropagation();
             //Setup drag start if defined
             if (onDragStart) onDragStart(e);
         }, this);
 
         //Setup drag end if defined
-        if (onDragEnd) element.addListener(DefaultEventName.dragEnd, (e: Event) => {
+        if (onDragEnd) $(element).on(DefaultEventName.dragEnd, (e: Event) => {
             e.stopImmediatePropagation();
             onDragEnd(e);
         }, this);

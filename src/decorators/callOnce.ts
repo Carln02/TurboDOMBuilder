@@ -1,47 +1,66 @@
 /**
+/**
  * @function callOnce
- * @description A decorator that ensures a method is called only once on a given instance. If the method is called
- * more than once, a warning is logged to the console.
- * @param {any} target - The target object.
- * @param {string} propertyKey - The name of the method being decorated.
- * @param {PropertyDescriptor} [descriptor=Object.getOwnPropertyDescriptor(target, propertyKey)] - The property
- * descriptor of the method.
- * @returns {PropertyDescriptor} - The updated property descriptor.
+ * @description Stage-3 method decorator: ensures a method is called only once per instance.
+ * Subsequent calls no-op and log a warning. Works for instance or static methods.
+ *
+ * Usage:
+ *   class A {
+ *     @callOnce
+ *     init() { ... }
+ *   }
  */
-function callOnce(target: any, propertyKey: string, descriptor: PropertyDescriptor
-    = Object.getOwnPropertyDescriptor(target, propertyKey)): PropertyDescriptor {
-    const originalMethod = descriptor?.value;
-    if (!originalMethod) throw new Error(`No method ${propertyKey} found on target`);
+function callOnce<T extends object>(value: (this: T, ...args: any[]) => any, ctx: ClassMethodDecoratorContext<T>): any {
+    if (ctx.kind !== "method") {
+        throw new Error(`@callOnce can only be used on methods (got: ${ctx.kind}).`);
+    }
 
-    const calledFlagKey = Symbol(`__callOnce__${propertyKey}`);
+    const name = String(ctx.name);
+    const flag = Symbol(`__callOnce__${name}`);
 
-    descriptor.value = function (...args: any[]) {
-        if (!this[calledFlagKey]) {
-            this[calledFlagKey] = true;
-            return originalMethod.apply(this, args);
-        } else {
-            console.warn(`Function ${propertyKey} has already been called once on this instance and will not be called again.`);
+    return function (this: any, ...args: any[]) {
+        if (this[flag]) {
+            console.warn(`Function ${name} has already been called once on this instance and will not be called again.`);
+            return;
         }
+        this[flag] = true;
+        return value.apply(this, args);
     };
-
-    return descriptor;
 }
 
 /**
  * @function callOncePerInstance
- * @description A function wrapper that ensures the wrapped function is called only once per instance.
- * @param {Function} fn - The function to wrap.
- * @param {string|symbol} [key=Symbol(`__callOncePerInstance__${fn.name}`)] - A unique key to track if the function
- * has been called.
- * @returns {Function} - The wrapped function that will only execute once per instance.
+ * @description Stage-3 method decorator (factory) that ensures the method
+ * runs only once per *instance*. Later calls no-op. If you pass a `key`,
+ * all methods decorated with the same key on the same instance share the
+ * same gate (i.e., only the first of them will run once).
+ *
+ * Usage:
+ *   class A {
+ *     @callOncePerInstance()           // unique per method
+ *     init() { ... }
+ *
+ *     @callOncePerInstance("bootKey")  // shared gate with others using "bootKey"
+ *     boot() { ... }
+ *   }
  */
-function callOncePerInstance(fn: Function, key: string | symbol
-    = Symbol(`__callOncePerInstance__${fn.name}`)): Function {
-    return function (this: any, ...args: any[]) {
-        if (!this[key]) {
-            this[key] = true;
-            return fn.apply(this, args);
+function callOncePerInstance(key?: string | symbol) {
+    return function <T extends object>(
+        value: (this: T, ...args: any[]) => any,
+        ctx: ClassMethodDecoratorContext<T>
+    ) {
+        if (ctx.kind !== "method") {
+            throw new Error(`@callOncePerInstance can only be used on methods (got: ${ctx.kind}).`);
         }
+
+        const name = String(ctx.name);
+        const flag = key ?? Symbol(`__callOncePerInstance__${name}`);
+
+        return function (this: any, ...args: any[]) {
+            if (this[flag]) return;
+            this[flag] = true;
+            return value.apply(this, args);
+        };
     };
 }
 

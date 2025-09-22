@@ -1,13 +1,14 @@
 import {TurboIcon} from "../icon/icon";
-import {element} from "../../../domBuilding/elementCreation/element";
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {define} from "../../../domBuilding/decorators/define";
-import {ValidElement, ValidTag} from "../../../domBuilding/core.types";
 import {TurboRichElementChildren, TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {ValidElement, ValidTag} from "../../../core.types";
+import {TurboModel} from "../../../mvc/core/model";
+import {define} from "../../../decorators/define/define";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {auto} from "../../../decorators/auto/auto";
+import { element } from "../../../elementCreation/element";
+import {TurboProperties} from "../../../turboFunctions/element/element.types";
 
 /**
  * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
@@ -38,7 +39,7 @@ class TurboRichElement<
         if (properties.text && !properties.element) properties.element = properties.text;
         super({...properties, text: null});
 
-        if (!properties.unsetDefaultClasses) this.addClass((this.constructor as typeof TurboElement).config.defaultClasses);
+        if (!properties.unsetDefaultClasses) $(this).addClass((this.constructor as typeof TurboElement).config.defaultClasses);
         this.elementTag = properties.elementTag;
 
         this.elements = {
@@ -74,7 +75,7 @@ class TurboRichElement<
             if (this.elements[key]) nextSiblingIndex++;
         }
 
-        this.addChild(element, nextSiblingIndex);
+        $(this).addChild(element, nextSiblingIndex);
     }
 
     /**
@@ -91,7 +92,7 @@ class TurboRichElement<
     }
 
     public set leftCustomElements(value: Element | Element[]) {
-        this.removeChild(this.leftCustomElements);
+        $(this).remChild(this.leftCustomElements);
         if (!value) return;
         this.addAtPosition(value, "leftCustomElements");
         this.elements.leftCustomElements = value;
@@ -107,7 +108,7 @@ class TurboRichElement<
 
     public set leftIcon(value: string | TurboIcon) {
         if (!value) {
-            this.removeChild(this.leftIcon);
+            $(this).remChild(this.leftIcon);
             return;
         }
 
@@ -119,7 +120,7 @@ class TurboRichElement<
             value = new TurboIcon({icon: value});
         }
 
-        this.removeChild(this.leftIcon);
+        $(this).remChild(this.leftIcon);
         this.addAtPosition(value, "leftIcon");
         this.elements.leftIcon = value;
     }
@@ -134,7 +135,7 @@ class TurboRichElement<
 
     public set prefixEntry(value: string | HTMLElement) {
         if (!value) {
-            this.removeChild(this.prefixEntry);
+            $(this).remChild(this.prefixEntry);
             return;
         }
 
@@ -146,7 +147,7 @@ class TurboRichElement<
             value = element({text: value}) as HTMLElement;
         }
 
-        this.removeChild(this.prefixEntry);
+        $(this).remChild(this.prefixEntry);
         this.addAtPosition(value, "prefixEntry");
         this.elements.prefixEntry = value;
     }
@@ -161,7 +162,7 @@ class TurboRichElement<
 
     public set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {
         if (!value) {
-            this.removeChild(this.element);
+            $(this).remChild(this.element);
             return;
         }
 
@@ -175,7 +176,7 @@ class TurboRichElement<
             value = element(value);
         }
 
-        this.removeChild(this.element);
+        $(this).remChild(this.element);
         this.addAtPosition(value, "element");
         this.elements.element = value;
     }
@@ -206,7 +207,7 @@ class TurboRichElement<
 
     public set suffixEntry(value: string | HTMLElement) {
         if (!value) {
-            this.removeChild(this.suffixEntry);
+            $(this).remChild(this.suffixEntry);
             return;
         }
 
@@ -218,7 +219,7 @@ class TurboRichElement<
             value = element({text: value}) as HTMLElement;
         }
 
-        this.removeChild(this.suffixEntry);
+        $(this).remChild(this.suffixEntry);
         this.addAtPosition(value, "suffixEntry");
         this.elements.suffixEntry = value;
     }
@@ -233,7 +234,7 @@ class TurboRichElement<
 
     public set rightIcon(value: string | TurboIcon) {
         if (!value) {
-            this.removeChild(this.rightIcon);
+            $(this).remChild(this.rightIcon);
             return;
         }
 
@@ -245,7 +246,7 @@ class TurboRichElement<
             value = new TurboIcon({icon: value});
         }
 
-        this.removeChild(this.rightIcon);
+        $(this).remChild(this.rightIcon);
         this.addAtPosition(value, "rightIcon");
         this.elements.rightIcon = value;
     }
@@ -258,7 +259,7 @@ class TurboRichElement<
     }
 
     public set rightCustomElements(value: Element | Element[]) {
-        this.removeChild(this.rightCustomElements);
+        $(this).remChild(this.rightCustomElements);
         if (!value) return;
         this.addAtPosition(value, "rightCustomElements");
         this.elements.rightCustomElements = value;

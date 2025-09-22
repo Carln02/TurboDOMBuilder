@@ -5,12 +5,13 @@ import {
     PropertyConfig,
     ReifectAppliedOptions, ReifectEnabledObject, StateSpecificProperty, BasicPropertyConfig
 } from "./statefulReifect.types";
-import {PartialRecord} from "../../../domBuilding/core.types";
-import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
 import {isNull} from "../../../utils/dataManipulation/misc";
 import {eachEqualToAny} from "../../../utils/computations/equity";
 import {mod} from "../../../utils/computations/misc";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
+import {auto} from "../../../decorators/auto/auto";
+import {PartialRecord} from "../../../core.types";
+import {StylesType} from "../../../turboFunctions/style/style.types";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 /**
  * @class StatefulReifect
@@ -815,7 +816,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         if (!object || !(object instanceof Element)) return;
 
         for (const [key, value] of Object.entries(classes)) {
-            object.toggleClass(value as (string | string[]), state == key);
+            $(object).toggleClass(value as (string | string[]), state == key);
         }
     }
 
@@ -831,7 +832,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
-        object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
+        $(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
 
     public refreshStyles() {
@@ -845,7 +846,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element) || !data.resolvedValues) return;
-        object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
+        $(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
 
     public refreshTransition() {

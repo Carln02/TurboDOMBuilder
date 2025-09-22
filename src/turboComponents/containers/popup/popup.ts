@@ -1,14 +1,15 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
 import {DimensionProperties, PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
 import {Point} from "../../../utils/datatypes/point/point";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {Direction} from "../../../utils/datatypes/basicDatatypes.types";
-import {define} from "../../../domBuilding/decorators/define";
-import {cache} from "../../../domBuilding/decorators/cache/cache";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 import "./popup.css";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {cache} from "../../../decorators/cache/cache";
 
 @define()
 class TurboPopup<
@@ -33,9 +34,9 @@ class TurboPopup<
 
     constructor(properties: TurboPopupProperties<ViewType, DataType, ModelType> = {}) {
         super(properties);
-        this.addClass("turbo-popup");
+        $(this).addClass("turbo-popup");
 
-        if (!properties.unsetDefaultClasses) this.addClass(TurboPopup.config.defaultClasses);
+        if (!properties.unsetDefaultClasses) $(this).addClass(TurboPopup.config.defaultClasses);
 
         this.popupAnchor = properties.popupAnchor || TurboPopup.config.defaultPopupAnchor || {x: 50, y: 0};
         this.parentAnchor = properties.parentAnchor || TurboPopup.config.defaultParentAnchor || {x: 50, y: 100};
@@ -57,7 +58,7 @@ class TurboPopup<
         window.addEventListener(DefaultEventName.resize, () => {
             if (this.isShown) this.recomputePosition();
         });
-        document.addListener(DefaultEventName.click, e => {
+        $(document).on(DefaultEventName.click, e => {
             if (this.isShown && !this.contains(e.target as Node)) this.show(false);
         });
     }
@@ -121,8 +122,8 @@ class TurboPopup<
         const availableHeight = window.innerHeight - (2 * this.viewportMargin.y);
         const availableWidth = window.innerWidth - (2 * this.viewportMargin.x);
 
-        this.setStyle("maxHeight", `${availableHeight}px`);
-        this.setStyle("maxWidth", `${availableWidth}px`);
+        $(this).setStyle("maxHeight", `${availableHeight}px`);
+        $(this).setStyle("maxWidth", `${availableWidth}px`);
 
         const top = this.recomputeSide(Direction.vertical);
         const left = this.recomputeSide(Direction.horizontal);
@@ -226,8 +227,8 @@ class TurboPopup<
     }
 
     private clearMaxDimensions() {
-        this.setStyle("maxHeight", "", true);
-        this.setStyle("maxWidth", "", true);
+        $(this).setStyle("maxHeight", "", true)
+            .setStyle("maxWidth", "", true);
     }
 
     public show(b: boolean): this {

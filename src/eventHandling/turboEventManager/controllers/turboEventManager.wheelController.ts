@@ -1,10 +1,10 @@
-import {TurboController} from "../../../turboElement/mvc/turboController";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {InputDevice} from "../turboEventManager.types";
 import {TurboEventName, TurboEventNameEntry} from "../../eventNaming";
 import {TurboWheelEvent} from "../../events/turboWheelEvent";
 import {Point} from "../../../utils/datatypes/point/point";
+import {TurboController} from "../../../mvc/logic/controller";
 
 export class TurboEventManagerWheelController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "wheel";

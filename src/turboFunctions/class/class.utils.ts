@@ -1,4 +1,4 @@
-import {TurboSelector} from "../turboFunctions";
+import {TurboSelector} from "../turboSelector";
 
 export class ClassFunctionsUtils {
     /**

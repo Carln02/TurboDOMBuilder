@@ -1,17 +1,22 @@
-import {TurboSelector} from "../turboFunctions";
+import {TurboSelector} from "../turboSelector";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ToolBehaviorCallback} from "./tool.types";
+import {Delegate} from "../../eventHandling/delegate/delegate";
 
 type ElementData = {
     tools: Set<string>,
-    embeddedTarget?: Node
+    embeddedTarget?: Node,
+    activationDelegates: Map<string, Delegate<() => void>>,
+    deactivationDelegates: Map<string, Delegate<() => void>>
 };
 
-type BehaviorMap = Map<string, Set<ToolBehaviorCallback>>;
+type ToolData = {
+    behaviors: Map<string, Set<ToolBehaviorCallback>>
+};
 
 export class ToolFunctionsUtils {
     private elements: WeakMap<Node, WeakMap<TurboEventManager, ElementData>> = new WeakMap();
-    private behaviors: WeakMap<TurboEventManager, Map<string, BehaviorMap>> = new WeakMap();
+    private tools: WeakMap<TurboEventManager, Map<string, ToolData>> = new WeakMap();
 
     private getOrCreate<Key, Value>(map: Map<Key, Value>, key: Key, factory: () => Value): Value;
     private getOrCreate<Key extends object, Value>(map: WeakMap<Key, Value>, key: Key, factory: () => Value): Value;
@@ -24,15 +29,34 @@ export class ToolFunctionsUtils {
         return value;
     }
 
-    private getElementData(el: Node, manager: TurboEventManager): ElementData {
-        const es = this.getOrCreate(this.elements, el,
+    private getElementData(element: Node, manager: TurboEventManager): ElementData {
+        if (element instanceof TurboSelector) element = element.element;
+        const es = this.getOrCreate(this.elements, element,
             () => new WeakMap());
-        return this.getOrCreate(es, manager, () => ({tools: new Set()}));
+        return this.getOrCreate(es, manager, () => ({
+            tools: new Set(),
+            activationDelegates: new Map(),
+            deactivationDelegates: new Map()
+        }));
     }
 
-    private getBehaviorData(manager: TurboEventManager, toolName: string): BehaviorMap {
-        const byTool = this.getOrCreate(this.behaviors, manager, () => new Map());
-        return this.getOrCreate(byTool, toolName, () => new Map());
+    private getToolsData(manager: TurboEventManager, toolName: string): ToolData {
+        const byTool = this.getOrCreate(this.tools, manager, () => new Map());
+        return this.getOrCreate(byTool, toolName, () => ({
+            behaviors: new Map()
+        }));
+    }
+
+    public getActivationDelegate(element: Node, toolName: string, manager: TurboEventManager): Delegate<() => void> {
+        const map = this.getElementData(element, manager).activationDelegates;
+        if (!map.get(toolName)) map.set(toolName, new Delegate());
+        return map.get(toolName);
+    }
+
+    public getDeactivationDelegate(element: Node, toolName: string, manager: TurboEventManager): Delegate<() => void> {
+        const map = this.getElementData(element, manager).deactivationDelegates;
+        if (!map.get(toolName)) map.set(toolName, new Delegate());
+        return map.get(toolName);
     }
 
     public saveTool(element: Node, toolName: string, manager: TurboEventManager): void {
@@ -62,18 +86,22 @@ export class ToolFunctionsUtils {
     }
 
     public addToolBehavior(toolName: string, type: string, callback: ToolBehaviorCallback, manager: TurboEventManager): void {
-        const behaviors = this.getBehaviorData(manager, toolName);
+        const behaviors = this.getToolsData(manager, toolName).behaviors;
         const set = this.getOrCreate(behaviors, type, () => new Set());
         set.add(callback);
     }
 
     public getToolBehaviors(toolName: string, type: string, manager: TurboEventManager): ToolBehaviorCallback[] {
-        const behaviors = this.getBehaviorData(manager, toolName);
+        const behaviors = this.getToolsData(manager, toolName).behaviors;
         return [...this.getOrCreate(behaviors, type, () => new Set())];
     }
 
     public removeToolBehaviors(toolName: string, type: string, manager: TurboEventManager): void {
-        const behaviors = this.getBehaviorData(manager, toolName);
+        const behaviors = this.getToolsData(manager, toolName).behaviors;
         this.getOrCreate(behaviors, type, () => new Set()).clear();
+    }
+
+    public clearToolBehaviors(manager: TurboEventManager): void {
+        this.getOrCreate(this.tools, manager, () => new Map()).clear();
     }
 }

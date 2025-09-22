@@ -1,4 +1,3 @@
-import {TurboController} from "../../../turboElement/mvc/turboController";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ActionMode, ClickMode, InputDevice} from "../turboEventManager.types";
@@ -8,6 +7,7 @@ import {TurboMap} from "../../../utils/datatypes/turboMap/turboMap";
 import {clearCache} from "../../../decorators/cache/cache";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboDragEvent} from "../../events/turboDragEvent";
+import {TurboController} from "../../../mvc/logic/controller";
 
 export class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "pointer";

@@ -1,7 +1,7 @@
 import {TurboRichElementProperties} from "../../richElement/richElement.types";
-import {ValidTag} from "../../../../domBuilding/core.types";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
+import {ValidTag} from "../../../../core.types";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
 
 /**
  * @type {TurboSelectEntryProperties}

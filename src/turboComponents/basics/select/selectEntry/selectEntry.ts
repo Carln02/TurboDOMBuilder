@@ -1,12 +1,13 @@
-import {define} from "../../../../domBuilding/decorators/define";
 import {TurboSelectEntryConfig, TurboSelectEntryProperties} from "./selectEntry.types";
-import {input} from "../../../../domBuilding/elementCreation/basicElements";
 import {stringify} from "../../../../utils/dataManipulation/stringManipulation";
-import {auto} from "../../../../domBuilding/decorators/auto/auto";
 import {TurboRichElement} from "../../richElement/richElement";
-import {ValidTag} from "../../../../domBuilding/core.types";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
+import {ValidTag} from "../../../../core.types";
+import {define} from "../../../../decorators/define/define";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
+import {$} from "../../../../turboFunctions/turboFunctions";
+import {auto} from "../../../../decorators/auto/auto";
+import {input} from "../../../../elementCreation/basicElements";
 
 /**
  * @class TurboSelectEntry
@@ -46,7 +47,7 @@ class TurboSelectEntry<
         DataType, ModelType>) {
         super(properties);
 
-        if (!properties.unsetDefaultClasses) this.addClass(TurboSelectEntry.config.defaultClasses);
+        if (!properties.unsetDefaultClasses) $(this).addClass(TurboSelectEntry.config.defaultClasses);
         this.selectedClasses = properties.selectedClasses;
 
         this.action = properties.action || (() => {});
@@ -87,7 +88,7 @@ class TurboSelectEntry<
      */
     @auto()
     public set selected(value: boolean) {
-        this.toggleClass(this.selectedClasses, value);
+        $(this).toggleClass(this.selectedClasses, value);
         if (value) this.action();
         this.onSelected(value);
     }
@@ -97,7 +98,7 @@ class TurboSelectEntry<
         if (!value && this.selected) this.selected = false;
 
         this.reifects.enabled = value;
-        this.setStyle("visibility", value ? "" : "hidden");
+        $(this).setStyle("visibility", value ? "" : "hidden");
         this.onEnabled(value);
     }
 

@@ -1,13 +1,15 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {define} from "../../../domBuilding/decorators/define";
 import {TurboSelectEntry} from "./selectEntry/selectEntry";
 import {TurboSelectConfig, TurboSelectProperties} from "./select.types";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {TurboEventManager} from "../../../eventHandling/turboEventManager/turboEventManager";
 
 /**
  * Base class for creating a selection menu
@@ -54,7 +56,7 @@ class TurboSelect<
         DataType, ModelType>) {
         super(properties);
 
-        if (!properties.unsetDefaultClasses) this.addClass(TurboSelect.config.defaultClasses);
+        if (!properties.unsetDefaultClasses) $(this).addClass(TurboSelect.config.defaultClasses);
         if (!properties.selectedValues) properties.selectedValues = [];
 
         this.entriesParent = properties.entriesParent ?? this;
@@ -95,11 +97,11 @@ class TurboSelect<
         if (index < 0) index = 0;
 
         if (!entry.selectedClasses) entry.selectedClasses = this.selectedEntryClasses;
-        entry.addListener(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
+        $(entry).on(DefaultEventName.click, (e: Event) => this.onEntryClick(entry, e));
 
         entry.onAttach.add(() => {
             if (!this.entries.includes(entry)) {
-                const domIndex = this.entriesParent.indexOfChild(entry);
+                const domIndex = $(this.entriesParent).indexOfChild(entry);
                 const insertionIndex = Math.max(0, Math.min(domIndex, this.entries.length));
                 this.entries.splice(insertionIndex, 0, entry);
             }
@@ -113,7 +115,7 @@ class TurboSelect<
         });
 
         this.entries.splice(index, 0, entry);
-        this.entriesParent.addChild(entry, index);
+        $(this.entriesParent).addChild(entry, index);
 
         return entry;
     }
@@ -143,7 +145,10 @@ class TurboSelect<
         if (this.selectedEntries.length === 0 && this.forceSelection) this.select(this.enabledEntries[0]);
 
         this.onSelect(entry.selected, entry, this.getIndex(entry));
-        this.dispatchEvent(new TurboSelectInputEvent<ValueType, SecondaryValueType>(entry, this.selectedValues));
+        this.dispatchEvent(new TurboSelectInputEvent<ValueType, SecondaryValueType>({
+            toggledEntry: entry,
+            values: this.selectedValues
+        }));
         return this;
     }
 
