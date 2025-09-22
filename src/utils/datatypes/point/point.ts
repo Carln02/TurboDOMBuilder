@@ -299,7 +299,7 @@ class Point {
     }
 
     public dot(p: Point): number {
-        return this.x * p.x + this.y + p.y;
+        return this.x * p.x + this.y * p.y;
     }
 
     /**

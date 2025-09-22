@@ -3,6 +3,7 @@ demo-toolbar {
     border: 1px solid #838383;
     padding: 8px;
     min-width: 400px;
+    z-index: 2;
 
     display: flex;
     flex-direction: row;

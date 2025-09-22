@@ -1,9 +1,9 @@
-import {define, signal, TurboButton, TurboButtonProperties, $, DefaultEventName, effect, input} from "../../../../../build/turbodombuilder.esm";
+import {define, signal, TurboButtonProperties, $, DefaultEventName, TurboButton, effect, input} from "../../../../../build/turbodombuilder.esm";
 import {BucketTool} from "./bucket.tool";
 
 @define("demo-bucket")
 export class Bucket extends TurboButton {
-    @signal private _color: string = "#000000";
+    @signal private _colorValue: string = "#000000";
 
     private colorInput: HTMLInputElement;
 
@@ -13,8 +13,8 @@ export class Bucket extends TurboButton {
         this.initializeUI();
     }
 
-    public get color(): string {
-        return this._color.toString();
+    public get colorValue(): string {
+        return this._colorValue.toString();
     }
 
     protected setupUIElements() {
@@ -30,11 +30,11 @@ export class Bucket extends TurboButton {
     protected setupUIListeners() {
         super.setupUIListeners();
         $(this).on(DefaultEventName.click, () => this.colorInput.click());
-        $(this.colorInput).on(DefaultEventName.input, () => this._color = this.colorInput.value);
+        $(this.colorInput).on(DefaultEventName.input, () => this._colorValue = this.colorInput.value);
     }
 
     protected setupChangedCallbacks() {
         super.setupChangedCallbacks();
-        effect(() => $(this).setStyle("borderColor", this._color));
+        effect(() => $(this).setStyle("borderColor", this._colorValue));
     }
 }

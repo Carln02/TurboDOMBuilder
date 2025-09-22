@@ -47,9 +47,8 @@ export class PusherSubstrate extends TurboSubstrate {
             const mtv = this.mtvAxis(el, overlap);
             if (!mtv) continue;
 
-            // Normal component of delta into 'processed'
             const alongN = delta.dot(mtv.normal);
-            if (alongN > 0) this.move(el, mtv.normal.mul(alongN)); // Move only by the pushing component
+            if (alongN > 0) this.move(el, mtv.normal.mul(alongN)); //Move only by the pushing component
         }
     };
 

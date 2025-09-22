@@ -1,4 +1,4 @@
-import {button, $, randomFromRange, TurboElement, trim} from "../../build/turbodombuilder.esm.js";
+import {button, $, randomFromRange, TurboElement, trim} from "../../../build/turbodombuilder.esm.js";
 
 class Square extends TurboElement {
     position = {x: randomFromRange(0, 600), y: randomFromRange(0, 600)};

@@ -3471,7 +3471,7 @@
             return Math.sqrt(this.length2);
         }
         dot(p) {
-            return this.x * p.x + this.y + p.y;
+            return this.x * p.x + this.y * p.y;
         }
         /**
          * @description Create a copy of the current point
@@ -8622,8 +8622,8 @@
         PopupFallbackMode["none"] = "none";
     })(PopupFallbackMode || (PopupFallbackMode = {}));
 
-    var css_248z$1 = ".turbo-popup{display:block;position:fixed}";
-    styleInject$1(css_248z$1);
+    var css_248z$1$1 = ".turbo-popup{display:block;position:fixed}";
+    styleInject$1(css_248z$1$1);
 
     let TurboPopup = (() => {
         let _classDecorators = [define()];
@@ -10012,94 +10012,11 @@
     }
     glo[importIdentifier] = true;
 
-    let SquareModel = (() => {
-        let _classSuper = TurboModel;
-        let _color_decorators;
-        let _color_initializers = [];
-        let _color_extraInitializers = [];
-        let _position_decorators;
-        let _position_initializers = [];
-        let _position_extraInitializers = [];
-        let _size_decorators;
-        let _size_initializers = [];
-        let _size_extraInitializers = [];
-        return class SquareModel extends _classSuper {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _color_decorators = [signal];
-                _position_decorators = [signal];
-                _size_decorators = [signal];
-                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
-                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
-                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            }
-            color = __runInitializers$1(this, _color_initializers, "#2e82d5");
-            position = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _position_initializers, { x: 0, y: 0 }));
-            size = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _size_initializers, 200));
-            constructor() {
-                super(...arguments);
-                __runInitializers$1(this, _size_extraInitializers);
-            }
-        };
-    })();
-
-    class SquareView extends TurboView {
-        initialize() {
-            super.initialize();
-            effect(() => $(this).setStyle("transform", `translate(${this.model.position.x}px, ${this.model.position.y}px)`));
-            effect(() => $(this).setStyle("backgroundColor", this.model.color));
-            effect(() => $(this).setStyle("width", this.model.size + "px")
-                .setStyle("height", this.model.size + "px"));
-        }
-    }
-
-    let Square = (() => {
-        let _classDecorators = [define("demo-square")];
-        let _classDescriptor;
-        let _classExtraInitializers = [];
-        let _classThis;
-        let _classSuper = TurboElement;
-        (class extends _classSuper {
-            static { _classThis = this; }
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-                _classThis = _classDescriptor.value;
-                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                __runInitializers$1(_classThis, _classExtraInitializers);
-            }
-            constructor(properties = {}) {
-                super(properties);
-                $(this).addClass("square");
-                this.mvc.generate({
-                    view: SquareView,
-                    model: SquareModel,
-                });
-            }
-            //TODO
-            // @expose color: string;
-            get color() {
-                return this.model.color;
-            }
-            set color(color) {
-                this.model.color = color;
-            }
-            move(delta) {
-                this.model.position = delta.add(this.model.position).object;
-            }
-            resize(delta) {
-                this.model.size = delta.min;
-            }
-        });
-        return _classThis;
-    })();
-
     function styleInject(css, ref) {
       if ( ref === void 0 ) ref = {};
       var insertAt = ref.insertAt;
 
-      if (typeof document === 'undefined') { return; }
+      if (!css || typeof document === 'undefined') { return; }
 
       var head = document.head || document.getElementsByTagName('head')[0];
       var style = document.createElement('style');
@@ -10122,8 +10039,8 @@
       }
     }
 
-    var css_248z = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%)}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
-    styleInject(css_248z);
+    var css_248z$1 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
+    styleInject(css_248z$1);
 
     let Toolbar = (() => {
         let _classDecorators = [define("demo-toolbar")];
@@ -10131,17 +10048,25 @@
         let _classExtraInitializers = [];
         let _classThis;
         let _classSuper = TurboElement;
+        let _color_decorators;
+        let _color_initializers = [];
+        let _color_extraInitializers = [];
         (class extends _classSuper {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _color_decorators = [signal];
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
                 __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
                 __runInitializers$1(_classThis, _classExtraInitializers);
             }
+            color = __runInitializers$1(this, _color_initializers, "white");
             constructor(properties = {}) {
                 super(properties);
+                __runInitializers$1(this, _color_extraInitializers);
+                effect(() => $(this).setStyle("backgroundColor", this.color));
             }
             addTool(tool) {
                 $(this).addChild(tool);
@@ -10179,9 +10104,10 @@
     class BucketTool extends TurboTool {
         toolName = "bucket";
         click(e, el) {
-            if (!(el instanceof HTMLElement))
+            if ("color" in el && typeof el.color === "string")
+                el.color = this.element.colorValue;
+            else
                 return false;
-            $(el).setStyle("backgroundColor", this.element.color);
             return true;
         }
     }
@@ -10192,29 +10118,29 @@
         let _classExtraInitializers = [];
         let _classThis;
         let _classSuper = TurboButton;
-        let __color_decorators;
-        let __color_initializers = [];
-        let __color_extraInitializers = [];
+        let __colorValue_decorators;
+        let __colorValue_initializers = [];
+        let __colorValue_extraInitializers = [];
         (class extends _classSuper {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                __color_decorators = [signal];
-                __esDecorate$1(null, null, __color_decorators, { kind: "field", name: "_color", static: false, private: false, access: { has: obj => "_color" in obj, get: obj => obj._color, set: (obj, value) => { obj._color = value; } }, metadata: _metadata }, __color_initializers, __color_extraInitializers);
+                __colorValue_decorators = [signal];
+                __esDecorate$1(null, null, __colorValue_decorators, { kind: "field", name: "_colorValue", static: false, private: false, access: { has: obj => "_colorValue" in obj, get: obj => obj._colorValue, set: (obj, value) => { obj._colorValue = value; } }, metadata: _metadata }, __colorValue_initializers, __colorValue_extraInitializers);
                 __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
                 __runInitializers$1(_classThis, _classExtraInitializers);
             }
-            _color = __runInitializers$1(this, __color_initializers, "#000000");
-            colorInput = __runInitializers$1(this, __color_extraInitializers);
+            _colorValue = __runInitializers$1(this, __colorValue_initializers, "#000000");
+            colorInput = __runInitializers$1(this, __colorValue_extraInitializers);
             constructor(properties) {
                 super(properties);
                 this.mvc.generate({ tools: BucketTool });
                 this.initializeUI();
             }
-            get color() {
-                return this._color.toString();
+            get colorValue() {
+                return this._colorValue.toString();
             }
             setupUIElements() {
                 super.setupUIElements();
@@ -10227,11 +10153,104 @@
             setupUIListeners() {
                 super.setupUIListeners();
                 $(this).on(DefaultEventName.click, () => this.colorInput.click());
-                $(this.colorInput).on(DefaultEventName.input, () => this._color = this.colorInput.value);
+                $(this.colorInput).on(DefaultEventName.input, () => this._colorValue = this.colorInput.value);
             }
             setupChangedCallbacks() {
                 super.setupChangedCallbacks();
-                effect(() => $(this).setStyle("borderColor", this._color));
+                effect(() => $(this).setStyle("borderColor", this._colorValue));
+            }
+        });
+        return _classThis;
+    })();
+
+    let SquareModel = (() => {
+        let _classSuper = TurboModel;
+        let _color_decorators;
+        let _color_initializers = [];
+        let _color_extraInitializers = [];
+        let _position_decorators;
+        let _position_initializers = [];
+        let _position_extraInitializers = [];
+        let _size_decorators;
+        let _size_initializers = [];
+        let _size_extraInitializers = [];
+        return class SquareModel extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _color_decorators = [signal];
+                _position_decorators = [signal];
+                _size_decorators = [signal];
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
+                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            color = __runInitializers$1(this, _color_initializers, "#2e82d5");
+            position = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _position_initializers, { x: 0, y: 0 }));
+            size = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _size_initializers, 100));
+            constructor() {
+                super(...arguments);
+                __runInitializers$1(this, _size_extraInitializers);
+            }
+        };
+    })();
+
+    class SquareView extends TurboView {
+        initialize() {
+            super.initialize();
+            effect(() => $(this).setStyle("transform", `translate(${this.model.position.x}px, ${this.model.position.y}px)`));
+            effect(() => $(this).setStyle("backgroundColor", this.model.color));
+            effect(() => $(this).setStyle("width", this.model.size + "px")
+                .setStyle("height", this.model.size + "px"));
+        }
+    }
+
+    var css_248z = "demo-square{background-color:#00aff4;height:100px;position:absolute;width:100px}";
+    styleInject(css_248z);
+
+    let Square = (() => {
+        let _classDecorators = [define("demo-square")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboElement;
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers$1(_classThis, _classExtraInitializers);
+            }
+            constructor(properties = {}) {
+                super(properties);
+                this.mvc.generate({
+                    view: SquareView,
+                    model: SquareModel,
+                });
+                if (properties.position)
+                    this.model.position = properties.position;
+            }
+            //TODO
+            // @expose color: string;
+            get color() {
+                return this.model.color;
+            }
+            set color(color) {
+                this.model.color = color;
+            }
+            get size() {
+                return this.model.size;
+            }
+            set size(size) {
+                this.model.size = size;
+            }
+            move(delta) {
+                this.model.position = delta.add(this.model.position).object;
+            }
+            resize(delta) {
+                this.model.size = delta.min;
             }
         });
         return _classThis;
@@ -10281,42 +10300,33 @@
             super.initialize();
             $(this).addSolver(this.resolvePush);
         }
-        /**
-         * Expected: properties.event.deltaPosition is a Point (drag delta for this tick).
-         * The object list is a Set<Element> and initially contains the interacted element.
-         */
         resolvePush = (properties) => {
             const delta = properties.event?.deltaPosition;
             const el = properties.target;
             if (!delta || !el || !(el instanceof Element))
                 return;
-            // Find all overlaps in the current pool (everything in the Set except o1)
             const list = Array.from($(document).getSubstrateObjectList());
             const overlaps = this.findOverlaps(el, list);
             if (overlaps.length === 0) {
-                // No overlap → remove from list
+                //No overlap -> remove from list
                 this.objectList.delete(el);
                 return;
             }
             for (const overlap of overlaps) {
-                // If any overlap is unprocessed, add it so resolve() will pick it up next
+                //If any overlap is unprocessed, add it so resolve() will pick it up next
                 if (!this.isProcessed(overlap)) {
                     this.objectList.add(overlap);
                     continue;
                 }
-                // For overlaps with already processed elements, push el by the normal component of delta
+                //For overlaps with already processed elements, push el by the normal component of delta
                 const mtv = this.mtvAxis(el, overlap);
                 if (!mtv)
                     continue;
-                // Normal component of delta into 'processed'
-                const n = mtv.normal; // unit axis normal: {1,0} or {0,1} with sign
-                const alongN = delta.x * n.x + delta.y * n.y; // dot(delta, n)
+                const alongN = delta.dot(mtv.normal);
                 if (alongN > 0)
-                    this.move(el, n.mul(alongN)); // Move only by the pushing component
+                    this.move(el, mtv.normal.mul(alongN)); //Move only by the pushing component
             }
         };
-        // ----------------- helpers -----------------
-        /** Axis-aligned rectangle overlap */
         overlaps(a, b) {
             if (!(a instanceof Element) || !(b instanceof Element))
                 return false;
@@ -10326,12 +10336,11 @@
                 return false;
             return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
         }
-        /** Minimal translation vector (axis-aligned), oriented to separate a from b */
         mtvAxis(aEl, bEl) {
-            const a = aEl.getBoundingClientRect();
-            const b = bEl.getBoundingClientRect();
             if (!this.overlaps(aEl, bEl))
                 return null;
+            const a = aEl.getBoundingClientRect();
+            const b = bEl.getBoundingClientRect();
             const ax = a.x + a.width / 2, ay = a.y + a.height / 2;
             const bx = b.x + b.width / 2, by = b.y + b.height / 2;
             const dx = bx - ax, dy = by - ay;
@@ -10341,7 +10350,6 @@
                 return { normal: new Point(dx < 0 ? 1 : -1, 0), depth: px };
             return { normal: new Point(0, dy < 0 ? 1 : -1), depth: py };
         }
-        /** Find overlaps of `o1` within a pool (current Set) */
         findOverlaps(element, pool) {
             const out = [];
             for (const el of pool) {
@@ -10352,7 +10360,6 @@
             }
             return out;
         }
-        /** Move an element by delta using whatever API it exposes */
         move(el, delta) {
             if ("move" in el && typeof el.move === "function")
                 el.move(delta);
@@ -10363,14 +10370,24 @@
         }
     }
 
+    class AddSquareTool extends TurboTool {
+        toolName = "addSquare";
+        click(e, target) {
+            if (target === document.body) {
+                new Square({ parent: document.body, position: e.position?.sub(50) });
+                return true;
+            }
+            return false;
+        }
+    }
+
     $(document)
         .makeSubstrate("main")
         .setSubstrateObjectList(document.body.children);
-    for (let i = 0; i < 4; i++)
-        new Square({ parent: document.body });
     const toolbar = new Toolbar({ parent: document.body });
-    toolbar.addTool(new TurboButton({ text: "Select", tools: SelectTool }));
-    toolbar.addTool(new Bucket({ text: "Bucket" }));
-    toolbar.addTool(new TurboButton({ text: "Pusher", tools: PusherTool, substrates: PusherSubstrate }));
+    toolbar.addTool(new TurboButton({ text: "Select", tools: SelectTool, classes: "demo-button" }));
+    toolbar.addTool(new TurboButton({ text: "Add Square", tools: AddSquareTool, classes: "demo-button" }));
+    toolbar.addTool(new Bucket({ text: "Bucket", classes: "demo-button" }));
+    toolbar.addTool(new TurboButton({ text: "Pusher", tools: PusherTool, substrates: PusherSubstrate, classes: "demo-button" }));
 
 })();

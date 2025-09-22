@@ -3494,7 +3494,7 @@ var Turbo = (function (exports) {
             return Math.sqrt(this.length2);
         }
         dot(p) {
-            return this.x * p.x + this.y + p.y;
+            return this.x * p.x + this.y * p.y;
         }
         /**
          * @description Create a copy of the current point

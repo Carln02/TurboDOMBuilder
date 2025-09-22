@@ -1,16 +1,18 @@
 import {$, define, TurboElement, Point} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {SquareView} from "./square.view";
+import {SquareProperties} from "./square.types";
+import "./square.css";
 
 @define("demo-square")
 export class Square extends TurboElement<SquareView, any, SquareModel> {
-    public constructor(properties = {}) {
+    public constructor(properties: SquareProperties = {}) {
         super(properties);
-        $(this).addClass("square");
         this.mvc.generate({
             view: SquareView,
             model: SquareModel,
         });
+        if (properties.position) this.model.position = properties.position;
     }
 
     //TODO
@@ -22,6 +24,14 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
 
     public set color(color: string) {
         this.model.color = color;
+    }
+
+    public get size(): number {
+        return this.model.size;
+    }
+
+    public set size(size: number) {
+        this.model.size = size;
     }
 
     public move(delta: Point) {

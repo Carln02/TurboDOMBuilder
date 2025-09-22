@@ -4,31 +4,18 @@ body {
     margin: 0;
 }
 
-.square {
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    background-color: #00aff4;
+.demo-button {
+    background-color: lightcyan;
+    border: 2px solid #8acccc;
+    cursor: pointer;
 }
 
-.circle {
-    width: 100px;
-    height: 100px;
-    position: absolute;
-    background-color: #5ddc39;
-    border-radius: 100%;
+.demo-button:hover {
+    scale: 1.05;
 }
 
-.moveTool {
-    position: absolute;
-    z-index: 1;
-    bottom: 15px;
-    right: 15px;
-}
-
-.outline {
-    width: 150px;
-    height: 150px;
-    border: 5px solid purple;
-    position: absolute;
+.demo-button.selected {
+    scale: 1.03;
+    background-color: #89d5d5;
+    border-color: #5ba1a1;
 }
