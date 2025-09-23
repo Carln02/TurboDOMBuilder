@@ -11,7 +11,10 @@ import {auto} from "../../../decorators/auto/auto";
 import {cache} from "../../../decorators/cache/cache";
 import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
+//TODO way to get static field through this
+//Maybe also function that i call and returns the class of the instance (direct one, not parent)
 /**
  * Icon class for creating icon elements.
  * @class TurboIcon
@@ -21,8 +24,9 @@ import {equalToAny} from "../../../utils/computations/equity";
 class TurboIcon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement<ViewType, DataType, ModelType> {
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     private _element: Element;
 
     private _type: string;
@@ -30,7 +34,12 @@ class TurboIcon<
 
     public onLoaded: (element: Element) => void;
 
-    public static readonly config: TurboIconConfig = {...TurboElement.config, defaultType: "svg", defaultDirectory: "", customLoaders: {}};
+    public static readonly config: TurboIconConfig = {
+        ...TurboElement.config,
+        defaultType: "svg",
+        defaultDirectory: "",
+        customLoaders: {}
+    };
 
     private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
         "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
@@ -39,14 +48,14 @@ class TurboIcon<
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>) {
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>) {
         super(properties);
         if (properties.icon) this.update(properties);
     }
 
     public update(properties: TurboIconProperties) {
-        if (properties.unsetDefaultClasses) $(this).removeClass(TurboIcon.config.defaultClasses);
-        else $(this).addClass(TurboIcon.config.defaultClasses);
+        if (properties.unsetDefaultClasses) $(this).removeClass((this.constructor as any).config.defaultClasses);
+        else $(this).addClass((this.constructor as any).config.defaultClasses);
 
         this.type = properties.type;
         this.directory = properties.directory;
@@ -66,7 +75,7 @@ class TurboIcon<
     }
 
     private set type(value: string) {
-        if (!value || value.length == 0) value = this.type || TurboIcon.config.defaultType || "svg";
+        if (!value || value.length == 0) value = this.type || (this.constructor as any).config.defaultType || "svg";
         if (value[0] == ".") value = value.substring(1);
         this._type = value;
     }
@@ -79,7 +88,7 @@ class TurboIcon<
     }
 
     private set directory(value: string) {
-        if (!value) value = this.directory || TurboIcon.config.defaultDirectory || "";
+        if (!value) value = this.directory || (this.constructor as any).config.defaultDirectory || "";
         if (value.length > 0 && !value.endsWith("/")) value += "/";
         this._directory = value;
     }
@@ -137,7 +146,7 @@ class TurboIcon<
 
     private generateIcon() {
         if (this.element instanceof HTMLImageElement
-            && equalToAny(this.type, ...TurboIcon.imageTypes)) {
+            && equalToAny(this.type, ...(this.constructor as any).imageTypes)) {
             this.element.src = this.path;
             this.element.alt = this.icon;
             return;
@@ -155,11 +164,11 @@ class TurboIcon<
     private getLoader(): (path: string) => Element | Promise<Element> {
         if (!this.type) return;
 
-        const customLoader = TurboIcon.config.customLoaders[this.type];
+        const customLoader = (this.constructor as any).config.customLoaders[this.type];
         if (customLoader) return customLoader;
 
         if (equalToAny(this.type, "svg", "SVG")) return this.loadSvg;
-        if (equalToAny(this.type, ...TurboIcon.imageTypes)) return this.loadImg;
+        if (equalToAny(this.type, ...(this.constructor as any).imageTypes)) return this.loadImg;
         throw new Error(`Unsupported icon type: ${this.type}`);
     }
 

@@ -2,21 +2,42 @@ import {camelToKebabCase, kebabToCamelCase, parse} from "../../utils/dataManipul
 import {DefineOptions} from "./define.types";
 
 /**
- * Class decorator factory.
+ * @decorator
+ * @function define
+ * @description Stage-3 class decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
- * - Publishes a *live* `observedAttributes` getter that merges attributes from
- *   this class and its ancestors, using metadata collected by your member decorator(s).
+ * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
+ * - Publishes a *live* `observedAttributes` getter that lists all attributes associated with `@observed` fields in
+ *   this class and its ancestors.
+ * - Sets up an `attributeChangedCallback()` function to mirror changes from attributes to their associated
+ * `@observed` fields.
  *
- * Usage:
- *   @define()            // name comes from ClassName -> class-name
- *   class MyEl extends HTMLElement { ... }
+ * @param {string} [elementName] - The name of the custom HTML element. It is inferred if omitted.
+ * @param {DefineOptions} [options] - Custom {@link DefineOptions} options object.
  *
- *   @define("my-el")     // explicit name
- *   class MyEl extends HTMLElement { ... }
+ * @example
+ * ```ts
+ * @define() // name will be "my-el" (kebab case of class name).
+ * class MyEl extends HTMLElement { ... }
+ *
+ * @define("my-el") // explicit name
+ * class MyEl extends HTMLElement { ... }
+ * ````
  */
 function define(elementName?: string, options: DefineOptions = { injectAttributeBridge: true }) {
-    return function <T extends { new(...args: any[]): HTMLElement }>(constructor: T, context: ClassDecoratorContext<T>) {
-        Object.defineProperty(constructor, "observedAttributes", {
+    return function <T extends { new(...args: any[]): HTMLElement }>(Base: T, context: ClassDecoratorContext<T>) {
+        const name = elementName ?? camelToKebabCase(Base.name);
+
+        class Wrapped extends Base {
+            constructor(...args: any[]) {
+                super(...args);
+                try {this.classList?.add(name)} catch {}
+            }
+        }
+
+        Object.setPrototypeOf(Wrapped, Base);
+
+        Object.defineProperty(Wrapped, "observedAttributes", {
             configurable: true,
             enumerable: false,
             get(this: any) {
@@ -32,8 +53,7 @@ function define(elementName?: string, options: DefineOptions = { injectAttribute
         });
 
         if (options.injectAttributeBridge !== false) {
-            const prototype = constructor.prototype as HTMLElement;
-
+            const prototype = Wrapped.prototype as HTMLElement;
             if (typeof prototype["attributeChangedCallback"] !== "function") {
                 Object.defineProperty(prototype, "attributeChangedCallback", {
                     configurable: true,
@@ -49,10 +69,8 @@ function define(elementName?: string, options: DefineOptions = { injectAttribute
             }
         }
 
-        const name = elementName ?? camelToKebabCase(constructor.name);
-        if (name && !customElements.get(name)) customElements.define(name, constructor);
-
-        return constructor;
+        if (name && !customElements.get(name)) customElements.define(name, Wrapped);
+        return Wrapped;
     };
 }
 

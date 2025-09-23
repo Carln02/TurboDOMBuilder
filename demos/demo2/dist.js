@@ -1407,8 +1407,19 @@
      *   class MyEl extends HTMLElement { ... }
      */
     function define(elementName, options = { injectAttributeBridge: true }) {
-        return function (constructor, context) {
-            Object.defineProperty(constructor, "observedAttributes", {
+        return function (Base, context) {
+            const name = elementName ?? camelToKebabCase(Base.name);
+            class Wrapped extends Base {
+                constructor(...args) {
+                    super(...args);
+                    try {
+                        this.classList?.add(name);
+                    }
+                    catch { }
+                }
+            }
+            Object.setPrototypeOf(Wrapped, Base);
+            Object.defineProperty(Wrapped, "observedAttributes", {
                 configurable: true,
                 enumerable: false,
                 get() {
@@ -1425,7 +1436,7 @@
                 },
             });
             if (options.injectAttributeBridge !== false) {
-                const prototype = constructor.prototype;
+                const prototype = Wrapped.prototype;
                 if (typeof prototype["attributeChangedCallback"] !== "function") {
                     Object.defineProperty(prototype, "attributeChangedCallback", {
                         configurable: true,
@@ -1447,10 +1458,9 @@
                     });
                 }
             }
-            const name = elementName ?? camelToKebabCase(constructor.name);
             if (name && !customElements.get(name))
-                customElements.define(name, constructor);
-            return constructor;
+                customElements.define(name, Wrapped);
+            return Wrapped;
         };
     }
 
@@ -5970,6 +5980,8 @@
         return true;
     }
 
+    //TODO way to get static field through this
+    //Maybe also function that i call and returns the class of the instance (direct one, not parent)
     /**
      * Icon class for creating icon elements.
      * @class TurboIcon
@@ -6003,7 +6015,12 @@
             _type;
             _directory;
             onLoaded;
-            static config = { ...TurboElement.config, defaultType: "svg", defaultDirectory: "", customLoaders: {} };
+            static config = {
+                ...TurboElement.config,
+                defaultType: "svg",
+                defaultDirectory: "",
+                customLoaders: {}
+            };
             static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
                 "PNG", "JPG", "JPEG", "GIF", "WEBP"];
             /**

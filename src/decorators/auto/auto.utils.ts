@@ -1,7 +1,13 @@
+/**
+ * @internal
+ */
 type AutoConstructorType = {
     installed: Map<PropertyKey, boolean>
 };
 
+/**
+ * @internal
+ */
 export class AutoUtils {
     private constructorMap = new WeakMap<object, AutoConstructorType>();
 

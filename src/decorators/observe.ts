@@ -1,7 +1,10 @@
 import {camelToKebabCase, stringify} from "../utils/dataManipulation/stringManipulation";
 
 // https://github.com/microsoft/TypeScript/issues/53461
-
+// To make sure that metadata exists on decorator contexts.
+/**
+ * @internal
+ */
 declare global { interface SymbolConstructor {metadata: symbol} }
 if (!("metadata" in Symbol)) {
     Object.defineProperty(Symbol, "metadata", {
@@ -10,7 +13,45 @@ if (!("metadata" in Symbol)) {
     });
 }
 
-/** * @description Member decorator for fields or accessors that reflects a property to an HTML attribute. * Also records the attribute name into class metadata so @useObservedAttributes() can expose it. * @param {unknown} value - Optional explicit attribute name. Defaults to camelCase → kebab-case. * @param context */
+/**
+ * @internal
+ */
+function generateGetter<T extends object, V>(getter: (this: T) => V, backingField: symbol) {
+    return getter ?? function (this: any) { return this[backingField]; };
+}
+
+/**
+ * @internal
+ */
+function generateSetter<T extends object, V>(setter: (this: T, v: V) => void, backingField: symbol, propName: string, attr: string) {
+    return function (this: any, value: any) {
+        const prev = this[propName];
+        if (prev === value) return;
+        if (setter) setter.call(this, value); else this[backingField] = value;
+        this.setAttribute?.(attr, stringify(this[propName]));
+    }
+}
+
+/**
+ * @decorator
+ * @function observe
+ * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML attribute.
+ * Also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
+ *
+ * @example
+ * ```ts
+ * @define()
+ * class MyClass extends HTMLElement {
+ *    @observe fieldName: string = "hello";
+ * }
+ * ```
+ *
+ * Leads to:
+ * ```html
+ * <my-class field-name="hello"></my-class>
+ * ```
+ *
+ */
 function observe<Type extends object, Value>(
     value:
         | ((initial: Value) => Value)
@@ -58,19 +99,6 @@ function observe<Type extends object, Value>(
             if (hadOwn) (this as any)[propName] = initial;
         });
         return (value: unknown) => (typeof init === "function" ? init(value) : value);
-    }
-}
-
-function generateGetter<T extends object, V>(getter: (this: T) => V, backingField: symbol) {
-    return getter ?? function (this: any) { return this[backingField]; };
-}
-
-function generateSetter<T extends object, V>(setter: (this: T, v: V) => void, backingField: symbol, propName: string, attr: string) {
-    return function (this: any, value: any) {
-        const prev = this[propName];
-        if (prev === value) return;
-        if (setter) setter.call(this, value); else this[backingField] = value;
-        this.setAttribute?.(attr, stringify(this[propName]));
     }
 }
 

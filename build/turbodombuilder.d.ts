@@ -447,12 +447,13 @@ declare global {
 
 /**
  * @type {AutoOptions}
- * @description Options for configuring the `auto` decorator.
+ * @template Type
+ * @description Options for configuring the `@auto` decorator.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
  * @property {(value: Type) => Type} [callBefore] - Optional callback to execute on the value just before it is set.
+ * The returned value will be stored.
  * @property {boolean} [returnDefinedGetterValue] - If true and a getter is defined, will not modify the latter.
- * @template Type
  */
 type AutoOptions<Type = any> = {
     cancelIfUnchanged?: boolean;
@@ -461,15 +462,31 @@ type AutoOptions<Type = any> = {
 };
 
 /**
+ * @decorator
  * @function auto
- * @description Stage-3 decorator that adds the “missing half” (getter or setter) and/or
- * wraps existing ones. Works with field / getter / setter / accessor. Designed to chain
- * cleanly with `@observe`.
+ * @description Stage-3 decorator that augments fields, getters, setters, and accessors. It can be used to generate
+ * missing getters/setters. Useful to create a setter and only define additional functionality on set.
+ * The storing and getting of the value are handled by `auto`.
+ * You can also pass to the function an `options` {@link AutoOptions} object to define custom behaviors.
  *
- * Options (use `autoFactory(opts)` if you need to pass them):
- *  - cancelIfUnchanged (default: true)
- *  - callBefore?: (value) => value    (preprocess before storing/forwarding)
- *  - returnDefinedGetterValue (default: false)  (when user getter exists)
+ * @example
+ * ```ts
+ * @auto() public set color(value: string) {
+ *    this.style.backgroundColor = value;
+ * }
+ *
+ * //Is equivalent to
+ *
+ * private _color: string;
+ * public get color(): string {
+ *    return this._color;
+ * }
+ *
+ * public set color(value: string) {
+ *    this._color = value;
+ *    this.style.backgroundColor = value;
+ * }
+ * ```
  */
 declare function auto(options?: AutoOptions): <Type extends object, Value>(value: {
     get?: (this: Type) => Value;
@@ -478,16 +495,16 @@ declare function auto(options?: AutoOptions): <Type extends object, Value>(value
 
 /**
  * @type {CacheOptions}
+ * @description Options for configuring the `@cache` decorator.
  * @property {number} [timeout] - The duration (in milliseconds) after which the cache should expire.
  * @property {string | string[]} [onEvent] - A string of one or more space-separated event names or an array of
- * event names. The cache will be cleared when one of these events occur.
+ * event names. The cache will be cleared when one of these events occur on the instance.
  * @property {() => boolean | Promise<boolean>} [onCallback] - A callback function that returns a boolean or a
  * promise resolving to a boolean. The cache will be cleared if the function returns true.
  * @property {number} [onCallbackFrequency] - The frequency (in milliseconds) at which the onCallback function is called.
  * @property {string | Function | (string | Function)[]} [onFieldChange] - The field or function names to watch for
  * changes. The cache will be cleared when any of these change. Multiple field names can be provided in the same.
  * @property {boolean} [clearOnNextFrame] - If set to true, the cache will be cleared on the next animation frame.
- * space-separated string.
  */
 type CacheOptions = {
     timeout?: number;
@@ -499,91 +516,507 @@ type CacheOptions = {
 };
 
 /**
- * Stage-3 cache decorator:
- *  - method: caches per arguments
- *  - getter: caches once per instance
- *  - accessor: wraps the getter like a cached getter (setter unchanged)
+ * @decorator
+ * @function cache
+ * @description Stage-3 cache decorator:
+ *  - When used on a method, it will cache the return value per arguments.
+ *  - When used on a getter, it will cache its value once per instance.
+ *  - When used on an accessor, it will wrap the getter similar to a cached getter.
+ *  @param {CacheOptions} [options] - Optional caching options.
  */
 declare function cache(options?: CacheOptions): (value: ((...args: any[]) => any) | (() => any) | {
     get?: () => any;
     set?: (v: any) => void;
 }, ctx: ClassMethodDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => any;
 /**
- * Clear *all* cache entries on an instance created by @cache
- * (we scan for symbols named Symbol(__cache__...)).
+ * @function clearCache
+ * @description Clear *all* cache entries created by `@cache` on an instance.
+ * @param {any} instance - The instance for which the cache should be cleared.
  */
 declare function clearCache(instance: any): void;
 /**
- * Clear a specific cache entry for a given method/getter name (or function).
+ * @function clearCacheEntry
+ * @description Clear a specific cache entry for a given method, function, or getter.
+ * @param {any} instance - The instance for which the cache should be cleared.
+ * @param {string | Function} field - The name (or the function itself) of the field to clear.
  */
 declare function clearCacheEntry(instance: any, field: string | Function): void;
 
 /**
-/**
  * @function callOnce
- * @description Stage-3 method decorator: ensures a method is called only once per instance.
- * Subsequent calls no-op and log a warning. Works for instance or static methods.
+ * @template {(...args: any[]) => any} Type
+ * @description Function wrapper that ensures the passed function is called only once.
+ * Subsequent calls will just return the cached computed result (if any) of the first call of that function.
+ * @param {Type} fn - The function to process.
  *
- * Usage:
- *   class A {
- *     @callOnce
- *     init() { ... }
- *   }
+ * @example
+ * ```ts
+ * const init = callOnce(function () { ... });
+ * const out = init();
+ * ```
  */
-declare function callOnce<T extends object>(value: (this: T, ...args: any[]) => any, ctx: ClassMethodDecoratorContext<T>): any;
+declare function callOnce<Type extends (...args: any[]) => any>(fn: Type): Type;
 /**
+ * @decorator
  * @function callOncePerInstance
- * @description Stage-3 method decorator (factory) that ensures the method
- * runs only once per *instance*. Later calls no-op. If you pass a `key`,
- * all methods decorated with the same key on the same instance share the
- * same gate (i.e., only the first of them will run once).
+ * @description Stage-3 method decorator. It ensures a method in a class is called only once per instance.
+ * Subsequent calls will be canceled and log a warning. Works for instance or static methods.
  *
- * Usage:
+ * @example
+ * ```ts
  *   class A {
- *     @callOncePerInstance()           // unique per method
- *     init() { ... }
- *
- *     @callOncePerInstance("bootKey")  // shared gate with others using "bootKey"
- *     boot() { ... }
+ *     @callOnce init() { ... }
  *   }
+ * ```
  */
-declare function callOncePerInstance(key?: string | symbol): <T extends object>(value: (this: T, ...args: any[]) => any, ctx: ClassMethodDecoratorContext<T>) => (this: any, ...args: any[]) => any;
+declare function callOncePerInstance<Type extends object>(value: (this: Type, ...args: any[]) => any, context: ClassMethodDecoratorContext<Type>): any;
 
+/**
+ * @decorator
+ * @function controller
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched controller.
+ * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @controller() protected textController: TurboController;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textController(): TurboController {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
+ *    if (typeof this.getController === "function") return this.getController("text");
+ * }
+ * ```
+ */
 declare function controller(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+/**
+ * @decorator
+ * @function handler
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched handler.
+ * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @handler() protected textHandler: TurboHandler;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textHandler(): TurboHandler {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
+ *    if (typeof this.getHandler === "function") return this.getHandler("text");
+ * }
+ * ```
+ */
 declare function handler(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
 
+/**
+ * @type DefineOptions
+ * @description Options object type for the `@define` decorator.
+ * @property {boolean} [injectAttributeBridge] - If true, injects an `attributeChangedCallback` into the
+ * class (if it's missing). It defaults to true.
+ */
 type DefineOptions = {
-    /** If true, injects attributeChangedCallback when missing. Default: true */
     injectAttributeBridge?: boolean;
 };
 
 /**
- * Class decorator factory.
+ * @decorator
+ * @function define
+ * @description Stage-3 class decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
- * - Publishes a *live* `observedAttributes` getter that merges attributes from
- *   this class and its ancestors, using metadata collected by your member decorator(s).
+ * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
+ * - Publishes a *live* `observedAttributes` getter that lists all attributes associated with `@observed` fields in
+ *   this class and its ancestors.
+ * - Sets up an `attributeChangedCallback()` function to mirror changes from attributes to their associated
+ * `@observed` fields.
  *
- * Usage:
- *   @define()            // name comes from ClassName -> class-name
- *   class MyEl extends HTMLElement { ... }
+ * @param {string} [elementName] - The name of the custom HTML element. It is inferred if omitted.
+ * @param {DefineOptions} [options] - Custom {@link DefineOptions} options object.
  *
- *   @define("my-el")     // explicit name
- *   class MyEl extends HTMLElement { ... }
+ * @example
+ * ```ts
+ * @define() // name will be "my-el" (kebab case of class name).
+ * class MyEl extends HTMLElement { ... }
+ *
+ * @define("my-el") // explicit name
+ * class MyEl extends HTMLElement { ... }
+ * ````
  */
-declare function define(elementName?: string, options?: DefineOptions): <T extends new (...args: any[]) => HTMLElement>(constructor: T, context: ClassDecoratorContext<T>) => T;
+declare function define(elementName?: string, options?: DefineOptions): <T extends new (...args: any[]) => HTMLElement>(Base: T, context: ClassDecoratorContext<T>) => {
+    new (...args: any[]): {
+        accessKey: string;
+        readonly accessKeyLabel: string;
+        autocapitalize: string;
+        dir: string;
+        draggable: boolean;
+        hidden: boolean;
+        inert: boolean;
+        innerText: string;
+        lang: string;
+        readonly offsetHeight: number;
+        readonly offsetLeft: number;
+        readonly offsetParent: Element;
+        readonly offsetTop: number;
+        readonly offsetWidth: number;
+        outerText: string;
+        popover: string;
+        spellcheck: boolean;
+        title: string;
+        translate: boolean;
+        attachInternals(): ElementInternals;
+        click(): void;
+        hidePopover(): void;
+        showPopover(): void;
+        togglePopover(force?: boolean): boolean;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K_1 extends keyof HTMLElementEventMap>(type: K_1, listener: (this: HTMLElement, ev: HTMLElementEventMap[K_1]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+        readonly attributes: NamedNodeMap;
+        readonly classList: DOMTokenList;
+        className: string;
+        readonly clientHeight: number;
+        readonly clientLeft: number;
+        readonly clientTop: number;
+        readonly clientWidth: number;
+        id: string;
+        readonly localName: string;
+        readonly namespaceURI: string;
+        onfullscreenchange: (this: Element, ev: Event) => any;
+        onfullscreenerror: (this: Element, ev: Event) => any;
+        outerHTML: string;
+        readonly ownerDocument: Document;
+        readonly part: DOMTokenList;
+        readonly prefix: string;
+        readonly scrollHeight: number;
+        scrollLeft: number;
+        scrollTop: number;
+        readonly scrollWidth: number;
+        readonly shadowRoot: ShadowRoot;
+        slot: string;
+        readonly tagName: string;
+        attachShadow(init: ShadowRootInit): ShadowRoot;
+        checkVisibility(options?: CheckVisibilityOptions): boolean;
+        closest<K_2 extends keyof HTMLElementTagNameMap>(selector: K_2): HTMLElementTagNameMap[K_2];
+        closest<K_3 extends keyof SVGElementTagNameMap>(selector: K_3): SVGElementTagNameMap[K_3];
+        closest<K_4 extends keyof MathMLElementTagNameMap>(selector: K_4): MathMLElementTagNameMap[K_4];
+        closest<E extends Element = Element>(selectors: string): E;
+        computedStyleMap(): StylePropertyMapReadOnly;
+        getAttribute(qualifiedName: string): string;
+        getAttributeNS(namespace: string, localName: string): string;
+        getAttributeNames(): string[];
+        getAttributeNode(qualifiedName: string): Attr;
+        getAttributeNodeNS(namespace: string, localName: string): Attr;
+        getBoundingClientRect(): DOMRect;
+        getClientRects(): DOMRectList;
+        getElementsByClassName(classNames: string): HTMLCollectionOf<Element>;
+        getElementsByTagName<K_5 extends keyof HTMLElementTagNameMap>(qualifiedName: K_5): HTMLCollectionOf<HTMLElementTagNameMap[K_5]>;
+        getElementsByTagName<K_6 extends keyof SVGElementTagNameMap>(qualifiedName: K_6): HTMLCollectionOf<SVGElementTagNameMap[K_6]>;
+        getElementsByTagName<K_7 extends keyof MathMLElementTagNameMap>(qualifiedName: K_7): HTMLCollectionOf<MathMLElementTagNameMap[K_7]>;
+        getElementsByTagName<K_8 extends keyof HTMLElementDeprecatedTagNameMap>(qualifiedName: K_8): HTMLCollectionOf<HTMLElementDeprecatedTagNameMap[K_8]>;
+        getElementsByTagName(qualifiedName: string): HTMLCollectionOf<Element>;
+        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1999/xhtml", localName: string): HTMLCollectionOf<HTMLElement>;
+        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/2000/svg", localName: string): HTMLCollectionOf<SVGElement>;
+        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1998/Math/MathML", localName: string): HTMLCollectionOf<MathMLElement>;
+        getElementsByTagNameNS(namespace: string, localName: string): HTMLCollectionOf<Element>;
+        hasAttribute(qualifiedName: string): boolean;
+        hasAttributeNS(namespace: string, localName: string): boolean;
+        hasAttributes(): boolean;
+        hasPointerCapture(pointerId: number): boolean;
+        insertAdjacentElement(where: InsertPosition, element: Element): Element;
+        insertAdjacentHTML(position: InsertPosition, text: string): void;
+        insertAdjacentText(where: InsertPosition, data: string): void;
+        matches(selectors: string): boolean;
+        releasePointerCapture(pointerId: number): void;
+        removeAttribute(qualifiedName: string): void;
+        removeAttributeNS(namespace: string, localName: string): void;
+        removeAttributeNode(attr: Attr): Attr;
+        requestFullscreen(options?: FullscreenOptions): Promise<void>;
+        requestPointerLock(): void;
+        scroll(options?: ScrollToOptions): void;
+        scroll(x: number, y: number): void;
+        scrollBy(options?: ScrollToOptions): void;
+        scrollBy(x: number, y: number): void;
+        scrollIntoView(arg?: boolean | ScrollIntoViewOptions): void;
+        scrollTo(options?: ScrollToOptions): void;
+        scrollTo(x: number, y: number): void;
+        setAttribute(qualifiedName: string, value: string): void;
+        setAttributeNS(namespace: string, qualifiedName: string, value: string): void;
+        setAttributeNode(attr: Attr): Attr;
+        setAttributeNodeNS(attr: Attr): Attr;
+        setPointerCapture(pointerId: number): void;
+        toggleAttribute(qualifiedName: string, force?: boolean): boolean;
+        webkitMatchesSelector(selectors: string): boolean;
+        readonly baseURI: string;
+        readonly childNodes: NodeListOf<ChildNode>;
+        readonly firstChild: ChildNode;
+        readonly isConnected: boolean;
+        readonly lastChild: ChildNode;
+        readonly nextSibling: ChildNode;
+        readonly nodeName: string;
+        readonly nodeType: number;
+        nodeValue: string;
+        readonly parentElement: HTMLElement;
+        readonly parentNode: ParentNode;
+        readonly previousSibling: ChildNode;
+        textContent: string;
+        appendChild<T_1 extends Node>(node: T_1): T_1;
+        cloneNode(deep?: boolean): Node;
+        compareDocumentPosition(other: Node): number;
+        contains(other: Node): boolean;
+        getRootNode(options?: GetRootNodeOptions): Node;
+        hasChildNodes(): boolean;
+        insertBefore<T_2 extends Node>(node: T_2, child: Node): T_2;
+        isDefaultNamespace(namespace: string): boolean;
+        isEqualNode(otherNode: Node): boolean;
+        isSameNode(otherNode: Node): boolean;
+        lookupNamespaceURI(prefix: string): string;
+        lookupPrefix(namespace: string): string;
+        normalize(): void;
+        removeChild<T_3 extends Node>(child: T_3): T_3;
+        replaceChild<T_4 extends Node>(node: Node, child: T_4): T_4;
+        readonly ELEMENT_NODE: 1;
+        readonly ATTRIBUTE_NODE: 2;
+        readonly TEXT_NODE: 3;
+        readonly CDATA_SECTION_NODE: 4;
+        readonly ENTITY_REFERENCE_NODE: 5;
+        readonly ENTITY_NODE: 6;
+        readonly PROCESSING_INSTRUCTION_NODE: 7;
+        readonly COMMENT_NODE: 8;
+        readonly DOCUMENT_NODE: 9;
+        readonly DOCUMENT_TYPE_NODE: 10;
+        readonly DOCUMENT_FRAGMENT_NODE: 11;
+        readonly NOTATION_NODE: 12;
+        readonly DOCUMENT_POSITION_DISCONNECTED: 1;
+        readonly DOCUMENT_POSITION_PRECEDING: 2;
+        readonly DOCUMENT_POSITION_FOLLOWING: 4;
+        readonly DOCUMENT_POSITION_CONTAINS: 8;
+        readonly DOCUMENT_POSITION_CONTAINED_BY: 16;
+        readonly DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 32;
+        readonly reifects: ReifectHandler<Node>;
+        showTransition: StatefulReifect<Shown, Node>;
+        readonly isShown: boolean;
+        show(b: boolean): any;
+        dispatchEvent(event: Event): boolean;
+        ariaAtomic: string;
+        ariaAutoComplete: string;
+        ariaBusy: string;
+        ariaChecked: string;
+        ariaColCount: string;
+        ariaColIndex: string;
+        ariaColSpan: string;
+        ariaCurrent: string;
+        ariaDescription: string;
+        ariaDisabled: string;
+        ariaExpanded: string;
+        ariaHasPopup: string;
+        ariaHidden: string;
+        ariaInvalid: string;
+        ariaKeyShortcuts: string;
+        ariaLabel: string;
+        ariaLevel: string;
+        ariaLive: string;
+        ariaModal: string;
+        ariaMultiLine: string;
+        ariaMultiSelectable: string;
+        ariaOrientation: string;
+        ariaPlaceholder: string;
+        ariaPosInSet: string;
+        ariaPressed: string;
+        ariaReadOnly: string;
+        ariaRequired: string;
+        ariaRoleDescription: string;
+        ariaRowCount: string;
+        ariaRowIndex: string;
+        ariaRowSpan: string;
+        ariaSelected: string;
+        ariaSetSize: string;
+        ariaSort: string;
+        ariaValueMax: string;
+        ariaValueMin: string;
+        ariaValueNow: string;
+        ariaValueText: string;
+        role: string;
+        animate(keyframes: Keyframe[] | PropertyIndexedKeyframes, options?: number | KeyframeAnimationOptions): Animation;
+        getAnimations(options?: GetAnimationsOptions): Animation[];
+        after(...nodes: (string | Node)[]): void;
+        before(...nodes: (string | Node)[]): void;
+        remove(): void;
+        replaceWith(...nodes: (string | Node)[]): void;
+        innerHTML: string;
+        readonly nextElementSibling: Element;
+        readonly previousElementSibling: Element;
+        readonly childElementCount: number;
+        readonly children: HTMLCollection;
+        readonly firstElementChild: Element;
+        readonly lastElementChild: Element;
+        append(...nodes: (string | Node)[]): void;
+        prepend(...nodes: (string | Node)[]): void;
+        querySelector<K_9 extends keyof HTMLElementTagNameMap>(selectors: K_9): HTMLElementTagNameMap[K_9];
+        querySelector<K_10 extends keyof SVGElementTagNameMap>(selectors: K_10): SVGElementTagNameMap[K_10];
+        querySelector<K_11 extends keyof MathMLElementTagNameMap>(selectors: K_11): MathMLElementTagNameMap[K_11];
+        querySelector<K_12 extends keyof HTMLElementDeprecatedTagNameMap>(selectors: K_12): HTMLElementDeprecatedTagNameMap[K_12];
+        querySelector<E_1 extends Element = Element>(selectors: string): E_1;
+        querySelectorAll<K_13 extends keyof HTMLElementTagNameMap>(selectors: K_13): NodeListOf<HTMLElementTagNameMap[K_13]>;
+        querySelectorAll<K_14 extends keyof SVGElementTagNameMap>(selectors: K_14): NodeListOf<SVGElementTagNameMap[K_14]>;
+        querySelectorAll<K_15 extends keyof MathMLElementTagNameMap>(selectors: K_15): NodeListOf<MathMLElementTagNameMap[K_15]>;
+        querySelectorAll<K_16 extends keyof HTMLElementDeprecatedTagNameMap>(selectors: K_16): NodeListOf<HTMLElementDeprecatedTagNameMap[K_16]>;
+        querySelectorAll<E_2 extends Element = Element>(selectors: string): NodeListOf<E_2>;
+        replaceChildren(...nodes: (string | Node)[]): void;
+        readonly assignedSlot: HTMLSlotElement;
+        readonly attributeStyleMap: StylePropertyMap;
+        readonly style: CSSStyleDeclaration;
+        contentEditable: string;
+        enterKeyHint: string;
+        inputMode: string;
+        readonly isContentEditable: boolean;
+        onabort: (this: GlobalEventHandlers, ev: UIEvent) => any;
+        onanimationcancel: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
+        onanimationend: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
+        onanimationiteration: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
+        onanimationstart: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
+        onauxclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onbeforeinput: (this: GlobalEventHandlers, ev: InputEvent) => any;
+        onbeforetoggle: (this: GlobalEventHandlers, ev: Event) => any;
+        onblur: (this: GlobalEventHandlers, ev: FocusEvent) => any;
+        oncancel: (this: GlobalEventHandlers, ev: Event) => any;
+        oncanplay: (this: GlobalEventHandlers, ev: Event) => any;
+        oncanplaythrough: (this: GlobalEventHandlers, ev: Event) => any;
+        onchange: (this: GlobalEventHandlers, ev: Event) => any;
+        onclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onclose: (this: GlobalEventHandlers, ev: Event) => any;
+        oncontextmenu: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        oncopy: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
+        oncuechange: (this: GlobalEventHandlers, ev: Event) => any;
+        oncut: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
+        ondblclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        ondrag: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondragend: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondragenter: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondragleave: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondragover: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondragstart: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondrop: (this: GlobalEventHandlers, ev: DragEvent) => any;
+        ondurationchange: (this: GlobalEventHandlers, ev: Event) => any;
+        onemptied: (this: GlobalEventHandlers, ev: Event) => any;
+        onended: (this: GlobalEventHandlers, ev: Event) => any;
+        onerror: OnErrorEventHandlerNonNull;
+        onfocus: (this: GlobalEventHandlers, ev: FocusEvent) => any;
+        onformdata: (this: GlobalEventHandlers, ev: FormDataEvent) => any;
+        ongotpointercapture: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        oninput: (this: GlobalEventHandlers, ev: Event) => any;
+        oninvalid: (this: GlobalEventHandlers, ev: Event) => any;
+        onkeydown: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
+        onkeypress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
+        onkeyup: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
+        onload: (this: GlobalEventHandlers, ev: Event) => any;
+        onloadeddata: (this: GlobalEventHandlers, ev: Event) => any;
+        onloadedmetadata: (this: GlobalEventHandlers, ev: Event) => any;
+        onloadstart: (this: GlobalEventHandlers, ev: Event) => any;
+        onlostpointercapture: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onmousedown: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmouseenter: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmouseleave: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmousemove: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmouseout: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmouseover: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onmouseup: (this: GlobalEventHandlers, ev: MouseEvent) => any;
+        onpaste: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
+        onpause: (this: GlobalEventHandlers, ev: Event) => any;
+        onplay: (this: GlobalEventHandlers, ev: Event) => any;
+        onplaying: (this: GlobalEventHandlers, ev: Event) => any;
+        onpointercancel: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerdown: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerenter: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerleave: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointermove: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerout: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerover: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onpointerup: (this: GlobalEventHandlers, ev: PointerEvent) => any;
+        onprogress: (this: GlobalEventHandlers, ev: ProgressEvent<EventTarget>) => any;
+        onratechange: (this: GlobalEventHandlers, ev: Event) => any;
+        onreset: (this: GlobalEventHandlers, ev: Event) => any;
+        onresize: (this: GlobalEventHandlers, ev: UIEvent) => any;
+        onscroll: (this: GlobalEventHandlers, ev: Event) => any;
+        onscrollend: (this: GlobalEventHandlers, ev: Event) => any;
+        onsecuritypolicyviolation: (this: GlobalEventHandlers, ev: SecurityPolicyViolationEvent) => any;
+        onseeked: (this: GlobalEventHandlers, ev: Event) => any;
+        onseeking: (this: GlobalEventHandlers, ev: Event) => any;
+        onselect: (this: GlobalEventHandlers, ev: Event) => any;
+        onselectionchange: (this: GlobalEventHandlers, ev: Event) => any;
+        onselectstart: (this: GlobalEventHandlers, ev: Event) => any;
+        onslotchange: (this: GlobalEventHandlers, ev: Event) => any;
+        onstalled: (this: GlobalEventHandlers, ev: Event) => any;
+        onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any;
+        onsuspend: (this: GlobalEventHandlers, ev: Event) => any;
+        ontimeupdate: (this: GlobalEventHandlers, ev: Event) => any;
+        ontoggle: (this: GlobalEventHandlers, ev: Event) => any;
+        ontouchcancel?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
+        ontouchend?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
+        ontouchmove?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
+        ontouchstart?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
+        ontransitioncancel: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
+        ontransitionend: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
+        ontransitionrun: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
+        ontransitionstart: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
+        onvolumechange: (this: GlobalEventHandlers, ev: Event) => any;
+        onwaiting: (this: GlobalEventHandlers, ev: Event) => any;
+        onwebkitanimationend: (this: GlobalEventHandlers, ev: Event) => any;
+        onwebkitanimationiteration: (this: GlobalEventHandlers, ev: Event) => any;
+        onwebkitanimationstart: (this: GlobalEventHandlers, ev: Event) => any;
+        onwebkittransitionend: (this: GlobalEventHandlers, ev: Event) => any;
+        onwheel: (this: GlobalEventHandlers, ev: WheelEvent) => any;
+        autofocus: boolean;
+        readonly dataset: DOMStringMap;
+        nonce?: string;
+        tabIndex: number;
+        blur(): void;
+        focus(options?: FocusOptions): void;
+    };
+} & T;
 
+/**
+ * @internal
+ */
 declare global {
     interface SymbolConstructor {
         metadata: symbol;
     }
 }
-/** * @description Member decorator for fields or accessors that reflects a property to an HTML attribute. * Also records the attribute name into class metadata so @useObservedAttributes() can expose it. * @param {unknown} value - Optional explicit attribute name. Defaults to camelCase → kebab-case. * @param context */
+/**
+ * @decorator
+ * @function observe
+ * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML attribute.
+ * Also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
+ *
+ * @example
+ * ```ts
+ * @define()
+ * class MyClass extends HTMLElement {
+ *    @observe fieldName: string = "hello";
+ * }
+ * ```
+ *
+ * Leads to:
+ * ```html
+ * <my-class field-name="hello"></my-class>
+ * ```
+ *
+ */
 declare function observe<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
 
 type SignalSubscriber = () => void;
+/**
+ * @internal
+ */
 type SignalEntry<Type = any> = {
     get(): Type;
     set(value: Type): void;
@@ -1439,7 +1872,7 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
     /**
      * @description Whether callbacks are enabled or disabled.
      */
-    enabledCallbacks: boolean;
+    accessor enabledCallbacks: boolean;
     /**
      * @function getData
      * @description Retrieves the value associated with a given key in the specified block.
@@ -2648,7 +3081,7 @@ type TurboButtonConfig = {
  * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
  * TurboIcon.config.defaultClasses to this instance of Icon.
  */
-type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboElementProperties<ViewType, DataType, ModelType> & {
+type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     type?: string;
     directory?: string;
     icon: string;
@@ -2745,7 +3178,7 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
  * @class TurboIcon
  * @extends TurboElement
  */
-declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboElement<ViewType, DataType, ModelType> {
+declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     private _element;
     private _type;
     private _directory;
@@ -2756,7 +3189,7 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType>);
+    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>);
     update(properties: TurboIconProperties): void;
     /**
      * @description The type of the icon.
@@ -4264,7 +4697,6 @@ declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewTy
     protected setupUIElements(): void;
     protected setupUILayout(): void;
     protected setupUIListeners(): void;
-    set selected(value: boolean);
 }
 
 declare function setupClassFunctions(): void;
@@ -4329,7 +4761,7 @@ type ToolBehaviorOptions = {
 declare function $<Type extends Node = Node>(element?: Type | object): Turbo<Type>;
 declare function t<Type extends Node = Node>(element: Type): Turbo<Type>;
 declare function turbo<Type extends Node = Node>(element: Type): Turbo<Type>;
-declare function turbofy(options?: TurbofyOptions): void;
+declare const turbofy: (options?: TurbofyOptions) => void;
 
 declare function areEqual<Type = any>(...entries: Type[]): boolean;
 declare function equalToAny<Type = any>(entry: Type, ...values: Type[]): boolean;

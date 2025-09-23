@@ -8,14 +8,13 @@ import {defineDefaultProperties} from "./setup/default/default";
 import {defineMvcAccessors} from "./setup/mvc/mvc";
 import {defineUIPrototype} from "./setup/ui/ui";
 import { Delegate } from "../eventHandling/delegate/delegate";
+import {callOnce} from "../decorators/callOnce";
 
-let isSetup: boolean = false;
-function setup() {
-    if (isSetup) return;
+const setup = callOnce(function () {
     defineDefaultProperties(TurboElement);
     defineMvcAccessors(TurboElement);
     defineUIPrototype(TurboElement);
-}
+});
 
 /**
  * @class TurboElement

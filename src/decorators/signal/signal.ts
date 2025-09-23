@@ -1,6 +1,9 @@
 import {Effect, SignalEntry} from "./signal.types";
 import {SignalUtils} from "./signal.utils";
 
+/**
+ * @internal
+ */
 const utils = new SignalUtils();
 
 function effect(callback: () => void): () => void {
@@ -42,7 +45,7 @@ function effect(callback: () => void): () => void {
  *
  * Private fields/getters/setters are NOT supported.
  */
-//TODO MAYBE MAKE IT WORK FOR CHANGES IN NESTED FIELDS OF OBJECT/ARRAY VIA PROXY
+// TODO MAYBE MAKE IT WORK FOR CHANGES IN NESTED FIELDS OF OBJECT/ARRAY VIA PROXY
 function signal<Type extends object, Value>(
     value:
         | ((initial: Value) => Value)

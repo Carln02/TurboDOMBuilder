@@ -1,21 +1,74 @@
-/**
+const onceRegistry = new WeakMap<(...args: any[]) => any, (...args: any[]) => any>();
+
 /**
  * @function callOnce
- * @description Stage-3 method decorator: ensures a method is called only once per instance.
- * Subsequent calls no-op and log a warning. Works for instance or static methods.
+ * @template {(...args: any[]) => any} Type
+ * @description Function wrapper that ensures the passed function is called only once.
+ * Subsequent calls will just return the cached computed result (if any) of the first call of that function.
+ * @param {Type} fn - The function to process.
  *
- * Usage:
- *   class A {
- *     @callOnce
- *     init() { ... }
- *   }
+ * @example
+ * ```ts
+ * const init = callOnce(function () { ... });
+ * const out = init();
+ * ```
  */
-function callOnce<T extends object>(value: (this: T, ...args: any[]) => any, ctx: ClassMethodDecoratorContext<T>): any {
-    if (ctx.kind !== "method") {
-        throw new Error(`@callOnce can only be used on methods (got: ${ctx.kind}).`);
-    }
+function callOnce<Type extends (...args: any[]) => any>(fn: Type): Type {
+    if (onceRegistry.has(fn)) return onceRegistry.get(fn)! as Type;
 
-    const name = String(ctx.name);
+    let called = false;
+    let result: ReturnType<Type>;
+    let promise: Promise<any>;
+
+    const wrapper = function (this: any, ...args: Parameters<Type>): ReturnType<Type> {
+        if (called) return result;
+        if (promise) return promise as ReturnType<Type>;
+
+        try {
+            const out = fn.apply(this, args);
+            if (out instanceof Promise) {
+                promise = out.then((val) => {
+                    result = val;
+                    called = true;
+                    promise = null;
+                    return val;
+                }).catch((err) => {
+                    promise = null;
+                    throw err;
+                });
+                return promise as ReturnType<Type>;
+            } else {
+                result = out;
+                called = true;
+                return out;
+            }
+        } catch (err) {throw err}
+    } as Type;
+
+    onceRegistry.set(fn, wrapper);
+    return wrapper;
+}
+
+/**
+ * @decorator
+ * @function callOncePerInstance
+ * @description Stage-3 method decorator. It ensures a method in a class is called only once per instance.
+ * Subsequent calls will be canceled and log a warning. Works for instance or static methods.
+ *
+ * @example
+ * ```ts
+ *   class A {
+ *     @callOnce init() { ... }
+ *   }
+ * ```
+ */
+function callOncePerInstance<Type extends object>(
+    value: (this: Type, ...args: any[]) => any,
+    context: ClassMethodDecoratorContext<Type>
+): any {
+    if (context.kind !== "method") throw new Error(`@callOnce can only be used on methods (got: ${context.kind}).`);
+
+    const name = String(context.name);
     const flag = Symbol(`__callOnce__${name}`);
 
     return function (this: any, ...args: any[]) {
@@ -25,42 +78,6 @@ function callOnce<T extends object>(value: (this: T, ...args: any[]) => any, ctx
         }
         this[flag] = true;
         return value.apply(this, args);
-    };
-}
-
-/**
- * @function callOncePerInstance
- * @description Stage-3 method decorator (factory) that ensures the method
- * runs only once per *instance*. Later calls no-op. If you pass a `key`,
- * all methods decorated with the same key on the same instance share the
- * same gate (i.e., only the first of them will run once).
- *
- * Usage:
- *   class A {
- *     @callOncePerInstance()           // unique per method
- *     init() { ... }
- *
- *     @callOncePerInstance("bootKey")  // shared gate with others using "bootKey"
- *     boot() { ... }
- *   }
- */
-function callOncePerInstance(key?: string | symbol) {
-    return function <T extends object>(
-        value: (this: T, ...args: any[]) => any,
-        ctx: ClassMethodDecoratorContext<T>
-    ) {
-        if (ctx.kind !== "method") {
-            throw new Error(`@callOncePerInstance can only be used on methods (got: ${ctx.kind}).`);
-        }
-
-        const name = String(ctx.name);
-        const flag = key ?? Symbol(`__callOncePerInstance__${name}`);
-
-        return function (this: any, ...args: any[]) {
-            if (this[flag]) return;
-            this[flag] = true;
-            return value.apply(this, args);
-        };
     };
 }
 

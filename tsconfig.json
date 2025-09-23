@@ -6,6 +6,7 @@
     "declarationDir": "./build/types",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "stripInternal": false,
     "experimentalDecorators": false,
     "emitDecoratorMetadata": false,
     "useDefineForClassFields": true,

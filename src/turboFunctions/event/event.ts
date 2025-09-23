@@ -61,7 +61,7 @@ function setupEventFunctions() {
 
         manager.setupCustomDispatcher?.(type);
         utils.getBoundListenersSet(this).add({target: this, type, toolName, listener, bundledListener, options, manager});
-        this.element.addEventListener(type, bundledListener, options);
+        this.element?.addEventListener(type, bundledListener, options);
         return this;
     };
 

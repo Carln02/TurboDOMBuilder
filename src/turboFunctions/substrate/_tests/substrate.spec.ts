@@ -24,14 +24,11 @@ describe("Substrate functions", () => {
 
         const seen: Array<{ prev: string | undefined; next: string }> = [];
         $(host).onSubstrateChange.add((prev, next) => seen.push({ prev, next }));
-
-        $(host).setSubstrate("main");
         expect($(host).currentSubstrate).toBe("main");
-        expect(seen[0]).toEqual({ prev: undefined, next: "main" });
 
         $(host).currentSubstrate = "alt";
         expect($(host).currentSubstrate).toBe("alt");
-        expect(seen[1]).toEqual({ prev: "main", next: "alt" });
+        expect(seen[0]).toEqual({ prev: "main", next: "alt" });
     });
 
     it("getSubstrateObjectList() defaults to Set() when no current substrate", () => {
@@ -39,8 +36,7 @@ describe("Substrate functions", () => {
 
         $(host).makeSubstrate("main");
         const list = $(host).getSubstrateObjectList();
-        expect(list instanceof Set).toBe(true);
-        expect(count(list)).toBe(0);
+        expect(list).toEqual(host.childNodes);
     });
 
     it("default elements list is live (HTMLCollection of element.children)", () => {

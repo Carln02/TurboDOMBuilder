@@ -1,7 +1,110 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {callOnce, callOncePerInstance} from "../callOnce";
 
-describe("@callOnce", () => {
+describe("callOnce (function wrapper)", () => {
+    const delay = (ms: number) => new Promise<void>(res => setTimeout(res, ms));
+
+    it("calls a sync function only once and caches the first result", () => {
+        const fn = vi.fn((x: number) => x * 2);
+        const once = callOnce(fn);
+
+        expect(once(2)).toBe(4);
+        // Subsequent calls ignore new args and return cached result
+        expect(once(999)).toBe(4);
+        expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("preserves `this` on the first invocation; returns cached value thereafter", () => {
+        const target = {
+            factor: 3,
+            calc(this: any, x: number) {
+                return this.factor * x;
+            }
+        };
+        const once = callOnce(target.calc);
+
+        const out1 = once.call({ factor: 10 }, 2); // 20
+        expect(out1).toBe(20);
+
+        // New `this`/args are ignored; cached value returned
+        const out2 = once.call({ factor: 99 }, 999);
+        expect(out2).toBe(20);
+    });
+
+    it("de-dupes concurrent async calls (returns the same in-flight Promise)", async () => {
+        const fn = vi.fn(async (x: number) => {
+            await delay(10);
+            return x * 10;
+        });
+        const once = callOnce(fn);
+
+        const p1 = once(2);
+        const p2 = once(999); // should be the SAME promise while in-flight
+        expect(p1).toBe(p2);
+
+        const val = await p1;
+        expect(val).toBe(20);
+        expect(await p2).toBe(20);
+        expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("after async resolves, subsequent calls return the cached resolved value (not a Promise)", async () => {
+        const fn = vi.fn(async () => {
+            await delay(5);
+            return "OK";
+        });
+        const once = callOnce(fn);
+
+        const p = once();
+        expect(p).toBeInstanceOf(Promise);
+        await expect(p).resolves.toBe("OK");
+
+        const again = once();
+        expect(again).toBe("OK"); // cached value, not a Promise
+        expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("wrapping the same function twice yields the same wrapper (registry hit)", () => {
+        const fn = (n: number) => n + 1;
+        const w1 = callOnce(fn);
+        const w2 = callOnce(fn);
+        expect(w1).toBe(w2);
+    });
+
+    it("if a sync function throws, the error propagates and a later call can retry", () => {
+        let tries = 0;
+        const fn = vi.fn(() => {
+            tries++;
+            if (tries === 1) throw new Error("boom");
+            return "recovered";
+        });
+        const once = callOnce(fn);
+
+        expect(() => once()).toThrowError("boom");
+        expect(once()).toBe("recovered");
+        expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it("if an async function rejects, the error propagates and a later call can retry", async () => {
+        let tries = 0;
+        const fn = vi.fn(async () => {
+            tries++;
+            if (tries === 1) {
+                await delay(1);
+                throw new Error("nope");
+            }
+            await delay(1);
+            return "ok";
+        });
+        const once = callOnce(fn);
+
+        await expect(once()).rejects.toThrowError("nope");
+        await expect(once()).resolves.toBe("ok");
+        expect(fn).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("@callOncePerInstance", () => {
     let warnSpy: ReturnType<typeof vi.spyOn>;
     beforeEach(() => warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {}));
 
@@ -9,7 +112,7 @@ describe("@callOnce", () => {
         class A {
             count = 0;
 
-            @callOnce init() {
+            @callOncePerInstance init() {
                 this.count++;
                 return "ok";
             }
@@ -27,7 +130,7 @@ describe("@callOnce", () => {
     it("is per-instance: each instance can call once", () => {
         class A {
             n = 0;
-            @callOnce boot() {this.n++;}
+            @callOncePerInstance boot() {this.n++;}
         }
 
         const a1 = new A();
@@ -48,7 +151,7 @@ describe("@callOnce", () => {
         class S {
             static times = 0;
 
-            @callOnce
+            @callOncePerInstance
             static setup() {
                 this.times++;
                 return "done";
@@ -67,89 +170,10 @@ describe("@callOnce", () => {
         const bad = () => {
             class B {
                 //@ts-ignore
-                @callOnce accessor x = 1;
+                @callOncePerInstance accessor x = 1;
             }
             new B();
         };
         expect(bad).toThrow(/can only be used on methods/);
-    });
-});
-
-describe("callOncePerInstance (stage-3 decorator)", () => {
-    it("runs only once per instance (method style)", () => {
-        class W {
-            count = 0;
-            @callOncePerInstance() run() {
-                this.count++;
-                return "ran";
-            }
-        }
-
-        const w = new W();
-        expect(w.run()).toBe("ran");
-        expect(w.run()).toBeUndefined();
-        expect(w.count).toBe(1);
-    });
-
-    it("resets across different instances", () => {
-        class W {
-            count = 0;
-            @callOncePerInstance() run() {this.count++;}
-        }
-
-        const a = new W();
-        const b = new W();
-
-        a.run();
-        a.run();
-        b.run();
-
-        expect(a.count).toBe(1);
-        expect(b.count).toBe(1);
-    });
-
-    it("shared explicit key causes subsequent decorated methods to no-op", () => {
-        const KEY = Symbol("once-key");
-
-        class K {
-            aCalls = 0;
-            bCalls = 0;
-
-            @callOncePerInstance(KEY) callA() {
-                this.aCalls++;
-                return "A";
-            }
-
-            @callOncePerInstance(KEY) callB() {
-                this.bCalls++;
-                return "B";
-            }
-        }
-
-        const k = new K();
-
-        expect(k.callA()).toBe("A");
-        expect(k.callB()).toBeUndefined();
-
-        expect(k.aCalls).toBe(1);
-        expect(k.bCalls).toBe(0);
-    });
-
-    it("different keys are independent (each runs once)", () => {
-        class Z {
-            a = 0;
-            b = 0;
-
-            @callOncePerInstance("k1") first() { this.a++; return "F"; }
-            @callOncePerInstance("k2") second() { this.b++; return "S"; }
-        }
-
-        const z = new Z();
-        expect(z.first()).toBe("F");
-        expect(z.second()).toBe("S");
-        expect(z.first()).toBeUndefined();
-        expect(z.second()).toBeUndefined();
-        expect(z.a).toBe(1);
-        expect(z.b).toBe(1);
     });
 });

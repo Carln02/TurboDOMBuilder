@@ -2,6 +2,9 @@ export type SignalSubscriber = () => void;
 export type Read<Type> = () => Type;
 export type Write<Type> = (value: Type) => void;
 
+/**
+ * @internal
+ */
 export type SignalEntry<Type = any> = {
     get(): Type,
     set(value: Type): void,
@@ -10,6 +13,9 @@ export type SignalEntry<Type = any> = {
     emit(): void
 }
 
+/**
+ * @internal
+ */
 export type Effect = {
     callback: () => void,
     dependencies: Set<SignalEntry>,

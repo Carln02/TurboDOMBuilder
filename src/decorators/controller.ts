@@ -1,11 +1,17 @@
 import {Mvc} from "../mvc/mvc";
 
+/**
+ * @internal
+ */
 function inferKey(name: string, type: "Controller" | "Handler", context: ClassFieldDecoratorContext) {
     return name ?? (String(context.name).endsWith(type)
         ? String(context.name).slice(0, -type.length)
         : String(context.name));
 }
 
+/**
+ * @internal
+ */
 function generateField(context: ClassFieldDecoratorContext, type: "Controller" | "Handler", name?: string) {
     const cacheKey = Symbol(`__${type.toLowerCase()}_${String(context.name)}`);
     const keyName = inferKey(name, type, context);
@@ -34,13 +40,52 @@ function generateField(context: ClassFieldDecoratorContext, type: "Controller" |
     });
 }
 
-
+/**
+ * @decorator
+ * @function controller
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched controller.
+ * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @controller() protected textController: TurboController;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textController(): TurboController {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
+ *    if (typeof this.getController === "function") return this.getController("text");
+ * }
+ * ```
+ */
 function controller(name?: string) {
     return function (_unused: unknown, context: ClassFieldDecoratorContext) {
         generateField(context, "Controller", name);
     };
 }
 
+/**
+ * @decorator
+ * @function handler
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched handler.
+ * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @handler() protected textHandler: TurboHandler;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textHandler(): TurboHandler {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
+ *    if (typeof this.getHandler === "function") return this.getHandler("text");
+ * }
+ * ```
+ */
 function handler(name?: string) {
     return function (_unused: unknown, context: ClassFieldDecoratorContext) {
         generateField(context, "Handler", name);

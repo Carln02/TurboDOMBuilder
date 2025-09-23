@@ -2,10 +2,13 @@ import { CacheOptions } from "./cache.types";
 import {cacheKeySymbolFor, initInvalidation, keyFromArgs} from "./cache.utils";
 
 /**
- * Stage-3 cache decorator:
- *  - method: caches per arguments
- *  - getter: caches once per instance
- *  - accessor: wraps the getter like a cached getter (setter unchanged)
+ * @decorator
+ * @function cache
+ * @description Stage-3 cache decorator:
+ *  - When used on a method, it will cache the return value per arguments.
+ *  - When used on a getter, it will cache its value once per instance.
+ *  - When used on an accessor, it will wrap the getter similar to a cached getter.
+ *  @param {CacheOptions} [options] - Optional caching options.
  */
 function cache(options: CacheOptions = {}) {
     return function (
@@ -147,8 +150,9 @@ function cache(options: CacheOptions = {}) {
 }
 
 /**
- * Clear *all* cache entries on an instance created by @cache
- * (we scan for symbols named Symbol(__cache__...)).
+ * @function clearCache
+ * @description Clear *all* cache entries created by `@cache` on an instance.
+ * @param {any} instance - The instance for which the cache should be cleared.
  */
 function clearCache(instance: any): void {
     for (const sym of Object.getOwnPropertySymbols(instance)) {
@@ -159,7 +163,10 @@ function clearCache(instance: any): void {
 }
 
 /**
- * Clear a specific cache entry for a given method/getter name (or function).
+ * @function clearCacheEntry
+ * @description Clear a specific cache entry for a given method, function, or getter.
+ * @param {any} instance - The instance for which the cache should be cleared.
+ * @param {string | Function} field - The name (or the function itself) of the field to clear.
  */
 function clearCacheEntry(instance: any, field: string | Function): void {
     const name = typeof field === "function" ? field.name : field;

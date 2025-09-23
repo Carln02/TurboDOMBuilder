@@ -1,8 +1,8 @@
 import {CacheOptions} from "./cache.types";
+import {$} from "../../turboFunctions/turboFunctions";
 
 /**
- * Stringify args into a stable cache key.
- * Matches your previous logic, preserving function/object handling.
+ * @internal
  */
 export function keyFromArgs(args: any[]): string {
     if (!args || args.length === 0) return "__no_args__";
@@ -21,13 +21,15 @@ export function keyFromArgs(args: any[]): string {
     );
 }
 
-/** Create the same symbol label you used before so clearing keeps working. */
+/**
+ * @internal
+ */
 export function cacheKeySymbolFor(name: string) {
     return Symbol(`__cache__${name}`);
 }
 
 /**
- * Install invalidation triggers on first use per instance.
+ * @internal
  */
 export function initInvalidation(
     instance: any,
@@ -46,9 +48,7 @@ export function initInvalidation(
             ? options.onEvent
             : String(options.onEvent).split(/\s+/).filter(Boolean);
 
-        for (const evt of names) {
-            target.addEventListener(evt, () => deleteFn());
-        }
+        for (const evt of names) $(target).on(evt, () => deleteFn());
     }
 
     // onFieldChange: wrap methods / define property setters to invalidate

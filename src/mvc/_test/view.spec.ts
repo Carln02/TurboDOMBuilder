@@ -6,6 +6,7 @@ import {TurboEmitter} from "../core/emitter";
 class TestModel extends TurboModel<Record<string, any>, string, string, "map"> {
     private _enabled = true;
 
+    //@ts-ignore
     public get enabledCallbacks() { return this._enabled; }
 
     public set enabledCallbacks(v: boolean) { this._enabled = v; }
@@ -43,6 +44,6 @@ describe("TurboView", () => {
         const view = new ProbeView({element, model, emitter} as any);
         view.initialize();
 
-        expect(view.calls).toEqual(["changed", "elements", "layout", "listeners"]);
+        expect(view.calls).toEqual(["elements", "layout", "listeners", "changed"]);
     });
 });

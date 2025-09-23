@@ -51,8 +51,8 @@ class TurboTool<
             clickMode: this.clickMode,
             key: this.key,
             activationEvent: this.activationEvent,
-            onActivation: typeof this["onActivate"] === "function" ? this["onActivate"] : undefined,
-            onDeactivation: typeof this["onDeactivate"] === "function" ? this["onDeactivate"] : undefined,
+            onActivate: typeof this["onActivate"] === "function" ? this["onActivate"] : undefined,
+            onDeactivate: typeof this["onDeactivate"] === "function" ? this["onDeactivate"] : undefined,
             customActivation: typeof this["customActivation"] === "function" ? this["customActivation"] : undefined,
             manager: this.manager,
         });

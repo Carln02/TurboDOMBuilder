@@ -75,7 +75,7 @@ class TurboModel<
     /**
      * @description Whether callbacks are enabled or disabled.
      */
-    @auto() public enabledCallbacks: boolean;
+    @auto() public accessor enabledCallbacks: boolean;
 
     /**
      * @function getData

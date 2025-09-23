@@ -20,7 +20,8 @@
   "scripts": {
     "test": "vitest",
     "build": "gulp build",
-    "doc": "typedoc src/**/*.ts",
+    "doc": "typedoc",
+    "doc:json": "npx typedoc --json docs/api.json",
     "clean": "rm -rf dist"
   },
   "repository": {
@@ -61,7 +62,9 @@
     "through2": "^4.0.2",
     "ts-loader": "^9.5.1",
     "ts-morph": "^27.0.0",
-    "typedoc": "^0.25.12",
+    "typedoc": "^0.28.13",
+    "typedoc-plugin-extras": "^4.0.1",
+    "typedoc-plugin-mdn-links": "^5.0.9",
     "typescript": "^5.4.3",
     "unplugin-swc": "^1.5.7",
     "vite": "^6.0.0",

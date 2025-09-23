@@ -44,6 +44,6 @@ describe("TurboElement: lifecycle delegates + initializeUI", () => {
         const el = new Custom();
         el.initializeUI();
 
-        expect(el.steps).toEqual(["changed", "elems", "layout", "listeners"]);
+        expect(el.steps).toEqual(["elems", "layout", "listeners", "changed"]);
     });
 });

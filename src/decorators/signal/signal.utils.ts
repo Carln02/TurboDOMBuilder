@@ -1,9 +1,15 @@
 import {Effect, Read, SignalEntry, SignalSubscriber, Write} from "./signal.types";
 
+/**
+ * @internal
+ */
 type SignalConstructorType = {
     installed: Map<PropertyKey, boolean>
 };
 
+/**
+ * @internal
+ */
 export class SignalUtils {
     private constructorMap = new WeakMap<object, SignalConstructorType>();
     private dataMap = new WeakMap<object, Map<PropertyKey, SignalEntry>>();

@@ -5,13 +5,12 @@ import {TurboModel} from "../../mvc/core/model";
 import {TurboEmitter} from "../../mvc/core/emitter";
 import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineDefaultProperties} from "../setup/default/default";
+import {callOnce} from "../../decorators/callOnce";
 
-let isSetup: boolean = false;
-function setup() {
-    if (isSetup) return;
+const setup = callOnce(function () {
     defineDefaultProperties(TurboHeadlessElement);
     defineMvcAccessors(TurboHeadlessElement);
-}
+});
 
 /**
  * @class TurboHeadlessElement

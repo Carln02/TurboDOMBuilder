@@ -10,14 +10,14 @@ import {TurboView} from "../../mvc/core/view";
 import {defineDefaultProperties} from "../setup/default/default";
 import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineUIPrototype} from "../setup/ui/ui";
+import {callOnce} from "../../decorators/callOnce";
 
-let isSetup: boolean = false;
-function setup() {
-    if (isSetup) return;
+const setup = callOnce(function () {
+    console.log("setup");
     defineDefaultProperties(TurboProxiedElement);
     defineMvcAccessors(TurboProxiedElement);
     defineUIPrototype(TurboProxiedElement);
-}
+});
 
 /**
  * @class TurboProxiedElement
@@ -78,13 +78,6 @@ class TurboProxiedElement<
     }
 
     protected setupUIListeners(): void {
-    }
-
-
-    @auto()
-    public set selected(value: boolean) {
-        const selectedClass = this.getPropertiesValue(null, "defaultSelectedClass", "selected");
-        $(this.element).toggleClass(selectedClass, value);
     }
 }
 

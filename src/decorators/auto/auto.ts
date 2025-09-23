@@ -1,18 +1,37 @@
 import {AutoOptions} from "./auto.types";
 import {AutoUtils} from "./auto.utils";
 
+/**
+ * @internal
+ */
 const utils = new AutoUtils();
 
 /**
+ * @decorator
  * @function auto
- * @description Stage-3 decorator that adds the “missing half” (getter or setter) and/or
- * wraps existing ones. Works with field / getter / setter / accessor. Designed to chain
- * cleanly with `@observe`.
+ * @description Stage-3 decorator that augments fields, getters, setters, and accessors. It can be used to generate
+ * missing getters/setters. Useful to create a setter and only define additional functionality on set.
+ * The storing and getting of the value are handled by `auto`.
+ * You can also pass to the function an `options` {@link AutoOptions} object to define custom behaviors.
  *
- * Options (use `autoFactory(opts)` if you need to pass them):
- *  - cancelIfUnchanged (default: true)
- *  - callBefore?: (value) => value    (preprocess before storing/forwarding)
- *  - returnDefinedGetterValue (default: false)  (when user getter exists)
+ * @example
+ * ```ts
+ * @auto() public set color(value: string) {
+ *    this.style.backgroundColor = value;
+ * }
+ *
+ * //Is equivalent to
+ *
+ * private _color: string;
+ * public get color(): string {
+ *    return this._color;
+ * }
+ *
+ * public set color(value: string) {
+ *    this._color = value;
+ *    this.style.backgroundColor = value;
+ * }
+ * ```
  */
 function auto(options?: AutoOptions) {
     return function <Type extends object, Value>(
