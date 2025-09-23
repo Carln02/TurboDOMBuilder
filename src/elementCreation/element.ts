@@ -2,6 +2,7 @@ import {isMathMLTag, isSvgTag, MathMLNamespace, SvgNamespace} from "./namespaceI
 import {ValidElement, ValidTag} from "../core.types";
 import {$} from "../turboFunctions/turboFunctions";
 import {TurboProperties} from "../turboFunctions/element/element.types";
+import {TurboIcon} from "../turboComponents/basics/icon/icon";
 
 /**
  * @description Create an element with the specified properties (and the specified namespace if applicable).

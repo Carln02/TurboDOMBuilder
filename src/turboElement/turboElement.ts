@@ -10,12 +10,6 @@ import {defineUIPrototype} from "./setup/ui/ui";
 import { Delegate } from "../eventHandling/delegate/delegate";
 import {callOnce} from "../decorators/callOnce";
 
-const setup = callOnce(function () {
-    defineDefaultProperties(TurboElement);
-    defineMvcAccessors(TurboElement);
-    defineUIPrototype(TurboElement);
-});
-
 /**
  * @class TurboElement
  * @extends HTMLElement
@@ -34,7 +28,10 @@ class TurboElement<
     /**
      * @description Static configuration object.
      */
-    public static readonly config: any = {shadowDOM: false, defaultSelectedClass: "selected"};
+    public static readonly config: any = {
+        shadowDOM: false,
+        defaultSelectedClass: "selected"
+    };
 
     /**
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
@@ -68,7 +65,6 @@ class TurboElement<
     }
 
     public constructor(properties: TurboElementProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        setup();
         super();
         if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.attachShadow({mode: "open"});
         $(this).setProperties(properties, true);
@@ -121,5 +117,11 @@ class TurboElement<
         this.onAdopt.fire();
     }
 }
+
+(() => {
+    defineDefaultProperties(TurboElement);
+    defineMvcAccessors(TurboElement);
+    defineUIPrototype(TurboElement);
+})();
 
 export {TurboElement};

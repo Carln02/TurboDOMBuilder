@@ -14,7 +14,7 @@ type TurboProxiedProperties<
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboProperties<Tag> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
+> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
 
 declare module "./turboProxiedElement" {
     interface TurboProxiedElement extends TurboElementDefaultInterface {}

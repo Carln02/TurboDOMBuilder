@@ -26,7 +26,7 @@ import {DefineOptions} from "./define.types";
  */
 function define(elementName?: string, options: DefineOptions = { injectAttributeBridge: true }) {
     return function <T extends { new(...args: any[]): HTMLElement }>(Base: T, context: ClassDecoratorContext<T>) {
-        const name = elementName ?? camelToKebabCase(Base.name);
+        const name = elementName ?? camelToKebabCase(context.name);
 
         class Wrapped extends Base {
             constructor(...args: any[]) {

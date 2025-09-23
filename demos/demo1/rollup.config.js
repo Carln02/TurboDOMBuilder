@@ -18,7 +18,7 @@ export default [
             commonjs(),
             postcss({
                 plugins: [autoprefixer(), cssnano()]
-            })
+            }),
         ]
     },
 ];

@@ -11,6 +11,8 @@ interface TurboElementUiInterface {
      * setupUIElements, setupUILayout, setupUIListeners).
      */
     initializeUI(): void;
+
+    unsetDefaultClasses: boolean;
 }
 
 export {TurboElementUiInterface};

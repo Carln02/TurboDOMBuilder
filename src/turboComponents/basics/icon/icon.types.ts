@@ -2,6 +2,7 @@ import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboIcon} from "./icon";
 
 /**
  * @type {TurboIconProperties}
@@ -50,6 +51,12 @@ type TurboIconConfig = {
     defaultDirectory?: string;
     defaultClasses?: string | string[];
     customLoaders?: Record<string, (path: string) => Promise<Element>>
+}
+
+declare module "../../../core.types" {
+    interface TurboElementTagNameMap {
+        "turbo-icon": TurboIcon
+    }
 }
 
 export {TurboIconProperties, TurboIconConfig};

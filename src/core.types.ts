@@ -1,11 +1,16 @@
+import {TurboIcon} from "./turboComponents/basics/icon/icon";
+
 type PartialRecord<Property extends keyof any, Value> = { [P in Property]?: Value };
 
 type SVGTagMap = Omit<SVGElementTagNameMap, "style">;
 
+export interface TurboElementTagNameMap {
+}
+
 /**
  * @description A type that represents a union of HTML, SVG, and MathML tag name maps.`
  */
-type ElementTagMap = HTMLElementTagNameMap & SVGTagMap & MathMLElementTagNameMap;
+type ElementTagMap = HTMLElementTagNameMap & SVGTagMap & MathMLElementTagNameMap & TurboElementTagNameMap;
 
 /**
  * @description Ensures that only valid tags are used, i.e., those that map to elements.

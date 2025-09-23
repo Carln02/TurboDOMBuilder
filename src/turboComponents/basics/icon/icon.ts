@@ -12,28 +12,21 @@ import {cache} from "../../../decorators/cache/cache";
 import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {element} from "../../../elementCreation/element";
+import {signal} from "../../../decorators/signal/signal";
 
-//TODO way to get static field through this
-//Maybe also function that i call and returns the class of the instance (direct one, not parent)
 /**
  * Icon class for creating icon elements.
  * @class TurboIcon
  * @extends TurboElement
  */
-@define()
+@define("turbo-icon")
 class TurboIcon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    private _element: Element;
-
-    private _type: string;
-    private _directory: string;
-
-    public onLoaded: (element: Element) => void;
-
     public static readonly config: TurboIconConfig = {
         ...TurboElement.config,
         defaultType: "svg",
@@ -44,19 +37,20 @@ class TurboIcon<
     private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
         "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
 
+    private _element: Element;
+
+    public onLoaded: (element: Element) => void;
+
     /**
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
      */
     constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>) {
-        super(properties);
+        super();
         if (properties.icon) this.update(properties);
     }
 
     public update(properties: TurboIconProperties) {
-        if (properties.unsetDefaultClasses) $(this).removeClass((this.constructor as any).config.defaultClasses);
-        else $(this).addClass((this.constructor as any).config.defaultClasses);
-
         this.type = properties.type;
         this.directory = properties.directory;
 
@@ -70,27 +64,27 @@ class TurboIcon<
     /**
      * @description The type of the icon.
      */
-    public get type(): string {
-        return this._type;
-    }
-
-    private set type(value: string) {
-        if (!value || value.length == 0) value = this.type || (this.constructor as any).config.defaultType || "svg";
-        if (value[0] == ".") value = value.substring(1);
-        this._type = value;
+    @auto({
+        callBefore: function (value: string) {
+            if (!value || value.length == 0) value = this.type || (this.constructor as any).config.defaultType || "svg";
+            if (value[0] == ".") value = value.substring(1);
+            return value;
+        }
+    }) public set type(value: string) {
+        this.generateIcon();
     }
 
     /**
      * @description The user-provided (or statically configured) directory to the icon's file.
      */
-    public get directory(): string {
-        return this._directory;
-    }
-
-    private set directory(value: string) {
-        if (!value) value = this.directory || (this.constructor as any).config.defaultDirectory || "";
-        if (value.length > 0 && !value.endsWith("/")) value += "/";
-        this._directory = value;
+    @auto({
+        callBefore: function (value: string) {
+            if (!value) value = this.directory || (this.constructor as any).config.defaultDirectory || "";
+            if (value.length > 0 && !value.endsWith("/")) value += "/";
+            return value;
+        }
+    }) public set directory(value: string) {
+        this.generateIcon();
     }
 
     /**
@@ -105,9 +99,8 @@ class TurboIcon<
      * @description The name (or path) of the icon. Might include the file extension (to override the icon's type).
      * Setting it will update the icon accordingly.
      */
-    @observe
-    @auto()
-    public set icon(value: string) {
+    @observe @auto() public set icon(value: string) {
+        console.log("HEIWHFHIFEWIWEIWEF")
         const ext = getFileExtension(value).substring(1);
         if (ext) this.type = ext;
         this.generateIcon();
@@ -119,7 +112,7 @@ class TurboIcon<
     @observe
     @auto()
     public set iconColor(value: string) {
-        if (value && this.element instanceof SVGElement) this.element.style.fill = value;
+        this.updateColor(value);
     }
 
     /**
@@ -136,15 +129,19 @@ class TurboIcon<
     //Utilities
 
     @cache()
-    public loadSvg(path: string): Promise<SVGElement> {
+    protected loadSvg(path: string): Promise<SVGElement> {
         return fetchSvg(path);
     }
 
-    private loadImg(path: string): HTMLImageElement {
+    protected loadImg(path: string): HTMLImageElement {
         return img({src: path, alt: this.icon, parent: this});
     }
 
-    private generateIcon() {
+    protected updateColor(value: string = this.iconColor) {
+        if (value && this.element instanceof SVGElement) this.element.style.fill = value;
+    }
+
+    protected generateIcon() {
         if (this.element instanceof HTMLImageElement
             && equalToAny(this.type, ...(this.constructor as any).imageTypes)) {
             this.element.src = this.path;
@@ -177,9 +174,8 @@ class TurboIcon<
         if (element.parentElement) element = element.cloneNode(true) as Element;
 
         $(this).addChild(element);
-        if (this.iconColor && element instanceof SVGElement) element.style.fill = this.iconColor;
-        if (this.onLoaded) this.onLoaded(element);
-
+        this.updateColor();
+        this.onLoaded?.(element);
         this.element = element;
     }
 
@@ -192,9 +188,11 @@ class TurboIcon<
 function icon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
->(properties: TurboIconProperties<ViewType, DataType, ModelType>): TurboIcon<ViewType, DataType, ModelType> {
-    return new TurboIcon<ViewType, DataType, ModelType>(properties);
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+    return new TurboIcon<ViewType, DataType, ModelType, EmitterType>(properties);
+    // return element({...properties, tag: "turbo-icon"} as any) as any;
 }
 
 export {TurboIcon, icon};

@@ -1,4 +1,4 @@
-import {TurboIcon} from "../icon/icon";
+import {icon, TurboIcon} from "../icon/icon";
 import {TurboRichElementChildren, TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
 import {TurboView} from "../../../mvc/core/view";
 import {ValidElement, ValidTag} from "../../../core.types";
@@ -117,7 +117,7 @@ class TurboRichElement<
                 this.leftIcon.icon = value;
                 return;
             }
-            value = new TurboIcon({icon: value});
+            value = icon({icon: value});
         }
 
         $(this).remChild(this.leftIcon);
@@ -243,7 +243,7 @@ class TurboRichElement<
                 this.rightIcon.icon = value;
                 return;
             }
-            value = new TurboIcon({icon: value});
+            value = icon({icon: value});
         }
 
         $(this).remChild(this.rightIcon);

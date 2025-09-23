@@ -6,10 +6,12 @@ type PartialRecord<Property extends keyof any, Value> = {
     [P in Property]?: Value;
 };
 type SVGTagMap = Omit<SVGElementTagNameMap, "style">;
+interface TurboElementTagNameMap {
+}
 /**
  * @description A type that represents a union of HTML, SVG, and MathML tag name maps.`
  */
-type ElementTagMap = HTMLElementTagNameMap & SVGTagMap & MathMLElementTagNameMap;
+type ElementTagMap = HTMLElementTagNameMap & SVGTagMap & MathMLElementTagNameMap & TurboElementTagNameMap;
 /**
  * @description Ensures that only valid tags are used, i.e., those that map to elements.
  */
@@ -2988,9 +2990,10 @@ interface TurboElementUiInterface {
      * setupUIElements, setupUILayout, setupUIListeners).
      */
     initializeUI(): void;
+    unsetDefaultClasses: boolean;
 }
 
-type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProperties<Tag> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
+type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
 /**
  * @type {TurboElementProperties}
  * @extends TurboProperties
@@ -3179,12 +3182,10 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
  * @extends TurboElement
  */
 declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    private _element;
-    private _type;
-    private _directory;
-    onLoaded: (element: Element) => void;
     static readonly config: TurboIconConfig;
     private static imageTypes;
+    private _element;
+    onLoaded: (element: Element) => void;
     /**
      * Creates an instance of Icon.
      * @param {TurboIconProperties} properties - Properties to configure the icon.
@@ -3194,13 +3195,11 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
     /**
      * @description The type of the icon.
      */
-    get type(): string;
-    private set type(value);
+    set type(value: string);
     /**
      * @description The user-provided (or statically configured) directory to the icon's file.
      */
-    get directory(): string;
-    private set directory(value);
+    set directory(value: string);
     /**
      * @description The path to the icon's source file.
      */
@@ -3219,14 +3218,15 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
      */
     private set element(value);
     get element(): Element;
-    loadSvg(path: string): Promise<SVGElement>;
-    private loadImg;
-    private generateIcon;
+    protected loadSvg(path: string): Promise<SVGElement>;
+    protected loadImg(path: string): HTMLImageElement;
+    protected updateColor(value?: string): void;
+    protected generateIcon(): void;
     private getLoader;
     private setupLoadedElement;
     private clear;
 }
-declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>>(properties: TurboIconProperties<ViewType, DataType, ModelType>): TurboIcon<ViewType, DataType, ModelType>;
+declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>): TurboIcon<ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @type {TurboRichElementProperties}
@@ -4833,9 +4833,10 @@ declare function kebabToCamelCase(str?: string): string;
 /**
  * @description Fetches an SVG from the given path
  * @param {string} path - The path to the SVG
+ * @param logError
  * @returns An SVGElement promise
  */
-declare function fetchSvg(path: string): Promise<SVGElement>;
+declare function fetchSvg(path: string, logError?: boolean): Promise<SVGElement>;
 
 declare function getEventPosition(e: Event): Point;
 
@@ -5304,6 +5305,9 @@ interface TurboElement extends TurboElementDefaultInterface {
 interface TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
     }
 interface TurboElement extends TurboElementUiInterface {
+    }
+interface TurboElementTagNameMap {
+        "turbo-icon": TurboIcon;
     }
 interface TurboSelector {
         /**

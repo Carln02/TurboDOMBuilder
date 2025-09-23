@@ -3732,7 +3732,7 @@ function callOncePerInstance(value, context) {
     };
 }
 
-const setup$2 = callOnce(function () {
+const setup$1 = callOnce(function () {
     defineDefaultProperties(TurboHeadlessElement);
     defineMvcAccessors(TurboHeadlessElement);
 });
@@ -3765,7 +3765,7 @@ class TurboHeadlessElement {
      */
     mvc;
     constructor(properties = {}) {
-        setup$2();
+        setup$1();
         this.mvc = new Mvc({ ...properties, element: this });
     }
 }
@@ -5538,7 +5538,7 @@ function kebabToCamelCase(str) {
  */
 function define(elementName, options = { injectAttributeBridge: true }) {
     return function (Base, context) {
-        const name = elementName ?? camelToKebabCase(Base.name);
+        const name = elementName ?? camelToKebabCase(context.name);
         class Wrapped extends Base {
             constructor(...args) {
                 super(...args);
@@ -6223,9 +6223,10 @@ function createProxy(self, proxied) {
 /**
  * @description Fetches an SVG from the given path
  * @param {string} path - The path to the SVG
+ * @param logError
  * @returns An SVGElement promise
  */
-function fetchSvg(path) {
+function fetchSvg(path, logError = true) {
     return new Promise((resolve, reject) => {
         if (!path || path.length === 0) {
             reject(new Error("Invalid path"));
@@ -6244,6 +6245,8 @@ function fetchSvg(path) {
             resolve(svg);
         })
             .catch(error => {
+            if (!logError)
+                reject(error);
             console.error("Error fetching SVG:", error);
             reject(error);
         });
@@ -6252,6 +6255,7 @@ function fetchSvg(path) {
 
 function defineUIPrototype(constructor) {
     const prototype = constructor.prototype;
+    const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
     Object.defineProperty(prototype, "initializeUI", {
         value: function initializeUI() {
             this.setupUIElements?.();
@@ -6262,13 +6266,20 @@ function defineUIPrototype(constructor) {
         configurable: true,
         enumerable: false,
     });
+    Object.defineProperty(prototype, "unsetDefaultClasses", {
+        get: function () { return this[unsetDefaultClassesKey] ?? false; },
+        set: function (value) {
+            this[unsetDefaultClassesKey] = value;
+            const defaultClasses = this.constructor?.config?.defaultClasses;
+            if (!defaultClasses)
+                return;
+            $(this).toggleClass(defaultClasses, value);
+        },
+        enumerable: true,
+        configurable: true,
+    });
 }
 
-const setup$1 = callOnce(function () {
-    defineDefaultProperties(TurboElement);
-    defineMvcAccessors(TurboElement);
-    defineUIPrototype(TurboElement);
-});
 /**
  * @class TurboElement
  * @extends HTMLElement
@@ -6282,7 +6293,10 @@ class TurboElement extends HTMLElement {
     /**
      * @description Static configuration object.
      */
-    static config = { shadowDOM: false, defaultSelectedClass: "selected" };
+    static config = {
+        shadowDOM: false,
+        defaultSelectedClass: "selected"
+    };
     /**
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
@@ -6311,7 +6325,6 @@ class TurboElement extends HTMLElement {
         });
     }
     constructor(properties = {}) {
-        setup$1();
         super();
         if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM"))
             this.attachShadow({ mode: "open" });
@@ -6358,6 +6371,11 @@ class TurboElement extends HTMLElement {
         this.onAdopt.fire();
     }
 }
+(() => {
+    defineDefaultProperties(TurboElement);
+    defineMvcAccessors(TurboElement);
+    defineUIPrototype(TurboElement);
+})();
 
 function areEqual(...entries) {
     if (entries.length < 2)
@@ -6392,20 +6410,20 @@ function eachEqualToAny(values, ...entries) {
     return true;
 }
 
-//TODO way to get static field through this
-//Maybe also function that i call and returns the class of the instance (direct one, not parent)
 /**
  * Icon class for creating icon elements.
  * @class TurboIcon
  * @extends TurboElement
  */
 let TurboIcon = (() => {
-    let _classDecorators = [define()];
+    let _classDecorators = [define("turbo-icon")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
+    let _set_type_decorators;
+    let _set_directory_decorators;
     let _set_icon_decorators;
     let _set_iconColor_decorators;
     let _loadSvg_decorators;
@@ -6413,9 +6431,29 @@ let TurboIcon = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_type_decorators = [auto({
+                    callBefore: function (value) {
+                        if (!value || value.length == 0)
+                            value = this.type || this.constructor.config.defaultType || "svg";
+                        if (value[0] == ".")
+                            value = value.substring(1);
+                        return value;
+                    }
+                })];
+            _set_directory_decorators = [auto({
+                    callBefore: function (value) {
+                        if (!value)
+                            value = this.directory || this.constructor.config.defaultDirectory || "";
+                        if (value.length > 0 && !value.endsWith("/"))
+                            value += "/";
+                        return value;
+                    }
+                })];
             _set_icon_decorators = [observe, auto()];
             _set_iconColor_decorators = [observe, auto()];
             _loadSvg_decorators = [cache()];
+            __esDecorate(this, null, _set_type_decorators, { kind: "setter", name: "type", static: false, private: false, access: { has: obj => "type" in obj, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_directory_decorators, { kind: "setter", name: "directory", static: false, private: false, access: { has: obj => "directory" in obj, set: (obj, value) => { obj.directory = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_iconColor_decorators, { kind: "setter", name: "iconColor", static: false, private: false, access: { has: obj => "iconColor" in obj, set: (obj, value) => { obj.iconColor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _loadSvg_decorators, { kind: "method", name: "loadSvg", static: false, private: false, access: { has: obj => "loadSvg" in obj, get: obj => obj.loadSvg }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -6423,10 +6461,6 @@ let TurboIcon = (() => {
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
-        _element = __runInitializers(this, _instanceExtraInitializers);
-        _type;
-        _directory;
-        onLoaded;
         static config = {
             ...TurboElement.config,
             defaultType: "svg",
@@ -6435,20 +6469,18 @@ let TurboIcon = (() => {
         };
         static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
             "PNG", "JPG", "JPEG", "GIF", "WEBP"];
+        _element = __runInitializers(this, _instanceExtraInitializers);
+        onLoaded;
         /**
          * Creates an instance of Icon.
          * @param {TurboIconProperties} properties - Properties to configure the icon.
          */
         constructor(properties) {
-            super(properties);
+            super();
             if (properties.icon)
                 this.update(properties);
         }
         update(properties) {
-            if (properties.unsetDefaultClasses)
-                $(this).removeClass(this.constructor.config.defaultClasses);
-            else
-                $(this).addClass(this.constructor.config.defaultClasses);
             this.type = properties.type;
             this.directory = properties.directory;
             if (properties.iconColor)
@@ -6462,28 +6494,14 @@ let TurboIcon = (() => {
         /**
          * @description The type of the icon.
          */
-        get type() {
-            return this._type;
-        }
         set type(value) {
-            if (!value || value.length == 0)
-                value = this.type || this.constructor.config.defaultType || "svg";
-            if (value[0] == ".")
-                value = value.substring(1);
-            this._type = value;
+            this.generateIcon();
         }
         /**
          * @description The user-provided (or statically configured) directory to the icon's file.
          */
-        get directory() {
-            return this._directory;
-        }
         set directory(value) {
-            if (!value)
-                value = this.directory || this.constructor.config.defaultDirectory || "";
-            if (value.length > 0 && !value.endsWith("/"))
-                value += "/";
-            this._directory = value;
+            this.generateIcon();
         }
         /**
          * @description The path to the icon's source file.
@@ -6497,6 +6515,7 @@ let TurboIcon = (() => {
          * Setting it will update the icon accordingly.
          */
         set icon(value) {
+            console.log("HEIWHFHIFEWIWEIWEF");
             const ext = getFileExtension(value).substring(1);
             if (ext)
                 this.type = ext;
@@ -6506,8 +6525,7 @@ let TurboIcon = (() => {
          * @description The assigned color to the icon (if any)
          */
         set iconColor(value) {
-            if (value && this.element instanceof SVGElement)
-                this.element.style.fill = value;
+            this.updateColor(value);
         }
         /**
          * @description The child element of the icon element (an HTML image or an SVG element).
@@ -6524,6 +6542,10 @@ let TurboIcon = (() => {
         }
         loadImg(path) {
             return img({ src: path, alt: this.icon, parent: this });
+        }
+        updateColor(value = this.iconColor) {
+            if (value && this.element instanceof SVGElement)
+                this.element.style.fill = value;
         }
         generateIcon() {
             if (this.element instanceof HTMLImageElement
@@ -6560,10 +6582,8 @@ let TurboIcon = (() => {
             if (element.parentElement)
                 element = element.cloneNode(true);
             $(this).addChild(element);
-            if (this.iconColor && element instanceof SVGElement)
-                element.style.fill = this.iconColor;
-            if (this.onLoaded)
-                this.onLoaded(element);
+            this.updateColor();
+            this.onLoaded?.(element);
             this.element = element;
         }
         clear() {
@@ -6578,6 +6598,7 @@ let TurboIcon = (() => {
 })();
 function icon(properties) {
     return new TurboIcon(properties);
+    // return element({...properties, tag: "turbo-icon"} as any) as any;
 }
 
 /**
@@ -6689,7 +6710,7 @@ let TurboRichElement = (() => {
                     this.leftIcon.icon = value;
                     return;
                 }
-                value = new TurboIcon({ icon: value });
+                value = icon({ icon: value });
             }
             $(this).remChild(this.leftIcon);
             this.addAtPosition(value, "leftIcon");
@@ -6801,7 +6822,7 @@ let TurboRichElement = (() => {
                     this.rightIcon.icon = value;
                     return;
                 }
-                value = new TurboIcon({ icon: value });
+                value = icon({ icon: value });
             }
             $(this).remChild(this.rightIcon);
             this.addAtPosition(value, "rightIcon");

@@ -1,4 +1,6 @@
-import {button, $, randomFromRange, TurboElement, trim} from "../../../build/turbodombuilder.esm.js";
+import {button, $, randomFromRange, TurboElement, trim, icon, TurboIcon} from "../../../build/turbodombuilder.esm.js";
+
+TurboIcon.config.defaultDirectory = "assets";
 
 class Square extends TurboElement {
     position = {x: randomFromRange(0, 600), y: randomFromRange(0, 600)};
@@ -72,7 +74,7 @@ for (let i = 0; i < 4; i++) new Square();
 for (let i = 0; i < 4; i++) new Circle();
 for (let i = 0; i < 4; i++) new Outline();
 
-const moveTool = button({text: "Move Tool", parent: document.body, classes: "moveTool"});
+const moveTool = button({leftIcon: "chevron-top", text: "Move Tool", parent: document.body, classes: "moveTool"});
 $(moveTool).on("turbo-click", () => moveTool.style.backgroundColor = "red");
 $(moveTool).makeTool("move");
 
