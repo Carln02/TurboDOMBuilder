@@ -2,6 +2,7 @@ import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 import {TurboControllerProperties} from "./logic.types";
+import {initializeEffects} from "../../reactivity/reactivity";
 
 /**
  * @class TurboController
@@ -16,7 +17,7 @@ import {TurboControllerProperties} from "./logic.types";
  */
 class TurboController<
     ElementType extends object = object,
-    ViewType extends TurboView = TurboView,
+    ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > {
@@ -31,31 +32,31 @@ class TurboController<
      * @description A reference to the component.
      * @protected
      */
-    protected readonly element: ElementType;
+    public element: ElementType;
 
     /**
      * @description A reference to the MVC view.
      * @protected
      */
-    protected readonly view: ViewType;
+    public view?: ViewType;
 
     /**
      * @description A reference to the MVC model.
      * @protected
      */
-    protected readonly model: ModelType;
+    public model?: ModelType;
 
     /**
      * @description A reference to the MVC emitter.
      * @protected
      */
-    protected readonly emitter: EmitterType;
+    public emitter?: EmitterType;
 
     public constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>) {
         this.element = properties.element;
-        this.view = properties.view;
-        this.model = properties.model;
-        this.emitter = properties.emitter;
+        if (properties.model) this.model = properties.model;
+        if (properties.emitter) this.emitter = properties.emitter;
+        if (properties.view) this.view = properties.view;
     }
 
     /**
@@ -72,6 +73,7 @@ class TurboController<
      * @protected
      */
     protected setupChangedCallbacks(): void {
+        initializeEffects(this);
     }
 }
 

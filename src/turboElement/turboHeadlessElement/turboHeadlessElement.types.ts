@@ -18,10 +18,9 @@ type TurboHeadlessProperties<
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element">
-    & {
-    out?: string | Node;
-    [key: string]: any;
+> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+    out?: string | Node,
+    [key: string]: any
 };
 
 declare module "./turboHeadlessElement" {

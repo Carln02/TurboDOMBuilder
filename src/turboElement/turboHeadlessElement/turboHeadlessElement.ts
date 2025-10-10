@@ -7,11 +7,6 @@ import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineDefaultProperties} from "../setup/default/default";
 import {callOnce} from "../../decorators/callOnce";
 
-const setup = callOnce(function () {
-    defineDefaultProperties(TurboHeadlessElement);
-    defineMvcAccessors(TurboHeadlessElement);
-});
-
 /**
  * @class TurboHeadlessElement
  * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
@@ -37,7 +32,7 @@ class TurboHeadlessElement<
      */
     public static configure(value: typeof this.config) {
         Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined) (this.config as any)[key] = val;
+            if (val !== undefined) this.config[key] = val;
         });
     }
 
@@ -48,9 +43,13 @@ class TurboHeadlessElement<
     protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
 
     public constructor(properties: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        setup();
         this.mvc = new Mvc({...properties, element: this});
     }
 }
+
+(() => {
+    defineDefaultProperties(TurboHeadlessElement);
+    defineMvcAccessors(TurboHeadlessElement);
+})();
 
 export {TurboHeadlessElement};

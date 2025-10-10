@@ -81,11 +81,11 @@ describe("@auto", () => {
         expect(g2.y).toBe(21);
     });
 
-    it("applies callBefore before storing/forwarding", () => {
+    it("applies preprocessValue before storing/forwarding", () => {
         const spy = vi.fn();
 
         class C {
-            @auto({callBefore: (v: string) => String(v).trim().toUpperCase()})
+            @auto({preprocessValue: (v: string) => String(v).trim().toUpperCase()})
             set name(v: string) { spy(v); }
         }
 

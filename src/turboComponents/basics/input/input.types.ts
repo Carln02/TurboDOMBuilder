@@ -7,7 +7,7 @@ type TurboInputProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel
-> = TurboRichElementProperties<InputTag, ViewType, DataType, ModelType> & {
+> = Omit<TurboRichElementProperties<InputTag, ViewType, DataType, ModelType>, "element"> & {
     label?: string,
 
     locked?: boolean,

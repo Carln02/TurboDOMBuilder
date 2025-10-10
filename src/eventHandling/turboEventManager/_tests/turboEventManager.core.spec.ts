@@ -10,7 +10,7 @@ describe("TurboEventManager: tools & locks", () => {
 
         const toolEl = div({parent: document.body});
         const sel = $(toolEl);
-        sel.makeTool("brush");
+        sel.makeTool("brush", {manager: mgr});
 
         const onAct = vi.fn();
         const onDeact = vi.fn();
@@ -20,16 +20,16 @@ describe("TurboEventManager: tools & locks", () => {
         const fired = vi.fn();
         mgr.onToolChange.add?.(fired);
 
-        mgr.setTool("brush", ClickMode.left, { select: true, activate: true });
+        mgr.setTool(toolEl, ClickMode.left, { select: true, activate: true });
         expect(mgr.getCurrentToolName(ClickMode.left)).toBe("brush");
 
         expect(onAct).toHaveBeenCalledTimes(1);
         expect(fired).toHaveBeenCalledTimes(1);
-        expect(fired.mock.calls[0]).toEqual([undefined, "brush", ClickMode.left]);
+        expect(fired.mock.calls[0]).toEqual([undefined, toolEl, ClickMode.left]);
 
         const tool2 = div({parent: document.body});
-        mgr.addTool("eraser", tool2);
-        mgr.setTool("eraser", ClickMode.left, { select: true, activate: true });
+        $(tool2).makeTool("eraser", {manager: mgr});
+        mgr.setTool(tool2, ClickMode.left, { select: true, activate: true });
         expect(onDeact).toHaveBeenCalledTimes(1);
         expect(mgr.getCurrentToolName(ClickMode.left)).toBe("eraser");
     });
@@ -37,7 +37,7 @@ describe("TurboEventManager: tools & locks", () => {
     it("key mapping: setToolByKey picks the mapped tool; key release clears key mode", () => {
         const mgr = new TurboEventManager();
         const toolEl = div({parent: document.body});
-        mgr.addTool("pan", toolEl, "p");
+        $(toolEl).makeTool("pan", {key: "p", manager: mgr});
 
         const ok = mgr.setToolByKey("p");
         expect(ok).toBe(true);

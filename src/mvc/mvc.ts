@@ -8,6 +8,12 @@ import {auto} from "../decorators/auto/auto";
 import {TurboHandler} from "./logic/handler";
 import {TurboTool} from "./tool/tool";
 import {TurboSubstrate} from "./substrate/substrate";
+import {TurboViewProperties} from "./core/core.types";
+import {TurboInteractorProperties} from "./interactor/interactor.types";
+import {TurboToolProperties} from "./tool/tool.types";
+import {TurboSubstrateProperties} from "./substrate/substrate.types";
+import {TurboControllerProperties} from "./logic/logic.types";
+import {$} from "../turboFunctions/turboFunctions";
 
 /**
  * @class Mvc
@@ -26,15 +32,20 @@ class Mvc<
     EmitterType extends TurboEmitter = TurboEmitter<any>,
 > {
     private readonly element: ElementType;
-    private _model: ModelType;
 
-    private readonly controllers: Map<string, TurboController> = new Map();
-    private readonly interactors: Map<string, TurboInteractor> = new Map();
-    private readonly tools: Map<string, TurboTool> = new Map();
-    private readonly substrates: Map<string, TurboSubstrate> = new Map();
+    private _view: ViewType;
+    private _model: ModelType;
+    private _emitter: EmitterType;
+
+    private readonly _controllers: Map<string, TurboController> = new Map();
+    private readonly _handlers: Map<string, TurboHandler> = new Map();
+    private readonly _interactors: Map<string, TurboInteractor> = new Map();
+    private readonly _tools: Map<string, TurboTool> = new Map();
+    private readonly _substrates: Map<string, TurboSubstrate> = new Map();
 
     public constructor(properties: MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>) {
         if (properties.element) this.element = properties.element;
+        if (!properties.emitter) this.emitter = new TurboEmitter() as EmitterType;
         this.generate(properties);
     }
 
@@ -42,9 +53,13 @@ class Mvc<
      * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
      * to this new view.
      */
-    @auto()
-    public set view(value: ViewType) {
-        this.linkModelToView();
+    public get view(): ViewType {
+        return this._view;
+    }
+
+    public set view(value: ViewType | (new (properties: TurboViewProperties) => ViewType)) {
+        this._view = this.generateInstance(value, {element: this.element});
+        this.linkPieces();
     }
 
     /**
@@ -55,21 +70,59 @@ class Mvc<
         return this._model;
     }
 
-    public set model(model: ModelType) {
-        this.deLinkModelFromEmitter();
-        this._model = model;
-
-        this.linkModelToEmitter();
-        this.linkModelToView();
+    public set model(model: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType)) {
+        this.model?.keyChangedCallback.remove(this.emitterFireCallback);
+        this._model = this.generateInstance(model);
+        this._model.handlers = this._handlers;
+        this._model.addHandler = (handler: TurboHandler) => this.addHandler(handler);
+        this.linkPieces();
     }
 
     /**
      * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
      * to this new emitter.
      */
-    @auto()
-    public set emitter(emitter: EmitterType) {
-        this.linkModelToEmitter();
+    public get emitter(): EmitterType {
+        return this._emitter;
+    }
+
+    public set emitter(emitter: EmitterType | (new (properties: ModelType) => EmitterType)) {
+        this._emitter = this.generateInstance(emitter);
+        this.linkPieces();
+    }
+
+    public set controllers(value: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>) {
+        this._controllers.clear();
+        this.generateInstances(value, {element: this.element})
+            .forEach(instance => this.addController(instance));
+        this.linkPieces();
+    }
+
+    public set handlers(value: MvcManyInstancesOrConstructors<TurboHandler>) {
+        this._handlers.clear();
+        this.generateInstances(value).forEach(instance => this.addHandler(instance));
+        this.linkPieces();
+    }
+
+    public set interactors(value: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>) {
+        this._interactors.clear();
+        this.generateInstances(value, {element: this.element})
+            .forEach(instance => this.addInteractor(instance));
+        this.linkPieces();
+    }
+
+    public set tools(value: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>) {
+        this._tools.clear();
+        this.generateInstances(value, {element: this.element})
+            .forEach(instance => this.addTool(instance));
+        this.linkPieces();
+    }
+
+    public set substrates(value: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>) {
+        this._substrates.clear();
+        this.generateInstances(value, {element: this.element})
+            .forEach(instance => this.addSubstrate(instance));
+        this.linkPieces();
     }
 
     /**
@@ -121,7 +174,7 @@ class Mvc<
      * @return {TurboController} - The controller.
      */
     public getController(key: string): TurboController {
-        return this.controllers.get(key);
+        return this._controllers.get(key);
     }
 
     /**
@@ -132,8 +185,8 @@ class Mvc<
     public addController(controller: TurboController) {
         if (!controller.keyName) controller.keyName =
             this.extractClassEssenceName(controller.constructor as new (...args: any[]) => any, "Controller");
-
-        this.controllers.set(controller.keyName, controller);
+        this._controllers.set(controller.keyName, controller);
+        this.updateController(controller);
     }
 
     /**
@@ -145,7 +198,7 @@ class Mvc<
      * @return {TurboHandler} - The handler.
      */
     public getHandler(key: string): TurboHandler {
-        return this.model.getHandler(key);
+        return this._handlers.get(key);
     }
 
     /**
@@ -156,7 +209,8 @@ class Mvc<
     public addHandler(handler: TurboHandler) {
         if (!handler.keyName) handler.keyName =
             this.extractClassEssenceName(handler.constructor as new (...args: any[]) => any, "Handler");
-        this.model.addHandler(handler.keyName, handler);
+        this._handlers.set(handler.keyName, handler);
+        this.updateHandler(handler);
     }
 
     /**
@@ -168,7 +222,7 @@ class Mvc<
      * @return {TurboInteractor} - The interactor.
      */
     public getInteractor(key: string): TurboInteractor {
-        return this.interactors.get(key);
+        return this._interactors.get(key);
     }
 
     /**
@@ -179,7 +233,8 @@ class Mvc<
     public addInteractor(interactor: TurboInteractor) {
         if (!interactor.keyName) interactor.keyName =
             this.extractClassEssenceName(interactor.constructor as new (...args: any[]) => any, "Interactor");
-        this.interactors.set(interactor.keyName, interactor);
+        this._interactors.set(interactor.keyName, interactor);
+        this.updateInteractor(interactor);
     }
 
     /**
@@ -191,7 +246,7 @@ class Mvc<
      * @return {TurboTool} - The tool.
      */
     public getTool(key: string): TurboTool {
-        return this.tools.get(key);
+        return this._tools.get(key);
     }
 
     /**
@@ -202,7 +257,8 @@ class Mvc<
     public addTool(tool: TurboTool) {
         if (!tool.keyName) tool.keyName =
             this.extractClassEssenceName(tool.constructor as new (...args: any[]) => any, "Tool");
-        this.tools.set(tool.keyName, tool);
+        this._tools.set(tool.keyName, tool);
+        this.updateTool(tool);
     }
 
     /**
@@ -214,7 +270,7 @@ class Mvc<
      * @return {TurboSubstrate} - The substrate.
      */
     public getSubstrate(key: string): TurboSubstrate {
-        return this.substrates.get(key);
+        return this._substrates.get(key);
     }
 
     /**
@@ -225,7 +281,54 @@ class Mvc<
     public addSubstrate(substrate: TurboSubstrate) {
         if (!substrate.keyName) substrate.keyName =
             this.extractClassEssenceName(substrate.constructor as new (...args: any[]) => any, "Substrate");
-        this.substrates.set(substrate.keyName, substrate);
+        this._substrates.set(substrate.keyName, substrate);
+        this.updateSubstrate(substrate);
+    }
+
+    protected updateController(controller: TurboController) {
+        controller.emitter = this.emitter;
+        controller.model = this.model;
+        controller.view = this.view;
+    }
+
+    protected updateHandler(handler: TurboHandler) {
+        handler.model = this.model;
+    }
+
+    protected updateInteractor(interactor: TurboInteractor) {
+        interactor.model = this.model;
+        interactor.view = this.view;
+        interactor.emitter = this.emitter;
+    }
+
+    protected updateTool(tool: TurboTool) {
+        tool.emitter = this.emitter;
+        tool.model = this.model;
+        tool.view = this.view;
+    }
+
+    protected updateSubstrate(substrate: TurboSubstrate) {
+        substrate.model = this.model;
+        substrate.view = this.view;
+        substrate.emitter = this.emitter;
+    }
+
+    protected linkPieces() {
+        if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
+            this.model.keyChangedCallback.add(this.emitterFireCallback);
+        }
+
+        if (this.emitter) this.emitter.model = this.model;
+        if (this.view) {
+            this.view.emitter = this.emitter;
+            this.view.model = this.model;
+        }
+
+        this._controllers.forEach(controller => this.updateController(controller));
+        this._handlers.forEach(handler => this.updateHandler(handler));
+        this._interactors.forEach(interactor => this.updateInteractor(interactor));
+        this._tools.forEach(tool => this.updateTool(tool));
+        this._substrates.forEach(substrate => this.updateSubstrate(substrate));
     }
 
     /**
@@ -237,61 +340,19 @@ class Mvc<
      * to generate the MVC structure.
      */
     public generate(properties: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        const {
-            view, model, emitter, controllers, handlers, interactors, tools, substrates,
-            data, initialize = true, force = false
-        }: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = properties;
-
-        //Model
-        if (model && (force || !this.model)) this.model = this.generateInstance(model, data, false);
-        if (data !== undefined && this.model && this.model.data !== data) this.model.data = data;
-        //Emitter
-        if ((emitter || this.model) && (force || !this.emitter)) {
-            this.emitter = this.generateInstance(emitter ?? TurboEmitter, this.model, false) as EmitterType;
+        for (const property of Object.keys(properties)) {
+            const value = properties[property];
+            if (value === undefined || property === "initialize" || property === "data") continue;
+            this[property] = value;
         }
 
-        const constructorProperties = {
-            element: this.element,
-            model: this.model,
-            emitter: this.emitter,
-            view: undefined
-        };
-
-        //View
-        if (view && (force || !this.view)) {
-            this.view = this.generateInstance(view, constructorProperties);
-            if (typeof view !== "function") {
-                this.view.model = this.model;
-                this.view.emitter = this.emitter;
-                this.view.element = this.element;
-            }
-        }
-
-        constructorProperties.view = this.view;
-
-        //Controllers
-        this.generateInstances(controllers, constructorProperties)
-            .forEach(instance => this.addController(instance));
-        //Handlers
-        this.generateInstances(handlers, this.model, false)
-            .forEach(instance => this.addHandler(instance));
-
-        //Interactors
-        this.generateInstances(interactors, constructorProperties)
-            .forEach(instance => this.addInteractor(instance));
-        //Tools
-        this.generateInstances(tools, constructorProperties)
-            .forEach(instance => this.addTool(instance));
-        //Substrates
-        this.generateInstances(substrates, constructorProperties)
-            .forEach(instance => this.addSubstrate(instance));
-
-        if (initialize) this.initialize();
+        if (properties.data && this.model) this.model.setBlock(properties.data, undefined, undefined, false);
+        if (properties.initialize === undefined || properties.initialize) this.initialize();
     }
 
     private generateInstance<Type, PropertiesType>(
         data: MvcManyInstancesOrConstructors<Type, PropertiesType>,
-        properties: PropertiesType,
+        properties?: PropertiesType,
         shallowCopyProperties: boolean = true
     ): Type {
         if (!data) return undefined;
@@ -305,7 +366,7 @@ class Mvc<
 
     private generateInstances<Type, PropertiesType>(
         data: MvcManyInstancesOrConstructors<Type, PropertiesType>,
-        properties: PropertiesType,
+        properties?: PropertiesType,
         shallowCopyProperties: boolean = true
         ): Type[] {
         if (!data) return [];
@@ -319,7 +380,6 @@ class Mvc<
         return result;
     }
 
-
     /**
      * @function initialize
      * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
@@ -327,32 +387,15 @@ class Mvc<
      */
     public initialize() {
         this.view?.initialize();
-        this.controllers.forEach(controller => controller.initialize());
+        this._controllers.forEach(controller => controller.initialize());
         this.model?.initialize();
-        this.interactors.forEach(interactor => interactor.initialize());
-        this.tools.forEach(tool => tool.initialize());
-        this.substrates.forEach(substrate => substrate.initialize());
-    }
-
-    private linkModelToView() {
-        if (!this.view || !this.model) return;
-        this.view.model = this.model;
+        this._interactors.forEach(interactor => interactor.initialize());
+        this._tools.forEach(tool => tool.initialize());
+        this._substrates.forEach(substrate => substrate.initialize());
     }
 
     private emitterFireCallback = (keyName: string, blockKey: any, ...args: any[]) =>
-        this.emitter.fireWithBlock(keyName, blockKey, ...args);
-
-    private deLinkModelFromEmitter() {
-        if (!this.emitter || !this.model) return;
-        this.model.keyChangedCallback.remove(this.emitterFireCallback);
-    }
-
-    private linkModelToEmitter() {
-        if (!this.emitter || !this.model) return;
-        this.emitter.model = this.model;
-        this.model.keyChangedCallback.add(this.emitterFireCallback);
-    }
-
+        this.emitter?.fireWithBlock(keyName, blockKey, ...args);
 
     protected extractClassEssenceName(constructor: new (...args: any[]) => any, type: string): string {
         let className = constructor.name;

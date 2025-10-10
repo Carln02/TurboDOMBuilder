@@ -16,10 +16,10 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
     /**
      * @description The attached MVC model.
      */
-    public model: ModelType;
+    public model?: ModelType;
 
-    public constructor(model: ModelType) {
-        this.model = model;
+    public constructor(model?: ModelType) {
+        if (model) this.model = model;
     }
 
     /**
@@ -117,7 +117,7 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
      */
     public remove(key: string, callback?: (...args: any[]) => void): void {
-        this.removeWithBlock(key, this.model.defaultBlockKey, callback);
+        this.removeWithBlock(key, this.model?.defaultBlockKey, callback);
     }
 
     /**
@@ -140,7 +140,7 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      * @param {...any[]} args - Arguments passed to the callback.
      */
     public fire(key: string, ...args: any[]): void {
-        this.fireWithBlock(key, this.model.defaultBlockKey, ...args);
+        this.fireWithBlock(key, this.model?.defaultBlockKey, ...args);
     }
 }
 

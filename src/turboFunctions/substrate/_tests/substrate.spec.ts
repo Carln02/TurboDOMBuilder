@@ -2,9 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import {$} from "../../turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
 
-const count = (list: HTMLCollection | NodeList | Set<object>) =>
-    "length" in list ? list.length : (list as Set<object>).size;
-
 describe("Substrate functions", () => {
     it("makeSubstrate() creates a named substrate and getSubstrates() lists it", () => {
         const host = div({parent: document.body});
@@ -36,7 +33,7 @@ describe("Substrate functions", () => {
 
         $(host).makeSubstrate("main");
         const list = $(host).getSubstrateObjectList();
-        expect(list).toEqual(host.childNodes);
+        expect(list).toEqual(new Set());
     });
 
     it("default elements list is live (HTMLCollection of element.children)", () => {
@@ -45,17 +42,15 @@ describe("Substrate functions", () => {
         $(host).makeSubstrate("main");
         $(host).setSubstrate("main");
 
-        const list = $(host).getSubstrateObjectList();
-        expect("length" in list).toBe(true);
-        expect(count(list)).toBe(0);
+        expect($(host).getSubstrateObjectList().size).toBe(0);
 
         const c1 = document.createElement("span");
         host.appendChild(c1);
-        expect(count(list)).toBe(1);
+        expect($(host).getSubstrateObjectList().size).toBe(1);
 
         const c2 = document.createElement("span");
         host.appendChild(c2);
-        expect(count(list)).toBe(2);
+        expect($(host).getSubstrateObjectList().size).toBe(2);
     });
 
     it("setSubstrateObjectList() replaces the substrate list (e.g., with a Set)", () => {
@@ -68,11 +63,11 @@ describe("Substrate functions", () => {
         $(host).setSubstrateObjectList(custom, "main");
 
         const list = $(host).getSubstrateObjectList("main");
-        expect(list).toBe(custom);
-        expect(count(list)).toBe(0);
+        expect(list).toEqual(custom);
+        expect(list.size).toBe(0);
 
         host.appendChild(document.createElement("span"));
-        expect(count(list)).toBe(0);
+        expect(list.size).toBe(0);
     });
 
     it("onSubstrateActivate/onSubstrateDeactivate delegates include callbacks passed to makeSubstrate()", () => {

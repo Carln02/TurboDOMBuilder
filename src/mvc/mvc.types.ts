@@ -13,7 +13,7 @@ import {TurboSubstrate} from "./substrate/substrate";
 import {TurboSubstrateProperties} from "./substrate/substrate.types";
 
 export type MvcInstanceOrConstructor<Type, PropertiesType> = Type | (new (properties: PropertiesType) => Type);
-export type MvcManyInstancesOrConstructors<Type, PropertiesType> = MvcInstanceOrConstructor<Type, PropertiesType>
+export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrConstructor<Type, PropertiesType>
     | MvcInstanceOrConstructor<Type, PropertiesType>[];
 
 type MvcGenerationProperties<
@@ -22,9 +22,9 @@ type MvcGenerationProperties<
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > = {
-    view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>,
+    view?: ViewType | (new (properties: TurboViewProperties) => ViewType),
     model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType),
-    emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>,
+    emitter?: EmitterType | (new (properties: ModelType) => EmitterType),
 
     controllers?: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>,
     handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>,
@@ -35,7 +35,6 @@ type MvcGenerationProperties<
 
     data?: DataType,
     initialize?: boolean,
-    force?: boolean
 };
 
 type MvcProperties<

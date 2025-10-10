@@ -6,7 +6,6 @@ import {TurboEmitter} from "../core/emitter";
 class TestModel extends TurboModel<Record<string, any>, string, string, "map"> {
     private _enabled = true;
 
-    //@ts-ignore
     public get enabledCallbacks() { return this._enabled; }
 
     public set enabledCallbacks(v: boolean) { this._enabled = v; }

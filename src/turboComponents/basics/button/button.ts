@@ -8,41 +8,35 @@ import {ValidTag} from "../../../core.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {auto} from "../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {element} from "../../../elementCreation/element";
 
 /**
  * Button class for creating Turbo button elements.
  * @class TurboButton
  * @extends TurboElement
  */
-@define()
+@define("turbo-button")
 class TurboButton<
     ElementTag extends ValidTag = "p",
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType> {
-
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
     public static readonly config: TurboButtonConfig = {...TurboRichElement.config, defaultElementTag: "h4"};
-
-    /**
-     * Initializes a new instance of the Button class.
-     * @param {TurboButtonProperties} properties - Properties to configure the button.
-     */
-    public constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
-        super(properties);
-        if (!properties.unsetDefaultClasses) $(this).addClass(TurboButton.config.defaultClasses);
-    }
-
-    /**
-     * @description The tag of the text element in the button
-     */
-    @auto({callBefore: (value: ElementTag) => TurboButton.config.defaultElementTag || "h4"})
-    public set elementTag(value: ElementTag) {}
 }
 
-function button<ElementTag extends ValidTag = "p">(properties: TurboRichElementProperties<ElementTag>)
-    : TurboButton<ElementTag> {
-    return new TurboButton<ElementTag>(properties);
+function button<
+    ElementTag extends ValidTag = "p",
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>)
+    : TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType> {
+    if (properties.text && !properties.element) properties.element = properties.text;
+    return element({...properties, text: undefined, tag: "turbo-button"} as any) as any;
 }
 
 export {TurboButton, button};

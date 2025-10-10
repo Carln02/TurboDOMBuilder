@@ -6,11 +6,11 @@ interface TurboElementUiInterface {
     selected: boolean;
 
     /**
-     * @function initializeUI
+     * @function initialize
      * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
      * setupUIElements, setupUILayout, setupUIListeners).
      */
-    initializeUI(): void;
+    initialize(): void;
 
     unsetDefaultClasses: boolean;
 }

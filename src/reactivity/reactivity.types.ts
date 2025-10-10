@@ -24,3 +24,16 @@ export type Effect = {
     run(): void,
     dispose(): void
 }
+
+type SignalBox<Value> = Value & {
+    get(): Value;
+    set(v: Value): void;
+    update(fn: (prev: Value) => Value): void;
+    sub(fn: SignalSubscriber): () => void;
+    toJSON(): Value;
+    valueOf(): Value;
+    value: Value;
+    [Symbol.toPrimitive](hint: "default" | "number" | "string"): string | number;
+};
+
+export {SignalBox};

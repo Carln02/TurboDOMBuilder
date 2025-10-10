@@ -5,6 +5,7 @@ import {Delegate} from "../../eventHandling/delegate/delegate";
 
 type ElementData = {
     tools: Set<string>,
+    ignoredTools: Map<string, "all" | Set<string>>,
     embeddedTarget?: Node,
     activationDelegates: Map<string, Delegate<() => void>>,
     deactivationDelegates: Map<string, Delegate<() => void>>
@@ -35,8 +36,9 @@ export class ToolFunctionsUtils {
             () => new WeakMap());
         return this.getOrCreate(es, manager, () => ({
             tools: new Set(),
+            ignoredTools: new Map(),
             activationDelegates: new Map(),
-            deactivationDelegates: new Map()
+            deactivationDelegates: new Map(),
         }));
     }
 
@@ -103,5 +105,29 @@ export class ToolFunctionsUtils {
 
     public clearToolBehaviors(manager: TurboEventManager): void {
         this.getOrCreate(this.tools, manager, () => new Map()).clear();
+    }
+
+    public ignoreTool(element: Node, toolName: string, type: string, ignore: boolean, manager: TurboEventManager): void {
+        const ignoredTools = this.getElementData(element, manager).ignoredTools;
+        if (!type) {
+            if (ignore) ignoredTools.set(toolName, "all");
+            else ignoredTools.delete(toolName);
+        }
+        else {
+            const ignoredTool = ignoredTools.get(toolName);
+            if (!ignore) {
+                if (ignoredTool instanceof Set) ignoredTool.delete(type);
+                return;
+            }
+            if (!(ignoredTool instanceof Set)) ignoredTools.set(toolName, new Set());
+            (ignoredTools.get(toolName) as Set<string>).add(type);
+        }
+    }
+
+    public isToolIgnored(element: Node, toolName: string, type: string, manager: TurboEventManager): boolean {
+        const ignoredTool = this.getElementData(element, manager).ignoredTools?.get(toolName);
+        if (!ignoredTool) return false;
+        if (ignoredTool === "all" || !type) return true;
+        return ignoredTool.has(type);
     }
 }

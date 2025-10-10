@@ -12,13 +12,6 @@ import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineUIPrototype} from "../setup/ui/ui";
 import {callOnce} from "../../decorators/callOnce";
 
-const setup = callOnce(function () {
-    console.log("setup");
-    defineDefaultProperties(TurboProxiedElement);
-    defineMvcAccessors(TurboProxiedElement);
-    defineUIPrototype(TurboProxiedElement);
-});
-
 /**
  * @class TurboProxiedElement
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
@@ -58,14 +51,11 @@ class TurboProxiedElement<
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
      */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
+    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType> = new Mvc({element: this});
 
     public constructor(properties: TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType> =
                        {} as TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>) {
-        setup();
-        this.element = blindElement(properties);
-        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.element.attachShadow({mode: "open"});
-        this.mvc = new Mvc({...properties, element: this});
+        this.element = blindElement(properties as any);
     }
 
     protected setupChangedCallbacks(): void {
@@ -80,5 +70,11 @@ class TurboProxiedElement<
     protected setupUIListeners(): void {
     }
 }
+
+(() => {
+    defineDefaultProperties(TurboProxiedElement);
+    defineMvcAccessors(TurboProxiedElement);
+    defineUIPrototype(TurboProxiedElement);
+})();
 
 export {TurboProxiedElement};

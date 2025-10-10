@@ -2,6 +2,7 @@ import {describe, expect, it, vi} from "vitest";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboKeyEventName} from "../../eventNaming";
 import {ClickMode} from "../turboEventManager.types";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 describe("Key controller → TurboKeyEvent dispatch + mapping", () => {
     it("keydown → keyPressed; keyup → keyReleased; key mapping toggles ClickMode.key tool", () => {
@@ -15,7 +16,7 @@ describe("Key controller → TurboKeyEvent dispatch + mapping", () => {
 
         // map 'b' key to 'brush' tool
         const tool = document.createElement("div");
-        mgr.addTool("brush", tool, "b");
+        $(tool).makeTool("brush", {key: "b", manager: mgr});
 
         // key down fires event and selects 'brush' in key mode (via dispatchController)
         keyCtl.keyDown(new KeyboardEvent("keydown", { key: "b", bubbles: true }));

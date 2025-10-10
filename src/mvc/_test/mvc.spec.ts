@@ -57,11 +57,11 @@ describe("Mvc end-to-end", () => {
         const controller = mvc.getController("myController");
         // Depending on your naming rules, auto-key becomes "myController" if element’s class name prefix matches;
         // If not, you can check presence via the controllers map size:
-        expect(controller ?? (mvc as any).controllers.size).toBeTruthy();
+        expect(controller ?? (mvc as any)._controllers.size).toBeTruthy();
 
         // handlers are added to model
         const handler = model.getHandler("myHandler");
-        expect(handler ?? (model as any).handlers.size).toBeTruthy();
+        expect(handler ?? (mvc as any)._handlers.size).toBeTruthy();
 
         // model -> emitter propagation:
         const emitter = mvc.emitter;
@@ -91,7 +91,7 @@ describe("Mvc end-to-end", () => {
             initialize: true,
         });
 
-        expect((mvc as any).controllers.size).toBeGreaterThan(0);
-        expect((mvc as any).model.handlers.size).toBeGreaterThan(0);
+        expect((mvc as any)._controllers.size).toBeGreaterThan(0);
+        expect((mvc as any)._handlers.size).toBeGreaterThan(0);
     });
 });

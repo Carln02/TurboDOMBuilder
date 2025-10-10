@@ -12,27 +12,6 @@ describe("TurboHeadlessElement: default properties & MVC accessors", () => {
         expect(h.selected).toBe(false);
     });
 
-    it("MVC accessors proxy to internal mvc (view/model/data...)", () => {
-        const el = new TurboHeadlessElement();
-
-        (el as any).view = {v: 1};
-        expect((el as any).view).toEqual({v: 1});
-
-        (el as any).model = {m: 2};
-        expect((el as any).model).toEqual({m: 2});
-
-        (el as any).data = {d: 3};
-        expect((el as any).data).toEqual({d: 3});
-
-        (el as any).dataId = "abc";
-        expect((el as any).dataId).toBe("abc");
-
-        (el as any).dataIndex = 7;
-        expect((el as any).dataIndex).toBe(7);
-
-        void (el as any).dataSize;
-    });
-
     it("getPropertiesValue helper picks value → config → default", () => {
         const el = new TurboHeadlessElement();
 

@@ -11,7 +11,7 @@ describe("Tool: activation", () => {
         $(host).makeTool("brush", {activationEvent: "click"});
         $(host).executeAction("click", undefined as any, new Event("click"));
 
-        expect(setToolSpy).toHaveBeenCalledWith("brush", expect.anything());
+        expect(setToolSpy).toHaveBeenCalledWith(host, expect.anything());
     });
 
     it("custom activation via options.activateOn is invoked immediately with (selector, manager)", () => {

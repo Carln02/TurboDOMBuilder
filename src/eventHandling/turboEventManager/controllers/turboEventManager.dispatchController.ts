@@ -21,6 +21,7 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
         EventType extends TurboEvent = TurboEvent,
         PropertiesType extends TurboRawEventProperties = TurboRawEventProperties
     >(target: Node, eventType: new (properties: PropertiesType) => EventType, properties: Partial<PropertiesType>) => {
+        if (!target) return;
         properties.keys = this.model.currentKeys;
         properties.toolName = this.element.getCurrentToolName(this.model.currentClick) as string;
         properties.clickMode = this.model.currentClick;
@@ -38,10 +39,6 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
 
     private getToolHandlingCallback(type: string, e: Event) {
         const toolName = this.element.getCurrentToolName(this.model.currentClick);
-        const tool = this.element.getCurrentTool(this.model.currentClick);
-
-        if (!tool || !$(tool).hasToolBehavior(type)) return;
-
         const path = e.composedPath?.() || [];
 
         for (let i = path.length - 1; i >= 0; i--) {

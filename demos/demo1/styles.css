@@ -32,3 +32,12 @@ body {
     border: 5px solid purple;
     position: absolute;
 }
+
+.controller {
+    position: relative;
+    margin: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 100%;
+    background-color: #1e2024;
+}

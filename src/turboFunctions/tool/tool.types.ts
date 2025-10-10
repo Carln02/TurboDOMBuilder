@@ -179,6 +179,9 @@ declare module "../turboSelector" {
          * @return {Node} The embedded target node, if any.
          */
         getEmbeddedToolTarget(manager?: TurboEventManager): Node;
+
+        ignoreTool(toolName: string, type?: string, ignore?: boolean, manager?: TurboEventManager): this;
+        isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
 }
 

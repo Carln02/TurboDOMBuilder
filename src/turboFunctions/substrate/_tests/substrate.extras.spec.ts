@@ -2,9 +2,6 @@ import {describe, it, expect, vi} from "vitest";
 import {$} from "../../turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
 
-const count = (list: HTMLCollection | NodeList | Set<object>) =>
-    "length" in list ? list.length : (list as Set<object>).size;
-
 describe("Substrate functions – extras", () => {
     it("addObjectToSubstrate / removeObjectFromSubstrate with Set", () => {
         const host = div({parent: document.body});
@@ -19,36 +16,18 @@ describe("Substrate functions – extras", () => {
         const b = {id: "b"};
 
         // add
-        expect($(host).addObjectToSubstrate(a, "main")).toBe(true);
-        expect($(host).addObjectToSubstrate(a, "main")).toBe(false); // duplicate
-        expect($(host).addObjectToSubstrate(b, "main")).toBe(true);
-        expect(count($(host).getSubstrateObjectList("main"))).toBe(2);
+        $(host).addObjectToSubstrate(a, "main");
+        $(host).addObjectToSubstrate(a, "main"); // duplicate
+        $(host).addObjectToSubstrate(b, "main");
+        expect($(host).getSubstrateObjectList("main").size).toBe(2);
 
         // has
         expect($(host).hasObjectInSubstrate(a, "main")).toBe(true);
         expect($(host).hasObjectInSubstrate({id: "z"}, "main")).toBe(false);
 
         // remove
-        expect($(host).removeObjectFromSubstrate(a, "main")).toBe(true);
-        expect($(host).removeObjectFromSubstrate(a, "main")).toBe(false); // already gone
-        expect(count($(host).getSubstrateObjectList("main"))).toBe(1);
-    });
-
-    it("addObjectToSubstrate / removeObjectFromSubstrate return false for HTMLCollection/NodeList", () => {
-        const host = div({parent: document.body});
-
-        $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
-
-        // default objects list for an Element substrate is a live HTMLCollection (children)
-        const obj = {k: 1};
-        expect($(host).addObjectToSubstrate(obj, "main")).toBe(false);
-        expect($(host).removeObjectFromSubstrate(obj, "main")).toBe(false);
-
-        // Force NodeList (childNodes)
-        $(host).setSubstrateObjectList(host.childNodes, "main");
-        expect($(host).addObjectToSubstrate(obj, "main")).toBe(false);
-        expect($(host).removeObjectFromSubstrate(obj, "main")).toBe(false);
+        $(host).removeObjectFromSubstrate(a, "main");
+        expect($(host).getSubstrateObjectList("main").size).toBe(1);
     });
 
     it("hasObjectInSubstrate works for HTMLCollection and NodeList", () => {

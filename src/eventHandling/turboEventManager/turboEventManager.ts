@@ -1,16 +1,21 @@
 import {
     ClickMode,
-    InputDevice, SetToolOptions,
+    InputDevice,
+    SetToolOptions,
     TurboEventManagerProperties,
     TurboEventManagerStateProperties
 } from "./turboEventManager.types";
 import {Delegate} from "../delegate/delegate";
 import {Point} from "../../utils/datatypes/point/point";
 import {
-    DefaultClickEventName, DefaultDragEventName, DefaultEventNameEntry,
-    DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName,
+    DefaultClickEventName,
+    DefaultDragEventName,
+    DefaultKeyEventName,
+    DefaultMoveEventName,
+    DefaultWheelEventName,
     TurboClickEventName,
-    TurboDragEventName, TurboEventNameEntry,
+    TurboDragEventName,
+    TurboEventNameEntry,
     TurboKeyEventName,
     TurboMoveEventName,
     TurboWheelEventName
@@ -26,10 +31,10 @@ import {TurboEventManagerDispatchController} from "./controllers/turboEventManag
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {controller} from "../../decorators/controller";
 import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
+import {isUndefined} from "../../utils/dataManipulation/misc";
 
 //TODO Create merged events maybe --> fire event x when "mousedown" | "touchstart" | "mousemove" etc.
 //ToDO Create "interaction" event --> when element interacted with
-//TODO GO from toolname to tool --> each tool instance can have different data --> different behavior (+ maybe tool has some attached data)
 
 /**
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
@@ -154,7 +159,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     /**
      * @description Delegate fired when a tool is changed on a certain click button/mode
      */
-    public get onToolChange(): Delegate<(oldTool: ToolType, newTool: ToolType, type: ClickMode) => void> {
+    public get onToolChange(): Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void> {
         return this.model.onToolChange;
     }
 
@@ -199,8 +204,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      *
      */
 
-    @auto({cancelIfUnchanged: true})
-    public set keyEventsEnabled(value: boolean) {
+    @auto() public set keyEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
             doc.on("keydown", this.keyController.keyDown);
@@ -212,8 +216,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set wheelEventsEnabled(value: boolean) {
+    @auto() public set wheelEventsEnabled(value: boolean) {
         if (value) $(document.body).on("wheel", this.wheelController.wheel, {
             passive: false,
             propagate: true
@@ -222,13 +225,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set moveEventsEnabled(value: boolean) {
+    @auto() public set moveEventsEnabled(value: boolean) {
         this.applyAndHookEvents(TurboMoveEventName, DefaultMoveEventName, value);
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set mouseEventsEnabled(value: boolean) {
+    @auto() public set mouseEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
             doc.on("mousedown", this.pointerController.pointerDown, {propagate: true});
@@ -243,8 +244,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         }
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set touchEventsEnabled(value: boolean) {
+    @auto() public set touchEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
             doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
@@ -259,13 +259,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         }
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set clickEventEnabled(value: boolean) {
+    @auto() public set clickEventEnabled(value: boolean) {
         this.applyAndHookEvents(TurboClickEventName, DefaultClickEventName, value);
     }
 
-    @auto({cancelIfUnchanged: true})
-    public set dragEventEnabled(value: boolean) {
+    @auto() public set dragEventEnabled(value: boolean) {
         this.applyAndHookEvents(TurboDragEventName, DefaultDragEventName, value);
     }
 
@@ -353,6 +351,40 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         return array;
     }
 
+    public getCurrentTool(mode: ClickMode = this.model.currentClick): Node {
+        return this.model.currentTools.get(mode);
+    }
+
+    /**
+     * @description Returns the instances of the tool currently held by the provided click mode
+     * @param mode
+     */
+    public getCurrentTools(mode: ClickMode = this.model.currentClick): Node[] {
+        return this.getToolsByName(this.getCurrentToolName(mode));
+    }
+
+    /**
+     * @description Returns the name of the tool currently held by the provided click mode
+     * @param mode
+     */
+    public getCurrentToolName(mode: ClickMode = this.model.currentClick): ToolType {
+        return this.getToolName(this.getCurrentTool(mode));
+    }
+
+    public getToolName(tool: Node): ToolType {
+        for (const [toolName, weakSet] of this.model.tools.entries()) {
+            if (weakSet.has(tool)) return toolName as ToolType;
+        }
+    }
+
+
+    public getSimilarTools(tool: Node): Node[] {
+        for (const [toolName, weakSet] of this.model.tools.entries()) {
+            if (weakSet.has(tool)) return weakSet.toArray();
+        }
+        return [];
+    }
+
     /**
      * @description Returns the tool with the given name (or undefined)
      * @param name
@@ -360,6 +392,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     public getToolsByName(name: ToolType): Node[] {
         return this.model.tools.get(name)?.toArray() || [];
     }
+
 
     /**
      * @description Returns the first tool with the given name (or undefined)
@@ -405,62 +438,44 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     /**
-     * @description Returns the name of the tool currently held by the provided click mode
-     * @param mode
-     */
-    public getCurrentToolName(mode: ClickMode = this.model.currentClick): ToolType {
-        return this.model.currentTools.get(mode) as ToolType;
-    }
-
-    /**
-     * @description Returns the instances of the tool currently held by the provided click mode
-     * @param mode
-     */
-    public getCurrentTools(mode: ClickMode = this.model.currentClick): Node[] {
-        return this.getToolsByName(this.getCurrentToolName(mode));
-    }
-
-    public getCurrentTool(mode: ClickMode = this.model.currentClick): Node {
-        return this.getToolByName(this.getCurrentToolName(mode));
-    }
-
-    /**
      * @description Sets the provided tool as a current tool associated with the provided type
-     * @param toolName
+     * @param tool
      * @param type
      * @param options
      */
-    public setTool(toolName: ToolType, type: ClickMode, options: SetToolOptions = {}) {
+    public setTool(tool: Node, type: ClickMode, options: SetToolOptions = {}) {
+        if (!isUndefined(tool) && !$(tool).isTool(this)) return;
+
         //Initialize undefined options
         if (options.select == undefined) options.select = true;
         if (options.activate == undefined) options.activate = true;
         if (options.setAsNoAction == undefined) options.setAsNoAction = type == ClickMode.left;
 
         //Get previous tool
-        const previousToolName = this.model.currentTools.get(type) as ToolType;
-        if (previousToolName) {
+        const previousTool = this.model.currentTools.get(type);
+        if (previousTool) {
             //Return if it's the same
-            if (previousToolName === toolName) return;
+            if (previousTool === tool) return;
 
             //Deselect and deactivate previous tool
-            (this.getToolsByName(previousToolName) || []).forEach(element => {
+            this.getSimilarTools(previousTool).forEach(element => {
                 if (options.select) this.model.utils.selectTool(element, false);
-                if (options.activate) this.model.utils.activateTool(element, previousToolName, false);
+                if (options.activate) this.model.utils.activateTool(element, this.getToolName(previousTool), false);
             });
         }
 
         //Select new tool (and maybe set it as the tool for no click mode)
-        this.model.currentTools.set(type, toolName);
-        if (options.setAsNoAction) this.model.currentTools.set(ClickMode.none, toolName);
+        this.model.currentTools.set(type, tool);
+        if (options.setAsNoAction) this.model.currentTools.set(ClickMode.none, tool);
 
         //Select and activate the tool
-        (this.getToolsByName(toolName) || []).forEach(element => {
-            if (options.activate) this.model.utils.activateTool(element, toolName, true);
+        this.getSimilarTools(tool).forEach(element => {
+            if (options.activate) this.model.utils.activateTool(element, this.getToolName(tool), true);
             if (options.select) this.model.utils.selectTool(element, true);
         });
 
         //Fire tool changed
-        this.onToolChange.fire(previousToolName, toolName, type);
+        this.onToolChange.fire(previousTool, tool, type);
     }
 
     /**
@@ -470,7 +485,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     public setToolByKey(key: string): boolean {
         const toolName = this.model.mappedKeysToTool.get(key) as ToolType;
         if (!toolName) return false;
-        this.setTool(toolName, ClickMode.key, {select: false});
+        this.setTool(this.getToolByName(toolName), ClickMode.key, {select: false});
         return true;
     }
 

@@ -26,9 +26,13 @@ function setupSubstrateFunctions() {
     TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(
         this: TurboSelector,
         substrate: string = this.currentSubstrate
-    ): HTMLCollection | NodeList | Set<object> {
-        if (!substrate) return new Set();
-        return utils.getSubstrateData(this, substrate).objects;
+    ): Set<object> {
+        const set = new Set<object>();
+        if (!substrate) return set;
+        Array.from(utils.getSubstrateData(this, substrate).objects).forEach(object => {
+            if (!utils.getPersistentMetadata(this, substrate, object).ignored) set.add(object);
+        });
+        return set;
     }
 
     TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(
@@ -44,38 +48,34 @@ function setupSubstrateFunctions() {
     TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(
         this: TurboSelector,
         object: object,
-        substrate?: string
-    ): boolean {
-        const list = this.getSubstrateObjectList(substrate);
-        if (list instanceof HTMLCollection || list instanceof NodeList) return false;
-        try {
-            if (list.has(object)) return false;
-            list.add(object);
-            return true;
-        } catch (e) {return false}
+        substrate: string = this.currentSubstrate
+    ): TurboSelector {
+        if (!object || !substrate) return this;
+        utils.getPersistentMetadata(this, substrate, object).ignored = false;
+        const list = utils.getSubstrateData(this, substrate).objects;
+        if (list instanceof HTMLCollection || list instanceof NodeList) return this;
+        try {if (!list.has(object)) list.add(object)} catch {}
+        return this;
     }
 
     TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(
         this: TurboSelector,
         object: object,
-        substrate?: string
-    ): boolean {
-        const list = this.getSubstrateObjectList(substrate);
-        if (list instanceof HTMLCollection || list instanceof NodeList) return false;
-        for (const obj of list) {
-            if (obj === object) {
-                list.delete(object);
-                return true;
-            }
-        }
-        return false;
+        substrate: string = this.currentSubstrate
+    ): TurboSelector {
+        if (!object || !substrate) return this;
+        utils.getPersistentMetadata(this, substrate, object).ignored = true;
+        const list = utils.getSubstrateData(this, substrate).objects;
+        if (list instanceof Set) list.delete(object);
+        return this;
     }
 
     TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(
         this: TurboSelector,
         object: object,
-        substrate?: string
+        substrate: string = this.currentSubstrate
     ): boolean {
+        if (!object || !substrate) return false;
         const list = this.getSubstrateObjectList(substrate);
         for (const obj of list) {
             if (obj === object) return true;
@@ -86,18 +86,21 @@ function setupSubstrateFunctions() {
     TurboSelector.prototype.wasObjectProcessedBySubstrate = function _wasObjectProcessedBySubstrate(
         this: TurboSelector,
         object: object,
-        substrate?: string
+        substrate: string = this.currentSubstrate
     ): boolean {
-        return !!utils.getObjectMetadata(this.element, substrate, object)?.processed;
+        if (!object || !substrate) return false;
+        return !!utils.getTemporaryMetadata(this, substrate, object)?.processed;
     }
 
     TurboSelector.prototype.setSubstrate = function _setSubstrate(
         this: TurboSelector,
         name: string
     ): TurboSelector {
+        if (!name) return this;
         const prev = this.currentSubstrate;
         if (!utils.setCurrent(this, name)) return this;
         this.onSubstrateChange.fire(prev, name);
+        return this;
     }
 
     Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
@@ -117,14 +120,14 @@ function setupSubstrateFunctions() {
         this: TurboSelector,
         name: string = this.currentSubstrate
     ): Delegate<() => void> {
-        return utils.getSubstrateData(this, name)?.onActivate;
+        return utils.getSubstrateData(this, name)?.onActivate ?? new Delegate();
     }
 
     TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(
         this: TurboSelector,
         name: string = this.currentSubstrate
     ): Delegate<() => void> {
-        return utils.getSubstrateData(this, name)?.onDeactivate;
+        return utils.getSubstrateData(this, name)?.onDeactivate ?? new Delegate();
     }
 
     TurboSelector.prototype.addSolver = function _addSolver(
@@ -155,7 +158,7 @@ function setupSubstrateFunctions() {
 
     TurboSelector.prototype.resolveSubstrate = function _resolveSubstrate(
         this: TurboSelector,
-        properties?: SubstrateSolverProperties
+        properties: SubstrateSolverProperties = {}
     ): TurboSelector {
         if (!properties) properties = {};
         if (!properties.substrate) properties.substrate = this.currentSubstrate;
@@ -163,12 +166,12 @@ function setupSubstrateFunctions() {
         if (!properties.eventOptions) properties.eventOptions = {};
 
         const data = utils.getSubstrateData(this, properties.substrate);
-        if (!data) return;
+        if (!data) return this;
 
         data.solvers?.forEach(solver => {
-            data.objectsMetadata = new WeakMap();
+            data.temporaryMetadata = new WeakMap();
             if (properties.eventTarget) {
-                data.objectsMetadata.set(properties.eventTarget, {processed: true, isMainTarget: true});
+                data.temporaryMetadata.set(properties.eventTarget, {processed: true, isMainTarget: true});
                 solver({...properties, target: properties.eventTarget});
             }
 
@@ -177,10 +180,10 @@ function setupSubstrateFunctions() {
             do {
                 target = Array
                     .from(this.getSubstrateObjectList(properties.substrate))
-                    .find(entry => !data.objectsMetadata.get(entry)?.processed);
+                    .find(entry => !data.temporaryMetadata.get(entry)?.processed);
 
                 if (target) {
-                    data.objectsMetadata.set(target, {processed: true});
+                    data.temporaryMetadata.set(target, {processed: true});
                     solver({...properties, target});
                 }
             } while (target);

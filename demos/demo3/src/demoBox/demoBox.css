@@ -1,0 +1,23 @@
+demo-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    border-radius: 12px;
+    padding: 0.7rem;
+}
+
+demo-box > :first-child {
+    margin: 0;
+    padding: 0.4rem 0 0 0;
+}
+
+demo-box > :last-child {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 10px;
+
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+}

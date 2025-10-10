@@ -1,5 +1,6 @@
 import {CacheOptions} from "./cache.types";
 import {$} from "../../turboFunctions/turboFunctions";
+import {getFirstDescriptorInChain} from "../../utils/dataManipulation/prototypeManipulation";
 
 /**
  * @internal
@@ -62,17 +63,10 @@ export function initInvalidation(
                 typeof fieldOrFn === "string" ? fieldOrFn : fieldOrFn.name;
             if (!fieldName) continue;
 
-            const hasOwn = Object.prototype.hasOwnProperty.call(instance, fieldName);
-            let desc =
-                hasOwn
-                    ? Object.getOwnPropertyDescriptor(instance, fieldName)
-                    : Object.getOwnPropertyDescriptor(
-                        Object.getPrototypeOf(instance),
-                        fieldName
-                    );
+            const desc = getFirstDescriptorInChain(instance, fieldName);
 
             // If it's a method, wrap it (on the instance) to invalidate before/after
-            const existing = (hasOwn ? instance[fieldName] : instance[fieldName]);
+            const existing = instance[fieldName];
             if (typeof existing === "function") {
                 const originalFn = existing;
                 Object.defineProperty(instance, fieldName, {

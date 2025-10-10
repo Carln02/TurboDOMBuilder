@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from "vitest";
-import {effect, getSignal, markDirty, setSignal, signal} from "../signal/signal";
+import {effect, getSignal, markDirty, setSignal, signal} from "../reactivity";
 
 async function flushMicrotasks(times = 2) {
     for (let i = 0; i < times; i++) await Promise.resolve();

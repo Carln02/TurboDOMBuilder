@@ -3,6 +3,10 @@
     align-items: center;
 }
 
+.turbo-drawer-panel-container {
+    overflow: hidden;
+}
+
 .turbo-drawer.top-drawer, .turbo-drawer.top-drawer .turbo-drawer-panel-container {
     flex-direction: column;
 }

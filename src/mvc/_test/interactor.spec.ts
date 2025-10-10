@@ -16,10 +16,18 @@ describe("TurboInteractor (smoke)", () => {
         const element = div({parent: document.body});
 
         const model = new TurboModel<any>({});
-        const emitter = new TurboEmitter(model);
-        const view = new TurboView({ element, model, emitter });
+        const emitter = new TurboEmitter();
+        emitter.model = model;
 
-        const itc = new DemoInteractor({ element, view, model, emitter, toolName: undefined as any });
+        const view = new TurboView({element});
+        view.model = model;
+        view.emitter = emitter;
+
+        const itc = new DemoInteractor({element});
+        itc.view = view;
+        itc.model = model;
+        itc.emitter = emitter;
+
         expect(itc.rand).toBe(0);
         expect(() => itc.initialize()).not.toThrow();
 

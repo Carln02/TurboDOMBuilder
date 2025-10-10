@@ -4,7 +4,8 @@ import {
     SubstrateSolverProperties,
     Point,
     Coordinate,
-    TurboDragEvent
+    TurboDragEvent,
+    solver
 } from "../../../../../build/turbodombuilder.esm";
 
 export class PusherSubstrate extends TurboSubstrate {
@@ -18,12 +19,7 @@ export class PusherSubstrate extends TurboSubstrate {
         if (value instanceof Set) super.objectList = value;
     }
 
-    public initialize(): void {
-        super.initialize();
-        $(this).addSolver(this.resolvePush);
-    }
-
-    private resolvePush = (properties: SubstrateSolverProperties) => {
+    @solver private resolvePush(properties: SubstrateSolverProperties) {
         const delta: Point = (properties.event as TurboDragEvent)?.deltaPosition;
         const el = properties.target;
         if (!delta || !el || !(el instanceof Element)) return;

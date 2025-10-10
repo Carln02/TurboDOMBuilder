@@ -1,5 +1,3 @@
-import {TurboElementProperties} from "./turboElement.types";
-import {$} from "../turboFunctions/turboFunctions";
 import {Mvc} from "../mvc/mvc";
 import {TurboEmitter} from "../mvc/core/emitter";
 import {TurboModel} from "../mvc/core/model";
@@ -8,7 +6,7 @@ import {defineDefaultProperties} from "./setup/default/default";
 import {defineMvcAccessors} from "./setup/mvc/mvc";
 import {defineUIPrototype} from "./setup/ui/ui";
 import { Delegate } from "../eventHandling/delegate/delegate";
-import {callOnce} from "../decorators/callOnce";
+import {TurboElementConfig} from "./turboElement.types";
 
 /**
  * @class TurboElement
@@ -28,7 +26,7 @@ class TurboElement<
     /**
      * @description Static configuration object.
      */
-    public static readonly config: any = {
+    public static readonly config: TurboElementConfig = {
         shadowDOM: false,
         defaultSelectedClass: "selected"
     };
@@ -37,7 +35,7 @@ class TurboElement<
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
      */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
+    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType> = new Mvc({element: this});
 
     /**
      * @description Delegate fired when the element is attached to DOM.
@@ -62,13 +60,6 @@ class TurboElement<
         Object.entries(value).forEach(([key, val]) => {
             if (val !== undefined) (this.config as any)[key] = val;
         });
-    }
-
-    public constructor(properties: TurboElementProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        super();
-        if (this.getPropertiesValue(properties.shadowDOM, "shadowDOM")) this.attachShadow({mode: "open"});
-        $(this).setProperties(properties, true);
-        this.mvc = new Mvc({...properties, element: this});
     }
 
     /**

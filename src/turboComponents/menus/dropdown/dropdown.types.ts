@@ -1,8 +1,9 @@
 import {TurboSelectConfig, TurboSelectProperties} from "../../basics/select/select.types";
-import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {HTMLTag} from "../../../core.types";
+import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 /**
  * @type {TurboDropdownProperties}
@@ -32,11 +33,13 @@ import {HTMLTag} from "../../../core.types";
 type TurboDropdownProperties<
     ValueType = string,
     SecondaryValueType = string,
-    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    EntryType extends HTMLElement = HTMLElement,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<DataType>
-> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
+    ModelType extends TurboModel<DataType> = TurboModel<DataType>,
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType>
+    & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
 
@@ -64,8 +67,7 @@ type TurboDropdownProperties<
  * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
  * dropdown entries.
  */
-type TurboDropdownConfig = TurboSelectConfig & {
-    defaultEntryTag?: HTMLTag;
+type TurboDropdownConfig = TurboElementConfig & {
     defaultSelectorTag?: HTMLTag;
 
     defaultSelectorClasses?: string | string[];

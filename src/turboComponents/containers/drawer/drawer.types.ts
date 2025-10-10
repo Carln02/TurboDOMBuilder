@@ -7,12 +7,14 @@ import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {PartialRecord} from "../../../core.types";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 type TurboDrawerProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboElementProperties<ViewType, DataType, ModelType> & {
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     side?: Side,
     offset?: PartialRecord<Open, number>
     hideOverflow?: boolean,
@@ -24,7 +26,7 @@ type TurboDrawerProperties<
     attachSideToIconName?: boolean;
     rotateIconBasedOnSide?: boolean;
 
-    initiallyOpen?: boolean,
+    open?: boolean,
     transition?: Reifect<HTMLElement>
 }
 

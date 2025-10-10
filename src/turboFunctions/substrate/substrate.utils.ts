@@ -2,14 +2,19 @@ import {TurboSelector} from "../turboSelector";
 import {Delegate} from "../../eventHandling/delegate/delegate";
 import {SubstrateSolver} from "./substrate.types";
 
-type SubstrateObjectMetadata = {
+type PersistentObjectMetadata = {
+    ignored?: boolean
+};
+
+type TemporaryObjectMetadata = {
     processed?: boolean,
-    isMainTarget?: boolean
+    isMainTarget?: boolean,
 };
 
 type SubstrateData = {
     objects: HTMLCollection | NodeList | Set<object>,
-    objectsMetadata: WeakMap<object, SubstrateObjectMetadata>,
+    temporaryMetadata: WeakMap<object, TemporaryObjectMetadata>,
+    persistentMetadata: WeakMap<object, PersistentObjectMetadata>,
     onActivate: Delegate<() => void>,
     onDeactivate: Delegate<() => void>,
     solvers: Set<SubstrateSolver>
@@ -37,7 +42,8 @@ export class SubstrateFunctionsUtils {
     public createSubstrate(element: Node, substrate: string): SubstrateData {
         const data: SubstrateData = {
             objects: element instanceof Element ? element.children : element.childNodes,
-            objectsMetadata: new WeakMap(),
+            temporaryMetadata: new WeakMap(),
+            persistentMetadata: new WeakMap(),
             onActivate: new Delegate(),
             onDeactivate: new Delegate(),
             solvers: new Set()
@@ -60,20 +66,37 @@ export class SubstrateFunctionsUtils {
         return [...this.data(element).substrates.keys()];
     }
 
-    public getObjectMetadata(element: Node, substrate: string, object: object): SubstrateObjectMetadata {
+    public getPersistentMetadata(element: Node, substrate: string, object: object): PersistentObjectMetadata {
         const substrateData = this.getSubstrateData(element, substrate);
-        if (!substrateData || !substrateData.objectsMetadata) return;
-        let metadata = substrateData.objectsMetadata.get(object);
+        if (!substrateData || !substrateData.persistentMetadata) return {};
+        let metadata = substrateData.persistentMetadata.get(object);
         if (!metadata) {
             metadata = {};
-            substrateData.objectsMetadata.set(object, metadata);
+            substrateData.persistentMetadata.set(object, metadata);
         }
         return metadata;
     }
 
-    public setObjectMetadata(element: Node, substrate: string, object: object, metadata: SubstrateObjectMetadata): void {
+    public setPersistentMetadata(element: Node, substrate: string, object: object, metadata: PersistentObjectMetadata): void {
         const substrateData = this.getSubstrateData(element, substrate);
-        if (!substrateData || !substrateData.objectsMetadata) return;
-        substrateData.objectsMetadata.set(object, metadata);
+        if (!substrateData || !substrateData.persistentMetadata) return;
+        substrateData.persistentMetadata.set(object, metadata);
+    }
+
+    public getTemporaryMetadata(element: Node, substrate: string, object: object): TemporaryObjectMetadata {
+        const substrateData = this.getSubstrateData(element, substrate);
+        if (!substrateData || !substrateData.temporaryMetadata) return;
+        let metadata = substrateData.temporaryMetadata.get(object);
+        if (!metadata) {
+            metadata = {};
+            substrateData.temporaryMetadata.set(object, metadata);
+        }
+        return metadata;
+    }
+
+    public setTemporaryMetadata(element: Node, substrate: string, object: object, metadata: TemporaryObjectMetadata): void {
+        const substrateData = this.getSubstrateData(element, substrate);
+        if (!substrateData || !substrateData.temporaryMetadata) return;
+        substrateData.temporaryMetadata.set(object, metadata);
     }
 }

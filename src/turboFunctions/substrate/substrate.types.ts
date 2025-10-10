@@ -26,11 +26,12 @@ declare module "../turboSelector" {
         makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
         getSubstrates(): string[];
 
-        getSubstrateObjectList(substrate?: string): HTMLCollection | NodeList | Set<object>;
+        getSubstrateObjectList(substrate?: string): Set<object>;
         setSubstrateObjectList(list: HTMLCollection | NodeList | Set<object>, substrate?: string): this;
 
-        addObjectToSubstrate(object: object, substrate?: string): void;
-        removeObjectFromSubstrate(object: object, substrate?: string): boolean;
+        addObjectToSubstrate(object: object, substrate?: string): this;
+        removeObjectFromSubstrate(object: object, substrate?: string): this;
+
         hasObjectInSubstrate(object: object, substrate?: string): boolean;
         wasObjectProcessedBySubstrate(object: object, substrate?: string): boolean;
 

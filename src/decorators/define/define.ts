@@ -31,7 +31,9 @@ function define(elementName?: string, options: DefineOptions = { injectAttribute
         class Wrapped extends Base {
             constructor(...args: any[]) {
                 super(...args);
-                try {this.classList?.add(name)} catch {}
+                requestAnimationFrame(() => {
+                    try {this.classList?.add(name)} catch {}
+                });
             }
         }
 

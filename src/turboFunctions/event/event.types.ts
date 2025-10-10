@@ -61,7 +61,7 @@ declare module "../turboSelector" {
          * @returns {this} Itself, allowing for method chaining.
          */
         on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => void),
-                              options?: ListenerOptions, manager?: TurboEventManager): Type;
+                              options?: ListenerOptions, manager?: TurboEventManager): this;
 
         /**
          * @description Adds an event listener to the element.
@@ -75,7 +75,7 @@ declare module "../turboSelector" {
          * @returns {this} Itself, allowing for method chaining.
          */
         onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => void),
-                                  options?: ListenerOptions, manager?: TurboEventManager): Type;
+                                  options?: ListenerOptions, manager?: TurboEventManager): this;
 
         //TODO
         executeAction(type: string, toolName: string, event: Event, options?: ListenerOptions, manager?: TurboEventManager): boolean;

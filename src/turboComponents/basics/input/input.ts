@@ -1,6 +1,5 @@
-import {TurboInputProperties} from "./input.types";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {TurboRichElement} from "../richElement/richElement";
+import {richElement, TurboRichElement} from "../richElement/richElement";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
@@ -8,6 +7,8 @@ import {TurboElement} from "../../../turboElement/turboElement";
 import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {$} from "../../../turboFunctions/turboFunctions";
+import {auto} from "../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 @define("turbo-input")
 class TurboInput<
@@ -15,63 +16,76 @@ class TurboInput<
     ValueType extends string | number = string,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement {
-    public readonly labelElement: HTMLLabelElement;
-    public readonly inputElement: TurboRichElement<InputTag>;
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter,
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    protected labelElement: HTMLLabelElement;
+    public inputElement: TurboRichElement<InputTag>;
 
-    public locked: boolean;
+    public locked: boolean = false;
+    public  dynamicVerticalResize: boolean = false;
+    public selectTextOnFocus: boolean = false;
 
-    private lastValueWithInputCheck: string;
-    private lastValueWithBlurCheck: string;
+    private lastValueWithInputCheck: string = "";
+    private lastValueWithBlurCheck: string = "";
 
-    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType> = {}) {
-        super(properties);
+    public inputRegexCheck: RegExp | string;
+    public blurRegexCheck?: RegExp | string;
 
-        this.locked = properties.locked || false;
-        this.lastValueWithInputCheck = "";
-        this.lastValueWithBlurCheck = "";
+    @auto() public set label(value: string) {
+        if (!value || value.length === 0) {
+            if (this.labelElement) this.labelElement.remove();
+            return;
+        }
 
-        if (properties.label) this.labelElement = element({tag: "label", text: properties.label, parent: this});
-        this.inputElement = new TurboRichElement({
-            ...properties,
-            elementTag: properties.elementTag || "input" as InputTag,
-            element: properties.element || element({tag: properties.elementTag || "input"} as TurboProperties<InputTag>),
-            parent: this
-        });
+        if (!this.labelElement) {
+            this.labelElement = element({tag: "label"}) as HTMLLabelElement;
+            $(this).addChild(this.labelElement, 0);
+        }
 
-        this.setupEvents(properties);
+        this.labelElement.textContent = value;
     }
 
-    private setupEvents(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType>) {
+    protected setupUIElements() {
+        super.setupUIElements();
+        //TODO MAYBE MAKE THIS EL EXTEND ITSELF TURBORICHELEMENT
+            // this.inputElement = richElement({
+            //     elementTag: properties.elementTag || "input" as InputTag,
+            //     element: properties.element || element({tag: properties.elementTag || "input"} as TurboProperties<InputTag>),
+            //     parent: this
+            // });
+    }
+
+    protected setupUIListeners() {
+        super.setupUIListeners();
         //TODO $(this.inputElement.element).bypassManagerOn = () => true;
 
         $(this.inputElement).on(DefaultEventName.blur, (e: Event) => {
-            if (properties.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
+            if (this.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
                 this.stringValue = this.lastValueWithBlurCheck;
             this.dispatchEvent(new FocusEvent(DefaultEventName.blur, e));
         });
 
         $(this.inputElement).on(DefaultEventName.focus, (e: Event) => {
             if (this.locked) this.inputElement.blur();
-            if (properties.selectTextOnFocus) this.inputElement.element.select();
+            if (this.selectTextOnFocus) this.inputElement.element.select();
             this.dispatchEvent(new FocusEvent(DefaultEventName.focus, e));
         });
 
         $(this.inputElement).on(DefaultEventName.input, (e: Event) => {
-            if (properties.dynamicVerticalResize) {
+            if (this.dynamicVerticalResize) {
                 this.inputElement.style.height = "";
                 this.inputElement.style.height = this.inputElement.scrollHeight + "px";
             }
 
-            if (properties.inputRegexCheck) {
-                const regex = new RegExp(properties.inputRegexCheck, "g");
+            if (this.inputRegexCheck) {
+                const regex = new RegExp(this.inputRegexCheck, "g");
                if (!regex.test(this.stringValue)) this.stringValue = this.lastValueWithInputCheck;
             }
             this.lastValueWithInputCheck = this.stringValue;
 
-            if (properties.blurRegexCheck) {
-                const regex = new RegExp(properties.blurRegexCheck, "g");
+            if (this.blurRegexCheck) {
+                const regex = new RegExp(this.blurRegexCheck, "g");
                 if (regex.test(this.stringValue)) this.lastValueWithBlurCheck = this.stringValue;
             }
 

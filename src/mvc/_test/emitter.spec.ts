@@ -7,7 +7,9 @@ class MiniModel {
 
 describe("TurboEmitter", () => {
     it("adds and fires callbacks on default block", () => {
-        const emitter = new TurboEmitter<any>(new MiniModel() as any);
+        const emitter = new TurboEmitter();
+        emitter.model = new MiniModel() as any;
+
         let called = 0;
         let lastArgs: any[] = [];
 
@@ -26,7 +28,9 @@ describe("TurboEmitter", () => {
     });
 
     it("scopes by block keys with addWithBlock / fireWithBlock", () => {
-        const emitter = new TurboEmitter<any>(new MiniModel() as any);
+        const emitter = new TurboEmitter();
+        emitter.model = new MiniModel() as any;
+
         const A = "A";
         const B = "B";
         const seen: string[] = [];
@@ -40,7 +44,9 @@ describe("TurboEmitter", () => {
     });
 
     it("removes specific callbacks or clears key bucket", () => {
-        const emitter = new TurboEmitter<any>(new MiniModel() as any);
+        const emitter = new TurboEmitter();
+        emitter.model = new MiniModel() as any;
+
         let a = 0, b = 0;
 
         const cbA = () => (a += 1);

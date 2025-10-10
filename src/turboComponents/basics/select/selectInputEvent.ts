@@ -1,11 +1,10 @@
 import {TurboEvent} from "../../../eventHandling/events/turboEvent";
-import {TurboSelectEntry} from "./selectEntry/selectEntry";
 import {TurboSelectInputEventProperties} from "./select.types";
 
 class TurboSelectInputEvent<
     ValueType = string,
     SecondaryValueType = string,
-    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>
+    EntryType extends object = HTMLElement,
 > extends TurboEvent {
     public readonly toggledEntry: EntryType;
     public readonly values: ValueType[];

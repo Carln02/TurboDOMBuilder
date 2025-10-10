@@ -1,6 +1,6 @@
 import {describe, it, expect} from "vitest";
 import {define} from "../define/define";
-import {observe} from "../observe";
+import {observe} from "../observe/observe";
 
 describe("@define", () => {
     it("registers the element and exposes observedAttributes (inferred name)", () => {

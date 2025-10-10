@@ -16,7 +16,7 @@ class TE extends TurboElement {
     }
 }
 
-describe("TurboElement: lifecycle delegates + initializeUI", () => {
+describe("TurboElement: lifecycle delegates + initialize", () => {
     it("fires onAttach/onDetach when connected/disconnected", () => {
         const el = new TE();
         expect(el.attachCount).toBe(0);
@@ -42,7 +42,7 @@ describe("TurboElement: lifecycle delegates + initializeUI", () => {
         customElements.define("te-y", Custom);
 
         const el = new Custom();
-        el.initializeUI();
+        el.initialize();
 
         expect(el.steps).toEqual(["elems", "layout", "listeners", "changed"]);
     });

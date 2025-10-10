@@ -125,7 +125,8 @@ function setupEventFunctions() {
         };
 
         if (activeTool && run(this, activeTool)) return true;
-        if (!options.capture && activeTool && this.applyTool(activeTool, type, event, manager)) return true;
+        if (!options.capture && activeTool && !this.isToolIgnored(activeTool, type, manager)
+            && this.applyTool(activeTool, type, event, manager)) return true;
 
         const embeddedTarget = this.getEmbeddedToolTarget(manager);
         const objectTools = this.getToolNames(manager);
@@ -137,8 +138,10 @@ function setupEventFunctions() {
             }
             if (ret) return true;
 
-            for (const toolName of objectTools) {
-                if ($(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
+            const embeddedTargetSel = $(embeddedTarget);
+            if (!options.capture) for (const toolName of objectTools) {
+                if (!embeddedTargetSel.isToolIgnored(toolName, type, manager)
+                    && $(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
             }
             if (ret) return true;
         }

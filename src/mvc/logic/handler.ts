@@ -18,10 +18,10 @@ class TurboHandler<ModelType extends TurboModel = TurboModel> {
      * @description A reference to the MVC model.
      * @protected
      */
-    protected readonly model: ModelType;
+    public model?: ModelType;
 
-    public constructor(model: ModelType) {
-        this.model = model;
+    public constructor(model?: ModelType) {
+        if (this.model) this.model = model;
     }
 }
 

@@ -1,3 +1,5 @@
+import {Delegate} from "../../../eventHandling/delegate/delegate";
+
 interface TurboElementDefaultInterface {
     /**
      * @description Whether the element is selected or not.
@@ -15,6 +17,17 @@ interface TurboElementDefaultInterface {
      * @protected
      */
     getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+
+    destroy(): void;
+
+    /**
+     * @function initialize
+     * @description Initializes the element.
+     */
+    initialize(): void;
+
+
+    readonly initialized: boolean;
 }
 
 export {TurboElementDefaultInterface};

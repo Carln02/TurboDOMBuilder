@@ -1,15 +1,15 @@
 import {TurboControllerProperties} from "../logic/logic.types";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {TurboEmitter} from "../core/emitter";
 import {DefaultEventNameEntry} from "../../eventHandling/eventNaming";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Turbo} from "../../turboFunctions/turboFunctions.types";
+import {TurboView} from "../core/view";
+import {TurboModel} from "../core/model";
+import {TurboEmitter} from "../core/emitter";
 
 type TurboToolProperties<
     ElementType extends object = object,
-    ViewType extends TurboView = TurboView<any, any>,
+    ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {

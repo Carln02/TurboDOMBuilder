@@ -8,7 +8,7 @@ import {SubstrateSolverProperties} from "../../turboFunctions/substrate/substrat
 
 class TurboSubstrate<
     ElementType extends object = object,
-    ViewType extends TurboView = TurboView,
+    ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
@@ -20,6 +20,8 @@ class TurboSubstrate<
     public declare keyName: string;
 
     public readonly substrateName: string;
+
+    public readonly solverKeys: string[] = [];
 
     public get objectList(): HTMLCollection | NodeList | Set<object> {
         return $(this).getSubstrateObjectList(this.substrateName);
@@ -41,6 +43,10 @@ class TurboSubstrate<
         $(this).makeSubstrate(this.substrateName, {
             onActivate: typeof this["onActivate"] === "function" ? this["onActivate"] : undefined,
             onDeactivate: typeof this["onDeactivate"] === "function" ? this["onDeactivate"] : undefined,
+        });
+
+        this.solverKeys.forEach((key: string) => {
+            $(this).addSolver(props => this[key]?.(props));
         });
     }
 

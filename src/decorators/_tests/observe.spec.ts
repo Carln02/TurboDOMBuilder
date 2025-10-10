@@ -1,5 +1,5 @@
 import {describe, it, expect} from "vitest";
-import {observe} from "../observe";
+import {observe} from "../observe/observe";
 import {define} from "../define/define";
 import {TurboElement} from "../../turboElement/turboElement";
 
@@ -26,8 +26,8 @@ describe("@observe", () => {
         @define("obs-y")
         class Y extends HTMLElement {
             #v = "";
-            @observe get userName() { return this.#v; }
-            @observe set userName(v) { this.#v = v; }
+            @observe public get userName() { return this.#v; }
+            @observe public set userName(v) { this.#v = v; }
         }
 
         const el = new Y();

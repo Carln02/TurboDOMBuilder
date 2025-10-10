@@ -12,10 +12,9 @@ import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsH
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 import {handler} from "../../decorators/controller";
 import {TurboModel} from "../../mvc/core/model";
+import {auto} from "../../decorators/auto/auto";
 
 export class TurboEventManagerModel extends TurboModel {
-    private _inputDevice: InputDevice;
-
     @handler() public utils: TurboEventManagerUtilsHandler;
 
     public readonly state: TurboEventManagerStateProperties = {};
@@ -28,7 +27,7 @@ export class TurboEventManagerModel extends TurboModel {
     /**
      * @description Delegate fired when a tool is changed on a certain click button/mode
      */
-    public readonly onToolChange: Delegate<(oldTool: string, newTool: string, type: ClickMode) => void> = new Delegate();
+    public readonly onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void> = new Delegate();
 
     //Input events states
     public readonly currentKeys: string[] = [];
@@ -60,16 +59,10 @@ export class TurboEventManagerModel extends TurboModel {
     public readonly mappedKeysToTool: Map<string, string> = new Map();
 
     //Tools currently held by the user (one - or none - per each click button/mode)
-    public readonly currentTools: Map<ClickMode, string> = new Map();
+    public readonly currentTools: Map<ClickMode, Node> = new Map();
 
-    public get inputDevice(): InputDevice {
-        return this._inputDevice;
-    }
-
+    @auto({callBefore: function (value) {if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true}})
     public set inputDevice(value: InputDevice) {
-        if (this.inputDevice == value) return;
-        if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true;
-        this._inputDevice = value;
         this.onInputDeviceChange.fire(value);
     }
 }

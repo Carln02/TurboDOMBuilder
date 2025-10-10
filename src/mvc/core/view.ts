@@ -1,6 +1,7 @@
 import {TurboModel} from "./model";
 import {TurboEmitter} from "./emitter";
 import {TurboViewProperties} from "./core.types";
+import {initializeEffects} from "../../reactivity/reactivity";
 
 /**
  * @class TurboView
@@ -23,12 +24,12 @@ class TurboView<
     /**
      * @description The model instance this view is bound to.
      */
-    public model: ModelType;
+    public model?: ModelType;
 
     /**
      * @description The emitter instance used for event communication.
      */
-    public emitter: EmitterType;
+    public emitter?: EmitterType;
 
     /**
      * @constructor
@@ -36,8 +37,8 @@ class TurboView<
      */
     public constructor(properties: TurboViewProperties<ElementType, ModelType, EmitterType>) {
         this.element = properties.element;
-        this.emitter = properties.emitter;
-        this.model = properties.model;
+        if (properties.model) this.model = properties.model;
+        if (properties.emitter) this.emitter = properties.emitter;
     }
 
     /**
@@ -57,6 +58,7 @@ class TurboView<
      * @protected
      */
     protected setupChangedCallbacks(): void {
+        initializeEffects(this);
     }
 
     /**

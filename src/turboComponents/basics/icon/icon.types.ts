@@ -1,6 +1,6 @@
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {TurboIcon} from "./icon";
 
@@ -46,10 +46,9 @@ type TurboIconProperties<
  * directory once here to not type it again at every Icon generation.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
  */
-type TurboIconConfig = {
-    defaultType?: string;
-    defaultDirectory?: string;
-    defaultClasses?: string | string[];
+type TurboIconConfig = TurboElementConfig & {
+    defaultType?: string,
+    defaultDirectory?: string,
     customLoaders?: Record<string, (path: string) => Promise<Element>>
 }
 

@@ -366,6 +366,27 @@ function setupHierarchyFunctions() {
         if (!referenceList) return -1;
         return referenceList.indexOf(this.element);
     };
+
+    //Parent manipulation
+
+    /**
+     * @description Add one or more children to the referenced parent node.
+     * @param {Node} [parent] - Array of (or single) child nodes.
+     * @param {number} [index] - The position at which to add the child relative to the parent's child list.
+     * Leave undefined to add the child at the end.
+     * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
+     * use as computation reference for index placement. Defaults to the node's `childrenArray`.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    TurboSelector.prototype.addToParent = function _addToParent(
+        this: TurboSelector,
+        parent?: Node,
+        index?: number,
+        referenceList?: Node[] | NodeListOf<Node>
+    ): TurboSelector {
+        if (!this || !parent) return this;
+        return $(parent).addChild(this.element, index, referenceList);
+    };
 }
 
 export {setupHierarchyFunctions};

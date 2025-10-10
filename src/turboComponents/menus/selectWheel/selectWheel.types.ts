@@ -1,4 +1,3 @@
-import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelectProperties} from "../../basics/select/select.types";
 import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
@@ -6,15 +5,16 @@ import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {PartialRecord} from "../../../core.types";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 
 type TurboSelectWheelProperties<
     ValueType = string,
     SecondaryValueType = string,
-    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    EntryType extends HTMLElement = HTMLElement,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel
-> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
+> = TurboElementProperties<ViewType, DataType, ModelType> & {
     direction?: Direction,
     styleReifect?: Reifect | StatelessReifectProperties,
 

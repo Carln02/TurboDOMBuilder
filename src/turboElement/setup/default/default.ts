@@ -1,9 +1,12 @@
 import {$} from "../../../turboFunctions/turboFunctions";
+import {Mvc} from "../../../mvc/mvc";
+import {initializeEffects} from "../../../reactivity/reactivity";
 
 export function defineDefaultProperties<Type extends new (...args: any[]) => any>(constructor: Type) {
     const prototype = constructor.prototype;
     const selectedKey = Symbol("__selected__");
     const selectedClass = Symbol("__selectedClass__");
+    const initializedKey = Symbol("__initialized__");
 
     Object.defineProperty(prototype, "selected", {
         get(this: any) {return !!this[selectedKey]},
@@ -27,11 +30,44 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
     });
 
     Object.defineProperty(prototype, "getPropertiesValue", {
-        value: function<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
+        value: function <Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
             if (propertiesValue !== undefined && propertiesValue !== null) return propertiesValue;
-            const configValue: Type = this.constructor.config?.[configFieldName];
-            if (configValue !== undefined && configValue !== null) return configValue;
+            let constructor = this.constructor;
+            while (constructor) {
+                const configValue: Type = constructor.config?.[configFieldName];
+                if (configValue !== undefined && configValue !== null) return configValue;
+                constructor = Object.getPrototypeOf(constructor);
+            }
             return defaultValue;
+        },
+        configurable: true,
+        enumerable: false,
+    });
+
+    Object.defineProperty(prototype, "destroy", {
+        value: function () {},
+        configurable: true,
+        enumerable: false,
+    });
+
+    Object.defineProperty(prototype, "initialized", {
+        get: function (): boolean {
+            return this[initializedKey] ?? false;
+        },
+        configurable: true,
+        enumerable: false,
+    });
+
+    Object.defineProperty(prototype, "initialize", {
+        value: function (): void {
+            if (this[initializedKey]) return;
+            this.setupUIElements?.();
+            this.setupUILayout?.();
+            this.setupUIListeners?.();
+            this.setupChangedCallbacks?.();
+            if (this.mvc && this.mvc instanceof Mvc) this.mvc.initialize();
+            initializeEffects(this);
+            this[initializedKey] = true;
         },
         configurable: true,
         enumerable: false,

@@ -10,7 +10,7 @@ import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager
 
 class TurboTool<
     ElementType extends object = object,
-    ViewType extends TurboView = TurboView,
+    ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboController<ElementType, ViewType, ModelType, EmitterType> {

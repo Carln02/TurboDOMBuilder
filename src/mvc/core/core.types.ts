@@ -1,5 +1,5 @@
-import {TurboEmitter} from "./emitter";
 import {TurboModel} from "./model";
+import {TurboEmitter} from "./emitter";
 
 type MvcBlocksType<
     Type extends "array" | "map" = "map",
@@ -19,11 +19,11 @@ type MvcDataBlock<
 type TurboViewProperties<
     ElementType extends object = object,
     ModelType extends TurboModel = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
+    EmitterType extends TurboEmitter = TurboEmitter,
 > = {
     element: ElementType,
-    model: ModelType,
-    emitter: EmitterType
+    model?: ModelType,
+    emitter?: EmitterType,
 };
 
 export {TurboViewProperties, MvcBlockKeyType, MvcBlocksType, MvcDataBlock};

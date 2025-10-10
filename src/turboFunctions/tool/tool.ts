@@ -29,7 +29,7 @@ function setupToolFunctions() {
         else {
             options.activationEvent ??= DefaultEventName.click;
             options.clickMode ??= ClickMode.left;
-            this.on(options.activationEvent, () => options.manager.setTool(toolName, options.clickMode),
+            this.on(options.activationEvent, () => options.manager.setTool(this.element, options.clickMode),
                 undefined, options.manager);
         }
         utils.saveTool(this, toolName, options.manager);
@@ -186,6 +186,26 @@ function setupToolFunctions() {
         });
 
         return pass;
+    }
+
+    TurboSelector.prototype.ignoreTool = function _ignoreTool(
+        this: TurboSelector,
+        toolName: string,
+        type?: string,
+        ignore: boolean = true,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): TurboSelector {
+        utils.ignoreTool(this.element, toolName, type, ignore, manager);
+        return this;
+    }
+
+    TurboSelector.prototype.isToolIgnored = function _isToolIgnored(
+        this: TurboSelector,
+        toolName: string,
+        type?: string,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): boolean {
+        return utils.isToolIgnored(this.element, toolName, type, manager);
     }
 }
 

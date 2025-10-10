@@ -1,15 +1,15 @@
 import {TurboControllerProperties} from "../logic/logic.types";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {PartialRecord} from "../../core.types";
 import {DefaultEventNameKey} from "../../eventHandling/eventNaming";
 import {ListenerOptions} from "../../turboFunctions/event/event.types";
+import {TurboView} from "../core/view";
+import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 
 type TurboInteractorProperties<
     ElementType extends object = object,
-    ViewType extends TurboView = TurboView<any, any>,
+    ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {

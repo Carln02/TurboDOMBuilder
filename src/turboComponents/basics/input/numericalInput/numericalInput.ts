@@ -16,18 +16,18 @@ class TurboNumericalInput<
     public min: number;
     public max: number;
 
-    public constructor(properties: TurboInputProperties<"input", ViewType, DataType, ModelType> = {}) {
-        //Only allow numbers (positive, negative, and decimal)
-        properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
-        properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-        super(properties);
-
-        this.multiplier = properties.multiplier || 1;
-        this.decimalPlaces = properties.decimalPlaces;
-
-        this.min = properties.min;
-        this.max = properties.max;
-    }
+    // public constructor(properties: TurboInputProperties<"input", ViewType, DataType, ModelType> = {}) {
+    //     //Only allow numbers (positive, negative, and decimal)
+    //     properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
+    //     properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
+    //     super(properties);
+    //
+    //     this.multiplier = properties.multiplier || 1;
+    //     this.decimalPlaces = properties.decimalPlaces;
+    //
+    //     this.min = properties.min;
+    //     this.max = properties.max;
+    // }
 
     public get value(): number {
         return Number.parseFloat(this.stringValue) / this.multiplier;

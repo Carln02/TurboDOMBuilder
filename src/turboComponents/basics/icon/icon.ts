@@ -6,14 +6,13 @@ import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElement} from "../../../turboElement/turboElement";
-import {observe} from "../../../decorators/observe";
+import {observe} from "../../../decorators/observe/observe";
 import {auto} from "../../../decorators/auto/auto";
-import {cache} from "../../../decorators/cache/cache";
 import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
-import {signal} from "../../../decorators/signal/signal";
+import {cache} from "../../../decorators/cache/cache";
 
 /**
  * Icon class for creating icon elements.
@@ -30,7 +29,6 @@ class TurboIcon<
     public static readonly config: TurboIconConfig = {
         ...TurboElement.config,
         defaultType: "svg",
-        defaultDirectory: "",
         customLoaders: {}
     };
 
@@ -41,57 +39,39 @@ class TurboIcon<
 
     public onLoaded: (element: Element) => void;
 
-    /**
-     * Creates an instance of Icon.
-     * @param {TurboIconProperties} properties - Properties to configure the icon.
-     */
-    constructor(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>) {
-        super();
-        if (properties.icon) this.update(properties);
-    }
-
-    public update(properties: TurboIconProperties) {
-        this.type = properties.type;
-        this.directory = properties.directory;
-
-        if (properties.iconColor) this.iconColor = properties.iconColor;
-        if (properties.onLoaded) this.onLoaded = properties.onLoaded;
-        if (properties.icon) this.icon = properties.icon;
-    }
-
     //Getters and setters
 
     /**
      * @description The type of the icon.
      */
-    @auto({
-        callBefore: function (value: string) {
-            if (!value || value.length == 0) value = this.type || (this.constructor as any).config.defaultType || "svg";
+    @observe @auto({
+        initialValueCallback: function() {return this.getPropertiesValue(this.type, "defaultType", "svg")},
+        preprocessValue: function (value: string) {
+            if (!value || value.length == 0) return this.type;
             if (value[0] == ".") value = value.substring(1);
             return value;
-        }
-    }) public set type(value: string) {
-        this.generateIcon();
-    }
+        },
+        callAfter: function() {this.generateIcon()},
+    }) public type: string;
 
     /**
      * @description The user-provided (or statically configured) directory to the icon's file.
      */
-    @auto({
-        callBefore: function (value: string) {
-            if (!value) value = this.directory || (this.constructor as any).config.defaultDirectory || "";
+    @observe @auto({
+        initialValueCallback: function() {return this.getPropertiesValue(undefined, "defaultDirectory", "")},
+        preprocessValue: function (value: string) {
+            if (!value) return this.directory;
             if (value.length > 0 && !value.endsWith("/")) value += "/";
             return value;
-        }
-    }) public set directory(value: string) {
-        this.generateIcon();
-    }
+        },
+        callAfter: function() {this.generateIcon()}
+    }) public directory: string;
 
     /**
      * @description The path to the icon's source file.
      */
     public get path(): string {
-        let extension = (this.icon.endsWith("." + this.type) || this.type.length == 0) ? "" : "." + this.type;
+        let extension = (this.icon.endsWith("." + this.type) || this.type.length === 0) ? "" : "." + this.type;
         return this.directory + this.icon + extension;
     }
 
@@ -100,7 +80,6 @@ class TurboIcon<
      * Setting it will update the icon accordingly.
      */
     @observe @auto() public set icon(value: string) {
-        console.log("HEIWHFHIFEWIWEIWEF")
         const ext = getFileExtension(value).substring(1);
         if (ext) this.type = ext;
         this.generateIcon();
@@ -109,9 +88,7 @@ class TurboIcon<
     /**
      * @description The assigned color to the icon (if any)
      */
-    @observe
-    @auto()
-    public set iconColor(value: string) {
+    @observe @auto() public set iconColor(value: string) {
         this.updateColor(value);
     }
 
@@ -128,13 +105,13 @@ class TurboIcon<
 
     //Utilities
 
-    @cache()
+    // @cache()
     protected loadSvg(path: string): Promise<SVGElement> {
         return fetchSvg(path);
     }
 
-    protected loadImg(path: string): HTMLImageElement {
-        return img({src: path, alt: this.icon, parent: this});
+    protected loadImg(path: string) {
+        return img({src: path, alt: this.icon});
     }
 
     protected updateColor(value: string = this.iconColor) {
@@ -152,21 +129,22 @@ class TurboIcon<
         this.clear();
         if (!this.icon) return;
 
-        const element = this.getLoader()(this.path);
+        const element = this.getLoader(this.type)(this.path);
+
         if (element instanceof Element) this.setupLoadedElement(element);
         else element.then(element => this.setupLoadedElement(element))
             .catch(error => console.error(`Failed to load icon: ${error}`));
     }
 
-    private getLoader(): (path: string) => Element | Promise<Element> {
-        if (!this.type) return;
+    private getLoader(type: string): (path: string) => Element | Promise<Element> {
+        if (!type) return;
 
-        const customLoader = (this.constructor as any).config.customLoaders[this.type];
+        const customLoader = (this.constructor as any).config.customLoaders[type];
         if (customLoader) return customLoader;
 
-        if (equalToAny(this.type, "svg", "SVG")) return this.loadSvg;
-        if (equalToAny(this.type, ...(this.constructor as any).imageTypes)) return this.loadImg;
-        throw new Error(`Unsupported icon type: ${this.type}`);
+        if (equalToAny(type, "svg", "SVG")) return this.loadSvg.bind(this);
+        if (equalToAny(type, ...(this.constructor as any).imageTypes)) return this.loadImg.bind(this);
+        throw new Error(`Unsupported icon type: ${type}`);
     }
 
     private setupLoadedElement(element: Element) {
@@ -191,8 +169,7 @@ function icon<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 >(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    return new TurboIcon<ViewType, DataType, ModelType, EmitterType>(properties);
-    // return element({...properties, tag: "turbo-icon"} as any) as any;
+    return element({...properties, tag: "turbo-icon"} as any) as any;
 }
 
 export {TurboIcon, icon};

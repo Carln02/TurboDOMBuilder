@@ -1,9 +1,11 @@
 import "./element.types";
 import {TurboSelector} from "../turboSelector";
-import {ValidElement, ValidTag} from "../../core.types";
+import {PartialRecord, ValidElement, ValidTag} from "../../core.types";
 import {TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
 import {$} from "../turboFunctions";
+import {Mvc} from "../../mvc/mvc";
+import {TurboModel} from "../../mvc/core/model";
 
 function setupElementFunctions() {
     /**
@@ -24,54 +26,91 @@ function setupElementFunctions() {
             else Object.assign(properties.out, this);
         }
 
-        Object.keys(properties).forEach(property => {
+        if (!this.element.shadowRoot) {
+            let shadowDOM = !!properties.shadowDOM;
+            if ("getPropertiesValue" in this.element && typeof this.element.getPropertiesValue === "function")
+                shadowDOM = this.element.getPropertiesValue(properties.shadowDOM, "shadowDOM");
+            if (shadowDOM) try {this.element.attachShadow({mode: "open"})} catch {}
+        }
+
+        const mvc = this.element?.["mvc"] instanceof Mvc ? this.element["mvc"]
+            : "model" in this.element && "view" in this.element ? this.element : undefined;
+
+        for (const property of Object.keys(properties)) {
+            const value = properties[property];
+            if (value === undefined) continue;
+
             switch (property) {
                 case "tag":
                 case "namespace":
                 case "shadowDOM":
-                    return;
+                    break;
+
                 case "text":
-                    if (!(this.element instanceof HTMLElement)) return;
-                    this.element.innerText = properties.text;
-                    return;
+                    if (this.element instanceof HTMLElement) this.element.innerText = value;
+                    break;
                 case "style":
-                    if (!(this.element instanceof HTMLElement || this.element instanceof SVGElement)) return;
-                    this.element.style.cssText += properties.style;
-                    return;
+                    if (!(this.element instanceof HTMLElement || this.element instanceof SVGElement)) break;
+                    this.setStyles(value, true);
+                    break;
                 case "stylesheet":
-                    stylesheet(properties.stylesheet, this.closestRoot);
-                    return;
+                    stylesheet(value, this.closestRoot);
+                    break;
                 case "id":
-                    this.element.id = properties.id;
-                    return;
+                    this.element.id = value;
+                    break;
                 case "classes":
-                    this.addClass(properties.classes);
-                    return;
+                    this.addClass(value);
+                    break;
                 case "listeners":
-                    Object.keys(properties.listeners).forEach(listenerType =>
-                        this.on(listenerType, properties.listeners[listenerType]));
-                    return;
+                    Object.entries(value).forEach(([type, callback]) =>
+                        this.on(type, callback as any));
+                    break;
                 case "children":
-                    this.addChild(properties.children);
-                    return;
+                    this.addChild(value);
+                    break;
                 case "parent":
-                    if (!properties.parent) return;
-                    $(properties.parent).addChild(this.element);
-                    return;
-                default:
-                    if (setOnlyBaseProperties) return;
-                    try {
-                        this.element[property] = properties[property];
-                    } catch (e) {
+                    $(value).addChild(this.element);
+                    break;
+
+                case "data":
+                case "initialize":
+                    if (mvc) break;
+
+                case "model":
+                case "view":
+                case "emitter":
+                case "controllers":
+                case "handlers":
+                case "interactors":
+                case "tools":
+                case "substrates":
+                    if (setOnlyBaseProperties) break;
+                    if (mvc) {
                         try {
-                            this.setAttribute(property, properties[property]);
-                        } catch (e) {
-                            console.error(e);
-                        }
+                            mvc[property] = value;
+                            if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
+                                mvc["model"].setBlock(properties.data, undefined, undefined, false);
+                            }
+                        } catch {}
+                        break;
                     }
-                    return;
+
+                default:
+                    if (setOnlyBaseProperties) break;
+                    try {this.element[property] = properties[property]}
+                    catch (e) {
+                        try {this.setAttribute(property, properties[property])}
+                        catch (e) {console.error(e)}
+                    }
+                    break;
             }
-        });
+        }
+
+        if (properties.initialize === undefined || properties.initialize) {
+            if (this.element && "initialize" in this.element && typeof this.element.initialize === "function") this.element.initialize();
+            else if (mvc && "initialize" in mvc && typeof mvc.initialize === "function") mvc.initialize();
+        }
 
         return this;
     };
@@ -83,6 +122,7 @@ function setupElementFunctions() {
     TurboSelector.prototype.destroy = function _destroy(this: TurboSelector): TurboSelector {
         this.removeAllListeners();
         this.remove();
+        if (this.element && "destroy" in this.element && typeof this.element.destroy === "function") this.element.destroy();
         return this;
     }
 

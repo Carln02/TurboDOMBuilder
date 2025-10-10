@@ -94,4 +94,43 @@ describe("executeAction order + semantics", () => {
 
         expect(L).toHaveBeenCalledTimes(1);
     });
+
+    it("ignored tool on element: skips custom listeners and default behaviors", () => {
+        const node = div({ id: "ign-el" });
+        const custom = vi.fn().mockReturnValue(true);
+        const def = vi.fn().mockReturnValue(true);
+
+        $(node).onTool("click", "brush", custom);
+        $(node).addToolBehavior("click", (ev, target) => def(ev, target), "brush");
+        $(node).ignoreTool("brush");
+
+        const consumed = $(node).executeAction("click", "brush", new Event("x"));
+
+        expect(consumed).toBe(true);
+        expect(custom).toHaveBeenCalled();
+        expect(def).not.toHaveBeenCalled();
+    });
+
+    it("ignored specific (tool,type): skips only that event type, others still work", () => {
+        const node = div({ id: "ign-type" });
+
+        const customClick = vi.fn().mockReturnValue(true);
+        const customDown  = vi.fn().mockReturnValue(true);
+        const defClick    = vi.fn().mockReturnValue(true);
+
+        $(node).onTool("click", "brush", customClick);
+        $(node).onTool("pointerdown", "brush", customDown);
+        $(node).addToolBehavior("click", (ev, target) => defClick(ev, target), "brush");
+
+        $(node).ignoreTool("brush", "click");
+
+        const consumedClick = $(node).executeAction("click", "brush", new Event("x"));
+        expect(consumedClick).toBe(true);
+        expect(customClick).toHaveBeenCalled();
+        expect(defClick).not.toHaveBeenCalled();
+
+        const consumedDown = $(node).executeAction("pointerdown", "brush", new Event("y"));
+        expect(consumedDown).toBe(true);
+        expect(customDown).toHaveBeenCalledTimes(1);
+    });
 });

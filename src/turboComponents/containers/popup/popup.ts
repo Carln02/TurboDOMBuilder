@@ -10,21 +10,17 @@ import {TurboModel} from "../../../mvc/core/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {cache} from "../../../decorators/cache/cache";
+import {auto} from "../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {element} from "../../../elementCreation/element";
 
-@define()
+@define("turbo-popup")
 class TurboPopup<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement<ViewType, DataType, ModelType> {
-    private _popupAnchor: Point;
-    private _parentAnchor: Point;
-
-    private _viewportMargin: Point;
-    private _offsetFromParent: Point;
-
-    public fallbackModes: Coordinate<PopupFallbackMode>;
-
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     public static readonly config: TurboPopupConfig = {
         defaultPopupAnchor: {x: 0, y: -100},
         defaultParentAnchor: {x: 0, y: 100},
@@ -32,87 +28,71 @@ class TurboPopup<
         defaultOffsetFromParent: {x: 0, y: 4}
     };
 
-    constructor(properties: TurboPopupProperties<ViewType, DataType, ModelType> = {}) {
-        super(properties);
-        $(this).addClass("turbo-popup");
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultPopupAnchor", {x: 50, y: 0})},
+        preprocessValue: (value: Coordinate)=> new Point(value).bound(0, 100)
+    }) public set popupAnchor(value: Coordinate) {}
 
-        if (!properties.unsetDefaultClasses) $(this).addClass(TurboPopup.config.defaultClasses);
+    public get popupAnchor(): Point {return}
 
-        this.popupAnchor = properties.popupAnchor || TurboPopup.config.defaultPopupAnchor || {x: 50, y: 0};
-        this.parentAnchor = properties.parentAnchor || TurboPopup.config.defaultParentAnchor || {x: 50, y: 100};
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultParentAnchor", {x: 50, y: 100})},
+        preprocessValue: (value: Coordinate)=> new Point(value).bound(0, 100)
+    }) public set parentAnchor(value: Coordinate) {}
 
-        this.viewportMargin = properties.viewportMargin || TurboPopup.config.defaultViewportMargin || 0;
-        this.offsetFromParent = properties.offsetFromParent || TurboPopup.config.defaultOffsetFromParent || 0;
+    public get parentAnchor(): Point {return}
 
-        this.fallbackModes = properties.fallbackModes || {
-            x: Math.abs(this.parentAnchor.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-            y: Math.abs(this.parentAnchor.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-        };
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultViewportMargin", 0)},
+        preprocessValue: (value: Coordinate | number)=> new Point(value)
+    }) public set viewportMargin(value: Coordinate | number) {}
 
-        this.addListeners();
-        this.show(false);
-    }
+    public get viewportMargin(): Point {return}
 
-    private addListeners() {
-        window.addEventListener(DefaultEventName.scroll, () => this.show(false));
-        window.addEventListener(DefaultEventName.resize, () => {
-            if (this.isShown) this.recomputePosition();
-        });
-        $(document).on(DefaultEventName.click, e => {
-            if (this.isShown && !this.contains(e.target as Node)) this.show(false);
-        });
-    }
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultOffsetFromParent", 0)},
+        preprocessValue: (value: Coordinate | number)=> new Point(value)
+    }) public set offsetFromParent(value: Coordinate | number) {}
 
-    public get popupAnchor(): Point {
-        return this._popupAnchor;
-    }
+    public get offsetFromParent(): Point {return}
 
-    public set popupAnchor(value: Coordinate) {
-        this._popupAnchor = new Point(value).bound(0, 100);
-    }
+    @auto({
+        initialValueCallback: function () {
+            return {
+                x: Math.abs(this.parentAnchor.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                y: Math.abs(this.parentAnchor.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+            }
+        }
+    }) public fallbackModes: Coordinate<PopupFallbackMode>;
 
-    public get parentAnchor(): Point {
-        return this._parentAnchor;
-    }
-
-    public set parentAnchor(value: Coordinate) {
-        this._parentAnchor = new Point(value).bound(0, 100);
-    }
-
-    public get viewportMargin(): Point {
-        return this._viewportMargin;
-    }
-
-    public set viewportMargin(value: number | Coordinate) {
-        this._viewportMargin = new Point(value);
-    }
-
-    public get offsetFromParent(): Point {
-        return this._offsetFromParent;
-    }
-
-    public set offsetFromParent(value: number | Coordinate) {
-        this._offsetFromParent = new Point(value);
-    }
-
-    @cache({clearOnNextFrame: true})
-    public get rect(): DOMRect {
+    @cache({clearOnNextFrame: true}) public get rect(): DOMRect {
         return this.getBoundingClientRect();
     }
 
-    @cache({clearOnNextFrame: true})
-    public get parentRect(): DOMRect {
+    @cache({clearOnNextFrame: true}) public get parentRect(): DOMRect {
         return this.parentElement.getBoundingClientRect();
     }
 
-    @cache({clearOnNextFrame: true})
-    public get computedStyle(): CSSStyleDeclaration {
+    @cache({clearOnNextFrame: true}) public get computedStyle(): CSSStyleDeclaration {
         return window.getComputedStyle(this);
     }
 
-    @cache({clearOnNextFrame: true})
-    public get parentComputedStyle(): CSSStyleDeclaration {
+    @cache({clearOnNextFrame: true}) public get parentComputedStyle(): CSSStyleDeclaration {
         return window.getComputedStyle(this.parentElement);
+    }
+
+    public initialize() {
+        super.initialize();
+        this.show(false);
+    }
+
+    protected setupUIListeners(): void {
+        super.setupUIListeners();
+        window.addEventListener(DefaultEventName.scroll, () => this.show(false));
+        window.addEventListener(DefaultEventName.resize, () => {if (this.isShown) this.recomputePosition()});
+        $(document).on(DefaultEventName.click, e => {
+            if (this.isShown && !this.contains(e.target as Node)) this.show(false);
+        });
     }
 
     private recomputePosition() {
@@ -261,4 +241,14 @@ class TurboPopup<
     }
 }
 
-export {TurboPopup};
+function popup<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType> = {}):
+    TurboPopup<ViewType, DataType, ModelType, EmitterType> {
+    return element({...properties, text: undefined, tag: "turbo-popup"} as any) as any;
+}
+
+export {TurboPopup, popup};

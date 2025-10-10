@@ -44,7 +44,7 @@ describe("flex elements", () => {
     });
 
     it("plays nice with initial style provided in properties", () => {
-        const el = flexRow({tag: "div", style: "background:red"} as any);
+        const el = flexRow({tag: "div", style: "background: red"} as any);
         expect(el.style.display).toBe("flex");
         expect(el.style.flexDirection).toBe("row");
         expect(el.style.background).toBe("red");

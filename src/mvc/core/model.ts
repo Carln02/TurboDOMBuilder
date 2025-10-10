@@ -2,6 +2,7 @@ import {auto} from "../../decorators/auto/auto";
 import {Delegate} from "../../eventHandling/delegate/delegate";
 import {MvcBlockKeyType, MvcBlocksType, MvcDataBlock} from "./core.types";
 import {TurboHandler} from "../logic/handler";
+import {markDirty} from "../../reactivity/reactivity";
 
 /**
  * @class TurboModel
@@ -23,7 +24,7 @@ class TurboModel<
     protected readonly isDataBlocksArray: boolean = false;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
 
-    protected readonly handlers: Map<string, TurboHandler> = new Map();
+    public handlers: Map<string, TurboHandler>;
 
     /**
      * @description Delegate triggered when a key changes.
@@ -251,6 +252,7 @@ class TurboModel<
      */
     protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
         if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
+        markDirty(this, key); //TODO CHECK
         this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
     }
 
@@ -401,11 +403,11 @@ class TurboModel<
     /**
      * @function addHandler
      * @description Registers a TurboHandler for the given key.
-     * @param {string} key - The identifier for the handler.
      * @param {TurboHandler} handler - The handler instance to register.
      */
-    public addHandler(key: string, handler: TurboHandler) {
-        this.handlers.set(key, handler);
+    public addHandler(handler: TurboHandler) {
+        if (!handler.keyName) return;
+        this.handlers.set(handler.keyName, handler);
     }
 }
 

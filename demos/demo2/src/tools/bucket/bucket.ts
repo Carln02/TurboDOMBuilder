@@ -1,4 +1,4 @@
-import {define, signal, TurboButtonProperties, $, DefaultEventName, TurboButton, effect, input} from "../../../../../build/turbodombuilder.esm";
+import {define, signal, $, DefaultEventName, TurboButton, effect, input, element, TurboRichElementProperties} from "../../../../../build/turbodombuilder.esm";
 import {BucketTool} from "./bucket.tool";
 
 @define("demo-bucket")
@@ -6,12 +6,6 @@ export class Bucket extends TurboButton {
     @signal private _colorValue: string = "#000000";
 
     private colorInput: HTMLInputElement;
-
-    public constructor(properties: TurboButtonProperties) {
-        super(properties as any);
-        this.mvc.generate({tools: BucketTool});
-        this.initializeUI();
-    }
 
     public get colorValue(): string {
         return this._colorValue.toString();
@@ -37,4 +31,8 @@ export class Bucket extends TurboButton {
         super.setupChangedCallbacks();
         effect(() => $(this).setStyle("borderColor", this._colorValue));
     }
+}
+
+export function bucket(properties: TurboRichElementProperties = {}): Bucket {
+    return element({...properties, tools: BucketTool, tag: "demo-bucket"}) as Bucket;
 }

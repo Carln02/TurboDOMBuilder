@@ -10,33 +10,34 @@ import {cacheKeySymbolFor, initInvalidation, keyFromArgs} from "./cache.utils";
  *  - When used on an accessor, it will wrap the getter similar to a cached getter.
  *  @param {CacheOptions} [options] - Optional caching options.
  */
+//TODO FIX THEN TEST ON ICON loadSvg
 function cache(options: CacheOptions = {}) {
-    return function (
+    return function<Type extends object, Value>(
         value:
-            | ((...args: any[]) => any) // method
-            | (() => any)               // getter
-            | { get?: () => any; set?: (v: any) => void }, // accessor
-        ctx:
-            | ClassMethodDecoratorContext
-            | ClassGetterDecoratorContext
-            | ClassAccessorDecoratorContext
+            | ((this: Type, ...args: any[]) => any)
+            | ((this: Type) => Value)
+            | {get?: (this: Type) => Value; set?: (this: Type, value: Value) => void},
+        context:
+            | ClassMethodDecoratorContext<Type>
+            | ClassGetterDecoratorContext<Type, Value>
+            | ClassAccessorDecoratorContext<Type, Value>
     ): any {
-        const name = String(ctx.name);
-        const cacheKey = cacheKeySymbolFor(name);
-        const setupKey = Symbol(`__cache__setup__${name}`);
+        const {kind, name, static: isStatic} = context;
+        const key = name as string;
+
+        const cacheKey = cacheKeySymbolFor(key);
+        const setupKey = Symbol(`__cache__setup__${key}`);
+
         const timeouts: NodeJS.Timeout[] = [];
 
-        // delete function shared by variants
         const deleteCallback = function (this: any, hard: boolean = true) {
             if (!hard) return;
             const slot = this[cacheKey];
             if (!slot) return;
 
-            // getter: single value; method: Map
             if (slot instanceof Map) slot.clear();
             else delete this[cacheKey];
 
-            // clear pending timers
             for (const t of timeouts) clearTimeout(t);
             timeouts.length = 0;
         };
@@ -45,15 +46,13 @@ function cache(options: CacheOptions = {}) {
         const ensureSetup = function (this: any) {
             if (this[setupKey]) return;
             this[setupKey] = true;
-            initInvalidation(this, name, ctx.kind === "getter" || ctx.kind === "accessor", cacheKey, timeouts, options, deleteCallback.bind(this));
+            initInvalidation(this, key, kind === "getter" || kind === "accessor", cacheKey, timeouts, options, deleteCallback.bind(this));
         };
 
-        // ---- METHOD -----------------------------------------------------------
-        if (ctx.kind === "method") {
+        if (kind === "method") {
             const original = value as (...args: any[]) => any;
 
-            ctx.addInitializer(function () {
-                // initialize storage
+            context.addInitializer(function () {
                 if (!this[cacheKey]) this[cacheKey] = new Map<string, any>();
             });
 
@@ -84,7 +83,7 @@ function cache(options: CacheOptions = {}) {
         }
 
         // ---- GETTER -----------------------------------------------------------
-        if (ctx.kind === "getter") {
+        if (kind === "getter") {
             const originalGet = value as () => any;
 
             return function (this: any) {
@@ -109,7 +108,7 @@ function cache(options: CacheOptions = {}) {
         }
 
         // ---- ACCESSOR (wrap read path; keep set untouched) --------------------
-        if (ctx.kind === "accessor") {
+        if (kind === "accessor") {
             const orig = value as { get?: () => any; set?: (v: any) => void };
 
             return {
@@ -144,8 +143,6 @@ function cache(options: CacheOptions = {}) {
                 },
             };
         }
-
-        // fields not supported by the original decorator; ignore
     };
 }
 

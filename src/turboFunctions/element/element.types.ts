@@ -1,4 +1,5 @@
 import {ValidElement, ValidTag} from "../../core.types";
+import {MvcGenerationProperties} from "../../mvc/mvc.types";
 
 /**
  * @description Ensures that non-function properties of an element are selected.
@@ -22,8 +23,8 @@ type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> =
  * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
  * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
  */
-type ElementTagDefinition<Tag extends ValidTag> = {
-    tag?: Tag;
+type ElementTagDefinition = {
+    tag?: string;
     namespace?: string;
 };
 
@@ -75,7 +76,7 @@ type ElementTagDefinition<Tag extends ValidTag> = {
  */
 type TurboProperties<
     Tag extends ValidTag = "div",
-> = HTMLElementMutableFields<Tag> & ElementTagDefinition<Tag> & {
+> = HTMLElementMutableFields<Tag> & ElementTagDefinition & {
     id?: string;
     classes?: string | string[];
 
@@ -104,6 +105,8 @@ declare module "../turboSelector" {
          * @template Tag
          */
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
+
+        setMvc(properties: MvcGenerationProperties): this;
 
         /**
          * @description Destroys the node by removing it from the document and removing all its bound listeners.
