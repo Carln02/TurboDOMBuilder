@@ -49,7 +49,7 @@ type TurboIconProperties<
 type TurboIconConfig = TurboElementConfig & {
     defaultType?: string,
     defaultDirectory?: string,
-    customLoaders?: Record<string, (path: string) => Promise<Element>>
+    customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>
 }
 
 declare module "../../../core.types" {

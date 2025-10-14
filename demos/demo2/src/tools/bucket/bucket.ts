@@ -24,7 +24,7 @@ export class Bucket extends TurboButton {
     protected setupUIListeners() {
         super.setupUIListeners();
         $(this).on(DefaultEventName.click, () => this.colorInput.click());
-        $(this.colorInput).on(DefaultEventName.input, () => this._colorValue = this.colorInput.value);
+        $(this.colorInput).on(DefaultEventName.input, () => {this._colorValue = this.colorInput.value});
     }
 
     protected setupChangedCallbacks() {

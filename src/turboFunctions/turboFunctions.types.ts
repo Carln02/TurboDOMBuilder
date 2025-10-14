@@ -11,6 +11,7 @@ type TurbofyOptions = {
     excludeToolFunctions?: boolean,
     excludeSubstrateFunctions?: boolean,
     excludeMiscFunctions?: boolean,
+    excludeReifectFunctions?: boolean
 };
 
 declare module "./turboSelector" {

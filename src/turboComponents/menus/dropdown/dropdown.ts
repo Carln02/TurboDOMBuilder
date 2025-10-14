@@ -52,6 +52,7 @@ class TurboDropdown<
         onEntryAdded: (entry: EntryType) => $(entry).on(DefaultEventName.click, () => {
             this.select.select(entry);
             this.openPopup(false);
+            return true;
         })
     });
 
@@ -99,8 +100,8 @@ class TurboDropdown<
     private openPopup(b: boolean) {
         if (this.popupOpen == b) return;
         this.popupOpen = b;
-        if (this.popup instanceof TurboElement) this.popup.show(b);
-        else this.popup.show(b);
+        if ("show" in this.popup && typeof this.popup.show === "function") this.popup.show(b);
+        else $(this.popup).show(b);
     }
 
     public get selectedValues(): ValueType[] {

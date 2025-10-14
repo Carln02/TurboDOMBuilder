@@ -15,6 +15,8 @@ describe("@define", () => {
         expect((SampleEl as any).observedAttributes).toEqual(["foo-bar"]);
 
         const el = new SampleEl();
+        document.body.appendChild(el);
+
         expect(el.getAttribute("foo-bar")).toBe("10");
         el.fooBar = 42;
         expect(el.getAttribute("foo-bar")).toBe("42");

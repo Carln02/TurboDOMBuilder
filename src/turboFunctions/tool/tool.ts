@@ -29,8 +29,10 @@ function setupToolFunctions() {
         else {
             options.activationEvent ??= DefaultEventName.click;
             options.clickMode ??= ClickMode.left;
-            this.on(options.activationEvent, () => options.manager.setTool(this.element, options.clickMode),
-                undefined, options.manager);
+            this.on(options.activationEvent, () => {
+                options.manager.setTool(this.element, options.clickMode);
+                return true;
+            }, undefined, options.manager);
         }
         utils.saveTool(this, toolName, options.manager);
 

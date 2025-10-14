@@ -74,7 +74,7 @@ describe("executeAction order + semantics", () => {
         const A = vi.fn();
         const B = vi.fn();
 
-        $(node).onTool("pointerdown", "brush", A, {propagate: true});
+        $(node).onTool("pointerdown", "brush", A);
         $(node).onTool("pointerdown", "brush", B);
 
         const consumed = $(node).executeAction("pointerdown", "brush", new Event("x"));

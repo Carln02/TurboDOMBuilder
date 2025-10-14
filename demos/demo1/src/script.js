@@ -1,6 +1,8 @@
-import {button, $, randomFromRange, TurboElement, trim, element, TurboIcon, div} from "../../../build/turbodombuilder.esm.js";
+import {button, $, randomFromRange, TurboElement, trim, element, TurboIcon, div, TurboEventManager} from "../../../build/turbodombuilder.esm.js";
 
 TurboIcon.config.defaultDirectory = "assets/";
+TurboEventManager.instance.preventDefaultMouse = false;
+TurboEventManager.instance.preventDefaultTouch = false;
 
 class Square extends TurboElement {
     position = {x: randomFromRange(0, 600), y: randomFromRange(0, 600)};
@@ -70,7 +72,6 @@ const controller = div({classes: "controller", parent: embeddedSquare});
 $(controller).makeTool("move").embedTool(embeddedSquare);
 
 const moveTool = button({leftIcon: "chevron-top", text: "Move Tool", parent: document.body, classes: "moveTool"});
-
 $(moveTool).on("turbo-click", () => moveTool.style.backgroundColor = "red");
 $(moveTool).makeTool("move");
 
@@ -79,5 +80,4 @@ $(moveTool).addToolBehavior("turbo-drag", (e, el) => {
         el.translate(e.deltaPosition);
         return true;
     }
-    return false;
 });

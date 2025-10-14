@@ -13,8 +13,6 @@ function fetchSvg(path: string, logError: boolean = true): Promise<SVGElement> {
             return;
         }
 
-        console.log("Fetching", path);
-
         fetch(path)
             .then(response => {
                 if (!response.ok) throw new Error("Network response was not ok while loading your SVG");

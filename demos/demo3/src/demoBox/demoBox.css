@@ -1,23 +1,54 @@
 demo-box {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    border-radius: 12px;
-    padding: 0.7rem;
+    display: grid;
+    gap: .75rem;
+    border-radius: var(--radius);
+    padding: calc(var(--pad) * .9);
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--edge);
+    box-shadow: var(--shadow);
 }
 
 demo-box > :first-child {
     margin: 0;
-    padding: 0.4rem 0 0 0;
+    padding: .25rem 0 .1rem 0;
+    font-weight: 700;
+    letter-spacing: .2px;
+    color: var(--text);
 }
 
 demo-box > :last-child {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 10px;
+    background: var(--card);
+    padding: calc(var(--pad) * .9);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
 
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--gap);
+    align-items: start;
+}
+
+demo-box .case-entry {
+    display: grid;
+    gap: .6rem;
+    align-items: start;
+
+    min-width: 12rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, 0));
+    padding: .75rem;
+    transition: transform var(--trans), border-color var(--trans), box-shadow var(--trans);
+}
+
+demo-box .case-entry:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--border) 70%, var(--ring));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .25);
+}
+
+demo-box > :last-child > *:not(button):hover {
+    transform: translateY(-1px);
+    transition: transform var(--trans);
 }

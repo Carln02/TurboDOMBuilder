@@ -33,8 +33,9 @@ function button<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>)
-    : TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType> {
+>(
+    properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>
+): TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType> {
     if (properties.text && !properties.element) properties.element = properties.text;
     return element({...properties, text: undefined, tag: "turbo-button"} as any) as any;
 }

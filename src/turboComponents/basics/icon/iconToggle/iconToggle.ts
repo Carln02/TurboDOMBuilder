@@ -19,8 +19,13 @@ class TurboIconToggle<
 > extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     public config: TurboIconConfig = {...TurboIcon.config};
 
+    public stopPropagationOnClick: boolean = true;
+
     public onToggle: (value: boolean, el: TurboIconToggle) => void;
-    private clickListener = () => this.toggle();
+    private clickListener = () => {
+        this.toggle();
+        return this.stopPropagationOnClick;
+    }
 
     @auto({initialValue: false})
     public set toggled(value: boolean) {
@@ -43,8 +48,9 @@ function iconToggle<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>):
-    TurboIconToggle<ViewType, DataType, ModelType, EmitterType> {
+>(
+    properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>
+): TurboIconToggle<ViewType, DataType, ModelType, EmitterType> {
     return element({...properties, tag: "turbo-icon-toggle"} as any) as any;
 }
 

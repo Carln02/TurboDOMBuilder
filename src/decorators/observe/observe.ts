@@ -57,15 +57,15 @@ function observe<Type extends object, Value>(
     const backing = Symbol(`__observed_${key}`);
 
     if (context.metadata) {
-        const curList = context.metadata.observedAttributes as Set<string> | undefined;
+        const observedAttributes = context.metadata.observedAttributes as Set<string>;
         if (!Object.prototype.hasOwnProperty.call(context.metadata, "observedAttributes"))
-            context.metadata.observedAttributes = new Set(curList);
+            context.metadata.observedAttributes = new Set(observedAttributes);
+        else if (!observedAttributes) context.metadata.observedAttributes = new Set();
         (context.metadata.observedAttributes as Set<string>).add(attribute);
     }
 
     context.addInitializer(function (this: any) {
         const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-        let initialized: boolean = false;
 
         let customGetter: (this: any) => Value;
         let customSetter: (this: any, value: Value) => void;
@@ -73,12 +73,7 @@ function observe<Type extends object, Value>(
         if (kind === "field" || kind === "accessor") try {this[backing] = this[name]} catch {}
 
         const read = function (this: any) {
-            const value = customGetter ? customGetter.call(this) : this[backing];
-            if (!initialized && value !== undefined) {
-                initialized = true;
-                this.setAttribute?.(attribute, stringify(value));
-            }
-            return value;
+            return customGetter ? customGetter.call(this) : this[backing];
         };
 
         const write = function (this: any, value: Value): void {
@@ -104,7 +99,6 @@ function observe<Type extends object, Value>(
                 get: () => read.call(this),
                 set: (value: Value) => write.call(this, value),
             });
-
         } else if (kind === "getter" || kind === "setter") {
             const installed = utils.constructorData(prototype).installed;
             if (installed.get(key)) return;
@@ -122,8 +116,6 @@ function observe<Type extends object, Value>(
                 set: function (this: any, value: Value) {write.call(this, value)},
             });
         }
-
-        try {read.call(this)} catch {}
     });
 }
 

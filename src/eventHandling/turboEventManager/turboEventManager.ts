@@ -121,9 +121,13 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         if (!properties.disableClickEvents) this.clickEventEnabled = true;
         if (!properties.disableMoveEvent) this.moveEventsEnabled = true;
 
+        document.addEventListener("pointerdown", this.pointerController.pointerDown, {passive: false});
+        document.addEventListener("pointermove", this.pointerController.pointerMove, {passive: false});
+        document.addEventListener("pointerup", this.pointerController.pointerUp, {passive: false});
+        document.addEventListener("pointercancel", this.pointerController.pointerCancel, {passive: false});
+
         //TODO
-        this.dispatchController.setupCustomDispatcher("mousedown");
-        this.dispatchController.setupCustomDispatcher("touchstart");
+        this.dispatchController.setupCustomDispatcher("pointerdown");
     }
 
     /*
@@ -207,21 +211,18 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     @auto() public set keyEventsEnabled(value: boolean) {
         const doc = $(document);
         if (value) {
-            doc.on("keydown", this.keyController.keyDown);
-            doc.on("keyup", this.keyController.keyUp);
+            document.addEventListener("keydown", this.keyController.keyDown);
+            document.addEventListener("keyup", this.keyController.keyUp);
         } else {
-            doc.removeListener("keydown", this.keyController.keyDown);
-            doc.removeListener("keyup", this.keyController.keyUp);
+            document.removeEventListener("keydown", this.keyController.keyDown);
+            document.removeEventListener("keyup", this.keyController.keyUp);
         }
         this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
     }
 
     @auto() public set wheelEventsEnabled(value: boolean) {
-        if (value) $(document.body).on("wheel", this.wheelController.wheel, {
-            passive: false,
-            propagate: true
-        });
-        else $(document).removeListener("wheel", this.wheelController.wheel);
+        if (value) document.body.addEventListener("wheel", this.wheelController.wheel, {passive: false});
+        else document.body.removeEventListener("wheel", this.wheelController.wheel);
         this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
     }
 
@@ -231,32 +232,34 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
 
     @auto() public set mouseEventsEnabled(value: boolean) {
         const doc = $(document);
-        if (value) {
-            doc.on("mousedown", this.pointerController.pointerDown, {propagate: true});
-            doc.on("mousemove", this.pointerController.pointerMove, {propagate: true});
-            doc.on("mouseup", this.pointerController.pointerUp, {propagate: true});
-            doc.on("mouseleave", this.pointerController.pointerLeave, {propagate: true});
-        } else {
-            doc.removeListener("mousedown", this.pointerController.pointerDown);
-            doc.removeListener("mousemove", this.pointerController.pointerMove);
-            doc.removeListener("mouseup", this.pointerController.pointerUp);
-            doc.removeListener("mouseleave", this.pointerController.pointerLeave);
-        }
+        //TODO
+
+        // if (value) {
+        //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
+        //     doc.on("pointermove", this.pointerController.pointerMove, {passive: false, propagate: true});
+        //     doc.on("pointerup", this.pointerController.pointerUp, {passive: false, propagate: true});
+        //     doc.on("pointercancel", this.pointerController.pointerCancel, {passive: false, propagate: true});
+        // } else {
+        //     doc.removeListener("mousedown", this.pointerController.pointerDown);
+        //     doc.removeListener("mousemove", this.pointerController.pointerMove);
+        //     doc.removeListener("mouseup", this.pointerController.pointerUp);
+        //     doc.removeListener("mouseleave", this.pointerController.pointerLeave);
+        // }
     }
 
     @auto() public set touchEventsEnabled(value: boolean) {
         const doc = $(document);
-        if (value) {
-            doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
-            doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
-            doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
-            doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
-        } else {
-            doc.removeListener("touchstart", this.pointerController.pointerDown);
-            doc.removeListener("touchmove", this.pointerController.pointerMove);
-            doc.removeListener("touchend", this.pointerController.pointerUp);
-            doc.removeListener("touchcancel", this.pointerController.pointerUp);
-        }
+        // if (value) {
+        //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
+        //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
+        //     doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
+        //     doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
+        // } else {
+        //     doc.removeListener("touchstart", this.pointerController.pointerDown);
+        //     doc.removeListener("touchmove", this.pointerController.pointerMove);
+        //     doc.removeListener("touchend", this.pointerController.pointerUp);
+        //     doc.removeListener("touchcancel", this.pointerController.pointerUp);
+        // }
     }
 
     @auto() public set clickEventEnabled(value: boolean) {

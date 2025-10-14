@@ -133,7 +133,10 @@ class TurboSelect<
 
     @auto({
         defaultValue: function (entry: EntryType) {
-            $(entry).on(DefaultEventName.click, () => this.select(entry));
+            $(entry).on(DefaultEventName.click, () => {
+                this.select(entry);
+                return true;
+            });
         },
     }) public onEntryAdded: (entry: EntryType, index: number) => void;
 

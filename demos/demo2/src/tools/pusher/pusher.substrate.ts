@@ -11,14 +11,6 @@ import {
 export class PusherSubstrate extends TurboSubstrate {
     public substrateName = "pusher";
 
-    public get objectList(): Set<Element> {
-        return super.objectList as Set<Element>;
-    }
-
-    public set objectList(value: Set<Element>) {
-        if (value instanceof Set) super.objectList = value;
-    }
-
     @solver private resolvePush(properties: SubstrateSolverProperties) {
         const delta: Point = (properties.event as TurboDragEvent)?.deltaPosition;
         const el = properties.target;
@@ -26,16 +18,17 @@ export class PusherSubstrate extends TurboSubstrate {
 
         const list = Array.from($(document).getSubstrateObjectList()) as Element[];
         const overlaps = this.findOverlaps(el, list);
+
         if (overlaps.length === 0) {
             //No overlap -> remove from list
-            this.objectList.delete(el);
+            $(this).removeObjectFromSubstrate(el);
             return;
         }
 
         for (const overlap of overlaps) {
             //If any overlap is unprocessed, add it so resolve() will pick it up next
             if (!this.isProcessed(overlap)) {
-                this.objectList.add(overlap);
+                $(this).addObjectToSubstrate(overlap);
                 continue;
             }
 

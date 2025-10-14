@@ -1,7 +1,6 @@
 import {YMap, YMapEvent} from "../../yManagement.types";
 import {YModel} from "../yModel";
 import {MvcBlockKeyType} from "../../../mvc/core/core.types";
-import {markDirty} from "../../../decorators/signal/signal";
 
 /**
  * @class YComponentModel

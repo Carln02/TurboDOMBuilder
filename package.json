@@ -1,6 +1,6 @@
 {
   "name": "turbodombuilder",
-  "version": "0.8.103",
+  "version": "0.9.5",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
   "type": "module",
   "main": "build/turbodombuilder.cjs.js",
@@ -20,7 +20,7 @@
   "scripts": {
     "test": "vitest",
     "build": "gulp build",
-    "doc": "typedoc",
+    "doc": "typedoc --options typedoc.json",
     "doc:json": "npx typedoc --json docs/api.json",
     "clean": "rm -rf dist"
   },

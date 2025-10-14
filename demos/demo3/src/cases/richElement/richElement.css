@@ -1,0 +1,83 @@
+.turbo-rich-element {
+    --tre-bg: color-mix(in oklab, #ffffff 6%, transparent);
+    --tre-border: color-mix(in oklab, #8aa4ff 25%, #e6ebf5);
+    --tre-border-hover: color-mix(in oklab, #8aa4ff 45%, #d9e2f5);
+    --tre-ring: #8fd3ff;
+
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: .55rem;
+
+    padding: .55rem .7rem;
+    border-radius: 12px;
+    border: 1px solid var(--tre-border);
+    transition: transform 200ms cubic-bezier(.2, .8, .2, 1),
+    box-shadow 200ms cubic-bezier(.2, .8, .2, 1),
+    border-color 200ms cubic-bezier(.2, .8, .2, 1),
+    background 200ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.turbo-rich-element:hover {
+    transform: translateY(-1px);
+    border-color: var(--tre-border-hover);
+    box-shadow: 0 12px 26px rgba(16, 19, 26, .12),
+    0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.turbo-rich-element:active {
+    transform: translateY(0);
+    filter: saturate(1.03);
+}
+
+.turbo-rich-element:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--tre-ring) 60%, transparent),
+    0 12px 26px rgba(16, 19, 26, .12),
+    0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.turbo-rich-element > h1,
+.turbo-rich-element > h2,
+.turbo-rich-element > h3,
+.turbo-rich-element > h4,
+.turbo-rich-element > h5,
+.turbo-rich-element > h6,
+.turbo-rich-element > p,
+.turbo-rich-element > span {
+    margin: 0;
+}
+
+.turbo-rich-element > turbo-icon, .turbo-rich-element > turbo-icon-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    min-height: 1.25rem;
+}
+
+.pill {
+    --pill-bg: color-mix(in oklab, #7dd3fc 24%, #fff);
+    --pill-text: #0f141c;
+    --pill-border: color-mix(in oklab, #7c8cf8 35%, #e6ebf5);
+
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--pill-bg), #ffffff);
+    color: var(--pill-text);
+    border: 1px solid var(--pill-border);
+    font: 12px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    box-shadow: 0 4px 12px rgba(16, 19, 26, .06), 0 1px 0 rgba(255, 255, 255, .9) inset;
+    white-space: nowrap;
+    transition: transform 160ms cubic-bezier(.2, .8, .2, 1),
+    box-shadow 160ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(16, 19, 26, .08), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}

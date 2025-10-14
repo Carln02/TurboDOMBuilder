@@ -22,7 +22,7 @@ export class EventFunctionsUtils {
         return set;
     }
 
-    public getPreventDefaultListeners(element: Node): Record<string, (e: Event) => void> {
+    public getPreventDefaultListeners(element: Node): Record<string, (e: Event) => boolean> {
         let map = this.data(element).preventDefaultListeners;
         if (!map) {
             map = {};
@@ -54,9 +54,9 @@ export class EventFunctionsUtils {
         return [...this.getBoundListenersSet(element)]
             .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)
             .filter(entry => {
-                if (!options || !entry.options) return true;
+                if (!options) return true;
                 for (const [option, value] of Object.entries(options)) {
-                    if (entry.options[option] !== value) return false;
+                    if (entry.options?.[option] !== value) return false;
                 }
                 return true;
             });

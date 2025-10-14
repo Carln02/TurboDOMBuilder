@@ -1,22 +1,31 @@
-import {TurboElement, $, auto, define, div, h4, effect, signal, randomColor, element} from "../../../../build/turbodombuilder.esm";
+import {TurboElement, $, auto, define, div, h4, effect, span, signal, randomColor, element, flexRow} from "../../../../build/turbodombuilder.esm";
 import "./demoBox.css";
 
 @define("demo-box")
-export class DemoBox<Type extends Element> extends TurboElement {
+export class DemoBox extends TurboElement {
     private labelElement: HTMLElement;
     private contentBox: HTMLElement;
 
     @signal public label: string;
 
     @auto({defaultValue: [], callBefore: function () {this.content?.forEach(el => el.remove())}})
-    public set content(value: Type[]) {
+    public set content(value: Element[]) {
         if (!this.contentBox) return;
         value.forEach(el => $(this.contentBox).addChild(el));
     }
 
-    public addContent(value: Type) {
+    public addContent(value: Element): this {
         this.content.push(value);
         $(this.contentBox).addChild(value);
+        return this;
+    }
+
+    public addSubBox(label: string, ...values: Element[]): this {
+        this.addContent(element({
+            classes: "case-entry",
+            children: [span({text: label, classes: "tag"}), flexRow({style: "gap: 0.4rem", children: values})]
+        }));
+        return this;
     }
 
     public initialize() {
@@ -44,6 +53,6 @@ export class DemoBox<Type extends Element> extends TurboElement {
     }
 }
 
-export function box<Type extends Element>(label: string, ...content: Type[]): DemoBox<Type> {
-    return element({parent: document.body, tag: "demo-box", label, content: content}) as DemoBox<Type>;
+export function box(label: string, ...content: Element[]): DemoBox {
+    return element({parent: document.body, tag: "demo-box", label, content: content}) as DemoBox;
 }

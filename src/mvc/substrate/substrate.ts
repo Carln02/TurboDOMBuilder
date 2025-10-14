@@ -23,7 +23,7 @@ class TurboSubstrate<
 
     public readonly solverKeys: string[] = [];
 
-    public get objectList(): HTMLCollection | NodeList | Set<object> {
+    public get objectList(): Set<object> {
         return $(this).getSubstrateObjectList(this.substrateName);
     }
 

@@ -12,6 +12,7 @@ type TurboIconToggleProperties<
 > = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
     toggled?: boolean,
     toggleOnClick?: boolean,
+    stopPropagationOnClick?: boolean,
     onToggle?: (value: boolean, el: TurboIconToggle) => void,
 }
 

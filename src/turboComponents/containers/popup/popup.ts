@@ -89,9 +89,12 @@ class TurboPopup<
     protected setupUIListeners(): void {
         super.setupUIListeners();
         window.addEventListener(DefaultEventName.scroll, () => this.show(false));
-        window.addEventListener(DefaultEventName.resize, () => {if (this.isShown) this.recomputePosition()});
+        window.addEventListener(DefaultEventName.resize, () => {if ($(this).isShown) this.recomputePosition()});
         $(document).on(DefaultEventName.click, e => {
-            if (this.isShown && !this.contains(e.target as Node)) this.show(false);
+            if ($(this).isShown && !this.contains(e.target as Node)) {
+                this.show(false);
+                return true;
+            }
         });
     }
 
@@ -212,17 +215,17 @@ class TurboPopup<
     }
 
     public show(b: boolean): this {
-        if (this.isShown == b) return this;
+        if ($(this).isShown == b) return this;
         requestAnimationFrame(() => {
             if (b) this.recomputePosition();
             else this.clearMaxDimensions();
-            super.show(b);
+            $(this).show(b);
         });
         return this;
     }
 
     public toggle(): this {
-        return this.show(!this.isShown);
+        return this.show(!$(this).isShown);
     }
 
     private generateDimensionParameters(direction: Direction): DimensionProperties {

@@ -453,9 +453,25 @@ declare global {
  * @description Options for configuring the `@auto` decorator.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
- * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value just before it is set.
- * The returned value will be stored.
- * @property {boolean} [returnDefinedGetterValue] - If true and a getter is defined, will not modify the latter.
+ * @property {boolean} [setIfUndefined] - If true, will fire the setter when the underlying value is `undefined` and
+ * the program is trying to access it (maybe through its getter).
+ * @property {boolean} [returnDefinedGetterValue] - If true and a custom getter is defined, the return value of this
+ * getter will be returned when accessing the property. Otherwise, the underlying saved value will always be returned.
+ * Defaults to `false`.
+ * @property {boolean} [executeSetterBeforeStoring] - If true, when setting the value, the setter will execute first,
+ * and then the value will be stored. In this case, accessing the value in the setter will return the previous value.
+ * Defaults to `false`.
+ * @property {Type} [defaultValue] - If defined, whenever the underlying value is `undefined` and trying to be
+ * accessed, it will be set to `defaultValue` before getting accessed.
+ * @property {() => Type} [defaultValueCallback] - If defined, whenever the underlying value is `undefined` and
+ * trying to be accessed, it will be set to the return value of `defaultValueCallback` before getting accessed.
+ * @property {Type} [initialValue] - If defined, on initialization, the property will be set to `initialValue`.
+ * @property {() => Type} [initialValueCallback] - If defined, on initialization, the property will be set to the
+ * return value of `initialValueCallback`.
+ * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
+ * just before it is set. The returned value will be stored.
+ * @property {(value: Type) => void} [callBefore] - Optional function to call before preprocessing and setting the value.
+ * @property {(value: Type) => void} [callAfter] - Optional function to call after setting the value.
  */
 type AutoOptions<Type = any> = {
     cancelIfUnchanged?: boolean;
@@ -474,13 +490,18 @@ type AutoOptions<Type = any> = {
 /**
  * @decorator
  * @function auto
- * @description Stage-3 decorator that augments fields, getters, setters, and accessors. It can be used to generate
- * missing getters/setters. Useful to create a setter and only define additional functionality on set.
- * The storing and getting of the value are handled by `auto`.
- * You can also pass to the function an `options` {@link AutoOptions} object to define custom behaviors.
+ * @description Stage-3 decorator that augments fields, getters, setters, and accessors. Useful to quickly create a setter
+ * and only define additional functionality on set. The decorator takes an optional object as parameter to configure
+ * it, allowing you to, among other things:
+ * - Preprocess the value when it is set,
+ * - Specify callbacks to call before/after the value is set,
+ * - Defining a default value to return instead of `undefined` when calling the getter, and
+ * - Fire the setter when the underlying value is `undefined`.
  *
  * *Note: If you want to chain decorators, place @auto closest to the property to ensure it runs first and sets
  * up the accessor for other decorators.*
+ *
+ * @param {AutoOptions} [options] - Options object to define custom behaviors.
  *
  * @example
  * ```ts
@@ -631,7 +652,7 @@ declare function handler(name?: string): (_unused: unknown, context: ClassFieldD
  * @type DefineOptions
  * @description Options object type for the `@define` decorator.
  * @property {boolean} [injectAttributeBridge] - If true, injects an `attributeChangedCallback` into the
- * class (if it's missing). It defaults to true.
+ * class (if it's missing). It defaults to `true`.
  */
 type DefineOptions = {
     injectAttributeBridge?: boolean;
@@ -660,338 +681,7 @@ type DefineOptions = {
  * class MyEl extends HTMLElement { ... }
  * ````
  */
-declare function define(elementName?: string, options?: DefineOptions): <T extends new (...args: any[]) => HTMLElement>(Base: T, context: ClassDecoratorContext<T>) => {
-    new (...args: any[]): {
-        accessKey: string;
-        readonly accessKeyLabel: string;
-        autocapitalize: string;
-        dir: string;
-        draggable: boolean;
-        hidden: boolean;
-        inert: boolean;
-        innerText: string;
-        lang: string;
-        readonly offsetHeight: number;
-        readonly offsetLeft: number;
-        readonly offsetParent: Element;
-        readonly offsetTop: number;
-        readonly offsetWidth: number;
-        outerText: string;
-        popover: string;
-        spellcheck: boolean;
-        title: string;
-        translate: boolean;
-        attachInternals(): ElementInternals;
-        click(): void;
-        hidePopover(): void;
-        showPopover(): void;
-        togglePopover(force?: boolean): boolean;
-        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-        removeEventListener<K_1 extends keyof HTMLElementEventMap>(type: K_1, listener: (this: HTMLElement, ev: HTMLElementEventMap[K_1]) => any, options?: boolean | EventListenerOptions): void;
-        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
-        readonly attributes: NamedNodeMap;
-        readonly classList: DOMTokenList;
-        className: string;
-        readonly clientHeight: number;
-        readonly clientLeft: number;
-        readonly clientTop: number;
-        readonly clientWidth: number;
-        id: string;
-        readonly localName: string;
-        readonly namespaceURI: string;
-        onfullscreenchange: (this: Element, ev: Event) => any;
-        onfullscreenerror: (this: Element, ev: Event) => any;
-        outerHTML: string;
-        readonly ownerDocument: Document;
-        readonly part: DOMTokenList;
-        readonly prefix: string;
-        readonly scrollHeight: number;
-        scrollLeft: number;
-        scrollTop: number;
-        readonly scrollWidth: number;
-        readonly shadowRoot: ShadowRoot;
-        slot: string;
-        readonly tagName: string;
-        attachShadow(init: ShadowRootInit): ShadowRoot;
-        checkVisibility(options?: CheckVisibilityOptions): boolean;
-        closest<K_2 extends keyof HTMLElementTagNameMap>(selector: K_2): HTMLElementTagNameMap[K_2];
-        closest<K_3 extends keyof SVGElementTagNameMap>(selector: K_3): SVGElementTagNameMap[K_3];
-        closest<K_4 extends keyof MathMLElementTagNameMap>(selector: K_4): MathMLElementTagNameMap[K_4];
-        closest<E extends Element = Element>(selectors: string): E;
-        computedStyleMap(): StylePropertyMapReadOnly;
-        getAttribute(qualifiedName: string): string;
-        getAttributeNS(namespace: string, localName: string): string;
-        getAttributeNames(): string[];
-        getAttributeNode(qualifiedName: string): Attr;
-        getAttributeNodeNS(namespace: string, localName: string): Attr;
-        getBoundingClientRect(): DOMRect;
-        getClientRects(): DOMRectList;
-        getElementsByClassName(classNames: string): HTMLCollectionOf<Element>;
-        getElementsByTagName<K_5 extends keyof HTMLElementTagNameMap>(qualifiedName: K_5): HTMLCollectionOf<HTMLElementTagNameMap[K_5]>;
-        getElementsByTagName<K_6 extends keyof SVGElementTagNameMap>(qualifiedName: K_6): HTMLCollectionOf<SVGElementTagNameMap[K_6]>;
-        getElementsByTagName<K_7 extends keyof MathMLElementTagNameMap>(qualifiedName: K_7): HTMLCollectionOf<MathMLElementTagNameMap[K_7]>;
-        getElementsByTagName<K_8 extends keyof HTMLElementDeprecatedTagNameMap>(qualifiedName: K_8): HTMLCollectionOf<HTMLElementDeprecatedTagNameMap[K_8]>;
-        getElementsByTagName(qualifiedName: string): HTMLCollectionOf<Element>;
-        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1999/xhtml", localName: string): HTMLCollectionOf<HTMLElement>;
-        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/2000/svg", localName: string): HTMLCollectionOf<SVGElement>;
-        getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1998/Math/MathML", localName: string): HTMLCollectionOf<MathMLElement>;
-        getElementsByTagNameNS(namespace: string, localName: string): HTMLCollectionOf<Element>;
-        hasAttribute(qualifiedName: string): boolean;
-        hasAttributeNS(namespace: string, localName: string): boolean;
-        hasAttributes(): boolean;
-        hasPointerCapture(pointerId: number): boolean;
-        insertAdjacentElement(where: InsertPosition, element: Element): Element;
-        insertAdjacentHTML(position: InsertPosition, text: string): void;
-        insertAdjacentText(where: InsertPosition, data: string): void;
-        matches(selectors: string): boolean;
-        releasePointerCapture(pointerId: number): void;
-        removeAttribute(qualifiedName: string): void;
-        removeAttributeNS(namespace: string, localName: string): void;
-        removeAttributeNode(attr: Attr): Attr;
-        requestFullscreen(options?: FullscreenOptions): Promise<void>;
-        requestPointerLock(): void;
-        scroll(options?: ScrollToOptions): void;
-        scroll(x: number, y: number): void;
-        scrollBy(options?: ScrollToOptions): void;
-        scrollBy(x: number, y: number): void;
-        scrollIntoView(arg?: boolean | ScrollIntoViewOptions): void;
-        scrollTo(options?: ScrollToOptions): void;
-        scrollTo(x: number, y: number): void;
-        setAttribute(qualifiedName: string, value: string): void;
-        setAttributeNS(namespace: string, qualifiedName: string, value: string): void;
-        setAttributeNode(attr: Attr): Attr;
-        setAttributeNodeNS(attr: Attr): Attr;
-        setPointerCapture(pointerId: number): void;
-        toggleAttribute(qualifiedName: string, force?: boolean): boolean;
-        webkitMatchesSelector(selectors: string): boolean;
-        readonly baseURI: string;
-        readonly childNodes: NodeListOf<ChildNode>;
-        readonly firstChild: ChildNode;
-        readonly isConnected: boolean;
-        readonly lastChild: ChildNode;
-        readonly nextSibling: ChildNode;
-        readonly nodeName: string;
-        readonly nodeType: number;
-        nodeValue: string;
-        readonly parentElement: HTMLElement;
-        readonly parentNode: ParentNode;
-        readonly previousSibling: ChildNode;
-        textContent: string;
-        appendChild<T_1 extends Node>(node: T_1): T_1;
-        cloneNode(deep?: boolean): Node;
-        compareDocumentPosition(other: Node): number;
-        contains(other: Node): boolean;
-        getRootNode(options?: GetRootNodeOptions): Node;
-        hasChildNodes(): boolean;
-        insertBefore<T_2 extends Node>(node: T_2, child: Node): T_2;
-        isDefaultNamespace(namespace: string): boolean;
-        isEqualNode(otherNode: Node): boolean;
-        isSameNode(otherNode: Node): boolean;
-        lookupNamespaceURI(prefix: string): string;
-        lookupPrefix(namespace: string): string;
-        normalize(): void;
-        removeChild<T_3 extends Node>(child: T_3): T_3;
-        replaceChild<T_4 extends Node>(node: Node, child: T_4): T_4;
-        readonly ELEMENT_NODE: 1;
-        readonly ATTRIBUTE_NODE: 2;
-        readonly TEXT_NODE: 3;
-        readonly CDATA_SECTION_NODE: 4;
-        readonly ENTITY_REFERENCE_NODE: 5;
-        readonly ENTITY_NODE: 6;
-        readonly PROCESSING_INSTRUCTION_NODE: 7;
-        readonly COMMENT_NODE: 8;
-        readonly DOCUMENT_NODE: 9;
-        readonly DOCUMENT_TYPE_NODE: 10;
-        readonly DOCUMENT_FRAGMENT_NODE: 11;
-        readonly NOTATION_NODE: 12;
-        readonly DOCUMENT_POSITION_DISCONNECTED: 1;
-        readonly DOCUMENT_POSITION_PRECEDING: 2;
-        readonly DOCUMENT_POSITION_FOLLOWING: 4;
-        readonly DOCUMENT_POSITION_CONTAINS: 8;
-        readonly DOCUMENT_POSITION_CONTAINED_BY: 16;
-        readonly DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 32;
-        readonly reifects: ReifectHandler<Node>;
-        showTransition: StatefulReifect<Shown, Node>;
-        readonly isShown: boolean;
-        show(b: boolean): any;
-        dispatchEvent(event: Event): boolean;
-        ariaAtomic: string;
-        ariaAutoComplete: string;
-        ariaBusy: string;
-        ariaChecked: string;
-        ariaColCount: string;
-        ariaColIndex: string;
-        ariaColSpan: string;
-        ariaCurrent: string;
-        ariaDescription: string;
-        ariaDisabled: string;
-        ariaExpanded: string;
-        ariaHasPopup: string;
-        ariaHidden: string;
-        ariaInvalid: string;
-        ariaKeyShortcuts: string;
-        ariaLabel: string;
-        ariaLevel: string;
-        ariaLive: string;
-        ariaModal: string;
-        ariaMultiLine: string;
-        ariaMultiSelectable: string;
-        ariaOrientation: string;
-        ariaPlaceholder: string;
-        ariaPosInSet: string;
-        ariaPressed: string;
-        ariaReadOnly: string;
-        ariaRequired: string;
-        ariaRoleDescription: string;
-        ariaRowCount: string;
-        ariaRowIndex: string;
-        ariaRowSpan: string;
-        ariaSelected: string;
-        ariaSetSize: string;
-        ariaSort: string;
-        ariaValueMax: string;
-        ariaValueMin: string;
-        ariaValueNow: string;
-        ariaValueText: string;
-        role: string;
-        animate(keyframes: Keyframe[] | PropertyIndexedKeyframes, options?: number | KeyframeAnimationOptions): Animation;
-        getAnimations(options?: GetAnimationsOptions): Animation[];
-        after(...nodes: (string | Node)[]): void;
-        before(...nodes: (string | Node)[]): void;
-        remove(): void;
-        replaceWith(...nodes: (string | Node)[]): void;
-        innerHTML: string;
-        readonly nextElementSibling: Element;
-        readonly previousElementSibling: Element;
-        readonly childElementCount: number;
-        readonly children: HTMLCollection;
-        readonly firstElementChild: Element;
-        readonly lastElementChild: Element;
-        append(...nodes: (string | Node)[]): void;
-        prepend(...nodes: (string | Node)[]): void;
-        querySelector<K_9 extends keyof HTMLElementTagNameMap>(selectors: K_9): HTMLElementTagNameMap[K_9];
-        querySelector<K_10 extends keyof SVGElementTagNameMap>(selectors: K_10): SVGElementTagNameMap[K_10];
-        querySelector<K_11 extends keyof MathMLElementTagNameMap>(selectors: K_11): MathMLElementTagNameMap[K_11];
-        querySelector<K_12 extends keyof HTMLElementDeprecatedTagNameMap>(selectors: K_12): HTMLElementDeprecatedTagNameMap[K_12];
-        querySelector<E_1 extends Element = Element>(selectors: string): E_1;
-        querySelectorAll<K_13 extends keyof HTMLElementTagNameMap>(selectors: K_13): NodeListOf<HTMLElementTagNameMap[K_13]>;
-        querySelectorAll<K_14 extends keyof SVGElementTagNameMap>(selectors: K_14): NodeListOf<SVGElementTagNameMap[K_14]>;
-        querySelectorAll<K_15 extends keyof MathMLElementTagNameMap>(selectors: K_15): NodeListOf<MathMLElementTagNameMap[K_15]>;
-        querySelectorAll<K_16 extends keyof HTMLElementDeprecatedTagNameMap>(selectors: K_16): NodeListOf<HTMLElementDeprecatedTagNameMap[K_16]>;
-        querySelectorAll<E_2 extends Element = Element>(selectors: string): NodeListOf<E_2>;
-        replaceChildren(...nodes: (string | Node)[]): void;
-        readonly assignedSlot: HTMLSlotElement;
-        readonly attributeStyleMap: StylePropertyMap;
-        readonly style: CSSStyleDeclaration;
-        contentEditable: string;
-        enterKeyHint: string;
-        inputMode: string;
-        readonly isContentEditable: boolean;
-        onabort: (this: GlobalEventHandlers, ev: UIEvent) => any;
-        onanimationcancel: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
-        onanimationend: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
-        onanimationiteration: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
-        onanimationstart: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
-        onauxclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onbeforeinput: (this: GlobalEventHandlers, ev: InputEvent) => any;
-        onbeforetoggle: (this: GlobalEventHandlers, ev: Event) => any;
-        onblur: (this: GlobalEventHandlers, ev: FocusEvent) => any;
-        oncancel: (this: GlobalEventHandlers, ev: Event) => any;
-        oncanplay: (this: GlobalEventHandlers, ev: Event) => any;
-        oncanplaythrough: (this: GlobalEventHandlers, ev: Event) => any;
-        onchange: (this: GlobalEventHandlers, ev: Event) => any;
-        onclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onclose: (this: GlobalEventHandlers, ev: Event) => any;
-        oncontextmenu: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        oncopy: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
-        oncuechange: (this: GlobalEventHandlers, ev: Event) => any;
-        oncut: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
-        ondblclick: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        ondrag: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondragend: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondragenter: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondragleave: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondragover: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondragstart: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondrop: (this: GlobalEventHandlers, ev: DragEvent) => any;
-        ondurationchange: (this: GlobalEventHandlers, ev: Event) => any;
-        onemptied: (this: GlobalEventHandlers, ev: Event) => any;
-        onended: (this: GlobalEventHandlers, ev: Event) => any;
-        onerror: OnErrorEventHandlerNonNull;
-        onfocus: (this: GlobalEventHandlers, ev: FocusEvent) => any;
-        onformdata: (this: GlobalEventHandlers, ev: FormDataEvent) => any;
-        ongotpointercapture: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        oninput: (this: GlobalEventHandlers, ev: Event) => any;
-        oninvalid: (this: GlobalEventHandlers, ev: Event) => any;
-        onkeydown: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
-        onkeypress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
-        onkeyup: (this: GlobalEventHandlers, ev: KeyboardEvent) => any;
-        onload: (this: GlobalEventHandlers, ev: Event) => any;
-        onloadeddata: (this: GlobalEventHandlers, ev: Event) => any;
-        onloadedmetadata: (this: GlobalEventHandlers, ev: Event) => any;
-        onloadstart: (this: GlobalEventHandlers, ev: Event) => any;
-        onlostpointercapture: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onmousedown: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmouseenter: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmouseleave: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmousemove: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmouseout: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmouseover: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onmouseup: (this: GlobalEventHandlers, ev: MouseEvent) => any;
-        onpaste: (this: GlobalEventHandlers, ev: ClipboardEvent) => any;
-        onpause: (this: GlobalEventHandlers, ev: Event) => any;
-        onplay: (this: GlobalEventHandlers, ev: Event) => any;
-        onplaying: (this: GlobalEventHandlers, ev: Event) => any;
-        onpointercancel: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerdown: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerenter: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerleave: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointermove: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerout: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerover: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onpointerup: (this: GlobalEventHandlers, ev: PointerEvent) => any;
-        onprogress: (this: GlobalEventHandlers, ev: ProgressEvent<EventTarget>) => any;
-        onratechange: (this: GlobalEventHandlers, ev: Event) => any;
-        onreset: (this: GlobalEventHandlers, ev: Event) => any;
-        onresize: (this: GlobalEventHandlers, ev: UIEvent) => any;
-        onscroll: (this: GlobalEventHandlers, ev: Event) => any;
-        onscrollend: (this: GlobalEventHandlers, ev: Event) => any;
-        onsecuritypolicyviolation: (this: GlobalEventHandlers, ev: SecurityPolicyViolationEvent) => any;
-        onseeked: (this: GlobalEventHandlers, ev: Event) => any;
-        onseeking: (this: GlobalEventHandlers, ev: Event) => any;
-        onselect: (this: GlobalEventHandlers, ev: Event) => any;
-        onselectionchange: (this: GlobalEventHandlers, ev: Event) => any;
-        onselectstart: (this: GlobalEventHandlers, ev: Event) => any;
-        onslotchange: (this: GlobalEventHandlers, ev: Event) => any;
-        onstalled: (this: GlobalEventHandlers, ev: Event) => any;
-        onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any;
-        onsuspend: (this: GlobalEventHandlers, ev: Event) => any;
-        ontimeupdate: (this: GlobalEventHandlers, ev: Event) => any;
-        ontoggle: (this: GlobalEventHandlers, ev: Event) => any;
-        ontouchcancel?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
-        ontouchend?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
-        ontouchmove?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
-        ontouchstart?: (this: GlobalEventHandlers, ev: TouchEvent) => any;
-        ontransitioncancel: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
-        ontransitionend: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
-        ontransitionrun: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
-        ontransitionstart: (this: GlobalEventHandlers, ev: TransitionEvent) => any;
-        onvolumechange: (this: GlobalEventHandlers, ev: Event) => any;
-        onwaiting: (this: GlobalEventHandlers, ev: Event) => any;
-        onwebkitanimationend: (this: GlobalEventHandlers, ev: Event) => any;
-        onwebkitanimationiteration: (this: GlobalEventHandlers, ev: Event) => any;
-        onwebkitanimationstart: (this: GlobalEventHandlers, ev: Event) => any;
-        onwebkittransitionend: (this: GlobalEventHandlers, ev: Event) => any;
-        onwheel: (this: GlobalEventHandlers, ev: WheelEvent) => any;
-        autofocus: boolean;
-        readonly dataset: DOMStringMap;
-        nonce?: string;
-        tabIndex: number;
-        blur(): void;
-        focus(options?: FocusOptions): void;
-    };
-} & T;
+declare function define(elementName?: string, options?: DefineOptions): <T extends new (...args: any[]) => HTMLElement>(Base: T, context: ClassDecoratorContext<T>) => T;
 
 declare function expose(rootKey: string): <Type extends object, Value>(value: {
     get?: (this: Type) => Value;
@@ -1009,8 +699,9 @@ declare global {
 /**
  * @decorator
  * @function observe
- * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML attribute.
- * Also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
+ * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
+ * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
+ * It also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
  *
  * @example
  * ```ts
@@ -1795,6 +1486,7 @@ declare class TurboEventManagerModel extends TurboModel {
     longPressDuration: number;
     authorizeEventScaling: boolean | (() => boolean);
     scaleEventPosition: (position: Point) => Point;
+    activePointers: Set<number>;
     readonly origins: TurboMap<number, Point>;
     readonly previousPositions: TurboMap<number, Point>;
     positions: TurboMap<number, Point>;
@@ -1873,14 +1565,16 @@ declare class TurboEventManagerWheelController extends TurboController<TurboEven
 
 declare class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
-    pointerDown: (e: MouseEvent | TouchEvent) => void;
-    protected pointerDownFn(e: MouseEvent | TouchEvent): void;
-    pointerMove: (e: MouseEvent | TouchEvent) => void;
-    protected pointerMoveFn(e: MouseEvent | TouchEvent): void;
-    pointerUp: (e: MouseEvent | TouchEvent) => void;
-    protected pointerUpFn(e: MouseEvent | TouchEvent): void;
-    pointerLeave: () => void;
-    protected pointerLeaveFn(): void;
+    pointerDown: (e: PointerEvent) => void;
+    pointerMove: (e: PointerEvent) => void;
+    pointerUp: (e: PointerEvent) => void;
+    pointerCancel: (e: PointerEvent) => void;
+    lostPointerCapture: (e: PointerEvent) => void;
+    protected pointerDownFn(e: PointerEvent): void;
+    protected pointerMoveFn(e: PointerEvent): void;
+    protected pointerUpFn(e: PointerEvent): void;
+    protected pointerCancelFn(e: PointerEvent): void;
+    protected lostPointerCaptureFn(_e: PointerEvent): void;
     /**
      * @description Fires a custom Turbo click event at the click target with the click position
      * @param p
@@ -2112,14 +1806,12 @@ type ListenerEntry = {
     target: Node;
     type: string;
     toolName?: string;
-    listener: ((e: Event, el: Node) => void);
-    bundledListener: ((e: Event) => void);
+    listener: ((e: Event, el: Node) => boolean | void);
+    bundledListener: ((e: Event) => boolean | void);
     options?: ListenerOptions;
     manager: TurboEventManager;
 };
-type ListenerOptions = AddEventListenerOptions & {
-    propagate?: boolean;
-};
+type ListenerOptions = AddEventListenerOptions;
 type PreventDefaultOptions = {
     types?: string[];
     phase?: "capture" | "bubble";
@@ -2129,7 +1821,7 @@ type PreventDefaultOptions = {
     manager?: TurboEventManager;
 };
 declare const BasicInputEvents: readonly ["mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu", "dragstart", "selectstart", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "wheel"];
-declare const NonPassiveEvents: readonly ["wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup"];
+declare const NonPassiveEvents: readonly ["wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"];
 
 declare class TurboInteractor<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
     /**
@@ -2162,6 +1854,7 @@ type TurbofyOptions = {
     excludeToolFunctions?: boolean;
     excludeSubstrateFunctions?: boolean;
     excludeMiscFunctions?: boolean;
+    excludeReifectFunctions?: boolean;
 };
 type TurboToolProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager;
@@ -2217,12 +1910,12 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
     keyName: string;
     readonly substrateName: string;
     readonly solverKeys: string[];
-    get objectList(): HTMLCollection | NodeList | Set<object>;
+    get objectList(): Set<object>;
     set objectList(value: HTMLCollection | NodeList | Set<object>);
     constructor(properties: TurboSubstrateProperties<ElementType, ViewType, ModelType, EmitterType>);
     initialize(): void;
     addObject(object: object): void;
-    removeObject(object: object): boolean;
+    removeObject(object: object): Turbo<Node>;
     hasObject(object: object): boolean;
     isProcessed(object: object): boolean;
     resolve(properties?: SubstrateSolverProperties): void;
@@ -2713,7 +2406,9 @@ type TurboProperties<Tag extends ValidTag = "div"> = HTMLElementMutableFields<Ta
     parent?: Element;
     children?: Element | Element[];
     text?: string;
-    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => void)>;
+    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean)>;
+    onClick?: (e: Event, el: ValidElement<Tag>) => boolean;
+    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean;
     out?: string | Node;
     [key: string]: any;
 };
@@ -2997,14 +2692,15 @@ type SignalEntry<Type = any> = {
     sub(fn: SignalSubscriber): () => void;
     emit(): void;
 };
-type SignalBox<Value> = {
-    get(): Value;
-    set(v: Value): void;
-    update(fn: (prev: Value) => Value): void;
+type SignalBox<Type> = Type & {
+    get(): Type;
+    set(value: Type): void;
+    update(updater: (previous: Type) => Type): void;
     sub(fn: SignalSubscriber): () => void;
-    toJSON(): Value;
-    valueOf(): Value;
-    value: Value;
+    emit(): void;
+    toJSON(): Type;
+    valueOf(): Type;
+    value: Type;
     [Symbol.toPrimitive](hint: "default" | "number" | "string"): string | number;
 };
 
@@ -3013,14 +2709,18 @@ declare function signal<Type extends object, Value>(value: ((initial: Value) => 
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
-declare function modelSignal(dataKey: string): <Type extends object, Value>(value: {
+declare function modelSignal(dataKey: string, blockKey?: string | number): <Type extends object, Value>(value: {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 } | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 declare function effect(callback: () => void): () => void;
+declare function effect<Type extends object>(value: (this: Type) => void, context?: ClassMethodDecoratorContext<Type, any> | ClassGetterDecoratorContext<Type, any>): any;
 declare function getSignal<Type = any>(target: object, key: PropertyKey): SignalEntry<Type>;
 declare function setSignal<Type = any>(target: object, key: PropertyKey, next: Type): void;
 declare function markDirty(target: object, key: PropertyKey): void;
+declare function initializeEffects(target: object): void;
+declare function disposeEffect(target: object, key: PropertyKey): void;
+declare function disposeEffects(target: object): void;
 
 interface TurboElementUiInterface {
     /**
@@ -3095,7 +2795,7 @@ type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extend
 type TurboIconConfig = TurboElementConfig & {
     defaultType?: string;
     defaultDirectory?: string;
-    customLoaders?: Record<string, (path: string) => Promise<Element>>;
+    customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>;
 };
 
 /**
@@ -3174,6 +2874,7 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
     static readonly config: TurboIconConfig;
     private static imageTypes;
     private _element;
+    private _loadToken;
     onLoaded: (element: Element) => void;
     /**
      * @description The type of the icon.
@@ -3219,7 +2920,7 @@ declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType
  * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
 declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboRichElementConfig;
+    static config: TurboRichElementConfig;
     readonly childrenOrder: readonly ["leftCustomElements", "leftIcon", "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"];
     /**
      * @description Adds a given element or elements to the button at a specified position.
@@ -3239,20 +2940,20 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    get leftIcon(): TurboIcon;
     set leftIcon(value: string | TurboIcon);
+    get leftIcon(): TurboIcon;
     /**
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    get prefixEntry(): HTMLElement;
     set prefixEntry(value: string | HTMLElement);
+    get prefixEntry(): HTMLElement;
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
      * string will update the text's innerText with the given string.
      */
-    get element(): ValidElement<ElementTag>;
     set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>);
+    get element(): ValidElement<ElementTag>;
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
      * string will update the text's innerText with the given string.
@@ -3263,14 +2964,14 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    get suffixEntry(): HTMLElement;
     set suffixEntry(value: string | HTMLElement);
+    get suffixEntry(): HTMLElement;
     /**
      * @description The right icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    get rightIcon(): TurboIcon;
     set rightIcon(value: string | TurboIcon);
+    get rightIcon(): TurboIcon;
     /**
      * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
      */
@@ -3821,6 +3522,7 @@ type FlexRect = {
 };
 
 declare class TurboIconSwitch<State extends string | number | symbol = OnOff, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+    config: TurboIconConfig;
     get switchReifect(): StatefulReifect<State, TurboIcon>;
     set switchReifect(value: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>);
     set defaultState(value: State);
@@ -3832,11 +3534,13 @@ declare function iconSwitch<State extends string | number | symbol = OnOff, View
 type TurboIconToggleProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
     toggled?: boolean;
     toggleOnClick?: boolean;
+    stopPropagationOnClick?: boolean;
     onToggle?: (value: boolean, el: TurboIconToggle) => void;
 };
 
 declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     config: TurboIconConfig;
+    stopPropagationOnClick: boolean;
     onToggle: (value: boolean, el: TurboIconToggle) => void;
     private clickListener;
     set toggled(value: boolean);
@@ -3845,26 +3549,9 @@ declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, 
 }
 declare function iconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>): TurboIconToggle<ViewType, DataType, ModelType, EmitterType>;
 
-declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    protected labelElement: HTMLLabelElement;
-    inputElement: TurboRichElement<InputTag>;
-    locked: boolean;
-    dynamicVerticalResize: boolean;
-    selectTextOnFocus: boolean;
-    private lastValueWithInputCheck;
-    private lastValueWithBlurCheck;
-    inputRegexCheck: RegExp | string;
-    blurRegexCheck?: RegExp | string;
-    set label(value: string);
-    protected setupUIElements(): void;
-    protected setupUIListeners(): void;
-    protected set stringValue(value: string);
-    protected get stringValue(): string;
-    get value(): ValueType;
-    set value(value: string | ValueType);
-}
-
-type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = Omit<TurboRichElementProperties<InputTag, ViewType, DataType, ModelType>, "element"> & {
+type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboRichElementProperties<InputTag, ViewType, DataType, ModelType, EmitterType>, "element" | "elementTag"> & {
+    inputTag?: InputTag;
+    input?: TurboProperties<InputTag> | ValidElement<InputTag>;
     label?: string;
     locked?: boolean;
     dynamicVerticalResize?: boolean;
@@ -3873,7 +3560,39 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
     selectTextOnFocus?: boolean;
 };
 
-declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboInput<"input", number, ViewType, DataType, ModelType> {
+declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
+    static config: TurboRichElementConfig;
+    protected labelElement: HTMLLabelElement;
+    protected content: HTMLElement;
+    locked: boolean;
+    selectTextOnFocus: boolean;
+    private lastValueWithInputCheck;
+    private lastValueWithBlurCheck;
+    inputRegexCheck: RegExp | string;
+    blurRegexCheck: RegExp | string;
+    dynamicVerticalResize: boolean;
+    defaultId: string;
+    set label(value: string);
+    set element(value: TurboProperties<InputTag> | ValidElement<InputTag>);
+    get element(): ValidElement<InputTag>;
+    protected setupUIElements(): void;
+    protected setupUILayout(): void;
+    protected setupUIListeners(): void;
+    protected set stringValue(value: string);
+    protected get stringValue(): string;
+    get value(): ValueType;
+    set value(value: string | ValueType);
+}
+declare function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
+
+type TurboNumericalInputProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboInputProperties<"input", ViewType, DataType, ModelType, EmitterType> & {
+    multiplier?: number;
+    decimalPlaces?: number;
+    min?: number;
+    max?: number;
+};
+
+declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
     multiplier: number;
     decimalPlaces: number;
     min: number;
@@ -3881,13 +3600,7 @@ declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, an
     get value(): number;
     set value(value: string | number);
 }
-
-type TurboNumericalInputProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboInputProperties<"input", ViewType, DataType, ModelType> & {
-    multiplier?: number;
-    decimalPlaces?: number;
-    min?: number;
-    max?: number;
-};
+declare function numericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboNumericalInputProperties<ViewType, DataType, ModelType, EmitterType>): TurboNumericalInput<ViewType, DataType, ModelType, EmitterType>;
 
 type EntryData = {
     enabled?: boolean;
@@ -4541,33 +4254,6 @@ declare class ReifectHandler<ClassType extends object = Node> {
     enableReifect(reifect: StatefulReifect<any, ClassType>, value: boolean | ReifectEnabledObject): void;
 }
 
-declare global {
-    interface Node {
-        /**
-         * @description Handler for all Reifects attached to this element.
-         */
-        readonly reifects: ReifectHandler;
-        /**
-         * @description The transition used by the element's show() and isShown methods. Directly modifying its
-         * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
-         * new custom StatefulReifect.
-         */
-        showTransition: StatefulReifect<Shown>;
-        /**
-         * @description Boolean indicating whether the element is shown or not, based on its showTransition.
-         */
-        readonly isShown: boolean;
-        /**
-         * @description Show or hide the element (based on CSS) by transitioning in/out of the element's showTransition.
-         * @param {boolean} b - Whether to show the element or not
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        show(b: boolean): this;
-    }
-}
-
-declare function addReifectManagementToNodePrototype(): void;
-
 /**
  * @class TurboProxiedElement
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
@@ -4616,6 +4302,7 @@ type ChildHandler = Node | ShadowRoot;
 declare function setupHierarchyFunctions(): void;
 
 declare function setupMiscFunctions(): void;
+declare function setupReifectFunctions(): void;
 
 declare function setupStyleFunctions(): void;
 
@@ -4707,6 +4394,7 @@ declare function isUndefined(value: any): boolean;
 declare function getFirstDescriptorInChain(object: object, key: PropertyKey): PropertyDescriptor;
 declare function hasPropertyInChain(object: object, key: PropertyKey): boolean;
 declare function getFirstPrototypeInChainWith(object: object, key: PropertyKey): any;
+declare function getSuperMethod(object: object, key: PropertyKey, wrapperFn: Function): Function;
 
 /**
  * @description Converts the passed variable into a string.
@@ -4912,47 +4600,47 @@ interface TurboSelector {
         /**
          * @description Adds an event listener to the element.
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => void), options?: ListenerOptions, manager?: TurboEventManager): this;
+        on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => boolean | void), options?: ListenerOptions, manager?: TurboEventManager): this;
         /**
          * @description Adds an event listener to the element.
          * @param {string} type - The type of the event.
          * @param toolName - The name of the tool. Set to null or undefined to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => void), options?: ListenerOptions, manager?: TurboEventManager): this;
+        onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => boolean | void), options?: ListenerOptions, manager?: TurboEventManager): this;
         executeAction(type: string, toolName: string, event: Event, options?: ListenerOptions, manager?: TurboEventManager): boolean;
         /**
          * @description Checks if the given event listener is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasListener(type: string, listener: ((e: Event, el: this) => void), manager?: TurboEventManager): boolean;
+        hasListener(type: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): boolean;
         /**
          * @description Checks if the given event listener is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => void), manager?: TurboEventManager): boolean;
+        hasToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): boolean;
         /**
          * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
@@ -4966,23 +4654,23 @@ interface TurboSelector {
         /**
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeListener(type: string, listener: ((e: Event, el: this) => void), manager?: TurboEventManager): this;
+        removeListener(type: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): this;
         /**
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
          * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => void), manager?: TurboEventManager): this;
+        removeToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): this;
         /**
          * @description Removes all event listeners bound to the element (in its boundListeners list) assigned to the
          * specified type.
@@ -5006,7 +4694,7 @@ interface TurboSelector {
          * will be processed.
          * @param {PreventDefaultOptions} options - An options object to customize the behavior of the function.
          */
-        preventDefault(options?: PreventDefaultOptions): void;
+        preventDefault(options?: PreventDefaultOptions): this;
     }
 interface TurboSelector extends Node {
     }
@@ -5064,10 +4752,10 @@ interface TurboSubstrate {
 interface TurboSelector {
         makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
         getSubstrates(): string[];
-        getSubstrateObjectList(substrate?: string): HTMLCollection | NodeList | Set<object>;
+        getSubstrateObjectList(substrate?: string): Set<object>;
         setSubstrateObjectList(list: HTMLCollection | NodeList | Set<object>, substrate?: string): this;
-        addObjectToSubstrate(object: object, substrate?: string): void;
-        removeObjectFromSubstrate(object: object, substrate?: string): boolean;
+        addObjectToSubstrate(object: object, substrate?: string): this;
+        removeObjectFromSubstrate(object: object, substrate?: string): this;
         hasObjectInSubstrate(object: object, substrate?: string): boolean;
         wasObjectProcessedBySubstrate(object: object, substrate?: string): boolean;
         setSubstrate(name: string): this;
@@ -5391,6 +5079,28 @@ interface TurboSelector {
     }
 interface TurboSelector {
         /**
+         * @description Handler for all Reifects attached to this element.
+         */
+        readonly reifects: ReifectHandler;
+        /**
+         * @description The transition used by the element's show() and isShown methods. Directly modifying its
+         * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
+         * new custom StatefulReifect.
+         */
+        showTransition: StatefulReifect<Shown>;
+        /**
+         * @description Boolean indicating whether the element is shown or not, based on its showTransition.
+         */
+        readonly isShown: boolean;
+        /**
+         * @description Show or hide the element (based on CSS) by transitioning in/out of the element's showTransition.
+         * @param {boolean} b - Whether to show the element or not
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        show(b: boolean): this;
+    }
+interface TurboSelector {
+        /**
          * @description Turns the element into a tool identified by `toolName`, optionally wiring activation and key mapping.
          * @param {string} toolName - The unique name of the tool to register under the manager.
          * @param {MakeToolOptions} [options] - Tool creation options (activation, click mode, key mapping, manager).
@@ -5481,4 +5191,4 @@ interface TurboSelector {
         isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
 
-export { $, AccessLevel, ActionMode, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDataBlock, type YDocumentProperties, type YManagerDataBlock, a, addInYArray, addInYMap, addReifectManagementToNodePrototype, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, t, textToElement, textarea, trim, turbo, turbofy, video };
+export { $, AccessLevel, ActionMode, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDataBlock, type YDocumentProperties, type YManagerDataBlock, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, t, textToElement, textarea, trim, turbo, turboInput, turbofy, video };

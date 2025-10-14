@@ -43,6 +43,8 @@ export class TurboEventManagerModel extends TurboModel {
     public authorizeEventScaling: boolean | (() => boolean);
     public scaleEventPosition: (position: Point) => Point;
 
+    public activePointers = new Set<number>();
+
     //Saved values (Maps to account for different touch points and their IDs)
     public readonly origins: TurboMap<number, Point> = new TurboMap();
     public readonly previousPositions: TurboMap<number, Point> = new TurboMap();

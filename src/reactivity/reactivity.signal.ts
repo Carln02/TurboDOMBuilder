@@ -34,7 +34,7 @@ export class SignalUtils {
                 }
                 return Reflect.set(target, key, value, receiver);
             }
-        });
+        }) as any;
     }
 
     public signalDecorator<Type extends object, Value>(

@@ -3,31 +3,22 @@ import {TurboInputProperties} from "../input.types";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/core/view";
 import {TurboModel} from "../../../../mvc/core/model";
+import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {element} from "../../../../elementCreation/element";
+import {TurboNumericalInputProperties} from "./numericalInput.types";
 
 @define("turbo-numerical-input")
 class TurboNumericalInput<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboInput<"input", number, ViewType, DataType, ModelType> {
-    public multiplier: number;
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
+    public multiplier: number = 1;
     public decimalPlaces: number;
 
     public min: number;
     public max: number;
-
-    // public constructor(properties: TurboInputProperties<"input", ViewType, DataType, ModelType> = {}) {
-    //     //Only allow numbers (positive, negative, and decimal)
-    //     properties.inputRegexCheck = properties.inputRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
-    //     properties.blurRegexCheck = properties.blurRegexCheck || /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-    //     super(properties);
-    //
-    //     this.multiplier = properties.multiplier || 1;
-    //     this.decimalPlaces = properties.decimalPlaces;
-    //
-    //     this.min = properties.min;
-    //     this.max = properties.max;
-    // }
 
     public get value(): number {
         return Number.parseFloat(this.stringValue) / this.multiplier;
@@ -50,5 +41,24 @@ class TurboNumericalInput<
     }
 }
 
-export {TurboNumericalInput};
+function numericalInput<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter,
+>(
+    properties: TurboNumericalInputProperties<ViewType, DataType, ModelType, EmitterType>
+): TurboNumericalInput<ViewType, DataType, ModelType, EmitterType> {
+    properties.element = properties.input;
+    properties.elementTag = "input";
+    if (!properties.element) properties.element = {};
+
+    //Only allow numbers (positive, negative, and decimal)
+    if (!properties.inputRegexCheck) properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
+    if (!properties.blurRegexCheck) properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
+
+    return element({...properties, input: undefined, inputTag: undefined, tag: "turbo-input"}) as any;
+}
+
+export {TurboNumericalInput, numericalInput};
 

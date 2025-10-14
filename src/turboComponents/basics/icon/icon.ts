@@ -13,6 +13,7 @@ import {equalToAny} from "../../../utils/computations/equity";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
 import {cache} from "../../../decorators/cache/cache";
+import {isUndefined} from "../../../utils/dataManipulation/misc";
 
 /**
  * Icon class for creating icon elements.
@@ -36,10 +37,9 @@ class TurboIcon<
         "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
 
     private _element: Element;
+    private _loadToken = 0;
 
     public onLoaded: (element: Element) => void;
-
-    //Getters and setters
 
     /**
      * @description The type of the icon.
@@ -60,7 +60,7 @@ class TurboIcon<
     @observe @auto({
         initialValueCallback: function() {return this.getPropertiesValue(undefined, "defaultDirectory", "")},
         preprocessValue: function (value: string) {
-            if (!value) return this.directory;
+            if (isUndefined(value)) return this.directory;
             if (value.length > 0 && !value.endsWith("/")) value += "/";
             return value;
         },
@@ -71,8 +71,10 @@ class TurboIcon<
      * @description The path to the icon's source file.
      */
     public get path(): string {
-        let extension = (this.icon.endsWith("." + this.type) || this.type.length === 0) ? "" : "." + this.type;
-        return this.directory + this.icon + extension;
+        let extension = getFileExtension(this.icon);
+        const icon = this.icon?.replace(extension, "");
+        if (extension.length === 0 && this.type?.length > 0) extension = "." + this.type;
+        return this.directory + icon + extension;
     }
 
     /**
@@ -105,7 +107,7 @@ class TurboIcon<
 
     //Utilities
 
-    // @cache()
+    @cache()
     protected loadSvg(path: string): Promise<SVGElement> {
         return fetchSvg(path);
     }
@@ -119,8 +121,11 @@ class TurboIcon<
     }
 
     protected generateIcon() {
+        const path = this.path;
+        const type = getFileExtension(path)?.substring(1);
+
         if (this.element instanceof HTMLImageElement
-            && equalToAny(this.type, ...(this.constructor as any).imageTypes)) {
+            && equalToAny(type, ...(this.constructor as any).imageTypes)) {
             this.element.src = this.path;
             this.element.alt = this.icon;
             return;
@@ -129,11 +134,14 @@ class TurboIcon<
         this.clear();
         if (!this.icon) return;
 
-        const element = this.getLoader(this.type)(this.path);
+        const token = ++this._loadToken;
+        const element = this.getLoader(type)(path);
 
         if (element instanceof Element) this.setupLoadedElement(element);
-        else element.then(element => this.setupLoadedElement(element))
-            .catch(error => console.error(`Failed to load icon: ${error}`));
+        else element.then(element => {
+            if (token !== this._loadToken) return;
+            this.setupLoadedElement(element);
+        }).catch(error => console.error(`Failed to load icon: ${error}`));
     }
 
     private getLoader(type: string): (path: string) => Element | Promise<Element> {
@@ -168,7 +176,9 @@ function icon<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+>(
+    properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>
+): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
     return element({...properties, tag: "turbo-icon"} as any) as any;
 }
 

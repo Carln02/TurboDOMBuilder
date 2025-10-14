@@ -9,6 +9,7 @@ import {setupToolFunctions} from "./tool/tool";
 import {setupSubstrateFunctions} from "./substrate/substrate";
 import {TurboSelector} from "./turboSelector";
 import {callOnce} from "../decorators/callOnce";
+import {setupReifectFunctions} from "./reifect/reifect";
 
 function $<Type extends Node = Node>(element?: Type | object): Turbo<Type> {
     turbofy();
@@ -46,7 +47,7 @@ const turbofy = callOnce(function (options: TurbofyOptions = {}) {
     if (!options.excludeStyleFunctions) setupStyleFunctions();
     if (!options.excludeToolFunctions) setupToolFunctions();
     if (!options.excludeSubstrateFunctions) setupSubstrateFunctions();
-    //todo addReifectManagementToNodePrototype();
+    if (!options.excludeReifectFunctions) setupReifectFunctions();
 });
 
 export {$, t, turbo, turbofy};

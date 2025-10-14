@@ -6,6 +6,8 @@ import {stylesheet} from "../../elementCreation/miscElements";
 import {$} from "../turboFunctions";
 import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/core/model";
+import {DefaultEventName} from "../../eventHandling/eventNaming";
+import {stringify} from "../../utils/dataManipulation/stringManipulation";
 
 function setupElementFunctions() {
     /**
@@ -66,6 +68,12 @@ function setupElementFunctions() {
                     Object.entries(value).forEach(([type, callback]) =>
                         this.on(type, callback as any));
                     break;
+                case "onClick":
+                    this.on(DefaultEventName.click, value as any);
+                    break;
+                case "onDrag":
+                    this.on(DefaultEventName.drag, value as any);
+                    break;
                 case "children":
                     this.addChild(value);
                     break;
@@ -98,9 +106,9 @@ function setupElementFunctions() {
 
                 default:
                     if (setOnlyBaseProperties) break;
-                    try {this.element[property] = properties[property]}
+                    try {this.element[property] = value}
                     catch (e) {
-                        try {this.setAttribute(property, properties[property])}
+                        try {this.setAttribute(property, stringify(value))}
                         catch (e) {console.error(e)}
                     }
                     break;

@@ -82,13 +82,13 @@ function auto(options?: AutoOptions) {
             let customSetter: (this: any, value: Value) => void;
 
             const write = function (this: any, value: Value): void {
+                options.callBefore?.call(this, value);
                 let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
                 if ((options.cancelIfUnchanged ?? true) && this[backing] === next) return;
-                options.callBefore?.call(this, value);
                 if (options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
                 this[backing] = next;
                 if (!options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
-                options.callAfter?.call(this, value);
+                options.callAfter?.call(this, next);
             };
 
             const baseRead = function (this: any) {

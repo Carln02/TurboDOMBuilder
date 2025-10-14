@@ -9,6 +9,7 @@ import {TurboModel} from "../../../../mvc/core/model";
 import {auto} from "../../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {element} from "../../../../elementCreation/element";
+import {TurboIconConfig} from "../icon.types";
 
 @define("turbo-icon-switch")
 class TurboIconSwitch<
@@ -18,6 +19,8 @@ class TurboIconSwitch<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+    public config: TurboIconConfig = {...TurboIcon.config};
+
     public get switchReifect(): StatefulReifect<State, TurboIcon> {return}
 
     @auto({

@@ -1,9 +1,9 @@
-import {ReifectHandler} from "../reifectHandler/reifectHandler";
-import {StatefulReifect} from "../statefulReifect/statefulReifect";
-import {Shown} from "../../../utils/datatypes/basicDatatypes.types";
+import {ReifectHandler} from "../../turboComponents/wrappers/reifectHandler/reifectHandler";
+import {StatefulReifect} from "../../turboComponents/wrappers/statefulReifect/statefulReifect";
+import {Shown} from "../../utils/datatypes/basicDatatypes.types";
 
-declare global {
-    interface Node {
+declare module "../turboSelector" {
+    interface TurboSelector {
         /**
          * @description Handler for all Reifects attached to this element.
          */

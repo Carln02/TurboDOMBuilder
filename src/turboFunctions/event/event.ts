@@ -5,6 +5,7 @@ import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventMa
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {EventFunctionsUtils} from "./event.utils";
 import {TurboSelector} from "../turboSelector";
+import {TurboButton} from "../../turboComponents/basics/button/button";
 
 const utils = new EventFunctionsUtils();
 
@@ -52,7 +53,7 @@ function setupEventFunctions() {
         this: Turbo<Type>,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo<Type>) => void),
+        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
@@ -61,7 +62,6 @@ function setupEventFunctions() {
 
         manager.setupCustomDispatcher?.(type);
         utils.getBoundListenersSet(this).add({target: this, type, toolName, listener, bundledListener, options, manager});
-        this.element?.addEventListener(type, bundledListener, options);
         return this;
     };
 
@@ -78,7 +78,7 @@ function setupEventFunctions() {
     TurboSelector.prototype.on = function _on<Type extends Node>(
         this: Turbo<Type>,
         type: string,
-        listener: ((e: Event, el: Turbo<Type>) => void),
+        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
@@ -107,21 +107,25 @@ function setupEventFunctions() {
 
         if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
 
+        const firedListeners: Set<ListenerEntry> = new Set();
+
         const run = (target: Node, tool?: string): boolean => {
             const ts = target instanceof TurboSelector ? target : $(target);
             const boundSet = utils.getBoundListenersSet(target);
             const entries = [...utils.getBoundListeners(target, type, tool, options, manager)];
             if (entries.length === 0) return false;
 
-            let propagate = false;
+            let stopPropagation = false;
             for (const entry of entries) {
-                try { entry.listener(event, ts); }
+                if (firedListeners.has(entry)) continue;
+                try {if (entry.listener(event, ts)) stopPropagation = true}
                 finally {
+                    firedListeners.add(entry);
                     if (entry.options?.once) boundSet.delete(entry);
-                    if (entry.options?.propagate) propagate = true;
                 }
             }
-            return !propagate;
+
+            return stopPropagation;
         };
 
         if (activeTool && run(this, activeTool)) return true;
@@ -160,7 +164,7 @@ function setupEventFunctions() {
     TurboSelector.prototype.hasListener = function _hasListener(
         this: Turbo,
         type: string,
-        listener: ((e: Event, el: Turbo) => void),
+        listener: ((e: Event, el: Turbo) => boolean | void),
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
         return this.hasToolListener(type, undefined, listener, manager);
@@ -180,7 +184,7 @@ function setupEventFunctions() {
         this: Turbo,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo) => void),
+        listener: ((e: Event, el: Turbo) => boolean | void),
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
         return utils.getBoundListeners(this, type, toolName, undefined, manager)
@@ -215,7 +219,7 @@ function setupEventFunctions() {
     TurboSelector.prototype.removeListener = function _removeListener<Type extends Node>(
         this: Turbo<Type>,
         type: string,
-        listener: ((e: Event, el: Turbo<Type>) => void),
+        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         return this.removeToolListener(type, undefined, listener, manager);
@@ -235,7 +239,7 @@ function setupEventFunctions() {
         this: Turbo<Type>,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo<Type>) => void),
+        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         const boundListeners = utils.getBoundListenersSet(this);
@@ -297,7 +301,7 @@ function setupEventFunctions() {
      * will be processed.
      * @param {PreventDefaultOptions} options - An options object to customize the behavior of the function.
      */
-    TurboSelector.prototype.preventDefault = function _preventDefault(this: Turbo, options?: PreventDefaultOptions): void {
+    TurboSelector.prototype.preventDefault = function _preventDefault(this: Turbo, options?: PreventDefaultOptions): TurboSelector {
         if (!options) options = {};
         const manager = options.manager ?? TurboEventManager.instance;
         const types = options.types ?? BasicInputEvents;
@@ -318,10 +322,11 @@ function setupEventFunctions() {
 
         for (const type of new Set(types)) {
             const handler = (event: Event) => {
-                if (!utils.data(this.element).preventDefaultOn(type, event)) return;
+                if (!utils.data(this.element).preventDefaultOn(type, event)) return false;
                 event.preventDefault?.();
                 if (stop === "immediate") event.stopImmediatePropagation?.();
                 else if (stop === "stop") event.stopPropagation?.();
+                return  true;
             }
             preventDefaultListeners[type] = handler;
             const options: Record<string, boolean> = {};
@@ -329,6 +334,8 @@ function setupEventFunctions() {
             if (shouldNotBePassive.has(type)) options.passive = false;
             this.on(type, handler, options, manager);
         }
+
+        return this;
     }
 }
 

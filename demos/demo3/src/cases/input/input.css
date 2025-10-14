@@ -1,0 +1,125 @@
+/* ---------- Turbo Input (dark-friendly) ---------- */
+.turbo-input {
+    display: grid;
+    gap: .5rem;
+    color: var(--text);
+}
+
+/* label */
+.turbo-input > label {
+    font: 600 12.5px/1.2 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    color: color-mix(in oklab, var(--text) 82%, #9ba7b6);
+    letter-spacing: .2px;
+}
+
+/* field shell (your code wraps the element in a div) */
+.turbo-input > div {
+    display: grid;
+    align-items: center;
+
+    border-radius: 12px;
+    background: linear-gradient(180deg, #101624, #0c111a);
+    border: 1px solid color-mix(in oklab, var(--border) 70%, #2b3a55);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .04);
+    padding: .55rem .7rem;
+
+    transition: border-color 200ms cubic-bezier(.2, .8, .2, 1),
+    box-shadow 200ms cubic-bezier(.2, .8, .2, 1),
+    background 200ms cubic-bezier(.2, .8, .2, 1),
+    transform 200ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.turbo-input > div:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--ring) 36%, #2b3a55);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+/* actual input / textarea */
+.turbo-input input,
+.turbo-input textarea {
+    width: 100%;
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    outline: none;
+    padding: 0;
+    font: 14.5px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    caret-color: var(--ring);
+}
+
+.turbo-input textarea {
+    resize: none; /* dynamicVerticalResize handles height */
+}
+
+/* placeholder */
+.turbo-input input::placeholder,
+.turbo-input textarea::placeholder {
+    color: color-mix(in oklab, var(--text) 45%, #7d8898);
+    opacity: .7;
+}
+
+/* focus ring (when the inner control is focused) */
+.turbo-input:has(input:focus-visible),
+.turbo-input:has(textarea:focus-visible) {
+    outline: none;
+}
+
+.turbo-input:has(input:focus-visible) > div,
+.turbo-input:has(textarea:focus-visible) > div {
+    border-color: color-mix(in oklab, var(--ring) 60%, #2b3a55);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent),
+    0 12px 26px rgba(0, 0, 0, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+/* disabled / readonly / locked */
+.turbo-input:has(input[disabled]),
+.turbo-input:has(textarea[disabled]),
+.turbo-input:has(input[readonly]),
+.turbo-input:has(textarea[readonly]) {
+    opacity: .7;
+}
+
+.turbo-input:has(input[disabled]) > div,
+.turbo-input:has(textarea[disabled]) > div {
+    filter: grayscale(.1);
+    cursor: not-allowed;
+}
+
+/* invalid (use aria-invalid or add .is-invalid on .turbo-input) */
+.turbo-input[aria-invalid="true"] > div,
+.turbo-input.is-invalid > div {
+    border-color: color-mix(in oklab, #fb7185 60%, #2b3a55);
+    box-shadow: 0 0 0 3px color-mix(in oklab, #fb7185 25%, transparent),
+    0 10px 22px rgba(0, 0, 0, .4),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+/* quick compact variant (optional) */
+.turbo-input.ti-compact > div {
+    padding: .4rem .6rem;
+}
+
+.turbo-input.ti-compact > label {
+    font-size: 11.5px;
+}
+
+/* remove number spinners if you end up using type=number */
+.turbo-input input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.turbo-input input[type="number"]::-webkit-outer-spin-button,
+.turbo-input input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .turbo-input > div {
+        transition: none !important;
+    }
+}
