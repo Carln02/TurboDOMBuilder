@@ -1,7 +1,5 @@
 # TurboDOMBuilder
-TurboDOMBuilder is a lightweight TypeScript library designed to accelerate the process of creating and appending DOM elements. With TurboDOMBuilder, you can quickly generate HTML elements with specified properties and seamlessly integrate them into your web applications, all in one line of code.
-
-For now, the library allows you to create any generic HTML element, and has more specialized functions for creating images and inputs. It also has a few custom components to create buttons and icons. You can refer to the [documentation](https://carln02.github.io/TurboDOMBuilder/) to discover all the possible actions.
+Documentation: https://carln02.github.io/TurboDOMBuilder/
 
 ## Installation
 
