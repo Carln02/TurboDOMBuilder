@@ -125,7 +125,6 @@ class TurboRichElement<
                 value = element({tag: this.elementTag, text: value} as TurboProperties<ElementTag>);
             } else if (typeof value === "object" && !(value instanceof Element)) {
                 if (!value.tag) value.tag = this.elementTag;
-                console.log(this.elementTag, value);
                 value = element(value);
             }
             $(this).remChild(this.element);
@@ -216,7 +215,11 @@ function richElement<
 >(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>):
     TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
     if (properties.text && !properties.element) properties.element = properties.text;
-    return element({...properties, text: undefined, tag: "turbo-rich-element"} as any) as any;
+    if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+        properties.element.tag = properties.elementTag;
+    }
+    if (!properties.tag) properties.tag = "turbo-rich-element";
+    return element({...properties, text: undefined}) as any;
 }
 
 export {TurboRichElement, richElement};

@@ -67,6 +67,11 @@ body {
     font: 14.5px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
 }
 
+h2, h3, h4, h5, h6, p, span {
+    padding: 0;
+    margin: 0;
+}
+
 .turbo-rich-element.turbo-button {
     --btn-bg: color-mix(in oklab, var(--brand) 10%, var(--panel-2));
     --btn-bg-hover: color-mix(in oklab, var(--brand) 18%, var(--panel-2));

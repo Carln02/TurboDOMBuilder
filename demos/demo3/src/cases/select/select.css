@@ -1,0 +1,40 @@
+.select-parent {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+}
+
+.select-parent > * {
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid color-mix(in oklab, var(--border, #2a2a2a), #000 20%);
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s ease, transform .08s ease, border-color .2s ease;
+}
+
+.select-parent > .selected {
+    display: block;
+    background-color: color-mix(in oklab, var(--brand, #6aa9ff), #000 50%);
+    border-color: color-mix(in oklab, var(--brand, #6aa9ff), #000 50%);
+}
+
+.tabs-bar {
+    border-bottom: 1px solid color-mix(in oklab, var(--border, #2a2a2a), #000 20%);
+}
+
+.tabs-panels {
+    padding: 0.75rem;
+    border: 1px solid color-mix(in oklab, var(--border, #2a2a2a), #000 20%);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--bg, #131313), #000 10%);
+}
+
+.tabs-panels > .is-active {
+    animation: panelIn .18s ease both;
+}
+
+@keyframes panelIn {
+    from { opacity: 0; translate: 0 4px; }
+    to { opacity: 1; translate: 0 0; }
+}

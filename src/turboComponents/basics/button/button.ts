@@ -1,15 +1,12 @@
 import {TurboButtonConfig} from "./button.types";
 import "./button.css";
-import {TurboRichElement} from "../richElement/richElement";
+import {richElement, TurboRichElement} from "../richElement/richElement";
 import {TurboRichElementProperties} from "../richElement/richElement.types";
-import {$} from "../../../turboFunctions/turboFunctions";
 import {define} from "../../../decorators/define/define";
 import {ValidTag} from "../../../core.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/core/emitter";
-import {element} from "../../../elementCreation/element";
 
 /**
  * Button class for creating Turbo button elements.
@@ -36,8 +33,8 @@ function button<
 >(
     properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>
 ): TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType> {
-    if (properties.text && !properties.element) properties.element = properties.text;
-    return element({...properties, text: undefined, tag: "turbo-button"} as any) as any;
+    if (!properties.tag) properties.tag = "turbo-button";
+    return richElement({...properties});
 }
 
 export {TurboButton, button};

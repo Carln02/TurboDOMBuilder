@@ -44,7 +44,7 @@ function setupClassFunctions() {
      * @return A boolean indicating whether the provided classes are included
      */
     TurboSelector.prototype.hasClass = function _hasClass(this: TurboSelector, classes?: string | string[]): boolean {
-        if (!this || !classes || !(this.element instanceof Element)) return false;
+        if (!classes || !(this.element instanceof Element)) return false;
 
         if (typeof classes === "string") return this.element.classList.contains(classes);
         for (let entry of classes) {

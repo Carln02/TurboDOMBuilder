@@ -23,7 +23,7 @@ export class DemoBox extends TurboElement {
     public addSubBox(label: string, ...values: Element[]): this {
         this.addContent(element({
             classes: "case-entry",
-            children: [span({text: label, classes: "tag"}), flexRow({style: "gap: 0.4rem", children: values})]
+            children: [span({text: label, classes: "tag"}), flexRow({style: "gap: 0.4rem; align-items: flex-start", children: values})]
         }));
         return this;
     }

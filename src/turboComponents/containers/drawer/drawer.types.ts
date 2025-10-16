@@ -16,7 +16,7 @@ type TurboDrawerProperties<
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     side?: Side,
-    offset?: PartialRecord<Open, number>
+    offset?: number | PartialRecord<Open, number>
     hideOverflow?: boolean,
 
     panel?: TurboProperties | HTMLElement,

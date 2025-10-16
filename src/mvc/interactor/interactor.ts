@@ -22,7 +22,7 @@ class TurboInteractor<
      */
     public declare keyName: string;
 
-    public readonly target: Node;
+    public accessor target: Node;
 
     public readonly toolName: string;
 
@@ -37,12 +37,13 @@ class TurboInteractor<
         this.options = properties.listenerOptions ?? {};
 
         const host = this.element as any;
-        this.target = this.target ?? host instanceof Node ? host
+        this.target = properties.target ?? this.target ?? host instanceof Node ? host
             : host?.element instanceof Node ? host.element
                 : undefined;
     }
 
     public initialize(): void {
+        super.initialize();
         const target = this.target ?? this;
         for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
             const handler = this[methodName];

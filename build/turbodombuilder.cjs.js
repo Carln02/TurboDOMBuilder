@@ -400,18 +400,6 @@ function auto(options) {
         const backing = Symbol(`__auto_${key}`);
         context.addInitializer(function () {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-            if (isUndefined(this[backing])) {
-                let initialValue = kind === "field" ? value : undefined;
-                if (isUndefined(initialValue)) {
-                    if (options.initialValue)
-                        initialValue = options.initialValue;
-                    else if (options.initialValueCallback)
-                        initialValue = options.initialValueCallback.call(this);
-                }
-                if (options.preprocessValue)
-                    initialValue = options.preprocessValue.call(this, initialValue);
-                this[backing] = initialValue;
-            }
             let customGetter;
             let customSetter;
             const write = function (value) {
@@ -426,6 +414,7 @@ function auto(options) {
                     customSetter.call(this, next);
                 options.callAfter?.call(this, next);
             };
+            let undefinedFlag = false;
             const baseRead = function () {
                 if (customGetter && options?.returnDefinedGetterValue)
                     return customGetter.call(this);
@@ -440,12 +429,26 @@ function auto(options) {
             };
             const read = function () {
                 let value = baseRead.call(this);
-                if (value === undefined && options.setIfUndefined) {
+                if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                    undefinedFlag = true;
                     write.call(this, value);
-                    return baseRead.call(this);
+                    value = baseRead.call(this);
+                    undefinedFlag = false;
                 }
                 return value;
             };
+            if (isUndefined(this[backing])) {
+                let initialValue = kind === "field" ? value : undefined;
+                if (isUndefined(initialValue)) {
+                    if (options.initialValue)
+                        initialValue = options.initialValue;
+                    else if (options.initialValueCallback)
+                        initialValue = options.initialValueCallback.call(this);
+                }
+                if (!isUndefined(initialValue) && options.preprocessValue)
+                    initialValue = options.preprocessValue.call(this, initialValue);
+                this[backing] = initialValue;
+            }
             if (kind === "field" || kind === "accessor") {
                 const accessor = value;
                 if (accessor?.get)
@@ -558,6 +561,8 @@ function setupHierarchyFunctions() {
      */
     Object.defineProperty(TurboSelector.prototype, "childNodesArray", {
         get: function () {
+            if (!this.element)
+                return [];
             return Array.from(this.childHandler?.childNodes) || [];
         },
         configurable: false,
@@ -633,7 +638,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.addChild = function _addChild(children, index, referenceList = this.childrenArray) {
-        if (!this || !children)
+        if (!this.element || !children)
             return this;
         if (index !== undefined && (index < 0 || index > referenceList.length))
             index = undefined;
@@ -665,7 +670,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.remChild = function _remChild(children) {
-        if (!this || !children)
+        if (!this.element || !children)
             return this;
         // Try to remove every provided child (according to its type)
         try {
@@ -692,7 +697,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.addChildBefore = function _addChildBefore(children, sibling) {
-        if (!this || !children)
+        if (!this.element || !children)
             return this;
         if (!sibling)
             return this.addChild(children);
@@ -722,7 +727,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeChildAt = function _removeChildAt(index, count = 1, referenceList = this.childrenArray) {
-        if (!this || index === undefined || index < 0)
+        if (!this.element || index === undefined || index < 0)
             return this;
         if (index >= referenceList.length)
             return this;
@@ -746,7 +751,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeAllChildren = function _removeAllChildren(referenceList = this.childrenArray) {
-        if (!this)
+        if (!this.element)
             return this;
         try {
             for (let i = 0; i < referenceList.length; i++)
@@ -767,7 +772,7 @@ function setupHierarchyFunctions() {
      * @returns {Node | Element | null} The child at the given index, or `null` if the index is invalid.
      */
     TurboSelector.prototype.childAt = function _childAt(index, referenceList = this.childrenArray) {
-        if (!this || index === undefined)
+        if (!this.element || index === undefined)
             return null;
         if (index >= referenceList.length)
             index = referenceList.length - 1;
@@ -783,7 +788,7 @@ function setupHierarchyFunctions() {
      * @returns {number} The index of the child node in the provided list, or -1 if the child is not found.
      */
     TurboSelector.prototype.indexOfChild = function _indexOfChild(child, referenceList = this.childrenArray) {
-        if (!this || !child)
+        if (!this.element || !child)
             return -1;
         if (!(referenceList instanceof Array))
             referenceList = Array.from(referenceList);
@@ -795,7 +800,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} A boolean indicating whether the provided nodes belong to the parent or not.
      */
     TurboSelector.prototype.hasChild = function _hasChild(children) {
-        if (!this || !children)
+        if (!this.element || !children)
             return false;
         const nodesArray = Array.from(this.element?.childNodes);
         if (children instanceof Node)
@@ -814,7 +819,7 @@ function setupHierarchyFunctions() {
      * @returns {Element | null} The matching ancestor element, or null if no match is found.
      */
     TurboSelector.prototype.closest = function _closest(type) {
-        if (!this || !type || !(this.element instanceof Element))
+        if (!this.element || !type || !(this.element instanceof Element))
             return null;
         if (typeof type === "string") {
             return this.element.closest(type);
@@ -834,7 +839,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} True if the node is within the given parents, false otherwise.
      */
     TurboSelector.prototype.findInParents = function _findInParents(parents) {
-        if (!parents)
+        if (!parents || !this.element)
             return false;
         if (parents instanceof Node)
             parents = [parents];
@@ -853,7 +858,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} True if the children belong to the node, false otherwise.
      */
     TurboSelector.prototype.findInSubTree = function _findInSubTree(children) {
-        if (!children)
+        if (!children || !this.element)
             return false;
         if (children instanceof Node)
             children = [children];
@@ -875,7 +880,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} True if the children belong to the node, false otherwise.
      */
     TurboSelector.prototype.indexInParent = function _indexInParent(referenceList = this.siblings) {
-        if (!referenceList)
+        if (!referenceList || !this.element)
             return -1;
         return referenceList.indexOf(this.element);
     };
@@ -890,7 +895,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.addToParent = function _addToParent(parent, index, referenceList) {
-        if (!this || !parent)
+        if (!this.element || !parent)
             return this;
         return $(parent).addChild(this.element, index, referenceList);
     };
@@ -972,7 +977,7 @@ function setupClassFunctions() {
      * @return A boolean indicating whether the provided classes are included
      */
     TurboSelector.prototype.hasClass = function _hasClass(classes) {
-        if (!this || !classes || !(this.element instanceof Element))
+        if (!classes || !(this.element instanceof Element))
             return false;
         if (typeof classes === "string")
             return this.element.classList.contains(classes);
@@ -1251,6 +1256,11 @@ class TurboEmitter {
         if (model)
             this.model = model;
     }
+    get defaultBlockKey() {
+        if (this.model)
+            return this.model.defaultBlockKey;
+        return "__defaultBlockKey__";
+    }
     /**
      * @function getBlock
      * @description Retrieves the callback block by the given blockKey.
@@ -1316,7 +1326,7 @@ class TurboEmitter {
      * @param {(...args: any[]) => void} callback - The callback function.
      */
     add(key, callback) {
-        this.addWithBlock(key, this.model.defaultBlockKey, callback);
+        this.addWithBlock(key, this.defaultBlockKey, callback);
     }
     /**
      * @function removeWithBlock
@@ -1343,7 +1353,7 @@ class TurboEmitter {
      * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
      */
     remove(key, callback) {
-        this.removeWithBlock(key, this.model?.defaultBlockKey, callback);
+        this.removeWithBlock(key, this.defaultBlockKey, callback);
     }
     /**
      * @function fireWithBlock
@@ -1365,7 +1375,7 @@ class TurboEmitter {
      * @param {...any[]} args - Arguments passed to the callback.
      */
     fire(key, ...args) {
-        this.fireWithBlock(key, this.model?.defaultBlockKey, ...args);
+        this.fireWithBlock(key, this.defaultBlockKey, ...args);
     }
 }
 
@@ -1432,30 +1442,25 @@ class Mvc {
         this.linkPieces();
     }
     set controllers(value) {
-        this._controllers.clear();
         this.generateInstances(value, { element: this.element })
             .forEach(instance => this.addController(instance));
         this.linkPieces();
     }
     set handlers(value) {
-        this._handlers.clear();
         this.generateInstances(value).forEach(instance => this.addHandler(instance));
         this.linkPieces();
     }
     set interactors(value) {
-        this._interactors.clear();
         this.generateInstances(value, { element: this.element })
             .forEach(instance => this.addInteractor(instance));
         this.linkPieces();
     }
     set tools(value) {
-        this._tools.clear();
         this.generateInstances(value, { element: this.element })
             .forEach(instance => this.addTool(instance));
         this.linkPieces();
     }
     set substrates(value) {
-        this._substrates.clear();
         this.generateInstances(value, { element: this.element })
             .forEach(instance => this.addSubstrate(instance));
         this.linkPieces();
@@ -2630,8 +2635,12 @@ const DefaultEventName = {
     input: "input",
     change: "change",
     focus: "focus",
+    focusIn: "focusin",
+    focusOut: "focusout",
     blur: "blur",
-    resize: "resize"
+    resize: "resize",
+    compositionStart: "compositionstart",
+    compositionEnd: "compositionend",
 };
 
 /**
@@ -7863,7 +7872,9 @@ class TurboView {
 }
 
 class TurboInteractor extends TurboController {
-    target;
+    #target_accessor_storage;
+    get target() { return this.#target_accessor_storage; }
+    set target(value) { this.#target_accessor_storage = value; }
     toolName;
     manager;
     options;
@@ -7873,11 +7884,12 @@ class TurboInteractor extends TurboController {
         this.toolName = properties.toolName ?? this.toolName ?? undefined;
         this.options = properties.listenerOptions ?? {};
         const host = this.element;
-        this.target = this.target ?? host instanceof Node ? host
+        this.target = properties.target ?? this.target ?? host instanceof Node ? host
             : host?.element instanceof Node ? host.element
                 : undefined;
     }
     initialize() {
+        super.initialize();
         const target = this.target ?? this;
         for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
             const handler = this[methodName];
@@ -8367,7 +8379,9 @@ let TurboIcon = (() => {
     return _classThis;
 })();
 function icon(properties) {
-    return element({ ...properties, tag: "turbo-icon" });
+    if (!properties.tag)
+        properties.tag = "turbo-icon";
+    return element({ ...properties });
 }
 
 /**
@@ -8440,7 +8454,6 @@ let TurboRichElement = (() => {
                         else if (typeof value === "object" && !(value instanceof Element)) {
                             if (!value.tag)
                                 value.tag = this.elementTag;
-                            console.log(this.elementTag, value);
                             value = element(value);
                         }
                         $(this).remChild(this.element);
@@ -8594,7 +8607,12 @@ let TurboRichElement = (() => {
 function richElement(properties) {
     if (properties.text && !properties.element)
         properties.element = properties.text;
-    return element({ ...properties, text: undefined, tag: "turbo-rich-element" });
+    if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+        properties.element.tag = properties.elementTag;
+    }
+    if (!properties.tag)
+        properties.tag = "turbo-rich-element";
+    return element({ ...properties, text: undefined });
 }
 
 /**
@@ -8624,9 +8642,9 @@ let TurboButton = (() => {
     return _classThis;
 })();
 function button(properties) {
-    if (properties.text && !properties.element)
-        properties.element = properties.text;
-    return element({ ...properties, text: undefined, tag: "turbo-button" });
+    if (!properties.tag)
+        properties.tag = "turbo-button";
+    return richElement({ ...properties });
 }
 
 let TurboIconSwitch = (() => {
@@ -8690,7 +8708,9 @@ let TurboIconSwitch = (() => {
     return _classThis;
 })();
 function iconSwitch(properties) {
-    return element({ ...properties, tag: "turbo-icon-switch" });
+    if (!properties.tag)
+        properties.tag = "turbo-icon-switch";
+    return icon({ ...properties });
 }
 
 let TurboIconToggle = (() => {
@@ -8739,7 +8759,9 @@ let TurboIconToggle = (() => {
     return _classThis;
 })();
 function iconToggle(properties) {
-    return element({ ...properties, tag: "turbo-icon-toggle" });
+    if (!properties.tag)
+        properties.tag = "turbo-icon-toggle";
+    return icon({ ...properties });
 }
 
 function randomId(length = 8) {
@@ -8772,6 +8794,92 @@ function randomString(length = 12) {
     return result;
 }
 
+class TurboInputInputInteractor extends TurboInteractor {
+    keyName = "__input__interactor__";
+    _composing = false;
+    _resizeQueued = false;
+    options = {
+        compositionStart: { capture: true },
+        compositionEnd: { capture: true },
+        input: { capture: true },
+    };
+    get inputElement() {
+        return this.element.element;
+    }
+    initialize() {
+        super.initialize();
+        $(this.target).bypassManagerOn = () => true;
+    }
+    setupChangedCallbacks() {
+        super.setupChangedCallbacks();
+        this.emitter.add("valueSet", () => this.handleInput());
+    }
+    click() {
+        if (!this.element.locked)
+            this.inputElement?.focus();
+        return false;
+    }
+    focusIn(e) {
+        if (e.target !== this.inputElement)
+            return;
+        if (this.element.locked) {
+            this.inputElement.blur();
+            return;
+        }
+        if (this.element.selectTextOnFocus)
+            requestAnimationFrame(() => {
+                try {
+                    this.inputElement.select?.();
+                }
+                catch { }
+            });
+        this.element.onFocus.fire();
+        return true;
+    }
+    focusOut(e) {
+        if (e.target !== this.inputElement)
+            return;
+        this.element.value = this.element.element?.value;
+        this.element.onBlur.fire();
+    }
+    compositionStart(e) {
+        if (e.target !== this.inputElement)
+            return;
+        this._composing = true;
+    }
+    compositionEnd(e) {
+        if (e.target !== this.inputElement)
+            return;
+        this._composing = false;
+        this.handleInput();
+        return true;
+    }
+    input(e) {
+        if (e.target !== this.inputElement)
+            return;
+        this.handleInput();
+        return true;
+    }
+    handleInput() {
+        if (this._composing)
+            return;
+        if (!this.inputElement)
+            return;
+        if (this.element.dynamicVerticalResize && this.inputElement instanceof HTMLTextAreaElement) {
+            if (!this._resizeQueued) {
+                this._resizeQueued = true;
+                queueMicrotask(() => {
+                    this._resizeQueued = false;
+                    $(this.inputElement)
+                        .setStyle("height", "auto", true)
+                        .setStyle("height", this.inputElement.scrollHeight + "px", true);
+                });
+            }
+        }
+        this.emitter.fire("processValue");
+    }
+}
+
 let TurboInput = (() => {
     let _classDecorators = [define("turbo-input")];
     let _classDescriptor;
@@ -8795,15 +8903,20 @@ let TurboInput = (() => {
             defaultElementTag: "input"
         };
         labelElement = __runInitializers(this, _instanceExtraInitializers);
-        content;
+        _content;
+        get content() { return this._content; }
+        set content(value) { this._content = value; }
+        defaultId = "turbo-input-" + randomId();
         locked = false;
         selectTextOnFocus = false;
-        lastValueWithInputCheck = "";
-        lastValueWithBlurCheck = "";
+        dynamicVerticalResize = false;
         inputRegexCheck;
         blurRegexCheck;
-        dynamicVerticalResize = false;
-        defaultId = "turbo-input-" + randomId();
+        lastValidForInput = "";
+        lastValidForBlur = "";
+        onFocus = new Delegate();
+        onBlur = new Delegate();
+        onInput = new Delegate();
         set label(value) {
             if (!value || value.length === 0) {
                 if (this.labelElement)
@@ -8837,6 +8950,11 @@ let TurboInput = (() => {
         get element() {
             return super.element;
         }
+        initialize() {
+            super.initialize();
+            this.mvc.generate({ interactors: [TurboInputInputInteractor] });
+            this.mvc.getInteractor("__input__interactor__").target = this.content;
+        }
         setupUIElements() {
             super.setupUIElements();
             this.content = div();
@@ -8847,55 +8965,12 @@ let TurboInput = (() => {
             $(this).addChild([this.labelElement, this.content]);
             $(this).childHandler = this.content;
         }
-        setupUIListeners() {
-            super.setupUIListeners();
-            $(this.element).on(DefaultEventName.click, () => {
-                this.element.focus();
-            });
-            $(this.element).bypassManagerOn = () => true;
-            $(this.element).on(DefaultEventName.blur, (e) => {
-                if (this.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
-                    this.stringValue = this.lastValueWithBlurCheck;
-                this.dispatchEvent(new FocusEvent(DefaultEventName.blur, { ...e }));
-            });
-            $(this.element).on(DefaultEventName.focus, (e) => {
-                if (this.locked)
-                    this.element.blur();
-                if (this.selectTextOnFocus)
-                    this.element.select();
-                this.dispatchEvent(new FocusEvent(DefaultEventName.focus, { ...e }));
-            });
-            $(this.element).on(DefaultEventName.input, (e) => {
-                if (this.dynamicVerticalResize && this.element instanceof HTMLTextAreaElement) {
-                    this.element.style.height = "";
-                    this.element.style.height = this.element.scrollHeight + "px";
-                }
-                if (this.inputRegexCheck) {
-                    const regex = new RegExp(this.inputRegexCheck);
-                    if (!regex.test(this.stringValue))
-                        this.stringValue = this.lastValueWithInputCheck;
-                }
-                this.lastValueWithInputCheck = this.stringValue;
-                if (this.blurRegexCheck) {
-                    const regex = new RegExp(this.blurRegexCheck);
-                    if (regex.test(this.stringValue))
-                        this.lastValueWithBlurCheck = this.stringValue;
-                }
-                if (this.stringValue.length == 0) {
-                    this.lastValueWithInputCheck = "0";
-                    this.lastValueWithBlurCheck = "0";
-                }
-                this.dispatchEvent(new InputEvent(DefaultEventName.input, { ...e }));
-            });
-        }
-        set stringValue(value) {
-            this.element.value = value;
-        }
-        get stringValue() {
-            return this.element.value;
+        setupChangedCallbacks() {
+            super.setupChangedCallbacks();
+            this.mvc.emitter.add("processValue", () => this.processInputValue());
         }
         get value() {
-            const value = this.stringValue;
+            const value = this.element?.value;
             try {
                 const num = parseFloat(value);
                 if (!isNaN(num))
@@ -8905,7 +8980,52 @@ let TurboInput = (() => {
             return value;
         }
         set value(value) {
-            this.stringValue = value.toString();
+            if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement))
+                return;
+            let strValue = value.toString();
+            if (this.blurRegexCheck) {
+                const re = new RegExp(this.blurRegexCheck);
+                if (!re.test(strValue))
+                    strValue = this.lastValidForBlur;
+            }
+            this.element.value = strValue;
+            this.mvc.emitter.fire("valueSet");
+        }
+        processInputValue(value = this.element.value) {
+            if (this.inputRegexCheck) {
+                const re = new RegExp(this.inputRegexCheck);
+                if (!re.test(value)) {
+                    const attemptSanitize = this.sanitizeByRegex(value, this.inputRegexCheck);
+                    if (re.test(attemptSanitize))
+                        value = attemptSanitize;
+                    else
+                        value = this.lastValidForInput;
+                }
+            }
+            this.lastValidForInput = value.toString();
+            if (this.blurRegexCheck) {
+                const re = new RegExp(this.blurRegexCheck);
+                if (re.test(value.toString()))
+                    this.lastValidForBlur = value;
+            }
+            else {
+                this.lastValidForBlur = value;
+            }
+            this.element.value = value;
+            this.onInput.fire();
+        }
+        sanitizeByRegex(value, rule) {
+            const src = typeof rule === "string" ? rule : rule.source;
+            const flags = typeof rule === "string" ? "" : rule.flags.replace("g", "");
+            const re = new RegExp(src, flags);
+            let out = "";
+            for (const ch of value) {
+                const candidate = out + ch;
+                re.lastIndex = 0;
+                if (re.test(candidate))
+                    out = candidate;
+            }
+            return out;
         }
         static {
             __runInitializers(_classThis, _classExtraInitializers);
@@ -8920,7 +9040,9 @@ function turboInput(properties) {
         properties.elementTag = "input";
     if (!properties.element)
         properties.element = {};
-    return element({ ...properties, input: undefined, inputTag: undefined, tag: "turbo-input" });
+    if (!properties.tag)
+        properties.tag = "turbo-input";
+    return richElement({ ...properties, input: undefined, inputTag: undefined });
 }
 
 let TurboNumericalInput = (() => {
@@ -8943,7 +9065,7 @@ let TurboNumericalInput = (() => {
         min;
         max;
         get value() {
-            return Number.parseFloat(this.stringValue) / this.multiplier;
+            return Number.parseFloat(this.element.value) / this.multiplier;
         }
         set value(value) {
             if (!value || value == "")
@@ -8964,16 +9086,13 @@ let TurboNumericalInput = (() => {
     return _classThis;
 })();
 function numericalInput(properties) {
-    properties.element = properties.input;
-    properties.elementTag = "input";
-    if (!properties.element)
-        properties.element = {};
-    //Only allow numbers (positive, negative, and decimal)
     if (!properties.inputRegexCheck)
         properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
     if (!properties.blurRegexCheck)
         properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-    return element({ ...properties, input: undefined, inputTag: undefined, tag: "turbo-input" });
+    if (!properties.tag)
+        properties.tag = "turbo-numerical-input";
+    return turboInput({ ...properties });
 }
 
 class TurboSelectInputEvent extends TurboEvent {
@@ -9021,6 +9140,8 @@ class TurboBaseElement {
  */
 let TurboSelect = (() => {
     let _classSuper = TurboBaseElement;
+    let _instanceExtraInitializers = [];
+    let _set_parent_decorators;
     let _getValue_decorators;
     let _getValue_initializers = [];
     let _getValue_extraInitializers = [];
@@ -9036,6 +9157,7 @@ let TurboSelect = (() => {
     let _onEntryRemoved_decorators;
     let _onEntryRemoved_initializers = [];
     let _onEntryRemoved_extraInitializers = [];
+    let _set_multiSelection_decorators;
     let _forceSelection_decorators;
     let _forceSelection_initializers = [];
     let _forceSelection_extraInitializers = [];
@@ -9045,31 +9167,20 @@ let TurboSelect = (() => {
     return class TurboSelect extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_parent_decorators = [auto()];
             _getValue_decorators = [auto({
                     defaultValue: (entry) => entry instanceof HTMLElement ? entry.innerText
                         : entry instanceof Element ? entry.innerHTML : undefined
                 })];
             _getSecondaryValue_decorators = [auto({ defaultValue: () => "" })];
             _createEntry_decorators = [auto({
-                    defaultValue: (value) => richElement({ text: stringify(value) }),
-                    preprocessValue: function (fn) {
-                        return function (value) {
-                            const entry = fn(value);
-                            if (!entry)
-                                return;
-                            const isNode = entry instanceof Node;
-                            if (isNode && !entry.parentElement)
-                                $(this.parent).addChild(entry);
-                            if (isNode && Array.isArray(this.entries) && !this.entries.includes(entry))
-                                this.entries.push(entry);
-                            return entry;
-                        };
-                    }
+                    defaultValue: (value) => richElement({ text: stringify(value) })
                 })];
             _onEntryAdded_decorators = [auto({
                     defaultValue: function (entry) {
+                        this.initializeSelection();
                         $(entry).on(DefaultEventName.click, () => {
-                            this.select(entry);
+                            this.select(entry, !this.isSelected(entry));
                             return true;
                         });
                     },
@@ -9077,12 +9188,13 @@ let TurboSelect = (() => {
             _onEntryRemoved_decorators = [auto({
                     defaultValue: function (entry) { },
                 })];
-            _forceSelection_decorators = [auto({
-                    defaultValueCallback: function () { return !this.multiSelection; }
-                })];
+            _set_multiSelection_decorators = [auto({ defaultValue: false })];
+            _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
             _selectedEntryClasses_decorators = [auto({
-                    initialValue: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
+                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
                 })];
+            __esDecorate(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
             __esDecorate(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
             __esDecorate(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
@@ -9093,8 +9205,7 @@ let TurboSelect = (() => {
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         static config = { defaultSelectedEntryClasses: "selected" };
-        _parent;
-        _inputField;
+        _inputField = __runInitializers(this, _instanceExtraInitializers);
         _entries = [];
         _entriesData = new WeakMap();
         parentObserver;
@@ -9107,38 +9218,28 @@ let TurboSelect = (() => {
             return this._entries;
         }
         set entries(value) {
-            if (this.parent && this.parentObserver) {
-                this.parentObserver.disconnect();
-                this.parentObserver = null;
-            }
+            this.enableObserver(false);
             const previouslySelectedValues = this.selectedValues;
             this.clear();
             this._entries = value;
-            if (value instanceof HTMLCollection && value.item(0)) {
-                this._parent = value.item(0).parentElement;
-                if (this.inputField)
-                    this.parent.appendChild(this.inputField);
-                this.setupParentObserver();
-            }
-            let selectionCount = 0;
+            if (value instanceof HTMLCollection && value.item(0))
+                this.parent = value.item(0).parentElement;
             const array = this.entriesArray;
-            for (let i = 0; i < array.length; i++) {
+            for (let i = 0; i < array.length; i++)
                 this.onEntryAdded?.call(this, array[i], i);
-                if (previouslySelectedValues.includes(this.getValue(array[i]))) {
-                    selectionCount++;
+            this.deselectAll();
+            for (let i = 0; i < array.length; i++) {
+                if (previouslySelectedValues.includes(this.getValue(array[i])))
                     this.select(array[i]);
-                }
             }
-            if (this.forceSelection && this.enabledEntries.length && selectionCount === 0) {
-                const fallback = this.enabledEntries[0];
-                if (fallback)
-                    this.select(fallback);
-            }
+            if (this.selectedEntries.length === 0)
+                this.initializeSelection();
             this.refreshInputField();
+            this.enableObserver(true);
         }
         get entriesArray() {
             const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries);
-            return array.filter(entry => entry !== this.inputField);
+            return (array ?? []).filter(entry => entry !== this.inputField);
         }
         /**
          * @description The dropdown's values. Setting it will update the dropdown accordingly.
@@ -9148,23 +9249,30 @@ let TurboSelect = (() => {
         }
         set values(values) {
             const entries = [];
-            values.forEach(value => entries.push(this.createEntry(value)));
+            values.forEach(value => {
+                const entry = this.createEntry(value);
+                if (entry instanceof Node && this.parent)
+                    $(this.parent).addChild(entry);
+                entries.push(entry);
+            });
             this.entries = entries;
         }
         get selectedEntries() {
             return this.entriesArray.filter(entry => this.getEntryData(entry).selected);
         }
         set selectedEntries(value) {
-            this.entriesArray.forEach(entry => this.getEntryData(entry).selected = false);
+            this.deselectAll();
             if (!value)
                 return;
             value.forEach(entry => this.select(entry));
         }
-        get parent() {
-            return this._parent;
-        }
         set parent(value) {
-            this.entries = value.children;
+            if (!(this.parent instanceof Element))
+                return;
+            $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node));
+            if (this.inputField)
+                this.parent.appendChild(this.inputField);
+            this.setupParentObserver();
         }
         getValue = __runInitializers(this, _getValue_initializers, void 0);
         getSecondaryValue = (__runInitializers(this, _getValue_extraInitializers), __runInitializers(this, _getSecondaryValue_initializers, void 0));
@@ -9175,22 +9283,24 @@ let TurboSelect = (() => {
          * The dropdown's underlying hidden input. Might be undefined.
          */
         get inputName() {
-            return this.inputField.name;
+            return this.inputField?.name;
         }
         set inputName(value) {
             if (!this._inputField)
                 this._inputField = input({
                     value: this.stringSelectedValue,
                     type: "hidden",
-                    parent: this.parent ?? document
+                    parent: this.parent ?? document.body
                 });
             this.inputField.name = value;
         }
         get inputField() {
             return this._inputField;
         }
-        multiSelection = (__runInitializers(this, _onEntryRemoved_extraInitializers), false);
-        forceSelection = __runInitializers(this, _forceSelection_initializers, true);
+        set multiSelection(value) {
+            this.forceSelection = !value;
+        }
+        forceSelection = (__runInitializers(this, _onEntryRemoved_extraInitializers), __runInitializers(this, _forceSelection_initializers, void 0));
         set onSelect(value) {
             if (value)
                 this.onSelectDelegate.add(value);
@@ -9221,12 +9331,12 @@ let TurboSelect = (() => {
                 }
                 catch { }
             }
-            //TODO MAKE IT BETTER SOMEHOW (I WANT TO RUN IT AFTER CHILD CLASSES FINISH SETTING UP)
-            requestAnimationFrame(() => {
-                this.entriesArray.forEach(entry => {
-                    if (selectedValues.includes(this.getValue(entry)))
-                        this.select(entry);
-                });
+            if (!this.forceSelection)
+                this.deselectAll();
+            this.entriesArray.forEach(entry => {
+                if (selectedValues.includes(this.getValue(entry))) {
+                    this.select(entry);
+                }
             });
         }
         getEntryData(entry) {
@@ -9247,13 +9357,13 @@ let TurboSelect = (() => {
                 index = this.entriesArray.length;
             if (index < 0)
                 index = 0;
-            this.parentObserver?.disconnect();
+            this.enableObserver(false);
             this.onEntryAdded?.call(this, entry, index);
             if (Array.isArray(this.entries) && !this.entries.includes(entry))
                 this.entries.splice(index, 0, entry);
             if (entry instanceof Node && !entry.parentElement && this.parent)
                 $(this.parent).addChild(entry, index);
-            this.parentObserver?.observe(this.parent, { childList: true });
+            this.enableObserver(true);
             requestAnimationFrame(() => this.select(this.selectedEntry));
         }
         getEntryFromSecondaryValue(value) {
@@ -9300,18 +9410,17 @@ let TurboSelect = (() => {
             catch { }
             if (!entry)
                 return this;
-            if (selected === this.isSelected(entry))
+            const wasSelected = this.isSelected(entry);
+            if (selected === wasSelected)
+                return this;
+            if (!selected && wasSelected && this.selectedEntries.length <= 1 && this.forceSelection)
                 return this;
             if (!this.multiSelection)
                 this.deselectAll();
             this.getEntryData(entry).selected = selected;
             if (entry instanceof HTMLElement)
                 $(entry).toggleClass(this.selectedEntryClasses, selected);
-            if (this.selectedEntries.length === 0 && this.forceSelection && this.enabledEntries.length) {
-                const fallback = this.enabledEntries[0];
-                if (fallback)
-                    this.select(fallback);
-            }
+            this.initializeSelection();
             this.refreshInputField();
             this.onSelectDelegate.fire(selected, entry, this.getIndex(entry));
             (this.parent ?? document).dispatchEvent(new TurboSelectInputEvent({
@@ -9409,7 +9518,7 @@ let TurboSelect = (() => {
             return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
         }
         clear() {
-            this.parentObserver?.disconnect();
+            this.enableObserver(false);
             for (const entry of this.entriesArray) {
                 this.clearEntryData(entry);
                 this.onEntryRemoved(entry);
@@ -9418,19 +9527,31 @@ let TurboSelect = (() => {
             }
             this._entries = [];
             this.refreshInputField();
-            this.parentObserver?.observe(this.parent, { childList: true });
+            this.enableObserver(true);
         }
         refreshInputField() {
             if (this.inputField)
                 this.inputField.value = this.stringSelectedValue;
         }
         destroy() {
-            this.parentObserver?.disconnect();
+            this.enableObserver(false);
             this.parentObserver = null;
         }
+        enableObserver(value) {
+            if (!value)
+                return this.parentObserver?.disconnect();
+            if (this.parent instanceof Element && this.parentObserver)
+                this.parentObserver.observe(this.parent, { childList: true });
+        }
+        initializeSelection() {
+            if (this.forceSelection && this.enabledEntries.length && this.selectedEntries.length === 0) {
+                const fallback = this.enabledEntries[0];
+                if (fallback)
+                    this.select(fallback);
+            }
+        }
         setupParentObserver() {
-            if (this.parentObserver)
-                this.parentObserver.disconnect();
+            this.enableObserver(false);
             this.parentObserver = new MutationObserver(records => {
                 for (const record of records) {
                     for (const node of record.addedNodes) {
@@ -9438,7 +9559,7 @@ let TurboSelect = (() => {
                             continue;
                         if (node === this.inputField)
                             continue;
-                        this.onEntryAdded.call(this, node, this.getIndex(node));
+                        this.onEntryAdded?.call(this, node, this.getIndex(node));
                     }
                     for (const node of record.removedNodes) {
                         if (node.nodeType !== Node.ELEMENT_NODE)
@@ -9455,18 +9576,18 @@ let TurboSelect = (() => {
                                     this.select(fallback);
                             }
                             data.selected = false;
-                            this.onEntryRemoved.call(this, node);
+                            this.onEntryRemoved?.call(this, node);
                             this.clearEntryData(node);
                         });
                     }
                 }
             });
-            this.parentObserver.observe(this.parent, { childList: true });
+            this.enableObserver(true);
         }
     };
 })();
 
-var css_248z$2 = ".turbo-drawer{align-items:center;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer,.turbo-drawer.top-drawer .turbo-drawer-panel-container{flex-direction:column}.turbo-drawer.bottom-drawer,.turbo-drawer.bottom-drawer .turbo-drawer-panel-container{flex-direction:column-reverse}.turbo-drawer.left-drawer,.turbo-drawer.left-drawer .turbo-drawer-panel-container{flex-direction:row}.turbo-drawer.right-drawer,.turbo-drawer.right-drawer .turbo-drawer-panel-container{flex-direction:row-reverse}.turbo-drawer>div:first-child{background-color:#fff;display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}.turbo-drawer>div:nth-child(2)>:first-child{background-color:#fff;display:block}";
+var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer{flex-direction:column}.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.turbo-drawer.left-drawer{flex-direction:row}.turbo-drawer.right-drawer{flex-direction:row-reverse}.turbo-drawer>div:first-child{display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}";
 styleInject(css_248z$2);
 
 //@ts-nocheck
@@ -9672,7 +9793,6 @@ let TurboDrawer = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
-    let _set_panelContainer_decorators;
     let _set_thumb_decorators;
     let _set_panel_decorators;
     let _set_icon_decorators;
@@ -9690,7 +9810,6 @@ let TurboDrawer = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_panelContainer_decorators = [auto()];
             _set_thumb_decorators = [auto({
                     setIfUndefined: true,
                     callBefore: function () { if (this.thumb)
@@ -9719,21 +9838,21 @@ let TurboDrawer = (() => {
                         });
                     }
                 })];
-            _set_hideOverflow_decorators = [auto({ initialValue: false })];
-            _set_attachSideToIconName_decorators = [auto({ initialValue: false })];
-            _set_rotateIconBasedOnSide_decorators = [auto({ initialValue: false })];
-            _set_side_decorators = [auto({ initialValue: exports.Side.bottom })];
+            _set_hideOverflow_decorators = [auto({ defaultValue: false })];
+            _set_attachSideToIconName_decorators = [auto({ defaultValue: false })];
+            _set_rotateIconBasedOnSide_decorators = [auto({ defaultValue: false })];
+            _set_side_decorators = [auto({ defaultValue: exports.Side.bottom, cancelIfUnchanged: false })];
             _set_offset_decorators = [auto({
-                    initialValue: { open: 0, closed: 0 },
+                    defaultValue: { open: 0, closed: 0 },
                     preprocessValue: (value) => typeof value === "number" ? { open: value, closed: value } : {
                         open: value?.open || 0,
                         closed: value?.closed || 0
                     }
                 })];
-            _set_open_decorators = [auto({ initialValue: false })];
+            _set_open_decorators = [auto({ defaultValue: false })];
             _set_translation_decorators = [auto()];
             _transition_decorators = [auto({
-                    initialValueCallback: function () {
+                    defaultValueCallback: function () {
                         return new Reifect({
                             transitionProperties: ["transform", this.isVertical ? "height" : "width"],
                             transitionDuration: 0.2,
@@ -9742,7 +9861,6 @@ let TurboDrawer = (() => {
                     },
                     callAfter: function () { this.transition.attachAll(this, this.panelContainer); },
                 })];
-            __esDecorate(this, null, _set_panelContainer_decorators, { kind: "setter", name: "panelContainer", static: false, private: false, access: { has: obj => "panelContainer" in obj, set: (obj, value) => { obj.panelContainer = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -9759,9 +9877,9 @@ let TurboDrawer = (() => {
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             __runInitializers(_classThis, _classExtraInitializers);
         }
-        set panelContainer(_value) { }
-        get panelContainer() { return; }
-        dragging = (__runInitializers(this, _instanceExtraInitializers), false);
+        _panelContainer = __runInitializers(this, _instanceExtraInitializers);
+        get panelContainer() { return this._panelContainer; }
+        dragging = false;
         animationOn = false;
         resizeObserver;
         set thumb(value) {
@@ -9872,7 +9990,7 @@ let TurboDrawer = (() => {
         }
         setupUIElements() {
             super.setupUIElements();
-            this.panelContainer = div({ classes: "turbo-drawer-panel-container" });
+            this._panelContainer = div({ classes: "turbo-drawer-panel-container" });
         }
         setupUILayout() {
             super.setupUILayout();
@@ -9983,7 +10101,9 @@ let TurboDrawer = (() => {
     return _classThis;
 })();
 function drawer(properties) {
-    return element({ ...properties, text: undefined, tag: "turbo-drawer", initialize: true });
+    if (!properties.tag)
+        properties.tag = "turbo-drawer";
+    return element({ ...properties, text: undefined, initialize: true });
 }
 
 exports.PopupFallbackMode = void 0;

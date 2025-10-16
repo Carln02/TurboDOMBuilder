@@ -1012,6 +1012,7 @@ declare class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      */
     model?: ModelType;
     constructor(model?: ModelType);
+    private get defaultBlockKey();
     /**
      * @function getBlock
      * @description Retrieves the callback block by the given blockKey.
@@ -1664,8 +1665,12 @@ declare const DefaultEventName: {
     input: string;
     change: string;
     focus: string;
+    focusIn: string;
+    focusOut: string;
     blur: string;
     resize: string;
+    compositionStart: string;
+    compositionEnd: string;
     trackpadScroll: "wheel";
     trackpadPinch: "wheel";
     mouseWheel: "wheel";
@@ -1830,7 +1835,7 @@ declare class TurboInteractor<ElementType extends object = object, ViewType exte
      * default to "something".
      */
     keyName: string;
-    readonly target: Node;
+    accessor target: Node;
     readonly toolName: string;
     readonly manager: TurboEventManager;
     protected readonly options: PartialRecord<DefaultEventNameKey, ListenerOptions>;
@@ -2308,6 +2313,7 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboH
 type TurboInteractorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager;
     toolName?: string;
+    target?: Node;
     listenerOptions?: PartialRecord<DefaultEventNameKey, ListenerOptions>;
 };
 type MvcInstanceOrConstructor<Type, PropertiesType> = Type | (new (properties: PropertiesType) => Type);
@@ -3563,25 +3569,31 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
 declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
     static config: TurboRichElementConfig;
     protected labelElement: HTMLLabelElement;
-    protected content: HTMLElement;
+    private _content;
+    get content(): HTMLElement;
+    set content(value: HTMLElement);
+    defaultId: string;
     locked: boolean;
     selectTextOnFocus: boolean;
-    private lastValueWithInputCheck;
-    private lastValueWithBlurCheck;
+    dynamicVerticalResize: boolean;
     inputRegexCheck: RegExp | string;
     blurRegexCheck: RegExp | string;
-    dynamicVerticalResize: boolean;
-    defaultId: string;
+    private lastValidForInput;
+    private lastValidForBlur;
+    readonly onFocus: Delegate<() => void>;
+    readonly onBlur: Delegate<() => void>;
+    readonly onInput: Delegate<() => void>;
     set label(value: string);
     set element(value: TurboProperties<InputTag> | ValidElement<InputTag>);
     get element(): ValidElement<InputTag>;
+    initialize(): void;
     protected setupUIElements(): void;
     protected setupUILayout(): void;
-    protected setupUIListeners(): void;
-    protected set stringValue(value: string);
-    protected get stringValue(): string;
+    protected setupChangedCallbacks(): void;
     get value(): ValueType;
     set value(value: string | ValueType);
+    protected processInputValue(value?: string): void;
+    private sanitizeByRegex;
 }
 declare function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
 
@@ -3657,7 +3669,6 @@ declare class TurboBaseElement {
  */
 declare class TurboSelect<ValueType = string, SecondaryValueType = string, EntryType extends object = HTMLElement> extends TurboBaseElement {
     static readonly config: TurboSelectConfig;
-    private _parent;
     private _inputField;
     private _entries;
     private readonly _entriesData;
@@ -3677,7 +3688,6 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     set values(values: ValueType[]);
     get selectedEntries(): EntryType[];
     set selectedEntries(value: EntryType[]);
-    get parent(): Element;
     set parent(value: Element);
     getValue: (entry: EntryType) => ValueType;
     getSecondaryValue: (entry: EntryType) => SecondaryValueType;
@@ -3690,7 +3700,7 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     get inputName(): string;
     set inputName(value: string);
     get inputField(): HTMLInputElement;
-    multiSelection: boolean;
+    set multiSelection(value: boolean);
     forceSelection: boolean;
     set onSelect(value: (b: boolean, entry: EntryType, index: number) => void);
     set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void);
@@ -3747,6 +3757,8 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     clear(): void;
     refreshInputField(): void;
     destroy(): void;
+    protected enableObserver(value: boolean): void;
+    protected initializeSelection(): void;
     protected setupParentObserver(): void;
 }
 
@@ -3900,7 +3912,7 @@ declare function reifect<ClassType extends object = Node>(properties: StatelessR
 
 type TurboDrawerProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     side?: Side;
-    offset?: PartialRecord<Open, number>;
+    offset?: number | PartialRecord<Open, number>;
     hideOverflow?: boolean;
     panel?: TurboProperties | HTMLElement;
     thumb?: TurboProperties | HTMLElement;
@@ -3912,7 +3924,7 @@ type TurboDrawerProperties<ViewType extends TurboView = TurboView, DataType exte
 };
 
 declare class TurboDrawer<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EMitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EMitterType> {
-    private set panelContainer(value);
+    private _panelContainer;
     get panelContainer(): HTMLElement;
     private dragging;
     private animationOn;
@@ -4744,6 +4756,9 @@ interface TurboTool {
          * @param target
          */
         dragEnd(e: Event, target: Node): boolean;
+        input(e: Event, target: Node): boolean;
+        focus(e: Event, target: Node): boolean;
+        blur(e: Event, target: Node): boolean;
     }
 interface TurboSubstrate {
         onActivate(): void;
@@ -4777,37 +4792,40 @@ interface TurboInteractor {
          * @description Fired on click start
          * @param e
          */
-        clickStart(e: Event): void;
+        clickStart(e: Event): boolean | void;
         /**
          * @description Fired on click
          * @param e
          */
-        click(e: Event): void;
+        click(e: Event): boolean | void;
         /**
          * @description Fired on click end
          * @param e
          */
-        clickEnd(e: Event): void;
+        clickEnd(e: Event): boolean | void;
         /**
          * @description Fired on pointer move
          * @param e
          */
-        move(e: Event): void;
+        move(e: Event): boolean | void;
         /**
          * @description Fired on drag start
          * @param e
          */
-        dragStart(e: Event): void;
+        dragStart(e: Event): boolean | void;
         /**
          * @description Fired on drag
          * @param e
          */
-        drag(e: Event): void;
+        drag(e: Event): boolean | void;
         /**
          * @description Fired on drag end
          * @param e
          */
-        dragEnd(e: Event): void;
+        dragEnd(e: Event): boolean | void;
+        input(e: Event): boolean | void;
+        focus(e: Event): boolean | void;
+        blur(e: Event): boolean | void;
     }
 interface TurboSelector {
         /**

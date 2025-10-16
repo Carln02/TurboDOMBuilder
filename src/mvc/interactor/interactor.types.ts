@@ -15,6 +15,7 @@ type TurboInteractorProperties<
 > = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager,
     toolName?: string,
+    target?: Node,
     listenerOptions?: PartialRecord<DefaultEventNameKey, ListenerOptions>
 };
 
@@ -24,43 +25,49 @@ declare module "./interactor" {
          * @description Fired on click start
          * @param e
          */
-        clickStart(e: Event): void;
+        clickStart(e: Event): boolean | void;
 
         /**
          * @description Fired on click
          * @param e
          */
-        click(e: Event): void;
+        click(e: Event): boolean | void;
 
         /**
          * @description Fired on click end
          * @param e
          */
-        clickEnd(e: Event): void;
+        clickEnd(e: Event): boolean | void;
 
         /**
          * @description Fired on pointer move
          * @param e
          */
-        move(e: Event): void;
+        move(e: Event): boolean | void;
 
         /**
          * @description Fired on drag start
          * @param e
          */
-        dragStart(e: Event): void;
+        dragStart(e: Event): boolean | void;
 
         /**
          * @description Fired on drag
          * @param e
          */
-        drag(e: Event): void;
+        drag(e: Event): boolean | void;
 
         /**
          * @description Fired on drag end
          * @param e
          */
-        dragEnd(e: Event): void;
+        dragEnd(e: Event): boolean | void;
+
+        input(e: Event): boolean | void;
+
+        focus(e: Event): boolean | void;
+
+        blur(e: Event): boolean | void;
     }
 }
 export {TurboInteractorProperties};

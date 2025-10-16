@@ -18,6 +18,7 @@ import {TurboEmitter} from "../../../mvc/core/emitter";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {element} from "../../../elementCreation/element";
 
+//TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
 @define("turbo-drawer")
 class TurboDrawer<
     ViewType extends TurboView = TurboView<any, any>,
@@ -25,8 +26,8 @@ class TurboDrawer<
     ModelType extends TurboModel = TurboModel,
     EMitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EMitterType> {
-    @auto() private set panelContainer(_value: HTMLElement) {}
-    public get panelContainer(): HTMLElement {return}
+    private _panelContainer: HTMLElement;
+    public get panelContainer(): HTMLElement {return this._panelContainer}
 
     private dragging: boolean = false;
     private animationOn: boolean = false;
@@ -75,16 +76,16 @@ class TurboDrawer<
 
     public get icon(): TurboIconSwitch<Side> | Element {return}
 
-    @auto({initialValue: false}) public set hideOverflow(value: boolean) {
+    @auto({defaultValue: false}) public set hideOverflow(value: boolean) {
         $(this.panelContainer).setStyle("overflow", value ? "hidden" : "");
     }
 
-    @auto({initialValue: false}) public set attachSideToIconName(value: boolean) {
+    @auto({defaultValue: false}) public set attachSideToIconName(value: boolean) {
         if (this.icon instanceof TurboIconSwitch) this.icon.appendStateToIconName = value;
         if (value) this.rotateIconBasedOnSide = false;
     }
 
-    @auto({initialValue: false}) public set rotateIconBasedOnSide(value: boolean) {
+    @auto({defaultValue: false}) public set rotateIconBasedOnSide(value: boolean) {
         if (value) this.attachSideToIconName = false;
         if (this.icon instanceof TurboIconSwitch) this.icon.switchReifect.styles = {
             top: "transform: rotate(180deg)",
@@ -94,7 +95,7 @@ class TurboDrawer<
         };
     }
 
-    @auto({initialValue: Side.bottom}) public set side(value: Side) {
+    @auto({defaultValue: Side.bottom, cancelIfUnchanged: false}) public set side(value: Side) {
         $(this).toggleClass("top-drawer", value == Side.top);
         $(this).toggleClass("bottom-drawer", value == Side.bottom);
         $(this).toggleClass("left-drawer", value == Side.left);
@@ -103,7 +104,7 @@ class TurboDrawer<
     }
 
     @auto({
-        initialValue: {open: 0, closed: 0},
+        defaultValue: {open: 0, closed: 0},
         preprocessValue: (value: number | PartialRecord<Open, number>) =>
             typeof value === "number" ? {open: value, closed: value} : {
                 open: value?.open || 0,
@@ -117,7 +118,7 @@ class TurboDrawer<
         return this.side == Side.top || this.side == Side.bottom;
     }
 
-    @auto({initialValue: false}) public set open(value: boolean) {
+    @auto({defaultValue: false}) public set open(value: boolean) {
         if (value) this.resizeObserver.observe(this.panel, {box: "border-box"});
         else this.resizeObserver.unobserve(this.panel);
         this.refresh();
@@ -145,7 +146,7 @@ class TurboDrawer<
     }
 
     @auto({
-        initialValueCallback: function () {
+        defaultValueCallback: function () {
             return new Reifect({
                 transitionProperties: ["transform", this.isVertical ? "height" : "width"],
                 transitionDuration: 0.2,
@@ -181,7 +182,7 @@ class TurboDrawer<
 
     protected setupUIElements() {
         super.setupUIElements();
-        this.panelContainer = div({classes: "turbo-drawer-panel-container"})
+        this._panelContainer = div({classes: "turbo-drawer-panel-container"})
     }
 
     protected setupUILayout() {
@@ -293,7 +294,8 @@ function drawer<
     EmitterType extends TurboEmitter = TurboEmitter
 >(properties: TurboDrawerProperties<ViewType, DataType, ModelType, EmitterType>):
     TurboDrawer<ViewType, DataType, ModelType, EmitterType> {
-    return element({...properties, text: undefined, tag: "turbo-drawer", initialize: true} as any) as any;
+    if (!properties.tag) properties.tag = "turbo-drawer";
+    return element({...properties, text: undefined, initialize: true} as any) as any;
 }
 
 export {TurboDrawer, drawer};

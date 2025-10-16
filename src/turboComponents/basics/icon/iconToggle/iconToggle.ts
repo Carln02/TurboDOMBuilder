@@ -1,4 +1,4 @@
-import {TurboIcon} from "../icon";
+import {icon, TurboIcon} from "../icon";
 import {DefaultEventName} from "../../../../eventHandling/eventNaming";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/core/view";
@@ -7,7 +7,6 @@ import {auto} from "../../../../decorators/auto/auto";
 import {$} from "../../../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {TurboIconToggleProperties} from "./iconToggle.types";
-import {element} from "../../../../elementCreation/element";
 import {TurboIconConfig} from "../icon.types";
 
 @define("turbo-icon-toggle")
@@ -51,7 +50,8 @@ function iconToggle<
 >(
     properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>
 ): TurboIconToggle<ViewType, DataType, ModelType, EmitterType> {
-    return element({...properties, tag: "turbo-icon-toggle"} as any) as any;
+    if (!properties.tag) properties.tag = "turbo-icon-toggle";
+    return icon({...properties}) as any;
 }
 
 export {TurboIconToggle, iconToggle};

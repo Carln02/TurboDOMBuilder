@@ -1,4 +1,4 @@
-import {TurboIcon} from "../icon";
+import {icon, TurboIcon} from "../icon";
 import {TurboIconSwitchProperties} from "./iconSwitch.types";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
 import {OnOff} from "../../../../utils/datatypes/basicDatatypes.types";
@@ -8,7 +8,6 @@ import {TurboView} from "../../../../mvc/core/view";
 import {TurboModel} from "../../../../mvc/core/model";
 import {auto} from "../../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
-import {element} from "../../../../elementCreation/element";
 import {TurboIconConfig} from "../icon.types";
 
 @define("turbo-icon-switch")
@@ -61,7 +60,8 @@ function iconSwitch<
     EmitterType extends TurboEmitter = TurboEmitter
 >(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>):
     TurboIconSwitch<State, ViewType, DataType, ModelType, EmitterType> {
-    return element({...properties, tag: "turbo-icon-switch"} as any) as any;
+    if (!properties.tag) properties.tag = "turbo-icon-switch";
+    return icon({...properties}) as any;
 }
 
 export {TurboIconSwitch, iconSwitch};

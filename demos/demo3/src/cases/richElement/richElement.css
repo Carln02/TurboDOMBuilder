@@ -37,17 +37,6 @@
     0 1px 0 rgba(255, 255, 255, 1) inset;
 }
 
-.turbo-rich-element > h1,
-.turbo-rich-element > h2,
-.turbo-rich-element > h3,
-.turbo-rich-element > h4,
-.turbo-rich-element > h5,
-.turbo-rich-element > h6,
-.turbo-rich-element > p,
-.turbo-rich-element > span {
-    margin: 0;
-}
-
 .turbo-rich-element > turbo-icon, .turbo-rich-element > turbo-icon-toggle {
     display: inline-flex;
     align-items: center;

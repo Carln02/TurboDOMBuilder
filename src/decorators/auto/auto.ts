@@ -68,16 +68,6 @@ function auto(options?: AutoOptions) {
         context.addInitializer(function (this: any) {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
 
-            if (isUndefined(this[backing])) {
-                let initialValue = kind === "field" ? value : undefined;
-                if (isUndefined(initialValue)) {
-                    if (options.initialValue) initialValue = options.initialValue;
-                    else if (options.initialValueCallback) initialValue = options.initialValueCallback.call(this);
-                }
-                if (options.preprocessValue) initialValue = options.preprocessValue.call(this, initialValue);
-                this[backing] = initialValue;
-            }
-
             let customGetter: (this: any) => Value;
             let customSetter: (this: any, value: Value) => void;
 
@@ -91,6 +81,8 @@ function auto(options?: AutoOptions) {
                 options.callAfter?.call(this, next);
             };
 
+            let undefinedFlag = false;
+
             const baseRead = function (this: any) {
                 if (customGetter && options?.returnDefinedGetterValue) return customGetter.call(this);
                 let value = this[backing];
@@ -103,12 +95,24 @@ function auto(options?: AutoOptions) {
 
             const read = function (this: any) {
                 let value = baseRead.call(this);
-                if (value === undefined && options.setIfUndefined) {
+                if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                    undefinedFlag = true;
                     write.call(this, value);
-                    return baseRead.call(this);
+                    value = baseRead.call(this);
+                    undefinedFlag = false;
                 }
                 return value;
             };
+
+            if (isUndefined(this[backing])) {
+                let initialValue = kind === "field" ? value : undefined;
+                if (isUndefined(initialValue)) {
+                    if (options.initialValue) initialValue = options.initialValue;
+                    else if (options.initialValueCallback) initialValue = options.initialValueCallback.call(this);
+                }
+                if (!isUndefined(initialValue) && options.preprocessValue) initialValue = options.preprocessValue.call(this, initialValue);
+                this[backing] = initialValue;
+            }
 
             if (kind === "field" || kind === "accessor") {
                 const accessor = value as {get?: (this: any) => Value; set?: (this: any, v: Value) => void};

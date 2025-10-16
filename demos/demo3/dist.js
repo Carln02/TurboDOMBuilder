@@ -392,18 +392,6 @@
           const backing = Symbol(`__auto_${key}`);
           context.addInitializer(function () {
               const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-              if (isUndefined(this[backing])) {
-                  let initialValue = kind === "field" ? value : undefined;
-                  if (isUndefined(initialValue)) {
-                      if (options.initialValue)
-                          initialValue = options.initialValue;
-                      else if (options.initialValueCallback)
-                          initialValue = options.initialValueCallback.call(this);
-                  }
-                  if (options.preprocessValue)
-                      initialValue = options.preprocessValue.call(this, initialValue);
-                  this[backing] = initialValue;
-              }
               let customGetter;
               let customSetter;
               const write = function (value) {
@@ -418,6 +406,7 @@
                       customSetter.call(this, next);
                   options.callAfter?.call(this, next);
               };
+              let undefinedFlag = false;
               const baseRead = function () {
                   if (customGetter && options?.returnDefinedGetterValue)
                       return customGetter.call(this);
@@ -432,12 +421,26 @@
               };
               const read = function () {
                   let value = baseRead.call(this);
-                  if (value === undefined && options.setIfUndefined) {
+                  if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                      undefinedFlag = true;
                       write.call(this, value);
-                      return baseRead.call(this);
+                      value = baseRead.call(this);
+                      undefinedFlag = false;
                   }
                   return value;
               };
+              if (isUndefined(this[backing])) {
+                  let initialValue = kind === "field" ? value : undefined;
+                  if (isUndefined(initialValue)) {
+                      if (options.initialValue)
+                          initialValue = options.initialValue;
+                      else if (options.initialValueCallback)
+                          initialValue = options.initialValueCallback.call(this);
+                  }
+                  if (!isUndefined(initialValue) && options.preprocessValue)
+                      initialValue = options.preprocessValue.call(this, initialValue);
+                  this[backing] = initialValue;
+              }
               if (kind === "field" || kind === "accessor") {
                   const accessor = value;
                   if (accessor?.get)
@@ -550,6 +553,8 @@
        */
       Object.defineProperty(TurboSelector.prototype, "childNodesArray", {
           get: function () {
+              if (!this.element)
+                  return [];
               return Array.from(this.childHandler?.childNodes) || [];
           },
           configurable: false,
@@ -625,7 +630,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.addChild = function _addChild(children, index, referenceList = this.childrenArray) {
-          if (!this || !children)
+          if (!this.element || !children)
               return this;
           if (index !== undefined && (index < 0 || index > referenceList.length))
               index = undefined;
@@ -657,7 +662,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.remChild = function _remChild(children) {
-          if (!this || !children)
+          if (!this.element || !children)
               return this;
           // Try to remove every provided child (according to its type)
           try {
@@ -684,7 +689,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.addChildBefore = function _addChildBefore(children, sibling) {
-          if (!this || !children)
+          if (!this.element || !children)
               return this;
           if (!sibling)
               return this.addChild(children);
@@ -714,7 +719,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.removeChildAt = function _removeChildAt(index, count = 1, referenceList = this.childrenArray) {
-          if (!this || index === undefined || index < 0)
+          if (!this.element || index === undefined || index < 0)
               return this;
           if (index >= referenceList.length)
               return this;
@@ -738,7 +743,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.removeAllChildren = function _removeAllChildren(referenceList = this.childrenArray) {
-          if (!this)
+          if (!this.element)
               return this;
           try {
               for (let i = 0; i < referenceList.length; i++)
@@ -759,7 +764,7 @@
        * @returns {Node | Element | null} The child at the given index, or `null` if the index is invalid.
        */
       TurboSelector.prototype.childAt = function _childAt(index, referenceList = this.childrenArray) {
-          if (!this || index === undefined)
+          if (!this.element || index === undefined)
               return null;
           if (index >= referenceList.length)
               index = referenceList.length - 1;
@@ -775,7 +780,7 @@
        * @returns {number} The index of the child node in the provided list, or -1 if the child is not found.
        */
       TurboSelector.prototype.indexOfChild = function _indexOfChild(child, referenceList = this.childrenArray) {
-          if (!this || !child)
+          if (!this.element || !child)
               return -1;
           if (!(referenceList instanceof Array))
               referenceList = Array.from(referenceList);
@@ -787,7 +792,7 @@
        * @returns {boolean} A boolean indicating whether the provided nodes belong to the parent or not.
        */
       TurboSelector.prototype.hasChild = function _hasChild(children) {
-          if (!this || !children)
+          if (!this.element || !children)
               return false;
           const nodesArray = Array.from(this.element?.childNodes);
           if (children instanceof Node)
@@ -806,7 +811,7 @@
        * @returns {Element | null} The matching ancestor element, or null if no match is found.
        */
       TurboSelector.prototype.closest = function _closest(type) {
-          if (!this || !type || !(this.element instanceof Element))
+          if (!this.element || !type || !(this.element instanceof Element))
               return null;
           if (typeof type === "string") {
               return this.element.closest(type);
@@ -826,7 +831,7 @@
        * @returns {boolean} True if the node is within the given parents, false otherwise.
        */
       TurboSelector.prototype.findInParents = function _findInParents(parents) {
-          if (!parents)
+          if (!parents || !this.element)
               return false;
           if (parents instanceof Node)
               parents = [parents];
@@ -845,7 +850,7 @@
        * @returns {boolean} True if the children belong to the node, false otherwise.
        */
       TurboSelector.prototype.findInSubTree = function _findInSubTree(children) {
-          if (!children)
+          if (!children || !this.element)
               return false;
           if (children instanceof Node)
               children = [children];
@@ -867,7 +872,7 @@
        * @returns {boolean} True if the children belong to the node, false otherwise.
        */
       TurboSelector.prototype.indexInParent = function _indexInParent(referenceList = this.siblings) {
-          if (!referenceList)
+          if (!referenceList || !this.element)
               return -1;
           return referenceList.indexOf(this.element);
       };
@@ -882,7 +887,7 @@
        * @returns {this} Itself, allowing for method chaining.
        */
       TurboSelector.prototype.addToParent = function _addToParent(parent, index, referenceList) {
-          if (!this || !parent)
+          if (!this.element || !parent)
               return this;
           return $(parent).addChild(this.element, index, referenceList);
       };
@@ -964,7 +969,7 @@
        * @return A boolean indicating whether the provided classes are included
        */
       TurboSelector.prototype.hasClass = function _hasClass(classes) {
-          if (!this || !classes || !(this.element instanceof Element))
+          if (!classes || !(this.element instanceof Element))
               return false;
           if (typeof classes === "string")
               return this.element.classList.contains(classes);
@@ -1094,6 +1099,14 @@
       return element({ ...properties, tag: "input" });
   }
   /**
+   * @description Creates a "p" element with the specified properties.
+   * @param {TurboProperties<"p">} [properties] - Object containing properties of the element.
+   * @returns {ValidElement<"p">} The created element.
+   */
+  function p(properties = {}) {
+      return element({ ...properties, tag: "p" });
+  }
+  /**
    * @description Creates a "span" element with the specified properties.
    * @param {TurboProperties<"span">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"span">} The created element.
@@ -1141,6 +1154,11 @@
       constructor(model) {
           if (model)
               this.model = model;
+      }
+      get defaultBlockKey() {
+          if (this.model)
+              return this.model.defaultBlockKey;
+          return "__defaultBlockKey__";
       }
       /**
        * @function getBlock
@@ -1207,7 +1225,7 @@
        * @param {(...args: any[]) => void} callback - The callback function.
        */
       add(key, callback) {
-          this.addWithBlock(key, this.model.defaultBlockKey, callback);
+          this.addWithBlock(key, this.defaultBlockKey, callback);
       }
       /**
        * @function removeWithBlock
@@ -1234,7 +1252,7 @@
        * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
        */
       remove(key, callback) {
-          this.removeWithBlock(key, this.model?.defaultBlockKey, callback);
+          this.removeWithBlock(key, this.defaultBlockKey, callback);
       }
       /**
        * @function fireWithBlock
@@ -1256,7 +1274,7 @@
        * @param {...any[]} args - Arguments passed to the callback.
        */
       fire(key, ...args) {
-          this.fireWithBlock(key, this.model?.defaultBlockKey, ...args);
+          this.fireWithBlock(key, this.defaultBlockKey, ...args);
       }
   }
 
@@ -1323,30 +1341,25 @@
           this.linkPieces();
       }
       set controllers(value) {
-          this._controllers.clear();
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addController(instance));
           this.linkPieces();
       }
       set handlers(value) {
-          this._handlers.clear();
           this.generateInstances(value).forEach(instance => this.addHandler(instance));
           this.linkPieces();
       }
       set interactors(value) {
-          this._interactors.clear();
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addInteractor(instance));
           this.linkPieces();
       }
       set tools(value) {
-          this._tools.clear();
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addTool(instance));
           this.linkPieces();
       }
       set substrates(value) {
-          this._substrates.clear();
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addSubstrate(instance));
           this.linkPieces();
@@ -2496,8 +2509,12 @@
       input: "input",
       change: "change",
       focus: "focus",
+      focusIn: "focusin",
+      focusOut: "focusout",
       blur: "blur",
-      resize: "resize"
+      resize: "resize",
+      compositionStart: "compositionstart",
+      compositionEnd: "compositionend",
   };
 
   /**
@@ -7536,6 +7553,39 @@
       return el;
   }
 
+  class TurboInteractor extends TurboController {
+      #target_accessor_storage;
+      get target() { return this.#target_accessor_storage; }
+      set target(value) { this.#target_accessor_storage = value; }
+      toolName;
+      manager;
+      options;
+      constructor(properties) {
+          super(properties);
+          this.manager = properties.manager ?? this.manager ?? TurboEventManager.instance;
+          this.toolName = properties.toolName ?? this.toolName ?? undefined;
+          this.options = properties.listenerOptions ?? {};
+          const host = this.element;
+          this.target = properties.target ?? this.target ?? host instanceof Node ? host
+              : host?.element instanceof Node ? host.element
+                  : undefined;
+      }
+      initialize() {
+          super.initialize();
+          const target = this.target ?? this;
+          for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
+              const handler = this[methodName];
+              if (typeof handler !== "function")
+                  continue;
+              const options = this.options?.[methodName];
+              if (this.toolName)
+                  $(target).onTool(eventName, this.toolName, e => handler.call(this, e), options, this.manager);
+              else
+                  $(target).on(eventName, e => handler.call(this, e), options, this.manager);
+          }
+      }
+  }
+
   function styleInject$1(css, ref) {
     if ( ref === void 0 ) ref = {};
     var insertAt = ref.insertAt;
@@ -7900,7 +7950,9 @@
       return _classThis;
   })();
   function icon(properties) {
-      return element({ ...properties, tag: "turbo-icon" });
+      if (!properties.tag)
+          properties.tag = "turbo-icon";
+      return element({ ...properties });
   }
 
   /**
@@ -7973,7 +8025,6 @@
                           else if (typeof value === "object" && !(value instanceof Element)) {
                               if (!value.tag)
                                   value.tag = this.elementTag;
-                              console.log(this.elementTag, value);
                               value = element(value);
                           }
                           $(this).remChild(this.element);
@@ -8127,7 +8178,12 @@
   function richElement(properties) {
       if (properties.text && !properties.element)
           properties.element = properties.text;
-      return element({ ...properties, text: undefined, tag: "turbo-rich-element" });
+      if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+          properties.element.tag = properties.elementTag;
+      }
+      if (!properties.tag)
+          properties.tag = "turbo-rich-element";
+      return element({ ...properties, text: undefined });
   }
 
   /**
@@ -8157,9 +8213,9 @@
       return _classThis;
   })();
   function button(properties) {
-      if (properties.text && !properties.element)
-          properties.element = properties.text;
-      return element({ ...properties, text: undefined, tag: "turbo-button" });
+      if (!properties.tag)
+          properties.tag = "turbo-button";
+      return richElement({ ...properties });
   }
 
   let TurboIconSwitch = (() => {
@@ -8223,7 +8279,9 @@
       return _classThis;
   })();
   function iconSwitch(properties) {
-      return element({ ...properties, tag: "turbo-icon-switch" });
+      if (!properties.tag)
+          properties.tag = "turbo-icon-switch";
+      return icon({ ...properties });
   }
 
   (() => {
@@ -8272,7 +8330,9 @@
       return _classThis;
   })();
   function iconToggle(properties) {
-      return element({ ...properties, tag: "turbo-icon-toggle" });
+      if (!properties.tag)
+          properties.tag = "turbo-icon-toggle";
+      return icon({ ...properties });
   }
 
   function randomId(length = 8) {
@@ -8298,6 +8358,92 @@
       return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
   }
 
+  class TurboInputInputInteractor extends TurboInteractor {
+      keyName = "__input__interactor__";
+      _composing = false;
+      _resizeQueued = false;
+      options = {
+          compositionStart: { capture: true },
+          compositionEnd: { capture: true },
+          input: { capture: true },
+      };
+      get inputElement() {
+          return this.element.element;
+      }
+      initialize() {
+          super.initialize();
+          $(this.target).bypassManagerOn = () => true;
+      }
+      setupChangedCallbacks() {
+          super.setupChangedCallbacks();
+          this.emitter.add("valueSet", () => this.handleInput());
+      }
+      click() {
+          if (!this.element.locked)
+              this.inputElement?.focus();
+          return false;
+      }
+      focusIn(e) {
+          if (e.target !== this.inputElement)
+              return;
+          if (this.element.locked) {
+              this.inputElement.blur();
+              return;
+          }
+          if (this.element.selectTextOnFocus)
+              requestAnimationFrame(() => {
+                  try {
+                      this.inputElement.select?.();
+                  }
+                  catch { }
+              });
+          this.element.onFocus.fire();
+          return true;
+      }
+      focusOut(e) {
+          if (e.target !== this.inputElement)
+              return;
+          this.element.value = this.element.element?.value;
+          this.element.onBlur.fire();
+      }
+      compositionStart(e) {
+          if (e.target !== this.inputElement)
+              return;
+          this._composing = true;
+      }
+      compositionEnd(e) {
+          if (e.target !== this.inputElement)
+              return;
+          this._composing = false;
+          this.handleInput();
+          return true;
+      }
+      input(e) {
+          if (e.target !== this.inputElement)
+              return;
+          this.handleInput();
+          return true;
+      }
+      handleInput() {
+          if (this._composing)
+              return;
+          if (!this.inputElement)
+              return;
+          if (this.element.dynamicVerticalResize && this.inputElement instanceof HTMLTextAreaElement) {
+              if (!this._resizeQueued) {
+                  this._resizeQueued = true;
+                  queueMicrotask(() => {
+                      this._resizeQueued = false;
+                      $(this.inputElement)
+                          .setStyle("height", "auto", true)
+                          .setStyle("height", this.inputElement.scrollHeight + "px", true);
+                  });
+              }
+          }
+          this.emitter.fire("processValue");
+      }
+  }
+
   let TurboInput = (() => {
       let _classDecorators = [define("turbo-input")];
       let _classDescriptor;
@@ -8321,15 +8467,20 @@
               defaultElementTag: "input"
           };
           labelElement = __runInitializers$1(this, _instanceExtraInitializers);
-          content;
+          _content;
+          get content() { return this._content; }
+          set content(value) { this._content = value; }
+          defaultId = "turbo-input-" + randomId();
           locked = false;
           selectTextOnFocus = false;
-          lastValueWithInputCheck = "";
-          lastValueWithBlurCheck = "";
+          dynamicVerticalResize = false;
           inputRegexCheck;
           blurRegexCheck;
-          dynamicVerticalResize = false;
-          defaultId = "turbo-input-" + randomId();
+          lastValidForInput = "";
+          lastValidForBlur = "";
+          onFocus = new Delegate();
+          onBlur = new Delegate();
+          onInput = new Delegate();
           set label(value) {
               if (!value || value.length === 0) {
                   if (this.labelElement)
@@ -8363,6 +8514,11 @@
           get element() {
               return super.element;
           }
+          initialize() {
+              super.initialize();
+              this.mvc.generate({ interactors: [TurboInputInputInteractor] });
+              this.mvc.getInteractor("__input__interactor__").target = this.content;
+          }
           setupUIElements() {
               super.setupUIElements();
               this.content = div();
@@ -8373,55 +8529,12 @@
               $(this).addChild([this.labelElement, this.content]);
               $(this).childHandler = this.content;
           }
-          setupUIListeners() {
-              super.setupUIListeners();
-              $(this.element).on(DefaultEventName.click, () => {
-                  this.element.focus();
-              });
-              $(this.element).bypassManagerOn = () => true;
-              $(this.element).on(DefaultEventName.blur, (e) => {
-                  if (this.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
-                      this.stringValue = this.lastValueWithBlurCheck;
-                  this.dispatchEvent(new FocusEvent(DefaultEventName.blur, { ...e }));
-              });
-              $(this.element).on(DefaultEventName.focus, (e) => {
-                  if (this.locked)
-                      this.element.blur();
-                  if (this.selectTextOnFocus)
-                      this.element.select();
-                  this.dispatchEvent(new FocusEvent(DefaultEventName.focus, { ...e }));
-              });
-              $(this.element).on(DefaultEventName.input, (e) => {
-                  if (this.dynamicVerticalResize && this.element instanceof HTMLTextAreaElement) {
-                      this.element.style.height = "";
-                      this.element.style.height = this.element.scrollHeight + "px";
-                  }
-                  if (this.inputRegexCheck) {
-                      const regex = new RegExp(this.inputRegexCheck);
-                      if (!regex.test(this.stringValue))
-                          this.stringValue = this.lastValueWithInputCheck;
-                  }
-                  this.lastValueWithInputCheck = this.stringValue;
-                  if (this.blurRegexCheck) {
-                      const regex = new RegExp(this.blurRegexCheck);
-                      if (regex.test(this.stringValue))
-                          this.lastValueWithBlurCheck = this.stringValue;
-                  }
-                  if (this.stringValue.length == 0) {
-                      this.lastValueWithInputCheck = "0";
-                      this.lastValueWithBlurCheck = "0";
-                  }
-                  this.dispatchEvent(new InputEvent(DefaultEventName.input, { ...e }));
-              });
-          }
-          set stringValue(value) {
-              this.element.value = value;
-          }
-          get stringValue() {
-              return this.element.value;
+          setupChangedCallbacks() {
+              super.setupChangedCallbacks();
+              this.mvc.emitter.add("processValue", () => this.processInputValue());
           }
           get value() {
-              const value = this.stringValue;
+              const value = this.element?.value;
               try {
                   const num = parseFloat(value);
                   if (!isNaN(num))
@@ -8431,7 +8544,52 @@
               return value;
           }
           set value(value) {
-              this.stringValue = value.toString();
+              if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement))
+                  return;
+              let strValue = value.toString();
+              if (this.blurRegexCheck) {
+                  const re = new RegExp(this.blurRegexCheck);
+                  if (!re.test(strValue))
+                      strValue = this.lastValidForBlur;
+              }
+              this.element.value = strValue;
+              this.mvc.emitter.fire("valueSet");
+          }
+          processInputValue(value = this.element.value) {
+              if (this.inputRegexCheck) {
+                  const re = new RegExp(this.inputRegexCheck);
+                  if (!re.test(value)) {
+                      const attemptSanitize = this.sanitizeByRegex(value, this.inputRegexCheck);
+                      if (re.test(attemptSanitize))
+                          value = attemptSanitize;
+                      else
+                          value = this.lastValidForInput;
+                  }
+              }
+              this.lastValidForInput = value.toString();
+              if (this.blurRegexCheck) {
+                  const re = new RegExp(this.blurRegexCheck);
+                  if (re.test(value.toString()))
+                      this.lastValidForBlur = value;
+              }
+              else {
+                  this.lastValidForBlur = value;
+              }
+              this.element.value = value;
+              this.onInput.fire();
+          }
+          sanitizeByRegex(value, rule) {
+              const src = typeof rule === "string" ? rule : rule.source;
+              const flags = typeof rule === "string" ? "" : rule.flags.replace("g", "");
+              const re = new RegExp(src, flags);
+              let out = "";
+              for (const ch of value) {
+                  const candidate = out + ch;
+                  re.lastIndex = 0;
+                  if (re.test(candidate))
+                      out = candidate;
+              }
+              return out;
           }
           static {
               __runInitializers$1(_classThis, _classExtraInitializers);
@@ -8446,7 +8604,9 @@
           properties.elementTag = "input";
       if (!properties.element)
           properties.element = {};
-      return element({ ...properties, input: undefined, inputTag: undefined, tag: "turbo-input" });
+      if (!properties.tag)
+          properties.tag = "turbo-input";
+      return richElement({ ...properties, input: undefined, inputTag: undefined });
   }
 
   (() => {
@@ -8469,7 +8629,7 @@
           min;
           max;
           get value() {
-              return Number.parseFloat(this.stringValue) / this.multiplier;
+              return Number.parseFloat(this.element.value) / this.multiplier;
           }
           set value(value) {
               if (!value || value == "")
@@ -8490,16 +8650,13 @@
       return _classThis;
   })();
   function numericalInput(properties) {
-      properties.element = properties.input;
-      properties.elementTag = "input";
-      if (!properties.element)
-          properties.element = {};
-      //Only allow numbers (positive, negative, and decimal)
       if (!properties.inputRegexCheck)
           properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
       if (!properties.blurRegexCheck)
           properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-      return element({ ...properties, input: undefined, inputTag: undefined, tag: "turbo-input" });
+      if (!properties.tag)
+          properties.tag = "turbo-numerical-input";
+      return turboInput({ ...properties });
   }
 
   class TurboSelectInputEvent extends TurboEvent {
@@ -8547,6 +8704,8 @@
    */
   let TurboSelect = (() => {
       let _classSuper = TurboBaseElement;
+      let _instanceExtraInitializers = [];
+      let _set_parent_decorators;
       let _getValue_decorators;
       let _getValue_initializers = [];
       let _getValue_extraInitializers = [];
@@ -8562,6 +8721,7 @@
       let _onEntryRemoved_decorators;
       let _onEntryRemoved_initializers = [];
       let _onEntryRemoved_extraInitializers = [];
+      let _set_multiSelection_decorators;
       let _forceSelection_decorators;
       let _forceSelection_initializers = [];
       let _forceSelection_extraInitializers = [];
@@ -8571,31 +8731,20 @@
       return class TurboSelect extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+              _set_parent_decorators = [auto()];
               _getValue_decorators = [auto({
                       defaultValue: (entry) => entry instanceof HTMLElement ? entry.innerText
                           : entry instanceof Element ? entry.innerHTML : undefined
                   })];
               _getSecondaryValue_decorators = [auto({ defaultValue: () => "" })];
               _createEntry_decorators = [auto({
-                      defaultValue: (value) => richElement({ text: stringify(value) }),
-                      preprocessValue: function (fn) {
-                          return function (value) {
-                              const entry = fn(value);
-                              if (!entry)
-                                  return;
-                              const isNode = entry instanceof Node;
-                              if (isNode && !entry.parentElement)
-                                  $(this.parent).addChild(entry);
-                              if (isNode && Array.isArray(this.entries) && !this.entries.includes(entry))
-                                  this.entries.push(entry);
-                              return entry;
-                          };
-                      }
+                      defaultValue: (value) => richElement({ text: stringify(value) })
                   })];
               _onEntryAdded_decorators = [auto({
                       defaultValue: function (entry) {
+                          this.initializeSelection();
                           $(entry).on(DefaultEventName.click, () => {
-                              this.select(entry);
+                              this.select(entry, !this.isSelected(entry));
                               return true;
                           });
                       },
@@ -8603,12 +8752,13 @@
               _onEntryRemoved_decorators = [auto({
                       defaultValue: function (entry) { },
                   })];
-              _forceSelection_decorators = [auto({
-                      defaultValueCallback: function () { return !this.multiSelection; }
-                  })];
+              _set_multiSelection_decorators = [auto({ defaultValue: false })];
+              _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
               _selectedEntryClasses_decorators = [auto({
-                      initialValue: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
+                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
                   })];
+              __esDecorate$1(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
               __esDecorate$1(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
               __esDecorate$1(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
@@ -8619,8 +8769,7 @@
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
           static config = { defaultSelectedEntryClasses: "selected" };
-          _parent;
-          _inputField;
+          _inputField = __runInitializers$1(this, _instanceExtraInitializers);
           _entries = [];
           _entriesData = new WeakMap();
           parentObserver;
@@ -8633,38 +8782,28 @@
               return this._entries;
           }
           set entries(value) {
-              if (this.parent && this.parentObserver) {
-                  this.parentObserver.disconnect();
-                  this.parentObserver = null;
-              }
+              this.enableObserver(false);
               const previouslySelectedValues = this.selectedValues;
               this.clear();
               this._entries = value;
-              if (value instanceof HTMLCollection && value.item(0)) {
-                  this._parent = value.item(0).parentElement;
-                  if (this.inputField)
-                      this.parent.appendChild(this.inputField);
-                  this.setupParentObserver();
-              }
-              let selectionCount = 0;
+              if (value instanceof HTMLCollection && value.item(0))
+                  this.parent = value.item(0).parentElement;
               const array = this.entriesArray;
-              for (let i = 0; i < array.length; i++) {
+              for (let i = 0; i < array.length; i++)
                   this.onEntryAdded?.call(this, array[i], i);
-                  if (previouslySelectedValues.includes(this.getValue(array[i]))) {
-                      selectionCount++;
+              this.deselectAll();
+              for (let i = 0; i < array.length; i++) {
+                  if (previouslySelectedValues.includes(this.getValue(array[i])))
                       this.select(array[i]);
-                  }
               }
-              if (this.forceSelection && this.enabledEntries.length && selectionCount === 0) {
-                  const fallback = this.enabledEntries[0];
-                  if (fallback)
-                      this.select(fallback);
-              }
+              if (this.selectedEntries.length === 0)
+                  this.initializeSelection();
               this.refreshInputField();
+              this.enableObserver(true);
           }
           get entriesArray() {
               const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries);
-              return array.filter(entry => entry !== this.inputField);
+              return (array ?? []).filter(entry => entry !== this.inputField);
           }
           /**
            * @description The dropdown's values. Setting it will update the dropdown accordingly.
@@ -8674,23 +8813,30 @@
           }
           set values(values) {
               const entries = [];
-              values.forEach(value => entries.push(this.createEntry(value)));
+              values.forEach(value => {
+                  const entry = this.createEntry(value);
+                  if (entry instanceof Node && this.parent)
+                      $(this.parent).addChild(entry);
+                  entries.push(entry);
+              });
               this.entries = entries;
           }
           get selectedEntries() {
               return this.entriesArray.filter(entry => this.getEntryData(entry).selected);
           }
           set selectedEntries(value) {
-              this.entriesArray.forEach(entry => this.getEntryData(entry).selected = false);
+              this.deselectAll();
               if (!value)
                   return;
               value.forEach(entry => this.select(entry));
           }
-          get parent() {
-              return this._parent;
-          }
           set parent(value) {
-              this.entries = value.children;
+              if (!(this.parent instanceof Element))
+                  return;
+              $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node));
+              if (this.inputField)
+                  this.parent.appendChild(this.inputField);
+              this.setupParentObserver();
           }
           getValue = __runInitializers$1(this, _getValue_initializers, void 0);
           getSecondaryValue = (__runInitializers$1(this, _getValue_extraInitializers), __runInitializers$1(this, _getSecondaryValue_initializers, void 0));
@@ -8701,22 +8847,24 @@
            * The dropdown's underlying hidden input. Might be undefined.
            */
           get inputName() {
-              return this.inputField.name;
+              return this.inputField?.name;
           }
           set inputName(value) {
               if (!this._inputField)
                   this._inputField = input({
                       value: this.stringSelectedValue,
                       type: "hidden",
-                      parent: this.parent ?? document
+                      parent: this.parent ?? document.body
                   });
               this.inputField.name = value;
           }
           get inputField() {
               return this._inputField;
           }
-          multiSelection = (__runInitializers$1(this, _onEntryRemoved_extraInitializers), false);
-          forceSelection = __runInitializers$1(this, _forceSelection_initializers, true);
+          set multiSelection(value) {
+              this.forceSelection = !value;
+          }
+          forceSelection = (__runInitializers$1(this, _onEntryRemoved_extraInitializers), __runInitializers$1(this, _forceSelection_initializers, void 0));
           set onSelect(value) {
               if (value)
                   this.onSelectDelegate.add(value);
@@ -8747,12 +8895,12 @@
                   }
                   catch { }
               }
-              //TODO MAKE IT BETTER SOMEHOW (I WANT TO RUN IT AFTER CHILD CLASSES FINISH SETTING UP)
-              requestAnimationFrame(() => {
-                  this.entriesArray.forEach(entry => {
-                      if (selectedValues.includes(this.getValue(entry)))
-                          this.select(entry);
-                  });
+              if (!this.forceSelection)
+                  this.deselectAll();
+              this.entriesArray.forEach(entry => {
+                  if (selectedValues.includes(this.getValue(entry))) {
+                      this.select(entry);
+                  }
               });
           }
           getEntryData(entry) {
@@ -8773,13 +8921,13 @@
                   index = this.entriesArray.length;
               if (index < 0)
                   index = 0;
-              this.parentObserver?.disconnect();
+              this.enableObserver(false);
               this.onEntryAdded?.call(this, entry, index);
               if (Array.isArray(this.entries) && !this.entries.includes(entry))
                   this.entries.splice(index, 0, entry);
               if (entry instanceof Node && !entry.parentElement && this.parent)
                   $(this.parent).addChild(entry, index);
-              this.parentObserver?.observe(this.parent, { childList: true });
+              this.enableObserver(true);
               requestAnimationFrame(() => this.select(this.selectedEntry));
           }
           getEntryFromSecondaryValue(value) {
@@ -8826,18 +8974,17 @@
               catch { }
               if (!entry)
                   return this;
-              if (selected === this.isSelected(entry))
+              const wasSelected = this.isSelected(entry);
+              if (selected === wasSelected)
+                  return this;
+              if (!selected && wasSelected && this.selectedEntries.length <= 1 && this.forceSelection)
                   return this;
               if (!this.multiSelection)
                   this.deselectAll();
               this.getEntryData(entry).selected = selected;
               if (entry instanceof HTMLElement)
                   $(entry).toggleClass(this.selectedEntryClasses, selected);
-              if (this.selectedEntries.length === 0 && this.forceSelection && this.enabledEntries.length) {
-                  const fallback = this.enabledEntries[0];
-                  if (fallback)
-                      this.select(fallback);
-              }
+              this.initializeSelection();
               this.refreshInputField();
               this.onSelectDelegate.fire(selected, entry, this.getIndex(entry));
               (this.parent ?? document).dispatchEvent(new TurboSelectInputEvent({
@@ -8935,7 +9082,7 @@
               return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
           }
           clear() {
-              this.parentObserver?.disconnect();
+              this.enableObserver(false);
               for (const entry of this.entriesArray) {
                   this.clearEntryData(entry);
                   this.onEntryRemoved(entry);
@@ -8944,19 +9091,31 @@
               }
               this._entries = [];
               this.refreshInputField();
-              this.parentObserver?.observe(this.parent, { childList: true });
+              this.enableObserver(true);
           }
           refreshInputField() {
               if (this.inputField)
                   this.inputField.value = this.stringSelectedValue;
           }
           destroy() {
-              this.parentObserver?.disconnect();
+              this.enableObserver(false);
               this.parentObserver = null;
           }
+          enableObserver(value) {
+              if (!value)
+                  return this.parentObserver?.disconnect();
+              if (this.parent instanceof Element && this.parentObserver)
+                  this.parentObserver.observe(this.parent, { childList: true });
+          }
+          initializeSelection() {
+              if (this.forceSelection && this.enabledEntries.length && this.selectedEntries.length === 0) {
+                  const fallback = this.enabledEntries[0];
+                  if (fallback)
+                      this.select(fallback);
+              }
+          }
           setupParentObserver() {
-              if (this.parentObserver)
-                  this.parentObserver.disconnect();
+              this.enableObserver(false);
               this.parentObserver = new MutationObserver(records => {
                   for (const record of records) {
                       for (const node of record.addedNodes) {
@@ -8964,7 +9123,7 @@
                               continue;
                           if (node === this.inputField)
                               continue;
-                          this.onEntryAdded.call(this, node, this.getIndex(node));
+                          this.onEntryAdded?.call(this, node, this.getIndex(node));
                       }
                       for (const node of record.removedNodes) {
                           if (node.nodeType !== Node.ELEMENT_NODE)
@@ -8981,18 +9140,18 @@
                                       this.select(fallback);
                               }
                               data.selected = false;
-                              this.onEntryRemoved.call(this, node);
+                              this.onEntryRemoved?.call(this, node);
                               this.clearEntryData(node);
                           });
                       }
                   }
               });
-              this.parentObserver.observe(this.parent, { childList: true });
+              this.enableObserver(true);
           }
       };
   })();
 
-  var css_248z$2$1 = ".turbo-drawer{align-items:center;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer,.turbo-drawer.top-drawer .turbo-drawer-panel-container{flex-direction:column}.turbo-drawer.bottom-drawer,.turbo-drawer.bottom-drawer .turbo-drawer-panel-container{flex-direction:column-reverse}.turbo-drawer.left-drawer,.turbo-drawer.left-drawer .turbo-drawer-panel-container{flex-direction:row}.turbo-drawer.right-drawer,.turbo-drawer.right-drawer .turbo-drawer-panel-container{flex-direction:row-reverse}.turbo-drawer>div:first-child{background-color:#fff;display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}.turbo-drawer>div:nth-child(2)>:first-child{background-color:#fff;display:block}";
+  var css_248z$2$1 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer{flex-direction:column}.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.turbo-drawer.left-drawer{flex-direction:row}.turbo-drawer.right-drawer{flex-direction:row-reverse}.turbo-drawer>div:first-child{display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}";
   styleInject$1(css_248z$2$1);
 
   //@ts-nocheck
@@ -9195,7 +9354,6 @@
       let _classThis;
       let _classSuper = TurboElement;
       let _instanceExtraInitializers = [];
-      let _set_panelContainer_decorators;
       let _set_thumb_decorators;
       let _set_panel_decorators;
       let _set_icon_decorators;
@@ -9213,7 +9371,6 @@
           static { _classThis = this; }
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _set_panelContainer_decorators = [auto()];
               _set_thumb_decorators = [auto({
                       setIfUndefined: true,
                       callBefore: function () { if (this.thumb)
@@ -9242,21 +9399,21 @@
                           });
                       }
                   })];
-              _set_hideOverflow_decorators = [auto({ initialValue: false })];
-              _set_attachSideToIconName_decorators = [auto({ initialValue: false })];
-              _set_rotateIconBasedOnSide_decorators = [auto({ initialValue: false })];
-              _set_side_decorators = [auto({ initialValue: Side.bottom })];
+              _set_hideOverflow_decorators = [auto({ defaultValue: false })];
+              _set_attachSideToIconName_decorators = [auto({ defaultValue: false })];
+              _set_rotateIconBasedOnSide_decorators = [auto({ defaultValue: false })];
+              _set_side_decorators = [auto({ defaultValue: Side.bottom, cancelIfUnchanged: false })];
               _set_offset_decorators = [auto({
-                      initialValue: { open: 0, closed: 0 },
+                      defaultValue: { open: 0, closed: 0 },
                       preprocessValue: (value) => typeof value === "number" ? { open: value, closed: value } : {
                           open: value?.open || 0,
                           closed: value?.closed || 0
                       }
                   })];
-              _set_open_decorators = [auto({ initialValue: false })];
+              _set_open_decorators = [auto({ defaultValue: false })];
               _set_translation_decorators = [auto()];
               _transition_decorators = [auto({
-                      initialValueCallback: function () {
+                      defaultValueCallback: function () {
                           return new Reifect({
                               transitionProperties: ["transform", this.isVertical ? "height" : "width"],
                               transitionDuration: 0.2,
@@ -9265,7 +9422,6 @@
                       },
                       callAfter: function () { this.transition.attachAll(this, this.panelContainer); },
                   })];
-              __esDecorate$1(this, null, _set_panelContainer_decorators, { kind: "setter", name: "panelContainer", static: false, private: false, access: { has: obj => "panelContainer" in obj, set: (obj, value) => { obj.panelContainer = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -9282,9 +9438,9 @@
               if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
               __runInitializers$1(_classThis, _classExtraInitializers);
           }
-          set panelContainer(_value) { }
-          get panelContainer() { return; }
-          dragging = (__runInitializers$1(this, _instanceExtraInitializers), false);
+          _panelContainer = __runInitializers$1(this, _instanceExtraInitializers);
+          get panelContainer() { return this._panelContainer; }
+          dragging = false;
           animationOn = false;
           resizeObserver;
           set thumb(value) {
@@ -9395,7 +9551,7 @@
           }
           setupUIElements() {
               super.setupUIElements();
-              this.panelContainer = div({ classes: "turbo-drawer-panel-container" });
+              this._panelContainer = div({ classes: "turbo-drawer-panel-container" });
           }
           setupUILayout() {
               super.setupUILayout();
@@ -9506,7 +9662,9 @@
       return _classThis;
   })();
   function drawer(properties) {
-      return element({ ...properties, text: undefined, tag: "turbo-drawer", initialize: true });
+      if (!properties.tag)
+          properties.tag = "turbo-drawer";
+      return element({ ...properties, text: undefined, initialize: true });
   }
 
   var PopupFallbackMode;
@@ -9760,8 +9918,8 @@
       return element({ ...properties, text: undefined, tag: "turbo-popup" });
   }
 
-  var css_248z$4 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-  styleInject$1(css_248z$4);
+  var css_248z$6 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+  styleInject$1(css_248z$6);
 
   /**
    * Dropdown class for creating Turbo button elements.
@@ -10854,8 +11012,8 @@
     }
   }
 
-  var css_248z$3 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fill,minmax(220px,1fr));padding:calc(var(--pad)*.9)}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans)}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(button):hover{transform:translateY(-1px);transition:transform var(--trans)}";
-  styleInject(css_248z$3);
+  var css_248z$5 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:flex-start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--gap);padding:calc(var(--pad)*.9)}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans)}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(button):hover{transform:translateY(-1px);transition:transform var(--trans)}";
+  styleInject(css_248z$5);
 
   (() => {
       let _classDecorators = [define("demo-box")];
@@ -10897,7 +11055,7 @@
           addSubBox(label, ...values) {
               this.addContent(element({
                   classes: "case-entry",
-                  children: [span({ text: label, classes: "tag" }), flexRow({ style: "gap: 0.4rem", children: values })]
+                  children: [span({ text: label, classes: "tag" }), flexRow({ style: "gap: 0.4rem; align-items: flex-start", children: values })]
               }));
               return this;
           }
@@ -10933,8 +11091,8 @@
       return element({ parent: document.body, tag: "demo-box", label, content: content });
   }
 
-  var css_248z$2 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:24px;justify-content:center;width:24px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;height:100%;width:100%;fill:#fff}";
-  styleInject(css_248z$2);
+  var css_248z$4 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:24px;justify-content:center;width:24px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;height:100%;width:100%;fill:#fff}";
+  styleInject(css_248z$4);
 
   const onLoadedLog = (prefix) => (el) => console.log(`[${prefix}] loaded`, el);
   function iconTest1() {
@@ -11044,8 +11202,8 @@
       iconTest8();
   }
 
-  var css_248z$1 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.turbo-rich-element>h1,.turbo-rich-element>h2,.turbo-rich-element>h3,.turbo-rich-element>h4,.turbo-rich-element>h5,.turbo-rich-element>h6,.turbo-rich-element>p,.turbo-rich-element>span{margin:0}.turbo-rich-element>turbo-icon,.turbo-rich-element>turbo-icon-toggle{align-items:center;display:inline-flex;justify-content:center;min-height:1.25rem;min-width:1.25rem}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
-  styleInject(css_248z$1);
+  var css_248z$3 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.turbo-rich-element>turbo-icon,.turbo-rich-element>turbo-icon-toggle{align-items:center;display:inline-flex;justify-content:center;min-height:1.25rem;min-width:1.25rem}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
+  styleInject(css_248z$3);
 
   function richTest1() {
       // Basics: element as text, left/right icons, prefix/suffix strings
@@ -11232,8 +11390,8 @@
       richTest8();
   }
 
-  var css_248z = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
-  styleInject(css_248z);
+  var css_248z$2 = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
+  styleInject(css_248z$2);
 
   const valueProbe = (label, el) => {
       const wrap = div({ class: "case-entry" });
@@ -11401,14 +11559,12 @@
   /* 8) Numerical: min/max, multiplier, decimalPlaces */
   function numTest2() {
       const ni = numericalInput({
-          label: "Scaled + clamped",
-          // starts as input element (factory sets elementTag = 'input')
-          input: {}, // ensure element exists
+          label: "Scaled + clamped"
       });
-      ni.multiplier = 100; // display scaled *100
-      ni.decimalPlaces = 2; // round to 2 decimals
-      ni.min = -50; // min raw (after /multiplier)
-      ni.max = 50; // max raw
+      ni.multiplier = 100;
+      ni.decimalPlaces = 2;
+      ni.min = -50;
+      ni.max = 50;
       box("TurboNumericalInput — min/max/multiplier/decimalPlaces")
           .addSubBox("field", ni)
           .addContent(valueProbe("probe (scaled view)", ni))
@@ -11459,15 +11615,416 @@
       numTest3();
   }
 
+  var css_248z$1 = ".select-parent{display:flex;gap:.5rem;padding:.25rem}.select-parent>*{border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:8px;cursor:pointer;padding:.4rem .7rem;transition:background .15s ease,transform .08s ease,border-color .2s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.select-parent>.selected{background-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);border-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);display:block}.tabs-bar{border-bottom:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%)}.tabs-panels{background:color-mix(in oklab,var(--bg,#131313),#000 10%);border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:10px;padding:.75rem}.tabs-panels>.is-active{animation:panelIn .18s ease both}@keyframes panelIn{0%{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}";
+  styleInject(css_248z$1);
+
+  // Small helper to print the selection nicely
+  const logSelection = (label, sel) => {
+      console.log(`[${label}] values=`, sel.selectedValues, "secondary=", sel.selectedSecondaryValues);
+  };
+  /* 1) Basics: values[] -> single select, forceSelection default */
+  function selectTest1() {
+      const host = div({ classes: "select-parent" });
+      const sel = new TurboSelect({ values: ["Alpha", "Beta", "Gamma"], parent: host });
+      sel.onSelect = () => logSelection("basic", sel);
+      const b = box("TurboSelect — Basics");
+      b.addSubBox("host", host);
+  }
+  /* 2) Preselected via constructor + multiSelection */
+  function selectTest2() {
+      const sel = new TurboSelect({
+          values: ["One", "Two", "Three", "Four"],
+          selectedValues: ["Two", "Four"],
+          multiSelection: true,
+      });
+      sel.onSelect = () => logSelection("multi", sel);
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      const b = box("TurboSelect — Multi selection");
+      b.addSubBox("multi", host)
+          .addContent(button({
+          text: "Select One & Three (prog)",
+          onClick: () => sel.selectedEntries = sel.findAll("One", "Three")
+      }))
+          .addContent(button({
+          text: "Deselect all",
+          onClick: () => sel.deselectAll()
+      }));
+  }
+  /* 3) forceSelection = false (allow empty) + programmatic selectByIndex */
+  function selectTest3() {
+      const sel = new TurboSelect({
+          values: ["A", "B", "C"],
+          multiSelection: false,
+      });
+      sel.forceSelection = false; // allow no selection
+      sel.onSelect = () => logSelection("force=false", sel);
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      const b = box("TurboSelect — forceSelection=false");
+      b.addSubBox("host", host)
+          .addContent(button({ text: "selectByIndex(2)", onClick: () => sel.selectByIndex(2) }))
+          .addContent(button({ text: "Deselect all", onClick: () => sel.deselectAll() }));
+  }
+  /* 4) Custom mapping: getValue / getSecondaryValue / createEntry */
+  function selectTest4() {
+      const sel = new TurboSelect({
+          values: [10, 20, 30],
+      });
+      // Secondary value (e.g., label code)
+      sel.getSecondaryValue = (el) => el?.dataset?.code ?? "";
+      // getValue reads number from data-value
+      sel.getValue = (el) => Number(el?.dataset?.value ?? NaN);
+      // createEntry maps number -> custom element w/ data attributes
+      sel.createEntry = (num) => {
+          const e = richElement({ text: `Item ${num}` });
+          e.dataset.value = String(num);
+          e.dataset.code = `code-${num}`;
+          return e;
+      };
+      // rebuild entries from values with our custom createEntry
+      sel.values = [10, 20, 40, 50];
+      sel.onSelect = () => logSelection("custom mapping", sel);
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      const b = box("TurboSelect — custom mapping");
+      b.addSubBox("host", host)
+          .addContent(button({ text: "Select value 40", onClick: () => sel.select(40) }))
+          .addContent(button({ text: "Select by secondary (code-50)", onClick: () => {
+              const entry = sel.findBySecondaryValue("code-50");
+              if (entry)
+                  sel.select(entry);
+          } }));
+  }
+  /* 5) Parent DOM observation: add/remove entries dynamically */
+  function selectTest5() {
+      const sel = new TurboSelect();
+      const host = div({ classes: "select-parent" }); // container the select will watch
+      sel.parent = host;
+      sel.entries = host.children;
+      // Start with two
+      $(host).addChild([richElement({ text: "Live-1" }), richElement({ text: "Live-2" })]);
+      // (select will auto-wire via MutationObserver; clicking an entry selects it)
+      sel.onSelect = () => logSelection("DOM-observed", sel);
+      const b = box("TurboSelect — DOM observation");
+      b.addSubBox("host", host)
+          .addContent(button({
+          text: "Add node",
+          onClick: () => $(host).addChild(richElement({ text: "Live-" + Math.floor(Math.random() * 100) }))
+      }))
+          .addContent(button({
+          text: "Remove last node",
+          onClick: () => {
+              const kids = host.children;
+              if (kids.length)
+                  kids.item(kids.length - 1).remove();
+          }
+      }));
+  }
+  /* 6) Enable/Disable + callbacks */
+  function selectTest6() {
+      const sel = new TurboSelect({ values: ["Red", "Green", "Blue"] });
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      sel.onEnabled = (b, entry) => {
+          // Default handler already toggles visibility; we’ll also add an aria-disabled
+          if (entry instanceof HTMLElement)
+              entry.setAttribute("aria-disabled", String(!b));
+      };
+      const [r, g, bEl] = sel.entriesArray;
+      const boxEl = box("TurboSelect — enable/disable");
+      boxEl.addSubBox("host", host)
+          .addContent(button({ text: "Disable Green", onClick: () => sel.enable(false, g) }))
+          .addContent(button({ text: "Enable Green", onClick: () => sel.enable(true, g) }))
+          .addContent(button({ text: "Disable all", onClick: () => sel.enable(false) }))
+          .addContent(button({ text: "Enable all", onClick: () => sel.enable(true) }));
+  }
+  /* 7) Hidden input sync */
+  function selectTest7() {
+      const sel = new TurboSelect({ values: ["Cat", "Dog", "Bird"] });
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      sel.inputName = "pet"; // creates a hidden input next to host’s children
+      sel.onSelect = () => {
+          const input = sel.inputField;
+          console.log("[hidden input] name=", input?.name, " value=", input?.value);
+      };
+      const b = box("TurboSelect — hidden input sync");
+      b.addSubBox("host", host)
+          .addContent(button({ text: "Select Dog", onClick: () => sel.select("Dog") }))
+          .addContent(button({ text: "Select Bird", onClick: () => sel.select("Bird") }));
+  }
+  /* 8) Programmatic APIs & finders */
+  function selectTest8() {
+      const sel = new TurboSelect({ values: ["X", "Y", "Z"] });
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      const b = box("TurboSelect — API surface");
+      b.addSubBox("host", host)
+          .addContent(button({ text: "select('Y')", onClick: () => sel.select("Y") }))
+          .addContent(button({ text: "selectByIndex(0)", onClick: () => sel.selectByIndex(0) }))
+          .addContent(button({ text: "find('Z') & select", onClick: () => sel.select(sel.find("Z")) }))
+          .addContent(button({ text: "Log enabled values", onClick: () => console.log("enabled:", sel.enabledValues) }));
+  }
+  /* 9) Tabbed menu (using TurboSelect as the tab controller) */
+  function selectTestTabs() {
+      const tabSelect = new TurboSelect({
+          createEntry: (label) => {
+              const e = richElement({ text: label });
+              e.dataset.key = label.toLowerCase();
+              return e;
+          },
+          getValue: (el) => el?.innerText ?? "",
+          getSecondaryValue: (el) => el?.dataset?.key ?? "",
+          values: ["Home", "Profile", "Settings"],
+          selectedValues: ["Home"],
+      });
+      // Panels
+      const panels = {
+          home: div({ text: "🏠 Welcome home!" }),
+          profile: div({ text: "👤 Your profile goes here." }),
+          settings: div({ text: "⚙️ Configure your preferences." }),
+      };
+      const tabBar = div({ classes: "tabs-bar select-parent" });
+      const tabPanels = div({ classes: "tabs-panels" });
+      // Hook select -> show/hide panels
+      tabSelect.onSelect = () => {
+          const activeKey = tabSelect.selectedSecondaryValue;
+          for (const [key, panel] of Object.entries(panels)) {
+              $(panel).toggleClass("is-active", key === activeKey)
+                  .setStyle("display", key === activeKey ? "" : "none");
+          }
+      };
+      // Mount
+      tabSelect.parent = tabBar;
+      $(tabPanels).addChild([panels.home, panels.profile, panels.settings]);
+      // initialize visibility
+      tabSelect.onSelect?.(true, tabSelect.selectedEntry, tabSelect.getIndex(tabSelect.selectedEntry));
+      const b = box("TurboSelect — Tabbed menu");
+      b.addSubBox("Tabs", tabBar);
+      b.addSubBox("Panels", tabPanels);
+  }
+  function setupSelectTests() {
+      selectTest1();
+      selectTest2();
+      selectTest3();
+      selectTest4();
+      selectTest5();
+      selectTest6();
+      selectTest7();
+      selectTest8();
+      selectTestTabs();
+  }
+
+  var css_248z = ".turbo-drawer{align-items:stretch;color:var(--text);display:inline-flex;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;gap:0;position:relative;-webkit-tap-highlight-color:transparent}.turbo-drawer>.turbo-drawer-thumb:first-child{align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--text);cursor:pointer;display:flex;height:32px;justify-content:center;min-height:32px;min-width:32px;transition:background-color var(--trans),border-color var(--trans),transform .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:32px}.turbo-drawer-thumb:hover{background:color-mix(in hsl,var(--panel-2),#fff 4%)}.turbo-drawer-thumb:active{transform:scale(.98)}.turbo-drawer-thumb:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.turbo-drawer-thumb svg [fill]{fill:currentColor!important}.turbo-drawer-thumb svg [stroke]{stroke:currentColor!important}.turbo-drawer-thumb svg{background:transparent!important}.turbo-drawer-thumb>.turbo-icon{height:18px;width:18px}.turbo-drawer-panel-container{border-radius:var(--radius);overflow:hidden;position:relative}.turbo-drawer-panel{background-color:transparent;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text);min-height:84px;min-width:220px;padding:.85rem;position:relative}.turbo-drawer-panel:after{border-radius:inherit;box-shadow:inset 0 0 0 1px var(--edge);content:\"\";inset:0;pointer-events:none;position:absolute}.turbo-drawer.is-compact .turbo-drawer-thumb{border-radius:var(--radius-xs);height:28px;min-height:28px;min-width:28px;width:28px}.turbo-drawer.is-compact .turbo-drawer-panel{min-width:200px;padding:.7rem}.top-drawer .turbo-drawer-thumb{margin-bottom:6px}.bottom-drawer .turbo-drawer-thumb{margin-top:6px}.left-drawer .turbo-drawer-thumb{margin-right:6px}.right-drawer .turbo-drawer-thumb{margin-left:6px}\r\n\r\n/*!* nicer content defaults inside the panel (fixes white form controls) *!*/\r\n\r\n/*!* reduce motion *!*/";
+  styleInject(css_248z);
+
+  function drawerTest1_Basics() {
+      const dLeft = drawer({
+          icon: "chevron",
+          side: Side.left,
+          attachSideToIconName: true,
+          hideOverflow: true,
+          children: [p({ text: "Left drawer content." })],
+      });
+      const dRight = drawer({
+          icon: "chevron",
+          side: Side.right,
+          hideOverflow: true,
+          children: [p({ text: "Right drawer content." })],
+      });
+      const dTop = drawer({
+          icon: "chevron",
+          side: Side.top,
+          attachSideToIconName: true,
+          hideOverflow: true,
+          children: [p({ text: "Top drawer content." })],
+      });
+      const dBottom = drawer({
+          icon: "chevron",
+          side: Side.bottom,
+          hideOverflow: true,
+          children: [p({ text: "Bottom drawer content." })],
+      });
+      box("TurboDrawer — Basics")
+          .addSubBox("Left", dLeft, button({ text: "Toggle", onClick: () => (dLeft.open = !dLeft.open) }))
+          .addSubBox("Right", dRight, button({ text: "Toggle", onClick: () => (dRight.open = !dRight.open) }))
+          .addSubBox("Top", dTop, button({ text: "Toggle", onClick: () => (dTop.open = !dTop.open) }))
+          .addSubBox("Bottom", dBottom, button({ text: "Toggle", onClick: () => (dBottom.open = !dBottom.open) }));
+  }
+  function drawerTest2_OverflowVsTransform() {
+      const overflow = drawer({
+          icon: "chevron",
+          side: Side.left,
+          hideOverflow: true, // container grows (width/height) instead of transform
+          children: [div({ text: "Overflow=hidden mode\n(Thumb drags should resize the container)" })],
+      });
+      const transform = drawer({
+          icon: "chevron",
+          side: Side.left,
+          hideOverflow: false, // transform translate is used
+          children: [div({ text: "Transform mode\n(translateX/Y instead of resizing container)" })],
+      });
+      box("TurboDrawer — hideOverflow vs transform")
+          .addSubBox("hideOverflow = true", overflow, button({ text: "Open", onClick: () => (overflow.open = true) }), button({ text: "Close", onClick: () => (overflow.open = false) }))
+          .addSubBox("hideOverflow = false", transform, button({ text: "Open", onClick: () => (transform.open = true) }), button({ text: "Close", onClick: () => (transform.open = false) }));
+  }
+  function drawerTest3_Offsets() {
+      const fixed = drawer({
+          icon: "chevron",
+          side: Side.bottom,
+          hideOverflow: true,
+          offset: 12, // same open/closed extra offset
+          children: [div({ text: "offset: 12 (both states)" })],
+      });
+      const perState = drawer({
+          icon: "chevron",
+          side: Side.bottom,
+          hideOverflow: true,
+          offset: { open: 24, closed: 4 }, // different open/closed offsets
+          children: [div({ text: "offset: { open: 24, closed: 4 }" })],
+      });
+      box("TurboDrawer — offset")
+          .addSubBox("Single number", fixed, button({ text: "Toggle", onClick: () => (fixed.open = !fixed.open) }))
+          .addSubBox("Per-state", perState, button({ text: "Toggle", onClick: () => (perState.open = !perState.open) }));
+  }
+  function drawerTest4_IconBehavior() {
+      const byName = drawer({
+          icon: "chevron", // icon-switch with appended side in name
+          attachSideToIconName: true,
+          side: Side.left,
+          children: [p({ text: "attachSideToIconName = true" })],
+      });
+      const byRotate = drawer({
+          icon: "chevron",
+          rotateIconBasedOnSide: true, // rotate via reifect styles
+          side: Side.left,
+          children: [p({ text: "rotateIconBasedOnSide = true" })],
+      });
+      box("TurboDrawer — icon modes")
+          .addSubBox("Append side to icon name", byName, button({ text: "Toggle", onClick: () => (byName.open = !byName.open) }), button({
+          text: "Cycle side",
+          onClick: () => {
+              const order = [Side.left, Side.top, Side.right, Side.bottom];
+              const i = order.indexOf(byName.side);
+              byName.side = order[(i + 1) % order.length];
+          },
+      }))
+          .addSubBox("Rotate icon based on side", byRotate, button({ text: "Toggle", onClick: () => (byRotate.open = !byRotate.open) }), button({
+          text: "Cycle side",
+          onClick: () => {
+              const order = [Side.left, Side.top, Side.right, Side.bottom];
+              const i = order.indexOf(byRotate.side);
+              byRotate.side = order[(i + 1) % order.length];
+          },
+      }));
+  }
+  function drawerTest5_LiveSideChanges() {
+      const d = drawer({
+          icon: "chevron",
+          attachSideToIconName: true,
+          side: Side.right,
+          children: [div({ text: "I move around as you change side" })],
+      });
+      box("TurboDrawer — live side changes")
+          .addSubBox("Drawer", d, button({ text: "Open/Close", onClick: () => (d.open = !d.open) }), button({ text: "Side: Left", onClick: () => (d.side = Side.left) }), button({ text: "Side: Right", onClick: () => (d.side = Side.right) }), button({ text: "Side: Top", onClick: () => (d.side = Side.top) }), button({ text: "Side: Bottom", onClick: () => (d.side = Side.bottom) }));
+  }
+  function drawerTest6_ResizeObserver() {
+      const d = drawer({
+          icon: "chevron",
+          side: Side.bottom,
+          hideOverflow: true, // easiest to see height change
+          children: [div({ text: "Growing content…" })],
+      });
+      let lines = 1;
+      box("TurboDrawer — content resize")
+          .addSubBox("Resize on content change", d, button({
+          text: "Add line",
+          onClick: () => {
+              lines += 1;
+              $(d.panel).addChild(p({ text: `Line ${lines}` }));
+              // drawer.refresh() is not needed; ResizeObserver should adjust translation
+          },
+      }), button({
+          text: "Remove last line",
+          onClick: () => {
+              const last = d.panel.lastElementChild;
+              if (last)
+                  last.remove();
+          },
+      }), button({ text: "Open/Close", onClick: () => (d.open = !d.open) }));
+  }
+  function drawerTest7_Nested() {
+      const inner = drawer({
+          icon: "chevron",
+          side: Side.right,
+          attachSideToIconName: true,
+          hideOverflow: true,
+          children: [p({ text: "Inner drawer" })],
+      });
+      const outer = drawer({
+          icon: "chevron",
+          side: Side.left,
+          attachSideToIconName: true,
+          hideOverflow: true,
+          children: [
+              h4({ text: "Outer drawer" }),
+              div({ text: "Has a nested drawer →" }),
+              inner,
+          ],
+      });
+      box("TurboDrawer — nested")
+          .addSubBox("Outer + Inner", outer, button({ text: "Toggle outer", onClick: () => (outer.open = !outer.open) }), button({ text: "Toggle inner", onClick: () => (inner.open = !inner.open) }));
+  }
+  function drawerTest8_RaceProps() {
+      const racer = drawer({
+          icon: "chevron",
+          side: Side.left,
+          hideOverflow: false,
+          attachSideToIconName: true,
+          children: [div({ text: "Props change quickly; should stay consistent" })],
+      });
+      box("TurboDrawer — stress/race")
+          .addSubBox("Racer", racer, button({
+          text: "Go!",
+          onClick: () => {
+              const sides = [Side.left, Side.top, Side.right, Side.bottom];
+              let i = 0;
+              const id = setInterval(() => {
+                  racer.open = i % 2 === 0;
+                  racer.side = sides[i % sides.length];
+                  racer.offset = i % 3 === 0 ? { open: 18, closed: 2 } : 8;
+                  i++;
+                  if (i > 12)
+                      clearInterval(id);
+              }, 120);
+          },
+      }));
+  }
+  function setupDrawerTests() {
+      drawerTest1_Basics();
+      drawerTest2_OverflowVsTransform();
+      drawerTest3_Offsets();
+      drawerTest4_IconBehavior();
+      drawerTest5_LiveSideChanges();
+      drawerTest6_ResizeObserver();
+      drawerTest7_Nested();
+      drawerTest8_RaceProps();
+  }
+
   TurboIcon.config.defaultDirectory = "assets";
   TurboIcon.config.defaultClasses = "icon";
   TurboEventManager.instance.preventDefaultWheel = false;
+  h1({ text: "TurboDrawer", parent: document.body });
+  setupDrawerTests();
   h1({ text: "TurboIcon", parent: document.body });
   setupIconTests();
   h1({ text: "TurboRichElement", parent: document.body });
   setupRichElementTests();
   h1({ text: "TurboInput", parent: document.body });
   setupInputTests();
+  h1({ text: "TurboSelect", parent: document.body });
+  setupSelectTests();
   const drawer1 = drawer({
       icon: "chevron",
       hideOverflow: true,

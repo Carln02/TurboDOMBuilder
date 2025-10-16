@@ -179,7 +179,8 @@ function icon<
 >(
     properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>
 ): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    return element({...properties, tag: "turbo-icon"} as any) as any;
+    if (!properties.tag) properties.tag = "turbo-icon";
+    return element({...properties}) as any;
 }
 
 export {TurboIcon, icon};

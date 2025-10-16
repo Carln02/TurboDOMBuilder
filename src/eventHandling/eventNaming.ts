@@ -85,9 +85,14 @@ const DefaultEventName = {
     change: "change",
 
     focus: "focus",
+    focusIn: "focusin",
+    focusOut: "focusout",
     blur: "blur",
 
-    resize: "resize"
+    resize: "resize",
+
+    compositionStart: "compositionstart",
+    compositionEnd: "compositionend",
 };
 
 type DefaultEventNameKey = keyof typeof DefaultEventName;

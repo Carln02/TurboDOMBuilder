@@ -92,34 +92,29 @@ class Mvc<
     }
 
     public set controllers(value: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>) {
-        this._controllers.clear();
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addController(instance));
         this.linkPieces();
     }
 
     public set handlers(value: MvcManyInstancesOrConstructors<TurboHandler>) {
-        this._handlers.clear();
         this.generateInstances(value).forEach(instance => this.addHandler(instance));
         this.linkPieces();
     }
 
     public set interactors(value: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>) {
-        this._interactors.clear();
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addInteractor(instance));
         this.linkPieces();
     }
 
     public set tools(value: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>) {
-        this._tools.clear();
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addTool(instance));
         this.linkPieces();
     }
 
     public set substrates(value: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>) {
-        this._substrates.clear();
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addSubstrate(instance));
         this.linkPieces();

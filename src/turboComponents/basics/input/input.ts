@@ -1,5 +1,4 @@
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {TurboRichElement} from "../richElement/richElement";
+import {richElement, TurboRichElement} from "../richElement/richElement";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
@@ -13,6 +12,8 @@ import {TurboInputProperties} from "./input.types";
 import {randomId} from "../../../utils/computations/random";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {ValidElement} from "../../../core.types";
+import {Delegate} from "../../../eventHandling/delegate/delegate";
+import {TurboInputInputInteractor} from "./input.inputInteractor";
 
 @define("turbo-input")
 class TurboInput<
@@ -29,20 +30,24 @@ class TurboInput<
     };
 
     protected labelElement: HTMLLabelElement;
-    protected content: HTMLElement;
+    private _content: HTMLElement;
+    public get content(): HTMLElement {return this._content}
+    public set content(value: HTMLElement) {this._content = value}
 
+    public defaultId: string = "turbo-input-" + randomId();
     public locked: boolean = false;
     public selectTextOnFocus: boolean = false;
-
-    private lastValueWithInputCheck: string = "";
-    private lastValueWithBlurCheck: string = "";
+    public dynamicVerticalResize: boolean = false;
 
     public inputRegexCheck: RegExp | string;
     public blurRegexCheck: RegExp | string;
 
-    public dynamicVerticalResize: boolean = false;
+    private lastValidForInput = "";
+    private lastValidForBlur = "";
 
-    public defaultId: string = "turbo-input-" + randomId();
+    public readonly onFocus: Delegate<() => void> = new Delegate();
+    public readonly onBlur: Delegate<() => void> = new Delegate();
+    public readonly onInput: Delegate<() => void> = new Delegate();
 
     @auto() public set label(value: string) {
         if (!value || value.length === 0) {
@@ -76,6 +81,12 @@ class TurboInput<
         return super.element;
     }
 
+    public initialize() {
+        super.initialize();
+        this.mvc.generate({interactors: [TurboInputInputInteractor]});
+        this.mvc.getInteractor("__input__interactor__").target = this.content;
+    }
+
     protected setupUIElements() {
         super.setupUIElements();
         this.content = div();
@@ -88,63 +99,13 @@ class TurboInput<
         $(this).childHandler = this.content;
     }
 
-    protected setupUIListeners() {
-        super.setupUIListeners();
-
-        $(this.element).on(DefaultEventName.click, () => {
-            this.element.focus();
-        });
-
-        $(this.element).bypassManagerOn = () => true;
-
-        $(this.element).on(DefaultEventName.blur, (e: Event) => {
-            if (this.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
-                this.stringValue = this.lastValueWithBlurCheck;
-            this.dispatchEvent(new FocusEvent(DefaultEventName.blur, {...e}));
-        });
-
-        $(this.element).on(DefaultEventName.focus, (e: Event) => {
-            if (this.locked) this.element.blur();
-            if (this.selectTextOnFocus) this.element.select();
-            this.dispatchEvent(new FocusEvent(DefaultEventName.focus, {...e}));
-        });
-
-        $(this.element).on(DefaultEventName.input, (e: Event) => {
-            if (this.dynamicVerticalResize && this.element instanceof HTMLTextAreaElement) {
-                this.element.style.height = "";
-                this.element.style.height = this.element.scrollHeight + "px";
-            }
-
-            if (this.inputRegexCheck) {
-                const regex = new RegExp(this.inputRegexCheck);
-               if (!regex.test(this.stringValue)) this.stringValue = this.lastValueWithInputCheck;
-            }
-            this.lastValueWithInputCheck = this.stringValue;
-
-            if (this.blurRegexCheck) {
-                const regex = new RegExp(this.blurRegexCheck);
-                if (regex.test(this.stringValue)) this.lastValueWithBlurCheck = this.stringValue;
-            }
-
-            if (this.stringValue.length == 0) {
-                this.lastValueWithInputCheck = "0";
-                this.lastValueWithBlurCheck = "0";
-            }
-
-            this.dispatchEvent(new InputEvent(DefaultEventName.input, {...e}));
-        });
-    }
-
-    protected set stringValue(value: string) {
-        this.element.value = value;
-    }
-
-    protected get stringValue(): string {
-        return this.element.value;
+    protected setupChangedCallbacks() {
+        super.setupChangedCallbacks();
+        this.mvc.emitter.add("processValue", () => this.processInputValue());
     }
 
     public get value(): ValueType {
-        const value = this.stringValue;
+        const value = this.element?.value;
         try {
             const num = parseFloat(value);
             if (!isNaN(num)) return num as ValueType;
@@ -153,7 +114,50 @@ class TurboInput<
     }
 
     public set value(value: string | ValueType) {
-        this.stringValue = value.toString();
+        if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement)) return;
+        let strValue = value.toString();
+        if (this.blurRegexCheck) {
+            const re = new RegExp(this.blurRegexCheck as any);
+            if (!re.test(strValue)) strValue = this.lastValidForBlur;
+        }
+        this.element.value = strValue;
+        this.mvc.emitter.fire("valueSet");
+    }
+
+    protected processInputValue(value: string = this.element.value) {
+        if (this.inputRegexCheck) {
+            const re = new RegExp(this.inputRegexCheck as any);
+            if (!re.test(value)) {
+                const attemptSanitize = this.sanitizeByRegex(value, this.inputRegexCheck);
+                if (re.test(attemptSanitize)) value = attemptSanitize;
+                else value = this.lastValidForInput;
+            }
+        }
+
+        this.lastValidForInput = value.toString();
+        if (this.blurRegexCheck) {
+            const re = new RegExp(this.blurRegexCheck as any);
+            if (re.test(value.toString())) this.lastValidForBlur = value;
+        } else {
+            this.lastValidForBlur = value;
+        }
+
+        this.element.value = value;
+        this.onInput.fire();
+    }
+
+    private sanitizeByRegex(value: string, rule: RegExp | string): string {
+        const src = typeof rule === "string" ? rule : rule.source;
+        const flags = typeof rule === "string" ? "" : rule.flags.replace("g", "");
+        const re = new RegExp(src, flags);
+
+        let out = "";
+        for (const ch of value) {
+            const candidate = out + ch;
+            re.lastIndex = 0;
+            if (re.test(candidate)) out = candidate;
+        }
+        return out;
     }
 }
 
@@ -171,7 +175,8 @@ function turboInput<
     properties.elementTag = properties.inputTag;
     if (!properties.elementTag) properties.elementTag = "input";
     if (!properties.element) properties.element = {};
-    return element({...properties, input: undefined, inputTag: undefined, tag: "turbo-input"}) as any;
+    if (!properties.tag) properties.tag = "turbo-input";
+    return richElement({...properties, input: undefined, inputTag: undefined}) as any;
 }
 
 export {TurboInput, turboInput};

@@ -23,10 +23,11 @@ demo-box > :last-child {
     border: 1px solid var(--edge);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
 
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: var(--gap);
-    align-items: start;
+    align-items: flex-start;
 }
 
 demo-box .case-entry {

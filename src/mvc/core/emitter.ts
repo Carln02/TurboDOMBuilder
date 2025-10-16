@@ -22,6 +22,10 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
         if (model) this.model = model;
     }
 
+    private get defaultBlockKey(): string | number {
+        if (this.model) return this.model.defaultBlockKey;
+        return "__defaultBlockKey__";
+    }
     /**
      * @function getBlock
      * @description Retrieves the callback block by the given blockKey.
@@ -90,7 +94,7 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      * @param {(...args: any[]) => void} callback - The callback function.
      */
     public add(key: string, callback: (...args: any[]) => void): void {
-        this.addWithBlock(key, this.model.defaultBlockKey, callback);
+        this.addWithBlock(key, this.defaultBlockKey, callback);
     }
 
     /**
@@ -117,7 +121,7 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
      */
     public remove(key: string, callback?: (...args: any[]) => void): void {
-        this.removeWithBlock(key, this.model?.defaultBlockKey, callback);
+        this.removeWithBlock(key, this.defaultBlockKey, callback);
     }
 
     /**
@@ -140,7 +144,7 @@ class TurboEmitter<ModelType extends TurboModel = TurboModel> {
      * @param {...any[]} args - Arguments passed to the callback.
      */
     public fire(key: string, ...args: any[]): void {
-        this.fireWithBlock(key, this.model?.defaultBlockKey, ...args);
+        this.fireWithBlock(key, this.defaultBlockKey, ...args);
     }
 }
 

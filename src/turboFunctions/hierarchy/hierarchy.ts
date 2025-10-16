@@ -3,6 +3,7 @@ import {ValidElement, ValidTag} from "../../core.types";
 import {$} from "../turboFunctions";
 import {HierarchyFunctionsUtils} from "./hierarchy.utils";
 import {TurboSelector} from "../turboSelector";
+import {element} from "../../elementCreation/element";
 
 const utils = new HierarchyFunctionsUtils();
 
@@ -34,6 +35,7 @@ function setupHierarchyFunctions() {
      */
     Object.defineProperty(TurboSelector.prototype, "childNodesArray", {
         get: function () {
+            if (!this.element) return [];
             return Array.from(this.childHandler?.childNodes) || [];
         },
         configurable: false,
@@ -116,7 +118,7 @@ function setupHierarchyFunctions() {
     TurboSelector.prototype.addChild = function _addChild(
         this: TurboSelector, children?: Node | Node[], index?: number,
         referenceList: Node[] | NodeListOf<Node> = this.childrenArray): TurboSelector {
-        if (!this || !children) return this;
+        if (!this.element || !children) return this;
 
         if (index !== undefined && (index < 0 || index > referenceList.length)) index = undefined;
 
@@ -144,7 +146,7 @@ function setupHierarchyFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.remChild = function _remChild(this: TurboSelector, children?: Node | Node[]): TurboSelector {
-        if (!this || !children) return this;
+        if (!this.element || !children) return this;
 
         // Try to remove every provided child (according to its type)
         try {
@@ -170,7 +172,7 @@ function setupHierarchyFunctions() {
      */
     TurboSelector.prototype.addChildBefore = function _addChildBefore
     (this: TurboSelector, children?: Node | Node[], sibling?: Node): TurboSelector {
-        if (!this || !children) return this;
+        if (!this.element || !children) return this;
         if (!sibling) return this.addChild(children);
 
         // Try to append every provided child (according to its type)
@@ -200,7 +202,7 @@ function setupHierarchyFunctions() {
         this: TurboSelector, index?: number, count: number = 1,
         referenceList: Node[] | NodeListOf<Node> = this.childrenArray
     ): TurboSelector {
-        if (!this || index === undefined || index < 0) return this;
+        if (!this.element || index === undefined || index < 0) return this;
 
         if (index >= referenceList.length) return this;
 
@@ -225,7 +227,7 @@ function setupHierarchyFunctions() {
      */
     TurboSelector.prototype.removeAllChildren = function _removeAllChildren(
         this: TurboSelector, referenceList: Node[] | NodeListOf<Node> = this.childrenArray): TurboSelector {
-        if (!this) return this;
+        if (!this.element) return this;
 
         try {
             for (let i = 0; i < referenceList.length; i++) this.removeChild(referenceList[i]);
@@ -250,7 +252,7 @@ function setupHierarchyFunctions() {
         this: TurboSelector, index?: number,
         referenceList: ChildType[] | NodeListOf<ChildType> = this.childrenArray as ChildType[]
     ): ChildType | null {
-        if (!this || index === undefined) return null;
+        if (!this.element || index === undefined) return null;
 
         if (index >= referenceList.length) index = referenceList.length - 1;
         while (index < 0) index += referenceList.length;
@@ -268,7 +270,7 @@ function setupHierarchyFunctions() {
         this: TurboSelector, child?: Node,
         referenceList: Node[] | NodeListOf<Node> = this.childrenArray
     ): number {
-        if (!this || !child) return -1;
+        if (!this.element || !child) return -1;
         if (!(referenceList instanceof Array)) referenceList = Array.from(referenceList);
         return referenceList.indexOf(child);
     };
@@ -279,7 +281,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} A boolean indicating whether the provided nodes belong to the parent or not.
      */
     TurboSelector.prototype.hasChild = function _hasChild(this: TurboSelector, children?: Node | Node[]): boolean {
-        if (!this || !children) return false;
+        if (!this.element || !children) return false;
 
         const nodesArray = Array.from(this.element?.childNodes) as Node[];
         if (children instanceof Node) return nodesArray.includes(children);
@@ -301,7 +303,7 @@ function setupHierarchyFunctions() {
         this: TurboSelector,
         type: TagOrType | (new (...args: any[]) => TagOrType)
     ): (TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType) | null {
-        if (!this || !type || !(this.element instanceof Element)) return null;
+        if (!this.element || !type || !(this.element instanceof Element)) return null;
 
         if (typeof type === "string") {
             return this.element.closest(type) as TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType;
@@ -321,7 +323,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} True if the node is within the given parents, false otherwise.
      */
     TurboSelector.prototype.findInParents = function _findInParents(this: TurboSelector, parents?: Node | Node[]): boolean {
-        if (!parents) return false;
+        if (!parents || !this.element) return false;
         if (parents instanceof Node) parents = [parents];
 
         let element = this.element;
@@ -341,7 +343,7 @@ function setupHierarchyFunctions() {
      * @returns {boolean} True if the children belong to the node, false otherwise.
      */
     TurboSelector.prototype.findInSubTree = function _findInSubTree(this: TurboSelector, children?: Node | Node[]): boolean {
-        if (!children) return false;
+        if (!children || !this.element) return false;
         if (children instanceof Node) children = [children];
         let count = 0;
 
@@ -363,7 +365,7 @@ function setupHierarchyFunctions() {
      */
     TurboSelector.prototype.indexInParent = function _indexInParent(
         this: TurboSelector, referenceList: Node[] = this.siblings as Node[]): number {
-        if (!referenceList) return -1;
+        if (!referenceList || !this.element) return -1;
         return referenceList.indexOf(this.element);
     };
 
@@ -384,7 +386,7 @@ function setupHierarchyFunctions() {
         index?: number,
         referenceList?: Node[] | NodeListOf<Node>
     ): TurboSelector {
-        if (!this || !parent) return this;
+        if (!this.element || !parent) return this;
         return $(parent).addChild(this.element, index, referenceList);
     };
 }

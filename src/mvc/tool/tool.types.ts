@@ -75,6 +75,12 @@ declare module "./tool" {
          * @param target
          */
         dragEnd(e: Event, target: Node): boolean;
+
+        input(e: Event, target: Node): boolean;
+
+        focus(e: Event, target: Node): boolean;
+
+        blur(e: Event, target: Node): boolean;
     }
 }
 

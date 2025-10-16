@@ -1,4 +1,4 @@
-import {TurboInput} from "../input";
+import {turboInput, TurboInput} from "../input";
 import {TurboInputProperties} from "../input.types";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/core/view";
@@ -21,7 +21,7 @@ class TurboNumericalInput<
     public max: number;
 
     public get value(): number {
-        return Number.parseFloat(this.stringValue) / this.multiplier;
+        return Number.parseFloat(this.element.value) / this.multiplier;
     }
 
     public set value(value: string | number) {
@@ -49,15 +49,10 @@ function numericalInput<
 >(
     properties: TurboNumericalInputProperties<ViewType, DataType, ModelType, EmitterType>
 ): TurboNumericalInput<ViewType, DataType, ModelType, EmitterType> {
-    properties.element = properties.input;
-    properties.elementTag = "input";
-    if (!properties.element) properties.element = {};
-
-    //Only allow numbers (positive, negative, and decimal)
     if (!properties.inputRegexCheck) properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
     if (!properties.blurRegexCheck) properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-
-    return element({...properties, input: undefined, inputTag: undefined, tag: "turbo-input"}) as any;
+    if (!properties.tag) properties.tag = "turbo-numerical-input";
+    return turboInput({...properties}) as any;
 }
 
 export {TurboNumericalInput, numericalInput};

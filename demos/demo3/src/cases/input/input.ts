@@ -192,15 +192,13 @@ function numTest1() {
 /* 8) Numerical: min/max, multiplier, decimalPlaces */
 function numTest2() {
     const ni = numericalInput({
-        label: "Scaled + clamped",
-        // starts as input element (factory sets elementTag = 'input')
-        input: {}, // ensure element exists
+        label: "Scaled + clamped"
     });
 
-    ni.multiplier = 100;        // display scaled *100
-    ni.decimalPlaces = 2;       // round to 2 decimals
-    ni.min = -50;               // min raw (after /multiplier)
-    ni.max = 50;                // max raw
+    ni.multiplier = 100;
+    ni.decimalPlaces = 2;
+    ni.min = -50;
+    ni.max = 50;
 
     box("TurboNumericalInput — min/max/multiplier/decimalPlaces")
         .addSubBox("field", ni)

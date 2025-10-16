@@ -23,7 +23,6 @@ class TurboSelect<
 > extends TurboBaseElement {
     public static readonly config: TurboSelectConfig = {defaultSelectedEntryClasses: "selected"};
 
-    private _parent: Element;
     private _inputField: HTMLInputElement;
     private _entries: HTMLCollection | NodeList | EntryType[] = [];
     private readonly _entriesData: WeakMap<EntryType, EntryData> = new WeakMap();
@@ -40,42 +39,30 @@ class TurboSelect<
     }
 
     public set entries(value: HTMLCollection | NodeList | EntryType[]) {
-        if (this.parent && this.parentObserver) {
-            this.parentObserver.disconnect();
-            this.parentObserver = null;
-        }
+        this.enableObserver(false);
 
         const previouslySelectedValues = this.selectedValues;
         this.clear();
         this._entries = value;
 
-        if (value instanceof HTMLCollection && value.item(0)) {
-            this._parent = value.item(0).parentElement;
-            if (this.inputField) this.parent.appendChild(this.inputField);
-            this.setupParentObserver();
-        }
-
-        let selectionCount = 0;
+        if (value instanceof HTMLCollection && value.item(0)) this.parent = value.item(0).parentElement;
 
         const array = this.entriesArray;
+        for (let i = 0; i < array.length; i++) this.onEntryAdded?.call(this, array[i], i);
+
+        this.deselectAll();
         for (let i = 0; i < array.length; i++) {
-            this.onEntryAdded?.call(this, array[i], i);
-            if (previouslySelectedValues.includes(this.getValue(array[i]))) {
-                selectionCount++;
-                this.select(array[i]);
-            }
+            if (previouslySelectedValues.includes(this.getValue(array[i]))) this.select(array[i]);
         }
 
-        if (this.forceSelection && this.enabledEntries.length && selectionCount === 0) {
-            const fallback = this.enabledEntries[0];
-            if (fallback) this.select(fallback);
-        }
+        if (this.selectedEntries.length === 0) this.initializeSelection();
         this.refreshInputField();
+        this.enableObserver(true);
     }
 
     public get entriesArray(): EntryType[] {
         const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries) as EntryType[];
-        return array.filter(entry => entry !== this.inputField);
+        return (array ?? []).filter(entry => entry !== this.inputField);
     }
 
     /**
@@ -87,7 +74,11 @@ class TurboSelect<
 
     public set values(values: ValueType[]) {
         const entries = [];
-        values.forEach(value => entries.push(this.createEntry(value)));
+        values.forEach(value => {
+            const entry = this.createEntry(value);
+            if (entry instanceof Node && this.parent) $(this.parent).addChild(entry);
+            entries.push(entry);
+        });
         this.entries = entries;
     }
 
@@ -96,17 +87,16 @@ class TurboSelect<
     }
 
     public set selectedEntries(value: EntryType[]) {
-        this.entriesArray.forEach(entry => this.getEntryData(entry).selected = false);
+        this.deselectAll();
         if (!value) return;
         value.forEach(entry => this.select(entry));
     }
 
-    public get parent(): Element {
-        return this._parent;
-    }
-
-    public set parent(value: Element) {
-        this.entries = value.children;
+    @auto() public set parent(value: Element) {
+        if (!(this.parent instanceof Element)) return;
+        $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node) as Node[]);
+        if (this.inputField) this.parent.appendChild(this.inputField);
+        this.setupParentObserver();
     }
 
     @auto({
@@ -117,24 +107,14 @@ class TurboSelect<
     @auto({defaultValue: () => ""}) public getSecondaryValue: (entry: EntryType) => SecondaryValueType;
 
     @auto({
-        defaultValue: (value: ValueType) => richElement({text: stringify(value)}),
-        preprocessValue: function (fn: (value: ValueType) => EntryType) {
-            return function (value: ValueType) {
-                const entry = fn(value);
-                if (!entry) return;
-                const isNode = entry instanceof Node;
-
-                if (isNode && !entry.parentElement) $(this.parent).addChild(entry);
-                if (isNode && Array.isArray(this.entries) && !this.entries.includes(entry)) this.entries.push(entry);
-                return entry;
-            }
-        }
+        defaultValue: (value: ValueType) => richElement({text: stringify(value)})
     }) public createEntry: (value: ValueType) => EntryType;
 
     @auto({
         defaultValue: function (entry: EntryType) {
+            this.initializeSelection();
             $(entry).on(DefaultEventName.click, () => {
-                this.select(entry);
+                this.select(entry, !this.isSelected(entry));
                 return true;
             });
         },
@@ -148,14 +128,14 @@ class TurboSelect<
      * The dropdown's underlying hidden input. Might be undefined.
      */
     public get inputName(): string {
-        return this.inputField.name;
+        return this.inputField?.name;
     }
 
     public set inputName(value: string) {
         if (!this._inputField) this._inputField = input({
             value: this.stringSelectedValue,
             type: "hidden",
-            parent: this.parent ?? document as any
+            parent: this.parent ?? document.body
         });
         this.inputField.name = value;
     }
@@ -164,11 +144,11 @@ class TurboSelect<
         return this._inputField;
     }
 
-    public multiSelection: boolean = false;
+    @auto({defaultValue: false}) public set multiSelection(value: boolean) {
+        this.forceSelection = !value;
+    }
 
-    @auto({
-        defaultValueCallback: function () {return !this.multiSelection}
-    }) public forceSelection: boolean = true;
+    @auto({defaultValueCallback: function () {return !this.multiSelection}}) public forceSelection: boolean;
 
     public set onSelect(value: (b: boolean, entry: EntryType, index: number) => void) {
         if (value) this.onSelectDelegate.add(value);
@@ -179,7 +159,7 @@ class TurboSelect<
     }
 
     @auto({
-        initialValue: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")}
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")}
     }) public selectedEntryClasses: string | string[];
 
     /**
@@ -200,11 +180,11 @@ class TurboSelect<
             try {this[property] = properties[property]} catch {}
         }
 
-        //TODO MAKE IT BETTER SOMEHOW (I WANT TO RUN IT AFTER CHILD CLASSES FINISH SETTING UP)
-        requestAnimationFrame(() => {
-            this.entriesArray.forEach(entry => {
-                if (selectedValues.includes(this.getValue(entry))) this.select(entry)
-            });
+        if (!this.forceSelection) this.deselectAll();
+        this.entriesArray.forEach(entry => {
+            if (selectedValues.includes(this.getValue(entry))) {
+                this.select(entry)
+            }
         });
     }
 
@@ -226,13 +206,13 @@ class TurboSelect<
         if (index === undefined || typeof index !== "number" || index > this.entries.length) index = this.entriesArray.length;
         if (index < 0) index = 0;
 
-        this.parentObserver?.disconnect();
+        this.enableObserver(false);
         this.onEntryAdded?.call(this, entry, index);
 
         if (Array.isArray(this.entries) && !this.entries.includes(entry)) this.entries.splice(index, 0, entry);
         if (entry instanceof Node && !entry.parentElement && this.parent) $(this.parent).addChild(entry, index);
 
-        this.parentObserver?.observe(this.parent, {childList: true});
+        this.enableObserver(true);
         requestAnimationFrame(() => this.select(this.selectedEntry));
     }
 
@@ -277,16 +257,15 @@ class TurboSelect<
         } catch {}
         if (!entry) return this;
 
-        if (selected === this.isSelected(entry)) return this;
+        const wasSelected = this.isSelected(entry);
+        if (selected === wasSelected) return this;
+        if (!selected && wasSelected && this.selectedEntries.length <= 1 && this.forceSelection) return this;
         if (!this.multiSelection) this.deselectAll();
 
         this.getEntryData(entry).selected = selected;
         if (entry instanceof HTMLElement) $(entry).toggleClass(this.selectedEntryClasses, selected);
 
-        if (this.selectedEntries.length === 0 && this.forceSelection && this.enabledEntries.length) {
-            const fallback = this.enabledEntries[0];
-            if (fallback) this.select(fallback);
-        }
+        this.initializeSelection();
         this.refreshInputField();
 
         this.onSelectDelegate.fire(selected, entry, this.getIndex(entry));
@@ -402,7 +381,7 @@ class TurboSelect<
     }
 
     public clear(): void {
-        this.parentObserver?.disconnect();
+        this.enableObserver(false);
 
         for (const entry of this.entriesArray) {
             this.clearEntryData(entry);
@@ -411,7 +390,7 @@ class TurboSelect<
         }
         this._entries = [];
         this.refreshInputField();
-        this.parentObserver?.observe(this.parent, {childList: true});
+        this.enableObserver(true);
     }
 
     public refreshInputField() {
@@ -419,18 +398,30 @@ class TurboSelect<
     }
 
     public destroy() {
-        this.parentObserver?.disconnect();
+        this.enableObserver(false);
         this.parentObserver = null;
     }
 
+    protected enableObserver(value: boolean) {
+        if (!value) return this.parentObserver?.disconnect();
+        if (this.parent instanceof Element && this.parentObserver) this.parentObserver.observe(this.parent, {childList: true});
+    }
+
+    protected initializeSelection() {
+        if (this.forceSelection && this.enabledEntries.length && this.selectedEntries.length === 0) {
+            const fallback = this.enabledEntries[0];
+            if (fallback) this.select(fallback);
+        }
+    }
+
     protected setupParentObserver() {
-        if (this.parentObserver) this.parentObserver.disconnect();
+        this.enableObserver(false);
         this.parentObserver = new MutationObserver(records => {
             for (const record of records) {
                 for (const node of record.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE || node.parentElement !== this.parent) continue;
                     if (node === this.inputField) continue;
-                    this.onEntryAdded.call(this, node, this.getIndex(node as any));
+                    this.onEntryAdded?.call(this, node, this.getIndex(node as any));
                 }
                 for (const node of record.removedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
@@ -445,14 +436,13 @@ class TurboSelect<
                         }
 
                         data.selected = false;
-                        this.onEntryRemoved.call(this, node);
+                        this.onEntryRemoved?.call(this, node);
                         this.clearEntryData(node as any);
                     });
                 }
             }
         });
-
-        this.parentObserver.observe(this.parent, {childList: true});
+        this.enableObserver(true);
     }
 }
 
