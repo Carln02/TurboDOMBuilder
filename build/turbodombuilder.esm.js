@@ -414,21 +414,18 @@ function auto(options) {
             };
             let undefinedFlag = false;
             const baseRead = function () {
-                if (customGetter && options?.returnDefinedGetterValue)
-                    return customGetter.call(this);
-                let value = this[backing];
-                if (isNull(value) || isUndefined(value)) {
-                    if (options.defaultValue)
-                        this[backing] = options.defaultValue;
-                    else if (options.defaultValueCallback)
-                        this[backing] = options.defaultValueCallback.call(this);
-                }
-                return this[backing];
+                return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
             };
             const read = function () {
                 let value = baseRead.call(this);
-                if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
                     undefinedFlag = true;
+                    if (options.defaultValue)
+                        value = options.defaultValue;
+                    else if (options.defaultValueCallback)
+                        value = options.defaultValueCallback.call(this);
+                    else if (!options.setIfUndefined)
+                        return value;
                     write.call(this, value);
                     value = baseRead.call(this);
                     undefinedFlag = false;
@@ -8430,7 +8427,7 @@ let TurboRichElement = (() => {
                     preprocessValue: function (value) {
                         if (typeof value == "string") {
                             if (this.prefixEntry) {
-                                this.prefixEntry.innerText = value;
+                                this.prefixEntry.textContent = value;
                                 return this.prefixEntry;
                             }
                             value = element({ text: value });
@@ -8443,8 +8440,8 @@ let TurboRichElement = (() => {
             _set_element_decorators = [auto({
                     preprocessValue: function (value) {
                         if (typeof value === "string") {
-                            if (this.element && "innerText" in this.element) {
-                                this.element.innerText = value;
+                            if (this.element && "textContent" in this.element) {
+                                this.element.textContent = value;
                                 return this.element;
                             }
                             value = element({ tag: this.elementTag, text: value });
@@ -8463,7 +8460,7 @@ let TurboRichElement = (() => {
                     preprocessValue: function (value) {
                         if (typeof value == "string") {
                             if (this.suffixEntry) {
-                                this.suffixEntry.innerText = value;
+                                this.suffixEntry.textContent = value;
                                 return this.suffixEntry;
                             }
                             value = element({ text: value });
@@ -8552,21 +8549,19 @@ let TurboRichElement = (() => {
         get prefixEntry() { return; }
         /**
          * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-         * string will update the text's innerText with the given string.
+         * string will update the text's textContent with the given string.
          */
         set element(value) { }
         get element() { return; }
         /**
          * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-         * string will update the text's innerText with the given string.
+         * string will update the text's textContent with the given string.
          */
         get text() {
             const element = this.element;
             if (!element)
                 return "";
-            if ("innerText" in element)
-                return element.innerText;
-            return element.innerHTML;
+            return element.textContent;
         }
         set text(value) {
             if (!value)
@@ -9167,8 +9162,10 @@ let TurboSelect = (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _set_parent_decorators = [auto()];
             _getValue_decorators = [auto({
-                    defaultValue: (entry) => entry instanceof HTMLElement ? entry.innerText
-                        : entry instanceof Element ? entry.innerHTML : undefined
+                    defaultValue: (entry) => entry instanceof TurboRichElement ? entry.text
+                        : entry instanceof HTMLElement ? entry.textContent
+                            : entry instanceof Element ? entry.innerHTML
+                                : undefined
                 })];
             _getSecondaryValue_decorators = [auto({ defaultValue: () => "" })];
             _createEntry_decorators = [auto({
@@ -9784,6 +9781,7 @@ function reifect(properties) {
     return new Reifect(properties);
 }
 
+//TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
 let TurboDrawer = (() => {
     let _classDecorators = [define("turbo-drawer")];
     let _classDescriptor;
@@ -9992,8 +9990,10 @@ let TurboDrawer = (() => {
         }
         setupUILayout() {
             super.setupUILayout();
+            console.log(this);
+            console.log(this.panel);
             $(this).childHandler = this;
-            $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panel.parentElement));
+            $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
             $(this).addChild([this.thumb, this.panelContainer]);
             $(this.panelContainer).addChild(this.panel);
             $(this.thumb).addChild(this.icon);
@@ -10101,7 +10101,7 @@ let TurboDrawer = (() => {
 function drawer(properties) {
     if (!properties.tag)
         properties.tag = "turbo-drawer";
-    return element({ ...properties, text: undefined, initialize: true });
+    return element({ ...properties, text: undefined });
 }
 
 var PopupFallbackMode;
@@ -10111,7 +10111,7 @@ var PopupFallbackMode;
     PopupFallbackMode["none"] = "none";
 })(PopupFallbackMode || (PopupFallbackMode = {}));
 
-var css_248z$1 = ".turbo-popup{display:block;position:fixed}";
+var css_248z$1 = "#turbo-popup-parent-element{display:block;left:0;position:fixed;top:0;z-index:1000}.turbo-popup{display:block;inset:auto;overflow:auto;position:fixed}";
 styleInject(css_248z$1);
 
 let TurboPopup = (() => {
@@ -10121,235 +10121,208 @@ let TurboPopup = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
-    let _set_popupAnchor_decorators;
-    let _set_parentAnchor_decorators;
+    let _static_parentElement_decorators;
+    let _static_parentElement_initializers = [];
+    let _static_parentElement_extraInitializers = [];
+    let _anchor_decorators;
+    let _anchor_initializers = [];
+    let _anchor_extraInitializers = [];
+    let _set_popupPosition_decorators;
+    let _set_anchorPosition_decorators;
     let _set_viewportMargin_decorators;
-    let _set_offsetFromParent_decorators;
-    let _fallbackModes_decorators;
-    let _fallbackModes_initializers = [];
-    let _fallbackModes_extraInitializers = [];
+    let _set_offsetFromAnchor_decorators;
+    let _set_fallbackModes_decorators;
     let _get_rect_decorators;
-    let _get_parentRect_decorators;
+    let _get_anchorRect_decorators;
     let _get_computedStyle_decorators;
-    let _get_parentComputedStyle_decorators;
-    (class extends _classSuper {
+    let _get_anchorComputedStyle_decorators;
+    let _get_computedMargins_decorators;
+    var TurboPopup = class extends _classSuper {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_popupAnchor_decorators = [auto({
-                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupAnchor", { x: 50, y: 0 }); },
+            _static_parentElement_decorators = [auto({ defaultValue: div({ parent: document.body, id: "turbo-popup-parent-element" }) })];
+            _anchor_decorators = [auto({ defaultValue: document.body })];
+            _set_popupPosition_decorators = [auto({
+                    initialValueCallback: function () {
+                        return this.getPropertiesValue(undefined, "defaultPopupAnchor", { x: 50, y: 0 });
+                    },
                     preprocessValue: (value) => new Point(value).bound(0, 100)
                 })];
-            _set_parentAnchor_decorators = [auto({
-                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultParentAnchor", { x: 50, y: 100 }); },
+            _set_anchorPosition_decorators = [auto({
+                    initialValueCallback: function () {
+                        return this.getPropertiesValue(undefined, "defaultAnchorPosition", { x: 50, y: 100 });
+                    },
                     preprocessValue: (value) => new Point(value).bound(0, 100)
                 })];
             _set_viewportMargin_decorators = [auto({
                     initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultViewportMargin", 0); },
                     preprocessValue: (value) => new Point(value)
                 })];
-            _set_offsetFromParent_decorators = [auto({
-                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultOffsetFromParent", 0); },
+            _set_offsetFromAnchor_decorators = [auto({
+                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultOffsetFromAnchor", 0); },
                     preprocessValue: (value) => new Point(value)
                 })];
-            _fallbackModes_decorators = [auto({
+            _set_fallbackModes_decorators = [auto({
+                    preprocessValue: (value) => {
+                        return typeof value !== "object" ? { x: value, y: value } : value;
+                    },
                     initialValueCallback: function () {
                         return {
-                            x: Math.abs(this.parentAnchor.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-                            y: Math.abs(this.parentAnchor.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                            x: Math.abs(this.anchorPosition.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                            y: Math.abs(this.anchorPosition.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
                         };
                     }
                 })];
             _get_rect_decorators = [cache({ clearOnNextFrame: true })];
-            _get_parentRect_decorators = [cache({ clearOnNextFrame: true })];
+            _get_anchorRect_decorators = [cache({ clearOnNextFrame: true })];
             _get_computedStyle_decorators = [cache({ clearOnNextFrame: true })];
-            _get_parentComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
-            __esDecorate(this, null, _set_popupAnchor_decorators, { kind: "setter", name: "popupAnchor", static: false, private: false, access: { has: obj => "popupAnchor" in obj, set: (obj, value) => { obj.popupAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_parentAnchor_decorators, { kind: "setter", name: "parentAnchor", static: false, private: false, access: { has: obj => "parentAnchor" in obj, set: (obj, value) => { obj.parentAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            _get_anchorComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
+            _get_computedMargins_decorators = [cache({ clearOnNextFrame: true })];
+            __esDecorate(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_offsetFromParent_decorators, { kind: "setter", name: "offsetFromParent", static: false, private: false, access: { has: obj => "offsetFromParent" in obj, set: (obj, value) => { obj.offsetFromParent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_parentRect_decorators, { kind: "getter", name: "parentRect", static: false, private: false, access: { has: obj => "parentRect" in obj, get: obj => obj.parentRect }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_parentComputedStyle_decorators, { kind: "getter", name: "parentComputedStyle", static: false, private: false, access: { has: obj => "parentComputedStyle" in obj, get: obj => obj.parentComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _fallbackModes_decorators, { kind: "field", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, get: obj => obj.fallbackModes, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, _fallbackModes_initializers, _fallbackModes_extraInitializers);
+            __esDecorate(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
+            __esDecorate(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
             __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-            _classThis = _classDescriptor.value;
+            TurboPopup = _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         static config = {
-            defaultPopupAnchor: { x: 0, y: -100 },
-            defaultParentAnchor: { x: 0, y: 100 },
+            ...TurboElement.config,
+            defaultPopupPosition: { x: 0, y: -100 },
+            defaultAnchorPosition: { x: 0, y: 100 },
             defaultViewportMargin: 4,
-            defaultOffsetFromParent: { x: 0, y: 4 }
+            defaultOffsetFromAnchor: { x: 0, y: 4 }
         };
-        set popupAnchor(value) { }
-        get popupAnchor() { return; }
-        set parentAnchor(value) { }
-        get parentAnchor() { return; }
+        static parentElement = __runInitializers(_classThis, _static_parentElement_initializers, void 0);
+        anchor = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _anchor_initializers, void 0));
+        set popupPosition(value) { }
+        get popupPosition() { return; }
+        set anchorPosition(value) { }
+        get anchorPosition() { return; }
         set viewportMargin(value) { }
         get viewportMargin() { return; }
-        set offsetFromParent(value) { }
-        get offsetFromParent() { return; }
-        fallbackModes = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _fallbackModes_initializers, void 0));
+        set offsetFromAnchor(value) { }
+        get offsetFromAnchor() { return; }
+        set fallbackModes(value) { }
+        get fallbackModes() { return; }
         get rect() {
             return this.getBoundingClientRect();
         }
-        get parentRect() {
-            return this.parentElement.getBoundingClientRect();
+        get anchorRect() {
+            return this.anchor.getBoundingClientRect();
         }
         get computedStyle() {
             return window.getComputedStyle(this);
         }
-        get parentComputedStyle() {
-            return window.getComputedStyle(this.parentElement);
+        get anchorComputedStyle() {
+            return window.getComputedStyle(this.anchor);
+        }
+        get computedMargins() {
+            return {
+                x: parseFloat(this.computedStyle.marginLeft) + parseFloat(this.computedStyle.marginRight),
+                y: parseFloat(this.computedStyle.marginTop) + parseFloat(this.computedStyle.marginBottom)
+            };
         }
         initialize() {
             super.initialize();
             this.show(false);
+            if (!this.parentElement)
+                $(this).addToParent(TurboPopup.parentElement);
         }
         setupUIListeners() {
             super.setupUIListeners();
-            window.addEventListener(DefaultEventName.scroll, () => this.show(false));
+            document.addEventListener(DefaultEventName.scroll, () => this.show(false), { capture: true, passive: true });
             window.addEventListener(DefaultEventName.resize, () => { if ($(this).isShown)
-                this.recomputePosition(); });
+                this.recomputePosition(); }, { passive: true });
             $(document).on(DefaultEventName.click, e => {
-                if ($(this).isShown && !this.contains(e.target)) {
-                    this.show(false);
-                    return true;
-                }
+                if (!$(this).isShown)
+                    return;
+                const t = e.target;
+                if (this.contains(t))
+                    return;
+                if (this.anchor instanceof Node && this.anchor.contains(t))
+                    return;
+                this.show(false);
+                return true;
             });
         }
         recomputePosition() {
-            if (!this.parentElement)
+            if (!this.anchor)
                 return;
-            this.clearMaxDimensions();
-            const availableHeight = window.innerHeight - (2 * this.viewportMargin.y);
-            const availableWidth = window.innerWidth - (2 * this.viewportMargin.x);
-            $(this).setStyle("maxHeight", `${availableHeight}px`);
-            $(this).setStyle("maxWidth", `${availableWidth}px`);
-            const top = this.recomputeSide(Direction.vertical);
-            const left = this.recomputeSide(Direction.horizontal);
-            this.recomputeMaxSize(top, Direction.vertical);
-            this.recomputeMaxSize(left, Direction.horizontal);
+            $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+            const left = this.computeAxis(Direction.horizontal);
+            const top = this.computeAxis(Direction.vertical);
+            $(this).setStyles({ left: `${left}px`, top: `${top}px` });
+            const maxWidth = Math.max(0, Math.min(window.innerWidth - 2 * this.viewportMargin.x, window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x));
+            const maxHeight = Math.max(0, Math.min(window.innerHeight - 2 * this.viewportMargin.y, window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y));
+            $(this).setStyle("maxWidth", `${maxWidth}px`);
+            $(this).setStyle("maxHeight", `${maxHeight}px`);
         }
-        recomputeSide(direction) {
-            const params = this.generateDimensionParameters(direction);
-            const popupSizeWithMargins = this.rect[params.size] + this.offsetFromParent[params.coordinate]
-                + parseFloat(this.computedStyle[params.marginStart]) + parseFloat(this.computedStyle[params.marginEnd]);
-            const parentAnchorOffset = this.parentRect[params.size] * this.parentAnchor[params.coordinate] / 100;
-            const popupSizeOffset = popupSizeWithMargins * this.popupAnchor[params.coordinate] / 100;
-            const totalSizeOffset = parentAnchorOffset - popupSizeOffset;
-            const incrementSign = totalSizeOffset > 0 ? 1 : -1;
-            const offsetFromParent = this.offsetFromParent[params.coordinate] * incrementSign;
-            const viewportMargin = this.viewportMargin[params.coordinate] * incrementSign;
-            let offset = this.parentRect[params.side] + totalSizeOffset + offsetFromParent;
-            const maxOffset = window[params.innerSize] - popupSizeWithMargins - viewportMargin;
-            const minOffset = viewportMargin;
-            if (this.fallbackModes[params.coordinate] === PopupFallbackMode.invert) {
-                const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-                    + (popupSizeWithMargins - popupSizeOffset);
-                if ((offset + popupSizeWithMargins > maxOffset) || (offset < minOffset)) {
-                    const inverseOffset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-                    if (inverseOffset >= minOffset && (inverseOffset + popupSizeWithMargins) <= maxOffset) {
-                        offset = inverseOffset;
-                    }
-                }
+        computeAxis(direction) {
+            const axis = direction === Direction.horizontal ? "x" : "y";
+            const sizeAxis = direction === Direction.horizontal ? "width" : "height";
+            const viewportSize = direction === Direction.horizontal ? window.innerWidth : window.innerHeight;
+            const parentStart = this.anchorRect[direction === Direction.horizontal ? "left" : "top"];
+            const popupSize = this.rect[sizeAxis] + this.computedMargins[axis];
+            const min = this.viewportMargin[axis];
+            const max = viewportSize - this.viewportMargin[axis] - popupSize;
+            const base = parentStart + (this.anchorRect[sizeAxis] * this.anchorPosition[axis] / 100)
+                - (popupSize * this.popupPosition[axis] / 100) + this.offsetFromAnchor[axis];
+            const fitsBase = base >= min && base <= max;
+            if (fitsBase || this.fallbackModes[axis] === PopupFallbackMode.offset) {
+                return Math.min(Math.max(base, min), max);
             }
-            // Final boundary check
-            offset = Math.min(Math.max(offset, minOffset), maxOffset);
-            this.style[params.side] = `${offset}px`;
-            return offset;
-            // if (this.fallbackModes[params.coordinate] == PopupFallbackMode.invert) {
-            //     const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-            //         + (popupSizeWithMargins - popupSizeOffset);
-            //     const inverseTotalSizeOffsetWithViewportMargin = inverseTotalSizeOffset - viewportMargin;
-            //
-            //     if ((totalSizeOffset >= 0
-            //             && window[params.innerSize] - this.parentRect[params.side] <
-            //             popupSizeWithMargins + totalSizeOffsetWithViewportMargin
-            //             && this.parentRect[params.side] >= popupSizeWithMargins - inverseTotalSizeOffsetWithViewportMargin)
-            //         || (totalSizeOffset < 0
-            //             && this.parentRect[params.side] < -totalSizeOffset - totalSizeOffsetWithViewportMargin
-            //             && window[params.innerSize] - this.parentRect[params.side] >=
-            //             inverseTotalSizeOffset + inverseTotalSizeOffsetWithViewportMargin)) {
-            //         offset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-            //     }
-            // } else if (this.fallbackModes[params.coordinate] == PopupFallbackMode.offset) {
-            //     if (totalSizeOffset < 0) {
-            //         const outOfBoundsStart: number = this.parentRect[params.side] + totalSizeOffsetWithViewportMargin;
-            //         if (outOfBoundsStart < 0) offset -= outOfBoundsStart;
-            //     } else {
-            //         const outOfBoundsEnd: number = (window[params.innerSize] - this.parentRect[params.side])
-            //             - (popupSizeWithMargins + totalSizeOffsetWithViewportMargin);
-            //         if (outOfBoundsEnd > 0) offset -= outOfBoundsEnd;
-            //     }
-            // }
-            //
-            // this.style[params.side] = offset + "px";
-            // return offset;
-        }
-        recomputeMaxSize(offset, direction) {
-            const params = this.generateDimensionParameters(direction);
-            const totalMargins = parseFloat(this.computedStyle[params.marginStart])
-                + parseFloat(this.computedStyle[params.marginEnd])
-                + (2 * this.viewportMargin[params.coordinate]);
-            const maxSize = Math.min(window[params.innerSize] - totalMargins, // Total available space
-            window[params.innerSize] - offset - this.viewportMargin[params.coordinate] // Space from offset to edge
-            );
-            // Only set if we need to constrain the size
-            const currentMaxSize = this.computedStyle[params.maxSize]
-                ? parseFloat(this.computedStyle[params.maxSize])
-                : Infinity;
-            if (!currentMaxSize || currentMaxSize > maxSize)
-                this.style[params.maxSize] = `${maxSize}px`;
-            // const maxSize = window[params.innerSize] - offset - this.viewportMargin[params.coordinate]
-            //     - parseFloat(this.computedStyle[params.marginStart]) - parseFloat(this.computedStyle[params.marginEnd])
-            //     - parseFloat(this.parentComputedStyle[params.marginStart]) - parseFloat(this.parentComputedStyle[params.marginEnd]);
-            //
-            // if (this.computedStyle[params.maxSize] && parseFloat(this.computedStyle[params.maxSize]) <= maxSize) return;
-            // this.style[params.maxSize] = maxSize + "px";
-        }
-        clearMaxDimensions() {
-            $(this).setStyle("maxHeight", "", true)
-                .setStyle("maxWidth", "", true);
+            const flipped = parentStart + this.anchorRect[sizeAxis] * (1 - this.anchorPosition[axis] / 100)
+                - popupSize * (1 - this.popupPosition[axis] / 100) - this.offsetFromAnchor[axis];
+            const fitsFlip = flipped >= min && flipped <= max;
+            let finalOffset;
+            if (fitsFlip)
+                finalOffset = flipped;
+            else if (fitsBase)
+                finalOffset = base;
+            else {
+                const pick = Math.abs(base - Math.min(Math.max(base, min), max)) <=
+                    Math.abs(flipped - Math.min(Math.max(flipped, min), max)) ? base : flipped;
+                finalOffset = Math.min(Math.max(pick, min), max);
+            }
+            return finalOffset;
         }
         show(b) {
-            if ($(this).isShown == b)
+            const sel = $(this);
+            if (sel.isShown === b)
                 return this;
-            requestAnimationFrame(() => {
-                if (b)
-                    this.recomputePosition();
-                else
-                    this.clearMaxDimensions();
-                $(this).show(b);
-            });
+            if (b) {
+                this.style.visibility = "hidden";
+                this.style.display = "";
+                this.recomputePosition();
+                this.style.visibility = "";
+                sel.show(true);
+            }
+            else {
+                $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+                sel.show(false);
+            }
             return this;
-        }
-        toggle() {
-            return this.show(!$(this).isShown);
-        }
-        generateDimensionParameters(direction) {
-            const isVertical = direction == Direction.vertical;
-            return {
-                size: isVertical ? "height" : "width",
-                innerSize: isVertical ? "innerHeight" : "innerWidth",
-                maxSize: isVertical ? "maxHeight" : "maxWidth",
-                marginStart: isVertical ? "marginTop" : "marginLeft",
-                marginEnd: isVertical ? "marginBottom" : "marginRight",
-                side: isVertical ? "top" : "left",
-                coordinate: isVertical ? "y" : "x"
-            };
         }
         constructor() {
             super(...arguments);
-            __runInitializers(this, _fallbackModes_extraInitializers);
+            __runInitializers(this, _anchor_extraInitializers);
         }
         static {
+            __runInitializers(_classThis, _static_parentElement_extraInitializers);
             __runInitializers(_classThis, _classExtraInitializers);
         }
-    });
-    return _classThis;
+    };
+    return TurboPopup = _classThis;
 })();
 function popup(properties = {}) {
     return element({ ...properties, text: undefined, tag: "turbo-popup" });
@@ -10370,6 +10343,9 @@ let TurboDropdown = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
+    let _customSelectorTag_decorators;
+    let _customSelectorTag_initializers = [];
+    let _customSelectorTag_extraInitializers = [];
     let _set_customSelectorClasses_decorators;
     let _set_customPopupClasses_decorators;
     let _entries_decorators;
@@ -10384,8 +10360,9 @@ let TurboDropdown = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_customSelectorClasses_decorators = [auto()];
-            _set_customPopupClasses_decorators = [auto()];
+            _customSelectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
+            _set_customSelectorClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); } })];
+            _set_customPopupClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); } })];
             _entries_decorators = [expose("select")];
             _values_decorators = [expose("select")];
             _set_selector_decorators = [auto({
@@ -10397,14 +10374,15 @@ let TurboDropdown = (() => {
                         if (this.selector instanceof TurboButton)
                             this.selector.text = text;
                         else
-                            return button({ text, elementTag: this.getPropertiesValue(this.customSelectorTag, "defaultSelectorTag") });
+                            return button({ text, elementTag: this.customSelectorTag });
                     }
                 })];
-            _set_popup_decorators = [auto({ setIfUndefined: true, defaultValue: popup() })];
+            _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
             __esDecorate(this, null, _set_customSelectorClasses_decorators, { kind: "setter", name: "customSelectorClasses", static: false, private: false, access: { has: obj => "customSelectorClasses" in obj, set: (obj, value) => { obj.customSelectorClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_customPopupClasses_decorators, { kind: "setter", name: "customPopupClasses", static: false, private: false, access: { has: obj => "customPopupClasses" in obj, set: (obj, value) => { obj.customPopupClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(null, null, _customSelectorTag_decorators, { kind: "field", name: "customSelectorTag", static: false, private: false, access: { has: obj => "customSelectorTag" in obj, get: obj => obj.customSelectorTag, set: (obj, value) => { obj.customSelectorTag = value; } }, metadata: _metadata }, _customSelectorTag_initializers, _customSelectorTag_extraInitializers);
             __esDecorate(null, null, _entries_decorators, { kind: "field", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
             __esDecorate(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
             __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -10412,23 +10390,27 @@ let TurboDropdown = (() => {
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
-        static config = { defaultSelectorTag: "h4" };
+        static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
         popupOpen = (__runInitializers(this, _instanceExtraInitializers), false);
-        customSelectorTag;
+        customSelectorTag = __runInitializers(this, _customSelectorTag_initializers, void 0);
         set customSelectorClasses(value) {
-            $(this.selector).addClass(this.getPropertiesValue(value, "defaultSelectorClasses"));
+            $(this.selector).addClass(value);
         }
         set customPopupClasses(value) {
-            $(this.selector).addClass(this.getPropertiesValue(value, "defaultPopupClasses"));
+            $(this.popup).addClass(value);
         }
-        entries = __runInitializers(this, _entries_initializers, void 0);
+        entries = (__runInitializers(this, _customSelectorTag_extraInitializers), __runInitializers(this, _entries_initializers, void 0));
         values = (__runInitializers(this, _entries_extraInitializers), __runInitializers(this, _values_initializers, void 0));
-        select = (__runInitializers(this, _values_extraInitializers), new TurboSelect({
-            onEntryAdded: (entry) => $(entry).on(DefaultEventName.click, () => {
-                this.select.select(entry);
+        onEntryAdded(entry) {
+            this.select.initializeSelection();
+            $(entry).on(DefaultEventName.click, () => {
+                this.select.select(entry, !this.select.isSelected(entry));
                 this.openPopup(false);
                 return true;
-            })
+            });
+        }
+        select = (__runInitializers(this, _values_extraInitializers), new TurboSelect({
+            onEntryAdded: (entry) => this.onEntryAdded(entry),
         }));
         /**
          * The dropdown's selector element.
@@ -10436,10 +10418,14 @@ let TurboDropdown = (() => {
         set selector(value) {
             if (!(value instanceof HTMLElement))
                 return;
-            $(value).on(DefaultEventName.click, (e) => {
+            $(value)
+                .addClass(this.customSelectorClasses)
+                .on(DefaultEventName.click, (e) => {
                 this.openPopup(!this.popupOpen);
-                e.stopImmediatePropagation();
-            }).addClass(this.getPropertiesValue(this.customSelectorClasses, "defaultSelectorClasses"));
+                return true;
+            });
+            if (this.popup instanceof TurboPopup)
+                this.popup.anchor = value;
             $(this).addChild(value);
             if (value instanceof TurboButton)
                 this.select.onSelect = () => value.text = this.stringSelectedValue;
@@ -10449,10 +10435,15 @@ let TurboDropdown = (() => {
          * The dropdown's popup element.
          */
         set popup(value) {
-            $(this).addChild(value);
-            $(value).show(false)
-                .addClass(this.getPropertiesValue(this.customPopupClasses, "defaultPopupClasses"));
+            console.log(value);
+            if (value instanceof TurboPopup)
+                value.anchor = this.selector;
+            $(value).addClass(this.customPopupClasses);
             this.select.parent = value;
+        }
+        initialize() {
+            super.initialize();
+            this.selector;
         }
         connectedCallback() {
             super.connectedCallback();
@@ -10492,7 +10483,9 @@ let TurboDropdown = (() => {
     return _classThis;
 })();
 function dropdown(properties = {}) {
-    return element({ ...properties, text: undefined, tag: "turbo-dropdown" });
+    if (!properties.tag)
+        properties.tag = "turbo-dropdown";
+    return element({ ...properties, text: undefined });
 }
 
 let TurboMarkingMenu = (() => {

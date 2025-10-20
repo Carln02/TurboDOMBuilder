@@ -5,7 +5,7 @@ import {trim} from "../../../utils/computations/misc";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {TurboBaseElement} from "../../../turboElement/turboBaseElement/turboBaseElement";
 import {auto} from "../../../decorators/auto/auto";
-import {richElement} from "../richElement/richElement";
+import {richElement, TurboRichElement} from "../richElement/richElement";
 import {stringify} from "../../../utils/dataManipulation/stringManipulation";
 import {Delegate} from "../../../eventHandling/delegate/delegate";
 import {isNull, isUndefined} from "../../../utils/dataManipulation/misc";
@@ -100,8 +100,10 @@ class TurboSelect<
     }
 
     @auto({
-        defaultValue: (entry: EntryType) => entry instanceof HTMLElement ? entry.innerText
-            : entry instanceof Element ? entry.innerHTML : undefined
+        defaultValue: (entry: EntryType) => entry instanceof TurboRichElement ? entry.text
+            : entry instanceof HTMLElement ? entry.textContent
+                : entry instanceof Element ? entry.innerHTML
+                    : undefined
     }) public getValue: (entry: EntryType) => ValueType;
 
     @auto({defaultValue: () => ""}) public getSecondaryValue: (entry: EntryType) => SecondaryValueType;

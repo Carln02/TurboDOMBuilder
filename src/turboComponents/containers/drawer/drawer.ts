@@ -61,8 +61,7 @@ class TurboDrawer<
         callBefore: function () {if (this.icon?.parentElement === this.thumb) this.thumb.removeChild(this.icon)},
         preprocessValue: function (value: string | Element | TurboIconSwitchProperties<Side> | TurboIconSwitch<Side>) {
             if (value instanceof Element) return value;
-            if (typeof value === "string" && !this.attachSideToIconName && !this.rotateIconBasedOnSide)
-                this.attachSideToIconName = true;
+            if (typeof value === "string" && !this.attachSideToIconName && !this.rotateIconBasedOnSide) this.attachSideToIconName = true;
             return iconSwitch(typeof value === "object" ? value : {
                 icon: value,
                 switchReifect: {states: Object.values(Side)},
@@ -187,8 +186,11 @@ class TurboDrawer<
 
     protected setupUILayout() {
         super.setupUILayout();
+        console.log(this);
+        console.log(this.panel);
+
         $(this).childHandler = this;
-        $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panel.parentElement));
+        $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
         $(this).addChild([this.thumb, this.panelContainer]);
         $(this.panelContainer).addChild(this.panel);
         $(this.thumb).addChild(this.icon);
@@ -295,7 +297,7 @@ function drawer<
 >(properties: TurboDrawerProperties<ViewType, DataType, ModelType, EmitterType>):
     TurboDrawer<ViewType, DataType, ModelType, EmitterType> {
     if (!properties.tag) properties.tag = "turbo-drawer";
-    return element({...properties, text: undefined, initialize: true} as any) as any;
+    return element({...properties, text: undefined}) as any;
 }
 
 export {TurboDrawer, drawer};

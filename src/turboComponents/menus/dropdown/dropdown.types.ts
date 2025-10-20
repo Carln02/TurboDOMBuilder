@@ -46,10 +46,10 @@ type TurboDropdownProperties<
     customSelectorTag?: HTMLTag;
     customEntryTag?: HTMLTag;
 
-    customSelectorClasses?: string;
-    customPopupClasses?: string;
-    customEntriesClasses?: string;
-    customSelectedEntriesClasses?: string;
+    customSelectorClasses?: string | string[];
+    customPopupClasses?: string | string[];
+    customEntriesClasses?: string | string[];
+    customSelectedEntriesClasses?: string | string[];
 };
 
 /**

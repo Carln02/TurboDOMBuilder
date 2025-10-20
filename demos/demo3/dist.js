@@ -408,21 +408,18 @@
               };
               let undefinedFlag = false;
               const baseRead = function () {
-                  if (customGetter && options?.returnDefinedGetterValue)
-                      return customGetter.call(this);
-                  let value = this[backing];
-                  if (isNull(value) || isUndefined(value)) {
-                      if (options.defaultValue)
-                          this[backing] = options.defaultValue;
-                      else if (options.defaultValueCallback)
-                          this[backing] = options.defaultValueCallback.call(this);
-                  }
-                  return this[backing];
+                  return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
               };
               const read = function () {
                   let value = baseRead.call(this);
-                  if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                  if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
                       undefinedFlag = true;
+                      if (options.defaultValue)
+                          value = options.defaultValue;
+                      else if (options.defaultValueCallback)
+                          value = options.defaultValueCallback.call(this);
+                      else if (!options.setIfUndefined)
+                          return value;
                       write.call(this, value);
                       value = baseRead.call(this);
                       undefinedFlag = false;
@@ -7541,17 +7538,6 @@
           }
       });
   }
-  /**
-   * @description Create a flex row element.
-   * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-   * @returns {ValidHTMLElement<Tag>} The created flex element.
-   * @template {HTMLTag} Tag
-   */
-  function flexRow(properties) {
-      const el = element(properties);
-      $(el).setStyles({ display: "flex", flexDirection: "row" }, true);
-      return el;
-  }
 
   class TurboInteractor extends TurboController {
       #target_accessor_storage;
@@ -8003,7 +7989,7 @@
                       preprocessValue: function (value) {
                           if (typeof value == "string") {
                               if (this.prefixEntry) {
-                                  this.prefixEntry.innerText = value;
+                                  this.prefixEntry.textContent = value;
                                   return this.prefixEntry;
                               }
                               value = element({ text: value });
@@ -8016,8 +8002,8 @@
               _set_element_decorators = [auto({
                       preprocessValue: function (value) {
                           if (typeof value === "string") {
-                              if (this.element && "innerText" in this.element) {
-                                  this.element.innerText = value;
+                              if (this.element && "textContent" in this.element) {
+                                  this.element.textContent = value;
                                   return this.element;
                               }
                               value = element({ tag: this.elementTag, text: value });
@@ -8036,7 +8022,7 @@
                       preprocessValue: function (value) {
                           if (typeof value == "string") {
                               if (this.suffixEntry) {
-                                  this.suffixEntry.innerText = value;
+                                  this.suffixEntry.textContent = value;
                                   return this.suffixEntry;
                               }
                               value = element({ text: value });
@@ -8125,21 +8111,19 @@
           get prefixEntry() { return; }
           /**
            * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-           * string will update the text's innerText with the given string.
+           * string will update the text's textContent with the given string.
            */
           set element(value) { }
           get element() { return; }
           /**
            * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-           * string will update the text's innerText with the given string.
+           * string will update the text's textContent with the given string.
            */
           get text() {
               const element = this.element;
               if (!element)
                   return "";
-              if ("innerText" in element)
-                  return element.innerText;
-              return element.innerHTML;
+              return element.textContent;
           }
           set text(value) {
               if (!value)
@@ -8733,8 +8717,10 @@
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
               _set_parent_decorators = [auto()];
               _getValue_decorators = [auto({
-                      defaultValue: (entry) => entry instanceof HTMLElement ? entry.innerText
-                          : entry instanceof Element ? entry.innerHTML : undefined
+                      defaultValue: (entry) => entry instanceof TurboRichElement ? entry.text
+                          : entry instanceof HTMLElement ? entry.textContent
+                              : entry instanceof Element ? entry.innerHTML
+                                  : undefined
                   })];
               _getSecondaryValue_decorators = [auto({ defaultValue: () => "" })];
               _createEntry_decorators = [auto({
@@ -9347,6 +9333,7 @@
       }
   }
 
+  //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
   (() => {
       let _classDecorators = [define("turbo-drawer")];
       let _classDescriptor;
@@ -9555,8 +9542,10 @@
           }
           setupUILayout() {
               super.setupUILayout();
+              console.log(this);
+              console.log(this.panel);
               $(this).childHandler = this;
-              $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panel.parentElement));
+              $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
               $(this).addChild([this.thumb, this.panelContainer]);
               $(this.panelContainer).addChild(this.panel);
               $(this.thumb).addChild(this.icon);
@@ -9664,7 +9653,7 @@
   function drawer(properties) {
       if (!properties.tag)
           properties.tag = "turbo-drawer";
-      return element({ ...properties, text: undefined, initialize: true });
+      return element({ ...properties, text: undefined });
   }
 
   var PopupFallbackMode;
@@ -9674,265 +9663,241 @@
       PopupFallbackMode["none"] = "none";
   })(PopupFallbackMode || (PopupFallbackMode = {}));
 
-  var css_248z$1$1 = ".turbo-popup{display:block;position:fixed}";
+  var css_248z$1$1 = "#turbo-popup-parent-element{display:block;left:0;position:fixed;top:0;z-index:1000}.turbo-popup{display:block;inset:auto;overflow:auto;position:fixed}";
   styleInject$1(css_248z$1$1);
 
-  (() => {
+  let TurboPopup = (() => {
       let _classDecorators = [define("turbo-popup")];
       let _classDescriptor;
       let _classExtraInitializers = [];
       let _classThis;
       let _classSuper = TurboElement;
       let _instanceExtraInitializers = [];
-      let _set_popupAnchor_decorators;
-      let _set_parentAnchor_decorators;
+      let _static_parentElement_decorators;
+      let _static_parentElement_initializers = [];
+      let _static_parentElement_extraInitializers = [];
+      let _anchor_decorators;
+      let _anchor_initializers = [];
+      let _anchor_extraInitializers = [];
+      let _set_popupPosition_decorators;
+      let _set_anchorPosition_decorators;
       let _set_viewportMargin_decorators;
-      let _set_offsetFromParent_decorators;
-      let _fallbackModes_decorators;
-      let _fallbackModes_initializers = [];
-      let _fallbackModes_extraInitializers = [];
+      let _set_offsetFromAnchor_decorators;
+      let _set_fallbackModes_decorators;
       let _get_rect_decorators;
-      let _get_parentRect_decorators;
+      let _get_anchorRect_decorators;
       let _get_computedStyle_decorators;
-      let _get_parentComputedStyle_decorators;
-      (class extends _classSuper {
+      let _get_anchorComputedStyle_decorators;
+      let _get_computedMargins_decorators;
+      var TurboPopup = class extends _classSuper {
           static { _classThis = this; }
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _set_popupAnchor_decorators = [auto({
-                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupAnchor", { x: 50, y: 0 }); },
+              _static_parentElement_decorators = [auto({ defaultValue: div({ parent: document.body, id: "turbo-popup-parent-element" }) })];
+              _anchor_decorators = [auto({ defaultValue: document.body })];
+              _set_popupPosition_decorators = [auto({
+                      initialValueCallback: function () {
+                          return this.getPropertiesValue(undefined, "defaultPopupAnchor", { x: 50, y: 0 });
+                      },
                       preprocessValue: (value) => new Point(value).bound(0, 100)
                   })];
-              _set_parentAnchor_decorators = [auto({
-                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultParentAnchor", { x: 50, y: 100 }); },
+              _set_anchorPosition_decorators = [auto({
+                      initialValueCallback: function () {
+                          return this.getPropertiesValue(undefined, "defaultAnchorPosition", { x: 50, y: 100 });
+                      },
                       preprocessValue: (value) => new Point(value).bound(0, 100)
                   })];
               _set_viewportMargin_decorators = [auto({
                       initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultViewportMargin", 0); },
                       preprocessValue: (value) => new Point(value)
                   })];
-              _set_offsetFromParent_decorators = [auto({
-                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultOffsetFromParent", 0); },
+              _set_offsetFromAnchor_decorators = [auto({
+                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultOffsetFromAnchor", 0); },
                       preprocessValue: (value) => new Point(value)
                   })];
-              _fallbackModes_decorators = [auto({
+              _set_fallbackModes_decorators = [auto({
+                      preprocessValue: (value) => {
+                          return typeof value !== "object" ? { x: value, y: value } : value;
+                      },
                       initialValueCallback: function () {
                           return {
-                              x: Math.abs(this.parentAnchor.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-                              y: Math.abs(this.parentAnchor.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                              x: Math.abs(this.anchorPosition.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                              y: Math.abs(this.anchorPosition.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
                           };
                       }
                   })];
               _get_rect_decorators = [cache({ clearOnNextFrame: true })];
-              _get_parentRect_decorators = [cache({ clearOnNextFrame: true })];
+              _get_anchorRect_decorators = [cache({ clearOnNextFrame: true })];
               _get_computedStyle_decorators = [cache({ clearOnNextFrame: true })];
-              _get_parentComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
-              __esDecorate$1(this, null, _set_popupAnchor_decorators, { kind: "setter", name: "popupAnchor", static: false, private: false, access: { has: obj => "popupAnchor" in obj, set: (obj, value) => { obj.popupAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _set_parentAnchor_decorators, { kind: "setter", name: "parentAnchor", static: false, private: false, access: { has: obj => "parentAnchor" in obj, set: (obj, value) => { obj.parentAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              _get_anchorComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
+              _get_computedMargins_decorators = [cache({ clearOnNextFrame: true })];
+              __esDecorate$1(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _set_offsetFromParent_decorators, { kind: "setter", name: "offsetFromParent", static: false, private: false, access: { has: obj => "offsetFromParent" in obj, set: (obj, value) => { obj.offsetFromParent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _get_parentRect_decorators, { kind: "getter", name: "parentRect", static: false, private: false, access: { has: obj => "parentRect" in obj, get: obj => obj.parentRect }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _get_parentComputedStyle_decorators, { kind: "getter", name: "parentComputedStyle", static: false, private: false, access: { has: obj => "parentComputedStyle" in obj, get: obj => obj.parentComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(null, null, _fallbackModes_decorators, { kind: "field", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, get: obj => obj.fallbackModes, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, _fallbackModes_initializers, _fallbackModes_extraInitializers);
+              __esDecorate$1(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
+              __esDecorate$1(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
               __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-              _classThis = _classDescriptor.value;
+              TurboPopup = _classThis = _classDescriptor.value;
               if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
           static config = {
-              defaultPopupAnchor: { x: 0, y: -100 },
-              defaultParentAnchor: { x: 0, y: 100 },
+              ...TurboElement.config,
+              defaultPopupPosition: { x: 0, y: -100 },
+              defaultAnchorPosition: { x: 0, y: 100 },
               defaultViewportMargin: 4,
-              defaultOffsetFromParent: { x: 0, y: 4 }
+              defaultOffsetFromAnchor: { x: 0, y: 4 }
           };
-          set popupAnchor(value) { }
-          get popupAnchor() { return; }
-          set parentAnchor(value) { }
-          get parentAnchor() { return; }
+          static parentElement = __runInitializers$1(_classThis, _static_parentElement_initializers, void 0);
+          anchor = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _anchor_initializers, void 0));
+          set popupPosition(value) { }
+          get popupPosition() { return; }
+          set anchorPosition(value) { }
+          get anchorPosition() { return; }
           set viewportMargin(value) { }
           get viewportMargin() { return; }
-          set offsetFromParent(value) { }
-          get offsetFromParent() { return; }
-          fallbackModes = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _fallbackModes_initializers, void 0));
+          set offsetFromAnchor(value) { }
+          get offsetFromAnchor() { return; }
+          set fallbackModes(value) { }
+          get fallbackModes() { return; }
           get rect() {
               return this.getBoundingClientRect();
           }
-          get parentRect() {
-              return this.parentElement.getBoundingClientRect();
+          get anchorRect() {
+              return this.anchor.getBoundingClientRect();
           }
           get computedStyle() {
               return window.getComputedStyle(this);
           }
-          get parentComputedStyle() {
-              return window.getComputedStyle(this.parentElement);
+          get anchorComputedStyle() {
+              return window.getComputedStyle(this.anchor);
+          }
+          get computedMargins() {
+              return {
+                  x: parseFloat(this.computedStyle.marginLeft) + parseFloat(this.computedStyle.marginRight),
+                  y: parseFloat(this.computedStyle.marginTop) + parseFloat(this.computedStyle.marginBottom)
+              };
           }
           initialize() {
               super.initialize();
               this.show(false);
+              if (!this.parentElement)
+                  $(this).addToParent(TurboPopup.parentElement);
           }
           setupUIListeners() {
               super.setupUIListeners();
-              window.addEventListener(DefaultEventName.scroll, () => this.show(false));
+              document.addEventListener(DefaultEventName.scroll, () => this.show(false), { capture: true, passive: true });
               window.addEventListener(DefaultEventName.resize, () => { if ($(this).isShown)
-                  this.recomputePosition(); });
+                  this.recomputePosition(); }, { passive: true });
               $(document).on(DefaultEventName.click, e => {
-                  if ($(this).isShown && !this.contains(e.target)) {
-                      this.show(false);
-                      return true;
-                  }
+                  if (!$(this).isShown)
+                      return;
+                  const t = e.target;
+                  if (this.contains(t))
+                      return;
+                  if (this.anchor instanceof Node && this.anchor.contains(t))
+                      return;
+                  this.show(false);
+                  return true;
               });
           }
           recomputePosition() {
-              if (!this.parentElement)
+              if (!this.anchor)
                   return;
-              this.clearMaxDimensions();
-              const availableHeight = window.innerHeight - (2 * this.viewportMargin.y);
-              const availableWidth = window.innerWidth - (2 * this.viewportMargin.x);
-              $(this).setStyle("maxHeight", `${availableHeight}px`);
-              $(this).setStyle("maxWidth", `${availableWidth}px`);
-              const top = this.recomputeSide(Direction.vertical);
-              const left = this.recomputeSide(Direction.horizontal);
-              this.recomputeMaxSize(top, Direction.vertical);
-              this.recomputeMaxSize(left, Direction.horizontal);
+              $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+              const left = this.computeAxis(Direction.horizontal);
+              const top = this.computeAxis(Direction.vertical);
+              $(this).setStyles({ left: `${left}px`, top: `${top}px` });
+              const maxWidth = Math.max(0, Math.min(window.innerWidth - 2 * this.viewportMargin.x, window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x));
+              const maxHeight = Math.max(0, Math.min(window.innerHeight - 2 * this.viewportMargin.y, window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y));
+              $(this).setStyle("maxWidth", `${maxWidth}px`);
+              $(this).setStyle("maxHeight", `${maxHeight}px`);
           }
-          recomputeSide(direction) {
-              const params = this.generateDimensionParameters(direction);
-              const popupSizeWithMargins = this.rect[params.size] + this.offsetFromParent[params.coordinate]
-                  + parseFloat(this.computedStyle[params.marginStart]) + parseFloat(this.computedStyle[params.marginEnd]);
-              const parentAnchorOffset = this.parentRect[params.size] * this.parentAnchor[params.coordinate] / 100;
-              const popupSizeOffset = popupSizeWithMargins * this.popupAnchor[params.coordinate] / 100;
-              const totalSizeOffset = parentAnchorOffset - popupSizeOffset;
-              const incrementSign = totalSizeOffset > 0 ? 1 : -1;
-              const offsetFromParent = this.offsetFromParent[params.coordinate] * incrementSign;
-              const viewportMargin = this.viewportMargin[params.coordinate] * incrementSign;
-              let offset = this.parentRect[params.side] + totalSizeOffset + offsetFromParent;
-              const maxOffset = window[params.innerSize] - popupSizeWithMargins - viewportMargin;
-              const minOffset = viewportMargin;
-              if (this.fallbackModes[params.coordinate] === PopupFallbackMode.invert) {
-                  const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-                      + (popupSizeWithMargins - popupSizeOffset);
-                  if ((offset + popupSizeWithMargins > maxOffset) || (offset < minOffset)) {
-                      const inverseOffset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-                      if (inverseOffset >= minOffset && (inverseOffset + popupSizeWithMargins) <= maxOffset) {
-                          offset = inverseOffset;
-                      }
-                  }
+          computeAxis(direction) {
+              const axis = direction === Direction.horizontal ? "x" : "y";
+              const sizeAxis = direction === Direction.horizontal ? "width" : "height";
+              const viewportSize = direction === Direction.horizontal ? window.innerWidth : window.innerHeight;
+              const parentStart = this.anchorRect[direction === Direction.horizontal ? "left" : "top"];
+              const popupSize = this.rect[sizeAxis] + this.computedMargins[axis];
+              const min = this.viewportMargin[axis];
+              const max = viewportSize - this.viewportMargin[axis] - popupSize;
+              const base = parentStart + (this.anchorRect[sizeAxis] * this.anchorPosition[axis] / 100)
+                  - (popupSize * this.popupPosition[axis] / 100) + this.offsetFromAnchor[axis];
+              const fitsBase = base >= min && base <= max;
+              if (fitsBase || this.fallbackModes[axis] === PopupFallbackMode.offset) {
+                  return Math.min(Math.max(base, min), max);
               }
-              // Final boundary check
-              offset = Math.min(Math.max(offset, minOffset), maxOffset);
-              this.style[params.side] = `${offset}px`;
-              return offset;
-              // if (this.fallbackModes[params.coordinate] == PopupFallbackMode.invert) {
-              //     const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-              //         + (popupSizeWithMargins - popupSizeOffset);
-              //     const inverseTotalSizeOffsetWithViewportMargin = inverseTotalSizeOffset - viewportMargin;
-              //
-              //     if ((totalSizeOffset >= 0
-              //             && window[params.innerSize] - this.parentRect[params.side] <
-              //             popupSizeWithMargins + totalSizeOffsetWithViewportMargin
-              //             && this.parentRect[params.side] >= popupSizeWithMargins - inverseTotalSizeOffsetWithViewportMargin)
-              //         || (totalSizeOffset < 0
-              //             && this.parentRect[params.side] < -totalSizeOffset - totalSizeOffsetWithViewportMargin
-              //             && window[params.innerSize] - this.parentRect[params.side] >=
-              //             inverseTotalSizeOffset + inverseTotalSizeOffsetWithViewportMargin)) {
-              //         offset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-              //     }
-              // } else if (this.fallbackModes[params.coordinate] == PopupFallbackMode.offset) {
-              //     if (totalSizeOffset < 0) {
-              //         const outOfBoundsStart: number = this.parentRect[params.side] + totalSizeOffsetWithViewportMargin;
-              //         if (outOfBoundsStart < 0) offset -= outOfBoundsStart;
-              //     } else {
-              //         const outOfBoundsEnd: number = (window[params.innerSize] - this.parentRect[params.side])
-              //             - (popupSizeWithMargins + totalSizeOffsetWithViewportMargin);
-              //         if (outOfBoundsEnd > 0) offset -= outOfBoundsEnd;
-              //     }
-              // }
-              //
-              // this.style[params.side] = offset + "px";
-              // return offset;
-          }
-          recomputeMaxSize(offset, direction) {
-              const params = this.generateDimensionParameters(direction);
-              const totalMargins = parseFloat(this.computedStyle[params.marginStart])
-                  + parseFloat(this.computedStyle[params.marginEnd])
-                  + (2 * this.viewportMargin[params.coordinate]);
-              const maxSize = Math.min(window[params.innerSize] - totalMargins, // Total available space
-              window[params.innerSize] - offset - this.viewportMargin[params.coordinate] // Space from offset to edge
-              );
-              // Only set if we need to constrain the size
-              const currentMaxSize = this.computedStyle[params.maxSize]
-                  ? parseFloat(this.computedStyle[params.maxSize])
-                  : Infinity;
-              if (!currentMaxSize || currentMaxSize > maxSize)
-                  this.style[params.maxSize] = `${maxSize}px`;
-              // const maxSize = window[params.innerSize] - offset - this.viewportMargin[params.coordinate]
-              //     - parseFloat(this.computedStyle[params.marginStart]) - parseFloat(this.computedStyle[params.marginEnd])
-              //     - parseFloat(this.parentComputedStyle[params.marginStart]) - parseFloat(this.parentComputedStyle[params.marginEnd]);
-              //
-              // if (this.computedStyle[params.maxSize] && parseFloat(this.computedStyle[params.maxSize]) <= maxSize) return;
-              // this.style[params.maxSize] = maxSize + "px";
-          }
-          clearMaxDimensions() {
-              $(this).setStyle("maxHeight", "", true)
-                  .setStyle("maxWidth", "", true);
+              const flipped = parentStart + this.anchorRect[sizeAxis] * (1 - this.anchorPosition[axis] / 100)
+                  - popupSize * (1 - this.popupPosition[axis] / 100) - this.offsetFromAnchor[axis];
+              const fitsFlip = flipped >= min && flipped <= max;
+              let finalOffset;
+              if (fitsFlip)
+                  finalOffset = flipped;
+              else if (fitsBase)
+                  finalOffset = base;
+              else {
+                  const pick = Math.abs(base - Math.min(Math.max(base, min), max)) <=
+                      Math.abs(flipped - Math.min(Math.max(flipped, min), max)) ? base : flipped;
+                  finalOffset = Math.min(Math.max(pick, min), max);
+              }
+              return finalOffset;
           }
           show(b) {
-              if ($(this).isShown == b)
+              const sel = $(this);
+              if (sel.isShown === b)
                   return this;
-              requestAnimationFrame(() => {
-                  if (b)
-                      this.recomputePosition();
-                  else
-                      this.clearMaxDimensions();
-                  $(this).show(b);
-              });
+              if (b) {
+                  this.style.visibility = "hidden";
+                  this.style.display = "";
+                  this.recomputePosition();
+                  this.style.visibility = "";
+                  sel.show(true);
+              }
+              else {
+                  $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+                  sel.show(false);
+              }
               return this;
-          }
-          toggle() {
-              return this.show(!$(this).isShown);
-          }
-          generateDimensionParameters(direction) {
-              const isVertical = direction == Direction.vertical;
-              return {
-                  size: isVertical ? "height" : "width",
-                  innerSize: isVertical ? "innerHeight" : "innerWidth",
-                  maxSize: isVertical ? "maxHeight" : "maxWidth",
-                  marginStart: isVertical ? "marginTop" : "marginLeft",
-                  marginEnd: isVertical ? "marginBottom" : "marginRight",
-                  side: isVertical ? "top" : "left",
-                  coordinate: isVertical ? "y" : "x"
-              };
           }
           constructor() {
               super(...arguments);
-              __runInitializers$1(this, _fallbackModes_extraInitializers);
+              __runInitializers$1(this, _anchor_extraInitializers);
           }
           static {
+              __runInitializers$1(_classThis, _static_parentElement_extraInitializers);
               __runInitializers$1(_classThis, _classExtraInitializers);
           }
-      });
-      return _classThis;
+      };
+      return TurboPopup = _classThis;
   })();
   function popup(properties = {}) {
       return element({ ...properties, text: undefined, tag: "turbo-popup" });
   }
 
-  var css_248z$6 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-  styleInject$1(css_248z$6);
+  var css_248z$7 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+  styleInject$1(css_248z$7);
 
   /**
    * Dropdown class for creating Turbo button elements.
    * @class TurboDropdown
    * @extends TurboElement
    */
-  (() => {
+  let TurboDropdown = (() => {
       let _classDecorators = [define("turbo-dropdown")];
       let _classDescriptor;
       let _classExtraInitializers = [];
       let _classThis;
       let _classSuper = TurboElement;
       let _instanceExtraInitializers = [];
+      let _customSelectorTag_decorators;
+      let _customSelectorTag_initializers = [];
+      let _customSelectorTag_extraInitializers = [];
       let _set_customSelectorClasses_decorators;
       let _set_customPopupClasses_decorators;
       let _entries_decorators;
@@ -9947,8 +9912,9 @@
           static { _classThis = this; }
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _set_customSelectorClasses_decorators = [auto()];
-              _set_customPopupClasses_decorators = [auto()];
+              _customSelectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
+              _set_customSelectorClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); } })];
+              _set_customPopupClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); } })];
               _entries_decorators = [expose("select")];
               _values_decorators = [expose("select")];
               _set_selector_decorators = [auto({
@@ -9960,14 +9926,15 @@
                           if (this.selector instanceof TurboButton)
                               this.selector.text = text;
                           else
-                              return button({ text, elementTag: this.getPropertiesValue(this.customSelectorTag, "defaultSelectorTag") });
+                              return button({ text, elementTag: this.customSelectorTag });
                       }
                   })];
-              _set_popup_decorators = [auto({ setIfUndefined: true, defaultValue: popup() })];
+              _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
               __esDecorate$1(this, null, _set_customSelectorClasses_decorators, { kind: "setter", name: "customSelectorClasses", static: false, private: false, access: { has: obj => "customSelectorClasses" in obj, set: (obj, value) => { obj.customSelectorClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_customPopupClasses_decorators, { kind: "setter", name: "customPopupClasses", static: false, private: false, access: { has: obj => "customPopupClasses" in obj, set: (obj, value) => { obj.customPopupClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(null, null, _customSelectorTag_decorators, { kind: "field", name: "customSelectorTag", static: false, private: false, access: { has: obj => "customSelectorTag" in obj, get: obj => obj.customSelectorTag, set: (obj, value) => { obj.customSelectorTag = value; } }, metadata: _metadata }, _customSelectorTag_initializers, _customSelectorTag_extraInitializers);
               __esDecorate$1(null, null, _entries_decorators, { kind: "field", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
               __esDecorate$1(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
               __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -9975,23 +9942,27 @@
               if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
           //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
-          static config = { defaultSelectorTag: "h4" };
+          static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
           popupOpen = (__runInitializers$1(this, _instanceExtraInitializers), false);
-          customSelectorTag;
+          customSelectorTag = __runInitializers$1(this, _customSelectorTag_initializers, void 0);
           set customSelectorClasses(value) {
-              $(this.selector).addClass(this.getPropertiesValue(value, "defaultSelectorClasses"));
+              $(this.selector).addClass(value);
           }
           set customPopupClasses(value) {
-              $(this.selector).addClass(this.getPropertiesValue(value, "defaultPopupClasses"));
+              $(this.popup).addClass(value);
           }
-          entries = __runInitializers$1(this, _entries_initializers, void 0);
+          entries = (__runInitializers$1(this, _customSelectorTag_extraInitializers), __runInitializers$1(this, _entries_initializers, void 0));
           values = (__runInitializers$1(this, _entries_extraInitializers), __runInitializers$1(this, _values_initializers, void 0));
-          select = (__runInitializers$1(this, _values_extraInitializers), new TurboSelect({
-              onEntryAdded: (entry) => $(entry).on(DefaultEventName.click, () => {
-                  this.select.select(entry);
+          onEntryAdded(entry) {
+              this.select.initializeSelection();
+              $(entry).on(DefaultEventName.click, () => {
+                  this.select.select(entry, !this.select.isSelected(entry));
                   this.openPopup(false);
                   return true;
-              })
+              });
+          }
+          select = (__runInitializers$1(this, _values_extraInitializers), new TurboSelect({
+              onEntryAdded: (entry) => this.onEntryAdded(entry),
           }));
           /**
            * The dropdown's selector element.
@@ -9999,10 +9970,14 @@
           set selector(value) {
               if (!(value instanceof HTMLElement))
                   return;
-              $(value).on(DefaultEventName.click, (e) => {
+              $(value)
+                  .addClass(this.customSelectorClasses)
+                  .on(DefaultEventName.click, (e) => {
                   this.openPopup(!this.popupOpen);
-                  e.stopImmediatePropagation();
-              }).addClass(this.getPropertiesValue(this.customSelectorClasses, "defaultSelectorClasses"));
+                  return true;
+              });
+              if (this.popup instanceof TurboPopup)
+                  this.popup.anchor = value;
               $(this).addChild(value);
               if (value instanceof TurboButton)
                   this.select.onSelect = () => value.text = this.stringSelectedValue;
@@ -10012,10 +9987,15 @@
            * The dropdown's popup element.
            */
           set popup(value) {
-              $(this).addChild(value);
-              $(value).show(false)
-                  .addClass(this.getPropertiesValue(this.customPopupClasses, "defaultPopupClasses"));
+              console.log(value);
+              if (value instanceof TurboPopup)
+                  value.anchor = this.selector;
+              $(value).addClass(this.customPopupClasses);
               this.select.parent = value;
+          }
+          initialize() {
+              super.initialize();
+              this.selector;
           }
           connectedCallback() {
               super.connectedCallback();
@@ -10054,6 +10034,11 @@
       });
       return _classThis;
   })();
+  function dropdown(properties = {}) {
+      if (!properties.tag)
+          properties.tag = "turbo-dropdown";
+      return element({ ...properties, text: undefined });
+  }
 
   (() => {
       let _classDecorators = [define("turbo-marking-menu")];
@@ -11012,8 +10997,8 @@
     }
   }
 
-  var css_248z$5 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:flex-start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--gap);padding:calc(var(--pad)*.9)}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans)}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(button):hover{transform:translateY(-1px);transition:transform var(--trans)}";
-  styleInject(css_248z$5);
+  var css_248z$6 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:flex-start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--gap);padding:calc(var(--pad)*.9);position:relative;z-index:0}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;position:relative;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans);z-index:0}demo-box .case-entry>:nth-child(2){align-items:flex-start;display:flex;flex-direction:row;gap:.4rem;justify-content:flex-start;position:relative}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(.turbo-popup):hover{transform:translateY(-1px);transition:transform var(--trans)}";
+  styleInject(css_248z$6);
 
   (() => {
       let _classDecorators = [define("demo-box")];
@@ -11055,7 +11040,7 @@
           addSubBox(label, ...values) {
               this.addContent(element({
                   classes: "case-entry",
-                  children: [span({ text: label, classes: "tag" }), flexRow({ style: "gap: 0.4rem; align-items: flex-start", children: values })]
+                  children: [span({ text: label, classes: "tag" }), div({ children: values })]
               }));
               return this;
           }
@@ -11091,8 +11076,8 @@
       return element({ parent: document.body, tag: "demo-box", label, content: content });
   }
 
-  var css_248z$4 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:24px;justify-content:center;width:24px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;height:100%;width:100%;fill:#fff}";
-  styleInject(css_248z$4);
+  var css_248z$5 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:16px;justify-content:center;width:16px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;height:100%;width:100%;fill:#fff}";
+  styleInject(css_248z$5);
 
   const onLoadedLog = (prefix) => (el) => console.log(`[${prefix}] loaded`, el);
   function iconTest1() {
@@ -11202,8 +11187,8 @@
       iconTest8();
   }
 
-  var css_248z$3 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.turbo-rich-element>turbo-icon,.turbo-rich-element>turbo-icon-toggle{align-items:center;display:inline-flex;justify-content:center;min-height:1.25rem;min-width:1.25rem}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
-  styleInject(css_248z$3);
+  var css_248z$4 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
+  styleInject(css_248z$4);
 
   function richTest1() {
       // Basics: element as text, left/right icons, prefix/suffix strings
@@ -11390,8 +11375,8 @@
       richTest8();
   }
 
-  var css_248z$2 = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
-  styleInject(css_248z$2);
+  var css_248z$3 = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
+  styleInject(css_248z$3);
 
   const valueProbe = (label, el) => {
       const wrap = div({ class: "case-entry" });
@@ -11615,8 +11600,8 @@
       numTest3();
   }
 
-  var css_248z$1 = ".select-parent{display:flex;gap:.5rem;padding:.25rem}.select-parent>*{border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:8px;cursor:pointer;padding:.4rem .7rem;transition:background .15s ease,transform .08s ease,border-color .2s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.select-parent>.selected{background-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);border-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);display:block}.tabs-bar{border-bottom:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%)}.tabs-panels{background:color-mix(in oklab,var(--bg,#131313),#000 10%);border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:10px;padding:.75rem}.tabs-panels>.is-active{animation:panelIn .18s ease both}@keyframes panelIn{0%{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}";
-  styleInject(css_248z$1);
+  var css_248z$2 = ".select-parent{display:flex;gap:.5rem;padding:.25rem}.select-parent>*{border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:8px;cursor:pointer;padding:.4rem .7rem;transition:background .15s ease,transform .08s ease,border-color .2s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.select-parent>.selected{background-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);border-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%)}.tabs-bar{border-bottom:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%)}.tabs-panels{background:color-mix(in oklab,var(--bg,#131313),#000 10%);border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:10px;padding:.75rem}.tabs-panels>.is-active{animation:panelIn .18s ease both}@keyframes panelIn{0%{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}";
+  styleInject(css_248z$2);
 
   // Small helper to print the selection nicely
   const logSelection = (label, sel) => {
@@ -11816,8 +11801,8 @@
       selectTestTabs();
   }
 
-  var css_248z = ".turbo-drawer{align-items:stretch;color:var(--text);display:inline-flex;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;gap:0;position:relative;-webkit-tap-highlight-color:transparent}.turbo-drawer>.turbo-drawer-thumb:first-child{align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--text);cursor:pointer;display:flex;height:32px;justify-content:center;min-height:32px;min-width:32px;transition:background-color var(--trans),border-color var(--trans),transform .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:32px}.turbo-drawer-thumb:hover{background:color-mix(in hsl,var(--panel-2),#fff 4%)}.turbo-drawer-thumb:active{transform:scale(.98)}.turbo-drawer-thumb:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.turbo-drawer-thumb svg [fill]{fill:currentColor!important}.turbo-drawer-thumb svg [stroke]{stroke:currentColor!important}.turbo-drawer-thumb svg{background:transparent!important}.turbo-drawer-thumb>.turbo-icon{height:18px;width:18px}.turbo-drawer-panel-container{border-radius:var(--radius);overflow:hidden;position:relative}.turbo-drawer-panel{background-color:transparent;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text);min-height:84px;min-width:220px;padding:.85rem;position:relative}.turbo-drawer-panel:after{border-radius:inherit;box-shadow:inset 0 0 0 1px var(--edge);content:\"\";inset:0;pointer-events:none;position:absolute}.turbo-drawer.is-compact .turbo-drawer-thumb{border-radius:var(--radius-xs);height:28px;min-height:28px;min-width:28px;width:28px}.turbo-drawer.is-compact .turbo-drawer-panel{min-width:200px;padding:.7rem}.top-drawer .turbo-drawer-thumb{margin-bottom:6px}.bottom-drawer .turbo-drawer-thumb{margin-top:6px}.left-drawer .turbo-drawer-thumb{margin-right:6px}.right-drawer .turbo-drawer-thumb{margin-left:6px}\r\n\r\n/*!* nicer content defaults inside the panel (fixes white form controls) *!*/\r\n\r\n/*!* reduce motion *!*/";
-  styleInject(css_248z);
+  var css_248z$1 = ".turbo-drawer{align-items:stretch;color:var(--text);display:inline-flex;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;gap:0;position:relative;-webkit-tap-highlight-color:transparent}.turbo-drawer>.turbo-drawer-thumb:first-child{align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--text);cursor:pointer;display:flex;height:32px;justify-content:center;min-height:32px;min-width:32px;transition:background-color var(--trans),border-color var(--trans),transform .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:32px}.turbo-drawer-thumb:hover{background:color-mix(in hsl,var(--panel-2),#fff 4%)}.turbo-drawer-thumb:active{transform:scale(.98)}.turbo-drawer-thumb:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.turbo-drawer-thumb svg [fill]{fill:currentColor!important}.turbo-drawer-thumb svg [stroke]{stroke:currentColor!important}.turbo-drawer-thumb svg{background:transparent!important}.turbo-drawer-thumb>.turbo-icon{height:18px;width:18px}.turbo-drawer-panel-container{border-radius:var(--radius);overflow:hidden;position:relative}.turbo-drawer-panel{background-color:transparent;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text);min-height:84px;min-width:220px;padding:.85rem;position:relative}.turbo-drawer-panel:after{border-radius:inherit;box-shadow:inset 0 0 0 1px var(--edge);content:\"\";inset:0;pointer-events:none;position:absolute}.turbo-drawer.is-compact .turbo-drawer-thumb{border-radius:var(--radius-xs);height:28px;min-height:28px;min-width:28px;width:28px}.turbo-drawer.is-compact .turbo-drawer-panel{min-width:200px;padding:.7rem}.top-drawer .turbo-drawer-thumb{margin-bottom:6px}.bottom-drawer .turbo-drawer-thumb{margin-top:6px}.left-drawer .turbo-drawer-thumb{margin-right:6px}.right-drawer .turbo-drawer-thumb{margin-left:6px}\r\n\r\n/*!* nicer content defaults inside the panel (fixes white form controls) *!*/\r\n\r\n/*!* reduce motion *!*/";
+  styleInject(css_248z$1);
 
   function drawerTest1_Basics() {
       const dLeft = drawer({
@@ -12012,11 +11997,382 @@
       drawerTest8_RaceProps();
   }
 
+  var css_248z = ":root{--panel-2:#1a1f2b;--text:#e7ecf3;--edge:hsla(0,0%,100%,.06);--shadow:0 10px 30px rgba(0,0,0,.35),0 1px 0 hsla(0,0%,100%,.04) inset}.popup-test-trigger{align-items:center;display:inline-flex;gap:.5rem;justify-content:center;min-width:120px;padding:.25rem;position:relative}.turbo-popup{background:var(--panel-2);border:1px solid var(--edge);border-radius:12px;box-shadow:var(--shadow);color:var(--text);min-width:150px;padding:12px 14px}.popup-body{max-width:min(360px,80vw);overflow:auto}.popup-body.wide{max-width:86vw;width:min(520px,86vw)}";
+  styleInject(css_248z);
+
+  function makeTrigger(label = "Trigger", popupProperties = {}) {
+      const trg = button({ text: label });
+      const tip = popup({
+          ...popupProperties,
+          anchor: trg,
+          children: [
+              div({
+                  classes: "popup-body",
+                  text: "Popup content."
+              })
+          ]
+      });
+      $(trg).on("click", () => { tip.show(true); });
+      return { trigger: trg, popup: tip };
+  }
+  function testBasics() {
+      box("TurboPopup — Basics")
+          .addSubBox("Below", makeTrigger("Below", {
+          anchorPosition: { x: 50, y: 100 },
+          popupPosition: { x: 50, y: 0 },
+          offsetFromAnchor: { x: 0, y: 8 }
+      }).trigger)
+          .addSubBox("Above", makeTrigger("Above", {
+          anchorPosition: { x: 50, y: 0 },
+          popupPosition: { x: 50, y: 100 },
+          offsetFromAnchor: { x: 0, y: -8 }
+      }).trigger)
+          .addSubBox("Left", makeTrigger("Left", {
+          anchorPosition: { x: 0, y: 50 },
+          popupPosition: { x: 100, y: 50 },
+          offsetFromAnchor: { x: -8, y: 0 }
+      }).trigger)
+          .addSubBox("Right", makeTrigger("Right", {
+          anchorPosition: { x: 100, y: 50 },
+          popupPosition: { x: 0, y: 50 },
+          offsetFromAnchor: { x: 8, y: 0 }
+      }).trigger);
+  }
+  function testFallbackModes() {
+      box("TurboPopup — Fallback: invert vs offset")
+          .addSubBox("Near right viewport edge", makeTrigger("invert →", {
+          anchorPosition: { x: 100, y: 50 },
+          popupPosition: { x: 0, y: 50 },
+          offsetFromAnchor: { x: 12, y: 0 },
+          fallbackModes: PopupFallbackMode.invert
+      }).trigger, makeTrigger("offset →", {
+          anchorPosition: { x: 100, y: 50 },
+          popupPosition: { x: 0, y: 50 },
+          offsetFromAnchor: { x: 12, y: 0 },
+          fallbackModes: PopupFallbackMode.offset
+      }).trigger);
+  }
+  function testViewportMarginsAndMaxSize() {
+      const b = box("TurboPopup — viewport margin & max size");
+      const { trigger, popup } = makeTrigger("Open tall", {
+          anchorPosition: { x: 50, y: 100 },
+          popupPosition: { x: 50, y: 0 },
+          viewportMargin: { x: 16, y: 24 },
+          offsetFromAnchor: { x: 0, y: 10 },
+      });
+      //TODO FIX
+      const bigContent = (lines = 40) => div({
+          classes: "popup-body",
+          text: Array.from({ length: lines }, (_, i) => `Row ${i + 1}`).join("\n")
+      });
+      b.addSubBox("Margin=16/24, tall content", trigger);
+      b.addContent(button({
+          text: "Shorten (20 rows)",
+          onClick: () => {
+              popup.innerHTML = "";
+              $(popup).addChild(bigContent(20));
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+      b.addContent(button({
+          text: "Make taller (120 rows)",
+          onClick: () => {
+              popup.innerHTML = "";
+              $(popup).addChild(bigContent(120));
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+  }
+  function testDynamicUpdates() {
+      const b = box("TurboPopup — dynamic updates");
+      const { trigger, popup } = makeTrigger("Toggle props", {
+          anchorPosition: { x: 50, y: 100 },
+          popupPosition: { x: 50, y: 0 },
+          viewportMargin: 8,
+          offsetFromAnchor: { x: 0, y: 8 },
+      });
+      b.addSubBox("Start below", trigger);
+      b.addContent(button({
+          text: "Flip vertical (above/below)",
+          onClick: () => {
+              const isBelow = popup.anchorPosition.y === 100;
+              popup.anchorPosition = { x: 50, y: isBelow ? 0 : 100 };
+              popup.popupPosition = { x: 50, y: isBelow ? 100 : 0 };
+              popup.offsetFromAnchor = { x: 0, y: isBelow ? -8 : 8 };
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+      b.addContent(button({
+          text: "Fallback = invert",
+          onClick: () => {
+              popup.fallbackModes = { x: PopupFallbackMode.invert, y: PopupFallbackMode.invert };
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+      b.addContent(button({
+          text: "Fallback = offset",
+          onClick: () => {
+              popup.fallbackModes = { x: PopupFallbackMode.offset, y: PopupFallbackMode.offset };
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+      b.addContent(button({
+          text: "vmargin = 32",
+          onClick: () => {
+              popup.viewportMargin = 32;
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+      b.addContent(button({
+          text: "vmargin = 0",
+          onClick: () => {
+              popup.viewportMargin = 0;
+              if ($(popup).isShown)
+                  popup["recomputePosition"]?.();
+          }
+      }));
+  }
+  function testScrollScenario() {
+      const b = box("TurboPopup — window scroll scenario");
+      // Add big spacer to require scrolling
+      const spacerTop = div({ styles: { height: "40vh" }, text: "" });
+      const spacerBot = div({ styles: { height: "60vh" }, text: "" });
+      const region = div({
+          styles: { display: "grid", gap: "0.5rem", placeItems: "center" }
+      });
+      const { trigger, popup } = makeTrigger("Scroll then open", {
+          anchorPosition: { x: 50, y: 100 },
+          popupPosition: { x: 50, y: 0 },
+          offsetFromAnchor: { x: 0, y: 10 },
+          viewportMargin: { x: 12, y: 12 }
+      });
+      $(region).addChild([spacerTop, trigger, spacerBot]);
+      b.addSubBox("Open after scrolling", region);
+      // little helper buttons
+      b.addContent(button({
+          text: "Scroll to trigger",
+          onClick: () => trigger.scrollIntoView({ behavior: "smooth", block: "center" })
+      }));
+      b.addContent(button({ text: "Open popup", onClick: () => popup.show(true) }));
+      b.addContent(button({ text: "Close popup", onClick: () => popup.show(false) }));
+  }
+  function setupPopupTests() {
+      testBasics();
+      testFallbackModes();
+      testViewportMarginsAndMaxSize();
+      testDynamicUpdates();
+      testScrollScenario();
+  }
+
+  TurboDropdown.config.defaultPopupClasses = "select-parent";
+  function ddTest1() {
+      const dd = dropdown({ values: ["Alpha", "Beta", "Gamma", "Delta"] });
+      box("TurboDropdown — Basics")
+          .addSubBox("click selector to open", dd)
+          .addContent(button({
+          text: "Log selected",
+          onClick: () => {
+              console.log("[dd1] selected:", dd.selectedValue, dd.selectedValues);
+          }
+      }));
+  }
+  function ddTest2() {
+      const dd = dropdown({
+          values: ["Small", "Medium", "Large", "XL"],
+          customSelectorTag: "h5",
+          customSelectorClasses: ["btn", "btn--ghost"],
+          customPopupClasses: ["popup-surface", "popup--elevated"]
+      });
+      box("TurboDropdown — custom selector / popup")
+          .addSubBox("custom tag & classes", dd)
+          .addContent(button({
+          text: "Open",
+          onClick: () => dd.popup.show(true)
+      }))
+          .addContent(button({
+          text: "Close",
+          onClick: () => dd.popup.show(false)
+      }));
+  }
+  function ddTest3() {
+      const entries = [
+          richElement({ text: "Home", leftIcon: "link" }),
+          richElement({ text: "Profile", leftIcon: "chevron-left" }),
+          richElement({ text: "Settings", leftIcon: "chevron-top" }),
+          richElement({ text: "Logout", leftIcon: "share" }),
+      ];
+      box("TurboDropdown — element entries")
+          .addSubBox("rich entries", dropdown({ entries }))
+          .addContent(span({ text: "Selected: " }))
+          .addContent(span({ text: "(watch selector text update on click)" }));
+  }
+  function ddTest4() {
+      const dd = dropdown({ values: ["One", "Two"] });
+      box("TurboDropdown — dynamic entries")
+          .addSubBox("start", dd)
+          .addContent(button({
+          text: "Add entry: Three",
+          onClick: () => {
+              const entry = richElement({ text: "Three", leftIcon: "chevron-left" });
+              dd.select.addEntry(entry);
+          }
+      }))
+          .addContent(button({
+          text: "Remove last entry",
+          onClick: () => {
+              const list = dd.select.entriesArray;
+              const last = list[list.length - 1];
+              if (last instanceof HTMLElement)
+                  last.remove();
+              //TODO MAKE A REMOVE ENTRY FN
+          }
+      }))
+          .addContent(button({
+          text: "Log values",
+          onClick: () => console.log("[dd4] values:", dd.select.values)
+      }));
+  }
+  function ddTest5() {
+      const dd = dropdown({ values: ["Red", "Green", "Blue", "Yellow"] });
+      // Configure the underlying select for multi
+      dd.select.multiSelection = true;
+      dd.select.forceSelection = false;
+      box("TurboDropdown — multi selection")
+          .addSubBox("click multiple entries", dd)
+          .addContent(button({
+          text: "Select All",
+          onClick: () => dd.select.selectedEntries = dd.select.entriesArray
+      }))
+          .addContent(button({
+          text: "Clear",
+          onClick: () => dd.select.deselectAll()
+      }))
+          .addContent(button({
+          text: "Log selected",
+          onClick: () => console.log("[dd5] selected:", dd.selectedValues)
+      }));
+  }
+  function ddTest6() {
+      const dd = dropdown({
+          values: ["Top", "Middle", "Bottom", "Custom"]
+      });
+      const p = dd.popup;
+      box("TurboDropdown — popup anchors & fallback")
+          .addSubBox("dropdown", dd)
+          .addContent(button({
+          text: "ParentAnchor: top (50,0)", onClick: () => {
+              p.anchorPosition = { x: 50, y: 0 };
+              p.show(true);
+              return true;
+          }
+      }))
+          .addContent(button({
+          text: "ParentAnchor: bottom (50,100)", onClick: () => {
+              p.anchorPosition = { x: 50, y: 100 };
+              p.show(true);
+              return true;
+          }
+      }))
+          .addContent(button({
+          text: "PopupAnchor: top (50,0)", onClick: () => {
+              p.popupPosition = { x: 50, y: 0 };
+              p.show(true);
+              return true;
+          }
+      }))
+          .addContent(button({
+          text: "PopupAnchor: bottom (50,100)", onClick: () => {
+              p.popupPosition = { x: 50, y: 100 };
+              p.show(true);
+              return true;
+          }
+      }))
+          .addContent(button({
+          text: "Fallback: invert", onClick: () => {
+              p.fallbackModes = PopupFallbackMode.invert;
+              p.show(true);
+              return true;
+          }
+      }))
+          .addContent(button({
+          text: "Fallback: offset", onClick: () => {
+              p.fallbackModes = PopupFallbackMode.offset;
+              p.show(true);
+              return true;
+          }
+      }));
+  }
+  function ddTest7() {
+      const dd = dropdown({ values: ["A", "B", "C", "D"] });
+      box("TurboDropdown — programmatic")
+          .addSubBox("start", dd)
+          .addContent(button({
+          text: "Open",
+          onClick: () => dd.popup.show(true)
+      }))
+          .addContent(button({
+          text: "Close",
+          onClick: () => dd.popup.show(false)
+      }))
+          .addContent(button({
+          text: "Select 'C'",
+          onClick: () => dd.select.select("C")
+      }))
+          .addContent(button({
+          text: "Replace values",
+          onClick: () => dd.values = ["Epsilon", "Zeta", "Eta"]
+      }))
+          .addContent(button({
+          text: "Log selected",
+          onClick: () => console.log("[dd7] value:", dd.selectedValue)
+      }));
+  }
+  function ddTestTabs() {
+      const tabs = [
+          { key: "overview", label: "Overview", content: div({ text: "Overview content..." }) },
+          { key: "details", label: "Details", content: div({ text: "Details content..." }) },
+          { key: "stats", label: "Stats", content: div({ text: "Stats content..." }) },
+      ];
+      const entries = tabs.map(t => richElement({ text: t.label, leftIcon: "chevron-left" }));
+      const dd = dropdown({ entries });
+      const contentWrap = div({
+          classes: "tab-content",
+          children: [tabs[0].content]
+      });
+      // When selection changes, render the corresponding panel
+      dd.select.onSelect = (_b, entry) => {
+          const label = entry.innerText;
+          const tab = tabs.find(t => t.label === label);
+          if (!tab)
+              return;
+          $(contentWrap).addChild([tab.content]);
+          if (dd.selector?.text !== label)
+              dd.selector.text = label; // extra safety for non-TurboButton selectors
+      };
+      box("TurboDropdown — Tabbed menu")
+          .addSubBox("tabs (select to switch)", dd)
+          .addSubBox("panel", contentWrap);
+  }
+  function setupDropdownTests() {
+      ddTest1();
+      ddTest2();
+      ddTest3();
+      ddTest4();
+      ddTest5();
+      ddTest6();
+      ddTest7();
+      ddTestTabs();
+  }
+
   TurboIcon.config.defaultDirectory = "assets";
   TurboIcon.config.defaultClasses = "icon";
   TurboEventManager.instance.preventDefaultWheel = false;
-  h1({ text: "TurboDrawer", parent: document.body });
-  setupDrawerTests();
   h1({ text: "TurboIcon", parent: document.body });
   setupIconTests();
   h1({ text: "TurboRichElement", parent: document.body });
@@ -12025,15 +12381,11 @@
   setupInputTests();
   h1({ text: "TurboSelect", parent: document.body });
   setupSelectTests();
-  const drawer1 = drawer({
-      icon: "chevron",
-      hideOverflow: true,
-      side: Side.left,
-      attachSideToIconName: true,
-      rotateIconBasedOnSide: false,
-      children: [div({ text: "A div..." }), span({ text: "A\nSpan\n..." })]
-  });
-  box("Drawer", drawer1);
-  drawer1.side = Side.left;
+  h1({ text: "TurboDrawer", parent: document.body });
+  setupDrawerTests();
+  h1({ text: "TurboPopup", parent: document.body });
+  setupPopupTests();
+  h1({ text: "TurboDropdown", parent: document.body });
+  setupDropdownTests();
 
 })();

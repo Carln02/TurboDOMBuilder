@@ -10,33 +10,22 @@ type TurboPopupProperties<
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    popupAnchor?: Coordinate,
-    parentAnchor?: Coordinate,
-    fallbackModes?: Coordinate<PopupFallbackMode>,
+    anchor?: Element,
+    popupPosition?: Coordinate,
+    parentPosition?: Coordinate,
+    fallbackModes?: PopupFallbackMode | Coordinate<PopupFallbackMode>,
     viewportMargin?: number | Coordinate,
-    offsetFromParent?: number | Coordinate,
+    offsetFromAnchor?: number | Coordinate,
 };
-
-type DimensionProperties = {
-    side: "top" | "left",
-    coordinate: "y" | "x",
-
-    size: "height" | "width",
-    innerSize: "innerHeight" | "innerWidth",
-    maxSize: "maxHeight" | "maxWidth",
-
-    marginStart: "marginTop" | "marginLeft",
-    marginEnd: "marginBottom" | "marginRight"
-}
 
 type TurboPopupConfig = {
     defaultClasses?: string | string[],
 
-    defaultPopupAnchor?: Coordinate,
-    defaultParentAnchor?: Coordinate,
+    defaultPopupPosition?: Coordinate,
+    defaultAnchorPosition?: Coordinate,
 
     defaultViewportMargin?: number | Coordinate,
-    defaultOffsetFromParent?: number | Coordinate,
+    defaultOffsetFromAnchor?: number | Coordinate,
 }
 
 enum PopupFallbackMode {
@@ -45,4 +34,4 @@ enum PopupFallbackMode {
     none = "none"
 }
 
-export {TurboPopupProperties, DimensionProperties, TurboPopupConfig, PopupFallbackMode};
+export {TurboPopupProperties, TurboPopupConfig, PopupFallbackMode};

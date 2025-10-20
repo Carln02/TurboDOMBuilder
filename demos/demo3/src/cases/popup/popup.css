@@ -1,0 +1,37 @@
+:root {
+    --panel-2: #1a1f2b;
+    --text: #e7ecf3;
+    --edge: rgba(255, 255, 255, .06);
+    --shadow: 0 10px 30px rgba(0, 0, 0, .35), 0 1px 0 rgba(255, 255, 255, .04) inset;
+}
+
+.popup-test-trigger {
+    min-width: 120px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.25rem;
+}
+
+.turbo-popup {
+    min-width: 150px;
+    padding: 12px 14px;
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--edge);
+}
+
+.popup-body {
+    max-width: min(360px, 80vw);
+    overflow: auto;
+}
+
+/* (Optional) wider body for the tall-content test */
+.popup-body.wide {
+    width: min(520px, 86vw);
+    max-width: 86vw;
+}

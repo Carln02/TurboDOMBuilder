@@ -17,6 +17,8 @@ demo-box > :first-child {
 }
 
 demo-box > :last-child {
+    position: relative;
+    z-index: 0;
     background: var(--card);
     padding: calc(var(--pad) * .9);
     border-radius: var(--radius-sm);
@@ -31,6 +33,8 @@ demo-box > :last-child {
 }
 
 demo-box .case-entry {
+    position: relative;
+    z-index: 0;
     display: grid;
     gap: .6rem;
     align-items: start;
@@ -43,13 +47,22 @@ demo-box .case-entry {
     transition: transform var(--trans), border-color var(--trans), box-shadow var(--trans);
 }
 
+demo-box .case-entry > :nth-child(2) {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    gap: 0.4rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
 demo-box .case-entry:hover {
     transform: translateY(-2px);
     border-color: color-mix(in oklab, var(--border) 70%, var(--ring));
     box-shadow: 0 10px 24px rgba(0, 0, 0, .25);
 }
 
-demo-box > :last-child > *:not(button):hover {
+demo-box > :last-child > *:not(.turbo-popup):hover {
     transform: translateY(-1px);
     transition: transform var(--trans);
 }

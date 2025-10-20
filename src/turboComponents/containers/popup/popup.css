@@ -1,4 +1,14 @@
+#turbo-popup-parent-element {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
 .turbo-popup {
     display: block;
     position: fixed;
+    inset: auto;
+    overflow: auto;
 }

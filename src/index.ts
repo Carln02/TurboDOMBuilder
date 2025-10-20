@@ -124,8 +124,8 @@ import {TurboDrawerProperties} from "./turboComponents/containers/drawer/drawer.
 export {TurboDrawerProperties};
 import {TurboPopup, popup} from "./turboComponents/containers/popup/popup";
 export {TurboPopup, popup};
-import {TurboPopupProperties, DimensionProperties, TurboPopupConfig, PopupFallbackMode} from "./turboComponents/containers/popup/popup.types";
-export {TurboPopupProperties, DimensionProperties, TurboPopupConfig, PopupFallbackMode};
+import {TurboPopupProperties, TurboPopupConfig, PopupFallbackMode} from "./turboComponents/containers/popup/popup.types";
+export {TurboPopupProperties, TurboPopupConfig, PopupFallbackMode};
 import {TurboDropdown, dropdown} from "./turboComponents/menus/dropdown/dropdown";
 export {TurboDropdown, dropdown};
 import {TurboDropdownProperties, TurboDropdownConfig} from "./turboComponents/menus/dropdown/dropdown.types";

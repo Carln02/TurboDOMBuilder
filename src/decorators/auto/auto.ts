@@ -84,19 +84,16 @@ function auto(options?: AutoOptions) {
             let undefinedFlag = false;
 
             const baseRead = function (this: any) {
-                if (customGetter && options?.returnDefinedGetterValue) return customGetter.call(this);
-                let value = this[backing];
-                if (isNull(value) || isUndefined(value)) {
-                    if (options.defaultValue) this[backing] = options.defaultValue;
-                    else if (options.defaultValueCallback) this[backing] = options.defaultValueCallback.call(this);
-                }
-                return this[backing];
+                return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
             }
 
             const read = function (this: any) {
                 let value = baseRead.call(this);
-                if (value === undefined && options.setIfUndefined && !undefinedFlag) {
+                if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
                     undefinedFlag = true;
+                    if (options.defaultValue) value = options.defaultValue;
+                    else if (options.defaultValueCallback) value = options.defaultValueCallback.call(this);
+                    else if (!options.setIfUndefined) return value;
                     write.call(this, value);
                     value = baseRead.call(this);
                     undefinedFlag = false;

@@ -2956,13 +2956,13 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
     get prefixEntry(): HTMLElement;
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
     set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>);
     get element(): ValidElement<ElementTag>;
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
     get text(): string;
     set text(value: string);
@@ -3957,27 +3957,19 @@ declare class TurboDrawer<ViewType extends TurboView = TurboView<any, any>, Data
 declare function drawer<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboDrawerProperties<ViewType, DataType, ModelType, EmitterType>): TurboDrawer<ViewType, DataType, ModelType, EmitterType>;
 
 type TurboPopupProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    popupAnchor?: Coordinate;
-    parentAnchor?: Coordinate;
-    fallbackModes?: Coordinate<PopupFallbackMode>;
+    anchor?: Element;
+    popupPosition?: Coordinate;
+    parentPosition?: Coordinate;
+    fallbackModes?: PopupFallbackMode | Coordinate<PopupFallbackMode>;
     viewportMargin?: number | Coordinate;
-    offsetFromParent?: number | Coordinate;
-};
-type DimensionProperties = {
-    side: "top" | "left";
-    coordinate: "y" | "x";
-    size: "height" | "width";
-    innerSize: "innerHeight" | "innerWidth";
-    maxSize: "maxHeight" | "maxWidth";
-    marginStart: "marginTop" | "marginLeft";
-    marginEnd: "marginBottom" | "marginRight";
+    offsetFromAnchor?: number | Coordinate;
 };
 type TurboPopupConfig = {
     defaultClasses?: string | string[];
-    defaultPopupAnchor?: Coordinate;
-    defaultParentAnchor?: Coordinate;
+    defaultPopupPosition?: Coordinate;
+    defaultAnchorPosition?: Coordinate;
     defaultViewportMargin?: number | Coordinate;
-    defaultOffsetFromParent?: number | Coordinate;
+    defaultOffsetFromAnchor?: number | Coordinate;
 };
 declare enum PopupFallbackMode {
     invert = "invert",
@@ -3987,28 +3979,28 @@ declare enum PopupFallbackMode {
 
 declare class TurboPopup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     static readonly config: TurboPopupConfig;
-    set popupAnchor(value: Coordinate);
-    get popupAnchor(): Point;
-    set parentAnchor(value: Coordinate);
-    get parentAnchor(): Point;
+    protected static parentElement: HTMLElement;
+    anchor: Element;
+    set popupPosition(value: Coordinate);
+    get popupPosition(): Point;
+    set anchorPosition(value: Coordinate);
+    get anchorPosition(): Point;
     set viewportMargin(value: Coordinate | number);
     get viewportMargin(): Point;
-    set offsetFromParent(value: Coordinate | number);
-    get offsetFromParent(): Point;
-    fallbackModes: Coordinate<PopupFallbackMode>;
-    get rect(): DOMRect;
-    get parentRect(): DOMRect;
-    get computedStyle(): CSSStyleDeclaration;
-    get parentComputedStyle(): CSSStyleDeclaration;
+    set offsetFromAnchor(value: Coordinate | number);
+    get offsetFromAnchor(): Point;
+    set fallbackModes(value: PopupFallbackMode | Coordinate<PopupFallbackMode>);
+    get fallbackModes(): Coordinate<PopupFallbackMode>;
+    protected get rect(): DOMRect;
+    protected get anchorRect(): DOMRect;
+    protected get computedStyle(): CSSStyleDeclaration;
+    protected get anchorComputedStyle(): CSSStyleDeclaration;
+    protected get computedMargins(): Coordinate;
     initialize(): void;
     protected setupUIListeners(): void;
     private recomputePosition;
-    private recomputeSide;
-    private recomputeMaxSize;
-    private clearMaxDimensions;
+    private computeAxis;
     show(b: boolean): this;
-    toggle(): this;
-    private generateDimensionParameters;
 }
 declare function popup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType>): TurboPopup<ViewType, DataType, ModelType, EmitterType>;
 
@@ -4042,10 +4034,10 @@ type TurboDropdownProperties<ValueType = string, SecondaryValueType = string, En
     popup?: HTMLElement;
     customSelectorTag?: HTMLTag;
     customEntryTag?: HTMLTag;
-    customSelectorClasses?: string;
-    customPopupClasses?: string;
-    customEntriesClasses?: string;
-    customSelectedEntriesClasses?: string;
+    customSelectorClasses?: string | string[];
+    customPopupClasses?: string | string[];
+    customEntriesClasses?: string | string[];
+    customSelectedEntriesClasses?: string | string[];
 };
 /**
  * @type {TurboDropdownConfig}
@@ -4083,6 +4075,7 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
     set customPopupClasses(value: string | string[]);
     entries: HTMLCollection | NodeList | EntryType[];
     values: ValueType[];
+    protected onEntryAdded(entry: EntryType): void;
     readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
     /**
      * The dropdown's selector element.
@@ -4093,6 +4086,7 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
      * The dropdown's popup element.
      */
     set popup(value: HTMLElement);
+    initialize(): void;
     connectedCallback(): void;
     private openPopup;
     get selectedValues(): ValueType[];
@@ -5209,4 +5203,4 @@ interface TurboSelector {
         isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
 
-export { $, AccessLevel, ActionMode, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, type DimensionProperties, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDataBlock, type YDocumentProperties, type YManagerDataBlock, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, t, textToElement, textarea, trim, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDataBlock, type YDocumentProperties, type YManagerDataBlock, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, t, textToElement, textarea, trim, turbo, turboInput, turbofy, video };

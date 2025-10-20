@@ -97,7 +97,7 @@ class TurboRichElement<
         preprocessValue: function (value: string | HTMLElement) {
             if (typeof value == "string") {
                 if (this.prefixEntry) {
-                    this.prefixEntry.innerText = value;
+                    this.prefixEntry.textContent = value;
                     return this.prefixEntry;
                 }
                 value = element({text: value}) as HTMLElement;
@@ -113,13 +113,13 @@ class TurboRichElement<
 
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
     @auto({
         preprocessValue: function (value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {
             if (typeof value === "string") {
-                if (this.element && "innerText" in this.element) {
-                    this.element.innerText = value;
+                if (this.element && "textContent" in this.element) {
+                    this.element.textContent = value;
                     return this.element;
                 }
                 value = element({tag: this.elementTag, text: value} as TurboProperties<ElementTag>);
@@ -138,13 +138,12 @@ class TurboRichElement<
 
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
     public get text(): string {
         const element = this.element;
         if (!element) return "";
-        if ("innerText" in element) return element.innerText;
-        return element.innerHTML;
+        return element.textContent;
     }
 
     public set text(value: string) {
@@ -160,7 +159,7 @@ class TurboRichElement<
         preprocessValue: function (value: string | HTMLElement) {
             if (typeof value == "string") {
                 if (this.suffixEntry) {
-                    this.suffixEntry.innerText = value;
+                    this.suffixEntry.textContent = value;
                     return this.suffixEntry;
                 }
                 value = element({text: value}) as HTMLElement;

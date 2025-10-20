@@ -14,7 +14,6 @@
 }
 
 .select-parent > .selected {
-    display: block;
     background-color: color-mix(in oklab, var(--brand, #6aa9ff), #000 50%);
     border-color: color-mix(in oklab, var(--brand, #6aa9ff), #000 50%);
 }

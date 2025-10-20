@@ -1,4 +1,4 @@
-import {TurboElement, $, auto, define, div, h4, effect, span, signal, randomColor, element, flexRow} from "../../../../build/turbodombuilder.esm";
+import {TurboElement, $, auto, define, div, h4, effect, span, signal, randomColor, element} from "../../../../build/turbodombuilder.esm";
 import "./demoBox.css";
 
 @define("demo-box")
@@ -23,7 +23,7 @@ export class DemoBox extends TurboElement {
     public addSubBox(label: string, ...values: Element[]): this {
         this.addContent(element({
             classes: "case-entry",
-            children: [span({text: label, classes: "tag"}), flexRow({style: "gap: 0.4rem; align-items: flex-start", children: values})]
+            children: [span({text: label, classes: "tag"}), div({children: values})]
         }));
         return this;
     }
