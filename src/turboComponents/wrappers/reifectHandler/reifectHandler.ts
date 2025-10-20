@@ -1,5 +1,6 @@
 import {StatefulReifect} from "../statefulReifect/statefulReifect";
 import {ReifectAppliedOptions, ReifectEnabledObject} from "../statefulReifect/statefulReifect.types";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 /**
  * @class ReifectHandler
@@ -118,7 +119,7 @@ class ReifectHandler<ClassType extends object = Node> {
      */
     public clear() {
         if (!(this.attachedNode instanceof Node)) return;
-        this.attachedNode.setStyle("transition", "", true);
+        $(this.attachedNode).setStyle("transition", "", true);
     }
 
     /**

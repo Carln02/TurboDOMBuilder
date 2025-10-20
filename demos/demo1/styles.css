@@ -1,0 +1,53 @@
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+}
+
+.square {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    background-color: #00aff4;
+}
+
+.circle {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    background-color: #5ddc39;
+    border-radius: 100%;
+}
+
+.moveTool {
+    position: absolute;
+    z-index: 1;
+    bottom: 15px;
+    right: 15px;
+}
+
+.outline {
+    width: 150px;
+    height: 150px;
+    border: 5px solid purple;
+    position: absolute;
+}
+
+.controller {
+    position: relative;
+    margin: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 100%;
+    background-color: #1e2024;
+}
+
+.turbo-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+.turbo-icon > svg {
+    width: 100%;
+    height: 100%;
+}

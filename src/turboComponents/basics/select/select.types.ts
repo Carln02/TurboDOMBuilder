@@ -1,34 +1,45 @@
-import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboSelectEntry} from "./selectEntry/selectEntry";
-import {TurboSelectEntryProperties} from "./selectEntry/selectEntry.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboRawEventProperties} from "../../../eventHandling/events/turboEvent.types";
+
+export type EntryData = {
+    enabled?: boolean,
+    selected?: boolean,
+};
 
 type TurboSelectProperties<
     ValueType = string,
     SecondaryValueType = string,
-    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
-    ViewType extends TurboView = TurboView,
-    DataType extends object = object,
-    ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
-    unsetDefaultClasses?: boolean,
-    customSelectedEntryClasses?: string,
-
-    values?: (ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType)[],
+    EntryType extends object = HTMLElement,
+> = {
+    selectedEntryClasses?: string | string[],
+    entries?: HTMLCollection | NodeList | EntryType[],
+    values?: (ValueType | EntryType)[],
     selectedValues?: ValueType[],
+
+    getValue?: (entry: EntryType) => ValueType,
+    getSecondaryValue?: (entry: EntryType) => SecondaryValueType,
+    createEntry?: (value: ValueType) => EntryType,
+    onEntryAdded?: (entry: EntryType, index: number) => void,
 
     multiSelection?: boolean,
     forceSelection?: boolean,
     inputName?: string,
 
-    entriesParent?: Element,
+    parent?: Element,
     onSelect?: (b: boolean, entry: EntryType, index: number) => void,
+    onEnabled?: (b: boolean, entry: EntryType, index: number) => void,
 };
 
 type TurboSelectConfig = {
-    defaultClasses?: string | string[],
     defaultSelectedEntryClasses?: string | string[]
 };
 
-export {TurboSelectProperties, TurboSelectConfig};
+type TurboSelectInputEventProperties<
+    ValueType = string,
+    SecondaryValueType = string,
+    EntryType extends object = HTMLElement,
+> = TurboRawEventProperties & {
+    toggledEntry: EntryType,
+    values: ValueType[]
+};
+
+export {TurboSelectProperties, TurboSelectConfig, TurboSelectInputEventProperties};

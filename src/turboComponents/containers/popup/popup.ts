@@ -1,263 +1,212 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {DimensionProperties, PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
+import {PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
 import {Point} from "../../../utils/datatypes/point/point";
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {Direction} from "../../../utils/datatypes/basicDatatypes.types";
-import {define} from "../../../domBuilding/decorators/define";
-import {cache} from "../../../domBuilding/decorators/cache/cache";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
 import "./popup.css";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {cache} from "../../../decorators/cache/cache";
+import {auto} from "../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {element} from "../../../elementCreation/element";
+import {div} from "../../../elementCreation/basicElements";
 
-@define()
+@define("turbo-popup")
 class TurboPopup<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement<ViewType, DataType, ModelType> {
-    private _popupAnchor: Point;
-    private _parentAnchor: Point;
-
-    private _viewportMargin: Point;
-    private _offsetFromParent: Point;
-
-    public fallbackModes: Coordinate<PopupFallbackMode>;
-
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     public static readonly config: TurboPopupConfig = {
-        defaultPopupAnchor: {x: 0, y: -100},
-        defaultParentAnchor: {x: 0, y: 100},
+        ...TurboElement.config,
+        defaultPopupPosition: {x: 0, y: -100},
+        defaultAnchorPosition: {x: 0, y: 100},
         defaultViewportMargin: 4,
-        defaultOffsetFromParent: {x: 0, y: 4}
+        defaultOffsetFromAnchor: {x: 0, y: 4}
     };
 
-    constructor(properties: TurboPopupProperties<ViewType, DataType, ModelType> = {}) {
-        super(properties);
-        this.addClass("turbo-popup");
+    @auto({defaultValue: div({parent: document.body, id: "turbo-popup-parent-element"})})
+    protected static parentElement: HTMLElement;
 
-        if (!properties.unsetDefaultClasses) this.addClass(TurboPopup.config.defaultClasses);
+    @auto({defaultValue: document.body}) public anchor: Element;
 
-        this.popupAnchor = properties.popupAnchor || TurboPopup.config.defaultPopupAnchor || {x: 50, y: 0};
-        this.parentAnchor = properties.parentAnchor || TurboPopup.config.defaultParentAnchor || {x: 50, y: 100};
+    @auto({
+        initialValueCallback: function () {
+            return this.getPropertiesValue(undefined, "defaultPopupAnchor", {x: 50, y: 0})
+        },
+        preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)
+    }) public set popupPosition(value: Coordinate) {}
 
-        this.viewportMargin = properties.viewportMargin || TurboPopup.config.defaultViewportMargin || 0;
-        this.offsetFromParent = properties.offsetFromParent || TurboPopup.config.defaultOffsetFromParent || 0;
+    public get popupPosition(): Point {return}
 
-        this.fallbackModes = properties.fallbackModes || {
-            x: Math.abs(this.parentAnchor.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-            y: Math.abs(this.parentAnchor.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-        };
+    @auto({
+        initialValueCallback: function () {
+            return this.getPropertiesValue(undefined, "defaultAnchorPosition", {x: 50, y: 100})
+        },
+        preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)
+    }) public set anchorPosition(value: Coordinate) {}
 
-        this.addListeners();
-        this.show(false);
-    }
+    public get anchorPosition(): Point {return}
 
-    private addListeners() {
-        window.addEventListener(DefaultEventName.scroll, () => this.show(false));
-        window.addEventListener(DefaultEventName.resize, () => {
-            if (this.isShown) this.recomputePosition();
-        });
-        document.addListener(DefaultEventName.click, e => {
-            if (this.isShown && !this.contains(e.target as Node)) this.show(false);
-        });
-    }
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultViewportMargin", 0)},
+        preprocessValue: (value: Coordinate | number) => new Point(value)
+    }) public set viewportMargin(value: Coordinate | number) {}
 
-    public get popupAnchor(): Point {
-        return this._popupAnchor;
-    }
+    public get viewportMargin(): Point {return}
 
-    public set popupAnchor(value: Coordinate) {
-        this._popupAnchor = new Point(value).bound(0, 100);
-    }
+    @auto({
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultOffsetFromAnchor", 0)},
+        preprocessValue: (value: Coordinate | number) => new Point(value)
+    }) public set offsetFromAnchor(value: Coordinate | number) {}
 
-    public get parentAnchor(): Point {
-        return this._parentAnchor;
-    }
+    public get offsetFromAnchor(): Point {return}
 
-    public set parentAnchor(value: Coordinate) {
-        this._parentAnchor = new Point(value).bound(0, 100);
-    }
+    @auto({
+        preprocessValue: (value) => {
+            return typeof value !== "object" ? {x: value, y: value} : value
+        },
+        initialValueCallback: function () {
+            return {
+                x: Math.abs(this.anchorPosition.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                y: Math.abs(this.anchorPosition.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+            }
+        }
+    }) public set fallbackModes(value: PopupFallbackMode | Coordinate<PopupFallbackMode>) {}
 
-    public get viewportMargin(): Point {
-        return this._viewportMargin;
-    }
+    public get fallbackModes(): Coordinate<PopupFallbackMode> {return}
 
-    public set viewportMargin(value: number | Coordinate) {
-        this._viewportMargin = new Point(value);
-    }
-
-    public get offsetFromParent(): Point {
-        return this._offsetFromParent;
-    }
-
-    public set offsetFromParent(value: number | Coordinate) {
-        this._offsetFromParent = new Point(value);
-    }
-
-    @cache({clearOnNextFrame: true})
-    public get rect(): DOMRect {
+    @cache({clearOnNextFrame: true}) protected get rect(): DOMRect {
         return this.getBoundingClientRect();
     }
 
-    @cache({clearOnNextFrame: true})
-    public get parentRect(): DOMRect {
-        return this.parentElement.getBoundingClientRect();
+    @cache({clearOnNextFrame: true}) protected get anchorRect(): DOMRect {
+        return this.anchor.getBoundingClientRect();
     }
 
-    @cache({clearOnNextFrame: true})
-    public get computedStyle(): CSSStyleDeclaration {
+    @cache({clearOnNextFrame: true}) protected get computedStyle(): CSSStyleDeclaration {
         return window.getComputedStyle(this);
     }
 
-    @cache({clearOnNextFrame: true})
-    public get parentComputedStyle(): CSSStyleDeclaration {
-        return window.getComputedStyle(this.parentElement);
+    @cache({clearOnNextFrame: true}) protected get anchorComputedStyle(): CSSStyleDeclaration {
+        return window.getComputedStyle(this.anchor);
+    }
+
+    @cache({clearOnNextFrame: true}) protected get computedMargins(): Coordinate {
+        return {
+            x: parseFloat(this.computedStyle.marginLeft) + parseFloat(this.computedStyle.marginRight),
+            y: parseFloat(this.computedStyle.marginTop) + parseFloat(this.computedStyle.marginBottom)
+        };
+    }
+
+    public initialize() {
+        super.initialize();
+        this.show(false);
+        if (!this.parentElement) $(this).addToParent(TurboPopup.parentElement);
+    }
+
+    protected setupUIListeners(): void {
+        super.setupUIListeners();
+
+        document.addEventListener(DefaultEventName.scroll, () => this.show(false), {capture: true, passive: true});
+        window.addEventListener(DefaultEventName.resize, () => {if ($(this).isShown) this.recomputePosition()}, {passive: true});
+        $(document).on(DefaultEventName.click, e => {
+            if (!$(this).isShown) return;
+            const t = e.target as Node;
+            if (this.contains(t)) return;
+            if (this.anchor instanceof Node && this.anchor.contains(t)) return;
+            this.show(false);
+            return true;
+        });
     }
 
     private recomputePosition() {
-        if (!this.parentElement) return;
-        this.clearMaxDimensions();
+        if (!this.anchor) return;
+        $(this).setStyles({maxHeight: "", maxWidth: ""}, true);
 
-        const availableHeight = window.innerHeight - (2 * this.viewportMargin.y);
-        const availableWidth = window.innerWidth - (2 * this.viewportMargin.x);
+        const left = this.computeAxis(Direction.horizontal);
+        const top = this.computeAxis(Direction.vertical);
+        $(this).setStyles({left: `${left}px`, top: `${top}px`});
 
-        this.setStyle("maxHeight", `${availableHeight}px`);
-        this.setStyle("maxWidth", `${availableWidth}px`);
+        const maxWidth = Math.max(0, Math.min(
+            window.innerWidth - 2 * this.viewportMargin.x,
+            window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x
+        ));
+        const maxHeight = Math.max(0, Math.min(
+            window.innerHeight - 2 * this.viewportMargin.y,
+            window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y
+        ));
 
-        const top = this.recomputeSide(Direction.vertical);
-        const left = this.recomputeSide(Direction.horizontal);
-
-        this.recomputeMaxSize(top, Direction.vertical);
-        this.recomputeMaxSize(left, Direction.horizontal);
+         $(this).setStyle("maxWidth", `${maxWidth}px`);
+         $(this).setStyle("maxHeight", `${maxHeight}px`);
     }
 
-    private recomputeSide(direction: Direction): number {
-        const params = this.generateDimensionParameters(direction);
+    private computeAxis(direction: Direction): number {
+        const axis = direction === Direction.horizontal ? "x" : "y";
+        const sizeAxis = direction === Direction.horizontal ? "width" : "height";
 
-        const popupSizeWithMargins = this.rect[params.size] + this.offsetFromParent[params.coordinate]
-            + parseFloat(this.computedStyle[params.marginStart]) + parseFloat(this.computedStyle[params.marginEnd]);
+        const viewportSize = direction === Direction.horizontal ? window.innerWidth : window.innerHeight;
+        const parentStart = this.anchorRect[direction === Direction.horizontal ? "left" : "top"];
+        const popupSize = this.rect[sizeAxis] + this.computedMargins[axis];
 
-        const parentAnchorOffset = this.parentRect[params.size] * this.parentAnchor[params.coordinate] / 100;
-        const popupSizeOffset = popupSizeWithMargins * this.popupAnchor[params.coordinate] / 100;
-        const totalSizeOffset = parentAnchorOffset - popupSizeOffset;
+        const min = this.viewportMargin[axis];
+        const max = viewportSize - this.viewportMargin[axis] - popupSize;
 
-        const incrementSign = totalSizeOffset > 0 ? 1 : -1;
-        const offsetFromParent = this.offsetFromParent[params.coordinate] * incrementSign;
-        const viewportMargin = this.viewportMargin[params.coordinate] * incrementSign;
-        const totalSizeOffsetWithViewportMargin = totalSizeOffset + viewportMargin;
+        const base = parentStart + (this.anchorRect[sizeAxis] * this.anchorPosition[axis] / 100)
+            - (popupSize * this.popupPosition[axis] / 100) + this.offsetFromAnchor[axis];
 
-        let offset: number = this.parentRect[params.side] + totalSizeOffset + offsetFromParent;
-
-        const maxOffset = window[params.innerSize] - popupSizeWithMargins - viewportMargin;
-        const minOffset = viewportMargin;
-
-        if (this.fallbackModes[params.coordinate] === PopupFallbackMode.invert) {
-            const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-                + (popupSizeWithMargins - popupSizeOffset);
-
-            if ((offset + popupSizeWithMargins > maxOffset) || (offset < minOffset)) {
-                const inverseOffset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-                if (inverseOffset >= minOffset && (inverseOffset + popupSizeWithMargins) <= maxOffset) {
-                    offset = inverseOffset;
-                }
-            }
+        const fitsBase = base >= min && base <= max;
+        if (fitsBase || this.fallbackModes[axis] === PopupFallbackMode.offset) {
+            return Math.min(Math.max(base, min), max);
         }
 
-        // Final boundary check
-        offset = Math.min(Math.max(offset, minOffset), maxOffset);
+        const flipped = parentStart + this.anchorRect[sizeAxis] * (1 - this.anchorPosition[axis] / 100)
+            - popupSize * (1 - this.popupPosition[axis] / 100) - this.offsetFromAnchor[axis];
+        const fitsFlip = flipped >= min && flipped <= max;
 
-        this.style[params.side] = `${offset}px`;
-        return offset;
+        let finalOffset: number;
+        if (fitsFlip) finalOffset = flipped;
+        else if (fitsBase) finalOffset = base;
+        else {
+            const pick = Math.abs(base - Math.min(Math.max(base, min), max)) <=
+            Math.abs(flipped - Math.min(Math.max(flipped, min), max)) ? base : flipped;
+            finalOffset = Math.min(Math.max(pick, min), max);
+        }
 
-        // if (this.fallbackModes[params.coordinate] == PopupFallbackMode.invert) {
-        //     const inverseTotalSizeOffset = (this.parentRect[params.size] - parentAnchorOffset)
-        //         + (popupSizeWithMargins - popupSizeOffset);
-        //     const inverseTotalSizeOffsetWithViewportMargin = inverseTotalSizeOffset - viewportMargin;
-        //
-        //     if ((totalSizeOffset >= 0
-        //             && window[params.innerSize] - this.parentRect[params.side] <
-        //             popupSizeWithMargins + totalSizeOffsetWithViewportMargin
-        //             && this.parentRect[params.side] >= popupSizeWithMargins - inverseTotalSizeOffsetWithViewportMargin)
-        //         || (totalSizeOffset < 0
-        //             && this.parentRect[params.side] < -totalSizeOffset - totalSizeOffsetWithViewportMargin
-        //             && window[params.innerSize] - this.parentRect[params.side] >=
-        //             inverseTotalSizeOffset + inverseTotalSizeOffsetWithViewportMargin)) {
-        //         offset = this.parentRect[params.side] - inverseTotalSizeOffset * incrementSign;
-        //     }
-        // } else if (this.fallbackModes[params.coordinate] == PopupFallbackMode.offset) {
-        //     if (totalSizeOffset < 0) {
-        //         const outOfBoundsStart: number = this.parentRect[params.side] + totalSizeOffsetWithViewportMargin;
-        //         if (outOfBoundsStart < 0) offset -= outOfBoundsStart;
-        //     } else {
-        //         const outOfBoundsEnd: number = (window[params.innerSize] - this.parentRect[params.side])
-        //             - (popupSizeWithMargins + totalSizeOffsetWithViewportMargin);
-        //         if (outOfBoundsEnd > 0) offset -= outOfBoundsEnd;
-        //     }
-        // }
-        //
-        // this.style[params.side] = offset + "px";
-        // return offset;
-    }
-
-    private recomputeMaxSize(offset: number, direction: Direction) {
-        const params = this.generateDimensionParameters(direction);
-        const totalMargins = parseFloat(this.computedStyle[params.marginStart])
-            + parseFloat(this.computedStyle[params.marginEnd])
-            + (2 * this.viewportMargin[params.coordinate]);
-
-        const maxSize = Math.min(
-            window[params.innerSize] - totalMargins,  // Total available space
-            window[params.innerSize] - offset - this.viewportMargin[params.coordinate] // Space from offset to edge
-        );
-
-        // Only set if we need to constrain the size
-        const currentMaxSize = this.computedStyle[params.maxSize]
-            ? parseFloat(this.computedStyle[params.maxSize])
-            : Infinity;
-
-        if (!currentMaxSize || currentMaxSize > maxSize) this.style[params.maxSize] = `${maxSize}px`;
-
-        // const maxSize = window[params.innerSize] - offset - this.viewportMargin[params.coordinate]
-        //     - parseFloat(this.computedStyle[params.marginStart]) - parseFloat(this.computedStyle[params.marginEnd])
-        //     - parseFloat(this.parentComputedStyle[params.marginStart]) - parseFloat(this.parentComputedStyle[params.marginEnd]);
-        //
-        // if (this.computedStyle[params.maxSize] && parseFloat(this.computedStyle[params.maxSize]) <= maxSize) return;
-        // this.style[params.maxSize] = maxSize + "px";
-    }
-
-    private clearMaxDimensions() {
-        this.setStyle("maxHeight", "", true);
-        this.setStyle("maxWidth", "", true);
+        return finalOffset;
     }
 
     public show(b: boolean): this {
-        if (this.isShown == b) return this;
-        requestAnimationFrame(() => {
-            if (b) this.recomputePosition();
-            else this.clearMaxDimensions();
-            super.show(b);
-        });
+        const sel = $(this);
+        if (sel.isShown === b) return this;
+
+        if (b) {
+            this.style.visibility = "hidden";
+            this.style.display = "";
+            this.recomputePosition();
+            this.style.visibility = "";
+            sel.show(true);
+        } else {
+            $(this).setStyles({maxHeight: "", maxWidth: ""}, true);
+            sel.show(false);
+        }
         return this;
-    }
-
-    public toggle(): this {
-        return this.show(!this.isShown);
-    }
-
-    private generateDimensionParameters(direction: Direction): DimensionProperties {
-        const isVertical = direction == Direction.vertical;
-        return {
-            size: isVertical ? "height" : "width",
-            innerSize: isVertical ? "innerHeight" : "innerWidth",
-            maxSize: isVertical ? "maxHeight" : "maxWidth",
-
-            marginStart: isVertical ? "marginTop" : "marginLeft",
-            marginEnd: isVertical ? "marginBottom" : "marginRight",
-
-            side: isVertical ? "top" : "left",
-            coordinate: isVertical ? "y" : "x"
-        };
     }
 }
 
-export {TurboPopup};
+function popup<
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType> = {}):
+    TurboPopup<ViewType, DataType, ModelType, EmitterType> {
+    return element({...properties, text: undefined, tag: "turbo-popup"} as any) as any;
+}
+
+export {TurboPopup, popup};

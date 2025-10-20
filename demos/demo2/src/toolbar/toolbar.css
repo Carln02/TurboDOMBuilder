@@ -1,0 +1,31 @@
+demo-toolbar {
+    border-radius: 12px;
+    border: 1px solid #838383;
+    padding: 8px;
+    min-width: 400px;
+    z-index: 2;
+
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+demo-toolbar > * {
+    border: 1px solid #838383;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+demo-toolbar > * > * {
+    margin: 0;
+    padding: 0;
+}
+
+demo-toolbar > .selected {
+    background-color: #25e463;
+}

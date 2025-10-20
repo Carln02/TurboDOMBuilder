@@ -18,6 +18,10 @@ class Delegate<CallbackType extends (...args: any[]) => any> {
         return this.callbacks.delete(callback);
     }
 
+    public has(callback: CallbackType): boolean {
+        return this.callbacks.has(callback);
+    }
+
     /**
      * @description Invokes all callbacks with the provided arguments.
      * @param args - The arguments to pass to the callbacks.

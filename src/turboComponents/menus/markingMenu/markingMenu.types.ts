@@ -1,19 +1,19 @@
-import {TurboSelectEntry} from "../../basics/select/selectEntry/selectEntry";
 import {TurboSelectProperties} from "../../basics/select/select.types";
 import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
 import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 
 type TurboMarkingMenuProperties<
     ValueType = string,
     SecondaryValueType = string,
-    EntryType extends TurboSelectEntry<ValueType, SecondaryValueType> = TurboSelectEntry<ValueType, SecondaryValueType>,
+    EntryType extends HTMLElement = HTMLElement,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel
-> = TurboSelectProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType> & {
+> = TurboElementProperties<ViewType, DataType, ModelType> & {
     transition?: StatefulReifect<InOut> | StatefulReifectProperties<InOut>,
 
     startAngle?: number,

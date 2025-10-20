@@ -1,13 +1,15 @@
-import {TurboIcon} from "../icon/icon";
-import {element} from "../../../domBuilding/elementCreation/element";
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
-import {define} from "../../../domBuilding/decorators/define";
-import {ValidElement, ValidTag} from "../../../domBuilding/core.types";
-import {TurboRichElementChildren, TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {icon, TurboIcon} from "../icon/icon";
+import {TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
+import {TurboView} from "../../../mvc/core/view";
+import {ValidElement, ValidTag} from "../../../core.types";
+import {TurboModel} from "../../../mvc/core/model";
+import {define} from "../../../decorators/define/define";
+import {TurboElement} from "../../../turboElement/turboElement";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {auto} from "../../../decorators/auto/auto";
+import {element} from "../../../elementCreation/element";
+import {TurboProperties} from "../../../turboFunctions/element/element.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 /**
  * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
@@ -21,178 +23,131 @@ class TurboRichElement<
     ElementTag extends ValidTag = any,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement<ViewType, DataType, ModelType> {
-    /**
-     * @description Object containing the children of the rich element.
-     */
-    private readonly elements: TurboRichElementChildren<ElementTag>;
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    public static config: TurboRichElementConfig = {
+        ...TurboElement.config,
+        defaultElementTag: "h4"
+    };
 
-    public static readonly config: TurboRichElementConfig = {...TurboElement.config, defaultElementTag: "h4"};
-
-    /**
-     * Initializes a new instance of the Button class.
-     * @param {TurboButtonProperties} properties - Properties to configure the button.
-     */
-    constructor(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType>) {
-        if (properties.text && !properties.element) properties.element = properties.text;
-        super({...properties, text: null});
-
-        if (!properties.unsetDefaultClasses) this.addClass((this.constructor as typeof TurboElement).config.defaultClasses);
-        this.elementTag = properties.elementTag;
-
-        this.elements = {
-            leftCustomElements: null,
-            leftIcon: null,
-            prefixEntry: null,
-            element: null,
-            suffixEntry: null,
-            rightIcon: null,
-            rightCustomElements: null,
-        };
-
-        this.leftCustomElements = properties.leftCustomElements;
-        this.leftIcon = properties.leftIcon;
-        this.prefixEntry = properties.prefixEntry;
-        this.element = properties.element;
-        this.suffixEntry = properties.suffixEntry;
-        this.rightIcon = properties.rightIcon;
-        this.rightCustomElements = properties.rightCustomElements;
-    }
+    public readonly childrenOrder = ["leftCustomElements", "leftIcon",
+        "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"] as const;
 
     /**
      * @description Adds a given element or elements to the button at a specified position.
      * @param {Element | Element[] | null} element - The element(s) to add.
-     * @param {keyof ButtonChildren} type - The type of child element being added.
+     * @param {this["childrenOrder"][number]} type - The type of child element being added.
      */
-    private addAtPosition(element?: Element | Element[], type?: keyof TurboRichElementChildren) {
+    private addAtPosition(element?: Element | Element[], type?: this["childrenOrder"][number]) {
         if (!element || !type) return;
-
         let nextSiblingIndex = 0;
-        for (let key in this.elements) {
-            if (key == type) break;
-            if (this.elements[key]) nextSiblingIndex++;
+        for (let i = 0; i < this.childrenOrder.length; i++) {
+            const key = this.childrenOrder[i];
+            if (key === type) break;
+            const el = this[key];
+            if (el && el instanceof Element) nextSiblingIndex++;
+            else if (el && Array.isArray(el)) nextSiblingIndex += el.length;
         }
-
-        this.addChild(element, nextSiblingIndex);
+        $(this).addChild(element, nextSiblingIndex);
     }
 
     /**
      * @description The tag of the text element in the button
      */
-    @auto({callBefore: (value: ElementTag) => TurboRichElement.config.defaultElementTag || "h4"})
-    public set elementTag(value: ElementTag) {}
+    @auto({initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultElementTag", "h4")}})
+    public elementTag: ElementTag;
 
     /**
      * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
      */
-    public get leftCustomElements(): Element | Element[] {
-        return this.elements.leftCustomElements;
-    }
-
+    @auto({executeSetterBeforeStoring: true})
     public set leftCustomElements(value: Element | Element[]) {
-        this.removeChild(this.leftCustomElements);
-        if (!value) return;
+        $(this).remChild(this.leftCustomElements);
         this.addAtPosition(value, "leftCustomElements");
-        this.elements.leftCustomElements = value;
     }
 
     /**
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    public get leftIcon(): TurboIcon {
-        return this.elements.leftIcon;
-    }
-
-    public set leftIcon(value: string | TurboIcon) {
-        if (!value) {
-            this.removeChild(this.leftIcon);
-            return;
-        }
-
-        if (typeof value == "string") {
-            if (this.leftIcon) {
-                this.leftIcon.icon = value;
-                return;
+    @auto({
+        preprocessValue: function (value: string | TurboIcon) {
+            if (typeof value == "string") {
+                if (this.leftIcon) {
+                    this.leftIcon.icon = value;
+                    return this.leftIcon;
+                }
+                value = icon({icon: value});
             }
-            value = new TurboIcon({icon: value});
+            $(this).remChild(this.leftIcon);
+            this.addAtPosition(value as TurboIcon, "leftIcon");
+            return value;
         }
+    })
+    public set leftIcon(value: string | TurboIcon) {}
 
-        this.removeChild(this.leftIcon);
-        this.addAtPosition(value, "leftIcon");
-        this.elements.leftIcon = value;
-    }
+    public get leftIcon(): TurboIcon {return}
 
     /**
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    public get prefixEntry(): HTMLElement {
-        return this.elements.prefixEntry;
-    }
-
-    public set prefixEntry(value: string | HTMLElement) {
-        if (!value) {
-            this.removeChild(this.prefixEntry);
-            return;
-        }
-
-        if (typeof value == "string") {
-            if (this.prefixEntry) {
-                this.prefixEntry.innerText = value;
-                return;
+    @auto({
+        preprocessValue: function (value: string | HTMLElement) {
+            if (typeof value == "string") {
+                if (this.prefixEntry) {
+                    this.prefixEntry.textContent = value;
+                    return this.prefixEntry;
+                }
+                value = element({text: value}) as HTMLElement;
             }
-            value = element({text: value}) as HTMLElement;
+            $(this).remChild(this.prefixEntry);
+            this.addAtPosition(value as HTMLElement, "prefixEntry");
+            return value;
         }
+    })
+    public set prefixEntry(value: string | HTMLElement) {}
 
-        this.removeChild(this.prefixEntry);
-        this.addAtPosition(value, "prefixEntry");
-        this.elements.prefixEntry = value;
-    }
+    public get prefixEntry(): HTMLElement {return}
 
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
-    public get element(): ValidElement<ElementTag> {
-        return this.elements.element;
-    }
-
-    public set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {
-        if (!value) {
-            this.removeChild(this.element);
-            return;
-        }
-
-        if (typeof value == "string") {
-            if (this.element && "innerText" in this.element) {
-                this.element.innerText = value;
-                return;
+    @auto({
+        preprocessValue: function (value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {
+            if (typeof value === "string") {
+                if (this.element && "textContent" in this.element) {
+                    this.element.textContent = value;
+                    return this.element;
+                }
+                value = element({tag: this.elementTag, text: value} as TurboProperties<ElementTag>);
+            } else if (typeof value === "object" && !(value instanceof Element)) {
+                if (!value.tag) value.tag = this.elementTag;
+                value = element(value);
             }
-            value = element({tag: this.elementTag, text: value} as TurboProperties<ElementTag>);
-        } else if (typeof value == "object" && !(value instanceof Element)) {
-            value = element(value);
+            $(this).remChild(this.element);
+            this.addAtPosition(value, "element");
+            return value;
         }
+    })
+    public set element(value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {}
 
-        this.removeChild(this.element);
-        this.addAtPosition(value, "element");
-        this.elements.element = value;
-    }
+    public get element(): ValidElement<ElementTag> {return}
 
     /**
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
-     * string will update the text's innerText with the given string.
+     * string will update the text's textContent with the given string.
      */
     public get text(): string {
-        const element = this.elements.element;
+        const element = this.element;
         if (!element) return "";
-        if ("innerText" in element) return element.innerText;
-        return element.innerHTML;
+        return element.textContent;
     }
 
     public set text(value: string) {
-        if (!value) return;
+        if (!value) value = "";
         this.element = value;
     }
 
@@ -200,69 +155,70 @@ class TurboRichElement<
      * @description The left icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    public get suffixEntry(): HTMLElement {
-        return this.elements.prefixEntry;
-    }
-
-    public set suffixEntry(value: string | HTMLElement) {
-        if (!value) {
-            this.removeChild(this.suffixEntry);
-            return;
-        }
-
-        if (typeof value == "string") {
-            if (this.suffixEntry) {
-                this.suffixEntry.innerText = value;
-                return;
+    @auto({
+        preprocessValue: function (value: string | HTMLElement) {
+            if (typeof value == "string") {
+                if (this.suffixEntry) {
+                    this.suffixEntry.textContent = value;
+                    return this.suffixEntry;
+                }
+                value = element({text: value}) as HTMLElement;
             }
-            value = element({text: value}) as HTMLElement;
+            $(this).remChild(this.suffixEntry);
+            this.addAtPosition(value, "suffixEntry");
+            return value;
         }
+    })
+    public set suffixEntry(value: string | HTMLElement) {}
 
-        this.removeChild(this.suffixEntry);
-        this.addAtPosition(value, "suffixEntry");
-        this.elements.suffixEntry = value;
-    }
+    public get suffixEntry(): HTMLElement {return}
 
     /**
      * @description The right icon element. Can be set with a new icon by a simple assignment (the name/path of the
      * icon, or a Turbo/HTML element).
      */
-    public get rightIcon(): TurboIcon {
-        return this.elements.rightIcon;
-    }
-
-    public set rightIcon(value: string | TurboIcon) {
-        if (!value) {
-            this.removeChild(this.rightIcon);
-            return;
-        }
-
-        if (typeof value == "string") {
-            if (this.rightIcon) {
-                this.rightIcon.icon = value;
-                return;
+    @auto({
+        preprocessValue: function (value: string | TurboIcon) {
+            if (typeof value == "string") {
+                if (this.rightIcon) {
+                    this.rightIcon.icon = value;
+                    return this.rightIcon;
+                }
+                value = icon({icon: value});
             }
-            value = new TurboIcon({icon: value});
+            $(this).remChild(this.rightIcon);
+            this.addAtPosition(value, "rightIcon");
+            return value;
         }
+    })
+    public set rightIcon(value: string | TurboIcon) {}
 
-        this.removeChild(this.rightIcon);
-        this.addAtPosition(value, "rightIcon");
-        this.elements.rightIcon = value;
-    }
+    public get rightIcon(): TurboIcon {return}
 
     /**
      * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
      */
-    public get rightCustomElements(): Element | Element[] {
-        return this.elements.rightCustomElements;
-    }
-
+    @auto({executeSetterBeforeStoring: true})
     public set rightCustomElements(value: Element | Element[]) {
-        this.removeChild(this.rightCustomElements);
-        if (!value) return;
+        $(this).remChild(this.rightCustomElements);
         this.addAtPosition(value, "rightCustomElements");
-        this.elements.rightCustomElements = value;
     }
 }
 
-export {TurboRichElement};
+function richElement<
+    ElementTag extends ValidTag = any,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>):
+    TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
+    if (properties.text && !properties.element) properties.element = properties.text;
+    if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+        properties.element.tag = properties.elementTag;
+    }
+    if (!properties.tag) properties.tag = "turbo-rich-element";
+    return element({...properties, text: undefined}) as any;
+}
+
+export {TurboRichElement, richElement};

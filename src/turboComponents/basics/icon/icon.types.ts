@@ -1,7 +1,8 @@
-import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboIcon} from "./icon";
 
 /**
  * @type {TurboIconProperties}
@@ -23,8 +24,9 @@ import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
 type TurboIconProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+    ModelType extends TurboModel = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     type?: string;
     directory?: string;
 
@@ -44,11 +46,16 @@ type TurboIconProperties<
  * directory once here to not type it again at every Icon generation.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
  */
-type TurboIconConfig = {
-    defaultType?: string;
-    defaultDirectory?: string;
-    defaultClasses?: string | string[];
-    customLoaders?: Record<string, (path: string) => Promise<Element>>
+type TurboIconConfig = TurboElementConfig & {
+    defaultType?: string,
+    defaultDirectory?: string,
+    customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>
+}
+
+declare module "../../../core.types" {
+    interface TurboElementTagNameMap {
+        "turbo-icon": TurboIcon
+    }
 }
 
 export {TurboIconProperties, TurboIconConfig};

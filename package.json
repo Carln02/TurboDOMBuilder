@@ -1,6 +1,6 @@
 {
   "name": "turbodombuilder",
-  "version": "0.8.103",
+  "version": "0.9.5",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
   "type": "module",
   "main": "build/turbodombuilder.cjs.js",
@@ -12,14 +12,16 @@
   ],
   "exports": {
     ".": {
+      "types": "./build/turbodombuilder.d.ts",
       "import": "./build/turbodombuilder.esm.js",
       "require": "./build/turbodombuilder.cjs.js"
     }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "build": "gulp build",
-    "doc": "typedoc src/**/*.ts",
+    "doc": "typedoc --options typedoc.json",
+    "doc:json": "npx typedoc --json docs/api.json",
     "clean": "rm -rf dist"
   },
   "repository": {
@@ -52,17 +54,26 @@
     "del": "^7.1.0",
     "gulp": "^5.0.0",
     "gulp-insert": "^0.5.0",
+    "gulp-rename": "^2.1.0",
+    "jsdom": "^26.1.0",
     "rollup": "^4.13.2",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-postcss": "^4.0.2",
     "through2": "^4.0.2",
     "ts-loader": "^9.5.1",
-    "typedoc": "^0.25.12",
-    "typescript": "^5.4.3"
+    "ts-morph": "^27.0.0",
+    "typedoc": "^0.28.13",
+    "typedoc-plugin-extras": "^4.0.1",
+    "typedoc-plugin-mdn-links": "^5.0.9",
+    "typescript": "^5.4.3",
+    "unplugin-swc": "^1.5.7",
+    "vite": "^6.0.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@types/ungap__structured-clone": "^1.2.0",
     "@ungap/structured-clone": "^1.2.0",
-    "tslib": "^2.6.2"
+    "tslib": "^2.6.2",
+    "yjs": "^13.6.27"
   }
 }

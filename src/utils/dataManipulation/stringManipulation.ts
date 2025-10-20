@@ -1,10 +1,12 @@
+import {isUndefined} from "./misc";
+
 /**
  * @description Converts the passed variable into a string.
  * @param value - The variable to convert to string
  * @returns {string} - The string representation of the value
  */
 function stringify(value: any): string {
-    if (value === null || value === undefined) return "";
+    if (value === null || value === undefined) return undefined;
 
     switch (typeof value) {
         case "string":
@@ -36,9 +38,8 @@ function stringify(value: any): string {
  * @returns {any} - The original value
  */
 function parse(str: string): any {
+    if (isUndefined(str)) return undefined;
     switch (str) {
-        case "":
-            return undefined;
         case "null":
             return null;
         case "true":

@@ -1,41 +1,31 @@
-import {TurboCustomProperties} from "../../../domBuilding/turboElement/turboElement.types";
 import {Coordinate} from "../../../utils/datatypes/point/point.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 type TurboPopupProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
-    popupAnchor?: Coordinate,
-    parentAnchor?: Coordinate,
-    fallbackModes?: Coordinate<PopupFallbackMode>,
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    anchor?: Element,
+    popupPosition?: Coordinate,
+    parentPosition?: Coordinate,
+    fallbackModes?: PopupFallbackMode | Coordinate<PopupFallbackMode>,
     viewportMargin?: number | Coordinate,
-    offsetFromParent?: number | Coordinate,
-    unsetDefaultClasses?: boolean,
+    offsetFromAnchor?: number | Coordinate,
 };
-
-type DimensionProperties = {
-    side: "top" | "left",
-    coordinate: "y" | "x",
-
-    size: "height" | "width",
-    innerSize: "innerHeight" | "innerWidth",
-    maxSize: "maxHeight" | "maxWidth",
-
-    marginStart: "marginTop" | "marginLeft",
-    marginEnd: "marginBottom" | "marginRight"
-}
 
 type TurboPopupConfig = {
     defaultClasses?: string | string[],
 
-    defaultPopupAnchor?: Coordinate,
-    defaultParentAnchor?: Coordinate,
+    defaultPopupPosition?: Coordinate,
+    defaultAnchorPosition?: Coordinate,
 
     defaultViewportMargin?: number | Coordinate,
-    defaultOffsetFromParent?: number | Coordinate,
+    defaultOffsetFromAnchor?: number | Coordinate,
 }
 
 enum PopupFallbackMode {
@@ -44,4 +34,4 @@ enum PopupFallbackMode {
     none = "none"
 }
 
-export {TurboPopupProperties, DimensionProperties, TurboPopupConfig, PopupFallbackMode};
+export {TurboPopupProperties, TurboPopupConfig, PopupFallbackMode};

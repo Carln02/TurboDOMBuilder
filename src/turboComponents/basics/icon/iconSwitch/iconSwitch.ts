@@ -1,49 +1,67 @@
-import {TurboIcon} from "../icon";
+import {icon, TurboIcon} from "../icon";
 import {TurboIconSwitchProperties} from "./iconSwitch.types";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
 import {OnOff} from "../../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
-import {define} from "../../../../domBuilding/decorators/define";
-import {TurboView} from "../../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../../domBuilding/mvc/turboModel";
-import { auto } from "../../../../domBuilding/decorators/auto/auto";
+import {define} from "../../../../decorators/define/define";
+import {TurboView} from "../../../../mvc/core/view";
+import {TurboModel} from "../../../../mvc/core/model";
+import {auto} from "../../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboIconConfig} from "../icon.types";
 
-@define()
+@define("turbo-icon-switch")
 class TurboIconSwitch<
     State extends string | number | symbol = OnOff,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>,
-> extends TurboIcon<ViewType, DataType, ModelType> {
-    public switchReifect: StatefulReifect<State, TurboIcon>;
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+    public config: TurboIconConfig = {...TurboIcon.config};
 
-    /**
-     * Creates an instance of Icon.
-     * @param {TurboIconSwitchProperties<State>} properties - Properties to configure the icon.
-     */
-    public constructor(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType>) {
-        super({...properties});
+    public get switchReifect(): StatefulReifect<State, TurboIcon> {return}
 
-        if (properties.switchReifect instanceof StatefulReifect) this.switchReifect = properties.switchReifect;
-        else this.switchReifect = new StatefulReifect<State, TurboIcon>(
-            properties.switchReifect as StatefulReifectProperties<State, TurboIcon> || {});
-
+    @auto({
+        preprocessValue: function (value: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>) {
+            if (value instanceof StatefulReifect) return value;
+            else return new StatefulReifect<State, TurboIcon>(value || {});
+        }
+    }) public set switchReifect(value: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>) {
         this.switchReifect.attach(this);
-        this.appendStateToIconName = properties.appendStateToIconName;
-
-        if (properties.defaultState) this.switchReifect.apply(properties.defaultState, this);
+        if (this.defaultState) this.switchReifect.apply(this.defaultState, this);
     }
 
-    @auto()
-    public set appendStateToIconName(value: boolean) {
+    @auto() public set defaultState(value: State) {
+        this.switchReifect?.apply(value, this);
+    }
+
+    @auto() public set appendStateToIconName(value: boolean) {
         if (value) {
-            const reifectProperties = this.switchReifect.properties as any;
+            const reifectProperties = this.switchReifect?.properties as any;
             this.switchReifect.states.forEach(state => {
                 if (!reifectProperties[state]) reifectProperties[state] = {};
                 reifectProperties[state].icon = this.icon + "-" + state.toString();
             });
         }
     }
+
+    public initialize() {
+        super.initialize();
+        if (this.defaultState && this.switchReifect) this.switchReifect.apply(this.defaultState, this);
+    }
 }
 
-export {TurboIconSwitch};
+function iconSwitch<
+    State extends string | number | symbol = OnOff,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+>(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>):
+    TurboIconSwitch<State, ViewType, DataType, ModelType, EmitterType> {
+    if (!properties.tag) properties.tag = "turbo-icon-switch";
+    return icon({...properties}) as any;
+}
+
+export {TurboIconSwitch, iconSwitch};

@@ -3,9 +3,10 @@ import {textToElement} from "./elementManipulation";
 /**
  * @description Fetches an SVG from the given path
  * @param {string} path - The path to the SVG
+ * @param logError
  * @returns An SVGElement promise
  */
-function fetchSvg(path: string): Promise<SVGElement> {
+function fetchSvg(path: string, logError: boolean = true): Promise<SVGElement> {
     return new Promise((resolve, reject) => {
         if (!path || path.length === 0) {
             reject(new Error("Invalid path"));
@@ -23,6 +24,7 @@ function fetchSvg(path: string): Promise<SVGElement> {
                 resolve(svg);
             })
             .catch(error => {
+                if (!logError) reject(error);
                 console.error("Error fetching SVG:", error);
                 reject(error);
             });

@@ -1,14 +1,25 @@
 import {ClickMode} from "../turboEventManager/turboEventManager.types";
 import {Point} from "../../utils/datatypes/point/point";
-import {ClosestOrigin} from "./turboEvent.types";
+import {ClosestOrigin, TurboEventProperties} from "./turboEvent.types";
 import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
 import {TurboEventNameEntry} from "../eventNaming";
-import {cache} from "../../domBuilding/decorators/cache/cache";
+import {cache} from "../../decorators/cache/cache";
+import {TurboEventManager} from "../turboEventManager/turboEventManager";
 
 /**
  * Generic turbo event
  */
 class TurboEvent extends Event {
+    /**
+     * @description The event manager that fired this event.
+     */
+    public readonly eventManager: TurboEventManager;
+
+    /**
+     * @description The name of the tool (if any) associated with this event.
+     */
+    public readonly toolName: string;
+
     /**
      * @description The name of the event.
      */
@@ -41,18 +52,28 @@ class TurboEvent extends Event {
      */
     public scalePosition: (position: Point) => Point;
 
-    constructor(position: Point, clickMode: ClickMode, keys: string[], eventName: TurboEventNameEntry,
-                authorizeScaling?: boolean | (() => boolean), scalePosition?: (position: Point) => Point,
-                eventInitDict?: EventInit) {
-        super(eventName, {bubbles: true, cancelable: true, ...eventInitDict});
+    public constructor(properties: TurboEventProperties) {
+        super(properties.eventName, {bubbles: true, cancelable: true, ...properties.eventInitDict});
 
-        this.authorizeScaling = authorizeScaling ?? true;
-        this.scalePosition = scalePosition ?? ((position: Point) => position);
+        this.eventManager = properties.eventManager ?? TurboEventManager.instance;
 
-        this.eventName = eventName;
-        this.clickMode = clickMode;
-        this.keys = keys;
-        this.position = position;
+        this.authorizeScaling = properties.authorizeScaling ?? true;
+        this.scalePosition = properties.scalePosition ?? ((position: Point) => position);
+
+        this.clickMode = properties.clickMode ?? TurboEventManager.instance.currentClick;
+        this.keys = properties.keys ?? TurboEventManager.instance.currentKeys;
+
+        this.eventName = properties.eventName;
+        this.position = properties.position;
+        this.toolName = properties.toolName;
+    }
+
+    /**
+     * @description The tool (if any) associated with this event.
+     */
+    public get tool(): Node {
+        if (!this.toolName || !(this.eventManager instanceof TurboEventManager)) return null;
+        return this.eventManager.getToolByName(this.toolName);
     }
 
     /**

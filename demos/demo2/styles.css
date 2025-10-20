@@ -1,0 +1,31 @@
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+}
+
+.turbo-button {
+    background-color: lightcyan;
+    border: 2px solid #8acccc;
+    cursor: pointer;
+}
+
+.turbo-button:hover {
+    scale: 1.05;
+}
+
+.turbo-button.selected {
+    scale: 1.03;
+    background-color: #89d5d5;
+    border-color: #5ba1a1;
+}
+
+.turbo-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+.turbo-icon > svg {
+    width: 100%;
+    height: 100%;
+}

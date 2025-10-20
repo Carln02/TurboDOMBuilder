@@ -1,13 +1,19 @@
-import {TurboElement} from "../../../domBuilding/turboElement/turboElement";
+import {richElement, TurboRichElement} from "../richElement/richElement";
+import {define} from "../../../decorators/define/define";
+import {TurboView} from "../../../mvc/core/view";
+import {TurboModel} from "../../../mvc/core/model";
+import {element} from "../../../elementCreation/element";
+import {$} from "../../../turboFunctions/turboFunctions";
+import {auto} from "../../../decorators/auto/auto";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {div} from "../../../elementCreation/basicElements";
+import {TurboRichElementConfig} from "../richElement/richElement.types";
 import {TurboInputProperties} from "./input.types";
-import {element} from "../../../domBuilding/elementCreation/element";
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {define} from "../../../domBuilding/decorators/define";
-import {TurboRichElement} from "../richElement/richElement";
-import {TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
+import {randomId} from "../../../utils/computations/random";
+import {TurboProperties} from "../../../turboFunctions/element/element.types";
+import {ValidElement} from "../../../core.types";
+import {Delegate} from "../../../eventHandling/delegate/delegate";
+import {TurboInputInputInteractor} from "./input.inputInteractor";
 
 @define("turbo-input")
 class TurboInput<
@@ -15,96 +21,162 @@ class TurboInput<
     ValueType extends string | number = string,
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel<any>
-> extends TurboElement {
-    public readonly labelElement: HTMLLabelElement;
-    public readonly inputElement: TurboRichElement<InputTag>;
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter,
+> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
+    public static config: TurboRichElementConfig = {
+        ...TurboRichElement.config,
+        defaultElementTag: "input"
+    };
 
-    public locked: boolean;
+    protected labelElement: HTMLLabelElement;
+    private _content: HTMLElement;
+    public get content(): HTMLElement {return this._content}
+    public set content(value: HTMLElement) {this._content = value}
 
-    private lastValueWithInputCheck: string;
-    private lastValueWithBlurCheck: string;
+    public defaultId: string = "turbo-input-" + randomId();
+    public locked: boolean = false;
+    public selectTextOnFocus: boolean = false;
+    public dynamicVerticalResize: boolean = false;
 
-    constructor(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType> = {}) {
-        super(properties);
+    public inputRegexCheck: RegExp | string;
+    public blurRegexCheck: RegExp | string;
 
-        this.locked = properties.locked || false;
-        this.lastValueWithInputCheck = "";
-        this.lastValueWithBlurCheck = "";
+    private lastValidForInput = "";
+    private lastValidForBlur = "";
 
-        if (properties.label) this.labelElement = element({tag: "label", text: properties.label, parent: this});
-        this.inputElement = new TurboRichElement({
-            ...properties,
-            elementTag: properties.elementTag || "input" as InputTag,
-            element: properties.element || element({tag: properties.elementTag || "input"} as TurboProperties<InputTag>),
-            parent: this
-        });
+    public readonly onFocus: Delegate<() => void> = new Delegate();
+    public readonly onBlur: Delegate<() => void> = new Delegate();
+    public readonly onInput: Delegate<() => void> = new Delegate();
 
-        this.setupEvents(properties);
+    @auto() public set label(value: string) {
+        if (!value || value.length === 0) {
+            if (this.labelElement) this.labelElement.remove();
+            return;
+        }
+
+        if (!this.labelElement) {
+            this.labelElement = element({tag: "label", htmlFor: this.element?.id ?? this.defaultId}) as HTMLLabelElement;
+            $(this).childHandler = this;
+            $(this).addChild(this.labelElement, 0);
+            if (this.content) $(this).childHandler = this.content;
+        }
+
+        this.labelElement.textContent = value;
     }
 
-    private setupEvents(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType>) {
-        if ("bypassTurboEventManager" in this.inputElement.element) this.inputElement.element.bypassTurboEventManager();
-
-        this.inputElement.element.addListener(DefaultEventName.blur, (e: Event) => {
-            if (properties.blurRegexCheck && this.stringValue != this.lastValueWithBlurCheck)
-                this.stringValue = this.lastValueWithBlurCheck;
-            this.dispatchEvent(new FocusEvent(DefaultEventName.blur, e));
-        });
-
-        this.inputElement.element.addListener(DefaultEventName.focus, (e: Event) => {
-            if (this.locked) this.inputElement.blur();
-            if (properties.selectTextOnFocus) this.inputElement.element.select();
-            this.dispatchEvent(new FocusEvent(DefaultEventName.focus, e));
-        });
-
-        this.inputElement.element.addListener(DefaultEventName.input, (e: Event) => {
-            if (properties.dynamicVerticalResize) {
-                this.inputElement.style.height = "";
-                this.inputElement.style.height = this.inputElement.scrollHeight + "px";
-            }
-
-            if (properties.inputRegexCheck) {
-                const regex = new RegExp(properties.inputRegexCheck, "g");
-               if (!regex.test(this.stringValue)) this.stringValue = this.lastValueWithInputCheck;
-            }
-            this.lastValueWithInputCheck = this.stringValue;
-
-            if (properties.blurRegexCheck) {
-                const regex = new RegExp(properties.blurRegexCheck, "g");
-                if (regex.test(this.stringValue)) this.lastValueWithBlurCheck = this.stringValue;
-            }
-
-            if (this.stringValue.length == 0) {
-                this.lastValueWithInputCheck = "0";
-                this.lastValueWithBlurCheck = "0";
-            }
-
-            this.dispatchEvent(new InputEvent(DefaultEventName.input, e));
-        });
+    public set element(value: TurboProperties<InputTag> | ValidElement<InputTag>) {
+        if (!(value instanceof Node) && typeof value === "object") {
+            if (!value.name) (value as any).name = randomId();
+            if (this.elementTag === "input" && !value.type) (value as any).type = "text";
+        }
+        super.element = value;
+        if (this.element) {
+            if (!this.element.id) this.element.id = this.defaultId;
+            else if (this.labelElement) this.labelElement.htmlFor = this.element.id;
+        }
     }
 
-    protected set stringValue(value: string) {
-        this.inputElement.element.value = value;
+    public get element(): ValidElement<InputTag> {
+        return super.element;
     }
 
-    protected get stringValue(): string {
-        return this.inputElement.element.value;
+    public initialize() {
+        super.initialize();
+        this.mvc.generate({interactors: [TurboInputInputInteractor]});
+        this.mvc.getInteractor("__input__interactor__").target = this.content;
+    }
+
+    protected setupUIElements() {
+        super.setupUIElements();
+        this.content = div();
+    }
+
+    protected setupUILayout() {
+        super.setupUILayout();
+        $(this.content).addChild($(this).childrenArray);
+        $(this).addChild([this.labelElement, this.content]);
+        $(this).childHandler = this.content;
+    }
+
+    protected setupChangedCallbacks() {
+        super.setupChangedCallbacks();
+        this.mvc.emitter.add("processValue", () => this.processInputValue());
     }
 
     public get value(): ValueType {
-        const value = this.stringValue;
-        // if (typeof value === "string" && value.trim() !== "") {
-        //     if (typeof th === "number") {
-        //         return parseFloat(value) as ValueType;
-        //     }
-        // }
+        const value = this.element?.value;
+        try {
+            const num = parseFloat(value);
+            if (!isNaN(num)) return num as ValueType;
+        } catch {}
         return value as ValueType;
     }
 
     public set value(value: string | ValueType) {
-        this.stringValue = value.toString();
+        if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement)) return;
+        let strValue = value.toString();
+        if (this.blurRegexCheck) {
+            const re = new RegExp(this.blurRegexCheck as any);
+            if (!re.test(strValue)) strValue = this.lastValidForBlur;
+        }
+        this.element.value = strValue;
+        this.mvc.emitter.fire("valueSet");
+    }
+
+    protected processInputValue(value: string = this.element.value) {
+        if (this.inputRegexCheck) {
+            const re = new RegExp(this.inputRegexCheck as any);
+            if (!re.test(value)) {
+                const attemptSanitize = this.sanitizeByRegex(value, this.inputRegexCheck);
+                if (re.test(attemptSanitize)) value = attemptSanitize;
+                else value = this.lastValidForInput;
+            }
+        }
+
+        this.lastValidForInput = value.toString();
+        if (this.blurRegexCheck) {
+            const re = new RegExp(this.blurRegexCheck as any);
+            if (re.test(value.toString())) this.lastValidForBlur = value;
+        } else {
+            this.lastValidForBlur = value;
+        }
+
+        this.element.value = value;
+        this.onInput.fire();
+    }
+
+    private sanitizeByRegex(value: string, rule: RegExp | string): string {
+        const src = typeof rule === "string" ? rule : rule.source;
+        const flags = typeof rule === "string" ? "" : rule.flags.replace("g", "");
+        const re = new RegExp(src, flags);
+
+        let out = "";
+        for (const ch of value) {
+            const candidate = out + ch;
+            re.lastIndex = 0;
+            if (re.test(candidate)) out = candidate;
+        }
+        return out;
     }
 }
 
-export {TurboInput};
+function turboInput<
+    InputTag extends "input" | "textarea" = "input",
+    ValueType extends string | number = string,
+    ViewType extends TurboView = TurboView<any, any>,
+    DataType extends object = object,
+    ModelType extends TurboModel<DataType> = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter,
+>(
+    properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>
+): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType> {
+    properties.element = properties.input;
+    properties.elementTag = properties.inputTag;
+    if (!properties.elementTag) properties.elementTag = "input";
+    if (!properties.element) properties.element = {};
+    if (!properties.tag) properties.tag = "turbo-input";
+    return richElement({...properties, input: undefined, inputTag: undefined}) as any;
+}
+
+export {TurboInput, turboInput};

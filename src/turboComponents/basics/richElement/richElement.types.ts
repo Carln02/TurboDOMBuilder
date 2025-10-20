@@ -1,9 +1,11 @@
-import {TurboCustomProperties, TurboProperties} from "../../../domBuilding/turboElement/turboElement.types";
-import {HTMLTag, ValidElement, ValidTag} from "../../../domBuilding/core.types";
 import {TurboIcon} from "../icon/icon";
-import {TurboView} from "../../../domBuilding/mvc/turboView";
-import {TurboModel} from "../../../domBuilding/mvc/turboModel";
-import {TurboEmitter} from "../../../domBuilding/mvc/turboEmitter";
+import {TurboView} from "../../../mvc/core/view";
+import {HTMLTag, ValidElement, ValidTag} from "../../../core.types";
+import {TurboModel} from "../../../mvc/core/model";
+import {TurboProperties} from "../../../turboFunctions/element/element.types";
+import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboRichElement} from "./richElement";
 
 /**
  * @type {TurboRichElementProperties}
@@ -33,8 +35,9 @@ type TurboRichElementProperties<
     ElementTag extends ValidTag = "div",
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel
-> = TurboCustomProperties<ViewType, DataType, ModelType> & {
+    ModelType extends TurboModel = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     elementTag?: ElementTag,
     text?: string;
 
@@ -45,42 +48,6 @@ type TurboRichElementProperties<
     suffixEntry?: string | HTMLElement,
     rightIcon?: string | TurboIcon,
     rightCustomElements?: Element | Element[],
-
-    unsetDefaultClasses?: boolean
-};
-
-type TurboRichElementData = {
-    leftCustomElements?: Element | Element[];
-    leftIcon?: string;
-    prefixEntry?: string;
-    text?: string;
-    suffixEntry?: string;
-    rightIcon?: string;
-    rightCustomElements?: Element | Element[];
-    elementTag?: string;
-};
-
-
-/**
- * @type {TurboRichElementChildren}
- * @description Holds references to the button's child elements for internal management.
- *
- * @property {Element | Element[] | null} leftCustomElements - Elements placed
- * on the left side of the button.
- * @property {Element | null} leftIcon - The icon placed on the left side of the button.
- * @property {Element | null} text - The text element of the button.
- * @property {Element | null} rightIcon - The icon placed on the right side of the button.
- * @property {Element | Element[] | null} rightCustomElements - Elements placed
- * on the right side of the button.
- */
-type TurboRichElementChildren<ElementTag extends ValidTag = "p"> = {
-    leftCustomElements: Element | Element[],
-    leftIcon: TurboIcon,
-    prefixEntry?: HTMLElement,
-    element: ValidElement<ElementTag>,
-    suffixEntry?: HTMLElement,
-    rightIcon: TurboIcon,
-    rightCustomElements: Element | Element[],
 };
 
 /**
@@ -91,9 +58,14 @@ type TurboRichElementChildren<ElementTag extends ValidTag = "p"> = {
  * element in the button.
  * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
  */
-type TurboRichElementConfig = {
-    defaultElementTag?: HTMLTag,
-    defaultClasses?: string | string[],
+type TurboRichElementConfig = TurboElementConfig & {
+    defaultElementTag?: HTMLTag
 }
 
-export {TurboRichElementProperties, TurboRichElementConfig, TurboRichElementChildren, TurboRichElementData};
+declare module "../../../core.types" {
+    interface TurboElementTagNameMap {
+        "turbo-rich-element": TurboRichElement
+    }
+}
+
+export {TurboRichElementProperties, TurboRichElementConfig};

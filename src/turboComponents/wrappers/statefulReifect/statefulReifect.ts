@@ -5,12 +5,13 @@ import {
     PropertyConfig,
     ReifectAppliedOptions, ReifectEnabledObject, StateSpecificProperty, BasicPropertyConfig
 } from "./statefulReifect.types";
-import {PartialRecord} from "../../../domBuilding/core.types";
-import {StylesType} from "../../../domBuilding/turbofication/styleManipulation/styleManipulation.types";
 import {isNull} from "../../../utils/dataManipulation/misc";
 import {eachEqualToAny} from "../../../utils/computations/equity";
 import {mod} from "../../../utils/computations/misc";
-import {auto} from "../../../domBuilding/decorators/auto/auto";
+import {auto} from "../../../decorators/auto/auto";
+import {PartialRecord} from "../../../core.types";
+import {StylesType} from "../../../turboFunctions/style/style.types";
+import {$} from "../../../turboFunctions/turboFunctions";
 
 /**
  * @class StatefulReifect
@@ -163,7 +164,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
         const data = this.generateNewData(object, onSwitch);
         this.attachedObjects.splice(index!, 0, data);
-        (object as Node).reifects?.attach(this as StatefulReifect<any>);
+        $(object).reifects?.attach(this as StatefulReifect<any>);
 
         data.lastState = this.stateOf(object);
         this.applyResolvedValues(data, false, true);
@@ -739,7 +740,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         this.applyStyles(data, data.lastState, applyStylesInstantly);
 
         if (!skipTransition) {
-            const handler = (data.object.deref() as Node)?.reifects;
+            const handler = $(data.object.deref()).reifects;
             if (this.attachedObjects.includes(data) && handler) handler.reloadTransitions();
             else this.applyTransition(data, data.lastState);
         }
@@ -786,7 +787,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         if (!this.enabled || !this.replaceWithEnabled) return;
         if (!data.enabled.global || !data.enabled.replaceWith) return;
 
-        const newObject = data.resolvedValues.replaceWith[state];
+        const newObject = data.resolvedValues?.replaceWith?.[state];
         if (!newObject) return;
 
         try {
@@ -808,14 +809,14 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         if (!this.enabled || !this.classesEnabled) return;
         if (!data.enabled.global || !data.enabled.classes) return;
 
-        const classes = data.resolvedValues.classes;
+        const classes = data.resolvedValues?.classes;
         if (!classes) return;
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
 
         for (const [key, value] of Object.entries(classes)) {
-            object.toggleClass(value as (string | string[]), state == key);
+            $(object).toggleClass(value as (string | string[]), state == key);
         }
     }
 
@@ -828,10 +829,11 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
                        applyStylesInstantly: boolean = false) {
         if (!this.enabled || !this.stylesEnabled) return;
         if (!data.enabled.global || !data.enabled.styles) return;
+        if (!data.resolvedValues?.styles) return;
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
-        object.setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
+        $(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
 
     public refreshStyles() {
@@ -845,12 +847,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element) || !data.resolvedValues) return;
-        object.appendStyle("transition", this.getTransitionString(data, state), ", ", true);
+        $(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
 
     public refreshTransition() {
         for (const data of this.attachedObjects) {
-            const handler = (data.object?.deref() as Node)?.reifects;
+            const handler = $(data.object?.deref()).reifects;
             if (handler) handler.reloadTransitions();
         }
     }
