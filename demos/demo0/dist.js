@@ -8122,9 +8122,18 @@
           .slice(0, length);
   }
   function randomFromRange(n1, n2) {
+      if (typeof n1 != "number" || typeof n2 != "number")
+          return 0;
       const min = Math.min(n1, n2);
       const max = Math.max(n1, n2);
       return (Math.random() * (max - min)) + min;
+  }
+  function randomColor(saturation = [50, 70], lightness = [70, 85]) {
+      if (typeof saturation != "number" && saturation.length >= 2)
+          saturation = randomFromRange(saturation[0], saturation[1]);
+      if (typeof lightness != "number" && lightness.length >= 2)
+          lightness = randomFromRange(lightness[0], lightness[1]);
+      return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
   }
 
   class TurboInputInputInteractor extends TurboInteractor {
@@ -10668,97 +10677,46 @@
   }
   glo[importIdentifier] = true;
 
-  TurboIcon.config.defaultDirectory = "assets/";
-  TurboEventManager.instance.preventDefaultMouse = false;
-  TurboEventManager.instance.preventDefaultTouch = false;
+  //Creating an element in JS and adding it to the document
+  const heading = document.createElement("h1");
+  heading.textContent = "Heading 1";
+  document.body.appendChild(heading);
 
-  //First custom element, a square
-  class Square extends TurboElement {
-      //Random position on creation
-      position = {x: randomFromRange(0, 600), y: randomFromRange(0, 600)};
+  //Creating another element and adding interaction
+  const colorChangingButton = document.createElement("button");
+  colorChangingButton.textContent = "Change color";
+  document.body.appendChild(colorChangingButton);
+  colorChangingButton.addEventListener("click", () => colorChangingButton.style.backgroundColor = randomColor());
 
-      //Adds parameter as a CSS class and fires first update()
-      init(classes = "") {
-          turbo(this).addClass(classes);
-          this.update();
-          return this;
-      }
+  //Do it in one line with the toolkit
+  const addSquareButton = button({text: "+ Add Square", parent: document.body, onClick: (e, el) => el.style.backgroundColor = "lightblue"});
 
-      //Translate function that properly increments the position by delta
-      translate(delta) {
-          this.position.x += delta.x;
-          this.position.y += delta.y;
-          this.update();
+  //Creating a custom "Square" element
+  class Square extends HTMLElement {
+      //Stored position of the square
+      position = {x: 0, y: 0};
+
+      init(position) {
+          position.x -= 100; position.y -= 100; //Center the position (according to the size of the square - 200px)
+          this.position = position; //Store the position
+          turbo(this).addClass("square").addToParent(document.body); //Assign CSS class and add to document
+          this.update(); //Update position
       }
 
       update() {
-          turbo(this).setStyle("transform", `translate(${this.position.x}px, ${this.position.y}px)`);
+          this.style.transform = `translate(${this.position.x}px, ${this.position.y}px)`;
       }
   }
 
-  //Second custom element, a circle (extends the square to inherit its position, init(), and update())
-  class Circle extends Square {
-      //Translate function that subtracts delta from the position
-      translate(delta) {
-          this.position.x -= delta.x;
-          this.position.y -= delta.y;
-          this.update();
-      }
-  }
-
-  //Third custom element, an outlined square (also extends the square to inherit its position, init(), and update())
-  class Outline extends Square {
-      //Opacity value
-      opacity = 0.5;
-
-      //Translate function that updates the opacity according to the horizontal delta
-      translate(delta) {
-          this.opacity = trim(this.opacity + delta.x / 500, 1);
-          this.update();
-      }
-
-      //Update the style
-      update() {
-          turbo(this).setStyles({
-              transform: `translate(${this.position.x}px, ${this.position.y}px)`,
-              opacity: this.opacity
-          });
-      }
-  }
-
-  //Define the custom elements
+  //Define the square element to be able to create it
   customElements.define("test-square", Square);
-  customElements.define("test-circle", Circle);
-  customElements.define("test-outline", Outline);
 
-  //Create 4 of each
-  for (let i = 0; i < 12; i++) {
-      const type = i < 4 ? "square" : i < 8 ? "circle" : "outline";
-      element({tag: "test-" + type, parent: document.body}).init(type);
-  }
+  //turn add square button into a tool
+  turbo(addSquareButton).makeTool("addSquare");
 
-  //Create a "move tool" button
-  const moveTool = button({leftIcon: "move", text: "Move Tool", parent: document.body, classes: "moveTool"});
-  //Turn it into a tool, and change its color when it is active
-  turbo(moveTool).makeTool("move", {onActivate: () => moveTool.style.backgroundColor = "#ff8888"});
-
-  //Add a behavior to the tool --> When the tool is active and the user is dragging, fire the callback
-  //el is the element that is interacted with (the target of the interaction)
-  turbo(moveTool).addToolBehavior("turbo-drag", (e, el) => {
-      //If el has a translate() function
-      if (typeof el.translate === "function") {
-          //Call it and pass it the delta position of the drag (the difference between the current position and
-          // the position captured at the previous "turbo-drag" event).
-          el.translate(e.deltaPosition);
-          return true; //Stop the event from propagating
-      }
+  //Define interaction with tool
+  turbo(document.body).onTool("click", "addSquare", (e) => {
+      document.createElement("test-square").init({x: e.clientX, y: e.clientY});
   });
-
-  //Create a new square that will contain an embedded tool
-  const newSquare = element({tag: "test-square", parent: document.body}).init("square");
-  //Create a handle or controller. It can be anything
-  const embeddedTool = div({classes: "controller", parent: newSquare});
-  //Turn the handle into a tool and embed it in the square
-  turbo(embeddedTool).makeTool("move", {customActivation: () => {}}).embedTool(newSquare);
 
 })();

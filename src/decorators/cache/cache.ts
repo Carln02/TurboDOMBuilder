@@ -4,11 +4,34 @@ import {cacheKeySymbolFor, initInvalidation, keyFromArgs} from "./cache.utils";
 /**
  * @decorator
  * @function cache
- * @description Stage-3 cache decorator:
- *  - When used on a method, it will cache the return value per arguments.
- *  - When used on a getter, it will cache its value once per instance.
- *  - When used on an accessor, it will wrap the getter similar to a cached getter.
- *  @param {CacheOptions} [options] - Optional caching options.
+ * @description Stage-3 decorator that memorizes expensive reads.
+ *
+ * **What it does**
+ * - **Method**: caches the return value **per unique arguments** (using a stable key from args).
+ * - **Getter**: caches the value **once per instance** until invalidated.
+ * - **Accessor**: wraps the `get` path like a cached getter; the `set` path invalidates cached value.
+ *
+ * @param {CacheOptions} [options] - Optional caching configuration to define when to clear it (on event, after
+ * timeout, on next frame, on callback, etc.).
+ *
+ * @example
+ * ```ts
+ * class IconRenderer {
+ *   #value = 0;
+ *
+ *   // Accessor: cached read; any write invalidates immediately
+ *   @cache({clearOnNextFrame: true}) accessor data = {
+ *     get: () => this.#value,
+ *     set: (v: number) => { this.#value = v; }
+ *   };
+ *
+ *   // Caches per argument list (e.g., same path ⇒ same result until invalidation)
+ *   @cache({timeout: 5_000}) async loadSvg(path: string): Promise<string> {
+ *     // ...expensive IO
+ *     return fetch(path).then(r => r.text());
+ *   }
+ * }
+ * ```
  */
 //TODO FIX THEN TEST ON ICON loadSvg
 function cache(options: CacheOptions = {}) {

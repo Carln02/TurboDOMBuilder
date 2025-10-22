@@ -387,7 +387,8 @@ function setupHierarchyFunctions() {
         referenceList?: Node[] | NodeListOf<Node>
     ): TurboSelector {
         if (!this.element || !parent) return this;
-        return $(parent).addChild(this.element, index, referenceList);
+        $(parent).addChild(this.element, index, referenceList);
+        return this;
     };
 }
 

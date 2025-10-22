@@ -2,6 +2,10 @@ body {
     width: 100vw;
     height: 100vh;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
 .turbo-button > * {
@@ -13,7 +17,6 @@ body {
     height: 200px;
     position: absolute;
     background-color: #00aff4;
-    border: #004d6c solid 1px;
 }
 
 .circle {
@@ -22,7 +25,6 @@ body {
     position: absolute;
     background-color: #5ddc39;
     border-radius: 100%;
-    border: #196009 solid 1px;
 }
 
 .moveTool {

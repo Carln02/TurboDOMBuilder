@@ -1,17 +1,19 @@
-import {$, effect, TurboView} from "../../../../build/turbodombuilder.esm";
+import {turbo, effect, TurboView} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {Square} from "./square";
 
+//View of the square element
 export class SquareView extends TurboView<Square, SquareModel> {
+    //@effect methods will be called when the values of the signals they use change
     @effect private updatePosition() {
-        $(this).setStyle("transform", `translate(${this.model.position.x}px, ${this.model.position.y}px)`);
+        turbo(this).setStyle("transform", `translate(${this.model.position.x}px, ${this.model.position.y}px)`);
     }
 
     @effect private updateColor() {
-        $(this).setStyle("backgroundColor", this.model.color);
+        turbo(this).setStyle("backgroundColor", this.model.color);
     }
 
     @effect private updateSize() {
-        $(this).setStyles({width: this.model.size + "px", height: this.model.size + "px"});
+        turbo(this).setStyles({width: this.model.size + "px", height: this.model.size + "px"});
     }
 }

@@ -1,4 +1,4 @@
-import {define, TurboElement, $, effect, signal, element, TurboElementProperties} from "../../../../build/turbodombuilder.esm";
+import {define, TurboElement, turbo, effect, signal, element, TurboElementProperties} from "../../../../build/turbodombuilder.esm";
 import "./toolbar.css";
 
 @define("demo-toolbar")
@@ -7,11 +7,11 @@ export class Toolbar extends TurboElement {
 
     public initialize() {
         super.initialize();
-        effect(() => $(this).setStyle("backgroundColor", this.color));
+        effect(() => turbo(this).setStyle("backgroundColor", this.color));
     }
 
     public addTool(tool: HTMLElement) {
-        $(this).addChild(tool);
+        turbo(this).addChild(tool);
     }
 }
 

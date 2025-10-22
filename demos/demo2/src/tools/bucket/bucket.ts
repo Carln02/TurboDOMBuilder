@@ -1,38 +1,42 @@
-import {define, signal, $, DefaultEventName, TurboButton, effect, input, element, TurboRichElementProperties} from "../../../../../build/turbodombuilder.esm";
+import {define, signal, turbo, DefaultEventName, TurboButton, effect, input, element, TurboRichElementProperties} from "../../../../../build/turbodombuilder.esm";
 import {BucketTool} from "./bucket.tool";
 
+//Custom element for the bucket tool
 @define("demo-bucket")
 export class Bucket extends TurboButton {
-    @signal private _colorValue: string = "#000000";
+    @signal private _color: string = "#000000"; //Signal to fire @effect callbacks when the value changes
 
     private colorInput: HTMLInputElement;
 
-    public get colorValue(): string {
-        return this._colorValue.toString();
+    public get color(): string {
+        return this._color.toString();
     }
 
+    //Function that sets up sub-elements. Called on creation.
     protected setupUIElements() {
         super.setupUIElements();
         this.colorInput = input({type: "color", style: "visibility: hidden; position: absolute"});
     }
 
+    //Function that adds the sub-elements to the document. Called on creation.
     protected setupUILayout() {
         super.setupUILayout();
-        $(this).addChild(this.colorInput);
+        turbo(this).addChild(this.colorInput);
     }
 
+    //Function that sets up event listeners. Called on creation.
     protected setupUIListeners() {
         super.setupUIListeners();
-        $(this).on(DefaultEventName.click, () => this.colorInput.click());
-        $(this.colorInput).on(DefaultEventName.input, () => {this._colorValue = this.colorInput.value});
+        turbo(this).on(DefaultEventName.click, () => this.colorInput.click());
+        turbo(this.colorInput).on(DefaultEventName.input, () => {this._color = this.colorInput.value});
     }
 
-    protected setupChangedCallbacks() {
-        super.setupChangedCallbacks();
-        effect(() => $(this).setStyle("borderColor", this._colorValue));
+    @effect private updateBorderColor() {
+        turbo(this).setStyle("borderColor", this._color);
     }
 }
 
+//Factory function to create bucket tool elements.
 export function bucket(properties: TurboRichElementProperties = {}): Bucket {
     return element({...properties, tools: BucketTool, tag: "demo-bucket"}) as Bucket;
 }

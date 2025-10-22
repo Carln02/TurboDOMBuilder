@@ -6,9 +6,6 @@ import {
 } from "../../utils/dataManipulation/prototypeManipulation";
 import {isNull, isUndefined} from "../../utils/dataManipulation/misc";
 
-/**
- * @internal
- */
 const utils = new AutoUtils();
 
 /**
@@ -19,7 +16,7 @@ const utils = new AutoUtils();
  * it, allowing you to, among other things:
  * - Preprocess the value when it is set,
  * - Specify callbacks to call before/after the value is set,
- * - Defining a default value to return instead of `undefined` when calling the getter, and
+ * - Define a default value to return instead of `undefined` when calling the getter, and
  * - Fire the setter when the underlying value is `undefined`.
  *
  * *Note: If you want to chain decorators, place @auto closest to the property to ensure it runs first and sets

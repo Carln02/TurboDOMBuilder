@@ -7,7 +7,44 @@ const utils = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils);
 const effectUtils = new EffectUtils(utils);
 
+/**
+ * @overload
+ * @function signal
+ * @description Create a standalone reactive signal box.
+ * Returns a {@link SignalBox} wrapping the initial value.
+ *
+ * @template Value
+ * @param {Value} [initial] - Initial value stored by the signal.
+ * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
+ *
+ * @example
+ * ```ts
+ * // Standalone signal
+ * const count = signal(0);
+ * // e.g., count.get(), count.set(1)
+ * ```
+ */
 function signal<Value>(initial?: Value): SignalBox<Value>;
+
+/**
+ * @overload
+ * @decorator
+ * @function signal
+ * @description Stage-3 decorator that turns a field, getter, setter, or accessor into a reactive signal.
+ *
+ * @example
+ * ```ts
+ * class Counter {
+ *   @signal count = 0;
+ *
+ *   @effect
+ *   log() { console.log(this.count); }
+ * }
+ *
+ * const c = new Counter();
+ * c.count++; // triggers effect, logs updated value
+ * ```
+ */
 function signal<Type extends object, Value>(
     value:
         | ((initial: Value) => Value)
@@ -27,6 +64,36 @@ function signal(...args: any): any {
     return signalUtils.createBoxFromEntry(utils.createSignalEntry(initial));
 }
 
+/**
+ * @decorator
+ * @function modelSignal
+ * @description Decorator that binds a reactive signal to a **model field**
+ * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
+ * Useful to create signals in TurboModel classes.
+ *
+ * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
+ * @param {string | number} [blockKey] - Optional blockKey identifier.
+ *
+ * @example
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @modelSignal() title = "";
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @signal public get title() {
+ *      return this.getData("title");
+ *   }
+ *
+ *   public set title(value) {
+ *      this.setData("title", value);
+ *   }
+ * }
+ *
+ * ```
+ */
 function modelSignal(dataKey: string, blockKey?: string | number) {
     return function <Type extends object, Value>(
         value:

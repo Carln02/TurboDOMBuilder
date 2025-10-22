@@ -8,7 +8,7 @@ const utils = new DefineDecoratorUtils();
 /**
  * @decorator
  * @function define
- * @description Stage-3 class decorator factory. It:
+ * @description Stage-3 **class** decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
  * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
  * - Publishes a *live* `observedAttributes` getter that lists all attributes associated with `@observed` fields in

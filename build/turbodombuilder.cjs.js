@@ -4,6 +4,10 @@
  * @description Options for configuring the `@auto` decorator.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
+ * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
+ * just before it is set. The returned value will be stored.
+ * @property {(value: Type) => void} [callBefore] - Optional function to call before preprocessing and setting the value.
+ * @property {(value: Type) => void} [callAfter] - Optional function to call after setting the value.
  * @property {boolean} [setIfUndefined] - If true, will fire the setter when the underlying value is `undefined` and
  * the program is trying to access it (maybe through its getter).
  * @property {boolean} [returnDefinedGetterValue] - If true and a custom getter is defined, the return value of this
@@ -13,30 +17,47 @@
  * and then the value will be stored. In this case, accessing the value in the setter will return the previous value.
  * Defaults to `false`.
  * @property {Type} [defaultValue] - If defined, whenever the underlying value is `undefined` and trying to be
- * accessed, it will be set to `defaultValue` before getting accessed.
+ * accessed, it will be set to `defaultValue` through the setter before getting accessed.
  * @property {() => Type} [defaultValueCallback] - If defined, whenever the underlying value is `undefined` and
- * trying to be accessed, it will be set to the return value of `defaultValueCallback` before getting accessed.
+ * trying to be accessed, it will be set to the return value of `defaultValueCallback` through the setter before
+ * getting accessed.
  * @property {Type} [initialValue] - If defined, on initialization, the property will be set to `initialValue`.
  * @property {() => Type} [initialValueCallback] - If defined, on initialization, the property will be set to the
  * return value of `initialValueCallback`.
- * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
- * just before it is set. The returned value will be stored.
- * @property {(value: Type) => void} [callBefore] - Optional function to call before preprocessing and setting the value.
- * @property {(value: Type) => void} [callAfter] - Optional function to call after setting the value.
  */
 
 /**
  * @typedef {Object} CacheOptions
  * @description Options for configuring the `@cache` decorator.
- * @property {number} [timeout] - The duration (in milliseconds) after which the cache should expire.
- * @property {string | string[]} [onEvent] - A string of one or more space-separated event names or an array of
- * event names. The cache will be cleared when one of these events occur on the instance.
- * @property {() => boolean | Promise<boolean>} [onCallback] - A callback function that returns a boolean or a
- * promise resolving to a boolean. The cache will be cleared if the function returns true.
- * @property {number} [onCallbackFrequency] - The frequency (in milliseconds) at which the onCallback function is called.
- * @property {string | Function | (string | Function)[]} [onFieldChange] - The field or function names to watch for
- * changes. The cache will be cleared when any of these change. Multiple field names can be provided in the same.
- * @property {boolean} [clearOnNextFrame] - If set to true, the cache will be cleared on the next animation frame.
+ *
+ * Defines when and how cached values should expire, refresh, or invalidate.
+ * These options apply equally to cached **methods**, **getters**, and **accessors**.
+ *
+ * @property {number} [timeout]
+ *  Duration in milliseconds after which the cached value automatically expires.
+ *  Useful for time-based caching where values should refresh periodically.
+ *
+ * @property {string | string[]} [onEvent]
+ *  One or more event names (space-separated string or array) that, when fired on the instance,
+ *  immediately clear the cache.
+ *  This allows integration with custom event systems or reactive models.
+ *
+ * @property {() => boolean | Promise<boolean>} [onCallback]
+ *  Function (sync or async) periodically called to decide whether to invalidate the cache.
+ *  If it returns `true`, the cache is cleared.
+ *
+ * @property {number} [onCallbackFrequency]
+ *  Frequency in milliseconds at which `onCallback` should be executed.
+ *  Ignored if `onCallback` is not provided.
+ *
+ * @property {string | Function | (string | Function)[]} [onFieldChange]
+ *  One or more property names or methods to watch for changes.
+ *  Whenever any of these fields or functions change, the cache for the decorated member is cleared.
+ *  Can be a string, a function reference, or an array of both.
+ *
+ * @property {boolean} [clearOnNextFrame]
+ *  If `true`, clears the cache automatically on the **next animation frame** (or equivalent microtask fallback).
+ *  Useful when the cached value is only valid for the current render/update cycle.
  */
 
 /**
@@ -67,11 +88,10 @@
  * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  *
  * @description Object containing properties for configuring a TurboElement, or any Element. A tag (and
- * possibly a namespace) can be provided for TurboProxiedElements for element creation. TurboElements will ignore these
+ * possibly a namespace) can be provided for element creation. TurboElements will ignore these
  * properties if set.
- * Any HTML attribute can be passed as key to be processed by the class/function. A few of these attributes were
- * explicitly defined here for autocompletion in JavaScript. Use TypeScript for optimal autocompletion (with the target
- * generic type, if needed). The type also has the following described custom properties:
+ * Any HTML attribute can be passed as key to be processed by the class/function. The type has the following
+ * described custom properties:
  *
  * @property {string} [id] - The ID of the element.
  * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
@@ -80,8 +100,10 @@
  * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
  * generate automatically a new style element in the element's corresponding root. Use the css literal function
  * for autocompletion.
- * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => void)>} [listeners]
+ * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => boolean)>} [listeners]
  * - An object containing event listeners to be applied to this element.
+ * @property {(e: Event, el: Element) => boolean} [onClick] - Click event listener.
+ * @property {(e: Event, el: Element) => boolean} [onDrag] - Drag event listener.
  * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
  * the created element.
  * @property {Element} [parent] - The parent element to which the created element will be appended.
@@ -89,20 +111,6 @@
  * as name.
  * @property {string} [text] - The text content of the element (if any).
  * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
- *
- * @property alt
- * @property src
- * @property href
- * @property target
- * @property action
- * @property method
- * @property type
- * @property value
- * @property placeholder
- * @property name
- * @property disabled
- * @property checked
- * @property selected
  */
 
 /**
@@ -352,9 +360,6 @@ function isUndefined(value) {
     return typeof value == "undefined";
 }
 
-/**
- * @internal
- */
 const utils$a = new AutoUtils();
 /**
  * @decorator
@@ -364,7 +369,7 @@ const utils$a = new AutoUtils();
  * it, allowing you to, among other things:
  * - Preprocess the value when it is set,
  * - Specify callbacks to call before/after the value is set,
- * - Defining a default value to return instead of `undefined` when calling the getter, and
+ * - Define a default value to return instead of `undefined` when calling the getter, and
  * - Fire the setter when the underlying value is `undefined`.
  *
  * *Note: If you want to chain decorators, place @auto closest to the property to ensure it runs first and sets
@@ -894,7 +899,8 @@ function setupHierarchyFunctions() {
     TurboSelector.prototype.addToParent = function _addToParent(parent, index, referenceList) {
         if (!this.element || !parent)
             return this;
-        return $(parent).addChild(this.element, index, referenceList);
+        $(parent).addChild(this.element, index, referenceList);
+        return this;
     };
 }
 
@@ -2116,6 +2122,36 @@ function signal(...args) {
     const initial = args[0];
     return signalUtils.createBoxFromEntry(utils$7.createSignalEntry(initial));
 }
+/**
+ * @decorator
+ * @function modelSignal
+ * @description Decorator that binds a reactive signal to a **model field**
+ * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
+ * Useful to create signals in TurboModel classes.
+ *
+ * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
+ * @param {string | number} [blockKey] - Optional blockKey identifier.
+ *
+ * @example
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @modelSignal() title = "";
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @signal public get title() {
+ *      return this.getData("title");
+ *   }
+ *
+ *   public set title(value) {
+ *      this.setData("title", value);
+ *   }
+ * }
+ *
+ * ```
+ */
 function modelSignal(dataKey, blockKey) {
     return function (value, context) {
         const key = dataKey || String(context.name);
@@ -7146,20 +7182,10 @@ function $(element) {
     return turboSelector;
 }
 function t(element) {
-    turbofy();
-    if (element instanceof TurboSelector)
-        return element;
-    const turboSelector = new TurboSelector();
-    turboSelector.element = element;
-    return turboSelector;
+    return $(element);
 }
 function turbo(element) {
-    turbofy();
-    if (element instanceof TurboSelector)
-        return element;
-    const turboSelector = new TurboSelector();
-    turboSelector.element = element;
-    return turboSelector;
+    return $(element);
 }
 const turbofy = callOnce(function (options = {}) {
     if (!options.excludeHierarchyFunctions)
@@ -7296,11 +7322,34 @@ function initInvalidation(instance, name, isGetterCache, cacheKey, timeouts, opt
 /**
  * @decorator
  * @function cache
- * @description Stage-3 cache decorator:
- *  - When used on a method, it will cache the return value per arguments.
- *  - When used on a getter, it will cache its value once per instance.
- *  - When used on an accessor, it will wrap the getter similar to a cached getter.
- *  @param {CacheOptions} [options] - Optional caching options.
+ * @description Stage-3 decorator that memorizes expensive reads.
+ *
+ * **What it does**
+ * - **Method**: caches the return value **per unique arguments** (using a stable key from args).
+ * - **Getter**: caches the value **once per instance** until invalidated.
+ * - **Accessor**: wraps the `get` path like a cached getter; the `set` path invalidates cached value.
+ *
+ * @param {CacheOptions} [options] - Optional caching configuration to define when to clear it (on event, after
+ * timeout, on next frame, on callback, etc.).
+ *
+ * @example
+ * ```ts
+ * class IconRenderer {
+ *   #value = 0;
+ *
+ *   // Accessor: cached read; any write invalidates immediately
+ *   @cache({clearOnNextFrame: true}) accessor data = {
+ *     get: () => this.#value,
+ *     set: (v: number) => { this.#value = v; }
+ *   };
+ *
+ *   // Caches per argument list (e.g., same path ⇒ same result until invalidation)
+ *   @cache({timeout: 5_000}) async loadSvg(path: string): Promise<string> {
+ *     // ...expensive IO
+ *     return fetch(path).then(r => r.text());
+ *   }
+ * }
+ * ```
  */
 //TODO FIX THEN TEST ON ICON loadSvg
 function cache(options = {}) {
@@ -7490,7 +7539,7 @@ const utils$1 = new DefineDecoratorUtils();
 /**
  * @decorator
  * @function define
- * @description Stage-3 class decorator factory. It:
+ * @description Stage-3 **class** decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
  * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
  * - Publishes a *live* `observedAttributes` getter that lists all attributes associated with `@observed` fields in
@@ -10437,7 +10486,6 @@ let TurboDropdown = (() => {
          * The dropdown's popup element.
          */
         set popup(value) {
-            console.log(value);
             if (value instanceof TurboPopup)
                 value.anchor = this.selector;
             $(value).addClass(this.customPopupClasses);

@@ -58,9 +58,10 @@ declare module "../turboSelector" {
 
         /**
          * @description Turns the element into a tool identified by `toolName`, optionally wiring activation and key mapping.
-         * @param {string} toolName - The unique name of the tool to register under the manager.
+         * @param {string} toolName - The unique name of the tool to register under the manager. Reusing an existing \
+         * `toolName` will make this element another instance of `toolName`.
          * @param {MakeToolOptions} [options] - Tool creation options (activation, click mode, key mapping, manager).
-         * @returns {void}
+         * @returns {this} - Itself for chaining.
          */
         makeTool(toolName: string, options?: MakeToolOptions): this;
 
@@ -134,7 +135,7 @@ declare module "../turboSelector" {
          * @param {string} type - The behavior/event type to clear.
          * @param {string} [toolName=this.getToolName()] - The tool name whose behaviors will be removed.
          * @param {TurboEventManager} [manager] - The associated manager.
-         * @returns {void}
+         * @returns {this} Itself for chaining
          */
         removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): this;
 
@@ -148,6 +149,11 @@ declare module "../turboSelector" {
          */
         applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): boolean;
 
+        /**
+         * @description Clears all registered behaviors for the tools attached to this element.
+         * @param {TurboEventManager} [manager] - The associated manager.
+         * @return {this} Itself for chaining.
+         */
         clearToolBehaviors(manager?: TurboEventManager): this;
 
         /*
@@ -162,7 +168,7 @@ declare module "../turboSelector" {
          * @description Embeds this tool into a target node, so interactions on the tool apply to the target.
          * @param {Node} target - The node to manipulate when interacting with the element itself.
          * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @returns {void}
+         * @returns {this} Itself for chaining.
          */
         embedTool(target: Node, manager?: TurboEventManager): this;
 

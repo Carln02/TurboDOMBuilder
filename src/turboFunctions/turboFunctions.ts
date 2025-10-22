@@ -22,20 +22,12 @@ function $<Type extends Node = Node>(element?: Type | object): Turbo<Type> {
     return turboSelector as Turbo<Type>;
 }
 
-function t<Type extends Node = Node>(element: Type): Turbo<Type> {
-    turbofy();
-    if (element instanceof TurboSelector) return element;
-    const turboSelector = new TurboSelector<Type>();
-    turboSelector.element = element;
-    return turboSelector as Turbo<Type>;
+function t<Type extends Node = Node>(element?: Type | object): Turbo<Type> {
+    return $(element);
 }
 
-function turbo<Type extends Node = Node>(element: Type): Turbo<Type> {
-    turbofy();
-    if (element instanceof TurboSelector) return element;
-    const turboSelector = new TurboSelector<Type>();
-    turboSelector.element = element;
-    return turboSelector as Turbo<Type>;
+function turbo<Type extends Node = Node>(element?: Type | object): Turbo<Type> {
+    return $(element);
 }
 
 const turbofy = callOnce(function (options: TurbofyOptions = {}) {
