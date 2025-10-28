@@ -40,11 +40,22 @@ declare module "../turboSelector" {
 
         //Self manipulation
 
+        /**
+         * @function bringToFront
+         * @description Brings the element to the front amongst its siblings in the DOM.
+         * @return {this} Itself for chaining.
+         */
         bringToFront(): this;
 
+        /**
+         * @function sendToBack
+         * @description Sends the element to the back amongst its siblings in the DOM.
+         * @return {this} Itself for chaining.
+         */
         sendToBack(): this;
 
         /**
+         * @function remove
          * @description Removes the node from the document.
          * @returns {this} Itself, allowing for method chaining.
          */
@@ -53,12 +64,13 @@ declare module "../turboSelector" {
         //Parent manipulation
 
         /**
-         * @description Add one or more children to the referenced parent node.
-         * @param {Node} [parent] - Array of (or single) child nodes.
-         * @param {number} [index] - The position at which to add the child relative to the parent's child list.
-         * Leave undefined to add the child at the end.
-         * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
-         * use as computation reference for index placement. Defaults to the node's `childrenArray`.
+         * @function addToParent
+         * @description Add the element to the given parent node
+         * @param {Node} parent - The parent node to attach the element to.
+         * @param {number} [index] - The position at which to add the element relative to the parent's child list.
+         * Leave undefined to add the element at the end.
+         * @param {Node[] | NodeListOf<Node>} [referenceList=parent.childrenArray] - The child list to
+         * use as computation reference for index placement. Defaults to the parent's `childrenArray`.
          * @returns {this} Itself, allowing for method chaining.
          */
         addToParent(parent: Node, index?: number, referenceList?: Node[] | NodeListOf<Node>): this;
@@ -66,7 +78,8 @@ declare module "../turboSelector" {
         //Child manipulation
 
         /**
-         * @description Add one or more children to the referenced parent node.
+         * @function addChild
+         * @description Add one or more children to the element.
          * @param {Node | Node[]} [children] - Array of (or single) child nodes.
          * @param {number} [index] - The position at which to add the child relative to the parent's child list.
          * Leave undefined to add the child at the end.
@@ -77,14 +90,16 @@ declare module "../turboSelector" {
         addChild(children?: Node | Node[], index?: number, referenceList?: Node[] | NodeListOf<Node>): this;
 
         /**
-         * @description Remove one or more children from the referenced parent node.
+         * @function remChild
+         * @description Remove one or more children from the element.
          * @param {Node | Node[]} [children] - Array of (or single) child nodes.
          * @returns {this} Itself, allowing for method chaining.
          */
         remChild(children?: Node | Node[]): this;
 
         /**
-         * @description Add one or more children to the referenced parent node before the provided sibling. If the
+         * @function addChildBefore
+         * @description Add one or more children to the element before the provided sibling. If the
          * sibling is not found in the parent's children, the nodes will be added to the end of the parent's child list.
          * @param {Node | Node[]} [children] - Array of (or single) child nodes to insert before sibling.
          * @param {Node} [sibling] - The sibling node to insert the children before.
@@ -93,7 +108,8 @@ declare module "../turboSelector" {
         addChildBefore(children?: Node | Node[], sibling?: Node): this;
 
         /**
-         * @description Remove one or more child nodes from the referenced parent node.
+         * @function removeChildAt
+         * @description Remove one or more child nodes from the element.
          * @param {number} [index] - The index of the child(ren) to remove.
          * @param {number} [count=1] - The number of children to remove.
          * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
@@ -103,6 +119,7 @@ declare module "../turboSelector" {
         removeChildAt(index?: number, count?: number, referenceList?: Node[] | NodeListOf<Node>): this;
 
         /**
+         * @function removeAllChildren
          * @description Remove all children of the node.
          * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
          * representing all the nodes to remove. Defaults to the node's `childrenArray`.
@@ -113,17 +130,18 @@ declare module "../turboSelector" {
         //Child identification
 
         /**
-         * @description Returns the child of the parent node at the given index. Any number inputted (including negatives)
-         * will be reduced modulo length of the list size.
+         * @function childAt
+         * @description Returns the child of the parent node at the given index. Any number inputted (including
+         * negatives) will be reduced modulo length of the list size.
          * @param {number} [index] - The index of the child to retrieve.
          * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
          * use as computation reference for index placement. Defaults to the node's `childrenArray`.
-         * @returns {Node | Element | null} The child at the given index, or `null` if the index is invalid.
+         * @returns {Node} The child at the given index, or `null` if the index is invalid.
          */
-        childAt<ChildType extends Node | Element>(index?: number, referenceList?: ChildType[] | NodeListOf<ChildType>)
-            : ChildType | null;
+        childAt(index?: number, referenceList?: Node[] | NodeListOf<Node>): Node;
 
         /**
+         * @function indexOfChild
          * @description Returns the index of the given child.
          * @param {Node} [child] - The child element to find.
          * @param {Node[] | NodeListOf<Node>} [referenceList=this.childrenArray] - The child list to
@@ -133,6 +151,7 @@ declare module "../turboSelector" {
         indexOfChild(child?: Node, referenceList?: Node[] | NodeListOf<Node>): number;
 
         /**
+         * @function hasChild
          * @description Identify whether one or more children belong to this parent node.
          * @param {Node | Node[]} [children] - Array of (or single) child nodes.
          * @returns {boolean} A boolean indicating whether the provided nodes belong to the parent or not.
@@ -140,6 +159,7 @@ declare module "../turboSelector" {
         hasChild(children?: Node | Node[]): boolean;
 
         /**
+         * @function findInSubTree
          * @description Finds whether one or more children belong to this node.
          * @param {Node | Node[]} [children] - The child or children to check.
          * @returns {boolean} True if the children belong to the node, false otherwise.
@@ -149,6 +169,7 @@ declare module "../turboSelector" {
         //Parent identification
 
         /**
+         * @function findInParents
          * @description Finds whether this node is within the given parent(s).
          * @param {Node | Node[]} [parents] - The parent(s) to check.
          * @returns {boolean} True if the node is within the given parents, false otherwise.
@@ -156,6 +177,7 @@ declare module "../turboSelector" {
         findInParents(parents?: Node | Node[]): boolean;
 
         /**
+         * @function indexInParent
          * @description Finds whether one or more children belong to this node.
          * @param {Node[]} [referenceList=this.siblings] - The siblings list to use as computation
          * reference for index placement. Defaults to the node's `siblings`.
@@ -164,20 +186,27 @@ declare module "../turboSelector" {
         indexInParent(referenceList?: Node[]): number;
 
         /**
-         * @description Removes the element from the document.
-         * @returns {this} Itself, allowing for method chaining.
+         * @overload
+         * @function closest
+         * @description Finds the closest ancestor of the current element (or the current element itself) that matches
+         * the provided CSS selector.
+         * @param {Type} type - The (valid) CSS selector string.
+         * constructor/class to match.
+         * @returns {Element} The matching ancestor element, or null if no match is found.
          */
-        remove(): this;
+        closest(type: string): Element;
 
         /**
-         * Finds the closest ancestor of the current element (or the current element itself) that matches the provided
-         * CSS selector or element type.
-         * @param {ValidTag | (new (...args: any[]) => Element)} type - The (valid) CSS selector string, or element
+         * @overload
+         * @function closest
+         * @template {Element} Type - The type of element to find.
+         * @description Finds the closest ancestor of the current element (or the current element itself) that is an
+         * instance of the given class.
+         * @param {new (...args: any[]) => Type} type - The class to match.
          * constructor/class to match.
-         * @returns {Element | null} The matching ancestor element, or null if no match is found.
+         * @returns {Element} The matching ancestor element, or null if no match is found.
          */
-        closest<Type extends ValidTag>(type: Type): ValidElement<Type> | null;
-        closest<Type extends Element>(type: new (...args: any[]) => Type): Type | null;
+        closest<Type extends Element>(type: new (...args: any[]) => Type): Type;
     }
 }
 

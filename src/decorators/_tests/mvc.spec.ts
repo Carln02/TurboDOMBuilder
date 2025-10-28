@@ -1,5 +1,5 @@
 import {describe, it, expect} from "vitest";
-import {controller, handler} from "../controller";
+import {controller, handler} from "../mvc";
 
 describe("controller decorator", () => {
     it("infers key from <name>Controller and fetches via getController()", () => {

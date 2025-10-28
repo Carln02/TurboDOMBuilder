@@ -4,7 +4,6 @@ import {TurboView} from "./core/view";
 import {MvcGenerationProperties, MvcManyInstancesOrConstructors, MvcProperties} from "./mvc.types";
 import {TurboInteractor} from "./interactor/interactor";
 import {TurboController} from "./logic/controller";
-import {auto} from "../decorators/auto/auto";
 import {TurboHandler} from "./logic/handler";
 import {TurboTool} from "./tool/tool";
 import {TurboSubstrate} from "./substrate/substrate";
@@ -13,16 +12,15 @@ import {TurboInteractorProperties} from "./interactor/interactor.types";
 import {TurboToolProperties} from "./tool/tool.types";
 import {TurboSubstrateProperties} from "./substrate/substrate.types";
 import {TurboControllerProperties} from "./logic/logic.types";
-import {$} from "../turboFunctions/turboFunctions";
 
 /**
  * @class Mvc
  * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
  * @template {object} ElementType - The type of the object that will be turned into MVC.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @template {TurboView} ViewType - The element's view type.
+ * @template {object} DataType - The element's data type.
+ * @template {TurboModel<DataType>} ModelType - The element's model type.
+ * @template {TurboEmitter} EmitterType - The element's emitter type.
  * */
 class Mvc<
     ElementType extends object = object,
@@ -31,7 +29,10 @@ class Mvc<
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter<any>,
 > {
-    private readonly element: ElementType;
+    /**
+     * @description The element/root of the MVC structure.
+     */
+    public readonly element: ElementType;
 
     private _view: ViewType;
     private _model: ModelType;
@@ -50,8 +51,8 @@ class Mvc<
     }
 
     /**
-     * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
-     * to this new view.
+     * @description The view (if any) of the current MVC structure. Setting it will update the view and link it
+     * with the existing pieces.
      */
     public get view(): ViewType {
         return this._view;
@@ -63,8 +64,8 @@ class Mvc<
     }
 
     /**
-     * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
-     * the new one to the current view (if any) and emitter (if any).
+     * @description The model (if any) of the current MVC structure. Setting it will update the model and link it
+     * with the existing pieces.
      */
     public get model(): ModelType {
         return this._model;
@@ -79,8 +80,8 @@ class Mvc<
     }
 
     /**
-     * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
-     * to this new emitter.
+     * @description The emitter (if any) of the current MVC structure. Setting it will update the emitter and link it
+     * with the existing pieces.
      */
     public get emitter(): EmitterType {
         return this._emitter;
@@ -91,15 +92,39 @@ class Mvc<
         this.linkPieces();
     }
 
+    /**
+     * @description The controllers (if any) of the current MVC structure. Setting it will not override the existing
+     * controllers, but only add the new values and link them with the existing pieces.
+     */
+    public get controllers(): TurboController[] {
+        return Array.from(this._controllers.values()) || [];
+    }
+
     public set controllers(value: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>) {
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addController(instance));
         this.linkPieces();
     }
 
+    /**
+     * @description The handlers (if any) of the current MVC structure. Setting it will not override the existing
+     * handlers, but only add the new values and link them with the existing pieces.
+     */
+    public get handlers(): TurboHandler[] {
+        return Array.from(this._handlers.values()) || [];
+    }
+
     public set handlers(value: MvcManyInstancesOrConstructors<TurboHandler>) {
         this.generateInstances(value).forEach(instance => this.addHandler(instance));
         this.linkPieces();
+    }
+
+    /**
+     * @description The interactors (if any) of the current MVC structure. Setting it will not override the existing
+     * interactors, but only add the new values and link them with the existing pieces.
+     */
+    public get interactors(): TurboInteractor[] {
+        return Array.from(this._interactors.values()) || [];
     }
 
     public set interactors(value: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>) {
@@ -108,10 +133,26 @@ class Mvc<
         this.linkPieces();
     }
 
+    /**
+     * @description The tools (if any) of the current MVC structure. Setting it will not override the existing
+     * tools, but only add the new values and link them with the existing pieces.
+     */
+    public get tools(): TurboTool[] {
+        return Array.from(this._tools.values()) || [];
+    }
+
     public set tools(value: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>) {
         this.generateInstances(value, {element: this.element})
             .forEach(instance => this.addTool(instance));
         this.linkPieces();
+    }
+
+    /**
+     * @description The substrates (if any) of the current MVC structure. Setting it will not override the existing
+     * substrates, but only add the new values and link them with the existing pieces.
+     */
+    public get substrates(): TurboSubstrate[] {
+        return Array.from(this._substrates.values()) || [];
     }
 
     public set substrates(value: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>) {
@@ -121,7 +162,7 @@ class Mvc<
     }
 
     /**
-     * @description The main data block (if any) attached to the element, taken from its model (if any).
+     * @description The main data block (if any) attached to the model (if any).
      */
     public get data(): DataType {
         return this.model?.data;
@@ -132,7 +173,7 @@ class Mvc<
     }
 
     /**
-     * @description The ID of the main data block (if any) of the element, taken from its model (if any).
+     * @description The ID of the main data block (if any) attached to the model (if any).
      */
     public get dataId(): string {
         return this.model?.dataId;
@@ -143,7 +184,7 @@ class Mvc<
     }
 
     /**
-     * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+     * @description The numerical index of the main data block (if any) attached to the model (if any).
      */
     public get dataIndex(): number {
         return Number.parseInt(this.dataId);
@@ -154,7 +195,7 @@ class Mvc<
     }
 
     /**
-     * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+     * @description The size (number) of the main data block (if any) attached to the model (if any).
      */
     public get dataSize(): number {
         return this.model?.getSize?.();
@@ -280,6 +321,41 @@ class Mvc<
         this.updateSubstrate(substrate);
     }
 
+    /**
+     * @function generate
+     * @description Generates the MVC structure based on the provided properties.
+     * If no model or model constructor is defined, no model will be generated. The same applies for the view.
+     * If not defined, a default emitter will be created.
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
+     * to generate the MVC structure.
+     */
+    public generate(properties: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
+        for (const property of Object.keys(properties)) {
+            const value = properties[property];
+            if (value === undefined || property === "initialize" || property === "data") continue;
+            this[property] = value;
+        }
+
+        if (!this._emitter) this.emitter = new TurboEmitter() as EmitterType;
+        if (properties.data && this.model) this.model.setBlock(properties.data, undefined, undefined, false);
+        if (properties.initialize === undefined || properties.initialize) this.initialize();
+    }
+
+    /**
+     * @function initialize
+     * @description Initializes the MVC parts: the view, the controllers, the interactors, the tools, the substrates,
+     * and the model (in this order). The model is initialized last to allow for the view and controllers to set up
+     * their change callbacks.
+     */
+    public initialize() {
+        this.view?.initialize();
+        this._controllers.forEach(controller => controller.initialize());
+        this._interactors.forEach(interactor => interactor.initialize());
+        this._tools.forEach(tool => tool.initialize());
+        this._substrates.forEach(substrate => substrate.initialize());
+        this.model?.initialize();
+    }
+
     protected updateController(controller: TurboController) {
         controller.emitter = this.emitter;
         controller.model = this.model;
@@ -326,25 +402,6 @@ class Mvc<
         this._substrates.forEach(substrate => this.updateSubstrate(substrate));
     }
 
-    /**
-     * @function generate
-     * @description Generates the MVC structure based on the provided properties.
-     * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
-     * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
-     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
-     * to generate the MVC structure.
-     */
-    public generate(properties: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        for (const property of Object.keys(properties)) {
-            const value = properties[property];
-            if (value === undefined || property === "initialize" || property === "data") continue;
-            this[property] = value;
-        }
-
-        if (properties.data && this.model) this.model.setBlock(properties.data, undefined, undefined, false);
-        if (properties.initialize === undefined || properties.initialize) this.initialize();
-    }
-
     private generateInstance<Type, PropertiesType>(
         data: MvcManyInstancesOrConstructors<Type, PropertiesType>,
         properties?: PropertiesType,
@@ -373,20 +430,6 @@ class Mvc<
             if (instance) result.push(instance);
         })
         return result;
-    }
-
-    /**
-     * @function initialize
-     * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
-     * initialized last to allow for the view and controllers to setup their change callbacks.
-     */
-    public initialize() {
-        this.view?.initialize();
-        this._controllers.forEach(controller => controller.initialize());
-        this.model?.initialize();
-        this._interactors.forEach(interactor => interactor.initialize());
-        this._tools.forEach(tool => tool.initialize());
-        this._substrates.forEach(substrate => substrate.initialize());
     }
 
     private emitterFireCallback = (keyName: string, blockKey: any, ...args: any[]) =>

@@ -402,6 +402,7 @@ class TurboSelect<
     public destroy() {
         this.enableObserver(false);
         this.parentObserver = null;
+        return this;
     }
 
     protected enableObserver(value: boolean) {

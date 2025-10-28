@@ -1,0 +1,33 @@
+turbo-song {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--gap-small);
+    padding: var(--gap-small);
+
+    background-color: var(--surface);
+    border-radius: var(--radius-small);
+    border: 1px solid var(--border);
+}
+
+turbo-song .song-cover {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--radius-tiny);
+}
+
+turbo-song > :nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-tiny);
+}
+
+turbo-song .song-artist {
+    font-weight: normal;
+    color: var(--text-2);
+}
+
+turbo-song .song-duration {
+    color: var(--text-muted);
+    font-weight: normal;
+}

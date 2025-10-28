@@ -22,7 +22,7 @@ const utils = new ObserveUtils();
  * @function observe
  * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
  * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
- * It also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
+ * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.
  *
  * @example
  * ```ts

@@ -1,5 +1,6 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from "vitest";
 import {cache, clearCache, clearCacheEntry} from "../cache/cache";
+import {turbo} from "../../turboFunctions/turboFunctions";
 
 describe("@cache", () => {
     beforeEach(() => vi.useFakeTimers());
@@ -171,9 +172,9 @@ describe("@cache", () => {
         expect(e.v).toBe("X");
         expect(e.calls).toBe(1);
 
-        e.dispatchEvent(new Event("boom"));
+        turbo(e).executeAction("boom", undefined, new Event("boom"));
         expect(e.v).toBe("X");
-        expect(e.calls).toBe(2);
+        expect(e.calls).toBe(2); //todo
     });
 
     it("onFieldChange (data prop) invalidates when the property is set", () => {

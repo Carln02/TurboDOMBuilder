@@ -5,6 +5,7 @@ import {Delegate} from "../../eventHandling/delegate/delegate";
 
 type ElementData = {
     tools: Set<string>,
+    ignoreAllTools: boolean,
     ignoredTools: Map<string, "all" | Set<string>>,
     embeddedTarget?: Node,
     activationDelegates: Map<string, Delegate<() => void>>,
@@ -30,12 +31,13 @@ export class ToolFunctionsUtils {
         return value;
     }
 
-    private getElementData(element: Node, manager: TurboEventManager): ElementData {
+    public getElementData(element: Node, manager: TurboEventManager): ElementData {
         if (element instanceof TurboSelector) element = element.element;
         const es = this.getOrCreate(this.elements, element,
             () => new WeakMap());
         return this.getOrCreate(es, manager, () => ({
             tools: new Set(),
+            ignoreAllTools: false,
             ignoredTools: new Map(),
             activationDelegates: new Map(),
             deactivationDelegates: new Map(),

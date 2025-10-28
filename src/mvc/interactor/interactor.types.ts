@@ -7,6 +7,22 @@ import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 
+/**
+ * @type {TurboInteractorProperties}
+ * @extends {TurboControllerProperties}
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description  Options used to create a new {@link TurboInteractor} attached to an element.
+ * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
+ * @property {Node} [target] - The target that will listen for the events.
+ * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom options to define per
+ * event type.
+ * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
+ * to `TurboEventManager.instance`.
+ */
 type TurboInteractorProperties<
     ElementType extends object = object,
     ViewType extends TurboView = TurboView,

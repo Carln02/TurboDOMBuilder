@@ -6,10 +6,10 @@ import {initializeEffects} from "../../reactivity/reactivity";
 
 /**
  * @class TurboController
- * @description The MVC base controller class. Its main job is to handle  (some part of or all of) the logic of the
+ * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
  * component. It has access to the element, the model to read and write data, the view to update the UI, and the
- * emitter to listen for changes in the model. It can only communicate with other controllers via the emitter
- * (by firing or listening for changes on a certain key).
+ * emitter to listen for changes in the model or any other internal events. It can only communicate with other
+ * controllers via the emitter (by firing or listening for changes on a certain key).
  * @template {object} ElementType - The type of the main component.
  * @template {TurboView} ViewType - The element's MVC view type.
  * @template {TurboModel} ModelType - The element's MVC model type.
@@ -29,28 +29,24 @@ class TurboController<
     public keyName: string;
 
     /**
-     * @description A reference to the component.
-     * @protected
+     * @description The element it is bound to.
      */
     public element: ElementType;
 
     /**
-     * @description A reference to the MVC view.
-     * @protected
+     * @description The MVC view.
      */
-    public view?: ViewType;
+    public view: ViewType;
 
     /**
-     * @description A reference to the MVC model.
-     * @protected
+     * @description The MVC model.
      */
-    public model?: ModelType;
+    public model: ModelType;
 
     /**
-     * @description A reference to the MVC emitter.
-     * @protected
+     * @description The MVC emitter.
      */
-    public emitter?: EmitterType;
+    public emitter: EmitterType;
 
     public constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>) {
         this.element = properties.element;
@@ -61,7 +57,7 @@ class TurboController<
 
     /**
      * @function initialize
-     * @description Initializes the controller. Specifically, it will setup the change callbacks.
+     * @description Initializes the controller. Specifically, it will set up the change callbacks.
      */
     public initialize(): void {
         this.setupChangedCallbacks();

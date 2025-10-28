@@ -25,8 +25,8 @@ declare module "../turboSelector" {
 
         /**
          * @description Check if the element's class list contains the provided class(es).
-         * @param {string | string[]} [classes] - String of classes separated by spaces, or array of strings
-         * @return A boolean indicating whether the provided classes are included
+         * @param {string | string[]} [classes] - String of classes separated by spaces, or array of strings.
+         * @return A boolean indicating whether the provided classes are included.
          */
         hasClass(classes?: string | string[]): boolean;
     }

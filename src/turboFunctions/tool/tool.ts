@@ -25,8 +25,9 @@ function setupToolFunctions() {
         if (!options.manager) options.manager = TurboEventManager.instance;
 
         options.manager.addTool(toolName, this.element, options.key);
-        if (options.customActivation && typeof options.customActivation === "function") options.customActivation(this, options.manager);
-        else {
+        if (options.customActivation && typeof options.customActivation === "function") {
+            options.customActivation(this as any, options.manager);
+        } else {
             options.activationEvent ??= DefaultEventName.click;
             options.clickMode ??= ClickMode.left;
             this.on(options.activationEvent, () => {
@@ -72,17 +73,19 @@ function setupToolFunctions() {
 
     TurboSelector.prototype.onToolActivate = function _onActivate(
         this: TurboSelector,
-        toolName: string,
+        toolName?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): Delegate<() => void> {
+        if (!toolName) toolName = this.getToolName(manager);
         return utils.getActivationDelegate(this, toolName, manager);
     }
 
     TurboSelector.prototype.onToolDeactivate = function _onDeactivate(
         this: TurboSelector,
-        toolName: string,
+        toolName?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): Delegate<() => void> {
+        if (!toolName) toolName = this.getToolName(manager);
         return utils.getDeactivationDelegate(this, toolName, manager);
     }
 
@@ -201,12 +204,22 @@ function setupToolFunctions() {
         return this;
     }
 
+    TurboSelector.prototype.ignoreAllTools = function _ignoreAllTools(
+        this: TurboSelector,
+        ignore: boolean = true,
+        manager: TurboEventManager = TurboEventManager.instance
+    ): TurboSelector {
+        utils.getElementData(this.element, manager).ignoreAllTools = ignore;
+        return this;
+    }
+
     TurboSelector.prototype.isToolIgnored = function _isToolIgnored(
         this: TurboSelector,
         toolName: string,
         type?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
+        if (utils.getElementData(this.element, manager).ignoreAllTools) return true;
         return utils.isToolIgnored(this.element, toolName, type, manager);
     }
 }

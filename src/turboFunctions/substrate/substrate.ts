@@ -19,8 +19,41 @@ function setupSubstrateFunctions() {
         return this;
     }
 
-    TurboSelector.prototype.getSubstrates = function _getSubstrates(this: TurboSelector): string[] {
-        return utils.getSubstrates(this);
+    Object.defineProperty(TurboSelector.prototype, "substrates", {
+        get: function () {return utils.getSubstrates(this.element)},
+        configurable: false,
+        enumerable: true
+    });
+
+    Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
+        get: function () {return utils.data(this).current},
+        set: function (value: string) {
+            if (!value) return;
+            const prev = this.currentSubstrate;
+            if (utils.setCurrent(this, value)) this.onSubstrateChange.fire(prev, value);
+        },
+        configurable: false,
+        enumerable: true
+    });
+
+    Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
+        get: function () {return utils.data(this).onChange},
+        configurable: false,
+        enumerable: true
+    });
+
+    TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(
+        this: TurboSelector,
+        name: string = this.currentSubstrate
+    ): Delegate<() => void> {
+        return utils.getSubstrateData(this, name)?.onActivate ?? new Delegate();
+    }
+
+    TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(
+        this: TurboSelector,
+        name: string = this.currentSubstrate
+    ): Delegate<() => void> {
+        return utils.getSubstrateData(this, name)?.onDeactivate ?? new Delegate();
     }
 
     TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(
@@ -92,44 +125,6 @@ function setupSubstrateFunctions() {
         return !!utils.getTemporaryMetadata(this, substrate, object)?.processed;
     }
 
-    TurboSelector.prototype.setSubstrate = function _setSubstrate(
-        this: TurboSelector,
-        name: string
-    ): TurboSelector {
-        if (!name) return this;
-        const prev = this.currentSubstrate;
-        if (!utils.setCurrent(this, name)) return this;
-        this.onSubstrateChange.fire(prev, name);
-        return this;
-    }
-
-    Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
-        set: function (value: string) {this.setSubstrate(value)},
-        get: function () {return utils.data(this).current},
-        configurable: false,
-        enumerable: true
-    });
-
-    Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
-        get: function () {return utils.data(this).onChange},
-        configurable: false,
-        enumerable: true
-    });
-
-    TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(
-        this: TurboSelector,
-        name: string = this.currentSubstrate
-    ): Delegate<() => void> {
-        return utils.getSubstrateData(this, name)?.onActivate ?? new Delegate();
-    }
-
-    TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(
-        this: TurboSelector,
-        name: string = this.currentSubstrate
-    ): Delegate<() => void> {
-        return utils.getSubstrateData(this, name)?.onDeactivate ?? new Delegate();
-    }
-
     TurboSelector.prototype.addSolver = function _addSolver(
         this: TurboSelector,
         callback: SubstrateSolver,
@@ -158,10 +153,13 @@ function setupSubstrateFunctions() {
 
     TurboSelector.prototype.resolveSubstrate = function _resolveSubstrate(
         this: TurboSelector,
-        properties: SubstrateSolverProperties = {}
+        properties: SubstrateSolverProperties = {},
+        substrate: string = this.currentSubstrate
     ): TurboSelector {
         if (!properties) properties = {};
-        if (!properties.substrate) properties.substrate = this.currentSubstrate;
+        properties.substrate = properties.substrate ?? substrate;
+        if (! properties.substrate) return this;
+
         if (!properties.manager) properties.manager = TurboEventManager.instance;
         if (!properties.eventOptions) properties.eventOptions = {};
 

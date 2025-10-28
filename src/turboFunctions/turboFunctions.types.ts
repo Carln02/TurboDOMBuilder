@@ -1,6 +1,6 @@
 import {TurboSelector} from "./turboSelector";
 
-type Turbo<Type extends Node = Node> = TurboSelector<Type> & Type;
+type Turbo<Type extends object = Node> = TurboSelector<Type> & Type;
 
 type TurbofyOptions = {
     excludeHierarchyFunctions?: boolean,

@@ -8,6 +8,9 @@ import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/core/model";
 import {DefaultEventName} from "../../eventHandling/eventNaming";
 import {stringify} from "../../utils/dataManipulation/stringManipulation";
+import {TurboEmitter} from "../../mvc/core/emitter";
+import {Type} from "typedoc";
+import {MvcGenerationProperties} from "../../mvc/mvc.types";
 
 function setupElementFunctions() {
     /**
@@ -122,6 +125,15 @@ function setupElementFunctions() {
 
         return this;
     };
+
+    TurboSelector.prototype.setMvc = function _setMvc(this: TurboSelector, properties: MvcGenerationProperties): Mvc {
+        if (!this.element) return undefined;
+        if ("mvc" in this.element && this.element.mvc instanceof Mvc) {
+            this.element.mvc.generate(properties);
+            return this.element.mvc;
+        }
+        return new Mvc({...properties, element: this.element});
+    }
 
     /**
      * @description Destroys the node by removing it from the document and removing all its bound listeners.

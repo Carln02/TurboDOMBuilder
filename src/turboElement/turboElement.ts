@@ -11,7 +11,7 @@ import {TurboElementConfig} from "./turboElement.types";
 /**
  * @class TurboElement
  * @extends HTMLElement
- * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
+ * @description Base TurboElement class, extending the base HTML element with a few useful tools and functions.
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.
  * @template {object} DataType - The element's data type, if initializing MVC.
  * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
@@ -64,7 +64,7 @@ class TurboElement<
 
     /**
      * @function setupChangedCallbacks
-     * @description Setup method intended to initialize change listeners and callbacks.
+     * @description Setup method intended to initialize change listeners and callbacks. Called on `initialize()`.
      * @protected
      */
     protected setupChangedCallbacks(): void {
@@ -73,7 +73,7 @@ class TurboElement<
     /**
      * @function setupUIElements
      * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
-     * them in fields.
+     * them in fields. Called on `initialize()`.
      * @protected
      */
     protected setupUIElements(): void {
@@ -82,7 +82,7 @@ class TurboElement<
     /**
      * @function setupUILayout
      * @description Setup method to create the layout structure of the element by adding all created sub-elements to
-     * this element's child tree.
+     * this element's child tree. Called on `initialize()`.
      * @protected
      */
     protected setupUILayout(): void {
@@ -90,20 +90,33 @@ class TurboElement<
 
     /**
      * @function setupUIListeners
-     * @description Setup method to initialize and define all input/DOM event listeners of the element.
+     * @description Setup method to initialize and define all input/DOM event listeners of the element. Called on
+     * `initialize()`.
      * @protected
      */
     protected setupUIListeners(): void {
     }
 
+    /**
+     * @function connectedCallback
+     * @description function called when the element is attached to the DOM.
+     */
     public connectedCallback() {
         this.onAttach.fire();
     }
 
+    /**
+     * @function disconnectedCallback
+     * @description function called when the element is detached from the DOM.
+     */
     public disconnectedCallback() {
         this.onDetach.fire();
     }
 
+    /**
+     * @function adoptedCallback
+     * @description function called when the element is adopted by a new parent in the DOM.
+     */
     public adoptedCallback() {
         this.onAdopt.fire();
     }

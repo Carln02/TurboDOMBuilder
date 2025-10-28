@@ -1,3 +1,8 @@
+/**
+ * @class Delegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
 class Delegate<CallbackType extends (...args: any[]) => any> {
     private callbacks: Set<CallbackType> = new Set();
 

@@ -1,0 +1,34 @@
+turbo-toolbar {
+    display: flex;
+    flex-direction: row;
+    gap: var(--gap-small);
+    padding: var(--gap-small);
+    border-radius: var(--radius-small);
+
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+
+    position: absolute;
+    top: var(--gap-big);
+    right: var(--gap-big);
+    backdrop-filter: blur(10px);
+}
+
+turbo-toolbar > * {
+    padding: var(--gap-tiny);
+    border-radius: var(--radius-tiny);
+    transition: all 0.1s ease-in-out;
+}
+
+turbo-toolbar > *:hover, turbo-toolbar > .selected:hover {
+    scale: 1.2;
+}
+
+turbo-toolbar > .selected {
+    background-color: var(--surface);
+    scale: 1.1;
+}
+
+turbo-toolbar svg {
+    fill: white;
+}

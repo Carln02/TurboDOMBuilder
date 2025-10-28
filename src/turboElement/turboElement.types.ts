@@ -9,10 +9,10 @@ import {TurboElementUiInterface} from "./setup/ui/ui.types";
 /**
  * @type {TurboElementProperties}
  * @extends TurboProperties
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {object} DataType - The element's data type, if any.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
  * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
  * without the tag.

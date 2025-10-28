@@ -1,0 +1,64 @@
+turbo-playlist {
+    position: absolute;
+}
+
+turbo-playlist > .turbo-rich-element {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-tiny);
+    align-items: center;
+}
+
+turbo-playlist > .turbo-rich-element .turbo-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-small);
+    overflow: hidden;
+}
+
+turbo-playlist > .turbo-rich-element > * {
+    text-wrap: nowrap;
+}
+
+turbo-playlist > .turbo-drawer {
+    position: absolute;
+    min-width: 300px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+turbo-playlist * {
+    transition: all 0.05s ease-in-out;
+}
+
+turbo-playlist > .turbo-drawer .turbo-drawer-panel {
+    padding: var(--gap-medium);
+    border-radius: var(--radius-small);
+
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    height: 300px;
+
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-small);
+}
+
+turbo-playlist .empty-playlist-placeholder {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-medium);
+
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--gap-medium);
+}
+
+turbo-playlist .empty-playlist-placeholder .turbo-icon {
+    width: 32px;
+    height: 32px;
+}
+

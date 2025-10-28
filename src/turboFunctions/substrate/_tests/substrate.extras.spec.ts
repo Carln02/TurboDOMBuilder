@@ -5,9 +5,7 @@ import {div} from "../../../elementCreation/basicElements";
 describe("Substrate functions – extras", () => {
     it("addObjectToSubstrate / removeObjectFromSubstrate with Set", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         const set = new Set<object>();
         $(host).setSubstrateObjectList(set, "main");
@@ -32,9 +30,7 @@ describe("Substrate functions – extras", () => {
 
     it("hasObjectInSubstrate works for HTMLCollection and NodeList", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         // HTMLCollection (children)
         const span = document.createElement("span");
@@ -50,9 +46,7 @@ describe("Substrate functions – extras", () => {
 
     it("wasObjectProcessedBySubstrate changes after resolveSubstrate", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         const set = new Set<object>();
         const a = {id: "a"};
@@ -72,9 +66,7 @@ describe("Substrate functions – extras", () => {
 
     it("resolveSubstrate processes all items in a Set and honors eventTarget first", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         const set = new Set<object>();
         const a = {id: "a"};
@@ -97,9 +89,7 @@ describe("Substrate functions – extras", () => {
 
     it("resolveSubstrate picks up items added during the same pass (Set)", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         const set = new Set<object>();
         const a = {id: "a"};
@@ -125,9 +115,7 @@ describe("Substrate functions – extras", () => {
 
     it("resolveSubstrate with default HTMLCollection processes existing and newly appended children", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         // default: objects = host.children (HTMLCollection)
         const s1 = document.createElement("span");

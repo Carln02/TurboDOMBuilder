@@ -10,7 +10,7 @@ import {Point} from "../../utils/datatypes/point/point";
 import {Delegate} from "../delegate/delegate";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
-import {handler} from "../../decorators/controller";
+import {handler} from "../../decorators/mvc";
 import {TurboModel} from "../../mvc/core/model";
 import {auto} from "../../decorators/auto/auto";
 

@@ -29,7 +29,7 @@ import {TurboEventManagerPointerController} from "./controllers/turboEventManage
 import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
-import {controller} from "../../decorators/controller";
+import {controller} from "../../decorators/mvc";
 import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
 import {isUndefined} from "../../utils/dataManipulation/misc";
 
@@ -521,6 +521,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.dragEventEnabled = false;
         this.clickEventEnabled = false;
         this.onToolChange.clear();
+        return this;
     }
 }
 

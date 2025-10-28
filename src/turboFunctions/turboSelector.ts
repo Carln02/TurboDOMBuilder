@@ -1,9 +1,14 @@
-class TurboSelector<Type extends Node = Node> {
+/**
+ * @class TurboSelector
+ * @template {object} Type - The type of the object it wraps.
+ * @description Selector class that wraps an object and augments it with useful functions to manipulate it. It also
+ * proxies the object, so you can access properties and methods on the underlying object directly through the selector.
+ */
+class TurboSelector<Type extends object = Node> {
+    /**
+     * @description The underlying, wrapped object.
+     */
     public element: Type;
-
-    public constructor() {
-        return this.#generateProxy();
-    }
 
     #generateProxy() {
         return new Proxy(this, {
@@ -29,6 +34,10 @@ class TurboSelector<Type extends Node = Node> {
                     || undefined;
             }
         });
+    }
+
+    public constructor() {
+        return this.#generateProxy();
     }
 }
 

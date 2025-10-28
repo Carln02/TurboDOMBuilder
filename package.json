@@ -1,6 +1,6 @@
 {
   "name": "turbodombuilder",
-  "version": "0.9.5",
+  "version": "0.9.8",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
   "type": "module",
   "main": "build/turbodombuilder.cjs.js",
@@ -68,7 +68,12 @@
     "typescript": "^5.4.3",
     "unplugin-swc": "^1.5.7",
     "vite": "^6.0.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
   },
   "dependencies": {
     "@types/ungap__structured-clone": "^1.2.0",

@@ -6,12 +6,9 @@ interface TurboElementUiInterface {
     selected: boolean;
 
     /**
-     * @function initialize
-     * @description Initializes the element's UI by calling all the setup methods (setupChangedCallbacks,
-     * setupUIElements, setupUILayout, setupUIListeners).
+     * @description Whether to set the default CSS classes defined in the static config on the element or not. Setting
+     * it will accordingly add/remove the CSS classes from the element.
      */
-    initialize(): void;
-
     unsetDefaultClasses: boolean;
 }
 

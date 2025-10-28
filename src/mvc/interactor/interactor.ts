@@ -9,6 +9,16 @@ import {ListenerOptions} from "../../turboFunctions/event/event.types";
 import {TurboEmitter} from "../core/emitter";
 import {TurboController} from "../logic/controller";
 
+/**
+ * @class TurboInteractor
+ * @extends TurboController
+ * @template {object} ElementType - The type of the main component.
+ * @template {TurboView} ViewType - The element's MVC view type.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
+ * @description Class representing an MVC interactor. It holds event listeners to set up on the element itself, or
+ * the custom defined target.
+ */
 class TurboInteractor<
     ElementType extends object = object,
     ViewType extends TurboView = TurboView<any, any>,
@@ -22,13 +32,29 @@ class TurboInteractor<
      */
     public declare keyName: string;
 
+    /**
+     * @description The target of the event listeners. Defaults to the element itself.
+     */
     public accessor target: Node;
 
+    /**
+     * @readonly
+     * @description The name of the tool (if any) to listen for.
+     */
     public readonly toolName: string;
 
+    /**
+     * @readonly
+     * @description The associated event manager. Defaults to `TurboEventManager.instance`.
+     */
     public readonly manager: TurboEventManager;
 
-    protected readonly options: PartialRecord<DefaultEventNameKey, ListenerOptions>;
+    /**
+     *
+     * @readonly
+     * @description Optional custom options to define per event type.
+     */
+    public readonly options: PartialRecord<DefaultEventNameKey, ListenerOptions>;
 
     public constructor(properties: TurboInteractorProperties<ElementType, ViewType, ModelType, EmitterType>) {
        super(properties);
@@ -42,6 +68,10 @@ class TurboInteractor<
                 : undefined;
     }
 
+    /**
+     * @function initialize
+     * @description Initialization function that sets up all the defined evnt listeners and attaches them to the target.
+     */
     public initialize(): void {
         super.initialize();
         const target = this.target ?? this;

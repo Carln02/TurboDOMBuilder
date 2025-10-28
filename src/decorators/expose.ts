@@ -1,5 +1,30 @@
 import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototypeManipulation";
 
+/**
+ * @decorator
+ * @function expose
+ * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
+ * from inner instances.
+ * @param {string} rootKey - The property key of the instance to expose from.
+ *
+ * @example
+ * ```ts
+ * protected model: TurboModel;
+ * @expose("model") public color: string;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected model: TurboModel;
+ *
+ * public get color(): string {
+ *    return this.model.color;
+ * }
+ *
+ * public set color(value: string) {
+ *    this.model.color = value;
+ * }
+ * ```
+ */
 function expose(rootKey: string) {
     return function <Type extends object, Value>(
         value:

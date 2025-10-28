@@ -248,15 +248,15 @@ function setupHierarchyFunctions() {
      * use as computation reference for index placement. Defaults to the node's `childrenArray`.
      * @returns {Node | Element | null} The child at the given index, or `null` if the index is invalid.
      */
-    TurboSelector.prototype.childAt = function _childAt<ChildType extends Node | Element>(
+    TurboSelector.prototype.childAt = function _childAt(
         this: TurboSelector, index?: number,
-        referenceList: ChildType[] | NodeListOf<ChildType> = this.childrenArray as ChildType[]
-    ): ChildType | null {
+        referenceList: Node[] | NodeListOf<Node> = this.childrenArray
+    ): Node {
         if (!this.element || index === undefined) return null;
 
         if (index >= referenceList.length) index = referenceList.length - 1;
         while (index < 0) index += referenceList.length;
-        return referenceList[index] as ChildType;
+        return referenceList[index];
     };
 
     /**
@@ -299,7 +299,7 @@ function setupHierarchyFunctions() {
      * constructor/class to match.
      * @returns {Element | null} The matching ancestor element, or null if no match is found.
      */
-    TurboSelector.prototype.closest = function _closest<TagOrType extends ValidTag | (new (...args: any[]) => Element)>(
+    TurboSelector.prototype.closest = function _closest<TagOrType extends string | (new (...args: any[]) => Element)>(
         this: TurboSelector,
         type: TagOrType | (new (...args: any[]) => TagOrType)
     ): (TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType) | null {

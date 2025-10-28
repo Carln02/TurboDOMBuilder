@@ -9,7 +9,7 @@ describe("Substrate functions", () => {
         $(host).makeSubstrate("main");
         $(host).makeSubstrate("alt");
 
-        const names = $(host).getSubstrates();
+        const names = $(host).substrates;
         expect(names).toEqual(["main", "alt"]);
     });
 
@@ -38,9 +38,7 @@ describe("Substrate functions", () => {
 
     it("default elements list is live (HTMLCollection of element.children)", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         expect($(host).getSubstrateObjectList().size).toBe(0);
 
@@ -55,9 +53,7 @@ describe("Substrate functions", () => {
 
     it("setSubstrateObjectList() replaces the substrate list (e.g., with a Set)", () => {
         const host = div({parent: document.body});
-
         $(host).makeSubstrate("main");
-        $(host).setSubstrate("main");
 
         const custom = new Set<Node>();
         $(host).setSubstrateObjectList(custom, "main");

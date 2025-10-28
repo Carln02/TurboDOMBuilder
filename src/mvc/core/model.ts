@@ -24,6 +24,9 @@ class TurboModel<
     protected readonly isDataBlocksArray: boolean = false;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
 
+    /**
+     * @description Map of MVC handlers bound to this model.
+     */
     public handlers: Map<string, TurboHandler>;
 
     /**
@@ -74,7 +77,7 @@ class TurboModel<
     }
 
     /**
-     * @description Whether callbacks are enabled or disabled.
+     * @description Whether callbacks are enabled or not.
      */
     @auto() public accessor enabledCallbacks: boolean;
 
