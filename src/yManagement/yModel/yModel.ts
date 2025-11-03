@@ -15,7 +15,7 @@ import {MvcBlockKeyType} from "../../mvc/core/core.types";
  * @template {YDataBlock<YType, IdType>} BlockType - The structure of each block including observer.
  * @description A model that wraps and manages Yjs data structures (YMap/YArray), adding automatic observer support.
  *  */
-export abstract class YModel<
+abstract class YModel<
     DataType = any,
     YType extends YMap | YArray = YMap | YArray,
     KeyType extends string | number = string | number,
@@ -180,3 +180,5 @@ export abstract class YModel<
         return this.getAllBlocks(blockKey).map(block => block.observer);
     }
 }
+
+export {YModel};

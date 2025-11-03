@@ -8,12 +8,12 @@ import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElement} from "../../../turboElement/turboElement";
-import {$} from "../../../turboFunctions/turboFunctions";
 import {cache} from "../../../decorators/cache/cache";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
 import {div} from "../../../elementCreation/basicElements";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 
 @define("turbo-popup")
 class TurboPopup<
@@ -107,31 +107,30 @@ class TurboPopup<
     public initialize() {
         super.initialize();
         this.show(false);
-        if (!this.parentElement) $(this).addToParent(TurboPopup.parentElement);
+        if (!this.parentElement) turbo(this).addToParent(TurboPopup.parentElement);
     }
 
     protected setupUIListeners(): void {
         super.setupUIListeners();
 
         document.addEventListener(DefaultEventName.scroll, () => this.show(false), {capture: true, passive: true});
-        window.addEventListener(DefaultEventName.resize, () => {if ($(this).isShown) this.recomputePosition()}, {passive: true});
-        $(document).on(DefaultEventName.click, e => {
-            if (!$(this).isShown) return;
+        window.addEventListener(DefaultEventName.resize, () => {if (turbo(this).isShown) this.recomputePosition()}, {passive: true});
+        turbo(document.body).on(DefaultEventName.click, e => {
+            if (!turbo(this).isShown) return;
             const t = e.target as Node;
             if (this.contains(t)) return;
             if (this.anchor instanceof Node && this.anchor.contains(t)) return;
             this.show(false);
-            return true;
-        });
+        }, {capture: true});
     }
 
     private recomputePosition() {
         if (!this.anchor) return;
-        $(this).setStyles({maxHeight: "", maxWidth: ""}, true);
+        turbo(this).setStyles({maxHeight: "", maxWidth: ""}, true);
 
         const left = this.computeAxis(Direction.horizontal);
         const top = this.computeAxis(Direction.vertical);
-        $(this).setStyles({left: `${left}px`, top: `${top}px`});
+        turbo(this).setStyles({left: `${left}px`, top: `${top}px`});
 
         const maxWidth = Math.max(0, Math.min(
             window.innerWidth - 2 * this.viewportMargin.x,
@@ -142,8 +141,8 @@ class TurboPopup<
             window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y
         ));
 
-         $(this).setStyle("maxWidth", `${maxWidth}px`);
-         $(this).setStyle("maxHeight", `${maxHeight}px`);
+        turbo(this).setStyle("maxWidth", `${maxWidth}px`);
+        turbo(this).setStyle("maxHeight", `${maxHeight}px`);
     }
 
     private computeAxis(direction: Direction): number {
@@ -182,18 +181,14 @@ class TurboPopup<
     }
 
     public show(b: boolean): this {
-        const sel = $(this);
-        if (sel.isShown === b) return this;
-
         if (b) {
             this.style.visibility = "hidden";
             this.style.display = "";
             this.recomputePosition();
             this.style.visibility = "";
-            sel.show(true);
+            turbo(this).show(true);
         } else {
-            $(this).setStyles({maxHeight: "", maxWidth: ""}, true);
-            sel.show(false);
+            turbo(this).setStyles({maxHeight: "", maxWidth: ""}, true).show(false);
         }
         return this;
     }

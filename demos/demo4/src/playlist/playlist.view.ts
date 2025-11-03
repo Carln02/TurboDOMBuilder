@@ -77,6 +77,7 @@ export class PlaylistView extends TurboView<Playlist, PlaylistModel> {
         }
 
         turbo(this.drawer.panel).removeAllChildren();
+        this.songElements.forEach(song => song.remove());
         this.songElements = [];
 
         this.model.songs.forEach(id =>

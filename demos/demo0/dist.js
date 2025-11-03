@@ -4141,7 +4141,6 @@
            *
            */
           set keyEventsEnabled(value) {
-              $(document);
               if (value) {
                   document.addEventListener("keydown", this.keyController.keyDown);
                   document.addEventListener("keyup", this.keyController.keyUp);

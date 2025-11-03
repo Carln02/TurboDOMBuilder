@@ -1,6 +1,6 @@
 {
   "name": "turbodombuilder",
-  "version": "0.9.8",
+  "version": "0.9.17",
   "description": "A lightweight JavaScript library for quickly creating and appending DOM elements.",
   "type": "module",
   "main": "build/turbodombuilder.cjs.js",
@@ -50,6 +50,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "autoprefixer": "^10.4.19",
+    "css-loader": "^7.1.2",
     "cssnano": "^6.1.2",
     "del": "^7.1.0",
     "gulp": "^5.0.0",
@@ -59,6 +60,7 @@
     "rollup": "^4.13.2",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-postcss": "^4.0.2",
+    "style-loader": "^4.0.0",
     "through2": "^4.0.2",
     "ts-loader": "^9.5.1",
     "ts-morph": "^27.0.0",
@@ -69,13 +71,15 @@
     "unplugin-swc": "^1.5.7",
     "vite": "^6.0.0",
     "vitest": "^3.2.4",
-    "css-loader": "^7.1.2",
-    "style-loader": "^4.0.0",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.2"
+    "webpack-dev-server": "^5.2.2",
+    "@types/ungap__structured-clone": "^1.2.0",
+    "@ungap/structured-clone": "^1.2.0",
+    "tslib": "^2.6.2",
+    "yjs": "^13.6.27"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@types/ungap__structured-clone": "^1.2.0",
     "@ungap/structured-clone": "^1.2.0",
     "tslib": "^2.6.2",

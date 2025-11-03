@@ -103,10 +103,8 @@ function selectTest4() {
 
 /* 5) Parent DOM observation: add/remove entries dynamically */
 function selectTest5() {
-    const sel = new TurboSelect<string>();
     const host = div({classes: "select-parent"}); // container the select will watch
-    sel.parent = host;
-    sel.entries = host.children;
+    const sel = new TurboSelect<string>({parent: host});
 
     // Start with two
     $(host).addChild([richElement({text: "Live-1"}), richElement({text: "Live-2"})]);
@@ -139,7 +137,7 @@ function selectTest6() {
         if (entry instanceof HTMLElement) entry.setAttribute("aria-disabled", String(!b));
     };
 
-    const [r, g, bEl] = sel.entriesArray;
+    const [r, g, bEl] = sel.entries;
     const boxEl = box("TurboSelect — enable/disable");
     boxEl.addSubBox("host", host)
         .addContent(button({ text: "Disable Green", onClick: () => sel.enable(false, g as any) }))

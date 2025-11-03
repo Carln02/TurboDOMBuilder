@@ -5,8 +5,8 @@ type ListenerEntry = {
     target: Node,
     type: string,
     toolName?: string,
-    listener: ((e: Event, el: Node) => boolean | void),
-    bundledListener: ((e: Event) => boolean | void),
+    listener: ((e: Event, el: Node) => boolean | any),
+    bundledListener: ((e: Event) => boolean | any),
     options?: ListenerOptions,
     manager: TurboEventManager,
 }
@@ -53,14 +53,14 @@ declare module "../turboSelector" {
          * @description Adds an event listener to the element.
          * @template {Node} Type - The type of the element.
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => boolean | void),
+        on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => boolean | any),
                               options?: ListenerOptions, manager?: TurboEventManager): this;
 
         /**
@@ -70,14 +70,14 @@ declare module "../turboSelector" {
          * @param {string} type - The type of the event.
          * @param {string} toolName - The name of the tool. Set to null or undefined to check for listeners not bound
          * to a tool.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => boolean | void),
+        onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => boolean | any),
                                   options?: ListenerOptions, manager?: TurboEventManager): this;
 
         /**
@@ -100,12 +100,12 @@ declare module "../turboSelector" {
          * @function hasListener
          * @description Checks if the given event listener is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasListener(type: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): boolean;
+        hasListener(type: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): boolean;
 
         /**
          * @function hasToolListener
@@ -113,12 +113,12 @@ declare module "../turboSelector" {
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | void),
+        hasToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | any),
                     manager?: TurboEventManager): boolean;
 
         /**
@@ -137,12 +137,12 @@ declare module "../turboSelector" {
          * @function removeListener
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeListener(type: string, listener: ((e: Event, el: this) => boolean | void), manager?: TurboEventManager): this;
+        removeListener(type: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): this;
 
         /**
          * @function removeToolListener
@@ -150,12 +150,12 @@ declare module "../turboSelector" {
          * @param {string} type - The type of the event.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => boolean | void} listener - The function that receives a notification.
+         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | void),
+        removeToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | any),
                            manager?: TurboEventManager): this;
 
         /**

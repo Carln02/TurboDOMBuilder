@@ -181,13 +181,11 @@ class TurboDrawer<
 
     protected setupUIElements() {
         super.setupUIElements();
-        this._panelContainer = div({classes: "turbo-drawer-panel-container"})
+        this._panelContainer = div({classes: "turbo-drawer-panel-container"});
     }
 
     protected setupUILayout() {
         super.setupUILayout();
-        console.log(this);
-        console.log(this.panel);
 
         $(this).childHandler = this;
         $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));

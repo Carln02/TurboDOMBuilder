@@ -20597,6 +20597,7 @@ turbo-playlist > .turbo-rich-element .turbo-icon {
     height: 56px;
     border-radius: var(--radius-small);
     overflow: hidden;
+    backdrop-filter: blur(10px);
 }
 
 turbo-playlist > .turbo-rich-element > * {
@@ -20626,6 +20627,7 @@ turbo-playlist > .turbo-drawer .turbo-drawer-panel {
     display: flex;
     flex-direction: column;
     gap: var(--gap-small);
+    backdrop-filter: blur(10px);
 }
 
 turbo-playlist .empty-playlist-placeholder {
@@ -20645,7 +20647,7 @@ turbo-playlist .empty-playlist-placeholder .turbo-icon {
     height: 32px;
 }
 
-`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;AACpB;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,iCAAiC;AACrC;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;AACzB;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\r\n    position: absolute;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n    align-items: center;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element .turbo-icon {\r\n    width: 56px;\r\n    height: 56px;\r\n    border-radius: var(--radius-small);\r\n    overflow: hidden;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element > * {\r\n    text-wrap: nowrap;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer {\r\n    position: absolute;\r\n    min-width: 300px;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n}\r\n\r\nturbo-playlist * {\r\n    transition: all 0.05s ease-in-out;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\r\n    padding: var(--gap-medium);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    height: 300px;\r\n\r\n    overflow: auto;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-small);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder {\r\n    flex-grow: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-medium);\r\n\r\n    align-items: center;\r\n    justify-content: center;\r\n    text-align: center;\r\n    padding: var(--gap-medium);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\r\n    width: 32px;\r\n    height: 32px;\r\n}\r\n\r\n"],"sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;IAChB,2BAA2B;AAC/B;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,iCAAiC;AACrC;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\r\n    position: absolute;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n    align-items: center;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element .turbo-icon {\r\n    width: 56px;\r\n    height: 56px;\r\n    border-radius: var(--radius-small);\r\n    overflow: hidden;\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element > * {\r\n    text-wrap: nowrap;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer {\r\n    position: absolute;\r\n    min-width: 300px;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n}\r\n\r\nturbo-playlist * {\r\n    transition: all 0.05s ease-in-out;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\r\n    padding: var(--gap-medium);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    height: 300px;\r\n\r\n    overflow: auto;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-small);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder {\r\n    flex-grow: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-medium);\r\n\r\n    align-items: center;\r\n    justify-content: center;\r\n    text-align: center;\r\n    padding: var(--gap-medium);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\r\n    width: 32px;\r\n    height: 32px;\r\n}\r\n\r\n"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -21798,6 +21800,7 @@ let PlaylistView = (() => {
                     return;
                 }
                 (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this.drawer.panel).removeAllChildren();
+                this.songElements.forEach(song => song.remove());
                 this.songElements = [];
                 this.model.songs.forEach(id => _dataHandler__WEBPACK_IMPORTED_MODULE_2__.DataHandler.getSong(id).then(data => this.songElements.push((0,_song_song__WEBPACK_IMPORTED_MODULE_1__.song)({ data, parent: this.drawer }))));
             }

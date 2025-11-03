@@ -21,6 +21,7 @@ class TurboModel<
     BlocksType extends "array" | "map" = "array" | "map",
     BlockType extends MvcDataBlock<DataType, IdType> = MvcDataBlock<DataType, IdType>
 > {
+    protected readonly isInitialized: Map<MvcBlockKeyType<BlocksType>, boolean> = new Map();
     protected readonly isDataBlocksArray: boolean = false;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
 
@@ -177,6 +178,7 @@ class TurboModel<
         }
 
         if (initialize) this.initialize(blockKey);
+        else this.isInitialized.set(blockKey, false);
     }
 
     /**
@@ -290,6 +292,7 @@ class TurboModel<
         const keys = this.getAllKeys(blockKey);
         if (!keys || !this.enabledCallbacks) return;
         keys.forEach(key => this.fireKeyChangedCallback(key as KeyType, blockKey));
+        this.isInitialized.set(blockKey, true);
     }
 
     /**

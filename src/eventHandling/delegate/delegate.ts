@@ -1,9 +1,11 @@
+import {isUndefined} from "../../utils/dataManipulation/misc";
+
 /**
  * @class Delegate
  * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
  * @description Class representing a set of callbacks that can be maintained and executed together.
  */
-class Delegate<CallbackType extends (...args: any[]) => any> {
+class SimpleDelegate<CallbackType extends (...args: any[]) => any> {
     private callbacks: Set<CallbackType> = new Set();
 
     /**
@@ -23,6 +25,11 @@ class Delegate<CallbackType extends (...args: any[]) => any> {
         return this.callbacks.delete(callback);
     }
 
+    /**
+     * @description Checks whether a callback is in the list.
+     * @param callback - The callback function to check for.
+     * @returns A boolean indicating whether the callback was found.
+     */
     public has(callback: CallbackType): boolean {
         return this.callbacks.has(callback);
     }
@@ -31,14 +38,17 @@ class Delegate<CallbackType extends (...args: any[]) => any> {
      * @description Invokes all callbacks with the provided arguments.
      * @param args - The arguments to pass to the callbacks.
      */
-    public fire(...args: Parameters<CallbackType>) {
+    public fire(...args: Parameters<CallbackType>): ReturnType<CallbackType> {
+        let returnValue: ReturnType<CallbackType>;
         for (const callback of this.callbacks) {
             try {
-                callback(...args);
+                const value = callback(...args);
+                if (!isUndefined(value)) returnValue = value;
             } catch (error) {
                 console.error("Error invoking callback:", error);
             }
         }
+        return returnValue;
     }
 
     /**
@@ -46,6 +56,27 @@ class Delegate<CallbackType extends (...args: any[]) => any> {
      */
     public clear() {
         this.callbacks.clear();
+    }
+}
+
+/**
+ * @class Delegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
+class Delegate<CallbackType extends (...args: any[]) => any> extends SimpleDelegate<CallbackType> {
+    /**
+     * @description Delegate fired when a callback is added.
+     */
+    public onAdded: SimpleDelegate<(callback: CallbackType) => void> = new SimpleDelegate();
+
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    public add(callback: CallbackType) {
+        super.add(callback);
+        this.onAdded.fire(callback);
     }
 }
 

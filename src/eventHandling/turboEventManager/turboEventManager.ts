@@ -209,7 +209,6 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      */
 
     @auto() public set keyEventsEnabled(value: boolean) {
-        const doc = $(document);
         if (value) {
             document.addEventListener("keydown", this.keyController.keyDown);
             document.addEventListener("keyup", this.keyController.keyUp);
@@ -231,7 +230,6 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     @auto() public set mouseEventsEnabled(value: boolean) {
-        const doc = $(document);
         //TODO
 
         // if (value) {
@@ -248,7 +246,6 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     @auto() public set touchEventsEnabled(value: boolean) {
-        const doc = $(document);
         // if (value) {
         //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
         //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});

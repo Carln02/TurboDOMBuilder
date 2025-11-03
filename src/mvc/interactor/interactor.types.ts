@@ -41,49 +41,49 @@ declare module "./interactor" {
          * @description Fired on click start
          * @param e
          */
-        clickStart(e: Event): boolean | void;
+        clickStart(e: Event): boolean | any;
 
         /**
          * @description Fired on click
          * @param e
          */
-        click(e: Event): boolean | void;
+        click(e: Event): boolean | any;
 
         /**
          * @description Fired on click end
          * @param e
          */
-        clickEnd(e: Event): boolean | void;
+        clickEnd(e: Event): boolean | any;
 
         /**
          * @description Fired on pointer move
          * @param e
          */
-        move(e: Event): boolean | void;
+        move(e: Event): boolean | any;
 
         /**
          * @description Fired on drag start
          * @param e
          */
-        dragStart(e: Event): boolean | void;
+        dragStart(e: Event): boolean | any;
 
         /**
          * @description Fired on drag
          * @param e
          */
-        drag(e: Event): boolean | void;
+        drag(e: Event): boolean | any;
 
         /**
          * @description Fired on drag end
          * @param e
          */
-        dragEnd(e: Event): boolean | void;
+        dragEnd(e: Event): boolean | any;
 
-        input(e: Event): boolean | void;
+        input(e: Event): boolean | any;
 
-        focus(e: Event): boolean | void;
+        focus(e: Event): boolean | any;
 
-        blur(e: Event): boolean | void;
+        blur(e: Event): boolean | any;
     }
 }
 export {TurboInteractorProperties};

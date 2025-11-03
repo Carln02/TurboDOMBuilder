@@ -2,7 +2,7 @@ import {EntryData, TurboSelectConfig, TurboSelectProperties} from "./select.type
 import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboBaseElement} from "../../../turboElement/turboBaseElement/turboBaseElement";
 import {auto} from "../../../decorators/auto/auto";
 import {richElement, TurboRichElement} from "../richElement/richElement";
@@ -24,7 +24,7 @@ class TurboSelect<
     public static readonly config: TurboSelectConfig = {defaultSelectedEntryClasses: "selected"};
 
     private _inputField: HTMLInputElement;
-    private _entries: HTMLCollection | NodeList | EntryType[] = [];
+    private _entries: EntryType[] = [];
     private readonly _entriesData: WeakMap<EntryType, EntryData> = new WeakMap();
 
     private parentObserver: MutationObserver;
@@ -34,7 +34,7 @@ class TurboSelect<
     /**
      * The dropdown's entries.
      */
-    public get entries(): HTMLCollection | NodeList | EntryType[] {
+    public get entries(): EntryType[] {
         return this._entries;
     }
 
@@ -43,11 +43,14 @@ class TurboSelect<
 
         const previouslySelectedValues = this.selectedValues;
         this.clear();
-        this._entries = value;
+        this._entries = (Array.isArray(value) ? value : Array.from(value) as EntryType[])
+            .filter(entry => entry !== this.inputField);
+
+        console.log(this.entries);
 
         if (value instanceof HTMLCollection && value.item(0)) this.parent = value.item(0).parentElement;
 
-        const array = this.entriesArray;
+        const array = this.entries;
         for (let i = 0; i < array.length; i++) this.onEntryAdded?.call(this, array[i], i);
 
         this.deselectAll();
@@ -60,16 +63,11 @@ class TurboSelect<
         this.enableObserver(true);
     }
 
-    public get entriesArray(): EntryType[] {
-        const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries) as EntryType[];
-        return (array ?? []).filter(entry => entry !== this.inputField);
-    }
-
     /**
      * @description The dropdown's values. Setting it will update the dropdown accordingly.
      */
     public get values(): ValueType[] {
-        return this.entriesArray.map(entry => this.getValue(entry));
+        return this.entries.map(entry => this.getValue(entry));
     }
 
     public set values(values: ValueType[]) {
@@ -79,11 +77,12 @@ class TurboSelect<
             if (entry instanceof Node && this.parent) $(this.parent).addChild(entry);
             entries.push(entry);
         });
+        console.log(entries);
         this.entries = entries;
     }
 
     public get selectedEntries(): EntryType[] {
-        return this.entriesArray.filter(entry => this.getEntryData(entry).selected);
+        return this.entries.filter(entry => this.getEntryData(entry).selected);
     }
 
     public set selectedEntries(value: EntryType[]) {
@@ -93,9 +92,9 @@ class TurboSelect<
     }
 
     @auto() public set parent(value: Element) {
-        if (!(this.parent instanceof Element)) return;
-        $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node) as Node[]);
-        if (this.inputField) this.parent.appendChild(this.inputField);
+        if (!(value instanceof Element)) return;
+        $(value).addChild(this.entries.filter(entry => entry instanceof Node) as Node[]);
+        if (this.inputField) value.appendChild(this.inputField);
         this.setupParentObserver();
     }
 
@@ -161,7 +160,9 @@ class TurboSelect<
     }
 
     @auto({
-        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")}
+        callBefore: function () {this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses))},
+        callAfter: function () {this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses))},
+        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")},
     }) public selectedEntryClasses: string | string[];
 
     /**
@@ -183,7 +184,7 @@ class TurboSelect<
         }
 
         if (!this.forceSelection) this.deselectAll();
-        this.entriesArray.forEach(entry => {
+        this.entries.forEach(entry => {
             if (selectedValues.includes(this.getValue(entry))) {
                 this.select(entry)
             }
@@ -202,10 +203,12 @@ class TurboSelect<
 
     protected clearEntryData(entry: EntryType) {
         this._entriesData.delete(entry);
+        const index = this.entries.indexOf(entry);
+        if (index >= 0) this.entries.splice(index, 1);
     }
 
-    public addEntry(entry: EntryType, index: number = this.entriesArray.length) {
-        if (index === undefined || typeof index !== "number" || index > this.entries.length) index = this.entriesArray.length;
+    public addEntry(entry: EntryType, index: number = this.entries.length) {
+        if (index === undefined || typeof index !== "number" || index > this.entries.length) index = this.entries.length;
         if (index < 0) index = 0;
 
         this.enableObserver(false);
@@ -219,7 +222,7 @@ class TurboSelect<
     }
 
     public getEntryFromSecondaryValue(value: SecondaryValueType): EntryType {
-        return this.entriesArray.find((entry: EntryType) => this.getSecondaryValue(entry) === value);
+        return this.entries.find((entry: EntryType) => this.getSecondaryValue(entry) === value);
     }
 
     public isSelected(entry: EntryType): boolean {
@@ -232,7 +235,7 @@ class TurboSelect<
             const fromValue = this.find(value as any);
             if (fromValue) entry = fromValue;
             else {
-                const isEntry = this.entriesArray.find(entry => entry === value);
+                const isEntry = this.entries.find(entry => entry === value);
                 if (isEntry) entry = isEntry;
             }
         } catch {}
@@ -253,7 +256,7 @@ class TurboSelect<
             const fromValue = this.getEntry(value as any);
             if (fromValue) entry = fromValue;
             else {
-                const isEntry = this.entriesArray.find(entry => entry === value);
+                const isEntry = this.entries.find(entry => entry === value);
                 if (isEntry) entry = isEntry;
             }
         } catch {}
@@ -289,11 +292,11 @@ class TurboSelect<
     public selectByIndex(index: number, preprocess: (index: number, entriesCount: number, zero?: number)
         => number = trim): this {
         index = preprocess(index, this.entries.length - 1, 0);
-        return this.select(this.entriesArray[index]);
+        return this.select(this.entries[index]);
     }
 
     public getIndex(entry: EntryType) {
-        return this.entriesArray.indexOf(entry);
+        return this.entries.indexOf(entry);
     }
 
     public deselectAll() {
@@ -310,7 +313,7 @@ class TurboSelect<
     }
 
     public get enabledEntries(): EntryType[] {
-        return this.entriesArray.filter(entry => this.getEntryData(entry).enabled);
+        return this.entries.filter(entry => this.getEntryData(entry).enabled);
     }
 
     public get enabledValues(): ValueType[] {
@@ -322,23 +325,23 @@ class TurboSelect<
     }
 
     public find(value: ValueType): EntryType {
-        return this.entriesArray.find((entry) => this.getValue(entry) === value);
+        return this.entries.find((entry) => this.getValue(entry) === value);
     }
 
     public findBySecondaryValue(value: SecondaryValueType): EntryType {
-        return this.entriesArray.find((entry) => this.getSecondaryValue(entry) === value);
+        return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
     }
 
     public findAll(...values: ValueType[]): EntryType[] {
-        return this.entriesArray.filter(entry => values.includes(this.getValue(entry)));
+        return this.entries.filter(entry => values.includes(this.getValue(entry)));
     }
 
     public findAllBySecondaryValue(...values: SecondaryValueType[]): EntryType[] {
-        return this.entriesArray.filter((entry) => values.includes(this.getSecondaryValue(entry)));
+        return this.entries.filter((entry) => values.includes(this.getSecondaryValue(entry)));
     }
 
     public enable(b: boolean, ...entries: (ValueType | EntryType)[]) {
-        if (!entries || entries.length === 0) entries = this.entriesArray;
+        if (!entries || entries.length === 0) entries = this.entries;
         entries.forEach(value => {
             const entry = this.getEntry(value);
             if (!entry) return;
@@ -385,7 +388,7 @@ class TurboSelect<
     public clear(): void {
         this.enableObserver(false);
 
-        for (const entry of this.entriesArray) {
+        for (const entry of this.entries) {
             this.clearEntryData(entry);
             this.onEntryRemoved(entry);
             if (this.parent && entry instanceof HTMLElement) entry.remove();
@@ -422,12 +425,28 @@ class TurboSelect<
         this.parentObserver = new MutationObserver(records => {
             for (const record of records) {
                 for (const node of record.addedNodes) {
-                    if (node.nodeType !== Node.ELEMENT_NODE || node.parentElement !== this.parent) continue;
+                    if (!(node instanceof Element) || node.parentElement !== this.parent) continue;
                     if (node === this.inputField) continue;
-                    this.onEntryAdded?.call(this, node, this.getIndex(node as any));
+
+                    const entry = node as EntryType;
+                    const children: EntryType[] = (Array.from(this.parent!.children) as EntryType[])
+                        .filter(el => el !== this.inputField)
+                        .filter(el => this.entries.includes(el) || el === entry);
+
+                    const targetIndex = children.indexOf(entry);
+                    if (targetIndex < 0) continue;
+                    if (targetIndex === 0) this.entries.splice(targetIndex, 0, entry);
+                    else {
+                        const previousIndex = this.entries.indexOf(children[targetIndex - 1]);
+                        this.entries.splice(previousIndex + 1, 0, entry);
+                    }
+
+                    this.getEntryData(entry);
+                    this.onEntryAdded?.call(this, entry, this.getIndex(entry));
                 }
+
                 for (const node of record.removedNodes) {
-                    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                    if (!(node instanceof Element)) continue;
                     if (node === this.inputField) continue;
                     queueMicrotask(() => {
                         if (node.isConnected) return;

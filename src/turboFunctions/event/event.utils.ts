@@ -33,6 +33,8 @@ export class EventFunctionsUtils {
 
     public bypassManager(element: Node, eventManager: TurboEventManager,
                          bypassResults: boolean | TurboEventManagerStateProperties) {
+        if (element instanceof TurboSelector) element = element.element;
+        if (!element) return;
         if (typeof bypassResults == "boolean") eventManager.lock(element, {
             enabled: bypassResults,
             preventDefaultWheel: bypassResults,
@@ -50,6 +52,8 @@ export class EventFunctionsUtils {
 
     public getBoundListeners(element: Node, type: string, toolName: string, options?: ListenerOptions,
                              manager: TurboEventManager = TurboEventManager.instance): ListenerEntry[] {
+        if (element instanceof TurboSelector) element = element.element;
+        if (!element) return [];
         if (!options) options = {};
         return [...this.getBoundListenersSet(element)]
             .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)

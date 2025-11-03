@@ -33,7 +33,7 @@ export class SongsPanelView extends TurboView<SongsPanel> {
         super.setupUIListeners();
         turbo(this.search).on(DefaultEventName.input, () => {
             const value = this.search.value.toLowerCase();
-            this.select.entriesArray.forEach(entry => {
+            this.select.entries.forEach(entry => {
                 const enable = entry.title.toLowerCase().includes(value)
                     || entry.artist.toLowerCase().includes(value)
                     || entry.album.toLowerCase().includes(value);

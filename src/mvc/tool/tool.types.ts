@@ -74,55 +74,55 @@ declare module "./tool" {
          * @param e
          * @param target
          */
-        clickStart(e: Event, target: Node): boolean;
+        clickStart(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on click
          * @param e
          * @param target
          */
-        click(e: Event, target: Node): boolean;
+        click(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on click end
          * @param e
          * @param target
          */
-        clickEnd(e: Event, target: Node): boolean;
+        clickEnd(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on pointer move
          * @param e
          * @param target
          */
-        move(e: Event, target: Node): boolean;
+        move(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on drag start
          * @param e
          * @param target
          */
-        dragStart(e: Event, target: Node): boolean;
+        dragStart(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on drag
          * @param e
          * @param target
          */
-        drag(e: Event, target: Node): boolean;
+        drag(e: Event, target: Node): boolean | any;
 
         /**
          * @description Fired on drag end
          * @param e
          * @param target
          */
-        dragEnd(e: Event, target: Node): boolean;
+        dragEnd(e: Event, target: Node): boolean | any;
 
-        input(e: Event, target: Node): boolean;
+        input(e: Event, target: Node): boolean | any;
 
-        focus(e: Event, target: Node): boolean;
+        focus(e: Event, target: Node): boolean | any;
 
-        blur(e: Event, target: Node): boolean;
+        blur(e: Event, target: Node): boolean | any;
     }
 }
 

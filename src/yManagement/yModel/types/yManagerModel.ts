@@ -1,8 +1,9 @@
-import {YMap, YArray, YManagerDataBlock, YArrayEvent, YMapEvent,YEvent} from "../../yManagement.types";
+import {YMap, YArray, YManagerDataBlock, YArrayEvent, YMapEvent, YEvent} from "../../yManagement.types";
 import {YModel} from "../yModel";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {TurboProxiedElement} from "../../../turboElement/turboProxiedElement/turboProxiedElement";
 import {MvcBlockKeyType} from "../../../mvc/core/core.types";
+import {Delegate} from "../../../eventHandling/delegate/delegate";
 
 /**
  * @class YManagerModel
@@ -16,7 +17,7 @@ import {MvcBlockKeyType} from "../../../mvc/core/core.types";
  * @description MVC model that manages Yjs data and synchronizes it with a map or array of components, each attached to
  * one entry of the data object.
  */
-export class YManagerModel<
+class YManagerModel<
     DataType,
     ComponentType,
     KeyType extends string | number,
@@ -25,20 +26,41 @@ export class YManagerModel<
     BlocksType extends "array" | "map" = "map",
     BlockType extends YManagerDataBlock<YType, IdType, ComponentType, KeyType> = YManagerDataBlock<YType, IdType, ComponentType, KeyType>,
 > extends YModel<DataType, YType, KeyType, IdType, BlocksType, BlockType> {
-    public onAdded: (data: DataType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => ComponentType;
+    public readonly onAdded: Delegate<(
+        data: DataType,
+        id: KeyType,
+        blockKey: MvcBlockKeyType<BlocksType>
+    ) => ComponentType | void> = new Delegate();
 
-    public onUpdated: (data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void =
-        (data, instance, id) => {
+    public readonly onUpdated: Delegate<(
+        data: DataType,
+        instance: ComponentType,
+        id: KeyType,
+        blockKey: MvcBlockKeyType<BlocksType>
+    ) => void> = new Delegate();
+
+    public onDeleted: Delegate<(
+        data: DataType,
+        instance: ComponentType,
+        id: KeyType,
+        blockKey: MvcBlockKeyType<BlocksType>
+    ) => void> = new Delegate();
+
+    public constructor(data?: YType, dataBlocksType?: BlocksType) {
+        super(data, dataBlocksType);
+
+        this.onUpdated.add((data, instance, id) => {
             if (!(instance instanceof TurboElement || instance instanceof TurboProxiedElement)) return;
-            instance.data = data as object;
+            instance.data
+                = data as object;
             instance.dataId = id.toString();
-        };
+        });
 
-    public onDeleted: (data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void =
-        (_data, instance, id, blockKey) => {
+        this.onDeleted.add((_data, instance, id, blockKey) => {
             this.removeInstance(instance);
             this.getBlock(blockKey).instances?.delete(id);
-        };
+        });
+    }
 
     /**
      * @function createBlock
@@ -113,10 +135,9 @@ export class YManagerModel<
             return super.fireKeyChangedCallback(key, blockKey, deleted);
         }
 
-        if (!this.onAdded) return;
-
         const data = this.getData(key, blockKey) as DataType;
-        const instance = this.onAdded(data, key, blockKey);
+        const instance = this.onAdded.fire(data, key, blockKey);
+        if (!instance) return;
         this.getBlock(blockKey).instances?.set(key, instance);
 
         if (typeof instance === "object") {
@@ -124,7 +145,7 @@ export class YManagerModel<
             if ("dataId" in instance) instance.dataId = key.toString();
         }
 
-        this.onUpdated?.(data, instance, key, blockKey);
+        this.onUpdated.fire(data, instance, key, blockKey);
     }
 
     private removeInstance(instance: ComponentType) {
@@ -134,7 +155,7 @@ export class YManagerModel<
     protected observeChanges(event: YEvent, transaction: any, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
         //TODO
         const isLocal = !!transaction?.local;
-        const origin  = transaction?.origin;
+        const origin = transaction?.origin;
 
         if (event instanceof YMapEvent) {
             event.keysChanged.forEach(key => {
@@ -144,10 +165,10 @@ export class YManagerModel<
                         this.fireKeyChangedCallback(key, blockKey);
                         break;
                     case "delete":
-                        this.onDeleted?.(change.oldValue as DataType, this.getInstance(key, blockKey), key, blockKey);
+                        this.onDeleted.fire(change.oldValue as DataType, this.getInstance(key, blockKey), key, blockKey);
                         break;
                     case "update":
-                        this.onUpdated?.(this.getData(key, blockKey), this.getInstance(key, blockKey), key, blockKey);
+                        this.onUpdated.fire(this.getData(key, blockKey), this.getInstance(key, blockKey), key, blockKey);
                         break;
                 }
             });
@@ -164,7 +185,7 @@ export class YManagerModel<
                 } else if (delta.delete) {
                     const count = delta.delete;
                     for (let i = 0; i < count; i++) {
-                        this.onDeleted?.(undefined, this.getInstance((currentIndex + i) as KeyType, blockKey),
+                        this.onDeleted.fire(undefined, this.getInstance((currentIndex + i) as KeyType, blockKey),
                             (currentIndex + i) as KeyType, blockKey);
                     }
                     this.shiftIndices(currentIndex + count, -count, blockKey);
@@ -192,3 +213,5 @@ export class YManagerModel<
         }
     }
 }
+
+export {YManagerModel};

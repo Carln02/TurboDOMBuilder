@@ -14,6 +14,7 @@ turbo-playlist > .turbo-rich-element .turbo-icon {
     height: 56px;
     border-radius: var(--radius-small);
     overflow: hidden;
+    backdrop-filter: blur(10px);
 }
 
 turbo-playlist > .turbo-rich-element > * {
@@ -43,6 +44,7 @@ turbo-playlist > .turbo-drawer .turbo-drawer-panel {
     display: flex;
     flex-direction: column;
     gap: var(--gap-small);
+    backdrop-filter: blur(10px);
 }
 
 turbo-playlist .empty-playlist-placeholder {

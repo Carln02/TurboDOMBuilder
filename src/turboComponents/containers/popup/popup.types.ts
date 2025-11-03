@@ -12,7 +12,7 @@ type TurboPopupProperties<
 > = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     anchor?: Element,
     popupPosition?: Coordinate,
-    parentPosition?: Coordinate,
+    anchorPosition?: Coordinate,
     fallbackModes?: PopupFallbackMode | Coordinate<PopupFallbackMode>,
     viewportMargin?: number | Coordinate,
     offsetFromAnchor?: number | Coordinate,

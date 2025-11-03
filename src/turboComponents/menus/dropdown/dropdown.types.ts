@@ -16,14 +16,12 @@ import {TurboEmitter} from "../../../mvc/core/emitter";
  *
  * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
  *
- * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- * @property {ValidTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
+ * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
  *
- * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
+ * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
  * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customPopupClasses] - Custom CSS class(es) for the popup container. Overrides the
+ * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
  * default classes set in TurboConfig.Dropdown.
  * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
  * default classes set in TurboConfig.Dropdown.
@@ -43,11 +41,11 @@ type TurboDropdownProperties<
     selector?: string | HTMLElement;
     popup?: HTMLElement;
 
-    customSelectorTag?: HTMLTag;
-    customEntryTag?: HTMLTag;
+    selectorTag?: HTMLTag;
 
-    customSelectorClasses?: string | string[];
-    customPopupClasses?: string | string[];
+    selectorClasses?: string | string[];
+    popupClasses?: string | string[];
+
     customEntriesClasses?: string | string[];
     customSelectedEntriesClasses?: string | string[];
 };
@@ -56,8 +54,6 @@ type TurboDropdownProperties<
  * @type {TurboDropdownConfig}
  * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
  *
- * @property {ValidTag} [defaultEntryTag] - The default HTML tag for the creation of generic
- * dropdown entries.
  * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
  * element in generic selectors (which are Buttons).
  *

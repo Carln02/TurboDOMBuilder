@@ -20,6 +20,7 @@ export default [
             {file: outDir + "/" + outName + ".cjs.js", format: "cjs"},
             {file: outDir + "/" + outName + ".js", format: "iife", name: "Turbo"}
         ],
+        external: ['yjs', '@ungap/structured-clone', 'tslib'],
         plugins: [
             nodeResolve(), // Resolves modules from node_modules
             commonjs(), // Converts CommonJS modules to ES6

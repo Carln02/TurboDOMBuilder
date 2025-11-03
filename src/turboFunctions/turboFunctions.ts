@@ -13,6 +13,8 @@ import {setupReifectFunctions} from "./reifect/reifect";
 import {ValidElement, ValidTag} from "../core.types";
 import {element} from "../elementCreation/element";
 
+const cache: WeakMap<object, TurboSelector<object>> = new WeakMap();
+
 /**
  * @overload
  * @function turbo
@@ -59,8 +61,11 @@ function turbo(tagOrElement?: object | string): Turbo {
         else el = tagOrElement;
     }
 
+    const cached = cache.get(el);
+    if (cached) return cached as Turbo;
     const turboSelector = new TurboSelector<object>();
     turboSelector.element = el;
+    cache.set(el, turboSelector);
     return turboSelector as Turbo;
 }
 

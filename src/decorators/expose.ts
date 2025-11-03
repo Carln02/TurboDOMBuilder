@@ -6,6 +6,7 @@ import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototypeMani
  * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
  * from inner instances.
  * @param {string} rootKey - The property key of the instance to expose from.
+ * @param {boolean} [exposeSetter=true] - Whether to expose a setter for the property. Defaults to true.
  *
  * @example
  * ```ts
@@ -25,7 +26,7 @@ import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototypeMani
  * }
  * ```
  */
-function expose(rootKey: string) {
+function expose(rootKey: string, exposeSetter: boolean = true) {
     return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
@@ -36,21 +37,34 @@ function expose(rootKey: string) {
             | ClassAccessorDecoratorContext<Type, Value>
             | ClassMethodDecoratorContext<Type>
     ): any {
+        if (!rootKey) return value;
         const {kind, name} = context;
         const key = String(name);
+        const nestedRoots = rootKey.split(".").filter(Boolean);
+
+        const getLowestRoot = function (host: any) {
+            if (!host) return;
+            let parent = host;
+            for (const root of nestedRoots) {
+                parent = parent[root];
+                if (!parent) return;
+            }
+            return parent;
+        };
 
         if (kind === "method") {
             return function (this: any, ...args: any[]) {
-                const root = this[rootKey];
+                const root = getLowestRoot(this);
                 const fn = root?.[key];
                 if (typeof fn === "function") return fn.apply(root, args);
             };
         }
 
         context.addInitializer(function (this: any) {
-            const read = function (this: any) {return this[rootKey]?.[key]};
+            const read = function (this: any) {return getLowestRoot(this)?.[key]};
             const write = function (this: any, value: Value): void {
-                if (this[rootKey]) this[rootKey][key] = value;
+                const root = getLowestRoot(this);
+                if (root) root[key] = value;
             };
 
             if (kind === "field" || kind === "accessor") {
@@ -59,7 +73,9 @@ function expose(rootKey: string) {
                     configurable: true,
                     enumerable: descriptor?.enumerable ?? true,
                     get: () => read.call(this),
-                    set: (value: Value) => write.call(this, value),
+                    set: (value: Value) => {
+                        if (exposeSetter) write.call(this, value);
+                    },
                 });
             }
         });

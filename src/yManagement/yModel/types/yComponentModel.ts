@@ -8,7 +8,7 @@ import {MvcBlockKeyType} from "../../../mvc/core/core.types";
  * @description An MVC model that handles a Yjs map and observes changes on its direct fields, firing change
  * callbacks at the keys that changed through the emitter.
  */
-export class YComponentModel extends YModel<any, YMap, string> {
+class YComponentModel extends YModel<any, YMap, string> {
     protected observeChanges(event: YMapEvent, transaction: any, blockKey?: MvcBlockKeyType<"map">): void {
         event.keysChanged.forEach(key => {
             const change = event.changes.keys.get(key);
@@ -20,3 +20,5 @@ export class YComponentModel extends YModel<any, YMap, string> {
         });
     }
 }
+
+export {YComponentModel};

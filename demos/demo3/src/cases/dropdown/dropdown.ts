@@ -4,6 +4,22 @@ import {box} from "../../demoBox/demoBox";
 TurboDropdown.config.defaultPopupClasses = "select-parent";
 
 function ddTest1() {
+    console.log(`EWDHUIEDWUHEDW
+    wed
+    edw
+    edw
+    edw
+    edw
+    edw
+    wed
+    edw
+    ewd
+    wed
+    edw
+    
+    edwedw
+    edw
+    `);
     const dd = dropdown({values: ["Alpha", "Beta", "Gamma", "Delta"]});
     box("TurboDropdown — Basics")
         .addSubBox("click selector to open", dd)
@@ -18,9 +34,9 @@ function ddTest1() {
 function ddTest2() {
     const dd = dropdown({
         values: ["Small", "Medium", "Large", "XL"],
-        customSelectorTag: "h5" as any,
-        customSelectorClasses: ["btn", "btn--ghost"],
-        customPopupClasses: ["popup-surface", "popup--elevated"]
+        selectorTag: "h5" as any,
+        selectorClasses: ["btn", "btn--ghost"],
+        popupClasses: ["popup-surface", "popup--elevated"]
     });
 
     box("TurboDropdown — custom selector / popup")
@@ -64,7 +80,7 @@ function ddTest4() {
         .addContent(button({
             text: "Remove last entry",
             onClick: () => {
-                const list = dd.select.entriesArray;
+                const list = dd.select.entries;
                 const last = list[list.length - 1];
                 if (last instanceof HTMLElement) last.remove();
                 //TODO MAKE A REMOVE ENTRY FN
@@ -87,7 +103,7 @@ function ddTest5() {
         .addSubBox("click multiple entries", dd)
         .addContent(button({
             text: "Select All",
-            onClick: () => dd.select.selectedEntries = dd.select.entriesArray
+            onClick: () => dd.select.selectedEntries = dd.select.entries
         }))
         .addContent(button({
             text: "Clear",

@@ -7,7 +7,7 @@ import {popup, TurboPopup} from "../../containers/popup/popup";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {auto} from "../../../decorators/auto/auto";
 import {HTMLTag} from "../../../core.types";
@@ -34,36 +34,46 @@ class TurboDropdown<
     //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
     public static readonly config: TurboDropdownConfig = {...TurboElement.config, defaultSelectorTag: "h4"};
 
+    public readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType> = new TurboSelect({
+        onEntryAdded: (entry: EntryType) => this.onEntryAdded(entry),
+    });
+
     private popupOpen: boolean = false;
 
     @auto({defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectorTag")}})
-    public customSelectorTag: HTMLTag;
+    public selectorTag: HTMLTag;
 
-    @auto({defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectorClasses")}})
-    public set customSelectorClasses(value: string | string[]) {
-        $(this.selector).addClass(value);
-    }
+    @auto({
+        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectorClasses")},
+        callBefore: function () {turbo(this.selector).removeClass(this.selectorClasses)},
+        callAfter: function () {turbo(this.selector).addClass(this.selectorClasses)}
+    }) public selectorClasses: string | string[];
 
-    @auto({defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultPopupClasses")}})
-    public set customPopupClasses(value: string | string[]) {
-        $(this.popup).addClass(value);
-    }
+    @auto({
+        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultPopupClasses")},
+        callBefore: function () {turbo(this.popup).removeClass(this.popupClasses)},
+        callAfter: function () {turbo(this.popup).addClass(this.popupClasses)}
+    }) public popupClasses: string | string[];
 
     @expose("select") public entries: HTMLCollection | NodeList | EntryType[];
+
+    // public set values(values: ValueType[]) {
+    //     this.select.values = values;
+    // }
+    //
+    // public get values(): ValueType[] {
+    //     return this.select.values;
+    // }
     @expose("select") public values: ValueType[];
 
     protected onEntryAdded(entry: EntryType) {
         (this.select as any).initializeSelection();
-        $(entry).on(DefaultEventName.click, () => {
+        turbo(entry).on(DefaultEventName.click, () => {
             this.select.select(entry, !this.select.isSelected(entry));
             this.openPopup(false);
             return true;
         });
     }
-
-    public readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType> = new TurboSelect({
-        onEntryAdded: (entry: EntryType) => this.onEntryAdded(entry),
-    });
 
     /**
      * The dropdown's selector element.
@@ -74,18 +84,18 @@ class TurboDropdown<
             if (value instanceof HTMLElement) return value;
             const text = typeof value === "string" ? value : stringify(this.select.getValue(this.entries[0]));
             if (this.selector instanceof TurboButton) this.selector.text = text;
-            else return button({text, elementTag: this.customSelectorTag});
+            else return button({text, elementTag: this.selectorTag});
         }
     }) public set selector(value: string | HTMLElement) {
         if (!(value instanceof HTMLElement)) return;
-        $(value)
-            .addClass(this.customSelectorClasses)
+        turbo(value)
+            .addClass(this.selectorClasses)
             .on(DefaultEventName.click, (e) => {
                 this.openPopup(!this.popupOpen);
                 return true;
             });
         if (this.popup instanceof TurboPopup) this.popup.anchor = value;
-        $(this).addChild(value);
+        turbo(this).addChild(value);
         if (value instanceof TurboButton) this.select.onSelect = () => value.text = this.stringSelectedValue;
     }
 
@@ -96,27 +106,23 @@ class TurboDropdown<
      */
     @auto({defaultValueCallback: () => popup()}) public set popup(value: HTMLElement) {
         if (value instanceof TurboPopup) value.anchor = this.selector;
-        $(value).addClass(this.customPopupClasses);
+        turbo(value).addClass(this.popupClasses);
         this.select.parent = value;
     }
 
     public initialize() {
         super.initialize();
         this.selector;
-    }
-
-    public connectedCallback() {
-        super.connectedCallback();
-        $(document).on(DefaultEventName.click, e => {
+        turbo(document.body).on(DefaultEventName.click, () => e => {
             if (this.popupOpen && !this.contains(e.target as Node)) this.openPopup(false);
-        });
+        }, {capture: true});
     }
 
     private openPopup(b: boolean) {
         if (this.popupOpen == b) return;
         this.popupOpen = b;
         if ("show" in this.popup && typeof this.popup.show === "function") this.popup.show(b);
-        else $(this.popup).show(b);
+        else turbo(this.popup).show(b);
     }
 
     public get selectedValues(): ValueType[] {
@@ -151,7 +157,7 @@ function dropdown<
 >(properties: TurboDropdownProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> = {}):
     TurboDropdown<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
     if (!properties.tag) properties.tag = "turbo-dropdown";
-    return element({...properties, text: undefined} as any) as any;
+    return element({...properties, text: undefined}) as any;
 }
 
 export {TurboDropdown, dropdown};

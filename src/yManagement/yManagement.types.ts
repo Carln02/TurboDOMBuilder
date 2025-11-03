@@ -12,7 +12,8 @@ import {TurboElementProperties} from "../turboElement/turboElement.types";
 import {TurboView} from "../mvc/core/view";
 import {TurboModel} from "../mvc/core/model";
 import {TurboEmitter} from "../mvc/core/emitter";
-import {MvcDataBlock} from "../mvc/core/core.types";
+import {MvcBlockKeyType, MvcDataBlock} from "../mvc/core/core.types";
+import {Delegate} from "../eventHandling/delegate/delegate";
 
 declare module "yjs" {
     interface Map<MapType = any> {}
