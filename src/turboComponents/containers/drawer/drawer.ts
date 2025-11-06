@@ -2,7 +2,7 @@ import {TurboDrawerProperties} from "./drawer.types";
 import "./drawer.css";
 import {iconSwitch, TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
-import {Open, Side} from "../../../utils/datatypes/basicDatatypes.types";
+import {Direction, Open, Side} from "../../../utils/datatypes/basicDatatypes.types";
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
 import {DefaultEventName, TurboEventName} from "../../../eventHandling/eventNaming";
 import {define} from "../../../decorators/define/define";
@@ -10,13 +10,14 @@ import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {PartialRecord} from "../../../core.types";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
 import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {element} from "../../../elementCreation/element";
+import {isUndefined} from "../../../utils/dataManipulation/misc";
 
 //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
 @define("turbo-drawer")
@@ -47,10 +48,11 @@ class TurboDrawer<
 
     @auto({
         setIfUndefined: true,
-        callBefore: function () {if (this.panel) $(this).remChild(this.panel)},
+        callBefore: function () {if (this.panel) $(this).remChild(this.panel); console.log("EWFFEWFWWWWWWWWWWWWWW")},
         preprocessValue: (value: TurboProperties | HTMLElement) =>
             value instanceof HTMLElement ? value : div(value)
     }) public set panel(value: TurboProperties | HTMLElement) {
+        console.log("WEEWFEFEFEFEFFEWFWEFEWFEW")
         $(value).addClass("turbo-drawer-panel");
         if (this.initialized) this.setupUILayout();
     }
@@ -118,8 +120,8 @@ class TurboDrawer<
     }
 
     @auto({defaultValue: false}) public set open(value: boolean) {
-        if (value) this.resizeObserver.observe(this.panel, {box: "border-box"});
-        else this.resizeObserver.unobserve(this.panel);
+        if (value) this.resizeObserver?.observe(this.panel, {box: "border-box"});
+        else this.resizeObserver?.unobserve(this.panel);
         this.refresh();
     }
 
@@ -161,20 +163,24 @@ class TurboDrawer<
         super.initialize();
         this.transition.attachAll(this, this.panelContainer);
 
-        let pending = false;
-        this.resizeObserver = new ResizeObserver(entries => {
-            if (!this.open || this.dragging) return;
-            if (pending) return;
-            pending = true;
+        const getSize = (entry: any, isVertical: boolean) => (
+            Array.isArray(entry.borderBoxSize) ? entry.borderBoxSize[0] : entry.borderBoxSize
+        )[isVertical ? "blockSize" : "inlineSize"];
 
-            requestAnimationFrame(() => {
-                const size = Array.isArray(entries[0].borderBoxSize)
-                    ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
-                this.translation = (this.open ? this.offset.open : this.offset.closed)
-                    + (this.isVertical ? size.blockSize : size.inlineSize);
-                pending = false;
-            });
-        });
+        //TODO
+        // this.resizeObserver = new ResizeObserver(entries => {
+        //     if (!this.open || this.dragging) return;
+        //     requestAnimationFrame(() => {
+        //         const isVertical = this.isVertical;
+        //         const size1 = getSize(entries[0], isVertical);
+        //         requestAnimationFrame(() => {
+        //             const size2 = getSize(entries[0], isVertical);
+        //             console.log(size1, size2);
+        //             if (size1 !== size2) return;
+        //             this.translation = (this.open ? this.offset.open : this.offset.closed) + size2;
+        //         });
+        //     });
+        // });
 
         this.animationOn = true;
     }

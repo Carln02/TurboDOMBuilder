@@ -2,11 +2,11 @@ import {modelSignal, signal, TurboModel} from "../../../../build/turbodombuilder
 import {SongState} from "./song.types";
 
 export class SongModel extends TurboModel {
-    @modelSignal("id") id: string;
-    @modelSignal("title") title: string;
-    @modelSignal("artist") artist: string;
-    @modelSignal("album") album: string;
-    @modelSignal("cover") cover: string;
-    @modelSignal("duration") duration: number;
+    @modelSignal() id: string;
+    @modelSignal() title: string;
+    @modelSignal() artist: string;
+    @modelSignal() album: string;
+    @modelSignal() cover: string;
+    @modelSignal() duration: number;
     @signal state: SongState;
 }

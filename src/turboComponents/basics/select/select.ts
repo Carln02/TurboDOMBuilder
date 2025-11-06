@@ -46,8 +46,6 @@ class TurboSelect<
         this._entries = (Array.isArray(value) ? value : Array.from(value) as EntryType[])
             .filter(entry => entry !== this.inputField);
 
-        console.log(this.entries);
-
         if (value instanceof HTMLCollection && value.item(0)) this.parent = value.item(0).parentElement;
 
         const array = this.entries;
@@ -77,7 +75,6 @@ class TurboSelect<
             if (entry instanceof Node && this.parent) $(this.parent).addChild(entry);
             entries.push(entry);
         });
-        console.log(entries);
         this.entries = entries;
     }
 

@@ -7,10 +7,10 @@ import {SongMoveInteractor} from "./song.moveInteractor";
 
 @define("turbo-song")
 export class Song extends TurboElement<SongView, SongData, SongModel> {
-    @expose("model") public id: string;
-    @expose("model") public title: string;
-    @expose("model") public artist: string;
-    @expose("model") public album : string;
+    @expose("model") public accessor id: string;
+    @expose("model") public accessor title: string;
+    @expose("model") public accessor artist: string;
+    @expose("model") public accessor album : string;
 
     public isSong(id: string): boolean {
         return id === this.model.id;

@@ -4,22 +4,6 @@ import {box} from "../../demoBox/demoBox";
 TurboDropdown.config.defaultPopupClasses = "select-parent";
 
 function ddTest1() {
-    console.log(`EWDHUIEDWUHEDW
-    wed
-    edw
-    edw
-    edw
-    edw
-    edw
-    wed
-    edw
-    ewd
-    wed
-    edw
-    
-    edwedw
-    edw
-    `);
     const dd = dropdown({values: ["Alpha", "Beta", "Gamma", "Delta"]});
     box("TurboDropdown — Basics")
         .addSubBox("click selector to open", dd)

@@ -1,6 +1,8 @@
 /// <reference types="node" />
 import { Doc, YEvent, Map as Map$1, Array, YMapEvent, AbstractType } from 'yjs';
 export { AbstractType as YAbstractType, Array as YArray, YArrayEvent, Doc as YDoc, YEvent, Map as YMap, YMapEvent, Text as YText } from 'yjs';
+import { YMap } from 'yjs/dist/src/types/YMap';
+import { YArray } from 'yjs/dist/src/types/YArray';
 
 type PartialRecord<Property extends keyof any, Value> = {
     [P in Property]?: Value;
@@ -451,6 +453,7 @@ declare global {
  * @type {AutoOptions}
  * @template Type
  * @description Options for configuring the `@auto` decorator.
+ * @property {boolean} [override] - If true, will try to override the defined property in `super`.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
  * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
@@ -475,6 +478,7 @@ declare global {
  * return value of `initialValueCallback`.
  */
 type AutoOptions<Type = any> = {
+    override?: boolean;
     cancelIfUnchanged?: boolean;
     setIfUndefined?: boolean;
     returnDefinedGetterValue?: boolean;
@@ -3324,6 +3328,29 @@ declare function modelSignal(dataKey?: string, blockKey?: string | number): <Typ
     set?: (this: Type, value: Value) => void;
 } | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
+ * @decorator
+ * @function blockSignal
+ * Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends TurboModel<any, any, any, any, MvcDataBlock<any, any>>, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockIdSignal
+ * Same idea but binds the block **id**.
+ */
+declare function blockIdSignal(blockKey?: string | number): <Type extends TurboModel<any, any, any, any, MvcDataBlock<any, any>>, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
  * @overload
  * @function effect
  * @description Bind a standalone effect callback to any signal it includes. The callback will be fired everytime
@@ -5223,6 +5250,7 @@ declare function getFirstDescriptorInChain(object: object, key: PropertyKey): Pr
 declare function hasPropertyInChain(object: object, key: PropertyKey): boolean;
 declare function getFirstPrototypeInChainWith(object: object, key: PropertyKey): any;
 declare function getSuperMethod(object: object, key: PropertyKey, wrapperFn: Function): Function;
+declare const getSuperDescriptor: (object: object, key: PropertyKey) => PropertyDescriptor;
 
 /**
  * @description Converts the passed variable into a string.
@@ -5336,12 +5364,10 @@ declare module "yjs" {
 type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     document: Doc;
 };
+
 type YDataBlock<DataType = any, IdType extends string | number | symbol = any> = MvcDataBlock<DataType, IdType> & {
     observer: (event: YEvent, transaction: any) => void;
     data: DataType;
-};
-type YManagerDataBlock<DataType = any, IdType extends string | number | symbol = any, ComponentType = object, KeyType extends string | number = string | number> = YDataBlock<DataType, IdType> & {
-    instances: Map<KeyType, ComponentType>;
 };
 
 /**
@@ -5444,9 +5470,30 @@ declare abstract class YModel<DataType = any, YType extends Map$1 | Array = Map$
  * @description An MVC model that handles a Yjs map and observes changes on its direct fields, firing change
  * callbacks at the keys that changed through the emitter.
  */
-declare class YComponentModel extends YModel<any, Map$1, string> {
-    protected observeChanges(event: YMapEvent, transaction: any, blockKey?: MvcBlockKeyType<"map">): void;
+declare class YComponentModel extends YModel<any, YMap, string> {
+    protected observeChanges(event: YMapEvent, transaction: any, blockKey?: MvcBlockKeyType): void;
 }
+
+type YManagerDataBlock<DataType = any, IdType extends string | number | symbol = any, ComponentType = object, KeyType extends string | number = string | number> = YDataBlock<DataType, IdType> & {
+    instances: Map<KeyType, ComponentType>;
+};
+type YManagerChangeObserver<DataType, ComponentType, KeyType extends string | number = string, BlocksType extends "array" | "map" = "map"> = {
+    onAdded: Delegate<(data: DataType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => ComponentType | void>;
+    onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void>;
+    onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void>;
+    instances: Map<MvcBlockKeyType<BlocksType>, Map<KeyType, ComponentType>>;
+    getInstance(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): ComponentType;
+    getAllInstances(blockKey?: MvcBlockKeyType<BlocksType>): ComponentType[];
+    initialize(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    clear(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    destroy(): void;
+};
+type YManagerChangeObserverProperties<DataType, ComponentType, KeyType extends string | number = string, BlocksType extends "array" | "map" = "map"> = {
+    initialize?: boolean;
+    onAdded?: (data: DataType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => ComponentType | void;
+    onUpdated?: (data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void;
+    onDeleted?: (data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void;
+};
 
 /**
  * @class YManagerModel
@@ -5456,27 +5503,19 @@ declare class YComponentModel extends YModel<any, Map$1, string> {
  * @template {YMap | YArray} YType - The type of the Yjs data (YMap or YArray).
  * @template {string | number | symbol} IdType - The type of the block IDs.
  * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
- * @template {YManagerDataBlock<YType, IdType, ComponentType, KeyType>} BlockType - The structure of each data block.
+ * @template {YDataBlock<YType, IdType>} BlockType - The structure of each data block.
  * @description MVC model that manages Yjs data and synchronizes it with a map or array of components, each attached to
  * one entry of the data object.
  */
-declare class YManagerModel<DataType, ComponentType, KeyType extends string | number, YType extends Map$1 | Array, IdType extends string | number = string, BlocksType extends "array" | "map" = "map", BlockType extends YManagerDataBlock<YType, IdType, ComponentType, KeyType> = YManagerDataBlock<YType, IdType, ComponentType, KeyType>> extends YModel<DataType, YType, KeyType, IdType, BlocksType, BlockType> {
-    readonly onAdded: Delegate<(data: DataType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => ComponentType | void>;
-    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void>;
-    onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, blockKey: MvcBlockKeyType<BlocksType>) => void>;
-    constructor(data?: YType, dataBlocksType?: BlocksType);
+declare class YManagerModel<DataType, ComponentType, KeyType extends string | number = string, YType extends YMap | YArray = YMap, IdType extends string | number = string, BlocksType extends "array" | "map" = "map", BlockType extends YDataBlock<YType, IdType> = YDataBlock<YType, IdType>> extends YModel<DataType, YType, KeyType, IdType, BlocksType, BlockType> {
+    protected readonly changeObservers: TurboWeakSet<YManagerChangeObserver<DataType, ComponentType, KeyType, BlocksType>>;
     /**
-     * @function createBlock
-     * @description Creates a data block entry.
-     * @param {YType} value - The data of the block.
-     * @param {IdType} [id] - The optional ID of the data.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
-     * @protected
-     * @return {BlockType} - The created block.
+     * @constructor
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
+     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
-    createBlock(value: YType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>): BlockType;
-    getInstance(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): ComponentType;
-    getAllComponents(blockKey?: MvcBlockKeyType<BlocksType>): ComponentType[];
+    constructor(data?: YType, dataBlocksType?: BlocksType);
+    generateObserver(properties?: YManagerChangeObserverProperties<DataType, ComponentType, KeyType, BlocksType>): YManagerChangeObserver<DataType, ComponentType, KeyType, BlocksType>;
     /**
      * @function clear
      * @description Clears the block data at the given key.
@@ -5492,7 +5531,13 @@ declare class YManagerModel<DataType, ComponentType, KeyType extends string | nu
      * @param {boolean} [deleted=false] - Whether the key was deleted.
      */
     protected fireKeyChangedCallback(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>, deleted?: boolean): void;
+    protected fireKeyChangedCallbackForObserver(observer: YManagerChangeObserver<DataType, ComponentType, KeyType, BlocksType>, data: DataType, key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    private getInstancesMaps;
+    private getInstance;
+    private getAllInstances;
     private removeInstance;
+    private clearInstances;
+    private sortingFunction;
     protected observeChanges(event: YEvent, transaction: any, blockKey?: MvcBlockKeyType<BlocksType>): void;
     private shiftIndices;
 }
@@ -6458,4 +6503,4 @@ interface TurboSelector {
         isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
 
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, type ApplyDefaultsOptions, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type SignalEntry, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, YComponentModel, type YDataBlock, type YDocumentProperties, type YManagerDataBlock, YManagerModel, YModel, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, type ApplyDefaultsOptions, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagMap, type FlexRect, type FontProperties, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcDataBlock, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, ReifectHandler, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type SignalEntry, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, YComponentModel, type YDataBlock, type YDocumentProperties, type YManagerChangeObserver, type YManagerChangeObserverProperties, type YManagerDataBlock, YManagerModel, YModel, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

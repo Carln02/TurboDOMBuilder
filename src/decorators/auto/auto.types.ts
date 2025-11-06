@@ -2,6 +2,7 @@
  * @type {AutoOptions}
  * @template Type
  * @description Options for configuring the `@auto` decorator.
+ * @property {boolean} [override] - If true, will try to override the defined property in `super`.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
  * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
@@ -26,6 +27,8 @@
  * return value of `initialValueCallback`.
  */
 type AutoOptions<Type = any> = {
+    override?: boolean,
+
     cancelIfUnchanged?: boolean,
     setIfUndefined?: boolean,
     returnDefinedGetterValue?: boolean,

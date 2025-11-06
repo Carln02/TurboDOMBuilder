@@ -46,10 +46,6 @@ export class PlaylistView extends TurboView<Playlist, PlaylistModel> {
         });
     }
 
-    @effect private updateColor() {
-        this.toggle.leftIcon.style.fill = this.model.color;
-    }
-
     @effect private updateName() {
         const newEl = !this.toggle.element;
         this.toggle.element = this.model.name;

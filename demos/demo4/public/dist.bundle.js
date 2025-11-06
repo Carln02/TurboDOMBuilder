@@ -13,6 +13,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   $: () => (/* binding */ $),
 /* harmony export */   AccessLevel: () => (/* binding */ AccessLevel),
 /* harmony export */   ActionMode: () => (/* binding */ ActionMode),
+/* harmony export */   ApplyDefaultsMergeProperties: () => (/* binding */ ApplyDefaultsMergeProperties),
 /* harmony export */   BasicInputEvents: () => (/* binding */ BasicInputEvents),
 /* harmony export */   ClickMode: () => (/* binding */ ClickMode),
 /* harmony export */   ClosestOrigin: () => (/* binding */ ClosestOrigin),
@@ -84,14 +85,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   TurboWeakSet: () => (/* binding */ TurboWeakSet),
 /* harmony export */   TurboWheelEvent: () => (/* binding */ TurboWheelEvent),
 /* harmony export */   TurboWheelEventName: () => (/* binding */ TurboWheelEventName),
-/* harmony export */   YAbstractType: () => (/* binding */ AbstractType),
-/* harmony export */   YArray: () => (/* binding */ YArray),
-/* harmony export */   YArrayEvent: () => (/* binding */ YArrayEvent),
-/* harmony export */   YDoc: () => (/* binding */ Doc),
-/* harmony export */   YEvent: () => (/* binding */ YEvent),
-/* harmony export */   YMap: () => (/* binding */ YMap),
-/* harmony export */   YMapEvent: () => (/* binding */ YMapEvent),
-/* harmony export */   YText: () => (/* binding */ YText),
+/* harmony export */   YAbstractType: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType),
+/* harmony export */   YArray: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.Array),
+/* harmony export */   YArrayEvent: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent),
+/* harmony export */   YComponentModel: () => (/* binding */ YComponentModel),
+/* harmony export */   YDoc: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.Doc),
+/* harmony export */   YEvent: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.YEvent),
+/* harmony export */   YManagerModel: () => (/* binding */ YManagerModel),
+/* harmony export */   YMap: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.Map),
+/* harmony export */   YMapEvent: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent),
+/* harmony export */   YModel: () => (/* binding */ YModel),
+/* harmony export */   YText: () => (/* reexport safe */ yjs__WEBPACK_IMPORTED_MODULE_1__.Text),
 /* harmony export */   a: () => (/* binding */ a),
 /* harmony export */   addInYArray: () => (/* binding */ addInYArray),
 /* harmony export */   addInYMap: () => (/* binding */ addInYMap),
@@ -99,6 +103,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   auto: () => (/* binding */ auto),
 /* harmony export */   bestOverlayColor: () => (/* binding */ bestOverlayColor),
 /* harmony export */   blindElement: () => (/* binding */ blindElement),
+/* harmony export */   blockIdSignal: () => (/* binding */ blockIdSignal),
+/* harmony export */   blockSignal: () => (/* binding */ blockSignal),
 /* harmony export */   button: () => (/* binding */ button),
 /* harmony export */   cache: () => (/* binding */ cache),
 /* harmony export */   callOnce: () => (/* binding */ callOnce),
@@ -138,6 +144,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getFirstDescriptorInChain: () => (/* binding */ getFirstDescriptorInChain),
 /* harmony export */   getFirstPrototypeInChainWith: () => (/* binding */ getFirstPrototypeInChainWith),
 /* harmony export */   getSignal: () => (/* binding */ getSignal),
+/* harmony export */   getSuperDescriptor: () => (/* binding */ getSuperDescriptor),
 /* harmony export */   getSuperMethod: () => (/* binding */ getSuperMethod),
 /* harmony export */   h1: () => (/* binding */ h1),
 /* harmony export */   h2: () => (/* binding */ h2),
@@ -210,10 +217,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   turbofy: () => (/* binding */ turbofy),
 /* harmony export */   video: () => (/* binding */ video)
 /* harmony export */ });
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "../../node_modules/tslib/tslib.es6.mjs");
+/* harmony import */ var yjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! yjs */ "../../node_modules/yjs/dist/yjs.mjs");
 /**
  * @typedef {Object} AutoOptions
  * @template Type
  * @description Options for configuring the `@auto` decorator.
+ * @property {boolean} [override] - If true, will try to override the defined property in `super`.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
  * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
@@ -640,14 +650,12 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
  *
- * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- * @property {ValidTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
+ * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
  * default tag set in TurboConfig.Dropdown.
  *
- * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
+ * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
  * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customPopupClasses] - Custom CSS class(es) for the popup container. Overrides the
+ * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
  * default classes set in TurboConfig.Dropdown.
  * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
  * default classes set in TurboConfig.Dropdown.
@@ -659,8 +667,6 @@ __webpack_require__.r(__webpack_exports__);
  * @typedef {Object} TurboDropdownConfig
  * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
  *
- * @property {ValidTag} [defaultEntryTag] - The default HTML tag for the creation of generic
- * dropdown entries.
  * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
  * element in generic selectors (which are Buttons).
  *
@@ -674,6 +680,13 @@ __webpack_require__.r(__webpack_exports__);
 /**
  * @typedef {Object} ChildHandler
  * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
+ */
+
+/**
+ * @typedef {Object} ApplyDefaultsOptions
+ * @description Options for {@link TurboSelector.applyDefaults}.
+ * @property {string[]} [mergeProperties] - Array-like keys to merge. Defaults to {@link ApplyDefaultsMergeProperties}.
+ * @property {boolean} [removeDuplicates] - Whether to remove duplicates when merging arrays. Defaults to `true`.
  */
 
 /**
@@ -722,6 +735,10 @@ __webpack_require__.r(__webpack_exports__);
  * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
  */
 
+
+
+
+
 /**
  * @internal
  */
@@ -739,7 +756,7 @@ class AutoUtils {
 
 function getFirstDescriptorInChain(object, key) {
     let currentObject = object;
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         if (descriptor)
             return descriptor;
@@ -749,7 +766,7 @@ function getFirstDescriptorInChain(object, key) {
 }
 function hasPropertyInChain(object, key) {
     let currentObject = object;
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         if (Object.prototype.hasOwnProperty.call(currentObject, key))
             return true;
         currentObject = Object.getPrototypeOf(currentObject);
@@ -758,7 +775,7 @@ function hasPropertyInChain(object, key) {
 }
 function getFirstPrototypeInChainWith(object, key) {
     let currentObject = Object.getPrototypeOf(object);
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         if (descriptor)
             return currentObject;
@@ -768,7 +785,7 @@ function getFirstPrototypeInChainWith(object, key) {
 }
 function getSuperMethod(object, key, wrapperFn) {
     let currentObject = Object.getPrototypeOf(object);
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         const fn = descriptor?.value ?? descriptor?.get ?? descriptor?.set;
         if (typeof fn === "function" && fn !== wrapperFn)
@@ -777,6 +794,18 @@ function getSuperMethod(object, key, wrapperFn) {
     }
     return undefined;
 }
+const getSuperDescriptor = (object, key) => {
+    let currentObject = Object.getPrototypeOf(object);
+    if (currentObject)
+        currentObject = Object.getPrototypeOf(currentObject);
+    while (currentObject && currentObject !== Object.prototype) {
+        const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
+        if (descriptor)
+            return descriptor;
+        currentObject = Object.getPrototypeOf(currentObject);
+    }
+    return undefined;
+};
 
 function isNull(value) {
     return value == null && value != undefined;
@@ -830,24 +859,20 @@ function auto(options) {
         const backing = Symbol(`__auto_${key}`);
         context.addInitializer(function () {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
+            // const superDescriptor = getSuperDescriptor(this, key);
             let customGetter;
             let customSetter;
-            const write = function (value) {
-                options.callBefore?.call(this, value);
-                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && this[backing] === next)
-                    return;
-                if (options.executeSetterBeforeStoring && customSetter)
-                    customSetter.call(this, next);
-                this[backing] = next;
-                if (!options.executeSetterBeforeStoring && customSetter)
-                    customSetter.call(this, next);
-                options.callAfter?.call(this, next);
+            const baseRead = function () {
+                if (customGetter && options?.returnDefinedGetterValue)
+                    return customGetter.call(this);
+                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                return this[backing];
+            };
+            const baseWrite = function (value) {
+                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                this[backing] = value;
             };
             let undefinedFlag = false;
-            const baseRead = function () {
-                return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
-            };
             const read = function () {
                 let value = baseRead.call(this);
                 if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
@@ -864,7 +889,19 @@ function auto(options) {
                 }
                 return value;
             };
-            if (isUndefined(this[backing])) {
+            const write = function (value) {
+                options.callBefore?.call(this, value);
+                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next)
+                    return;
+                if (options.executeSetterBeforeStoring && customSetter)
+                    customSetter.call(this, next);
+                baseWrite.call(this, next);
+                if (!options.executeSetterBeforeStoring && customSetter)
+                    customSetter.call(this, next);
+                options.callAfter?.call(this, next);
+            };
+            if (isUndefined(baseRead.call(this))) {
                 let initialValue = kind === "field" ? value : undefined;
                 if (isUndefined(initialValue)) {
                     if (options.initialValue)
@@ -882,10 +919,10 @@ function auto(options) {
                     customGetter = accessor.get;
                 if (accessor?.set)
                     customSetter = accessor.set;
-                const descriptor = getFirstDescriptorInChain(this, key);
+                const descriptor = getFirstDescriptorInChain(this, key) ?? { enumerable: true };
                 Object.defineProperty(this, key, {
                     configurable: true,
-                    enumerable: descriptor?.enumerable ?? true,
+                    enumerable: descriptor.enumerable ?? true,
                     get: () => read.call(this),
                     set: (value) => write.call(this, value),
                 });
@@ -895,14 +932,14 @@ function auto(options) {
                 if (installed.get(key))
                     return;
                 installed.set(key, true);
-                const descriptor = getFirstDescriptorInChain(prototype, key) ?? {};
+                const descriptor = getFirstDescriptorInChain(prototype, key) ?? { enumerable: true };
                 if (typeof descriptor.get === "function")
                     customGetter = descriptor.get;
                 if (typeof descriptor.set === "function")
                     customSetter = descriptor.set;
                 Object.defineProperty(prototype, key, {
                     configurable: true,
-                    enumerable: !!descriptor?.enumerable,
+                    enumerable: descriptor.enumerable ?? true,
                     get: function () { return read.call(this); },
                     set: function (value) { write.call(this, value); },
                 });
@@ -1338,6 +1375,12 @@ function setupHierarchyFunctions() {
     };
 }
 
+/**
+ * @constant
+ * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
+ */
+const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"];
+
 function setupMiscFunctions() {
     /**
      * @description Execute a callback on the node while still benefiting from chaining.
@@ -1346,6 +1389,28 @@ function setupMiscFunctions() {
      */
     TurboSelector.prototype.execute = function _execute(callback) {
         callback(this);
+        return this;
+    };
+    TurboSelector.prototype.applyDefaults = function applyDefaults(defaults, options = {}) {
+        if (!this.element || typeof this.element !== "object")
+            return this;
+        const { mergeProperties = ApplyDefaultsMergeProperties, removeDuplicates = true } = options;
+        for (const [key, value] of Object.entries(defaults)) {
+            const isMergeKey = mergeProperties?.includes(key);
+            if (isMergeKey) {
+                const defaultArray = Array.isArray(value) ? value : [value];
+                const currentArray = isUndefined(this.element[key]) ? []
+                    : Array.isArray(this.element[key]) ? this.element[key].slice()
+                        : [this.element[key]];
+                let merged = currentArray.concat(defaultArray);
+                if (removeDuplicates)
+                    merged = Array.from(new Set(merged));
+                this.element[key] = merged;
+            }
+            else if (isUndefined(this.element[key])) {
+                this.element[key] = value;
+            }
+        }
         return this;
     };
 }
@@ -2207,68 +2272,12 @@ class Mvc {
     }
 }
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol */
-
-
-function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
-    }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
-}
-function __runInitializers(thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
-}
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
 /**
  * @class Delegate
  * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
  * @description Class representing a set of callbacks that can be maintained and executed together.
  */
-class Delegate {
+class SimpleDelegate {
     callbacks = new Set();
     /**
      * @description Adds a callback to the list.
@@ -2285,6 +2294,11 @@ class Delegate {
     remove(callback) {
         return this.callbacks.delete(callback);
     }
+    /**
+     * @description Checks whether a callback is in the list.
+     * @param callback - The callback function to check for.
+     * @returns A boolean indicating whether the callback was found.
+     */
     has(callback) {
         return this.callbacks.has(callback);
     }
@@ -2293,20 +2307,43 @@ class Delegate {
      * @param args - The arguments to pass to the callbacks.
      */
     fire(...args) {
+        let returnValue;
         for (const callback of this.callbacks) {
             try {
-                callback(...args);
+                const value = callback(...args);
+                if (!isUndefined(value))
+                    returnValue = value;
             }
             catch (error) {
                 console.error("Error invoking callback:", error);
             }
         }
+        return returnValue;
     }
     /**
      * @description Clears added callbacks
      */
     clear() {
         this.callbacks.clear();
+    }
+}
+/**
+ * @class Delegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
+class Delegate extends SimpleDelegate {
+    /**
+     * @description Delegate fired when a callback is added.
+     */
+    onAdded = new SimpleDelegate();
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback) {
+        super.add(callback);
+        this.onAdded.fire(callback);
     }
 }
 
@@ -2638,6 +2675,33 @@ function modelSignal(dataKey, blockKey) {
         return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
     };
 }
+/**
+ * @decorator
+ * @function blockSignal
+ * Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockSignal(blockKey, id) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); });
+    };
+}
+/**
+ * @decorator
+ * @function blockIdSignal
+ * Same idea but binds the block **id**.
+ */
+function blockIdSignal(blockKey) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); });
+    };
+}
 function effect(...args) {
     const value = args[0];
     const context = args[1];
@@ -2743,9 +2807,10 @@ let TurboModel = (() => {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
             _enabledCallbacks_decorators = [auto()];
-            __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
+        isInitialized = new Map();
         isDataBlocksArray = false;
         dataBlocks;
         /**
@@ -2762,7 +2827,7 @@ let TurboModel = (() => {
          * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
          */
         constructor(data, dataBlocksType) {
-            __runInitializers(this, _enabledCallbacks_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _enabledCallbacks_extraInitializers);
             this.keyChangedCallback = new Delegate();
             if (dataBlocksType === "array") {
                 this.isDataBlocksArray = true;
@@ -2793,7 +2858,7 @@ let TurboModel = (() => {
         set dataId(value) {
             this.setBlockId(value);
         }
-        #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
+        #enabledCallbacks_accessor_storage = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _enabledCallbacks_initializers, void 0);
         /**
          * @description Whether callbacks are enabled or not.
          */
@@ -2891,6 +2956,8 @@ let TurboModel = (() => {
             }
             if (initialize)
                 this.initialize(blockKey);
+            else
+                this.isInitialized.set(blockKey, false);
         }
         /**
          * @function hasBlock
@@ -3003,6 +3070,7 @@ let TurboModel = (() => {
             if (!keys || !this.enabledCallbacks)
                 return;
             keys.forEach(key => this.fireKeyChangedCallback(key, blockKey));
+            this.isInitialized.set(blockKey, true);
         }
         /**
          * @function clear
@@ -3785,12 +3853,12 @@ let TurboEventManagerModel = (() => {
             _utils_decorators = [handler()];
             _set_inputDevice_decorators = [auto({ callBefore: function (value) { if (value == InputDevice.trackpad)
                         this.wasRecentlyTrackpad = true; } })];
-            __esDecorate(this, null, _set_inputDevice_decorators, { kind: "setter", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _utils_decorators, { kind: "field", name: "utils", static: false, private: false, access: { has: obj => "utils" in obj, get: obj => obj.utils, set: (obj, value) => { obj.utils = value; } }, metadata: _metadata }, _utils_initializers, _utils_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_inputDevice_decorators, { kind: "setter", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _utils_decorators, { kind: "field", name: "utils", static: false, private: false, access: { has: obj => "utils" in obj, get: obj => obj.utils, set: (obj, value) => { obj.utils = value; } }, metadata: _metadata }, _utils_initializers, _utils_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
-        utils = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _utils_initializers, void 0));
-        state = (__runInitializers(this, _utils_extraInitializers), {});
+        utils = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _utils_initializers, void 0));
+        state = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _utils_extraInitializers), {});
         lockState = {};
         //Delegate fired when the input device changes
         onInputDeviceChange = new Delegate();
@@ -3848,14 +3916,14 @@ let TurboEvent = (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _closest_decorators = [cache()];
             _get_scaledPosition_decorators = [cache()];
-            __esDecorate(this, null, _closest_decorators, { kind: "method", name: "closest", static: false, private: false, access: { has: obj => "closest" in obj, get: obj => obj.closest }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_scaledPosition_decorators, { kind: "getter", name: "scaledPosition", static: false, private: false, access: { has: obj => "scaledPosition" in obj, get: obj => obj.scaledPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _closest_decorators, { kind: "method", name: "closest", static: false, private: false, access: { has: obj => "closest" in obj, get: obj => obj.closest }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledPosition_decorators, { kind: "getter", name: "scaledPosition", static: false, private: false, access: { has: obj => "scaledPosition" in obj, get: obj => obj.scaledPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         /**
          * @description The event manager that fired this event.
          */
-        eventManager = __runInitializers(this, _instanceExtraInitializers);
+        eventManager = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         /**
          * @description The name of the tool (if any) associated with this event.
          */
@@ -4318,19 +4386,19 @@ let TurboDragEvent = (() => {
             _get_deltaPosition_decorators = [cache()];
             _get_scaledDeltaPositions_decorators = [cache()];
             _get_scaledDeltaPosition_decorators = [cache()];
-            __esDecorate(this, null, _get_scaledOrigins_decorators, { kind: "getter", name: "scaledOrigins", static: false, private: false, access: { has: obj => "scaledOrigins" in obj, get: obj => obj.scaledOrigins }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_scaledPreviousPositions_decorators, { kind: "getter", name: "scaledPreviousPositions", static: false, private: false, access: { has: obj => "scaledPreviousPositions" in obj, get: obj => obj.scaledPreviousPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_scaledPositions_decorators, { kind: "getter", name: "scaledPositions", static: false, private: false, access: { has: obj => "scaledPositions" in obj, get: obj => obj.scaledPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_deltaPositions_decorators, { kind: "getter", name: "deltaPositions", static: false, private: false, access: { has: obj => "deltaPositions" in obj, get: obj => obj.deltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_deltaPosition_decorators, { kind: "getter", name: "deltaPosition", static: false, private: false, access: { has: obj => "deltaPosition" in obj, get: obj => obj.deltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_scaledDeltaPositions_decorators, { kind: "getter", name: "scaledDeltaPositions", static: false, private: false, access: { has: obj => "scaledDeltaPositions" in obj, get: obj => obj.scaledDeltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_scaledDeltaPosition_decorators, { kind: "getter", name: "scaledDeltaPosition", static: false, private: false, access: { has: obj => "scaledDeltaPosition" in obj, get: obj => obj.scaledDeltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledOrigins_decorators, { kind: "getter", name: "scaledOrigins", static: false, private: false, access: { has: obj => "scaledOrigins" in obj, get: obj => obj.scaledOrigins }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledPreviousPositions_decorators, { kind: "getter", name: "scaledPreviousPositions", static: false, private: false, access: { has: obj => "scaledPreviousPositions" in obj, get: obj => obj.scaledPreviousPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledPositions_decorators, { kind: "getter", name: "scaledPositions", static: false, private: false, access: { has: obj => "scaledPositions" in obj, get: obj => obj.scaledPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_deltaPositions_decorators, { kind: "getter", name: "deltaPositions", static: false, private: false, access: { has: obj => "deltaPositions" in obj, get: obj => obj.deltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_deltaPosition_decorators, { kind: "getter", name: "deltaPosition", static: false, private: false, access: { has: obj => "deltaPosition" in obj, get: obj => obj.deltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledDeltaPositions_decorators, { kind: "getter", name: "scaledDeltaPositions", static: false, private: false, access: { has: obj => "scaledDeltaPositions" in obj, get: obj => obj.scaledDeltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_scaledDeltaPosition_decorators, { kind: "getter", name: "scaledDeltaPosition", static: false, private: false, access: { has: obj => "scaledDeltaPosition" in obj, get: obj => obj.scaledDeltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         /**
          * @description Map containing the origins of the dragging points
          */
-        origins = __runInitializers(this, _instanceExtraInitializers);
+        origins = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         /**
          * @description Map containing the previous positions of the dragging points
          */
@@ -4987,17 +5055,17 @@ let TurboEventManager = (() => {
             _set_touchEventsEnabled_decorators = [auto()];
             _set_clickEventEnabled_decorators = [auto()];
             _set_dragEventEnabled_decorators = [auto()];
-            __esDecorate(this, null, _set_keyEventsEnabled_decorators, { kind: "setter", name: "keyEventsEnabled", static: false, private: false, access: { has: obj => "keyEventsEnabled" in obj, set: (obj, value) => { obj.keyEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_wheelEventsEnabled_decorators, { kind: "setter", name: "wheelEventsEnabled", static: false, private: false, access: { has: obj => "wheelEventsEnabled" in obj, set: (obj, value) => { obj.wheelEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_moveEventsEnabled_decorators, { kind: "setter", name: "moveEventsEnabled", static: false, private: false, access: { has: obj => "moveEventsEnabled" in obj, set: (obj, value) => { obj.moveEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_mouseEventsEnabled_decorators, { kind: "setter", name: "mouseEventsEnabled", static: false, private: false, access: { has: obj => "mouseEventsEnabled" in obj, set: (obj, value) => { obj.mouseEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_clickEventEnabled_decorators, { kind: "setter", name: "clickEventEnabled", static: false, private: false, access: { has: obj => "clickEventEnabled" in obj, set: (obj, value) => { obj.clickEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_dragEventEnabled_decorators, { kind: "setter", name: "dragEventEnabled", static: false, private: false, access: { has: obj => "dragEventEnabled" in obj, set: (obj, value) => { obj.dragEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
-            __esDecorate(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
-            __esDecorate(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
-            __esDecorate(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_keyEventsEnabled_decorators, { kind: "setter", name: "keyEventsEnabled", static: false, private: false, access: { has: obj => "keyEventsEnabled" in obj, set: (obj, value) => { obj.keyEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_wheelEventsEnabled_decorators, { kind: "setter", name: "wheelEventsEnabled", static: false, private: false, access: { has: obj => "wheelEventsEnabled" in obj, set: (obj, value) => { obj.wheelEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_moveEventsEnabled_decorators, { kind: "setter", name: "moveEventsEnabled", static: false, private: false, access: { has: obj => "moveEventsEnabled" in obj, set: (obj, value) => { obj.moveEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_mouseEventsEnabled_decorators, { kind: "setter", name: "mouseEventsEnabled", static: false, private: false, access: { has: obj => "mouseEventsEnabled" in obj, set: (obj, value) => { obj.mouseEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_clickEventEnabled_decorators, { kind: "setter", name: "clickEventEnabled", static: false, private: false, access: { has: obj => "clickEventEnabled" in obj, set: (obj, value) => { obj.clickEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_dragEventEnabled_decorators, { kind: "setter", name: "dragEventEnabled", static: false, private: false, access: { has: obj => "dragEventEnabled" in obj, set: (obj, value) => { obj.dragEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         /*
@@ -5027,10 +5095,10 @@ let TurboEventManager = (() => {
          *
          *
          */
-        keyController = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _keyController_initializers, void 0));
-        wheelController = (__runInitializers(this, _keyController_extraInitializers), __runInitializers(this, _wheelController_initializers, void 0));
-        pointerController = (__runInitializers(this, _wheelController_extraInitializers), __runInitializers(this, _pointerController_initializers, void 0));
-        dispatchController = (__runInitializers(this, _pointerController_extraInitializers), __runInitializers(this, _dispatchController_initializers, void 0));
+        keyController = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _keyController_initializers, void 0));
+        wheelController = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _keyController_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _wheelController_initializers, void 0));
+        pointerController = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _wheelController_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _pointerController_initializers, void 0));
+        dispatchController = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _pointerController_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _dispatchController_initializers, void 0));
         /*
          *
          *
@@ -5040,7 +5108,7 @@ let TurboEventManager = (() => {
          */
         constructor(properties = {}) {
             super();
-            __runInitializers(this, _dispatchController_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _dispatchController_extraInitializers);
             this.mvc.generate({
                 model: TurboEventManagerModel,
                 controllers: [
@@ -5146,7 +5214,6 @@ let TurboEventManager = (() => {
          *
          */
         set keyEventsEnabled(value) {
-            $(document);
             if (value) {
                 document.addEventListener("keydown", this.keyController.keyDown);
                 document.addEventListener("keyup", this.keyController.keyUp);
@@ -5168,7 +5235,6 @@ let TurboEventManager = (() => {
             this.applyAndHookEvents(TurboMoveEventName, DefaultMoveEventName, value);
         }
         set mouseEventsEnabled(value) {
-            $(document);
             //TODO
             // if (value) {
             //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
@@ -5183,7 +5249,6 @@ let TurboEventManager = (() => {
             // }
         }
         set touchEventsEnabled(value) {
-            $(document);
             // if (value) {
             //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
             //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
@@ -5469,6 +5534,10 @@ class EventFunctionsUtils {
         return map;
     }
     bypassManager(element, eventManager, bypassResults) {
+        if (element instanceof TurboSelector)
+            element = element.element;
+        if (!element)
+            return;
         if (typeof bypassResults == "boolean")
             eventManager.lock(element, {
                 enabled: bypassResults,
@@ -5485,6 +5554,10 @@ class EventFunctionsUtils {
             });
     }
     getBoundListeners(element, type, toolName, options, manager = TurboEventManager.instance) {
+        if (element instanceof TurboSelector)
+            element = element.element;
+        if (!element)
+            return [];
         if (!options)
             options = {};
         return [...this.getBoundListenersSet(element)]
@@ -6539,24 +6612,24 @@ let StatefulReifect = (() => {
             _set_transitionTimingFunction_decorators = [auto()];
             _set_transitionDelay_decorators = [auto()];
             _set_transition_decorators = [auto()];
-            __esDecorate(this, null, _set_enabled_decorators, { kind: "setter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, set: (obj, value) => { obj.enabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_propertiesEnabled_decorators, { kind: "setter", name: "propertiesEnabled", static: false, private: false, access: { has: obj => "propertiesEnabled" in obj, set: (obj, value) => { obj.propertiesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_stylesEnabled_decorators, { kind: "setter", name: "stylesEnabled", static: false, private: false, access: { has: obj => "stylesEnabled" in obj, set: (obj, value) => { obj.stylesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_classesEnabled_decorators, { kind: "setter", name: "classesEnabled", static: false, private: false, access: { has: obj => "classesEnabled" in obj, set: (obj, value) => { obj.classesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_replaceWithEnabled_decorators, { kind: "setter", name: "replaceWithEnabled", static: false, private: false, access: { has: obj => "replaceWithEnabled" in obj, set: (obj, value) => { obj.replaceWithEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transitionEnabled_decorators, { kind: "setter", name: "transitionEnabled", static: false, private: false, access: { has: obj => "transitionEnabled" in obj, set: (obj, value) => { obj.transitionEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_classes_decorators, { kind: "setter", name: "classes", static: false, private: false, access: { has: obj => "classes" in obj, set: (obj, value) => { obj.classes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_replaceWith_decorators, { kind: "setter", name: "replaceWith", static: false, private: false, access: { has: obj => "replaceWith" in obj, set: (obj, value) => { obj.replaceWith = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transitionProperties_decorators, { kind: "setter", name: "transitionProperties", static: false, private: false, access: { has: obj => "transitionProperties" in obj, set: (obj, value) => { obj.transitionProperties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_transition_decorators, { kind: "setter", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_enabled_decorators, { kind: "setter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, set: (obj, value) => { obj.enabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_propertiesEnabled_decorators, { kind: "setter", name: "propertiesEnabled", static: false, private: false, access: { has: obj => "propertiesEnabled" in obj, set: (obj, value) => { obj.propertiesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_stylesEnabled_decorators, { kind: "setter", name: "stylesEnabled", static: false, private: false, access: { has: obj => "stylesEnabled" in obj, set: (obj, value) => { obj.stylesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_classesEnabled_decorators, { kind: "setter", name: "classesEnabled", static: false, private: false, access: { has: obj => "classesEnabled" in obj, set: (obj, value) => { obj.classesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_replaceWithEnabled_decorators, { kind: "setter", name: "replaceWithEnabled", static: false, private: false, access: { has: obj => "replaceWithEnabled" in obj, set: (obj, value) => { obj.replaceWithEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transitionEnabled_decorators, { kind: "setter", name: "transitionEnabled", static: false, private: false, access: { has: obj => "transitionEnabled" in obj, set: (obj, value) => { obj.transitionEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_classes_decorators, { kind: "setter", name: "classes", static: false, private: false, access: { has: obj => "classes" in obj, set: (obj, value) => { obj.classes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_replaceWith_decorators, { kind: "setter", name: "replaceWith", static: false, private: false, access: { has: obj => "replaceWith" in obj, set: (obj, value) => { obj.replaceWith = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transitionProperties_decorators, { kind: "setter", name: "transitionProperties", static: false, private: false, access: { has: obj => "transitionProperties" in obj, set: (obj, value) => { obj.transitionProperties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_transition_decorators, { kind: "setter", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
-        timeRegex = (__runInitializers(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
+        timeRegex = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
         //List of attached objects
         attachedObjects = [];
         _states;
@@ -7795,6 +7868,7 @@ function setupReifectFunctions() {
     };
 }
 
+const cache$1 = new WeakMap();
 function turbo(tagOrElement) {
     turbofy();
     let el;
@@ -7812,8 +7886,12 @@ function turbo(tagOrElement) {
         else
             el = tagOrElement;
     }
+    const cached = cache$1.get(el);
+    if (cached)
+        return cached;
     const turboSelector = new TurboSelector();
     turboSelector.element = el;
+    cache$1.set(el, turboSelector);
     return turboSelector;
 }
 function tu(tagOrElement) {
@@ -8282,6 +8360,7 @@ function define(elementName, options = { injectAttributeBridge: true }) {
  * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
  * from inner instances.
  * @param {string} rootKey - The property key of the instance to expose from.
+ * @param {boolean} [exposeSetter=true] - Whether to expose a setter for the property. Defaults to true.
  *
  * @example
  * ```ts
@@ -8301,23 +8380,38 @@ function define(elementName, options = { injectAttributeBridge: true }) {
  * }
  * ```
  */
-function expose(rootKey) {
+function expose(rootKey, exposeSetter = true) {
     return function (value, context) {
+        if (!rootKey)
+            return value;
         const { kind, name } = context;
         const key = String(name);
+        const nestedRoots = rootKey.split(".").filter(Boolean);
+        const getLowestRoot = function (host) {
+            if (!host)
+                return;
+            let parent = host;
+            for (const root of nestedRoots) {
+                parent = parent[root];
+                if (!parent)
+                    return;
+            }
+            return parent;
+        };
         if (kind === "method") {
             return function (...args) {
-                const root = this[rootKey];
+                const root = getLowestRoot(this);
                 const fn = root?.[key];
                 if (typeof fn === "function")
                     return fn.apply(root, args);
             };
         }
         context.addInitializer(function () {
-            const read = function () { return this[rootKey]?.[key]; };
+            const read = function () { return getLowestRoot(this)?.[key]; };
             const write = function (value) {
-                if (this[rootKey])
-                    this[rootKey][key] = value;
+                const root = getLowestRoot(this);
+                if (root)
+                    root[key] = value;
             };
             if (kind === "field" || kind === "accessor") {
                 const descriptor = getFirstDescriptorInChain(this, key);
@@ -8325,7 +8419,10 @@ function expose(rootKey) {
                     configurable: true,
                     enumerable: descriptor?.enumerable ?? true,
                     get: () => read.call(this),
-                    set: (value) => write.call(this, value),
+                    set: (value) => {
+                        if (exposeSetter)
+                            write.call(this, value);
+                    },
                 });
             }
         });
@@ -9130,12 +9227,12 @@ let TurboIcon = (() => {
             _set_icon_decorators = [observe, auto()];
             _set_iconColor_decorators = [observe, auto()];
             _loadSvg_decorators = [cache()];
-            __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_iconColor_decorators, { kind: "setter", name: "iconColor", static: false, private: false, access: { has: obj => "iconColor" in obj, set: (obj, value) => { obj.iconColor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _loadSvg_decorators, { kind: "method", name: "loadSvg", static: false, private: false, access: { has: obj => "loadSvg" in obj, get: obj => obj.loadSvg }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _type_decorators, { kind: "field", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
-            __esDecorate(null, null, _directory_decorators, { kind: "field", name: "directory", static: false, private: false, access: { has: obj => "directory" in obj, get: obj => obj.directory, set: (obj, value) => { obj.directory = value; } }, metadata: _metadata }, _directory_initializers, _directory_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_iconColor_decorators, { kind: "setter", name: "iconColor", static: false, private: false, access: { has: obj => "iconColor" in obj, set: (obj, value) => { obj.iconColor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _loadSvg_decorators, { kind: "method", name: "loadSvg", static: false, private: false, access: { has: obj => "loadSvg" in obj, get: obj => obj.loadSvg }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _type_decorators, { kind: "field", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _directory_decorators, { kind: "field", name: "directory", static: false, private: false, access: { has: obj => "directory" in obj, get: obj => obj.directory, set: (obj, value) => { obj.directory = value; } }, metadata: _metadata }, _directory_initializers, _directory_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -9146,17 +9243,17 @@ let TurboIcon = (() => {
         };
         static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
             "PNG", "JPG", "JPEG", "GIF", "WEBP"];
-        _element = __runInitializers(this, _instanceExtraInitializers);
+        _element = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         _loadToken = 0;
         onLoaded;
         /**
          * @description The type of the icon.
          */
-        type = __runInitializers(this, _type_initializers, void 0);
+        type = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _type_initializers, void 0);
         /**
          * @description The user-provided (or statically configured) directory to the icon's file.
          */
-        directory = (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _directory_initializers, void 0));
+        directory = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _type_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _directory_initializers, void 0));
         /**
          * @description The path to the icon's source file.
          */
@@ -9254,10 +9351,10 @@ let TurboIcon = (() => {
         }
         constructor() {
             super(...arguments);
-            __runInitializers(this, _directory_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _directory_extraInitializers);
         }
         static {
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     });
     return _classThis;
@@ -9374,15 +9471,15 @@ let TurboRichElement = (() => {
                     }
                 })];
             _set_rightCustomElements_decorators = [auto({ executeSetterBeforeStoring: true })];
-            __esDecorate(this, null, _set_leftCustomElements_decorators, { kind: "setter", name: "leftCustomElements", static: false, private: false, access: { has: obj => "leftCustomElements" in obj, set: (obj, value) => { obj.leftCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_leftIcon_decorators, { kind: "setter", name: "leftIcon", static: false, private: false, access: { has: obj => "leftIcon" in obj, set: (obj, value) => { obj.leftIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_prefixEntry_decorators, { kind: "setter", name: "prefixEntry", static: false, private: false, access: { has: obj => "prefixEntry" in obj, set: (obj, value) => { obj.prefixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_element_decorators, { kind: "setter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, set: (obj, value) => { obj.element = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_suffixEntry_decorators, { kind: "setter", name: "suffixEntry", static: false, private: false, access: { has: obj => "suffixEntry" in obj, set: (obj, value) => { obj.suffixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_rightIcon_decorators, { kind: "setter", name: "rightIcon", static: false, private: false, access: { has: obj => "rightIcon" in obj, set: (obj, value) => { obj.rightIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_rightCustomElements_decorators, { kind: "setter", name: "rightCustomElements", static: false, private: false, access: { has: obj => "rightCustomElements" in obj, set: (obj, value) => { obj.rightCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _elementTag_decorators, { kind: "field", name: "elementTag", static: false, private: false, access: { has: obj => "elementTag" in obj, get: obj => obj.elementTag, set: (obj, value) => { obj.elementTag = value; } }, metadata: _metadata }, _elementTag_initializers, _elementTag_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_leftCustomElements_decorators, { kind: "setter", name: "leftCustomElements", static: false, private: false, access: { has: obj => "leftCustomElements" in obj, set: (obj, value) => { obj.leftCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_leftIcon_decorators, { kind: "setter", name: "leftIcon", static: false, private: false, access: { has: obj => "leftIcon" in obj, set: (obj, value) => { obj.leftIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_prefixEntry_decorators, { kind: "setter", name: "prefixEntry", static: false, private: false, access: { has: obj => "prefixEntry" in obj, set: (obj, value) => { obj.prefixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_element_decorators, { kind: "setter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, set: (obj, value) => { obj.element = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_suffixEntry_decorators, { kind: "setter", name: "suffixEntry", static: false, private: false, access: { has: obj => "suffixEntry" in obj, set: (obj, value) => { obj.suffixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_rightIcon_decorators, { kind: "setter", name: "rightIcon", static: false, private: false, access: { has: obj => "rightIcon" in obj, set: (obj, value) => { obj.rightIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_rightCustomElements_decorators, { kind: "setter", name: "rightCustomElements", static: false, private: false, access: { has: obj => "rightCustomElements" in obj, set: (obj, value) => { obj.rightCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _elementTag_decorators, { kind: "field", name: "elementTag", static: false, private: false, access: { has: obj => "elementTag" in obj, get: obj => obj.elementTag, set: (obj, value) => { obj.elementTag = value; } }, metadata: _metadata }, _elementTag_initializers, _elementTag_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -9390,7 +9487,7 @@ let TurboRichElement = (() => {
             ...TurboElement.config,
             defaultElementTag: "h4"
         };
-        childrenOrder = (__runInitializers(this, _instanceExtraInitializers), ["leftCustomElements", "leftIcon",
+        childrenOrder = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), ["leftCustomElements", "leftIcon",
             "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"]);
         /**
          * @description Adds a given element or elements to the button at a specified position.
@@ -9416,7 +9513,7 @@ let TurboRichElement = (() => {
         /**
          * @description The tag of the text element in the button
          */
-        elementTag = __runInitializers(this, _elementTag_initializers, void 0);
+        elementTag = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _elementTag_initializers, void 0);
         /**
          * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
          */
@@ -9478,10 +9575,10 @@ let TurboRichElement = (() => {
         }
         constructor() {
             super(...arguments);
-            __runInitializers(this, _elementTag_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _elementTag_extraInitializers);
         }
         static {
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     });
     return _classThis;
@@ -9512,13 +9609,13 @@ let TurboButton = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         static config = { ...TurboRichElement.config, defaultElementTag: "h4" };
         static {
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     });
     return _classThis;
@@ -9553,15 +9650,15 @@ let TurboIconSwitch = (() => {
                 })];
             _set_defaultState_decorators = [auto()];
             _set_appendStateToIconName_decorators = [auto()];
-            __esDecorate(this, null, _set_switchReifect_decorators, { kind: "setter", name: "switchReifect", static: false, private: false, access: { has: obj => "switchReifect" in obj, set: (obj, value) => { obj.switchReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_defaultState_decorators, { kind: "setter", name: "defaultState", static: false, private: false, access: { has: obj => "defaultState" in obj, set: (obj, value) => { obj.defaultState = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_appendStateToIconName_decorators, { kind: "setter", name: "appendStateToIconName", static: false, private: false, access: { has: obj => "appendStateToIconName" in obj, set: (obj, value) => { obj.appendStateToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_switchReifect_decorators, { kind: "setter", name: "switchReifect", static: false, private: false, access: { has: obj => "switchReifect" in obj, set: (obj, value) => { obj.switchReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_defaultState_decorators, { kind: "setter", name: "defaultState", static: false, private: false, access: { has: obj => "defaultState" in obj, set: (obj, value) => { obj.defaultState = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_appendStateToIconName_decorators, { kind: "setter", name: "appendStateToIconName", static: false, private: false, access: { has: obj => "appendStateToIconName" in obj, set: (obj, value) => { obj.appendStateToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
-        config = (__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
+        config = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), { ...TurboIcon.config });
         get switchReifect() { return; }
         set switchReifect(value) {
             this.switchReifect.attach(this);
@@ -9610,14 +9707,14 @@ let TurboIconToggle = (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _set_toggled_decorators = [auto({ initialValue: false })];
             _set_toggleOnClick_decorators = [auto({ initialValue: false })];
-            __esDecorate(this, null, _set_toggled_decorators, { kind: "setter", name: "toggled", static: false, private: false, access: { has: obj => "toggled" in obj, set: (obj, value) => { obj.toggled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_toggleOnClick_decorators, { kind: "setter", name: "toggleOnClick", static: false, private: false, access: { has: obj => "toggleOnClick" in obj, set: (obj, value) => { obj.toggleOnClick = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_toggled_decorators, { kind: "setter", name: "toggled", static: false, private: false, access: { has: obj => "toggled" in obj, set: (obj, value) => { obj.toggled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_toggleOnClick_decorators, { kind: "setter", name: "toggleOnClick", static: false, private: false, access: { has: obj => "toggleOnClick" in obj, set: (obj, value) => { obj.toggleOnClick = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
-        config = (__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
+        config = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), { ...TurboIcon.config });
         stopPropagationOnClick = true;
         onToggle;
         clickListener = () => {
@@ -9775,8 +9872,8 @@ let TurboInput = (() => {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _set_label_decorators = [auto()];
-            __esDecorate(this, null, _set_label_decorators, { kind: "setter", name: "label", static: false, private: false, access: { has: obj => "label" in obj, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_label_decorators, { kind: "setter", name: "label", static: false, private: false, access: { has: obj => "label" in obj, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -9784,7 +9881,7 @@ let TurboInput = (() => {
             ...TurboRichElement.config,
             defaultElementTag: "input"
         };
-        labelElement = __runInitializers(this, _instanceExtraInitializers);
+        labelElement = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         _content;
         get content() { return this._content; }
         set content(value) { this._content = value; }
@@ -9910,7 +10007,7 @@ let TurboInput = (() => {
             return out;
         }
         static {
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     });
     return _classThis;
@@ -9937,10 +10034,10 @@ let TurboNumericalInput = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
         multiplier = 1;
         decimalPlaces;
@@ -10075,21 +10172,23 @@ let TurboSelect = (() => {
             _set_multiSelection_decorators = [auto({ defaultValue: false })];
             _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
             _selectedEntryClasses_decorators = [auto({
-                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
+                    callBefore: function () { this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses)); },
+                    callAfter: function () { this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses)); },
+                    initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); },
                 })];
-            __esDecorate(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
-            __esDecorate(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
-            __esDecorate(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
-            __esDecorate(null, null, _onEntryAdded_decorators, { kind: "field", name: "onEntryAdded", static: false, private: false, access: { has: obj => "onEntryAdded" in obj, get: obj => obj.onEntryAdded, set: (obj, value) => { obj.onEntryAdded = value; } }, metadata: _metadata }, _onEntryAdded_initializers, _onEntryAdded_extraInitializers);
-            __esDecorate(null, null, _onEntryRemoved_decorators, { kind: "field", name: "onEntryRemoved", static: false, private: false, access: { has: obj => "onEntryRemoved" in obj, get: obj => obj.onEntryRemoved, set: (obj, value) => { obj.onEntryRemoved = value; } }, metadata: _metadata }, _onEntryRemoved_initializers, _onEntryRemoved_extraInitializers);
-            __esDecorate(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
-            __esDecorate(null, null, _selectedEntryClasses_decorators, { kind: "field", name: "selectedEntryClasses", static: false, private: false, access: { has: obj => "selectedEntryClasses" in obj, get: obj => obj.selectedEntryClasses, set: (obj, value) => { obj.selectedEntryClasses = value; } }, metadata: _metadata }, _selectedEntryClasses_initializers, _selectedEntryClasses_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _onEntryAdded_decorators, { kind: "field", name: "onEntryAdded", static: false, private: false, access: { has: obj => "onEntryAdded" in obj, get: obj => obj.onEntryAdded, set: (obj, value) => { obj.onEntryAdded = value; } }, metadata: _metadata }, _onEntryAdded_initializers, _onEntryAdded_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _onEntryRemoved_decorators, { kind: "field", name: "onEntryRemoved", static: false, private: false, access: { has: obj => "onEntryRemoved" in obj, get: obj => obj.onEntryRemoved, set: (obj, value) => { obj.onEntryRemoved = value; } }, metadata: _metadata }, _onEntryRemoved_initializers, _onEntryRemoved_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _selectedEntryClasses_decorators, { kind: "field", name: "selectedEntryClasses", static: false, private: false, access: { has: obj => "selectedEntryClasses" in obj, get: obj => obj.selectedEntryClasses, set: (obj, value) => { obj.selectedEntryClasses = value; } }, metadata: _metadata }, _selectedEntryClasses_initializers, _selectedEntryClasses_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         static config = { defaultSelectedEntryClasses: "selected" };
-        _inputField = __runInitializers(this, _instanceExtraInitializers);
+        _inputField = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         _entries = [];
         _entriesData = new WeakMap();
         parentObserver;
@@ -10105,10 +10204,11 @@ let TurboSelect = (() => {
             this.enableObserver(false);
             const previouslySelectedValues = this.selectedValues;
             this.clear();
-            this._entries = value;
+            this._entries = (Array.isArray(value) ? value : Array.from(value))
+                .filter(entry => entry !== this.inputField);
             if (value instanceof HTMLCollection && value.item(0))
                 this.parent = value.item(0).parentElement;
-            const array = this.entriesArray;
+            const array = this.entries;
             for (let i = 0; i < array.length; i++)
                 this.onEntryAdded?.call(this, array[i], i);
             this.deselectAll();
@@ -10121,15 +10221,11 @@ let TurboSelect = (() => {
             this.refreshInputField();
             this.enableObserver(true);
         }
-        get entriesArray() {
-            const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries);
-            return (array ?? []).filter(entry => entry !== this.inputField);
-        }
         /**
          * @description The dropdown's values. Setting it will update the dropdown accordingly.
          */
         get values() {
-            return this.entriesArray.map(entry => this.getValue(entry));
+            return this.entries.map(entry => this.getValue(entry));
         }
         set values(values) {
             const entries = [];
@@ -10142,7 +10238,7 @@ let TurboSelect = (() => {
             this.entries = entries;
         }
         get selectedEntries() {
-            return this.entriesArray.filter(entry => this.getEntryData(entry).selected);
+            return this.entries.filter(entry => this.getEntryData(entry).selected);
         }
         set selectedEntries(value) {
             this.deselectAll();
@@ -10151,18 +10247,18 @@ let TurboSelect = (() => {
             value.forEach(entry => this.select(entry));
         }
         set parent(value) {
-            if (!(this.parent instanceof Element))
+            if (!(value instanceof Element))
                 return;
-            $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node));
+            $(value).addChild(this.entries.filter(entry => entry instanceof Node));
             if (this.inputField)
-                this.parent.appendChild(this.inputField);
+                value.appendChild(this.inputField);
             this.setupParentObserver();
         }
-        getValue = __runInitializers(this, _getValue_initializers, void 0);
-        getSecondaryValue = (__runInitializers(this, _getValue_extraInitializers), __runInitializers(this, _getSecondaryValue_initializers, void 0));
-        createEntry = (__runInitializers(this, _getSecondaryValue_extraInitializers), __runInitializers(this, _createEntry_initializers, void 0));
-        onEntryAdded = (__runInitializers(this, _createEntry_extraInitializers), __runInitializers(this, _onEntryAdded_initializers, void 0));
-        onEntryRemoved = (__runInitializers(this, _onEntryAdded_extraInitializers), __runInitializers(this, _onEntryRemoved_initializers, void 0));
+        getValue = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getValue_initializers, void 0);
+        getSecondaryValue = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getSecondaryValue_initializers, void 0));
+        createEntry = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getSecondaryValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _createEntry_initializers, void 0));
+        onEntryAdded = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _createEntry_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryAdded_initializers, void 0));
+        onEntryRemoved = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryAdded_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryRemoved_initializers, void 0));
         /**
          * The dropdown's underlying hidden input. Might be undefined.
          */
@@ -10184,7 +10280,7 @@ let TurboSelect = (() => {
         set multiSelection(value) {
             this.forceSelection = !value;
         }
-        forceSelection = (__runInitializers(this, _onEntryRemoved_extraInitializers), __runInitializers(this, _forceSelection_initializers, void 0));
+        forceSelection = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryRemoved_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _forceSelection_initializers, void 0));
         set onSelect(value) {
             if (value)
                 this.onSelectDelegate.add(value);
@@ -10193,14 +10289,14 @@ let TurboSelect = (() => {
             if (value)
                 this.onEnabledDelegate.add(value);
         }
-        selectedEntryClasses = (__runInitializers(this, _forceSelection_extraInitializers), __runInitializers(this, _selectedEntryClasses_initializers, void 0));
+        selectedEntryClasses = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _forceSelection_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntryClasses_initializers, void 0));
         /**
          * @description Dropdown constructor
          * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
          */
         constructor(properties = {}) {
             super();
-            __runInitializers(this, _selectedEntryClasses_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntryClasses_extraInitializers);
             const selectedValues = properties.selectedValues || [];
             properties.selectedValues = undefined;
             if (!properties.onEnabled)
@@ -10217,7 +10313,7 @@ let TurboSelect = (() => {
             }
             if (!this.forceSelection)
                 this.deselectAll();
-            this.entriesArray.forEach(entry => {
+            this.entries.forEach(entry => {
                 if (selectedValues.includes(this.getValue(entry))) {
                     this.select(entry);
                 }
@@ -10235,10 +10331,13 @@ let TurboSelect = (() => {
         }
         clearEntryData(entry) {
             this._entriesData.delete(entry);
+            const index = this.entries.indexOf(entry);
+            if (index >= 0)
+                this.entries.splice(index, 1);
         }
-        addEntry(entry, index = this.entriesArray.length) {
+        addEntry(entry, index = this.entries.length) {
             if (index === undefined || typeof index !== "number" || index > this.entries.length)
-                index = this.entriesArray.length;
+                index = this.entries.length;
             if (index < 0)
                 index = 0;
             this.enableObserver(false);
@@ -10251,7 +10350,7 @@ let TurboSelect = (() => {
             requestAnimationFrame(() => this.select(this.selectedEntry));
         }
         getEntryFromSecondaryValue(value) {
-            return this.entriesArray.find((entry) => this.getSecondaryValue(entry) === value);
+            return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
         }
         isSelected(entry) {
             return this.selectedEntries.includes(entry);
@@ -10263,7 +10362,7 @@ let TurboSelect = (() => {
                 if (fromValue)
                     entry = fromValue;
                 else {
-                    const isEntry = this.entriesArray.find(entry => entry === value);
+                    const isEntry = this.entries.find(entry => entry === value);
                     if (isEntry)
                         entry = isEntry;
                 }
@@ -10286,7 +10385,7 @@ let TurboSelect = (() => {
                 if (fromValue)
                     entry = fromValue;
                 else {
-                    const isEntry = this.entriesArray.find(entry => entry === value);
+                    const isEntry = this.entries.find(entry => entry === value);
                     if (isEntry)
                         entry = isEntry;
                 }
@@ -10322,10 +10421,10 @@ let TurboSelect = (() => {
          */
         selectByIndex(index, preprocess = trim) {
             index = preprocess(index, this.entries.length - 1, 0);
-            return this.select(this.entriesArray[index]);
+            return this.select(this.entries[index]);
         }
         getIndex(entry) {
-            return this.entriesArray.indexOf(entry);
+            return this.entries.indexOf(entry);
         }
         deselectAll() {
             this.selectedEntries.forEach(entry => {
@@ -10340,7 +10439,7 @@ let TurboSelect = (() => {
             // todo this.onEntryClick(this.enabledEntries[0]);
         }
         get enabledEntries() {
-            return this.entriesArray.filter(entry => this.getEntryData(entry).enabled);
+            return this.entries.filter(entry => this.getEntryData(entry).enabled);
         }
         get enabledValues() {
             return this.enabledEntries.map(entry => this.getValue(entry));
@@ -10349,20 +10448,20 @@ let TurboSelect = (() => {
             return this.enabledEntries.map(entry => this.getSecondaryValue(entry));
         }
         find(value) {
-            return this.entriesArray.find((entry) => this.getValue(entry) === value);
+            return this.entries.find((entry) => this.getValue(entry) === value);
         }
         findBySecondaryValue(value) {
-            return this.entriesArray.find((entry) => this.getSecondaryValue(entry) === value);
+            return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
         }
         findAll(...values) {
-            return this.entriesArray.filter(entry => values.includes(this.getValue(entry)));
+            return this.entries.filter(entry => values.includes(this.getValue(entry)));
         }
         findAllBySecondaryValue(...values) {
-            return this.entriesArray.filter((entry) => values.includes(this.getSecondaryValue(entry)));
+            return this.entries.filter((entry) => values.includes(this.getSecondaryValue(entry)));
         }
         enable(b, ...entries) {
             if (!entries || entries.length === 0)
-                entries = this.entriesArray;
+                entries = this.entries;
             entries.forEach(value => {
                 const entry = this.getEntry(value);
                 if (!entry)
@@ -10403,7 +10502,7 @@ let TurboSelect = (() => {
         }
         clear() {
             this.enableObserver(false);
-            for (const entry of this.entriesArray) {
+            for (const entry of this.entries) {
                 this.clearEntryData(entry);
                 this.onEntryRemoved(entry);
                 if (this.parent && entry instanceof HTMLElement)
@@ -10440,14 +10539,28 @@ let TurboSelect = (() => {
             this.parentObserver = new MutationObserver(records => {
                 for (const record of records) {
                     for (const node of record.addedNodes) {
-                        if (node.nodeType !== Node.ELEMENT_NODE || node.parentElement !== this.parent)
+                        if (!(node instanceof Element) || node.parentElement !== this.parent)
                             continue;
                         if (node === this.inputField)
                             continue;
-                        this.onEntryAdded?.call(this, node, this.getIndex(node));
+                        const entry = node;
+                        const children = Array.from(this.parent.children)
+                            .filter(el => el !== this.inputField)
+                            .filter(el => this.entries.includes(el) || el === entry);
+                        const targetIndex = children.indexOf(entry);
+                        if (targetIndex < 0)
+                            continue;
+                        if (targetIndex === 0)
+                            this.entries.splice(targetIndex, 0, entry);
+                        else {
+                            const previousIndex = this.entries.indexOf(children[targetIndex - 1]);
+                            this.entries.splice(previousIndex + 1, 0, entry);
+                        }
+                        this.getEntryData(entry);
+                        this.onEntryAdded?.call(this, entry, this.getIndex(entry));
                     }
                     for (const node of record.removedNodes) {
-                        if (node.nodeType !== Node.ELEMENT_NODE)
+                        if (!(node instanceof Element))
                             continue;
                         if (node === this.inputField)
                             continue;
@@ -10472,7 +10585,7 @@ let TurboSelect = (() => {
     };
 })();
 
-var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer{flex-direction:column}.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.turbo-drawer.left-drawer{flex-direction:row}.turbo-drawer.right-drawer{flex-direction:row-reverse}.turbo-drawer>div:first-child{display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}";
+var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
 styleInject(css_248z$2);
 
 //@ts-nocheck
@@ -10705,7 +10818,7 @@ let TurboDrawer = (() => {
             _set_panel_decorators = [auto({
                     setIfUndefined: true,
                     callBefore: function () { if (this.panel)
-                        $(this).remChild(this.panel); },
+                        $(this).remChild(this.panel); console.log("EWFFEWFWWWWWWWWWWWWWW"); },
                     preprocessValue: (value) => value instanceof HTMLElement ? value : div(value)
                 })];
             _set_icon_decorators = [auto({
@@ -10747,23 +10860,23 @@ let TurboDrawer = (() => {
                     },
                     callAfter: function () { this.transition.attachAll(this, this.panelContainer); },
                 })];
-            __esDecorate(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_hideOverflow_decorators, { kind: "setter", name: "hideOverflow", static: false, private: false, access: { has: obj => "hideOverflow" in obj, set: (obj, value) => { obj.hideOverflow = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_attachSideToIconName_decorators, { kind: "setter", name: "attachSideToIconName", static: false, private: false, access: { has: obj => "attachSideToIconName" in obj, set: (obj, value) => { obj.attachSideToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_rotateIconBasedOnSide_decorators, { kind: "setter", name: "rotateIconBasedOnSide", static: false, private: false, access: { has: obj => "rotateIconBasedOnSide" in obj, set: (obj, value) => { obj.rotateIconBasedOnSide = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_side_decorators, { kind: "setter", name: "side", static: false, private: false, access: { has: obj => "side" in obj, set: (obj, value) => { obj.side = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_offset_decorators, { kind: "setter", name: "offset", static: false, private: false, access: { has: obj => "offset" in obj, set: (obj, value) => { obj.offset = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_translation_decorators, { kind: "setter", name: "translation", static: false, private: false, access: { has: obj => "translation" in obj, set: (obj, value) => { obj.translation = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _transition_decorators, { kind: "field", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, get: obj => obj.transition, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, _transition_initializers, _transition_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_hideOverflow_decorators, { kind: "setter", name: "hideOverflow", static: false, private: false, access: { has: obj => "hideOverflow" in obj, set: (obj, value) => { obj.hideOverflow = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_attachSideToIconName_decorators, { kind: "setter", name: "attachSideToIconName", static: false, private: false, access: { has: obj => "attachSideToIconName" in obj, set: (obj, value) => { obj.attachSideToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_rotateIconBasedOnSide_decorators, { kind: "setter", name: "rotateIconBasedOnSide", static: false, private: false, access: { has: obj => "rotateIconBasedOnSide" in obj, set: (obj, value) => { obj.rotateIconBasedOnSide = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_side_decorators, { kind: "setter", name: "side", static: false, private: false, access: { has: obj => "side" in obj, set: (obj, value) => { obj.side = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_offset_decorators, { kind: "setter", name: "offset", static: false, private: false, access: { has: obj => "offset" in obj, set: (obj, value) => { obj.offset = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_translation_decorators, { kind: "setter", name: "translation", static: false, private: false, access: { has: obj => "translation" in obj, set: (obj, value) => { obj.translation = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _transition_decorators, { kind: "field", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, get: obj => obj.transition, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, _transition_initializers, _transition_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
-        _panelContainer = __runInitializers(this, _instanceExtraInitializers);
+        _panelContainer = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
         get panelContainer() { return this._panelContainer; }
         dragging = false;
         animationOn = false;
@@ -10775,6 +10888,7 @@ let TurboDrawer = (() => {
         }
         get thumb() { return; }
         set panel(value) {
+            console.log("WEEWFEFEFEFEFFEWFWEFEWFEW");
             $(value).addClass("turbo-drawer-panel");
             if (this.initialized)
                 this.setupUILayout();
@@ -10819,9 +10933,9 @@ let TurboDrawer = (() => {
         }
         set open(value) {
             if (value)
-                this.resizeObserver.observe(this.panel, { box: "border-box" });
+                this.resizeObserver?.observe(this.panel, { box: "border-box" });
             else
-                this.resizeObserver.unobserve(this.panel);
+                this.resizeObserver?.unobserve(this.panel);
             this.refresh();
         }
         set translation(value) {
@@ -10852,26 +10966,24 @@ let TurboDrawer = (() => {
                     break;
             }
         }
-        transition = __runInitializers(this, _transition_initializers, void 0);
+        transition = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _transition_initializers, void 0);
         get translation() { return; }
         initialize() {
             super.initialize();
             this.transition.attachAll(this, this.panelContainer);
-            let pending = false;
-            this.resizeObserver = new ResizeObserver(entries => {
-                if (!this.open || this.dragging)
-                    return;
-                if (pending)
-                    return;
-                pending = true;
-                requestAnimationFrame(() => {
-                    const size = Array.isArray(entries[0].borderBoxSize)
-                        ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
-                    this.translation = (this.open ? this.offset.open : this.offset.closed)
-                        + (this.isVertical ? size.blockSize : size.inlineSize);
-                    pending = false;
-                });
-            });
+            // this.resizeObserver = new ResizeObserver(entries => {
+            //     if (!this.open || this.dragging) return;
+            //     requestAnimationFrame(() => {
+            //         const isVertical = this.isVertical;
+            //         const size1 = getSize(entries[0], isVertical);
+            //         requestAnimationFrame(() => {
+            //             const size2 = getSize(entries[0], isVertical);
+            //             console.log(size1, size2);
+            //             if (size1 !== size2) return;
+            //             this.translation = (this.open ? this.offset.open : this.offset.closed) + size2;
+            //         });
+            //     });
+            // });
             this.animationOn = true;
         }
         setupUIElements() {
@@ -10880,8 +10992,6 @@ let TurboDrawer = (() => {
         }
         setupUILayout() {
             super.setupUILayout();
-            console.log(this);
-            console.log(this.panel);
             $(this).childHandler = this;
             $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
             $(this).addChild([this.thumb, this.panelContainer]);
@@ -10983,7 +11093,7 @@ let TurboDrawer = (() => {
         }
         constructor() {
             super(...arguments);
-            __runInitializers(this, _transition_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _transition_extraInitializers);
         }
     });
     return _classThis;
@@ -11069,19 +11179,19 @@ let TurboPopup = (() => {
             _get_computedStyle_decorators = [cache({ clearOnNextFrame: true })];
             _get_anchorComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
             _get_computedMargins_decorators = [cache({ clearOnNextFrame: true })];
-            __esDecorate(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
-            __esDecorate(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             TurboPopup = _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -11092,8 +11202,8 @@ let TurboPopup = (() => {
             defaultViewportMargin: 4,
             defaultOffsetFromAnchor: { x: 0, y: 4 }
         };
-        static parentElement = __runInitializers(_classThis, _static_parentElement_initializers, void 0);
-        anchor = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _anchor_initializers, void 0));
+        static parentElement = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _static_parentElement_initializers, void 0);
+        anchor = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _anchor_initializers, void 0));
         set popupPosition(value) { }
         get popupPosition() { return; }
         set anchorPosition(value) { }
@@ -11126,15 +11236,15 @@ let TurboPopup = (() => {
             super.initialize();
             this.show(false);
             if (!this.parentElement)
-                $(this).addToParent(TurboPopup.parentElement);
+                turbo(this).addToParent(TurboPopup.parentElement);
         }
         setupUIListeners() {
             super.setupUIListeners();
             document.addEventListener(DefaultEventName.scroll, () => this.show(false), { capture: true, passive: true });
-            window.addEventListener(DefaultEventName.resize, () => { if ($(this).isShown)
+            window.addEventListener(DefaultEventName.resize, () => { if (turbo(this).isShown)
                 this.recomputePosition(); }, { passive: true });
-            $(document).on(DefaultEventName.click, e => {
-                if (!$(this).isShown)
+            turbo(document.body).on(DefaultEventName.click, e => {
+                if (!turbo(this).isShown)
                     return;
                 const t = e.target;
                 if (this.contains(t))
@@ -11142,20 +11252,19 @@ let TurboPopup = (() => {
                 if (this.anchor instanceof Node && this.anchor.contains(t))
                     return;
                 this.show(false);
-                return true;
-            });
+            }, { capture: true });
         }
         recomputePosition() {
             if (!this.anchor)
                 return;
-            $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+            turbo(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
             const left = this.computeAxis(Direction.horizontal);
             const top = this.computeAxis(Direction.vertical);
-            $(this).setStyles({ left: `${left}px`, top: `${top}px` });
+            turbo(this).setStyles({ left: `${left}px`, top: `${top}px` });
             const maxWidth = Math.max(0, Math.min(window.innerWidth - 2 * this.viewportMargin.x, window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x));
             const maxHeight = Math.max(0, Math.min(window.innerHeight - 2 * this.viewportMargin.y, window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y));
-            $(this).setStyle("maxWidth", `${maxWidth}px`);
-            $(this).setStyle("maxHeight", `${maxHeight}px`);
+            turbo(this).setStyle("maxWidth", `${maxWidth}px`);
+            turbo(this).setStyle("maxHeight", `${maxHeight}px`);
         }
         computeAxis(direction) {
             const axis = direction === Direction.horizontal ? "x" : "y";
@@ -11187,29 +11296,25 @@ let TurboPopup = (() => {
             return finalOffset;
         }
         show(b) {
-            const sel = $(this);
-            if (sel.isShown === b)
-                return this;
             if (b) {
                 this.style.visibility = "hidden";
                 this.style.display = "";
                 this.recomputePosition();
                 this.style.visibility = "";
-                sel.show(true);
+                turbo(this).show(true);
             }
             else {
-                $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
-                sel.show(false);
+                turbo(this).setStyles({ maxHeight: "", maxWidth: "" }, true).show(false);
             }
             return this;
         }
         constructor() {
             super(...arguments);
-            __runInitializers(this, _anchor_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _anchor_extraInitializers);
         }
         static {
-            __runInitializers(_classThis, _static_parentElement_extraInitializers);
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _static_parentElement_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     };
     return TurboPopup = _classThis;
@@ -11233,11 +11338,15 @@ let TurboDropdown = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
-    let _customSelectorTag_decorators;
-    let _customSelectorTag_initializers = [];
-    let _customSelectorTag_extraInitializers = [];
-    let _set_customSelectorClasses_decorators;
-    let _set_customPopupClasses_decorators;
+    let _selectorTag_decorators;
+    let _selectorTag_initializers = [];
+    let _selectorTag_extraInitializers = [];
+    let _selectorClasses_decorators;
+    let _selectorClasses_initializers = [];
+    let _selectorClasses_extraInitializers = [];
+    let _popupClasses_decorators;
+    let _popupClasses_initializers = [];
+    let _popupClasses_extraInitializers = [];
     let _entries_decorators;
     let _entries_initializers = [];
     let _entries_extraInitializers = [];
@@ -11250,9 +11359,17 @@ let TurboDropdown = (() => {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _customSelectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
-            _set_customSelectorClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); } })];
-            _set_customPopupClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); } })];
+            _selectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
+            _selectorClasses_decorators = [auto({
+                    defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); },
+                    callBefore: function () { turbo(this.selector).removeClass(this.selectorClasses); },
+                    callAfter: function () { turbo(this.selector).addClass(this.selectorClasses); }
+                })];
+            _popupClasses_decorators = [auto({
+                    defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); },
+                    callBefore: function () { turbo(this.popup).removeClass(this.popupClasses); },
+                    callAfter: function () { turbo(this.popup).addClass(this.popupClasses); }
+                })];
             _entries_decorators = [expose("select")];
             _values_decorators = [expose("select")];
             _set_selector_decorators = [auto({
@@ -11264,59 +11381,62 @@ let TurboDropdown = (() => {
                         if (this.selector instanceof TurboButton)
                             this.selector.text = text;
                         else
-                            return button({ text, elementTag: this.customSelectorTag });
+                            return button({ text, elementTag: this.selectorTag });
                     }
                 })];
             _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
-            __esDecorate(this, null, _set_customSelectorClasses_decorators, { kind: "setter", name: "customSelectorClasses", static: false, private: false, access: { has: obj => "customSelectorClasses" in obj, set: (obj, value) => { obj.customSelectorClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_customPopupClasses_decorators, { kind: "setter", name: "customPopupClasses", static: false, private: false, access: { has: obj => "customPopupClasses" in obj, set: (obj, value) => { obj.customPopupClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _customSelectorTag_decorators, { kind: "field", name: "customSelectorTag", static: false, private: false, access: { has: obj => "customSelectorTag" in obj, get: obj => obj.customSelectorTag, set: (obj, value) => { obj.customSelectorTag = value; } }, metadata: _metadata }, _customSelectorTag_initializers, _customSelectorTag_extraInitializers);
-            __esDecorate(null, null, _entries_decorators, { kind: "field", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
-            __esDecorate(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _selectorClasses_decorators, { kind: "field", name: "selectorClasses", static: false, private: false, access: { has: obj => "selectorClasses" in obj, get: obj => obj.selectorClasses, set: (obj, value) => { obj.selectorClasses = value; } }, metadata: _metadata }, _selectorClasses_initializers, _selectorClasses_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _popupClasses_decorators, { kind: "field", name: "popupClasses", static: false, private: false, access: { has: obj => "popupClasses" in obj, get: obj => obj.popupClasses, set: (obj, value) => { obj.popupClasses = value; } }, metadata: _metadata }, _popupClasses_initializers, _popupClasses_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _entries_decorators, { kind: "field", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
         static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
-        popupOpen = (__runInitializers(this, _instanceExtraInitializers), false);
-        customSelectorTag = __runInitializers(this, _customSelectorTag_initializers, void 0);
-        set customSelectorClasses(value) {
-            $(this.selector).addClass(value);
-        }
-        set customPopupClasses(value) {
-            $(this.popup).addClass(value);
-        }
-        entries = (__runInitializers(this, _customSelectorTag_extraInitializers), __runInitializers(this, _entries_initializers, void 0));
-        values = (__runInitializers(this, _entries_extraInitializers), __runInitializers(this, _values_initializers, void 0));
+        select = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), new TurboSelect({
+            onEntryAdded: (entry) => this.onEntryAdded(entry),
+        }));
+        popupOpen = false;
+        selectorTag = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorTag_initializers, void 0);
+        selectorClasses = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorTag_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorClasses_initializers, void 0));
+        popupClasses = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorClasses_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _popupClasses_initializers, void 0));
+        entries = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _popupClasses_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_initializers, void 0));
+        // public set values(values: ValueType[]) {
+        //     this.select.values = values;
+        // }
+        //
+        // public get values(): ValueType[] {
+        //     return this.select.values;
+        // }
+        values = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_initializers, void 0));
         onEntryAdded(entry) {
             this.select.initializeSelection();
-            $(entry).on(DefaultEventName.click, () => {
+            turbo(entry).on(DefaultEventName.click, () => {
                 this.select.select(entry, !this.select.isSelected(entry));
                 this.openPopup(false);
                 return true;
             });
         }
-        select = (__runInitializers(this, _values_extraInitializers), new TurboSelect({
-            onEntryAdded: (entry) => this.onEntryAdded(entry),
-        }));
         /**
          * The dropdown's selector element.
          */
         set selector(value) {
             if (!(value instanceof HTMLElement))
                 return;
-            $(value)
-                .addClass(this.customSelectorClasses)
+            turbo(value)
+                .addClass(this.selectorClasses)
                 .on(DefaultEventName.click, (e) => {
                 this.openPopup(!this.popupOpen);
                 return true;
             });
             if (this.popup instanceof TurboPopup)
                 this.popup.anchor = value;
-            $(this).addChild(value);
+            turbo(this).addChild(value);
             if (value instanceof TurboButton)
                 this.select.onSelect = () => value.text = this.stringSelectedValue;
         }
@@ -11327,19 +11447,16 @@ let TurboDropdown = (() => {
         set popup(value) {
             if (value instanceof TurboPopup)
                 value.anchor = this.selector;
-            $(value).addClass(this.customPopupClasses);
+            turbo(value).addClass(this.popupClasses);
             this.select.parent = value;
         }
         initialize() {
             super.initialize();
             this.selector;
-        }
-        connectedCallback() {
-            super.connectedCallback();
-            $(document).on(DefaultEventName.click, e => {
+            turbo(document.body).on(DefaultEventName.click, () => e => {
                 if (this.popupOpen && !this.contains(e.target))
                     this.openPopup(false);
-            });
+            }, { capture: true });
         }
         openPopup(b) {
             if (this.popupOpen == b)
@@ -11348,7 +11465,7 @@ let TurboDropdown = (() => {
             if ("show" in this.popup && typeof this.popup.show === "function")
                 this.popup.show(b);
             else
-                $(this.popup).show(b);
+                turbo(this.popup).show(b);
         }
         get selectedValues() {
             return this.select.selectedValues;
@@ -11365,8 +11482,12 @@ let TurboDropdown = (() => {
         get stringSelectedValue() {
             return this.select.stringSelectedValue;
         }
+        constructor() {
+            super(...arguments);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_extraInitializers);
+        }
         static {
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
     });
     return _classThis;
@@ -11401,23 +11522,23 @@ let TurboMarkingMenu = (() => {
                     initialValue: Math.PI * 2,
                     preprocessValue: (value) => value - Math.PI / 2
                 })];
-            __esDecorate(null, null, _startAngle_decorators, { kind: "field", name: "startAngle", static: false, private: false, access: { has: obj => "startAngle" in obj, get: obj => obj.startAngle, set: (obj, value) => { obj.startAngle = value; } }, metadata: _metadata }, _startAngle_initializers, _startAngle_extraInitializers);
-            __esDecorate(null, null, _endAngle_decorators, { kind: "field", name: "endAngle", static: false, private: false, access: { has: obj => "endAngle" in obj, get: obj => obj.endAngle, set: (obj, value) => { obj.endAngle = value; } }, metadata: _metadata }, _endAngle_initializers, _endAngle_extraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _startAngle_decorators, { kind: "field", name: "startAngle", static: false, private: false, access: { has: obj => "startAngle" in obj, get: obj => obj.startAngle, set: (obj, value) => { obj.startAngle = value; } }, metadata: _metadata }, _startAngle_initializers, _startAngle_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _endAngle_decorators, { kind: "field", name: "endAngle", static: false, private: false, access: { has: obj => "endAngle" in obj, get: obj => obj.endAngle, set: (obj, value) => { obj.endAngle = value; } }, metadata: _metadata }, _endAngle_initializers, _endAngle_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
         transition;
         currentOrigin;
         minDragDistance = 20;
         semiMajor = 50;
         semiMinor = 45;
-        startAngle = __runInitializers(this, _startAngle_initializers, void 0);
-        endAngle = (__runInitializers(this, _startAngle_extraInitializers), __runInitializers(this, _endAngle_initializers, void 0));
+        startAngle = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _startAngle_initializers, void 0);
+        endAngle = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _startAngle_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _endAngle_initializers, void 0));
         constructor() {
             super(...arguments);
-            __runInitializers(this, _endAngle_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _endAngle_extraInitializers);
         }
     });
     return _classThis;
@@ -11445,14 +11566,14 @@ let TurboSelectWheel = (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _set_alwaysOpen_decorators = [auto()];
             _set_open_decorators = [auto()];
-            __esDecorate(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            __runInitializers(_classThis, _classExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
-        _currentPosition = (__runInitializers(this, _instanceExtraInitializers), 0);
+        _currentPosition = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), 0);
         _reifect;
         _size = { max: 100, min: -100 };
         sizePerEntry = [];
@@ -11935,112 +12056,1173 @@ function loadLocalFont(font) {
 }
 
 /**
- * Utility module to work with key-value stores.
- *
- * @module map
- */
+ * @class YModel
+ * @abstract
+ * @extends TurboModel
+ * @template DataType - The plain shape of the shared data.
+ * @template {YMap | YArray} YType - The Yjs type used (YMap or YArray).
+ * @template {string | number} KeyType - The type of keys used to access values.
+ * @template {string | number} IdType - The type of block identifiers.
+ * @template {"array" | "map"} BlocksType - Either 'array' or 'map' depending on the block storage format.
+ * @template {YDataBlock<YType, IdType>} BlockType - The structure of each block including observer.
+ * @description A model that wraps and manages Yjs data structures (YMap/YArray), adding automatic observer support.
+ *  */
+let YModel = (() => {
+    let _classSuper = TurboModel;
+    let _instanceExtraInitializers = [];
+    let _set_enabledCallbacks_decorators;
+    return class YModel extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_enabledCallbacks_decorators = [auto()];
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        /**
+         * @constructor
+         * @param {DataType} [data] - Initial data. Not initialized if provided.
+         * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+         */
+        constructor(data, dataBlocksType) {
+            super(data, dataBlocksType);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
+        }
+        /**
+         * @description The data of the default block.
+         */
+        get data() {
+            return super.data;
+        }
+        set data(value) {
+            if (!(value instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType))
+                return;
+            super.data = value;
+        }
+        /**
+         * @description Whether callbacks are enabled or disabled.
+         */
+        set enabledCallbacks(value) {
+            this.getAllBlocks().forEach(block => {
+                if (!block.observer || !block.data)
+                    return;
+                if (value)
+                    block.data.observe(block.observer);
+                else
+                    block.data.unobserve(block.observer);
+            });
+        }
+        /**
+         * @function getData
+         * @description Retrieves the value associated with a given key in the specified block.
+         * @param {KeyType} key - The key to retrieve.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
+         * data.
+         * @returns {unknown} The value associated with the key, or null if not found.
+         */
+        getData(key, blockKey = this.defaultBlockKey) {
+            const data = this.getBlockData(blockKey);
+            if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                return data.get(key.toString());
+            if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                const index = Number(key);
+                if (index >= 0 && index < data.length)
+                    return data.get(index);
+            }
+            return null;
+        }
+        /**
+         * @function setData
+         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+         * @param {KeyType} key - The key to update.
+         * @param {unknown} value - The value to assign.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+         */
+        setData(key, value, blockKey = this.defaultBlockKey) {
+            const data = this.getBlockData(blockKey);
+            if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                data.set(key.toString(), value);
+            else if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                const index = Number(key);
+                if (index < 0)
+                    return;
+                if (index < data.length)
+                    data.delete(index, 1);
+                data.insert(index, [value]);
+            }
+        }
+        /**
+         * @function getSize
+         * @description Returns the size of the specified block.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
+         * @returns {number} The size.
+         */
+        getSize(blockKey = this.defaultBlockKey) {
+            const data = this.getBlockData(blockKey);
+            if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map || data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
+                return (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) ? data.length : data.size;
+            return 0;
+        }
+        /**
+         * @function createBlock
+         * @description Creates a data block entry.
+         * @param {YType} value - The data of the block.
+         * @param {IdType} [id] - The optional ID of the data.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+         * @protected
+         * @return {BlockType} - The created block.
+         */
+        createBlock(value, id, blockKey = this.defaultBlockKey) {
+            return {
+                ...super.createBlock(value, id),
+                observer: (event, transaction) => this.observeChanges(event, transaction, blockKey)
+            };
+        }
+        /**
+         * @function setBlock
+         * @description Creates and sets a data block at the specified key.
+         * @param {YType} value - The data to set.
+         * @param {IdType} [id] - Optional block ID.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
+         * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
+         */
+        setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
+            if (this.enabledCallbacks) {
+                const block = this.getBlock(blockKey);
+                if (block && block.data && block.observer)
+                    block.data.unobserve(block.observer);
+            }
+            this.clear(blockKey);
+            super.setBlock(value, id, blockKey, initialize);
+        }
+        /**
+         * @function initialize
+         * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+         */
+        initialize(blockKey = this.defaultBlockKey) {
+            super.initialize(blockKey);
+            const block = this.getBlock(blockKey);
+            block?.data?.observe(block?.observer);
+        }
+        /**
+         * @function getAllKeys
+         * @description Retrieves all keys within the given block(s).
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+         * @returns {KeyType[]} Array of keys.
+         */
+        getAllKeys(blockKey = this.defaultComputationBlockKey) {
+            const output = [];
+            for (const block of this.getAllBlocks(blockKey)) {
+                const data = block.data;
+                if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                    output.push(...Array.from(data.keys()));
+                else if (data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                    for (let i = 0; i < data.length; i++)
+                        output.push(i);
+                }
+            }
+            return output;
+        }
+        /**
+         * @function getAllObservers
+         * @description Retrieves all observers within the given block(s).
+         * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
+         * @returns {((event: YEvent) => void)[]} Array of observers.
+         */
+        getAllObservers(blockKey = this.defaultComputationBlockKey) {
+            return this.getAllBlocks(blockKey).map(block => block.observer);
+        }
+    };
+})();
 
 /**
- * Creates a new Map instance.
- *
- * @function
- * @return {Map<any, any>}
- *
- * @function
+ * @class YComponentModel
+ * @extends YModel
+ * @description An MVC model that handles a Yjs map and observes changes on its direct fields, firing change
+ * callbacks at the keys that changed through the emitter.
  */
-const create$5 = () => new Map();
-
-/**
- * Copy a Map object into a fresh Map object.
- *
- * @function
- * @template K,V
- * @param {Map<K,V>} m
- * @return {Map<K,V>}
- */
-const copy = m => {
-  const r = create$5();
-  m.forEach((v, k) => { r.set(k, v); });
-  return r
-};
-
-/**
- * Get map property. Create T if property is undefined and set T on map.
- *
- * ```js
- * const listeners = map.setIfUndefined(events, 'eventName', set.create)
- * listeners.add(listener)
- * ```
- *
- * @function
- * @template {Map<any, any>} MAP
- * @template {MAP extends Map<any,infer V> ? function():V : unknown} CF
- * @param {MAP} map
- * @param {MAP extends Map<infer K,any> ? K : unknown} key
- * @param {CF} createT
- * @return {ReturnType<CF>}
- */
-const setIfUndefined = (map, key, createT) => {
-  let set = map.get(key);
-  if (set === undefined) {
-    map.set(key, set = createT());
-  }
-  return set
-};
-
-/**
- * Creates an Array and populates it with the content of all key-value pairs using the `f(value, key)` function.
- *
- * @function
- * @template K
- * @template V
- * @template R
- * @param {Map<K,V>} m
- * @param {function(V,K):R} f
- * @return {Array<R>}
- */
-const map = (m, f) => {
-  const res = [];
-  for (const [key, value] of m) {
-    res.push(f(value, key));
-  }
-  return res
-};
-
-/**
- * Tests whether any key-value pairs pass the test implemented by `f(value, key)`.
- *
- * @todo should rename to some - similarly to Array.some
- *
- * @function
- * @template K
- * @template V
- * @param {Map<K,V>} m
- * @param {function(V,K):boolean} f
- * @return {boolean}
- */
-const any = (m, f) => {
-  for (const [key, value] of m) {
-    if (f(value, key)) {
-      return true
+class YComponentModel extends YModel {
+    observeChanges(event, transaction, blockKey) {
+        event.keysChanged.forEach(key => {
+            const change = event.changes.keys.get(key);
+            if (!change) {
+                console.warn(`No change info for key "${key}". Event:`, event);
+                return;
+            }
+            this.fireKeyChangedCallback(key, blockKey, change?.action === "delete");
+        });
     }
-  }
-  return false
-};
+}
 
 /**
- * Utility module to work with sets.
- *
- * @module set
+ * @class YManagerModel
+ * @template DataType - The type of the data stored in each block.
+ * @template ComponentType - The type of component that corresponds to each entry/field of the data.
+ * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
+ * @template {YMap | YArray} YType - The type of the Yjs data (YMap or YArray).
+ * @template {string | number | symbol} IdType - The type of the block IDs.
+ * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
+ * @template {YDataBlock<YType, IdType>} BlockType - The structure of each data block.
+ * @description MVC model that manages Yjs data and synchronizes it with a map or array of components, each attached to
+ * one entry of the data object.
  */
+class YManagerModel extends YModel {
+    changeObservers = new TurboWeakSet();
+    /**
+     * @constructor
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
+     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+     */
+    constructor(data, dataBlocksType) {
+        super(data, dataBlocksType);
+    }
+    generateObserver(properties = {}) {
+        const observer = {
+            onAdded: new Delegate(),
+            onUpdated: new Delegate(),
+            onDeleted: new Delegate(),
+            instances: new Map(),
+            getInstance: (key, blockKey = this.defaultComputationBlockKey) => this.getInstance(observer, key, blockKey),
+            getAllInstances: (blockKey = this.defaultComputationBlockKey) => this.getAllInstances(observer, blockKey),
+            initialize: (blockKey) => {
+                if (!this.isInitialized.get(blockKey))
+                    return;
+                for (const key of this.getAllKeys(blockKey)) {
+                    this.fireKeyChangedCallbackForObserver(observer, this.getData(key, blockKey), key, blockKey);
+                }
+            },
+            clear: (blockKey = this.defaultComputationBlockKey) => this.clearInstances(observer, blockKey),
+            destroy: () => {
+                this.getAllBlockKeys().forEach(blockKey => observer.clear(blockKey));
+                this.changeObservers?.delete(observer);
+            }
+        };
+        observer.onUpdated.add((data, instance, id) => {
+            if (typeof instance === "object") {
+                if ("data" in instance)
+                    instance.data = data;
+                if ("dataId" in instance)
+                    instance.dataId = id.toString();
+            }
+        });
+        observer.onDeleted.add((_data, instance, id, blockKey) => {
+            this.removeInstance(instance);
+            this.getInstancesMaps(observer, blockKey).forEach(map => map.delete(id));
+        });
+        if (properties.onAdded)
+            observer.onAdded.add((data, id, blockKey) => properties.onAdded(data, id, blockKey));
+        if (properties.onUpdated)
+            observer.onUpdated.add((data, instance, id, blockKey) => properties.onUpdated(data, instance, id, blockKey));
+        if (properties.onDeleted)
+            observer.onDeleted.add((data, instance, id, blockKey) => properties.onDeleted(data, instance, id, blockKey));
+        if (properties.initialize)
+            for (const blockKey of this.getAllBlockKeys())
+                observer.initialize(blockKey);
+        this.changeObservers?.add(observer);
+        return observer;
+    }
+    /**
+     * @function clear
+     * @description Clears the block data at the given key.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     */
+    clear(blockKey = this.defaultComputationBlockKey) {
+        super.clear(blockKey);
+        this.changeObservers?.toArray().forEach(observer => this.clearInstances(observer, blockKey));
+    }
+    getAllData(blockKey = this.defaultComputationBlockKey) {
+        return super.getAllData(blockKey);
+    }
+    /**
+     * @function fireKeyChangedCallback
+     * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
+     * @param {KeyType} key - The key that changed.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
+     * @param {boolean} [deleted=false] - Whether the key was deleted.
+     */
+    fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
+        if (!this.getAllKeys(blockKey).includes(key))
+            return super.fireKeyChangedCallback(key, blockKey, deleted);
+        const data = this.getData(key, blockKey);
+        this.changeObservers?.toArray().forEach(observer => this.fireKeyChangedCallbackForObserver(observer, data, key, blockKey));
+    }
+    fireKeyChangedCallbackForObserver(observer, data, key, blockKey = this.defaultBlockKey) {
+        if (!observer.instances.has(blockKey))
+            observer.instances.set(blockKey, new Map());
+        const map = observer.instances.get(blockKey);
+        const existingInstance = map.get(key);
+        if (existingInstance) {
+            observer.onUpdated.fire(data, existingInstance, key, blockKey);
+            return;
+        }
+        const instance = observer.onAdded.fire(data, key, blockKey);
+        if (!instance)
+            return;
+        map.set(key, instance);
+        observer.onUpdated.fire(data, instance, key, blockKey);
+    }
+    /*
+     *
+     * Utilities
+     *
+     */
+    getInstancesMaps(observer, blockKey, sort = false) {
+        const maps = [];
+        if (blockKey !== null) {
+            const map = observer.instances.get(blockKey);
+            if (map)
+                maps.push(map);
+        }
+        else {
+            const blockKeys = this.getAllBlockKeys();
+            if (sort)
+                blockKeys.sort(this.sortingFunction);
+            for (const curKey of blockKeys) {
+                const map = observer.instances.get(curKey);
+                if (map)
+                    maps.push(map);
+            }
+        }
+        return maps;
+    }
+    getInstance(observer, key, blockKey = this.defaultComputationBlockKey) {
+        for (const map of this.getInstancesMaps(observer, blockKey)) {
+            if (map.has(key))
+                return map.get(key);
+        }
+        return null;
+    }
+    getAllInstances(observer, blockKey = this.defaultComputationBlockKey) {
+        const maps = this.getInstancesMaps(observer, blockKey, true);
+        if (!this.isDataBlocksArray)
+            return maps.flatMap(map => Array.from(map.values()) || []);
+        let instances = [];
+        for (const map of maps) {
+            const tempInstances = Array.from(map.entries());
+            tempInstances.sort((a, b) => this.sortingFunction(a[0], b[0]));
+            instances = instances.concat(...tempInstances.map(entry => entry[1]));
+        }
+        return instances;
+    }
+    removeInstance(instance) {
+        if (instance && typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
+            instance?.remove();
+    }
+    clearInstances(observer, blockKey = this.defaultComputationBlockKey) {
+        this.getInstancesMaps(observer, blockKey).forEach(map => {
+            map.forEach(instance => this.removeInstance(instance));
+            map.clear();
+        });
+    }
+    sortingFunction(a, b) {
+        if (typeof a == "string" && typeof b == "string")
+            return a.localeCompare(b);
+        else if (typeof a == "number" && typeof b == "number")
+            return a - b;
+        return 0;
+    }
+    observeChanges(event, transaction, blockKey = this.defaultBlockKey) {
+        //TODO
+        !!transaction?.local;
+        transaction?.origin;
+        if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent) {
+            event.keysChanged.forEach(key => {
+                const change = event.changes.keys.get(key);
+                switch (change.action) {
+                    case "add":
+                        this.fireKeyChangedCallback(key, blockKey);
+                        break;
+                    case "delete":
+                        this.changeObservers?.toArray().forEach(observer => observer.onDeleted.fire(change.oldValue, this.getInstance(observer, key, blockKey), key, blockKey));
+                        break;
+                    case "update":
+                        this.changeObservers?.toArray().forEach(observer => observer.onUpdated.fire(this.getData(key, blockKey), this.getInstance(observer, key, blockKey), key, blockKey));
+                        break;
+                }
+            });
+        }
+        else if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent) {
+            let currentIndex = 0;
+            for (const delta of event.delta) {
+                if (delta.retain !== undefined)
+                    currentIndex += delta.retain;
+                else if (delta.insert) {
+                    const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
+                    const count = insertedItems.length;
+                    this.changeObservers?.toArray().forEach(observer => this.shiftIndices(observer, currentIndex, count, blockKey));
+                    for (let i = 0; i < count; i++)
+                        this.fireKeyChangedCallback((currentIndex + i), blockKey);
+                    currentIndex += count;
+                }
+                else if (delta.delete) {
+                    const count = delta.delete;
+                    for (let i = 0; i < count; i++) {
+                        this.changeObservers?.toArray().forEach(observer => observer.onDeleted.fire(undefined, this.getInstance(observer, (currentIndex + i), blockKey), (currentIndex + i), blockKey));
+                    }
+                    this.changeObservers?.toArray().forEach(observer => this.shiftIndices(observer, currentIndex + count, -count, blockKey));
+                }
+            }
+        }
+    }
+    shiftIndices(observer, fromIndex, offset, blockKey = this.defaultBlockKey) {
+        const block = this.getInstancesMaps(observer, blockKey)[0];
+        if (!block)
+            return;
+        const itemsToShift = [];
+        for (const [oldIndexStr, instance] of block.entries()) {
+            const oldIndex = Number(oldIndexStr);
+            if (oldIndex >= fromIndex)
+                itemsToShift.push([oldIndex, instance]);
+        }
+        itemsToShift.sort((a, b) => a[0] - b[0]);
+        for (const [oldIndex] of itemsToShift)
+            block.delete(oldIndex);
+        for (const [oldIndex, instance] of itemsToShift) {
+            const newIndex = oldIndex + offset;
+            if (typeof instance === "object" && "dataId" in instance)
+                instance.dataId = newIndex;
+            block.set((oldIndex + offset), instance);
+        }
+    }
+}
 
-const create$4 = () => new Set();
+/**
+ * @function createYMap
+ * @static
+ * @description Creates a YMap and populates it with key-value pairs from a plain object.
+ * @param {object} data - The initial data to populate the YMap with.
+ * @returns {YMap} A new YMap instance.
+ */
+function createYMap(data) {
+    const map = new yjs__WEBPACK_IMPORTED_MODULE_1__.Map();
+    for (const [key, value] of Object.entries(data))
+        map.set(key, value);
+    return map;
+}
+/**
+ * @function createYArray
+ * @static
+ * @template DataType - The type of the array's content.
+ * @description Creates a YArray and populates it with elements from a plain array.
+ * @param {DataType[]} data - The array of data to populate the YArray with.
+ * @returns {YArray} A new YArray instance.
+ */
+function createYArray(data) {
+    const array = new yjs__WEBPACK_IMPORTED_MODULE_1__.Array();
+    array.push(data);
+    return array;
+}
+/**
+ * @function addInYMap
+ * @static
+ * @async
+ * @description Adds the provided data in the provided parent in the Yjs document, with a unique ID as its field name.
+ * @param {object} data - The data to append to the Yjs document.
+ * @param {YMap} parentYMap - The YMap to add the data to.
+ * @param {string} [id] - Optional ID to use. If not provided, a unique ID is generated.
+ * @returns {Promise<string>} The ID of the inserted data.
+ */
+async function addInYMap(data, parentYMap, id) {
+    const generateId = async () => await hashBySize(parentYMap?.doc?.clientID?.toString(32) + randomId());
+    if (!id) {
+        id = await generateId();
+        while (parentYMap?.get(id) !== undefined)
+            id = await generateId();
+    }
+    parentYMap.set(id, data);
+    return id;
+}
+/**
+ * @function addInYArray
+ * @static
+ * @description Adds the provided data in the provided parent array in the Yjs document.
+ * @param {object} data - The data to append to the Yjs document.
+ * @param {YArray} parentYArray - The YArray to which the data should be appended.
+ * @param {number} [index] - The index to insert the data at. If omitted or invalid, it is appended at the end.
+ * @returns {number} The index where the data was inserted.
+ */
+function addInYArray(data, parentYArray, index) {
+    if (index == undefined || index > parentYArray.length) {
+        index = parentYArray.length;
+        parentYArray.push([data]);
+    }
+    else {
+        if (index < 0)
+            index = 0;
+        parentYArray.insert(index, [data]);
+    }
+    return index;
+}
+/**
+ * @function removeFromYArray
+ * @static
+ * @description Removes the first occurrence of the given entry from the YArray.
+ * @param {unknown} entry - The entry to remove.
+ * @param {YArray} parentYArray - The parent YArray.
+ * @returns {boolean} True if removed, false otherwise.
+ */
+function removeFromYArray(entry, parentYArray) {
+    for (const [index, child] of parentYArray.toArray()) {
+        if (entry != child)
+            continue;
+        parentYArray.delete(index);
+        return true;
+    }
+    return false;
+}
+/**
+ * @function deepObserveAny
+ * @static
+ * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
+ * changes.
+ * @param {YAbstractType} data - The Yjs type to observe.
+ * @param {(fieldChanged: string, event: YEvent, target: YAbstractType) => void} callback - The function to call
+ * when a matching field changes.
+ * @param {...string} fieldNames - List of field names to observe.
+ */
+function deepObserveAny(data, callback, ...fieldNames) {
+    if (!data)
+        return;
+    const fields = new Set(fieldNames);
+    data.observeDeep((events) => {
+        for (const event of events) {
+            const target = event.target;
+            const parentMap = target._item?.parent;
+            const key = target._item?.parentSub;
+            for (const field of fields) {
+                if ((event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent && event.changes.keys.has(field)) ||
+                    (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent && parentMap instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map && key === field) ||
+                    (event.path?.some(segment => segment === field))) {
+                    callback(field, event, target);
+                    return;
+                }
+            }
+        }
+    });
+}
+/**
+ * @function deepObserveAll
+ * @static
+ * @description Observes deeply for changes to all specified fields and invokes callback only when all fields
+ * have changed.
+ * @param {YAbstractType} data - The Yjs type to observe.
+ * @param {(event: YEvent, target: YAbstractType) => void} callback - The function to call when all fields change.
+ * @param {...string} fieldNames - List of field names to observe.
+ */
+function deepObserveAll(data, callback, ...fieldNames) {
+    if (!data)
+        return;
+    const fields = new Set(fieldNames);
+    data.observeDeep(events => {
+        const changedFields = new Set();
+        for (const event of events) {
+            const target = event.target;
+            const parentMap = target._item?.parent;
+            const key = target._item?.parentSub;
+            for (const field of fields) {
+                if ((event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent && event.changes.keys.has(field)) ||
+                    (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent && parentMap instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map && key === field) ||
+                    (event.path?.some(segment => segment === field)))
+                    changedFields.add(field);
+            }
+            if (changedFields.size === fields.size) {
+                callback(event, target);
+                return;
+            }
+        }
+    });
+}
 
+
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/main.css":
+/*!****************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/main.css ***!
+  \****************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `:root {
+    --bg: #01163b;
+    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);
+    --surface: rgba(255, 255, 255, 0.07);
+    --surface-2: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.14);
+
+    --font-family: "Roboto";
+    --text: rgba(220, 232, 255, 0.9);
+    --text-2: rgba(234, 242, 255, 0.8);
+    --text-muted: rgba(212, 224, 244, 0.6);
+
+    --accent: #ff6bd6;
+    --accent-2: #5ee7ff;
+    --accent-contrast: #0b0f1e;
+
+    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);
+    --blur: 10px;
+
+    --gap-big: 28px;
+    --gap-medium: 18px;
+    --gap-small: 12px;
+    --gap-tiny: 4px;
+
+    --radius-big: 16px;
+    --radius-small: 12px;
+    --radius-tiny: 8px;
+}
+
+
+body {
+    width: calc(100vw - var(--gap-big) * 2);
+    height: calc(100vh - var(--gap-big) * 2);
+    overflow: hidden;
+
+    margin: 0;
+    padding: var(--gap-big);
+
+    background: var(--bg);
+    background: var(--bg-gradient);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    color: var(--text);
+    font-family: var(--font-family), sans-serif;
+}
+
+.turbo-icon {
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.turbo-icon > svg {
+    fill: var(--text);
+    width: 100%;
+    height: 100%;
+}
+
+#canvas {
+    position: absolute;
+    display: block;
+    overflow: visible;
+    top: 0;
+    left: 0;
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+#canvas * {
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    backface-visibility: hidden;
+}`, "",{"version":3,"sources":["webpack://./src/main.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,4EAA4E;IAC5E,oCAAoC;IACpC,sCAAsC;IACtC,mCAAmC;;IAEnC,uBAAuB;IACvB,gCAAgC;IAChC,kCAAkC;IAClC,sCAAsC;;IAEtC,iBAAiB;IACjB,mBAAmB;IACnB,0BAA0B;;IAE1B,2CAA2C;IAC3C,gDAAgD;IAChD,YAAY;;IAEZ,eAAe;IACf,kBAAkB;IAClB,iBAAiB;IACjB,eAAe;;IAEf,kBAAkB;IAClB,oBAAoB;IACpB,kBAAkB;AACtB;;;AAGA;IACI,uCAAuC;IACvC,wCAAwC;IACxC,gBAAgB;;IAEhB,SAAS;IACT,uBAAuB;;IAEvB,qBAAqB;IACrB,8BAA8B;AAClC;;AAEA;IACI,SAAS;IACT,UAAU;IACV,kBAAkB;IAClB,2CAA2C;AAC/C;;AAEA;IACI,cAAc;IACd,aAAa;IACb,cAAc;AAClB;;AAEA;IACI,iBAAiB;IACjB,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,kBAAkB;IAClB,cAAc;IACd,iBAAiB;IACjB,MAAM;IACN,OAAO;IACP,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B;;AAEA;IACI,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B","sourcesContent":[":root {\r\n    --bg: #01163b;\r\n    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);\r\n    --surface: rgba(255, 255, 255, 0.07);\r\n    --surface-2: rgba(255, 255, 255, 0.03);\r\n    --border: rgba(255, 255, 255, 0.14);\r\n\r\n    --font-family: \"Roboto\";\r\n    --text: rgba(220, 232, 255, 0.9);\r\n    --text-2: rgba(234, 242, 255, 0.8);\r\n    --text-muted: rgba(212, 224, 244, 0.6);\r\n\r\n    --accent: #ff6bd6;\r\n    --accent-2: #5ee7ff;\r\n    --accent-contrast: #0b0f1e;\r\n\r\n    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);\r\n    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);\r\n    --blur: 10px;\r\n\r\n    --gap-big: 28px;\r\n    --gap-medium: 18px;\r\n    --gap-small: 12px;\r\n    --gap-tiny: 4px;\r\n\r\n    --radius-big: 16px;\r\n    --radius-small: 12px;\r\n    --radius-tiny: 8px;\r\n}\r\n\r\n\r\nbody {\r\n    width: calc(100vw - var(--gap-big) * 2);\r\n    height: calc(100vh - var(--gap-big) * 2);\r\n    overflow: hidden;\r\n\r\n    margin: 0;\r\n    padding: var(--gap-big);\r\n\r\n    background: var(--bg);\r\n    background: var(--bg-gradient);\r\n}\r\n\r\n* {\r\n    margin: 0;\r\n    padding: 0;\r\n    color: var(--text);\r\n    font-family: var(--font-family), sans-serif;\r\n}\r\n\r\n.turbo-icon {\r\n    display: block;\r\n    width: 1.5rem;\r\n    height: 1.5rem;\r\n}\r\n\r\n.turbo-icon > svg {\r\n    fill: var(--text);\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n#canvas {\r\n    position: absolute;\r\n    display: block;\r\n    overflow: visible;\r\n    top: 0;\r\n    left: 0;\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}\r\n\r\n#canvas * {\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/playlist/playlist.css":
+/*!*****************************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/playlist/playlist.css ***!
+  \*****************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `turbo-playlist {
+    position: absolute;
+}
+
+turbo-playlist > .turbo-rich-element {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-tiny);
+    align-items: center;
+}
+
+turbo-playlist > .turbo-rich-element .turbo-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-small);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+turbo-playlist > .turbo-rich-element > * {
+    text-wrap: nowrap;
+}
+
+turbo-playlist > .turbo-drawer {
+    position: absolute;
+    min-width: 300px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+turbo-playlist * {
+    transition: all 0.05s ease-in-out;
+}
+
+turbo-playlist > .turbo-drawer .turbo-drawer-panel {
+    padding: var(--gap-medium);
+    border-radius: var(--radius-small);
+
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    height: 300px;
+
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-small);
+    backdrop-filter: blur(10px);
+}
+
+turbo-playlist .empty-playlist-placeholder {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-medium);
+
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--gap-medium);
+}
+
+turbo-playlist .empty-playlist-placeholder .turbo-icon {
+    width: 32px;
+    height: 32px;
+}
+
+`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;IAChB,2BAA2B;AAC/B;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,iCAAiC;AACrC;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\r\n    position: absolute;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n    align-items: center;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element .turbo-icon {\r\n    width: 56px;\r\n    height: 56px;\r\n    border-radius: var(--radius-small);\r\n    overflow: hidden;\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element > * {\r\n    text-wrap: nowrap;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer {\r\n    position: absolute;\r\n    min-width: 300px;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n}\r\n\r\nturbo-playlist * {\r\n    transition: all 0.05s ease-in-out;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\r\n    padding: var(--gap-medium);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    height: 300px;\r\n\r\n    overflow: auto;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-small);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder {\r\n    flex-grow: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-medium);\r\n\r\n    align-items: center;\r\n    justify-content: center;\r\n    text-align: center;\r\n    padding: var(--gap-medium);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\r\n    width: 32px;\r\n    height: 32px;\r\n}\r\n\r\n"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/scrollbar.css":
+/*!*********************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/scrollbar.css ***!
+  \*********************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--surface);
+    border-radius: 1000px;
+}
+
+::-webkit-scrollbar-button {
+    display: none;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-2);
+    border-radius: 1000px;
+    border: 2px solid var(--surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--surface);
+}`, "",{"version":3,"sources":["webpack://./src/scrollbar.css"],"names":[],"mappings":"AAAA;IACI,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,0BAA0B;IAC1B,qBAAqB;AACzB;;AAEA;IACI,aAAa;AACjB;;AAEA;IACI,2BAA2B;IAC3B,qBAAqB;IACrB,gCAAgC;AACpC;;AAEA;IACI,yBAAyB;AAC7B;;AAEA;IACI,0BAA0B;AAC9B","sourcesContent":["::-webkit-scrollbar {\r\n    width: 10px;\r\n    height: 10px;\r\n}\r\n\r\n::-webkit-scrollbar-track {\r\n    background: var(--surface);\r\n    border-radius: 1000px;\r\n}\r\n\r\n::-webkit-scrollbar-button {\r\n    display: none;\r\n}\r\n\r\n::-webkit-scrollbar-thumb {\r\n    background: var(--accent-2);\r\n    border-radius: 1000px;\r\n    border: 2px solid var(--surface);\r\n}\r\n\r\n::-webkit-scrollbar-thumb:hover {\r\n    background: var(--accent);\r\n}\r\n\r\n::-webkit-scrollbar-corner {\r\n    background: var(--surface);\r\n}"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/song/song.css":
+/*!*********************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/song/song.css ***!
+  \*********************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `turbo-song {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--gap-small);
+    padding: var(--gap-small);
+
+    background-color: var(--surface);
+    border-radius: var(--radius-small);
+    border: 1px solid var(--border);
+}
+
+turbo-song .song-cover {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--radius-tiny);
+}
+
+turbo-song > :nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-tiny);
+}
+
+turbo-song .song-artist {
+    font-weight: normal;
+    color: var(--text-2);
+}
+
+turbo-song .song-duration {
+    color: var(--text-muted);
+    font-weight: normal;
+}`, "",{"version":3,"sources":["webpack://./src/song/song.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;;IAEzB,gCAAgC;IAChC,kCAAkC;IAClC,+BAA+B;AACnC;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,iCAAiC;AACrC;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;AACxB;;AAEA;IACI,mBAAmB;IACnB,oBAAoB;AACxB;;AAEA;IACI,wBAAwB;IACxB,mBAAmB;AACvB","sourcesContent":["turbo-song {\r\n    display: flex;\r\n    flex-direction: row;\r\n    align-items: center;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n\r\n    background-color: var(--surface);\r\n    border-radius: var(--radius-small);\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-song .song-cover {\r\n    width: 54px;\r\n    height: 54px;\r\n    border-radius: var(--radius-tiny);\r\n}\r\n\r\nturbo-song > :nth-child(2) {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n}\r\n\r\nturbo-song .song-artist {\r\n    font-weight: normal;\r\n    color: var(--text-2);\r\n}\r\n\r\nturbo-song .song-duration {\r\n    color: var(--text-muted);\r\n    font-weight: normal;\r\n}"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/songsPanel/songsPanel.css":
+/*!*********************************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/songsPanel/songsPanel.css ***!
+  \*********************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `turbo-songs-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-big);
+    padding: var(--gap-big);
+    border-radius: var(--radius-big);
+
+    width: 40vw;
+    min-width: 300px;
+    max-width: 550px;
+    height: calc(100% - 2 * var(--gap-big));
+
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+}
+
+turbo-songs-panel > .turbo-rich-element {
+    background-color: var(--surface);
+    border-radius: 1000px;
+    border: 1px solid var(--border);
+}
+
+turbo-songs-panel > .turbo-rich-element > div {
+    display: flex;
+    flex-direction: row;
+    gap: var(--gap-medium);
+    padding: var(--gap-small) calc(1.5 * var(--gap-small));
+}
+
+turbo-songs-panel > .turbo-rich-element input {
+    flex-grow: 1;
+    background-color: transparent;
+    border: none;
+}
+
+turbo-songs-panel > .songs-panel-container {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    gap: var(--gap-medium);
+    padding-inline-end: var(--gap-small);
+}
+
+`, "",{"version":3,"sources":["webpack://./src/songsPanel/songsPanel.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,sBAAsB;IACtB,mBAAmB;IACnB,uBAAuB;IACvB,gCAAgC;;IAEhC,WAAW;IACX,gBAAgB;IAChB,gBAAgB;IAChB,uCAAuC;;IAEvC,kCAAkC;IAClC,+BAA+B;IAC/B,2BAA2B;AAC/B;;AAEA;IACI,gCAAgC;IAChC,qBAAqB;IACrB,+BAA+B;AACnC;;AAEA;IACI,aAAa;IACb,mBAAmB;IACnB,sBAAsB;IACtB,sDAAsD;AAC1D;;AAEA;IACI,YAAY;IACZ,6BAA6B;IAC7B,YAAY;AAChB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,cAAc;IACd,sBAAsB;IACtB,oCAAoC;AACxC","sourcesContent":["turbo-songs-panel {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-big);\r\n    padding: var(--gap-big);\r\n    border-radius: var(--radius-big);\r\n\r\n    width: 40vw;\r\n    min-width: 300px;\r\n    max-width: 550px;\r\n    height: calc(100% - 2 * var(--gap-big));\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element {\r\n    background-color: var(--surface);\r\n    border-radius: 1000px;\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element > div {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-medium);\r\n    padding: var(--gap-small) calc(1.5 * var(--gap-small));\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element input {\r\n    flex-grow: 1;\r\n    background-color: transparent;\r\n    border: none;\r\n}\r\n\r\nturbo-songs-panel > .songs-panel-container {\r\n    display: flex;\r\n    flex-direction: column;\r\n    overflow: auto;\r\n    gap: var(--gap-medium);\r\n    padding-inline-end: var(--gap-small);\r\n}\r\n\r\n"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/cjs.js!./src/toolbar/toolbar.css":
+/*!***************************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/cjs.js!./src/toolbar/toolbar.css ***!
+  \***************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+// Imports
+
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, `turbo-toolbar {
+    display: flex;
+    flex-direction: row;
+    gap: var(--gap-small);
+    padding: var(--gap-small);
+    border-radius: var(--radius-small);
+
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+
+    position: absolute;
+    top: var(--gap-big);
+    right: var(--gap-big);
+    backdrop-filter: blur(10px);
+}
+
+turbo-toolbar > * {
+    padding: var(--gap-tiny);
+    border-radius: var(--radius-tiny);
+    transition: all 0.1s ease-in-out;
+}
+
+turbo-toolbar > *:hover, turbo-toolbar > .selected:hover {
+    scale: 1.2;
+}
+
+turbo-toolbar > .selected {
+    background-color: var(--surface);
+    scale: 1.1;
+}
+
+turbo-toolbar svg {
+    fill: white;
+}`, "",{"version":3,"sources":["webpack://./src/toolbar/toolbar.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;IACzB,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;;IAE/B,kBAAkB;IAClB,mBAAmB;IACnB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,wBAAwB;IACxB,iCAAiC;IACjC,gCAAgC;AACpC;;AAEA;IACI,UAAU;AACd;;AAEA;IACI,gCAAgC;IAChC,UAAU;AACd;;AAEA;IACI,WAAW;AACf","sourcesContent":["turbo-toolbar {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n\r\n    position: absolute;\r\n    top: var(--gap-big);\r\n    right: var(--gap-big);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-toolbar > * {\r\n    padding: var(--gap-tiny);\r\n    border-radius: var(--radius-tiny);\r\n    transition: all 0.1s ease-in-out;\r\n}\r\n\r\nturbo-toolbar > *:hover, turbo-toolbar > .selected:hover {\r\n    scale: 1.2;\r\n}\r\n\r\nturbo-toolbar > .selected {\r\n    background-color: var(--surface);\r\n    scale: 1.1;\r\n}\r\n\r\nturbo-toolbar svg {\r\n    fill: white;\r\n}"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/runtime/api.js":
+/*!*********************************************************!*\
+  !*** ../../node_modules/css-loader/dist/runtime/api.js ***!
+  \*********************************************************/
+/***/ ((module) => {
+
+
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+*/
+module.exports = function (cssWithMappingToString) {
+  var list = [];
+
+  // return the list of modules as css string
+  list.toString = function toString() {
+    return this.map(function (item) {
+      var content = "";
+      var needLayer = typeof item[5] !== "undefined";
+      if (item[4]) {
+        content += "@supports (".concat(item[4], ") {");
+      }
+      if (item[2]) {
+        content += "@media ".concat(item[2], " {");
+      }
+      if (needLayer) {
+        content += "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {");
+      }
+      content += cssWithMappingToString(item);
+      if (needLayer) {
+        content += "}";
+      }
+      if (item[2]) {
+        content += "}";
+      }
+      if (item[4]) {
+        content += "}";
+      }
+      return content;
+    }).join("");
+  };
+
+  // import a list of modules into the list
+  list.i = function i(modules, media, dedupe, supports, layer) {
+    if (typeof modules === "string") {
+      modules = [[null, modules, undefined]];
+    }
+    var alreadyImportedModules = {};
+    if (dedupe) {
+      for (var k = 0; k < this.length; k++) {
+        var id = this[k][0];
+        if (id != null) {
+          alreadyImportedModules[id] = true;
+        }
+      }
+    }
+    for (var _k = 0; _k < modules.length; _k++) {
+      var item = [].concat(modules[_k]);
+      if (dedupe && alreadyImportedModules[item[0]]) {
+        continue;
+      }
+      if (typeof layer !== "undefined") {
+        if (typeof item[5] === "undefined") {
+          item[5] = layer;
+        } else {
+          item[1] = "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {").concat(item[1], "}");
+          item[5] = layer;
+        }
+      }
+      if (media) {
+        if (!item[2]) {
+          item[2] = media;
+        } else {
+          item[1] = "@media ".concat(item[2], " {").concat(item[1], "}");
+          item[2] = media;
+        }
+      }
+      if (supports) {
+        if (!item[4]) {
+          item[4] = "".concat(supports);
+        } else {
+          item[1] = "@supports (".concat(item[4], ") {").concat(item[1], "}");
+          item[4] = supports;
+        }
+      }
+      list.push(item);
+    }
+  };
+  return list;
+};
+
+/***/ }),
+
+/***/ "../../node_modules/css-loader/dist/runtime/sourceMaps.js":
+/*!****************************************************************!*\
+  !*** ../../node_modules/css-loader/dist/runtime/sourceMaps.js ***!
+  \****************************************************************/
+/***/ ((module) => {
+
+
+
+module.exports = function (item) {
+  var content = item[1];
+  var cssMapping = item[3];
+  if (!cssMapping) {
+    return content;
+  }
+  if (typeof btoa === "function") {
+    var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(cssMapping))));
+    var data = "sourceMappingURL=data:application/json;charset=utf-8;base64,".concat(base64);
+    var sourceMapping = "/*# ".concat(data, " */");
+    return [content].concat([sourceMapping]).join("\n");
+  }
+  return [content].join("\n");
+};
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/array.js":
+/*!****************************************!*\
+  !*** ../../node_modules/lib0/array.js ***!
+  \****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   appendTo: () => (/* binding */ appendTo),
+/* harmony export */   bubblesortItem: () => (/* binding */ bubblesortItem),
+/* harmony export */   copy: () => (/* binding */ copy),
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   equalFlat: () => (/* binding */ equalFlat),
+/* harmony export */   every: () => (/* binding */ every),
+/* harmony export */   flatten: () => (/* binding */ flatten),
+/* harmony export */   fold: () => (/* binding */ fold),
+/* harmony export */   from: () => (/* binding */ from),
+/* harmony export */   isArray: () => (/* binding */ isArray),
+/* harmony export */   last: () => (/* binding */ last),
+/* harmony export */   map: () => (/* binding */ map),
+/* harmony export */   some: () => (/* binding */ some),
+/* harmony export */   unfold: () => (/* binding */ unfold),
+/* harmony export */   unique: () => (/* binding */ unique),
+/* harmony export */   uniqueBy: () => (/* binding */ uniqueBy)
+/* harmony export */ });
+/* harmony import */ var _set_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./set.js */ "../../node_modules/lib0/set.js");
 /**
  * Utility module to work with Arrays.
  *
  * @module array
  */
+
 
 
 /**
@@ -12050,7 +13232,33 @@ const create$4 = () => new Set();
  * @param {ArrayLike<L>} arr
  * @return {L}
  */
-const last = arr => arr[arr.length - 1];
+const last = arr => arr[arr.length - 1]
+
+/**
+ * @template C
+ * @return {Array<C>}
+ */
+const create = () => /** @type {Array<C>} */ ([])
+
+/**
+ * @template D
+ * @param {Array<D>} a
+ * @return {Array<D>}
+ */
+const copy = a => /** @type {Array<D>} */ (a.slice())
+
+/**
+ * Append elements from src to dest
+ *
+ * @template M
+ * @param {Array<M>} dest
+ * @param {Array<M>} src
+ */
+const appendTo = (dest, src) => {
+  for (let i = 0; i < src.length; i++) {
+    dest.push(src[i])
+  }
+}
 
 /**
  * Transforms something array-like to an actual Array.
@@ -12060,128 +13268,252 @@ const last = arr => arr[arr.length - 1];
  * @param {ArrayLike<T>|Iterable<T>} arraylike
  * @return {T}
  */
-const from = Array.from;
-
-const isArray = Array.isArray;
+const from = Array.from
 
 /**
- * Observable class prototype.
+ * True iff condition holds on every element in the Array.
  *
- * @module observable
+ * @function
+ * @template {ArrayLike<any>} ARR
+ *
+ * @param {ARR} arr
+ * @param {ARR extends ArrayLike<infer S> ? ((value:S, index:number, arr:ARR) => boolean) : any} f
+ * @return {boolean}
  */
-
-
-/**
- * Handles named events.
- * @experimental
- *
- * This is basically a (better typed) duplicate of Observable, which will replace Observable in the
- * next release.
- *
- * @template {{[key in keyof EVENTS]: function(...any):void}} EVENTS
- */
-class ObservableV2 {
-  constructor () {
-    /**
-     * Some desc.
-     * @type {Map<string, Set<any>>}
-     */
-    this._observers = create$5();
-  }
-
-  /**
-   * @template {keyof EVENTS & string} NAME
-   * @param {NAME} name
-   * @param {EVENTS[NAME]} f
-   */
-  on (name, f) {
-    setIfUndefined(this._observers, /** @type {string} */ (name), create$4).add(f);
-    return f
-  }
-
-  /**
-   * @template {keyof EVENTS & string} NAME
-   * @param {NAME} name
-   * @param {EVENTS[NAME]} f
-   */
-  once (name, f) {
-    /**
-     * @param  {...any} args
-     */
-    const _f = (...args) => {
-      this.off(name, /** @type {any} */ (_f));
-      f(...args);
-    };
-    this.on(name, /** @type {any} */ (_f));
-  }
-
-  /**
-   * @template {keyof EVENTS & string} NAME
-   * @param {NAME} name
-   * @param {EVENTS[NAME]} f
-   */
-  off (name, f) {
-    const observers = this._observers.get(name);
-    if (observers !== undefined) {
-      observers.delete(f);
-      if (observers.size === 0) {
-        this._observers.delete(name);
-      }
+const every = (arr, f) => {
+  for (let i = 0; i < arr.length; i++) {
+    if (!f(arr[i], i, arr)) {
+      return false
     }
   }
-
-  /**
-   * Emit a named event. All registered event listeners that listen to the
-   * specified name will receive the event.
-   *
-   * @todo This should catch exceptions
-   *
-   * @template {keyof EVENTS & string} NAME
-   * @param {NAME} name The event name.
-   * @param {Parameters<EVENTS[NAME]>} args The arguments that are applied to the event listener.
-   */
-  emit (name, args) {
-    // copy all listeners to an array first to make sure that no event is emitted to listeners that are subscribed while the event handler is called.
-    return from((this._observers.get(name) || create$5()).values()).forEach(f => f(...args))
-  }
-
-  destroy () {
-    this._observers = create$5();
-  }
+  return true
 }
-/* c8 ignore end */
 
 /**
- * Common Math expressions.
+ * True iff condition holds on some element in the Array.
  *
- * @module math
- */
-
-const floor = Math.floor;
-const abs = Math.abs;
-
-/**
  * @function
- * @param {number} a
- * @param {number} b
- * @return {number} The smaller element of a and b
+ * @template {ArrayLike<any>} ARR
+ *
+ * @param {ARR} arr
+ * @param {ARR extends ArrayLike<infer S> ? ((value:S, index:number, arr:ARR) => boolean) : never} f
+ * @return {boolean}
  */
-const min = (a, b) => a < b ? a : b;
+const some = (arr, f) => {
+  for (let i = 0; i < arr.length; i++) {
+    if (f(arr[i], i, arr)) {
+      return true
+    }
+  }
+  return false
+}
 
 /**
- * @function
- * @param {number} a
- * @param {number} b
- * @return {number} The bigger element of a and b
+ * @template ELEM
+ *
+ * @param {ArrayLike<ELEM>} a
+ * @param {ArrayLike<ELEM>} b
+ * @return {boolean}
  */
-const max = (a, b) => a > b ? a : b;
+const equalFlat = (a, b) => a.length === b.length && every(a, (item, index) => item === b[index])
 
 /**
- * @param {number} n
- * @return {boolean} Wether n is negative. This function also differentiates between -0 and +0
+ * @template ELEM
+ * @param {Array<Array<ELEM>>} arr
+ * @return {Array<ELEM>}
  */
-const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0;
+const flatten = arr => fold(arr, /** @type {Array<ELEM>} */ ([]), (acc, val) => acc.concat(val))
 
+/**
+ * @template T
+ * @param {number} len
+ * @param {function(number, Array<T>):T} f
+ * @return {Array<T>}
+ */
+const unfold = (len, f) => {
+  const array = new Array(len)
+  for (let i = 0; i < len; i++) {
+    array[i] = f(i, array)
+  }
+  return array
+}
+
+/**
+ * @template T
+ * @template RESULT
+ * @param {Array<T>} arr
+ * @param {RESULT} seed
+ * @param {function(RESULT, T, number):RESULT} folder
+ */
+const fold = (arr, seed, folder) => arr.reduce(folder, seed)
+
+const isArray = Array.isArray
+
+/**
+ * @template T
+ * @param {Array<T>} arr
+ * @return {Array<T>}
+ */
+const unique = arr => from(_set_js__WEBPACK_IMPORTED_MODULE_0__.from(arr))
+
+/**
+ * @template T
+ * @template M
+ * @param {ArrayLike<T>} arr
+ * @param {function(T):M} mapper
+ * @return {Array<T>}
+ */
+const uniqueBy = (arr, mapper) => {
+  /**
+   * @type {Set<M>}
+   */
+  const happened = _set_js__WEBPACK_IMPORTED_MODULE_0__.create()
+  /**
+   * @type {Array<T>}
+   */
+  const result = []
+  for (let i = 0; i < arr.length; i++) {
+    const el = arr[i]
+    const mapped = mapper(el)
+    if (!happened.has(mapped)) {
+      happened.add(mapped)
+      result.push(el)
+    }
+  }
+  return result
+}
+
+/**
+ * @template {ArrayLike<any>} ARR
+ * @template {function(ARR extends ArrayLike<infer T> ? T : never, number, ARR):any} MAPPER
+ * @param {ARR} arr
+ * @param {MAPPER} mapper
+ * @return {Array<MAPPER extends function(...any): infer M ? M : never>}
+ */
+const map = (arr, mapper) => {
+  /**
+   * @type {Array<any>}
+   */
+  const res = Array(arr.length)
+  for (let i = 0; i < arr.length; i++) {
+    res[i] = mapper(/** @type {any} */ (arr[i]), i, /** @type {any} */ (arr))
+  }
+  return /** @type {any} */ (res)
+}
+
+/**
+ * This function bubble-sorts a single item to the correct position. The sort happens in-place and
+ * might be useful to ensure that a single item is at the correct position in an otherwise sorted
+ * array.
+ *
+ * @example
+ *  const arr = [3, 2, 5]
+ *  arr.sort((a, b) => a - b)
+ *  arr // => [2, 3, 5]
+ *  arr.splice(1, 0, 7)
+ *  array.bubbleSortItem(arr, 1, (a, b) => a - b)
+ *  arr // => [2, 3, 5, 7]
+ *
+ * @template T
+ * @param {Array<T>} arr
+ * @param {number} i
+ * @param {(a:T,b:T) => number} compareFn
+ */
+const bubblesortItem = (arr, i, compareFn) => {
+  const n = arr[i]
+  let j = i
+  // try to sort to the right
+  while (j + 1 < arr.length && compareFn(n, arr[j + 1]) > 0) {
+    arr[j] = arr[j + 1]
+    arr[++j] = n
+  }
+  if (i === j && j > 0) { // no change yet
+    // sort to the left
+    while (j > 0 && compareFn(arr[j - 1], n) > 0) {
+      arr[j] = arr[j - 1]
+      arr[--j] = n
+    }
+  }
+  return j
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/binary.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/binary.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   BIT1: () => (/* binding */ BIT1),
+/* harmony export */   BIT10: () => (/* binding */ BIT10),
+/* harmony export */   BIT11: () => (/* binding */ BIT11),
+/* harmony export */   BIT12: () => (/* binding */ BIT12),
+/* harmony export */   BIT13: () => (/* binding */ BIT13),
+/* harmony export */   BIT14: () => (/* binding */ BIT14),
+/* harmony export */   BIT15: () => (/* binding */ BIT15),
+/* harmony export */   BIT16: () => (/* binding */ BIT16),
+/* harmony export */   BIT17: () => (/* binding */ BIT17),
+/* harmony export */   BIT18: () => (/* binding */ BIT18),
+/* harmony export */   BIT19: () => (/* binding */ BIT19),
+/* harmony export */   BIT2: () => (/* binding */ BIT2),
+/* harmony export */   BIT20: () => (/* binding */ BIT20),
+/* harmony export */   BIT21: () => (/* binding */ BIT21),
+/* harmony export */   BIT22: () => (/* binding */ BIT22),
+/* harmony export */   BIT23: () => (/* binding */ BIT23),
+/* harmony export */   BIT24: () => (/* binding */ BIT24),
+/* harmony export */   BIT25: () => (/* binding */ BIT25),
+/* harmony export */   BIT26: () => (/* binding */ BIT26),
+/* harmony export */   BIT27: () => (/* binding */ BIT27),
+/* harmony export */   BIT28: () => (/* binding */ BIT28),
+/* harmony export */   BIT29: () => (/* binding */ BIT29),
+/* harmony export */   BIT3: () => (/* binding */ BIT3),
+/* harmony export */   BIT30: () => (/* binding */ BIT30),
+/* harmony export */   BIT31: () => (/* binding */ BIT31),
+/* harmony export */   BIT32: () => (/* binding */ BIT32),
+/* harmony export */   BIT4: () => (/* binding */ BIT4),
+/* harmony export */   BIT5: () => (/* binding */ BIT5),
+/* harmony export */   BIT6: () => (/* binding */ BIT6),
+/* harmony export */   BIT7: () => (/* binding */ BIT7),
+/* harmony export */   BIT8: () => (/* binding */ BIT8),
+/* harmony export */   BIT9: () => (/* binding */ BIT9),
+/* harmony export */   BITS0: () => (/* binding */ BITS0),
+/* harmony export */   BITS1: () => (/* binding */ BITS1),
+/* harmony export */   BITS10: () => (/* binding */ BITS10),
+/* harmony export */   BITS11: () => (/* binding */ BITS11),
+/* harmony export */   BITS12: () => (/* binding */ BITS12),
+/* harmony export */   BITS13: () => (/* binding */ BITS13),
+/* harmony export */   BITS14: () => (/* binding */ BITS14),
+/* harmony export */   BITS15: () => (/* binding */ BITS15),
+/* harmony export */   BITS16: () => (/* binding */ BITS16),
+/* harmony export */   BITS17: () => (/* binding */ BITS17),
+/* harmony export */   BITS18: () => (/* binding */ BITS18),
+/* harmony export */   BITS19: () => (/* binding */ BITS19),
+/* harmony export */   BITS2: () => (/* binding */ BITS2),
+/* harmony export */   BITS20: () => (/* binding */ BITS20),
+/* harmony export */   BITS21: () => (/* binding */ BITS21),
+/* harmony export */   BITS22: () => (/* binding */ BITS22),
+/* harmony export */   BITS23: () => (/* binding */ BITS23),
+/* harmony export */   BITS24: () => (/* binding */ BITS24),
+/* harmony export */   BITS25: () => (/* binding */ BITS25),
+/* harmony export */   BITS26: () => (/* binding */ BITS26),
+/* harmony export */   BITS27: () => (/* binding */ BITS27),
+/* harmony export */   BITS28: () => (/* binding */ BITS28),
+/* harmony export */   BITS29: () => (/* binding */ BITS29),
+/* harmony export */   BITS3: () => (/* binding */ BITS3),
+/* harmony export */   BITS30: () => (/* binding */ BITS30),
+/* harmony export */   BITS31: () => (/* binding */ BITS31),
+/* harmony export */   BITS32: () => (/* binding */ BITS32),
+/* harmony export */   BITS4: () => (/* binding */ BITS4),
+/* harmony export */   BITS5: () => (/* binding */ BITS5),
+/* harmony export */   BITS6: () => (/* binding */ BITS6),
+/* harmony export */   BITS7: () => (/* binding */ BITS7),
+/* harmony export */   BITS8: () => (/* binding */ BITS8),
+/* harmony export */   BITS9: () => (/* binding */ BITS9)
+/* harmony export */ });
 /* eslint-env browser */
 
 /**
@@ -12195,98 +13527,1441 @@ const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0;
  *
  * @type {number}
  */
-const BIT1 = 1;
-const BIT2 = 2;
-const BIT3 = 4;
-const BIT4 = 8;
-const BIT6 = 32;
-const BIT7 = 64;
-const BIT8 = 128;
-const BITS5 = 31;
-const BITS6 = 63;
-const BITS7 = 127;
+const BIT1 = 1
+const BIT2 = 2
+const BIT3 = 4
+const BIT4 = 8
+const BIT5 = 16
+const BIT6 = 32
+const BIT7 = 64
+const BIT8 = 128
+const BIT9 = 256
+const BIT10 = 512
+const BIT11 = 1024
+const BIT12 = 2048
+const BIT13 = 4096
+const BIT14 = 8192
+const BIT15 = 16384
+const BIT16 = 32768
+const BIT17 = 65536
+const BIT18 = 1 << 17
+const BIT19 = 1 << 18
+const BIT20 = 1 << 19
+const BIT21 = 1 << 20
+const BIT22 = 1 << 21
+const BIT23 = 1 << 22
+const BIT24 = 1 << 23
+const BIT25 = 1 << 24
+const BIT26 = 1 << 25
+const BIT27 = 1 << 26
+const BIT28 = 1 << 27
+const BIT29 = 1 << 28
+const BIT30 = 1 << 29
+const BIT31 = 1 << 30
+const BIT32 = 1 << 31
+
+/**
+ * First n bits activated.
+ *
+ * @type {number}
+ */
+const BITS0 = 0
+const BITS1 = 1
+const BITS2 = 3
+const BITS3 = 7
+const BITS4 = 15
+const BITS5 = 31
+const BITS6 = 63
+const BITS7 = 127
+const BITS8 = 255
+const BITS9 = 511
+const BITS10 = 1023
+const BITS11 = 2047
+const BITS12 = 4095
+const BITS13 = 8191
+const BITS14 = 16383
+const BITS15 = 32767
+const BITS16 = 65535
+const BITS17 = BIT18 - 1
+const BITS18 = BIT19 - 1
+const BITS19 = BIT20 - 1
+const BITS20 = BIT21 - 1
+const BITS21 = BIT22 - 1
+const BITS22 = BIT23 - 1
+const BITS23 = BIT24 - 1
+const BITS24 = BIT25 - 1
+const BITS25 = BIT26 - 1
+const BITS26 = BIT27 - 1
+const BITS27 = BIT28 - 1
+const BITS28 = BIT29 - 1
+const BITS29 = BIT30 - 1
+const BITS30 = BIT31 - 1
 /**
  * @type {number}
  */
-const BITS31 = 0x7FFFFFFF;
-
+const BITS31 = 0x7FFFFFFF
 /**
- * Utility helpers for working with numbers.
+ * @type {number}
+ */
+const BITS32 = 0xFFFFFFFF
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/buffer.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/buffer.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   copyUint8Array: () => (/* binding */ copyUint8Array),
+/* harmony export */   createUint8ArrayFromArrayBuffer: () => (/* binding */ createUint8ArrayFromArrayBuffer),
+/* harmony export */   createUint8ArrayFromLen: () => (/* binding */ createUint8ArrayFromLen),
+/* harmony export */   createUint8ArrayViewFromArrayBuffer: () => (/* binding */ createUint8ArrayViewFromArrayBuffer),
+/* harmony export */   decodeAny: () => (/* binding */ decodeAny),
+/* harmony export */   encodeAny: () => (/* binding */ encodeAny),
+/* harmony export */   fromBase64: () => (/* binding */ fromBase64),
+/* harmony export */   fromBase64UrlEncoded: () => (/* binding */ fromBase64UrlEncoded),
+/* harmony export */   fromHexString: () => (/* binding */ fromHexString),
+/* harmony export */   shiftNBitsLeft: () => (/* binding */ shiftNBitsLeft),
+/* harmony export */   toBase64: () => (/* binding */ toBase64),
+/* harmony export */   toBase64UrlEncoded: () => (/* binding */ toBase64UrlEncoded),
+/* harmony export */   toHexString: () => (/* binding */ toHexString)
+/* harmony export */ });
+/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./string.js */ "../../node_modules/lib0/string.js");
+/* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./environment.js */ "../../node_modules/lib0/environment.js");
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./array.js */ "../../node_modules/lib0/array.js");
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _encoding_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./encoding.js */ "../../node_modules/lib0/encoding.js");
+/* harmony import */ var _decoding_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./decoding.js */ "../../node_modules/lib0/decoding.js");
+/**
+ * Utility functions to work with buffers (Uint8Array).
  *
- * @module number
+ * @module buffer
  */
 
 
-/* c8 ignore next */
-const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && floor(num) === num);
+
+
+
+
+
 
 /**
- * @param {string} s
- * @return {string}
+ * @param {number} len
  */
-const toLowerCase = s => s.toLowerCase();
-
-const trimLeftRegex = /^\s*/g;
+const createUint8ArrayFromLen = len => new Uint8Array(len)
 
 /**
- * @param {string} s
- * @return {string}
+ * Create Uint8Array with initial content from buffer
+ *
+ * @param {ArrayBuffer} buffer
+ * @param {number} byteOffset
+ * @param {number} length
  */
-const trimLeft = s => s.replace(trimLeftRegex, '');
-
-const fromCamelCaseRegex = /([A-Z])/g;
+const createUint8ArrayViewFromArrayBuffer = (buffer, byteOffset, length) => new Uint8Array(buffer, byteOffset, length)
 
 /**
- * @param {string} s
- * @param {string} separator
- * @return {string}
+ * Create Uint8Array with initial content from buffer
+ *
+ * @param {ArrayBuffer} buffer
  */
-const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`));
-
-/**
- * @param {string} str
- * @return {Uint8Array}
- */
-const _encodeUtf8Polyfill = str => {
-  const encodedString = unescape(encodeURIComponent(str));
-  const len = encodedString.length;
-  const buf = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    buf[i] = /** @type {number} */ (encodedString.codePointAt(i));
-  }
-  return buf
-};
-
-/* c8 ignore next */
-const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
-
-/**
- * @param {string} str
- * @return {Uint8Array}
- */
-const _encodeUtf8Native = str => utf8TextEncoder.encode(str);
-
-/**
- * @param {string} str
- * @return {Uint8Array}
- */
-/* c8 ignore next */
-const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill;
-
-/* c8 ignore next */
-let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+const createUint8ArrayFromArrayBuffer = buffer => new Uint8Array(buffer)
 
 /* c8 ignore start */
-if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
-  // Safari doesn't handle BOM correctly.
-  // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
-  // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
-  // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
-  // Another issue is that from then on no BOM chars are recognized anymore
-  /* c8 ignore next */
-  utf8TextDecoder = null;
+/**
+ * @param {Uint8Array} bytes
+ * @return {string}
+ */
+const toBase64Browser = bytes => {
+  let s = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    s += _string_js__WEBPACK_IMPORTED_MODULE_0__.fromCharCode(bytes[i])
+  }
+  // eslint-disable-next-line no-undef
+  return btoa(s)
+}
+/* c8 ignore stop */
+
+/**
+ * @param {Uint8Array} bytes
+ * @return {string}
+ */
+const toBase64Node = bytes => Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64')
+
+/* c8 ignore start */
+/**
+ * @param {string} s
+ * @return {Uint8Array}
+ */
+const fromBase64Browser = s => {
+  // eslint-disable-next-line no-undef
+  const a = atob(s)
+  const bytes = createUint8ArrayFromLen(a.length)
+  for (let i = 0; i < a.length; i++) {
+    bytes[i] = a.charCodeAt(i)
+  }
+  return bytes
+}
+/* c8 ignore stop */
+
+/**
+ * @param {string} s
+ */
+const fromBase64Node = s => {
+  const buf = Buffer.from(s, 'base64')
+  return createUint8ArrayViewFromArrayBuffer(buf.buffer, buf.byteOffset, buf.byteLength)
 }
 
+/* c8 ignore next */
+const toBase64 = _environment_js__WEBPACK_IMPORTED_MODULE_1__.isBrowser ? toBase64Browser : toBase64Node
+
+/* c8 ignore next */
+const fromBase64 = _environment_js__WEBPACK_IMPORTED_MODULE_1__.isBrowser ? fromBase64Browser : fromBase64Node
+
+/**
+ * Implements base64url - see https://datatracker.ietf.org/doc/html/rfc4648#section-5
+ * @param {Uint8Array} buf
+ */
+const toBase64UrlEncoded = buf => toBase64(buf).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+
+/**
+ * @param {string} base64
+ */
+const fromBase64UrlEncoded = base64 => fromBase64(base64.replaceAll('-', '+').replaceAll('_', '/'))
+
+/**
+ * Base64 is always a more efficient choice. This exists for utility purposes only.
+ *
+ * @param {Uint8Array} buf
+ */
+const toHexString = buf => _array_js__WEBPACK_IMPORTED_MODULE_2__.map(buf, b => b.toString(16).padStart(2, '0')).join('')
+
+/**
+ * Note: This function expects that the hex doesn't start with 0x..
+ *
+ * @param {string} hex
+ */
+const fromHexString = hex => {
+  const hlen = hex.length
+  const buf = new Uint8Array(_math_js__WEBPACK_IMPORTED_MODULE_3__.ceil(hlen / 2))
+  for (let i = 0; i < hlen; i += 2) {
+    buf[buf.length - i / 2 - 1] = Number.parseInt(hex.slice(hlen - i - 2, hlen - i), 16)
+  }
+  return buf
+}
+
+/**
+ * Copy the content of an Uint8Array view to a new ArrayBuffer.
+ *
+ * @param {Uint8Array} uint8Array
+ * @return {Uint8Array}
+ */
+const copyUint8Array = uint8Array => {
+  const newBuf = createUint8ArrayFromLen(uint8Array.byteLength)
+  newBuf.set(uint8Array)
+  return newBuf
+}
+
+/**
+ * Encode anything as a UInt8Array. It's a pun on typescripts's `any` type.
+ * See encoding.writeAny for more information.
+ *
+ * @param {any} data
+ * @return {Uint8Array}
+ */
+const encodeAny = data =>
+  _encoding_js__WEBPACK_IMPORTED_MODULE_4__.encode(encoder => _encoding_js__WEBPACK_IMPORTED_MODULE_4__.writeAny(encoder, data))
+
+/**
+ * Decode an any-encoded value.
+ *
+ * @param {Uint8Array} buf
+ * @return {any}
+ */
+const decodeAny = buf => _decoding_js__WEBPACK_IMPORTED_MODULE_5__.readAny(_decoding_js__WEBPACK_IMPORTED_MODULE_5__.createDecoder(buf))
+
+/**
+ * Shift Byte Array {N} bits to the left. Does not expand byte array.
+ *
+ * @param {Uint8Array} bs
+ * @param {number} N should be in the range of [0-7]
+ */
+const shiftNBitsLeft = (bs, N) => {
+  if (N === 0) return bs
+  bs = new Uint8Array(bs)
+  bs[0] <<= N
+  for (let i = 1; i < bs.length; i++) {
+    bs[i - 1] |= bs[i] >>> (8 - N)
+    bs[i] <<= N
+  }
+  return bs
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/conditions.js":
+/*!*********************************************!*\
+  !*** ../../node_modules/lib0/conditions.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   undefinedToNull: () => (/* binding */ undefinedToNull)
+/* harmony export */ });
+/**
+ * Often used conditions.
+ *
+ * @module conditions
+ */
+
+/**
+ * @template T
+ * @param {T|null|undefined} v
+ * @return {T|null}
+ */
+/* c8 ignore next */
+const undefinedToNull = v => v === undefined ? null : v
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/decoding.js":
+/*!*******************************************!*\
+  !*** ../../node_modules/lib0/decoding.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Decoder: () => (/* binding */ Decoder),
+/* harmony export */   IncUintOptRleDecoder: () => (/* binding */ IncUintOptRleDecoder),
+/* harmony export */   IntDiffDecoder: () => (/* binding */ IntDiffDecoder),
+/* harmony export */   IntDiffOptRleDecoder: () => (/* binding */ IntDiffOptRleDecoder),
+/* harmony export */   RleDecoder: () => (/* binding */ RleDecoder),
+/* harmony export */   RleIntDiffDecoder: () => (/* binding */ RleIntDiffDecoder),
+/* harmony export */   StringDecoder: () => (/* binding */ StringDecoder),
+/* harmony export */   UintOptRleDecoder: () => (/* binding */ UintOptRleDecoder),
+/* harmony export */   _readVarStringNative: () => (/* binding */ _readVarStringNative),
+/* harmony export */   _readVarStringPolyfill: () => (/* binding */ _readVarStringPolyfill),
+/* harmony export */   clone: () => (/* binding */ clone),
+/* harmony export */   createDecoder: () => (/* binding */ createDecoder),
+/* harmony export */   hasContent: () => (/* binding */ hasContent),
+/* harmony export */   peekUint16: () => (/* binding */ peekUint16),
+/* harmony export */   peekUint32: () => (/* binding */ peekUint32),
+/* harmony export */   peekUint8: () => (/* binding */ peekUint8),
+/* harmony export */   peekVarInt: () => (/* binding */ peekVarInt),
+/* harmony export */   peekVarString: () => (/* binding */ peekVarString),
+/* harmony export */   peekVarUint: () => (/* binding */ peekVarUint),
+/* harmony export */   readAny: () => (/* binding */ readAny),
+/* harmony export */   readBigInt64: () => (/* binding */ readBigInt64),
+/* harmony export */   readBigUint64: () => (/* binding */ readBigUint64),
+/* harmony export */   readFloat32: () => (/* binding */ readFloat32),
+/* harmony export */   readFloat64: () => (/* binding */ readFloat64),
+/* harmony export */   readFromDataView: () => (/* binding */ readFromDataView),
+/* harmony export */   readTailAsUint8Array: () => (/* binding */ readTailAsUint8Array),
+/* harmony export */   readTerminatedString: () => (/* binding */ readTerminatedString),
+/* harmony export */   readTerminatedUint8Array: () => (/* binding */ readTerminatedUint8Array),
+/* harmony export */   readUint16: () => (/* binding */ readUint16),
+/* harmony export */   readUint32: () => (/* binding */ readUint32),
+/* harmony export */   readUint32BigEndian: () => (/* binding */ readUint32BigEndian),
+/* harmony export */   readUint8: () => (/* binding */ readUint8),
+/* harmony export */   readUint8Array: () => (/* binding */ readUint8Array),
+/* harmony export */   readVarInt: () => (/* binding */ readVarInt),
+/* harmony export */   readVarString: () => (/* binding */ readVarString),
+/* harmony export */   readVarUint: () => (/* binding */ readVarUint),
+/* harmony export */   readVarUint8Array: () => (/* binding */ readVarUint8Array),
+/* harmony export */   skip8: () => (/* binding */ skip8)
+/* harmony export */ });
+/* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./binary.js */ "../../node_modules/lib0/binary.js");
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _number_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./number.js */ "../../node_modules/lib0/number.js");
+/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./string.js */ "../../node_modules/lib0/string.js");
+/* harmony import */ var _error_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./error.js */ "../../node_modules/lib0/error.js");
+/* harmony import */ var _encoding_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./encoding.js */ "../../node_modules/lib0/encoding.js");
+/**
+ * Efficient schema-less binary decoding with support for variable length encoding.
+ *
+ * Use [lib0/decoding] with [lib0/encoding]. Every encoding function has a corresponding decoding function.
+ *
+ * Encodes numbers in little-endian order (least to most significant byte order)
+ * and is compatible with Golang's binary encoding (https://golang.org/pkg/encoding/binary/)
+ * which is also used in Protocol Buffers.
+ *
+ * ```js
+ * // encoding step
+ * const encoder = encoding.createEncoder()
+ * encoding.writeVarUint(encoder, 256)
+ * encoding.writeVarString(encoder, 'Hello world!')
+ * const buf = encoding.toUint8Array(encoder)
+ * ```
+ *
+ * ```js
+ * // decoding step
+ * const decoder = decoding.createDecoder(buf)
+ * decoding.readVarUint(decoder) // => 256
+ * decoding.readVarString(decoder) // => 'Hello world!'
+ * decoding.hasContent(decoder) // => false - all data is read
+ * ```
+ *
+ * @module decoding
+ */
+
+
+
+
+
+
+
+
+const errorUnexpectedEndOfArray = _error_js__WEBPACK_IMPORTED_MODULE_4__.create('Unexpected end of array')
+const errorIntegerOutOfRange = _error_js__WEBPACK_IMPORTED_MODULE_4__.create('Integer out of Range')
+
+/**
+ * A Decoder handles the decoding of an Uint8Array.
+ */
+class Decoder {
+  /**
+   * @param {Uint8Array} uint8Array Binary data to decode
+   */
+  constructor (uint8Array) {
+    /**
+     * Decoding target.
+     *
+     * @type {Uint8Array}
+     */
+    this.arr = uint8Array
+    /**
+     * Current decoding position.
+     *
+     * @type {number}
+     */
+    this.pos = 0
+  }
+}
+
+/**
+ * @function
+ * @param {Uint8Array} uint8Array
+ * @return {Decoder}
+ */
+const createDecoder = uint8Array => new Decoder(uint8Array)
+
+/**
+ * @function
+ * @param {Decoder} decoder
+ * @return {boolean}
+ */
+const hasContent = decoder => decoder.pos !== decoder.arr.length
+
+/**
+ * Clone a decoder instance.
+ * Optionally set a new position parameter.
+ *
+ * @function
+ * @param {Decoder} decoder The decoder instance
+ * @param {number} [newPos] Defaults to current position
+ * @return {Decoder} A clone of `decoder`
+ */
+const clone = (decoder, newPos = decoder.pos) => {
+  const _decoder = createDecoder(decoder.arr)
+  _decoder.pos = newPos
+  return _decoder
+}
+
+/**
+ * Create an Uint8Array view of the next `len` bytes and advance the position by `len`.
+ *
+ * Important: The Uint8Array still points to the underlying ArrayBuffer. Make sure to discard the result as soon as possible to prevent any memory leaks.
+ *            Use `buffer.copyUint8Array` to copy the result into a new Uint8Array.
+ *
+ * @function
+ * @param {Decoder} decoder The decoder instance
+ * @param {number} len The length of bytes to read
+ * @return {Uint8Array}
+ */
+const readUint8Array = (decoder, len) => {
+  const view = new Uint8Array(decoder.arr.buffer, decoder.pos + decoder.arr.byteOffset, len)
+  decoder.pos += len
+  return view
+}
+
+/**
+ * Read variable length Uint8Array.
+ *
+ * Important: The Uint8Array still points to the underlying ArrayBuffer. Make sure to discard the result as soon as possible to prevent any memory leaks.
+ *            Use `buffer.copyUint8Array` to copy the result into a new Uint8Array.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {Uint8Array}
+ */
+const readVarUint8Array = decoder => readUint8Array(decoder, readVarUint(decoder))
+
+/**
+ * Read the rest of the content as an ArrayBuffer
+ * @function
+ * @param {Decoder} decoder
+ * @return {Uint8Array}
+ */
+const readTailAsUint8Array = decoder => readUint8Array(decoder, decoder.arr.length - decoder.pos)
+
+/**
+ * Skip one byte, jump to the next position.
+ * @function
+ * @param {Decoder} decoder The decoder instance
+ * @return {number} The next position
+ */
+const skip8 = decoder => decoder.pos++
+
+/**
+ * Read one byte as unsigned integer.
+ * @function
+ * @param {Decoder} decoder The decoder instance
+ * @return {number} Unsigned 8-bit integer
+ */
+const readUint8 = decoder => decoder.arr[decoder.pos++]
+
+/**
+ * Read 2 bytes as unsigned integer.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const readUint16 = decoder => {
+  const uint =
+    decoder.arr[decoder.pos] +
+    (decoder.arr[decoder.pos + 1] << 8)
+  decoder.pos += 2
+  return uint
+}
+
+/**
+ * Read 4 bytes as unsigned integer.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const readUint32 = decoder => {
+  const uint =
+    (decoder.arr[decoder.pos] +
+    (decoder.arr[decoder.pos + 1] << 8) +
+    (decoder.arr[decoder.pos + 2] << 16) +
+    (decoder.arr[decoder.pos + 3] << 24)) >>> 0
+  decoder.pos += 4
+  return uint
+}
+
+/**
+ * Read 4 bytes as unsigned integer in big endian order.
+ * (most significant byte first)
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const readUint32BigEndian = decoder => {
+  const uint =
+    (decoder.arr[decoder.pos + 3] +
+    (decoder.arr[decoder.pos + 2] << 8) +
+    (decoder.arr[decoder.pos + 1] << 16) +
+    (decoder.arr[decoder.pos] << 24)) >>> 0
+  decoder.pos += 4
+  return uint
+}
+
+/**
+ * Look ahead without incrementing the position
+ * to the next byte and read it as unsigned integer.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const peekUint8 = decoder => decoder.arr[decoder.pos]
+
+/**
+ * Look ahead without incrementing the position
+ * to the next byte and read it as unsigned integer.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const peekUint16 = decoder =>
+  decoder.arr[decoder.pos] +
+  (decoder.arr[decoder.pos + 1] << 8)
+
+/**
+ * Look ahead without incrementing the position
+ * to the next byte and read it as unsigned integer.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const peekUint32 = decoder => (
+  decoder.arr[decoder.pos] +
+  (decoder.arr[decoder.pos + 1] << 8) +
+  (decoder.arr[decoder.pos + 2] << 16) +
+  (decoder.arr[decoder.pos + 3] << 24)
+) >>> 0
+
+/**
+ * Read unsigned integer (32bit) with variable length.
+ * 1/8th of the storage is used as encoding overhead.
+ *  * numbers < 2^7 is stored in one bytlength
+ *  * numbers < 2^14 is stored in two bylength
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.length
+ */
+const readVarUint = decoder => {
+  let num = 0
+  let mult = 1
+  const len = decoder.arr.length
+  while (decoder.pos < len) {
+    const r = decoder.arr[decoder.pos++]
+    // num = num | ((r & binary.BITS7) << len)
+    num = num + (r & _binary_js__WEBPACK_IMPORTED_MODULE_0__.BITS7) * mult // shift $r << (7*#iterations) and add it to num
+    mult *= 128 // next iteration, shift 7 "more" to the left
+    if (r < _binary_js__WEBPACK_IMPORTED_MODULE_0__.BIT8) {
+      return num
+    }
+    /* c8 ignore start */
+    if (num > _number_js__WEBPACK_IMPORTED_MODULE_2__.MAX_SAFE_INTEGER) {
+      throw errorIntegerOutOfRange
+    }
+    /* c8 ignore stop */
+  }
+  throw errorUnexpectedEndOfArray
+}
+
+/**
+ * Read signed integer (32bit) with variable length.
+ * 1/8th of the storage is used as encoding overhead.
+ *  * numbers < 2^7 is stored in one bytlength
+ *  * numbers < 2^14 is stored in two bylength
+ * @todo This should probably create the inverse ~num if number is negative - but this would be a breaking change.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.length
+ */
+const readVarInt = decoder => {
+  let r = decoder.arr[decoder.pos++]
+  let num = r & _binary_js__WEBPACK_IMPORTED_MODULE_0__.BITS6
+  let mult = 64
+  const sign = (r & _binary_js__WEBPACK_IMPORTED_MODULE_0__.BIT7) > 0 ? -1 : 1
+  if ((r & _binary_js__WEBPACK_IMPORTED_MODULE_0__.BIT8) === 0) {
+    // don't continue reading
+    return sign * num
+  }
+  const len = decoder.arr.length
+  while (decoder.pos < len) {
+    r = decoder.arr[decoder.pos++]
+    // num = num | ((r & binary.BITS7) << len)
+    num = num + (r & _binary_js__WEBPACK_IMPORTED_MODULE_0__.BITS7) * mult
+    mult *= 128
+    if (r < _binary_js__WEBPACK_IMPORTED_MODULE_0__.BIT8) {
+      return sign * num
+    }
+    /* c8 ignore start */
+    if (num > _number_js__WEBPACK_IMPORTED_MODULE_2__.MAX_SAFE_INTEGER) {
+      throw errorIntegerOutOfRange
+    }
+    /* c8 ignore stop */
+  }
+  throw errorUnexpectedEndOfArray
+}
+
+/**
+ * Look ahead and read varUint without incrementing position
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number}
+ */
+const peekVarUint = decoder => {
+  const pos = decoder.pos
+  const s = readVarUint(decoder)
+  decoder.pos = pos
+  return s
+}
+
+/**
+ * Look ahead and read varUint without incrementing position
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number}
+ */
+const peekVarInt = decoder => {
+  const pos = decoder.pos
+  const s = readVarInt(decoder)
+  decoder.pos = pos
+  return s
+}
+
+/**
+ * We don't test this function anymore as we use native decoding/encoding by default now.
+ * Better not modify this anymore..
+ *
+ * Transforming utf8 to a string is pretty expensive. The code performs 10x better
+ * when String.fromCodePoint is fed with all characters as arguments.
+ * But most environments have a maximum number of arguments per functions.
+ * For effiency reasons we apply a maximum of 10000 characters at once.
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {String} The read String.
+ */
+/* c8 ignore start */
+const _readVarStringPolyfill = decoder => {
+  let remainingLen = readVarUint(decoder)
+  if (remainingLen === 0) {
+    return ''
+  } else {
+    let encodedString = String.fromCodePoint(readUint8(decoder)) // remember to decrease remainingLen
+    if (--remainingLen < 100) { // do not create a Uint8Array for small strings
+      while (remainingLen--) {
+        encodedString += String.fromCodePoint(readUint8(decoder))
+      }
+    } else {
+      while (remainingLen > 0) {
+        const nextLen = remainingLen < 10000 ? remainingLen : 10000
+        // this is dangerous, we create a fresh array view from the existing buffer
+        const bytes = decoder.arr.subarray(decoder.pos, decoder.pos + nextLen)
+        decoder.pos += nextLen
+        // Starting with ES5.1 we can supply a generic array-like object as arguments
+        encodedString += String.fromCodePoint.apply(null, /** @type {any} */ (bytes))
+        remainingLen -= nextLen
+      }
+    }
+    return decodeURIComponent(escape(encodedString))
+  }
+}
+/* c8 ignore stop */
+
+/**
+ * @function
+ * @param {Decoder} decoder
+ * @return {String} The read String
+ */
+const _readVarStringNative = decoder =>
+  /** @type any */ (_string_js__WEBPACK_IMPORTED_MODULE_3__.utf8TextDecoder).decode(readVarUint8Array(decoder))
+
+/**
+ * Read string of variable length
+ * * varUint is used to store the length of the string
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {String} The read String
+ *
+ */
+/* c8 ignore next */
+const readVarString = _string_js__WEBPACK_IMPORTED_MODULE_3__.utf8TextDecoder ? _readVarStringNative : _readVarStringPolyfill
+
+/**
+ * @param {Decoder} decoder
+ * @return {Uint8Array}
+ */
+const readTerminatedUint8Array = decoder => {
+  const encoder = _encoding_js__WEBPACK_IMPORTED_MODULE_5__.createEncoder()
+  let b
+  while (true) {
+    b = readUint8(decoder)
+    if (b === 0) {
+      return _encoding_js__WEBPACK_IMPORTED_MODULE_5__.toUint8Array(encoder)
+    }
+    if (b === 1) {
+      b = readUint8(decoder)
+    }
+    _encoding_js__WEBPACK_IMPORTED_MODULE_5__.write(encoder, b)
+  }
+}
+
+/**
+ * @param {Decoder} decoder
+ * @return {string}
+ */
+const readTerminatedString = decoder => _string_js__WEBPACK_IMPORTED_MODULE_3__.decodeUtf8(readTerminatedUint8Array(decoder))
+
+/**
+ * Look ahead and read varString without incrementing position
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {string}
+ */
+const peekVarString = decoder => {
+  const pos = decoder.pos
+  const s = readVarString(decoder)
+  decoder.pos = pos
+  return s
+}
+
+/**
+ * @param {Decoder} decoder
+ * @param {number} len
+ * @return {DataView}
+ */
+const readFromDataView = (decoder, len) => {
+  const dv = new DataView(decoder.arr.buffer, decoder.arr.byteOffset + decoder.pos, len)
+  decoder.pos += len
+  return dv
+}
+
+/**
+ * @param {Decoder} decoder
+ */
+const readFloat32 = decoder => readFromDataView(decoder, 4).getFloat32(0, false)
+
+/**
+ * @param {Decoder} decoder
+ */
+const readFloat64 = decoder => readFromDataView(decoder, 8).getFloat64(0, false)
+
+/**
+ * @param {Decoder} decoder
+ */
+const readBigInt64 = decoder => /** @type {any} */ (readFromDataView(decoder, 8)).getBigInt64(0, false)
+
+/**
+ * @param {Decoder} decoder
+ */
+const readBigUint64 = decoder => /** @type {any} */ (readFromDataView(decoder, 8)).getBigUint64(0, false)
+
+/**
+ * @type {Array<function(Decoder):any>}
+ */
+const readAnyLookupTable = [
+  decoder => undefined, // CASE 127: undefined
+  decoder => null, // CASE 126: null
+  readVarInt, // CASE 125: integer
+  readFloat32, // CASE 124: float32
+  readFloat64, // CASE 123: float64
+  readBigInt64, // CASE 122: bigint
+  decoder => false, // CASE 121: boolean (false)
+  decoder => true, // CASE 120: boolean (true)
+  readVarString, // CASE 119: string
+  decoder => { // CASE 118: object<string,any>
+    const len = readVarUint(decoder)
+    /**
+     * @type {Object<string,any>}
+     */
+    const obj = {}
+    for (let i = 0; i < len; i++) {
+      const key = readVarString(decoder)
+      obj[key] = readAny(decoder)
+    }
+    return obj
+  },
+  decoder => { // CASE 117: array<any>
+    const len = readVarUint(decoder)
+    const arr = []
+    for (let i = 0; i < len; i++) {
+      arr.push(readAny(decoder))
+    }
+    return arr
+  },
+  readVarUint8Array // CASE 116: Uint8Array
+]
+
+/**
+ * @param {Decoder} decoder
+ */
+const readAny = decoder => readAnyLookupTable[127 - readUint8(decoder)](decoder)
+
+/**
+ * T must not be null.
+ *
+ * @template T
+ */
+class RleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {function(Decoder):T} reader
+   */
+  constructor (uint8Array, reader) {
+    super(uint8Array)
+    /**
+     * The reader
+     */
+    this.reader = reader
+    /**
+     * Current state
+     * @type {T|null}
+     */
+    this.s = null
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = this.reader(this)
+      if (hasContent(this)) {
+        this.count = readVarUint(this) + 1 // see encoder implementation for the reason why this is incremented
+      } else {
+        this.count = -1 // read the current value forever
+      }
+    }
+    this.count--
+    return /** @type {T} */ (this.s)
+  }
+}
+
+class IntDiffDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {number} start
+   */
+  constructor (uint8Array, start) {
+    super(uint8Array)
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    this.s += readVarInt(this)
+    return this.s
+  }
+}
+
+class RleIntDiffDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {number} start
+   */
+  constructor (uint8Array, start) {
+    super(uint8Array)
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+    this.count = 0
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    if (this.count === 0) {
+      this.s += readVarInt(this)
+      if (hasContent(this)) {
+        this.count = readVarUint(this) + 1 // see encoder implementation for the reason why this is incremented
+      } else {
+        this.count = -1 // read the current value forever
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s)
+  }
+}
+
+class UintOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = readVarInt(this)
+      // if the sign is negative, we read the count too, otherwise count is 1
+      const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_1__.isNegativeZero(this.s)
+      this.count = 1
+      if (isNegative) {
+        this.s = -this.s
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s)
+  }
+}
+
+class IncUintOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = readVarInt(this)
+      // if the sign is negative, we read the count too, otherwise count is 1
+      const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_1__.isNegativeZero(this.s)
+      this.count = 1
+      if (isNegative) {
+        this.s = -this.s
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s++)
+  }
+}
+
+class IntDiffOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+    this.diff = 0
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    if (this.count === 0) {
+      const diff = readVarInt(this)
+      // if the first bit is set, we read more data
+      const hasCount = diff & 1
+      this.diff = _math_js__WEBPACK_IMPORTED_MODULE_1__.floor(diff / 2) // shift >> 1
+      this.count = 1
+      if (hasCount) {
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.s += this.diff
+    this.count--
+    return this.s
+  }
+}
+
+class StringDecoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    this.decoder = new UintOptRleDecoder(uint8Array)
+    this.str = readVarString(this.decoder)
+    /**
+     * @type {number}
+     */
+    this.spos = 0
+  }
+
+  /**
+   * @return {string}
+   */
+  read () {
+    const end = this.spos + this.decoder.read()
+    const res = this.str.slice(this.spos, end)
+    this.spos = end
+    return res
+  }
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/dom.js":
+/*!**************************************!*\
+  !*** ../../node_modules/lib0/dom.js ***!
+  \**************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CDATA_SECTION_NODE: () => (/* binding */ CDATA_SECTION_NODE),
+/* harmony export */   COMMENT_NODE: () => (/* binding */ COMMENT_NODE),
+/* harmony export */   DOCUMENT_FRAGMENT_NODE: () => (/* binding */ DOCUMENT_FRAGMENT_NODE),
+/* harmony export */   DOCUMENT_NODE: () => (/* binding */ DOCUMENT_NODE),
+/* harmony export */   DOCUMENT_TYPE_NODE: () => (/* binding */ DOCUMENT_TYPE_NODE),
+/* harmony export */   ELEMENT_NODE: () => (/* binding */ ELEMENT_NODE),
+/* harmony export */   TEXT_NODE: () => (/* binding */ TEXT_NODE),
+/* harmony export */   addEventListener: () => (/* binding */ addEventListener),
+/* harmony export */   addEventListeners: () => (/* binding */ addEventListeners),
+/* harmony export */   append: () => (/* binding */ append),
+/* harmony export */   appendChild: () => (/* binding */ appendChild),
+/* harmony export */   canvas: () => (/* binding */ canvas),
+/* harmony export */   checkNodeType: () => (/* binding */ checkNodeType),
+/* harmony export */   createDocumentFragment: () => (/* binding */ createDocumentFragment),
+/* harmony export */   createElement: () => (/* binding */ createElement),
+/* harmony export */   createTextNode: () => (/* binding */ createTextNode),
+/* harmony export */   doc: () => (/* binding */ doc),
+/* harmony export */   domParser: () => (/* binding */ domParser),
+/* harmony export */   element: () => (/* binding */ element),
+/* harmony export */   emitCustomEvent: () => (/* binding */ emitCustomEvent),
+/* harmony export */   fragment: () => (/* binding */ fragment),
+/* harmony export */   getElementById: () => (/* binding */ getElementById),
+/* harmony export */   insertBefore: () => (/* binding */ insertBefore),
+/* harmony export */   isParentOf: () => (/* binding */ isParentOf),
+/* harmony export */   mapToStyleString: () => (/* binding */ mapToStyleString),
+/* harmony export */   pairToStyleString: () => (/* binding */ pairToStyleString),
+/* harmony export */   pairsToStyleString: () => (/* binding */ pairsToStyleString),
+/* harmony export */   parseElement: () => (/* binding */ parseElement),
+/* harmony export */   parseFragment: () => (/* binding */ parseFragment),
+/* harmony export */   querySelector: () => (/* binding */ querySelector),
+/* harmony export */   querySelectorAll: () => (/* binding */ querySelectorAll),
+/* harmony export */   remove: () => (/* binding */ remove),
+/* harmony export */   removeEventListener: () => (/* binding */ removeEventListener),
+/* harmony export */   removeEventListeners: () => (/* binding */ removeEventListeners),
+/* harmony export */   replaceWith: () => (/* binding */ replaceWith),
+/* harmony export */   setAttributes: () => (/* binding */ setAttributes),
+/* harmony export */   setAttributesMap: () => (/* binding */ setAttributesMap),
+/* harmony export */   text: () => (/* binding */ text)
+/* harmony export */ });
+/* harmony import */ var _pair_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./pair.js */ "../../node_modules/lib0/pair.js");
+/* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./map.js */ "../../node_modules/lib0/map.js");
+/* eslint-env browser */
+
+/**
+ * Utility module to work with the DOM.
+ *
+ * @module dom
+ */
+
+
+
+
+/* c8 ignore start */
+/**
+ * @type {Document}
+ */
+const doc = /** @type {Document} */ (typeof document !== 'undefined' ? document : {})
+
+/**
+ * @param {string} name
+ * @return {HTMLElement}
+ */
+const createElement = name => doc.createElement(name)
+
+/**
+ * @return {DocumentFragment}
+ */
+const createDocumentFragment = () => doc.createDocumentFragment()
+
+/**
+ * @param {string} text
+ * @return {Text}
+ */
+const createTextNode = text => doc.createTextNode(text)
+
+const domParser = /** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null)
+
+/**
+ * @param {HTMLElement} el
+ * @param {string} name
+ * @param {Object} opts
+ */
+const emitCustomEvent = (el, name, opts) => el.dispatchEvent(new CustomEvent(name, opts))
+
+/**
+ * @param {Element} el
+ * @param {Array<pair.Pair<string,string|boolean>>} attrs Array of key-value pairs
+ * @return {Element}
+ */
+const setAttributes = (el, attrs) => {
+  _pair_js__WEBPACK_IMPORTED_MODULE_0__.forEach(attrs, (key, value) => {
+    if (value === false) {
+      el.removeAttribute(key)
+    } else if (value === true) {
+      el.setAttribute(key, '')
+    } else {
+      // @ts-ignore
+      el.setAttribute(key, value)
+    }
+  })
+  return el
+}
+
+/**
+ * @param {Element} el
+ * @param {Map<string, string>} attrs Array of key-value pairs
+ * @return {Element}
+ */
+const setAttributesMap = (el, attrs) => {
+  attrs.forEach((value, key) => { el.setAttribute(key, value) })
+  return el
+}
+
+/**
+ * @param {Array<Node>|HTMLCollection} children
+ * @return {DocumentFragment}
+ */
+const fragment = children => {
+  const fragment = createDocumentFragment()
+  for (let i = 0; i < children.length; i++) {
+    appendChild(fragment, children[i])
+  }
+  return fragment
+}
+
+/**
+ * @param {Element} parent
+ * @param {Array<Node>} nodes
+ * @return {Element}
+ */
+const append = (parent, nodes) => {
+  appendChild(parent, fragment(nodes))
+  return parent
+}
+
+/**
+ * @param {HTMLElement} el
+ */
+const remove = el => el.remove()
+
+/**
+ * @param {EventTarget} el
+ * @param {string} name
+ * @param {EventListener} f
+ */
+const addEventListener = (el, name, f) => el.addEventListener(name, f)
+
+/**
+ * @param {EventTarget} el
+ * @param {string} name
+ * @param {EventListener} f
+ */
+const removeEventListener = (el, name, f) => el.removeEventListener(name, f)
+
+/**
+ * @param {Node} node
+ * @param {Array<pair.Pair<string,EventListener>>} listeners
+ * @return {Node}
+ */
+const addEventListeners = (node, listeners) => {
+  _pair_js__WEBPACK_IMPORTED_MODULE_0__.forEach(listeners, (name, f) => addEventListener(node, name, f))
+  return node
+}
+
+/**
+ * @param {Node} node
+ * @param {Array<pair.Pair<string,EventListener>>} listeners
+ * @return {Node}
+ */
+const removeEventListeners = (node, listeners) => {
+  _pair_js__WEBPACK_IMPORTED_MODULE_0__.forEach(listeners, (name, f) => removeEventListener(node, name, f))
+  return node
+}
+
+/**
+ * @param {string} name
+ * @param {Array<pair.Pair<string,string>|pair.Pair<string,boolean>>} attrs Array of key-value pairs
+ * @param {Array<Node>} children
+ * @return {Element}
+ */
+const element = (name, attrs = [], children = []) =>
+  append(setAttributes(createElement(name), attrs), children)
+
+/**
+ * @param {number} width
+ * @param {number} height
+ */
+const canvas = (width, height) => {
+  const c = /** @type {HTMLCanvasElement} */ (createElement('canvas'))
+  c.height = height
+  c.width = width
+  return c
+}
+
+/**
+ * @param {string} t
+ * @return {Text}
+ */
+const text = createTextNode
+
+/**
+ * @param {pair.Pair<string,string>} pair
+ */
+const pairToStyleString = pair => `${pair.left}:${pair.right};`
+
+/**
+ * @param {Array<pair.Pair<string,string>>} pairs
+ * @return {string}
+ */
+const pairsToStyleString = pairs => pairs.map(pairToStyleString).join('')
+
+/**
+ * @param {Map<string,string>} m
+ * @return {string}
+ */
+const mapToStyleString = m => _map_js__WEBPACK_IMPORTED_MODULE_1__.map(m, (value, key) => `${key}:${value};`).join('')
+
+/**
+ * @todo should always query on a dom element
+ *
+ * @param {HTMLElement|ShadowRoot} el
+ * @param {string} query
+ * @return {HTMLElement | null}
+ */
+const querySelector = (el, query) => el.querySelector(query)
+
+/**
+ * @param {HTMLElement|ShadowRoot} el
+ * @param {string} query
+ * @return {NodeListOf<HTMLElement>}
+ */
+const querySelectorAll = (el, query) => el.querySelectorAll(query)
+
+/**
+ * @param {string} id
+ * @return {HTMLElement}
+ */
+const getElementById = id => /** @type {HTMLElement} */ (doc.getElementById(id))
+
+/**
+ * @param {string} html
+ * @return {HTMLElement}
+ */
+const _parse = html => domParser.parseFromString(`<html><body>${html}</body></html>`, 'text/html').body
+
+/**
+ * @param {string} html
+ * @return {DocumentFragment}
+ */
+const parseFragment = html => fragment(/** @type {any} */ (_parse(html).childNodes))
+
+/**
+ * @param {string} html
+ * @return {HTMLElement}
+ */
+const parseElement = html => /** @type HTMLElement */ (_parse(html).firstElementChild)
+
+/**
+ * @param {HTMLElement} oldEl
+ * @param {HTMLElement|DocumentFragment} newEl
+ */
+const replaceWith = (oldEl, newEl) => oldEl.replaceWith(newEl)
+
+/**
+ * @param {HTMLElement} parent
+ * @param {HTMLElement} el
+ * @param {Node|null} ref
+ * @return {HTMLElement}
+ */
+const insertBefore = (parent, el, ref) => parent.insertBefore(el, ref)
+
+/**
+ * @param {Node} parent
+ * @param {Node} child
+ * @return {Node}
+ */
+const appendChild = (parent, child) => parent.appendChild(child)
+
+const ELEMENT_NODE = doc.ELEMENT_NODE
+const TEXT_NODE = doc.TEXT_NODE
+const CDATA_SECTION_NODE = doc.CDATA_SECTION_NODE
+const COMMENT_NODE = doc.COMMENT_NODE
+const DOCUMENT_NODE = doc.DOCUMENT_NODE
+const DOCUMENT_TYPE_NODE = doc.DOCUMENT_TYPE_NODE
+const DOCUMENT_FRAGMENT_NODE = doc.DOCUMENT_FRAGMENT_NODE
+
+/**
+ * @param {any} node
+ * @param {number} type
+ */
+const checkNodeType = (node, type) => node.nodeType === type
+
+/**
+ * @param {Node} parent
+ * @param {HTMLElement} child
+ */
+const isParentOf = (parent, child) => {
+  let p = child.parentNode
+  while (p && p !== parent) {
+    p = p.parentNode
+  }
+  return p === parent
+}
+/* c8 ignore stop */
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/encoding.js":
+/*!*******************************************!*\
+  !*** ../../node_modules/lib0/encoding.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Encoder: () => (/* binding */ Encoder),
+/* harmony export */   IncUintOptRleEncoder: () => (/* binding */ IncUintOptRleEncoder),
+/* harmony export */   IntDiffEncoder: () => (/* binding */ IntDiffEncoder),
+/* harmony export */   IntDiffOptRleEncoder: () => (/* binding */ IntDiffOptRleEncoder),
+/* harmony export */   RleEncoder: () => (/* binding */ RleEncoder),
+/* harmony export */   RleIntDiffEncoder: () => (/* binding */ RleIntDiffEncoder),
+/* harmony export */   StringEncoder: () => (/* binding */ StringEncoder),
+/* harmony export */   UintOptRleEncoder: () => (/* binding */ UintOptRleEncoder),
+/* harmony export */   _writeVarStringNative: () => (/* binding */ _writeVarStringNative),
+/* harmony export */   _writeVarStringPolyfill: () => (/* binding */ _writeVarStringPolyfill),
+/* harmony export */   createEncoder: () => (/* binding */ createEncoder),
+/* harmony export */   encode: () => (/* binding */ encode),
+/* harmony export */   hasContent: () => (/* binding */ hasContent),
+/* harmony export */   length: () => (/* binding */ length),
+/* harmony export */   set: () => (/* binding */ set),
+/* harmony export */   setUint16: () => (/* binding */ setUint16),
+/* harmony export */   setUint32: () => (/* binding */ setUint32),
+/* harmony export */   setUint8: () => (/* binding */ setUint8),
+/* harmony export */   toUint8Array: () => (/* binding */ toUint8Array),
+/* harmony export */   verifyLen: () => (/* binding */ verifyLen),
+/* harmony export */   write: () => (/* binding */ write),
+/* harmony export */   writeAny: () => (/* binding */ writeAny),
+/* harmony export */   writeBigInt64: () => (/* binding */ writeBigInt64),
+/* harmony export */   writeBigUint64: () => (/* binding */ writeBigUint64),
+/* harmony export */   writeBinaryEncoder: () => (/* binding */ writeBinaryEncoder),
+/* harmony export */   writeFloat32: () => (/* binding */ writeFloat32),
+/* harmony export */   writeFloat64: () => (/* binding */ writeFloat64),
+/* harmony export */   writeOnDataView: () => (/* binding */ writeOnDataView),
+/* harmony export */   writeTerminatedString: () => (/* binding */ writeTerminatedString),
+/* harmony export */   writeTerminatedUint8Array: () => (/* binding */ writeTerminatedUint8Array),
+/* harmony export */   writeUint16: () => (/* binding */ writeUint16),
+/* harmony export */   writeUint32: () => (/* binding */ writeUint32),
+/* harmony export */   writeUint32BigEndian: () => (/* binding */ writeUint32BigEndian),
+/* harmony export */   writeUint8: () => (/* binding */ writeUint8),
+/* harmony export */   writeUint8Array: () => (/* binding */ writeUint8Array),
+/* harmony export */   writeVarInt: () => (/* binding */ writeVarInt),
+/* harmony export */   writeVarString: () => (/* binding */ writeVarString),
+/* harmony export */   writeVarUint: () => (/* binding */ writeVarUint),
+/* harmony export */   writeVarUint8Array: () => (/* binding */ writeVarUint8Array)
+/* harmony export */ });
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _number_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./number.js */ "../../node_modules/lib0/number.js");
+/* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./binary.js */ "../../node_modules/lib0/binary.js");
+/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./string.js */ "../../node_modules/lib0/string.js");
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./array.js */ "../../node_modules/lib0/array.js");
 /**
  * Efficient schema-less binary encoding with support for variable length encoding.
  *
@@ -12316,17 +14991,22 @@ if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
  */
 
 
+
+
+
+
+
 /**
  * A BinaryEncoder handles the encoding to an Uint8Array.
  */
 class Encoder {
   constructor () {
-    this.cpos = 0;
-    this.cbuf = new Uint8Array(100);
+    this.cpos = 0
+    this.cbuf = new Uint8Array(100)
     /**
      * @type {Array<Uint8Array>}
      */
-    this.bufs = [];
+    this.bufs = []
   }
 }
 
@@ -12334,7 +15014,16 @@ class Encoder {
  * @function
  * @return {Encoder}
  */
-const createEncoder = () => new Encoder();
+const createEncoder = () => new Encoder()
+
+/**
+ * @param {function(Encoder):void} f
+ */
+const encode = (f) => {
+  const encoder = createEncoder()
+  f(encoder)
+  return toUint8Array(encoder)
+}
 
 /**
  * The current length of the encoded data.
@@ -12344,12 +15033,21 @@ const createEncoder = () => new Encoder();
  * @return {number}
  */
 const length = encoder => {
-  let len = encoder.cpos;
+  let len = encoder.cpos
   for (let i = 0; i < encoder.bufs.length; i++) {
-    len += encoder.bufs[i].length;
+    len += encoder.bufs[i].length
   }
   return len
-};
+}
+
+/**
+ * Check whether encoder is empty.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @return {boolean}
+ */
+const hasContent = encoder => encoder.cpos > 0 || encoder.bufs.length > 0
 
 /**
  * Transform to Uint8Array.
@@ -12359,16 +15057,16 @@ const length = encoder => {
  * @return {Uint8Array} The created ArrayBuffer.
  */
 const toUint8Array = encoder => {
-  const uint8arr = new Uint8Array(length(encoder));
-  let curPos = 0;
+  const uint8arr = new Uint8Array(length(encoder))
+  let curPos = 0
   for (let i = 0; i < encoder.bufs.length; i++) {
-    const d = encoder.bufs[i];
-    uint8arr.set(d, curPos);
-    curPos += d.length;
+    const d = encoder.bufs[i]
+    uint8arr.set(d, curPos)
+    curPos += d.length
   }
-  uint8arr.set(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos), curPos);
+  uint8arr.set(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos), curPos)
   return uint8arr
-};
+}
 
 /**
  * Verify that it is possible to write `len` bytes wtihout checking. If
@@ -12378,13 +15076,13 @@ const toUint8Array = encoder => {
  * @param {number} len
  */
 const verifyLen = (encoder, len) => {
-  const bufferLen = encoder.cbuf.length;
+  const bufferLen = encoder.cbuf.length
   if (bufferLen - encoder.cpos < len) {
-    encoder.bufs.push(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos));
-    encoder.cbuf = new Uint8Array(max(bufferLen, len) * 2);
-    encoder.cpos = 0;
+    encoder.bufs.push(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos))
+    encoder.cbuf = new Uint8Array(_math_js__WEBPACK_IMPORTED_MODULE_0__.max(bufferLen, len) * 2)
+    encoder.cpos = 0
   }
-};
+}
 
 /**
  * Write one byte to the encoder.
@@ -12394,14 +15092,41 @@ const verifyLen = (encoder, len) => {
  * @param {number} num The byte that is to be encoded.
  */
 const write = (encoder, num) => {
-  const bufferLen = encoder.cbuf.length;
+  const bufferLen = encoder.cbuf.length
   if (encoder.cpos === bufferLen) {
-    encoder.bufs.push(encoder.cbuf);
-    encoder.cbuf = new Uint8Array(bufferLen * 2);
-    encoder.cpos = 0;
+    encoder.bufs.push(encoder.cbuf)
+    encoder.cbuf = new Uint8Array(bufferLen * 2)
+    encoder.cpos = 0
   }
-  encoder.cbuf[encoder.cpos++] = num;
-};
+  encoder.cbuf[encoder.cpos++] = num
+}
+
+/**
+ * Write one byte at a specific position.
+ * Position must already be written (i.e. encoder.length > pos)
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} pos Position to which to write data
+ * @param {number} num Unsigned 8-bit integer
+ */
+const set = (encoder, pos, num) => {
+  let buffer = null
+  // iterate all buffers and adjust position
+  for (let i = 0; i < encoder.bufs.length && buffer === null; i++) {
+    const b = encoder.bufs[i]
+    if (pos < b.length) {
+      buffer = b // found buffer
+    } else {
+      pos -= b.length
+    }
+  }
+  if (buffer === null) {
+    // use current buffer
+    buffer = encoder.cbuf
+  }
+  buffer[pos] = num
+}
 
 /**
  * Write one byte as an unsigned integer.
@@ -12410,7 +15135,84 @@ const write = (encoder, num) => {
  * @param {Encoder} encoder
  * @param {number} num The number that is to be encoded.
  */
-const writeUint8 = write;
+const writeUint8 = write
+
+/**
+ * Write one byte as an unsigned Integer at a specific location.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} pos The location where the data will be written.
+ * @param {number} num The number that is to be encoded.
+ */
+const setUint8 = set
+
+/**
+ * Write two bytes as an unsigned integer.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} num The number that is to be encoded.
+ */
+const writeUint16 = (encoder, num) => {
+  write(encoder, num & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+  write(encoder, (num >>> 8) & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+}
+/**
+ * Write two bytes as an unsigned integer at a specific location.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} pos The location where the data will be written.
+ * @param {number} num The number that is to be encoded.
+ */
+const setUint16 = (encoder, pos, num) => {
+  set(encoder, pos, num & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+  set(encoder, pos + 1, (num >>> 8) & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+}
+
+/**
+ * Write two bytes as an unsigned integer
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} num The number that is to be encoded.
+ */
+const writeUint32 = (encoder, num) => {
+  for (let i = 0; i < 4; i++) {
+    write(encoder, num & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+    num >>>= 8
+  }
+}
+
+/**
+ * Write two bytes as an unsigned integer in big endian order.
+ * (most significant byte first)
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} num The number that is to be encoded.
+ */
+const writeUint32BigEndian = (encoder, num) => {
+  for (let i = 3; i >= 0; i--) {
+    write(encoder, (num >>> (8 * i)) & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+  }
+}
+
+/**
+ * Write two bytes as an unsigned integer at a specific location.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} pos The location where the data will be written.
+ * @param {number} num The number that is to be encoded.
+ */
+const setUint32 = (encoder, pos, num) => {
+  for (let i = 0; i < 4; i++) {
+    set(encoder, pos + i, num & _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS8)
+    num >>>= 8
+  }
+}
 
 /**
  * Write a variable length unsigned integer. Max encodable integer is 2^53.
@@ -12420,12 +15222,12 @@ const writeUint8 = write;
  * @param {number} num The number that is to be encoded.
  */
 const writeVarUint = (encoder, num) => {
-  while (num > BITS7) {
-    write(encoder, BIT8 | (BITS7 & num));
-    num = floor(num / 128); // shift >>> 7
+  while (num > _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS7) {
+    write(encoder, _binary_js__WEBPACK_IMPORTED_MODULE_2__.BIT8 | (_binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS7 & num))
+    num = _math_js__WEBPACK_IMPORTED_MODULE_0__.floor(num / 128) // shift >>> 7
   }
-  write(encoder, BITS7 & num);
-};
+  write(encoder, _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS7 & num)
+}
 
 /**
  * Write a variable length integer.
@@ -12437,26 +15239,26 @@ const writeVarUint = (encoder, num) => {
  * @param {number} num The number that is to be encoded.
  */
 const writeVarInt = (encoder, num) => {
-  const isNegative = isNegativeZero(num);
+  const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_0__.isNegativeZero(num)
   if (isNegative) {
-    num = -num;
+    num = -num
   }
   //             |- whether to continue reading         |- whether is negative     |- number
-  write(encoder, (num > BITS6 ? BIT8 : 0) | (isNegative ? BIT7 : 0) | (BITS6 & num));
-  num = floor(num / 64); // shift >>> 6
+  write(encoder, (num > _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS6 ? _binary_js__WEBPACK_IMPORTED_MODULE_2__.BIT8 : 0) | (isNegative ? _binary_js__WEBPACK_IMPORTED_MODULE_2__.BIT7 : 0) | (_binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS6 & num))
+  num = _math_js__WEBPACK_IMPORTED_MODULE_0__.floor(num / 64) // shift >>> 6
   // We don't need to consider the case of num === 0 so we can use a different
   // pattern here than above.
   while (num > 0) {
-    write(encoder, (num > BITS7 ? BIT8 : 0) | (BITS7 & num));
-    num = floor(num / 128); // shift >>> 7
+    write(encoder, (num > _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS7 ? _binary_js__WEBPACK_IMPORTED_MODULE_2__.BIT8 : 0) | (_binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS7 & num))
+    num = _math_js__WEBPACK_IMPORTED_MODULE_0__.floor(num / 128) // shift >>> 7
   }
-};
+}
 
 /**
  * A cache to store strings temporarily
  */
-const _strBuffer = new Uint8Array(30000);
-const _maxStrBSize = _strBuffer.length / 3;
+const _strBuffer = new Uint8Array(30000)
+const _maxStrBSize = _strBuffer.length / 3
 
 /**
  * Write a variable length string.
@@ -12469,15 +15271,15 @@ const _writeVarStringNative = (encoder, str) => {
   if (str.length < _maxStrBSize) {
     // We can encode the string into the existing buffer
     /* c8 ignore next */
-    const written = utf8TextEncoder.encodeInto(str, _strBuffer).written || 0;
-    writeVarUint(encoder, written);
+    const written = _string_js__WEBPACK_IMPORTED_MODULE_3__.utf8TextEncoder.encodeInto(str, _strBuffer).written || 0
+    writeVarUint(encoder, written)
     for (let i = 0; i < written; i++) {
-      write(encoder, _strBuffer[i]);
+      write(encoder, _strBuffer[i])
     }
   } else {
-    writeVarUint8Array(encoder, encodeUtf8(str));
+    writeVarUint8Array(encoder, _string_js__WEBPACK_IMPORTED_MODULE_3__.encodeUtf8(str))
   }
-};
+}
 
 /**
  * Write a variable length string.
@@ -12487,13 +15289,13 @@ const _writeVarStringNative = (encoder, str) => {
  * @param {String} str The string that is to be encoded.
  */
 const _writeVarStringPolyfill = (encoder, str) => {
-  const encodedString = unescape(encodeURIComponent(str));
-  const len = encodedString.length;
-  writeVarUint(encoder, len);
+  const encodedString = unescape(encodeURIComponent(str))
+  const len = encodedString.length
+  writeVarUint(encoder, len)
   for (let i = 0; i < len; i++) {
-    write(encoder, /** @type {number} */ (encodedString.codePointAt(i)));
+    write(encoder, /** @type {number} */ (encodedString.codePointAt(i)))
   }
-};
+}
 
 /**
  * Write a variable length string.
@@ -12503,7 +15305,62 @@ const _writeVarStringPolyfill = (encoder, str) => {
  * @param {String} str The string that is to be encoded.
  */
 /* c8 ignore next */
-const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
+const writeVarString = (_string_js__WEBPACK_IMPORTED_MODULE_3__.utf8TextEncoder && /** @type {any} */ (_string_js__WEBPACK_IMPORTED_MODULE_3__.utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill
+
+/**
+ * Write a string terminated by a special byte sequence. This is not very performant and is
+ * generally discouraged. However, the resulting byte arrays are lexiographically ordered which
+ * makes this a nice feature for databases.
+ *
+ * The string will be encoded using utf8 and then terminated and escaped using writeTerminatingUint8Array.
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {String} str The string that is to be encoded.
+ */
+const writeTerminatedString = (encoder, str) =>
+  writeTerminatedUint8Array(encoder, _string_js__WEBPACK_IMPORTED_MODULE_3__.encodeUtf8(str))
+
+/**
+ * Write a terminating Uint8Array. Note that this is not performant and is generally
+ * discouraged. There are few situations when this is needed.
+ *
+ * We use 0x0 as a terminating character. 0x1 serves as an escape character for 0x0 and 0x1.
+ *
+ * Example: [0,1,2] is encoded to [1,0,1,1,2,0]. 0x0, and 0x1 needed to be escaped using 0x1. Then
+ * the result is terminated using the 0x0 character.
+ *
+ * This is basically how many systems implement null terminated strings. However, we use an escape
+ * character 0x1 to avoid issues and potenial attacks on our database (if this is used as a key
+ * encoder for NoSql databases).
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {Uint8Array} buf The string that is to be encoded.
+ */
+const writeTerminatedUint8Array = (encoder, buf) => {
+  for (let i = 0; i < buf.length; i++) {
+    const b = buf[i]
+    if (b === 0 || b === 1) {
+      write(encoder, 1)
+    }
+    write(encoder, buf[i])
+  }
+  write(encoder, 0)
+}
+
+/**
+ * Write the content of another Encoder.
+ *
+ * @TODO: can be improved!
+ *        - Note: Should consider that when appending a lot of small Encoders, we should rather clone than referencing the old structure.
+ *                Encoders start with a rather big initial buffer.
+ *
+ * @function
+ * @param {Encoder} encoder The enUint8Arr
+ * @param {Encoder} append The BinaryEncoder to be written.
+ */
+const writeBinaryEncoder = (encoder, append) => writeUint8Array(encoder, toUint8Array(append))
 
 /**
  * Append fixed-length Uint8Array to the encoder.
@@ -12513,23 +15370,23 @@ const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).
  * @param {Uint8Array} uint8Array
  */
 const writeUint8Array = (encoder, uint8Array) => {
-  const bufferLen = encoder.cbuf.length;
-  const cpos = encoder.cpos;
-  const leftCopyLen = min(bufferLen - cpos, uint8Array.length);
-  const rightCopyLen = uint8Array.length - leftCopyLen;
-  encoder.cbuf.set(uint8Array.subarray(0, leftCopyLen), cpos);
-  encoder.cpos += leftCopyLen;
+  const bufferLen = encoder.cbuf.length
+  const cpos = encoder.cpos
+  const leftCopyLen = _math_js__WEBPACK_IMPORTED_MODULE_0__.min(bufferLen - cpos, uint8Array.length)
+  const rightCopyLen = uint8Array.length - leftCopyLen
+  encoder.cbuf.set(uint8Array.subarray(0, leftCopyLen), cpos)
+  encoder.cpos += leftCopyLen
   if (rightCopyLen > 0) {
     // Still something to write, write right half..
     // Append new buffer
-    encoder.bufs.push(encoder.cbuf);
+    encoder.bufs.push(encoder.cbuf)
     // must have at least size of remaining buffer
-    encoder.cbuf = new Uint8Array(max(bufferLen * 2, rightCopyLen));
+    encoder.cbuf = new Uint8Array(_math_js__WEBPACK_IMPORTED_MODULE_0__.max(bufferLen * 2, rightCopyLen))
     // copy array
-    encoder.cbuf.set(uint8Array.subarray(leftCopyLen));
-    encoder.cpos = rightCopyLen;
+    encoder.cbuf.set(uint8Array.subarray(leftCopyLen))
+    encoder.cpos = rightCopyLen
   }
-};
+}
 
 /**
  * Append an Uint8Array to Encoder.
@@ -12539,9 +15396,9 @@ const writeUint8Array = (encoder, uint8Array) => {
  * @param {Uint8Array} uint8Array
  */
 const writeVarUint8Array = (encoder, uint8Array) => {
-  writeVarUint(encoder, uint8Array.byteLength);
-  writeUint8Array(encoder, uint8Array);
-};
+  writeVarUint(encoder, uint8Array.byteLength)
+  writeUint8Array(encoder, uint8Array)
+}
 
 /**
  * Create an DataView of the next `len` bytes. Use it to write data after
@@ -12561,31 +15418,37 @@ const writeVarUint8Array = (encoder, uint8Array) => {
  * @return {DataView}
  */
 const writeOnDataView = (encoder, len) => {
-  verifyLen(encoder, len);
-  const dview = new DataView(encoder.cbuf.buffer, encoder.cpos, len);
-  encoder.cpos += len;
+  verifyLen(encoder, len)
+  const dview = new DataView(encoder.cbuf.buffer, encoder.cpos, len)
+  encoder.cpos += len
   return dview
-};
+}
 
 /**
  * @param {Encoder} encoder
  * @param {number} num
  */
-const writeFloat32 = (encoder, num) => writeOnDataView(encoder, 4).setFloat32(0, num, false);
+const writeFloat32 = (encoder, num) => writeOnDataView(encoder, 4).setFloat32(0, num, false)
 
 /**
  * @param {Encoder} encoder
  * @param {number} num
  */
-const writeFloat64 = (encoder, num) => writeOnDataView(encoder, 8).setFloat64(0, num, false);
+const writeFloat64 = (encoder, num) => writeOnDataView(encoder, 8).setFloat64(0, num, false)
 
 /**
  * @param {Encoder} encoder
  * @param {bigint} num
  */
-const writeBigInt64 = (encoder, num) => /** @type {any} */ (writeOnDataView(encoder, 8)).setBigInt64(0, num, false);
+const writeBigInt64 = (encoder, num) => /** @type {any} */ (writeOnDataView(encoder, 8)).setBigInt64(0, num, false)
 
-const floatTestBed = new DataView(new ArrayBuffer(4));
+/**
+ * @param {Encoder} encoder
+ * @param {bigint} num
+ */
+const writeBigUint64 = (encoder, num) => /** @type {any} */ (writeOnDataView(encoder, 8)).setBigUint64(0, num, false)
+
+const floatTestBed = new DataView(new ArrayBuffer(4))
 /**
  * Check if a number can be encoded as a 32 bit float.
  *
@@ -12593,9 +15456,9 @@ const floatTestBed = new DataView(new ArrayBuffer(4));
  * @return {boolean}
  */
 const isFloat32 = num => {
-  floatTestBed.setFloat32(0, num);
+  floatTestBed.setFloat32(0, num)
   return floatTestBed.getFloat32(0) === num
-};
+}
 
 /**
  * Encode data with efficient binary format.
@@ -12638,65 +15501,65 @@ const writeAny = (encoder, data) => {
   switch (typeof data) {
     case 'string':
       // TYPE 119: STRING
-      write(encoder, 119);
-      writeVarString(encoder, data);
+      write(encoder, 119)
+      writeVarString(encoder, data)
       break
     case 'number':
-      if (isInteger(data) && abs(data) <= BITS31) {
+      if (_number_js__WEBPACK_IMPORTED_MODULE_1__.isInteger(data) && _math_js__WEBPACK_IMPORTED_MODULE_0__.abs(data) <= _binary_js__WEBPACK_IMPORTED_MODULE_2__.BITS31) {
         // TYPE 125: INTEGER
-        write(encoder, 125);
-        writeVarInt(encoder, data);
+        write(encoder, 125)
+        writeVarInt(encoder, data)
       } else if (isFloat32(data)) {
         // TYPE 124: FLOAT32
-        write(encoder, 124);
-        writeFloat32(encoder, data);
+        write(encoder, 124)
+        writeFloat32(encoder, data)
       } else {
         // TYPE 123: FLOAT64
-        write(encoder, 123);
-        writeFloat64(encoder, data);
+        write(encoder, 123)
+        writeFloat64(encoder, data)
       }
       break
     case 'bigint':
       // TYPE 122: BigInt
-      write(encoder, 122);
-      writeBigInt64(encoder, data);
+      write(encoder, 122)
+      writeBigInt64(encoder, data)
       break
     case 'object':
       if (data === null) {
         // TYPE 126: null
-        write(encoder, 126);
-      } else if (isArray(data)) {
+        write(encoder, 126)
+      } else if (_array_js__WEBPACK_IMPORTED_MODULE_4__.isArray(data)) {
         // TYPE 117: Array
-        write(encoder, 117);
-        writeVarUint(encoder, data.length);
+        write(encoder, 117)
+        writeVarUint(encoder, data.length)
         for (let i = 0; i < data.length; i++) {
-          writeAny(encoder, data[i]);
+          writeAny(encoder, data[i])
         }
       } else if (data instanceof Uint8Array) {
         // TYPE 116: ArrayBuffer
-        write(encoder, 116);
-        writeVarUint8Array(encoder, data);
+        write(encoder, 116)
+        writeVarUint8Array(encoder, data)
       } else {
         // TYPE 118: Object
-        write(encoder, 118);
-        const keys = Object.keys(data);
-        writeVarUint(encoder, keys.length);
+        write(encoder, 118)
+        const keys = Object.keys(data)
+        writeVarUint(encoder, keys.length)
         for (let i = 0; i < keys.length; i++) {
-          const key = keys[i];
-          writeVarString(encoder, key);
-          writeAny(encoder, data[key]);
+          const key = keys[i]
+          writeVarString(encoder, key)
+          writeAny(encoder, data[key])
         }
       }
       break
     case 'boolean':
       // TYPE 120/121: boolean (true/false)
-      write(encoder, data ? 120 : 121);
+      write(encoder, data ? 120 : 121)
       break
     default:
       // TYPE 127: undefined
-      write(encoder, 127);
+      write(encoder, 127)
   }
-};
+}
 
 /**
  * Now come a few stateful encoder that have their own classes.
@@ -12718,17 +15581,17 @@ class RleEncoder extends Encoder {
    * @param {function(Encoder, T):void} writer
    */
   constructor (writer) {
-    super();
+    super()
     /**
      * The writer
      */
-    this.w = writer;
+    this.w = writer
     /**
      * Current state
      * @type {T|null}
      */
-    this.s = null;
-    this.count = 0;
+    this.s = null
+    this.count = 0
   }
 
   /**
@@ -12736,16 +15599,83 @@ class RleEncoder extends Encoder {
    */
   write (v) {
     if (this.s === v) {
-      this.count++;
+      this.count++
     } else {
       if (this.count > 0) {
         // flush counter, unless this is the first value (count = 0)
-        writeVarUint(this, this.count - 1); // since count is always > 0, we can decrement by one. non-standard encoding ftw
+        writeVarUint(this, this.count - 1) // since count is always > 0, we can decrement by one. non-standard encoding ftw
       }
-      this.count = 1;
+      this.count = 1
       // write first value
-      this.w(this, v);
-      this.s = v;
+      this.w(this, v)
+      this.s = v
+    }
+  }
+}
+
+/**
+ * Basic diff decoder using variable length encoding.
+ *
+ * Encodes the values [3, 1100, 1101, 1050, 0] to [3, 1097, 1, -51, -1050] using writeVarInt.
+ */
+class IntDiffEncoder extends Encoder {
+  /**
+   * @param {number} start
+   */
+  constructor (start) {
+    super()
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    writeVarInt(this, v - this.s)
+    this.s = v
+  }
+}
+
+/**
+ * A combination of IntDiffEncoder and RleEncoder.
+ *
+ * Basically first writes the IntDiffEncoder and then counts duplicate diffs using RleEncoding.
+ *
+ * Encodes the values [1,1,1,2,3,4,5,6] as [1,1,0,2,1,5] (RLE([1,0,0,1,1,1,1,1]) ⇒ RleIntDiff[1,1,0,2,1,5])
+ */
+class RleIntDiffEncoder extends Encoder {
+  /**
+   * @param {number} start
+   */
+  constructor (start) {
+    super()
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+    this.count = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.s === v && this.count > 0) {
+      this.count++
+    } else {
+      if (this.count > 0) {
+        // flush counter, unless this is the first value (count = 0)
+        writeVarUint(this, this.count - 1) // since count is always > 0, we can decrement by one. non-standard encoding ftw
+      }
+      this.count = 1
+      // write first value
+      writeVarInt(this, v - this.s)
+      this.s = v
     }
   }
 }
@@ -12758,12 +15688,12 @@ const flushUintOptRleEncoder = encoder => {
     // flush counter, unless this is the first value (count = 0)
     // case 1: just a single value. set sign to positive
     // case 2: write several values. set sign to negative to indicate that there is a length coming
-    writeVarInt(encoder.encoder, encoder.count === 1 ? encoder.s : -encoder.s);
+    writeVarInt(encoder.encoder, encoder.count === 1 ? encoder.s : -encoder.s)
     if (encoder.count > 1) {
-      writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+      writeVarUint(encoder.encoder, encoder.count - 2) // since count is always > 1, we can decrement by one. non-standard encoding ftw
     }
   }
-};
+}
 
 /**
  * Optimized Rle encoder that does not suffer from the mentioned problem of the basic Rle encoder.
@@ -12775,12 +15705,12 @@ const flushUintOptRleEncoder = encoder => {
  */
 class UintOptRleEncoder {
   constructor () {
-    this.encoder = new Encoder();
+    this.encoder = new Encoder()
     /**
      * @type {number}
      */
-    this.s = 0;
-    this.count = 0;
+    this.s = 0
+    this.count = 0
   }
 
   /**
@@ -12788,11 +15718,11 @@ class UintOptRleEncoder {
    */
   write (v) {
     if (this.s === v) {
-      this.count++;
+      this.count++
     } else {
-      flushUintOptRleEncoder(this);
-      this.count = 1;
-      this.s = v;
+      flushUintOptRleEncoder(this)
+      this.count = 1
+      this.s = v
     }
   }
 
@@ -12802,7 +15732,49 @@ class UintOptRleEncoder {
    * Note that this should only be called once.
    */
   toUint8Array () {
-    flushUintOptRleEncoder(this);
+    flushUintOptRleEncoder(this)
+    return toUint8Array(this.encoder)
+  }
+}
+
+/**
+ * Increasing Uint Optimized RLE Encoder
+ *
+ * The RLE encoder counts the number of same occurences of the same value.
+ * The IncUintOptRle encoder counts if the value increases.
+ * I.e. 7, 8, 9, 10 will be encoded as [-7, 4]. 1, 3, 5 will be encoded
+ * as [1, 3, 5].
+ */
+class IncUintOptRleEncoder {
+  constructor () {
+    this.encoder = new Encoder()
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.s + this.count === v) {
+      this.count++
+    } else {
+      flushUintOptRleEncoder(this)
+      this.count = 1
+      this.s = v
+    }
+  }
+
+  /**
+   * Flush the encoded state and transform this to a Uint8Array.
+   *
+   * Note that this should only be called once.
+   */
+  toUint8Array () {
+    flushUintOptRleEncoder(this)
     return toUint8Array(this.encoder)
   }
 }
@@ -12814,16 +15786,16 @@ const flushIntDiffOptRleEncoder = encoder => {
   if (encoder.count > 0) {
     //          31 bit making up the diff | wether to write the counter
     // const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1)
-    const encodedDiff = encoder.diff * 2 + (encoder.count === 1 ? 0 : 1);
+    const encodedDiff = encoder.diff * 2 + (encoder.count === 1 ? 0 : 1)
     // flush counter, unless this is the first value (count = 0)
     // case 1: just a single value. set first bit to positive
     // case 2: write several values. set first bit to negative to indicate that there is a length coming
-    writeVarInt(encoder.encoder, encodedDiff);
+    writeVarInt(encoder.encoder, encodedDiff)
     if (encoder.count > 1) {
-      writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+      writeVarUint(encoder.encoder, encoder.count - 2) // since count is always > 1, we can decrement by one. non-standard encoding ftw
     }
   }
-};
+}
 
 /**
  * A combination of the IntDiffEncoder and the UintOptRleEncoder.
@@ -12844,13 +15816,13 @@ const flushIntDiffOptRleEncoder = encoder => {
  */
 class IntDiffOptRleEncoder {
   constructor () {
-    this.encoder = new Encoder();
+    this.encoder = new Encoder()
     /**
      * @type {number}
      */
-    this.s = 0;
-    this.count = 0;
-    this.diff = 0;
+    this.s = 0
+    this.count = 0
+    this.diff = 0
   }
 
   /**
@@ -12858,13 +15830,13 @@ class IntDiffOptRleEncoder {
    */
   write (v) {
     if (this.diff === v - this.s) {
-      this.s = v;
-      this.count++;
+      this.s = v
+      this.count++
     } else {
-      flushIntDiffOptRleEncoder(this);
-      this.count = 1;
-      this.diff = v - this.s;
-      this.s = v;
+      flushIntDiffOptRleEncoder(this)
+      this.count = 1
+      this.diff = v - this.s
+      this.s = v
     }
   }
 
@@ -12874,7 +15846,7 @@ class IntDiffOptRleEncoder {
    * Note that this should only be called once.
    */
   toUint8Array () {
-    flushIntDiffOptRleEncoder(this);
+    flushIntDiffOptRleEncoder(this)
     return toUint8Array(this.encoder)
   }
 }
@@ -12894,322 +15866,61 @@ class StringEncoder {
     /**
      * @type {Array<string>}
      */
-    this.sarr = [];
-    this.s = '';
-    this.lensE = new UintOptRleEncoder();
+    this.sarr = []
+    this.s = ''
+    this.lensE = new UintOptRleEncoder()
   }
 
   /**
    * @param {string} string
    */
   write (string) {
-    this.s += string;
+    this.s += string
     if (this.s.length > 19) {
-      this.sarr.push(this.s);
-      this.s = '';
+      this.sarr.push(this.s)
+      this.s = ''
     }
-    this.lensE.write(string.length);
+    this.lensE.write(string.length)
   }
 
   toUint8Array () {
-    const encoder = new Encoder();
-    this.sarr.push(this.s);
-    this.s = '';
-    writeVarString(encoder, this.sarr.join(''));
-    writeUint8Array(encoder, this.lensE.toUint8Array());
+    const encoder = new Encoder()
+    this.sarr.push(this.s)
+    this.s = ''
+    writeVarString(encoder, this.sarr.join(''))
+    writeUint8Array(encoder, this.lensE.toUint8Array())
     return toUint8Array(encoder)
   }
 }
 
-/**
- * Error helpers.
- *
- * @module error
- */
 
-/**
- * @param {string} s
- * @return {Error}
- */
-/* c8 ignore next */
-const create$3 = s => new Error(s);
+/***/ }),
 
-/**
- * @throws {Error}
- * @return {never}
- */
-/* c8 ignore next 3 */
-const methodUnimplemented = () => {
-  throw create$3('Method unimplemented')
-};
+/***/ "../../node_modules/lib0/environment.js":
+/*!**********************************************!*\
+  !*** ../../node_modules/lib0/environment.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-/**
- * @throws {Error}
- * @return {never}
- */
-/* c8 ignore next 3 */
-const unexpectedCase = () => {
-  throw create$3('Unexpected case')
-};
-
-/* eslint-env browser */
-
-const getRandomValues = crypto.getRandomValues.bind(crypto);
-
-/**
- * Isomorphic module for true random numbers / buffers / uuids.
- *
- * Attention: falls back to Math.random if the browser does not support crypto.
- *
- * @module random
- */
-
-
-const uint32 = () => getRandomValues(new Uint32Array(1))[0];
-
-// @ts-ignore
-const uuidv4Template = [1e7] + -1e3 + -4e3 + -8e3 + -1e11;
-
-/**
- * @return {string}
- */
-const uuidv4 = () => uuidv4Template.replace(/[018]/g, /** @param {number} c */ c =>
-  (c ^ uint32() & 15 >> c / 4).toString(16)
-);
-
-/**
- * Utility helpers to work with promises.
- *
- * @module promise
- */
-
-
-/**
- * @template T
- * @callback PromiseResolve
- * @param {T|PromiseLike<T>} [result]
- */
-
-/**
- * @template T
- * @param {function(PromiseResolve<T>,function(Error):void):any} f
- * @return {Promise<T>}
- */
-const create$2 = f => /** @type {Promise<T>} */ (new Promise(f));
-
-/**
- * `Promise.all` wait for all promises in the array to resolve and return the result
- * @template {unknown[] | []} PS
- *
- * @param {PS} ps
- * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
- */
-Promise.all.bind(Promise);
-
-/**
- * Often used conditions.
- *
- * @module conditions
- */
-
-/**
- * @template T
- * @param {T|null|undefined} v
- * @return {T|null}
- */
-/* c8 ignore next */
-const undefinedToNull = v => v === undefined ? null : v;
-
-/* eslint-env browser */
-
-/**
- * Isomorphic variable storage.
- *
- * Uses LocalStorage in the browser and falls back to in-memory storage.
- *
- * @module storage
- */
-
-/* c8 ignore start */
-class VarStoragePolyfill {
-  constructor () {
-    this.map = new Map();
-  }
-
-  /**
-   * @param {string} key
-   * @param {any} newValue
-   */
-  setItem (key, newValue) {
-    this.map.set(key, newValue);
-  }
-
-  /**
-   * @param {string} key
-   */
-  getItem (key) {
-    return this.map.get(key)
-  }
-}
-/* c8 ignore stop */
-
-/**
- * @type {any}
- */
-let _localStorage = new VarStoragePolyfill();
-let usePolyfill = true;
-
-/* c8 ignore start */
-try {
-  // if the same-origin rule is violated, accessing localStorage might thrown an error
-  if (typeof localStorage !== 'undefined' && localStorage) {
-    _localStorage = localStorage;
-    usePolyfill = false;
-  }
-} catch (e) { }
-/* c8 ignore stop */
-
-/**
- * This is basically localStorage in browser, or a polyfill in nodejs
- */
-/* c8 ignore next */
-const varStorage = _localStorage;
-
-/**
- * Utility functions for working with EcmaScript objects.
- *
- * @module object
- */
-
-
-/**
- * Object.assign
- */
-const assign = Object.assign;
-
-/**
- * @param {Object<string,any>} obj
- */
-const keys = Object.keys;
-
-/**
- * @template V
- * @param {{[k:string]:V}} obj
- * @param {function(V,string):any} f
- */
-const forEach = (obj, f) => {
-  for (const key in obj) {
-    f(obj[key], key);
-  }
-};
-
-/**
- * @param {Object<string,any>} obj
- * @return {number}
- */
-const size = obj => keys(obj).length;
-
-/**
- * @param {Object|null|undefined} obj
- */
-const isEmpty = obj => {
-  // eslint-disable-next-line no-unreachable-loop
-  for (const _k in obj) {
-    return false
-  }
-  return true
-};
-
-/**
- * @template {{ [key:string|number|symbol]: any }} T
- * @param {T} obj
- * @param {(v:T[keyof T],k:keyof T)=>boolean} f
- * @return {boolean}
- */
-const every = (obj, f) => {
-  for (const key in obj) {
-    if (!f(obj[key], key)) {
-      return false
-    }
-  }
-  return true
-};
-
-/**
- * Calls `Object.prototype.hasOwnProperty`.
- *
- * @param {any} obj
- * @param {string|number|symbol} key
- * @return {boolean}
- */
-const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
-
-/**
- * @param {Object<string,any>} a
- * @param {Object<string,any>} b
- * @return {boolean}
- */
-const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
-
-/**
- * Make an object immutable. This hurts performance and is usually not needed if you perform good
- * coding practices.
- */
-const freeze = Object.freeze;
-
-/**
- * Make an object and all its children immutable.
- * This *really* hurts performance and is usually not needed if you perform good coding practices.
- *
- * @template {any} T
- * @param {T} o
- * @return {Readonly<T>}
- */
-const deepFreeze = (o) => {
-  for (const key in o) {
-    const c = o[key];
-    if (typeof c === 'object' || typeof c === 'function') {
-      deepFreeze(o[key]);
-    }
-  }
-  return freeze(o)
-};
-
-/**
- * Common functions and function call helpers.
- *
- * @module function
- */
-
-
-/**
- * Calls all functions in `fs` with args. Only throws after all functions were called.
- *
- * @param {Array<function>} fs
- * @param {Array<any>} args
- */
-const callAll = (fs, args, i = 0) => {
-  try {
-    for (; i < fs.length; i++) {
-      fs[i](...args);
-    }
-  } finally {
-    if (i < fs.length) {
-      callAll(fs, args, i + 1);
-    }
-  }
-};
-
-/**
- * @template V
- * @template {V} OPTS
- *
- * @param {V} value
- * @param {Array<OPTS>} options
- */
-// @ts-ignore
-const isOneOf = (value, options) => options.includes(value);
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ensureConf: () => (/* binding */ ensureConf),
+/* harmony export */   getConf: () => (/* binding */ getConf),
+/* harmony export */   getParam: () => (/* binding */ getParam),
+/* harmony export */   getVariable: () => (/* binding */ getVariable),
+/* harmony export */   hasConf: () => (/* binding */ hasConf),
+/* harmony export */   hasParam: () => (/* binding */ hasParam),
+/* harmony export */   isBrowser: () => (/* binding */ isBrowser),
+/* harmony export */   isMac: () => (/* binding */ isMac),
+/* harmony export */   isNode: () => (/* binding */ isNode),
+/* harmony export */   production: () => (/* binding */ production),
+/* harmony export */   supportsColor: () => (/* binding */ supportsColor)
+/* harmony export */ });
+/* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./map.js */ "../../node_modules/lib0/map.js");
+/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./string.js */ "../../node_modules/lib0/string.js");
+/* harmony import */ var _conditions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./conditions.js */ "../../node_modules/lib0/conditions.js");
+/* harmony import */ var _storage_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./storage.js */ "../../node_modules/lib0/storage.js");
+/* harmony import */ var _function_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./function.js */ "../../node_modules/lib0/function.js");
 /**
  * Isomorphic module to work access the environment (query params, env variables).
  *
@@ -13217,55 +15928,70 @@ const isOneOf = (value, options) => options.includes(value);
  */
 
 
+
+
+
+
+
 /* c8 ignore next 2 */
 // @ts-ignore
-const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]'
+
+/* c8 ignore next */
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && !isNode
+/* c8 ignore next 3 */
+const isMac = typeof navigator !== 'undefined'
+  ? /Mac/.test(navigator.platform)
+  : false
 
 /**
  * @type {Map<string,string>}
  */
-let params;
+let params
+const args = []
 
 /* c8 ignore start */
 const computeParams = () => {
   if (params === undefined) {
     if (isNode) {
-      params = create$5();
-      const pargs = process.argv;
-      let currParamName = null;
+      params = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
+      const pargs = process.argv
+      let currParamName = null
       for (let i = 0; i < pargs.length; i++) {
-        const parg = pargs[i];
+        const parg = pargs[i]
         if (parg[0] === '-') {
           if (currParamName !== null) {
-            params.set(currParamName, '');
+            params.set(currParamName, '')
           }
-          currParamName = parg;
+          currParamName = parg
         } else {
           if (currParamName !== null) {
-            params.set(currParamName, parg);
-            currParamName = null;
+            params.set(currParamName, parg)
+            currParamName = null
+          } else {
+            args.push(parg)
           }
         }
       }
       if (currParamName !== null) {
-        params.set(currParamName, '');
+        params.set(currParamName, '')
       }
       // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
     } else if (typeof location === 'object') {
-      params = create$5(); // eslint-disable-next-line no-undef
+      params = _map_js__WEBPACK_IMPORTED_MODULE_0__.create(); // eslint-disable-next-line no-undef
       (location.search || '?').slice(1).split('&').forEach((kv) => {
         if (kv.length !== 0) {
-          const [key, value] = kv.split('=');
-          params.set(`--${fromCamelCase(key, '-')}`, value);
-          params.set(`-${fromCamelCase(key, '-')}`, value);
+          const [key, value] = kv.split('=')
+          params.set(`--${_string_js__WEBPACK_IMPORTED_MODULE_1__.fromCamelCase(key, '-')}`, value)
+          params.set(`-${_string_js__WEBPACK_IMPORTED_MODULE_1__.fromCamelCase(key, '-')}`, value)
         }
-      });
+      })
     } else {
-      params = create$5();
+      params = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
     }
   }
   return params
-};
+}
 /* c8 ignore stop */
 
 /**
@@ -13273,7 +15999,16 @@ const computeParams = () => {
  * @return {boolean}
  */
 /* c8 ignore next */
-const hasParam = (name) => computeParams().has(name);
+const hasParam = (name) => computeParams().has(name)
+
+/**
+ * @param {string} name
+ * @param {string} defaultVal
+ * @return {string}
+ */
+/* c8 ignore next 2 */
+const getParam = (name, defaultVal) =>
+  computeParams().get(name) || defaultVal
 
 /**
  * @param {string} name
@@ -13282,8 +16017,27 @@ const hasParam = (name) => computeParams().has(name);
 /* c8 ignore next 4 */
 const getVariable = (name) =>
   isNode
-    ? undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
-    : undefinedToNull(varStorage.getItem(name));
+    ? _conditions_js__WEBPACK_IMPORTED_MODULE_2__.undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
+    : _conditions_js__WEBPACK_IMPORTED_MODULE_2__.undefinedToNull(_storage_js__WEBPACK_IMPORTED_MODULE_3__.varStorage.getItem(name))
+
+/**
+ * @param {string} name
+ * @return {string|null}
+ */
+/* c8 ignore next 2 */
+const getConf = (name) =>
+  computeParams().get('--' + name) || getVariable(name)
+
+/**
+ * @param {string} name
+ * @return {string}
+ */
+/* c8 ignore next 5 */
+const ensureConf = (name) => {
+  const c = getConf(name)
+  if (c == null) throw new Error(`Expected configuration "${name.toUpperCase().replaceAll('-', '_')}"`)
+  return c
+}
 
 /**
  * @param {string} name
@@ -13291,14 +16045,14 @@ const getVariable = (name) =>
  */
 /* c8 ignore next 2 */
 const hasConf = (name) =>
-  hasParam('--' + name) || getVariable(name) !== null;
+  hasParam('--' + name) || getVariable(name) !== null
 
 /* c8 ignore next */
-hasConf('production');
+const production = hasConf('production')
 
 /* c8 ignore next 2 */
 const forceColor = isNode &&
-  isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
+  _function_js__WEBPACK_IMPORTED_MODULE_4__.isOneOf(process.env.FORCE_COLOR, ['true', '1', '2'])
 
 /* c8 ignore start */
 /**
@@ -13317,220 +16071,458 @@ const supportsColor = forceColor || (
     getVariable('COLORTERM') !== null ||
     (getVariable('TERM') || '').includes('color')
   )
-);
+)
 /* c8 ignore stop */
 
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/error.js":
+/*!****************************************!*\
+  !*** ../../node_modules/lib0/error.js ***!
+  \****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   methodUnimplemented: () => (/* binding */ methodUnimplemented),
+/* harmony export */   unexpectedCase: () => (/* binding */ unexpectedCase)
+/* harmony export */ });
 /**
- * Working with value pairs.
+ * Error helpers.
  *
- * @module pair
+ * @module error
  */
 
 /**
- * @template L,R
+ * @param {string} s
+ * @return {Error}
  */
-class Pair {
-  /**
-   * @param {L} left
-   * @param {R} right
-   */
-  constructor (left, right) {
-    this.left = left;
-    this.right = right;
+/* c8 ignore next */
+const create = s => new Error(s)
+
+/**
+ * @throws {Error}
+ * @return {never}
+ */
+/* c8 ignore next 3 */
+const methodUnimplemented = () => {
+  throw create('Method unimplemented')
+}
+
+/**
+ * @throws {Error}
+ * @return {never}
+ */
+/* c8 ignore next 3 */
+const unexpectedCase = () => {
+  throw create('Unexpected case')
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/eventloop.js":
+/*!********************************************!*\
+  !*** ../../node_modules/lib0/eventloop.js ***!
+  \********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Animation: () => (/* binding */ Animation),
+/* harmony export */   animationFrame: () => (/* binding */ animationFrame),
+/* harmony export */   createDebouncer: () => (/* binding */ createDebouncer),
+/* harmony export */   enqueue: () => (/* binding */ enqueue),
+/* harmony export */   idleCallback: () => (/* binding */ idleCallback),
+/* harmony export */   interval: () => (/* binding */ interval),
+/* harmony export */   timeout: () => (/* binding */ timeout)
+/* harmony export */ });
+/* harmony import */ var _time_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./time.js */ "../../node_modules/lib0/time.js");
+/* global requestIdleCallback, requestAnimationFrame, cancelIdleCallback, cancelAnimationFrame */
+
+
+
+/**
+ * Utility module to work with EcmaScript's event loop.
+ *
+ * @module eventloop
+ */
+
+/**
+ * @type {Array<function>}
+ */
+let queue = []
+
+const _runQueue = () => {
+  for (let i = 0; i < queue.length; i++) {
+    queue[i]()
+  }
+  queue = []
+}
+
+/**
+ * @param {function():void} f
+ */
+const enqueue = f => {
+  queue.push(f)
+  if (queue.length === 1) {
+    setTimeout(_runQueue, 0)
   }
 }
 
 /**
- * @template L,R
- * @param {L} left
- * @param {R} right
- * @return {Pair<L,R>}
- */
-const create$1 = (left, right) => new Pair(left, right);
-
-/* eslint-env browser */
-
-
-/** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null);
-
-/**
- * @param {Map<string,string>} m
- * @return {string}
- */
-const mapToStyleString = m => map(m, (value, key) => `${key}:${value};`).join('');
-/* c8 ignore stop */
-
-/**
- * Utility module to work with EcmaScript Symbols.
- *
- * @module symbol
+ * @typedef {Object} TimeoutObject
+ * @property {function} TimeoutObject.destroy
  */
 
 /**
- * Return fresh symbol.
+ * @param {function(number):void} clearFunction
  */
-const create = Symbol;
-
-const BOLD = create();
-const UNBOLD = create();
-const BLUE = create();
-const GREY = create();
-const GREEN = create();
-const RED = create();
-const PURPLE = create();
-const ORANGE = create();
-const UNCOLOR = create();
-
-/* c8 ignore start */
-/**
- * @param {Array<undefined|string|Symbol|Object|number|function():any>} args
- * @return {Array<string|object|number|undefined>}
- */
-const computeNoColorLoggingArgs = args => {
-  if (args.length === 1 && args[0]?.constructor === Function) {
-    args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
-  }
-  const strBuilder = [];
-  const logArgs = [];
-  // try with formatting until we find something unsupported
-  let i = 0;
-  for (; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === undefined) {
-      break
-    } else if (arg.constructor === String || arg.constructor === Number) {
-      strBuilder.push(arg);
-    } else if (arg.constructor === Object) {
-      break
-    }
-  }
-  if (i > 0) {
-    // create logArgs with what we have so far
-    logArgs.push(strBuilder.join(''));
-  }
-  // append the rest
-  for (; i < args.length; i++) {
-    const arg = args[i];
-    if (!(arg instanceof Symbol)) {
-      logArgs.push(arg);
-    }
-  }
-  return logArgs
-};
-/* c8 ignore stop */
-
-/**
- * Isomorphic logging module with support for colors!
- *
- * @module logging
- */
-
-
-/**
- * @type {Object<Symbol,pair.Pair<string,string>>}
- */
-const _browserStyleMap = {
-  [BOLD]: create$1('font-weight', 'bold'),
-  [UNBOLD]: create$1('font-weight', 'normal'),
-  [BLUE]: create$1('color', 'blue'),
-  [GREEN]: create$1('color', 'green'),
-  [GREY]: create$1('color', 'grey'),
-  [RED]: create$1('color', 'red'),
-  [PURPLE]: create$1('color', 'purple'),
-  [ORANGE]: create$1('color', 'orange'), // not well supported in chrome when debugging node with inspector - TODO: deprecate
-  [UNCOLOR]: create$1('color', 'black')
-};
-
-/**
- * @param {Array<string|Symbol|Object|number|function():any>} args
- * @return {Array<string|object|number>}
- */
-/* c8 ignore start */
-const computeBrowserLoggingArgs = (args) => {
-  if (args.length === 1 && args[0]?.constructor === Function) {
-    args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
-  }
-  const strBuilder = [];
-  const styles = [];
-  const currentStyle = create$5();
+const createTimeoutClass = clearFunction => class TT {
   /**
-   * @type {Array<string|Object|number>}
+   * @param {number} timeoutId
    */
-  let logArgs = [];
-  // try with formatting until we find something unsupported
-  let i = 0;
-  for (; i < args.length; i++) {
-    const arg = args[i];
-    // @ts-ignore
-    const style = _browserStyleMap[arg];
-    if (style !== undefined) {
-      currentStyle.set(style.left, style.right);
-    } else {
-      if (arg === undefined) {
-        break
-      }
-      if (arg.constructor === String || arg.constructor === Number) {
-        const style = mapToStyleString(currentStyle);
-        if (i > 0 || style.length > 0) {
-          strBuilder.push('%c' + arg);
-          styles.push(style);
-        } else {
-          strBuilder.push(arg);
+  constructor (timeoutId) {
+    this._ = timeoutId
+  }
+
+  destroy () {
+    clearFunction(this._)
+  }
+}
+
+const Timeout = createTimeoutClass(clearTimeout)
+
+/**
+ * @param {number} timeout
+ * @param {function} callback
+ * @return {TimeoutObject}
+ */
+const timeout = (timeout, callback) => new Timeout(setTimeout(callback, timeout))
+
+const Interval = createTimeoutClass(clearInterval)
+
+/**
+ * @param {number} timeout
+ * @param {function} callback
+ * @return {TimeoutObject}
+ */
+const interval = (timeout, callback) => new Interval(setInterval(callback, timeout))
+
+/* c8 ignore next */
+const Animation = createTimeoutClass(arg => typeof requestAnimationFrame !== 'undefined' && cancelAnimationFrame(arg))
+
+/**
+ * @param {function(number):void} cb
+ * @return {TimeoutObject}
+ */
+/* c8 ignore next */
+const animationFrame = cb => typeof requestAnimationFrame === 'undefined' ? timeout(0, cb) : new Animation(requestAnimationFrame(cb))
+
+/* c8 ignore next */
+// @ts-ignore
+const Idle = createTimeoutClass(arg => typeof cancelIdleCallback !== 'undefined' && cancelIdleCallback(arg))
+
+/**
+ * Note: this is experimental and is probably only useful in browsers.
+ *
+ * @param {function} cb
+ * @return {TimeoutObject}
+ */
+/* c8 ignore next 2 */
+// @ts-ignore
+const idleCallback = cb => typeof requestIdleCallback !== 'undefined' ? new Idle(requestIdleCallback(cb)) : timeout(1000, cb)
+
+/**
+ * @param {number} timeout Timeout of the debounce action
+ * @param {number} triggerAfter Optional. Trigger callback after a certain amount of time
+ *                              without waiting for debounce.
+ */
+const createDebouncer = (timeout, triggerAfter = -1) => {
+  let timer = -1
+  /**
+   * @type {number?}
+    */
+  let lastCall = null
+  /**
+   * @param {((...args: any)=>void)?} cb function to trigger after debounce. If null, it will reset the
+   *                         debounce.
+   */
+  return cb => {
+    clearTimeout(timer)
+    if (cb) {
+      if (triggerAfter >= 0) {
+        const now = _time_js__WEBPACK_IMPORTED_MODULE_0__.getUnixTime()
+        if (lastCall === null) lastCall = now
+        if (now - lastCall > triggerAfter) {
+          lastCall = null
+          timer = /** @type {any} */ (setTimeout(cb, 0))
+          return
         }
-      } else {
-        break
       }
+      timer = /** @type {any} */ (setTimeout(() => { lastCall = null; cb() }, timeout))
+    } else {
+      lastCall = null
     }
   }
-  if (i > 0) {
-    // create logArgs with what we have so far
-    logArgs = styles;
-    logArgs.unshift(strBuilder.join(''));
-  }
-  // append the rest
-  for (; i < args.length; i++) {
-    const arg = args[i];
-    if (!(arg instanceof Symbol)) {
-      logArgs.push(arg);
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/function.js":
+/*!*******************************************!*\
+  !*** ../../node_modules/lib0/function.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   apply: () => (/* binding */ apply),
+/* harmony export */   callAll: () => (/* binding */ callAll),
+/* harmony export */   equalityDeep: () => (/* binding */ equalityDeep),
+/* harmony export */   equalityFlat: () => (/* binding */ equalityFlat),
+/* harmony export */   equalityStrict: () => (/* binding */ equalityStrict),
+/* harmony export */   id: () => (/* binding */ id),
+/* harmony export */   is: () => (/* binding */ is),
+/* harmony export */   isArray: () => (/* binding */ isArray),
+/* harmony export */   isNumber: () => (/* binding */ isNumber),
+/* harmony export */   isOneOf: () => (/* binding */ isOneOf),
+/* harmony export */   isString: () => (/* binding */ isString),
+/* harmony export */   isTemplate: () => (/* binding */ isTemplate),
+/* harmony export */   nop: () => (/* binding */ nop)
+/* harmony export */ });
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./array.js */ "../../node_modules/lib0/array.js");
+/* harmony import */ var _object_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./object.js */ "../../node_modules/lib0/object.js");
+/* harmony import */ var _traits_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./traits.js */ "../../node_modules/lib0/traits.js");
+/**
+ * Common functions and function call helpers.
+ *
+ * @module function
+ */
+
+
+
+
+
+/**
+ * Calls all functions in `fs` with args. Only throws after all functions were called.
+ *
+ * @param {Array<function>} fs
+ * @param {Array<any>} args
+ */
+const callAll = (fs, args, i = 0) => {
+  try {
+    for (; i < fs.length; i++) {
+      fs[i](...args)
+    }
+  } finally {
+    if (i < fs.length) {
+      callAll(fs, args, i + 1)
     }
   }
-  return logArgs
-};
-/* c8 ignore stop */
+}
 
-/* c8 ignore start */
-const computeLoggingArgs = supportsColor
-  ? computeBrowserLoggingArgs
-  : computeNoColorLoggingArgs;
-/* c8 ignore stop */
+const nop = () => {}
 
 /**
- * @param {Array<string|Symbol|Object|number>} args
+ * @template T
+ * @param {function():T} f
+ * @return {T}
  */
-const print = (...args) => {
-  console.log(...computeLoggingArgs(args));
-  /* c8 ignore next */
-  vconsoles.forEach((vc) => vc.print(args));
-};
+const apply = f => f()
+
+/**
+ * @template A
+ *
+ * @param {A} a
+ * @return {A}
+ */
+const id = a => a
+
+/**
+ * @template T
+ *
+ * @param {T} a
+ * @param {T} b
+ * @return {boolean}
+ */
+const equalityStrict = (a, b) => a === b
+
+/**
+ * @template T
+ *
+ * @param {Array<T>|object} a
+ * @param {Array<T>|object} b
+ * @return {boolean}
+ */
+const equalityFlat = (a, b) => a === b || (a != null && b != null && a.constructor === b.constructor && ((_array_js__WEBPACK_IMPORTED_MODULE_0__.isArray(a) && _array_js__WEBPACK_IMPORTED_MODULE_0__.equalFlat(a, /** @type {Array<T>} */ (b))) || (typeof a === 'object' && _object_js__WEBPACK_IMPORTED_MODULE_1__.equalFlat(a, b))))
 
 /* c8 ignore start */
+
 /**
- * @param {Array<string|Symbol|Object|number>} args
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
  */
-const warn = (...args) => {
-  console.warn(...computeLoggingArgs(args));
-  args.unshift(ORANGE);
-  vconsoles.forEach((vc) => vc.print(args));
-};
+const equalityDeep = (a, b) => {
+  if (a === b) {
+    return true
+  }
+  if (a == null || b == null || a.constructor !== b.constructor) {
+    return false
+  }
+  if (a[_traits_js__WEBPACK_IMPORTED_MODULE_2__.EqualityTraitSymbol] != null) {
+    return a[_traits_js__WEBPACK_IMPORTED_MODULE_2__.EqualityTraitSymbol](b)
+  }
+  switch (a.constructor) {
+    case ArrayBuffer:
+      a = new Uint8Array(a)
+      b = new Uint8Array(b)
+    // eslint-disable-next-line no-fallthrough
+    case Uint8Array: {
+      if (a.byteLength !== b.byteLength) {
+        return false
+      }
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+          return false
+        }
+      }
+      break
+    }
+    case Set: {
+      if (a.size !== b.size) {
+        return false
+      }
+      for (const value of a) {
+        if (!b.has(value)) {
+          return false
+        }
+      }
+      break
+    }
+    case Map: {
+      if (a.size !== b.size) {
+        return false
+      }
+      for (const key of a.keys()) {
+        if (!b.has(key) || !equalityDeep(a.get(key), b.get(key))) {
+          return false
+        }
+      }
+      break
+    }
+    case Object:
+      if (_object_js__WEBPACK_IMPORTED_MODULE_1__.length(a) !== _object_js__WEBPACK_IMPORTED_MODULE_1__.length(b)) {
+        return false
+      }
+      for (const key in a) {
+        if (!_object_js__WEBPACK_IMPORTED_MODULE_1__.hasProperty(a, key) || !equalityDeep(a[key], b[key])) {
+          return false
+        }
+      }
+      break
+    case Array:
+      if (a.length !== b.length) {
+        return false
+      }
+      for (let i = 0; i < a.length; i++) {
+        if (!equalityDeep(a[i], b[i])) {
+          return false
+        }
+      }
+      break
+    default:
+      return false
+  }
+  return true
+}
 
-const vconsoles = create$4();
+/**
+ * @template V
+ * @template {V} OPTS
+ *
+ * @param {V} value
+ * @param {Array<OPTS>} options
+ */
+// @ts-ignore
+const isOneOf = (value, options) => options.includes(value)
+/* c8 ignore stop */
 
+const isArray = _array_js__WEBPACK_IMPORTED_MODULE_0__.isArray
+
+/**
+ * @param {any} s
+ * @return {s is String}
+ */
+const isString = (s) => s && s.constructor === String
+
+/**
+ * @param {any} n
+ * @return {n is Number}
+ */
+const isNumber = n => n != null && n.constructor === Number
+
+/**
+ * @template {abstract new (...args: any) => any} TYPE
+ * @param {any} n
+ * @param {TYPE} T
+ * @return {n is InstanceType<TYPE>}
+ */
+const is = (n, T) => n && n.constructor === T
+
+/**
+ * @template {abstract new (...args: any) => any} TYPE
+ * @param {TYPE} T
+ */
+const isTemplate = (T) =>
+  /**
+   * @param {any} n
+   * @return {n is InstanceType<TYPE>}
+   **/
+  n => n && n.constructor === T
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/iterator.js":
+/*!*******************************************!*\
+  !*** ../../node_modules/lib0/iterator.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createIterator: () => (/* binding */ createIterator),
+/* harmony export */   iteratorFilter: () => (/* binding */ iteratorFilter),
+/* harmony export */   iteratorMap: () => (/* binding */ iteratorMap),
+/* harmony export */   mapIterator: () => (/* binding */ mapIterator)
+/* harmony export */ });
 /**
  * Utility module to create and manipulate Iterators.
  *
  * @module iterator
  */
 
+/**
+ * @template T,R
+ * @param {Iterator<T>} iterator
+ * @param {function(T):R} f
+ * @return {IterableIterator<R>}
+ */
+const mapIterator = (iterator, f) => ({
+  [Symbol.iterator] () {
+    return this
+  },
+  // @ts-ignore
+  next () {
+    const r = iterator.next()
+    return { value: r.done ? undefined : f(r.value), done: r.done }
+  }
+})
 
 /**
  * @template T
@@ -13546,7 +16538,7 @@ const createIterator = next => ({
   },
   // @ts-ignore
   next
-});
+})
 
 /**
  * @template T
@@ -13554,12 +16546,12 @@ const createIterator = next => ({
  * @param {function(T):boolean} filter
  */
 const iteratorFilter = (iterator, filter) => createIterator(() => {
-  let res;
+  let res
   do {
-    res = iterator.next();
+    res = iterator.next()
   } while (!res.done && !filter(res.value))
   return res
-});
+})
 
 /**
  * @template T,M
@@ -13567,9 +16559,2936 @@ const iteratorFilter = (iterator, filter) => createIterator(() => {
  * @param {function(T):M} fmap
  */
 const iteratorMap = (iterator, fmap) => createIterator(() => {
-  const { done, value } = iterator.next();
+  const { done, value } = iterator.next()
   return { done, value: done ? undefined : fmap(value) }
+})
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/json.js":
+/*!***************************************!*\
+  !*** ../../node_modules/lib0/json.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   parse: () => (/* binding */ parse),
+/* harmony export */   stringify: () => (/* binding */ stringify)
+/* harmony export */ });
+/**
+ * JSON utility functions.
+ *
+ * @module json
+ */
+
+/**
+ * Transform JavaScript object to JSON.
+ *
+ * @param {any} object
+ * @return {string}
+ */
+const stringify = JSON.stringify
+
+/**
+ * Parse JSON object.
+ *
+ * @param {string} json
+ * @return {any}
+ */
+const parse = JSON.parse
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/logging.common.js":
+/*!*************************************************!*\
+  !*** ../../node_modules/lib0/logging.common.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   BLUE: () => (/* binding */ BLUE),
+/* harmony export */   BOLD: () => (/* binding */ BOLD),
+/* harmony export */   GREEN: () => (/* binding */ GREEN),
+/* harmony export */   GREY: () => (/* binding */ GREY),
+/* harmony export */   ORANGE: () => (/* binding */ ORANGE),
+/* harmony export */   PURPLE: () => (/* binding */ PURPLE),
+/* harmony export */   RED: () => (/* binding */ RED),
+/* harmony export */   UNBOLD: () => (/* binding */ UNBOLD),
+/* harmony export */   UNCOLOR: () => (/* binding */ UNCOLOR),
+/* harmony export */   computeNoColorLoggingArgs: () => (/* binding */ computeNoColorLoggingArgs),
+/* harmony export */   createModuleLogger: () => (/* binding */ createModuleLogger)
+/* harmony export */ });
+/* harmony import */ var _symbol_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./symbol.js */ "../../node_modules/lib0/symbol.js");
+/* harmony import */ var _time_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./time.js */ "../../node_modules/lib0/time.js");
+/* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./environment.js */ "../../node_modules/lib0/environment.js");
+/* harmony import */ var _function_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./function.js */ "../../node_modules/lib0/function.js");
+/* harmony import */ var _json_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./json.js */ "../../node_modules/lib0/json.js");
+
+
+
+
+
+
+const BOLD = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const UNBOLD = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const BLUE = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const GREY = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const GREEN = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const RED = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const PURPLE = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const ORANGE = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+const UNCOLOR = _symbol_js__WEBPACK_IMPORTED_MODULE_0__.create()
+
+/* c8 ignore start */
+/**
+ * @param {Array<undefined|string|Symbol|Object|number|function():any>} args
+ * @return {Array<string|object|number|undefined>}
+ */
+const computeNoColorLoggingArgs = args => {
+  if (args.length === 1 && args[0]?.constructor === Function) {
+    args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]())
+  }
+  const strBuilder = []
+  const logArgs = []
+  // try with formatting until we find something unsupported
+  let i = 0
+  for (; i < args.length; i++) {
+    const arg = args[i]
+    if (arg === undefined) {
+      break
+    } else if (arg.constructor === String || arg.constructor === Number) {
+      strBuilder.push(arg)
+    } else if (arg.constructor === Object) {
+      break
+    }
+  }
+  if (i > 0) {
+    // create logArgs with what we have so far
+    logArgs.push(strBuilder.join(''))
+  }
+  // append the rest
+  for (; i < args.length; i++) {
+    const arg = args[i]
+    if (!(arg instanceof Symbol)) {
+      logArgs.push(arg)
+    }
+  }
+  return logArgs
+}
+/* c8 ignore stop */
+
+const loggingColors = [GREEN, PURPLE, ORANGE, BLUE]
+let nextColor = 0
+let lastLoggingTime = _time_js__WEBPACK_IMPORTED_MODULE_1__.getUnixTime()
+
+/* c8 ignore start */
+/**
+ * @param {function(...any):void} _print
+ * @param {string} moduleName
+ * @return {function(...any):void}
+ */
+const createModuleLogger = (_print, moduleName) => {
+  const color = loggingColors[nextColor]
+  const debugRegexVar = _environment_js__WEBPACK_IMPORTED_MODULE_2__.getVariable('log')
+  const doLogging = debugRegexVar !== null &&
+    (debugRegexVar === '*' || debugRegexVar === 'true' ||
+      new RegExp(debugRegexVar, 'gi').test(moduleName))
+  nextColor = (nextColor + 1) % loggingColors.length
+  moduleName += ': '
+  return !doLogging
+    ? _function_js__WEBPACK_IMPORTED_MODULE_3__.nop
+    : (...args) => {
+        if (args.length === 1 && args[0]?.constructor === Function) {
+          args = args[0]()
+        }
+        const timeNow = _time_js__WEBPACK_IMPORTED_MODULE_1__.getUnixTime()
+        const timeDiff = timeNow - lastLoggingTime
+        lastLoggingTime = timeNow
+        _print(
+          color,
+          moduleName,
+          UNCOLOR,
+          ...args.map((arg) => {
+            if (arg != null && arg.constructor === Uint8Array) {
+              arg = Array.from(arg)
+            }
+            const t = typeof arg
+            switch (t) {
+              case 'string':
+              case 'symbol':
+                return arg
+              default: {
+                return _json_js__WEBPACK_IMPORTED_MODULE_4__.stringify(arg)
+              }
+            }
+          }),
+          color,
+          ' +' + timeDiff + 'ms'
+        )
+      }
+}
+/* c8 ignore stop */
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/logging.js":
+/*!******************************************!*\
+  !*** ../../node_modules/lib0/logging.js ***!
+  \******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   BLUE: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.BLUE),
+/* harmony export */   BOLD: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.BOLD),
+/* harmony export */   GREEN: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.GREEN),
+/* harmony export */   GREY: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.GREY),
+/* harmony export */   ORANGE: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.ORANGE),
+/* harmony export */   PURPLE: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.PURPLE),
+/* harmony export */   RED: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.RED),
+/* harmony export */   UNBOLD: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.UNBOLD),
+/* harmony export */   UNCOLOR: () => (/* reexport safe */ _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.UNCOLOR),
+/* harmony export */   VConsole: () => (/* binding */ VConsole),
+/* harmony export */   createModuleLogger: () => (/* binding */ createModuleLogger),
+/* harmony export */   createVConsole: () => (/* binding */ createVConsole),
+/* harmony export */   group: () => (/* binding */ group),
+/* harmony export */   groupCollapsed: () => (/* binding */ groupCollapsed),
+/* harmony export */   groupEnd: () => (/* binding */ groupEnd),
+/* harmony export */   print: () => (/* binding */ print),
+/* harmony export */   printCanvas: () => (/* binding */ printCanvas),
+/* harmony export */   printDom: () => (/* binding */ printDom),
+/* harmony export */   printError: () => (/* binding */ printError),
+/* harmony export */   printImg: () => (/* binding */ printImg),
+/* harmony export */   printImgBase64: () => (/* binding */ printImgBase64),
+/* harmony export */   vconsoles: () => (/* binding */ vconsoles),
+/* harmony export */   warn: () => (/* binding */ warn)
+/* harmony export */ });
+/* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./environment.js */ "../../node_modules/lib0/environment.js");
+/* harmony import */ var _set_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./set.js */ "../../node_modules/lib0/set.js");
+/* harmony import */ var _pair_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./pair.js */ "../../node_modules/lib0/pair.js");
+/* harmony import */ var _dom_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./dom.js */ "../../node_modules/lib0/dom.js");
+/* harmony import */ var _json_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./json.js */ "../../node_modules/lib0/json.js");
+/* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./map.js */ "../../node_modules/lib0/map.js");
+/* harmony import */ var _eventloop_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./eventloop.js */ "../../node_modules/lib0/eventloop.js");
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _logging_common_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./logging.common.js */ "../../node_modules/lib0/logging.common.js");
+/**
+ * Isomorphic logging module with support for colors!
+ *
+ * @module logging
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * @type {Object<Symbol,pair.Pair<string,string>>}
+ */
+const _browserStyleMap = {
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.BOLD]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('font-weight', 'bold'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.UNBOLD]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('font-weight', 'normal'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.BLUE]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'blue'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.GREEN]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'green'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.GREY]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'grey'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.RED]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'red'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.PURPLE]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'purple'),
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.ORANGE]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'orange'), // not well supported in chrome when debugging node with inspector - TODO: deprecate
+  [_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.UNCOLOR]: _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('color', 'black')
+}
+
+/**
+ * @param {Array<string|Symbol|Object|number|function():any>} args
+ * @return {Array<string|object|number>}
+ */
+/* c8 ignore start */
+const computeBrowserLoggingArgs = (args) => {
+  if (args.length === 1 && args[0]?.constructor === Function) {
+    args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]())
+  }
+  const strBuilder = []
+  const styles = []
+  const currentStyle = _map_js__WEBPACK_IMPORTED_MODULE_5__.create()
+  /**
+   * @type {Array<string|Object|number>}
+   */
+  let logArgs = []
+  // try with formatting until we find something unsupported
+  let i = 0
+  for (; i < args.length; i++) {
+    const arg = args[i]
+    // @ts-ignore
+    const style = _browserStyleMap[arg]
+    if (style !== undefined) {
+      currentStyle.set(style.left, style.right)
+    } else {
+      if (arg === undefined) {
+        break
+      }
+      if (arg.constructor === String || arg.constructor === Number) {
+        const style = _dom_js__WEBPACK_IMPORTED_MODULE_3__.mapToStyleString(currentStyle)
+        if (i > 0 || style.length > 0) {
+          strBuilder.push('%c' + arg)
+          styles.push(style)
+        } else {
+          strBuilder.push(arg)
+        }
+      } else {
+        break
+      }
+    }
+  }
+  if (i > 0) {
+    // create logArgs with what we have so far
+    logArgs = styles
+    logArgs.unshift(strBuilder.join(''))
+  }
+  // append the rest
+  for (; i < args.length; i++) {
+    const arg = args[i]
+    if (!(arg instanceof Symbol)) {
+      logArgs.push(arg)
+    }
+  }
+  return logArgs
+}
+/* c8 ignore stop */
+
+/* c8 ignore start */
+const computeLoggingArgs = _environment_js__WEBPACK_IMPORTED_MODULE_0__.supportsColor
+  ? computeBrowserLoggingArgs
+  : _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.computeNoColorLoggingArgs
+/* c8 ignore stop */
+
+/**
+ * @param {Array<string|Symbol|Object|number>} args
+ */
+const print = (...args) => {
+  console.log(...computeLoggingArgs(args))
+  /* c8 ignore next */
+  vconsoles.forEach((vc) => vc.print(args))
+}
+
+/* c8 ignore start */
+/**
+ * @param {Array<string|Symbol|Object|number>} args
+ */
+const warn = (...args) => {
+  console.warn(...computeLoggingArgs(args))
+  args.unshift(_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.ORANGE)
+  vconsoles.forEach((vc) => vc.print(args))
+}
+/* c8 ignore stop */
+
+/**
+ * @param {Error} err
+ */
+/* c8 ignore start */
+const printError = (err) => {
+  console.error(err)
+  vconsoles.forEach((vc) => vc.printError(err))
+}
+/* c8 ignore stop */
+
+/**
+ * @param {string} url image location
+ * @param {number} height height of the image in pixel
+ */
+/* c8 ignore start */
+const printImg = (url, height) => {
+  if (_environment_js__WEBPACK_IMPORTED_MODULE_0__.isBrowser) {
+    console.log(
+      '%c                      ',
+      `font-size: ${height}px; background-size: contain; background-repeat: no-repeat; background-image: url(${url})`
+    )
+    // console.log('%c                ', `font-size: ${height}x; background: url(${url}) no-repeat;`)
+  }
+  vconsoles.forEach((vc) => vc.printImg(url, height))
+}
+/* c8 ignore stop */
+
+/**
+ * @param {string} base64
+ * @param {number} height
+ */
+/* c8 ignore next 2 */
+const printImgBase64 = (base64, height) =>
+  printImg(`data:image/gif;base64,${base64}`, height)
+
+/**
+ * @param {Array<string|Symbol|Object|number>} args
+ */
+const group = (...args) => {
+  console.group(...computeLoggingArgs(args))
+  /* c8 ignore next */
+  vconsoles.forEach((vc) => vc.group(args))
+}
+
+/**
+ * @param {Array<string|Symbol|Object|number>} args
+ */
+const groupCollapsed = (...args) => {
+  console.groupCollapsed(...computeLoggingArgs(args))
+  /* c8 ignore next */
+  vconsoles.forEach((vc) => vc.groupCollapsed(args))
+}
+
+const groupEnd = () => {
+  console.groupEnd()
+  /* c8 ignore next */
+  vconsoles.forEach((vc) => vc.groupEnd())
+}
+
+/**
+ * @param {function():Node} createNode
+ */
+/* c8 ignore next 2 */
+const printDom = (createNode) =>
+  vconsoles.forEach((vc) => vc.printDom(createNode()))
+
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {number} height
+ */
+/* c8 ignore next 2 */
+const printCanvas = (canvas, height) =>
+  printImg(canvas.toDataURL(), height)
+
+const vconsoles = _set_js__WEBPACK_IMPORTED_MODULE_1__.create()
+
+/**
+ * @param {Array<string|Symbol|Object|number>} args
+ * @return {Array<Element>}
+ */
+/* c8 ignore start */
+const _computeLineSpans = (args) => {
+  const spans = []
+  const currentStyle = new Map()
+  // try with formatting until we find something unsupported
+  let i = 0
+  for (; i < args.length; i++) {
+    let arg = args[i]
+    // @ts-ignore
+    const style = _browserStyleMap[arg]
+    if (style !== undefined) {
+      currentStyle.set(style.left, style.right)
+    } else {
+      if (arg === undefined) {
+        arg = 'undefined '
+      }
+      if (arg.constructor === String || arg.constructor === Number) {
+        // @ts-ignore
+        const span = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('span', [
+          _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('style', _dom_js__WEBPACK_IMPORTED_MODULE_3__.mapToStyleString(currentStyle))
+        ], [_dom_js__WEBPACK_IMPORTED_MODULE_3__.text(arg.toString())])
+        if (span.innerHTML === '') {
+          span.innerHTML = '&nbsp;'
+        }
+        spans.push(span)
+      } else {
+        break
+      }
+    }
+  }
+  // append the rest
+  for (; i < args.length; i++) {
+    let content = args[i]
+    if (!(content instanceof Symbol)) {
+      if (content.constructor !== String && content.constructor !== Number) {
+        content = ' ' + _json_js__WEBPACK_IMPORTED_MODULE_4__.stringify(content) + ' '
+      }
+      spans.push(
+        _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('span', [], [_dom_js__WEBPACK_IMPORTED_MODULE_3__.text(/** @type {string} */ (content))])
+      )
+    }
+  }
+  return spans
+}
+/* c8 ignore stop */
+
+const lineStyle =
+  'font-family:monospace;border-bottom:1px solid #e2e2e2;padding:2px;'
+
+/* c8 ignore start */
+class VConsole {
+  /**
+   * @param {Element} dom
+   */
+  constructor (dom) {
+    this.dom = dom
+    /**
+     * @type {Element}
+     */
+    this.ccontainer = this.dom
+    this.depth = 0
+    vconsoles.add(this)
+  }
+
+  /**
+   * @param {Array<string|Symbol|Object|number>} args
+   * @param {boolean} collapsed
+   */
+  group (args, collapsed = false) {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      const triangleDown = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('span', [
+        _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('hidden', collapsed),
+        _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('style', 'color:grey;font-size:120%;')
+      ], [_dom_js__WEBPACK_IMPORTED_MODULE_3__.text('▼')])
+      const triangleRight = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('span', [
+        _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('hidden', !collapsed),
+        _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('style', 'color:grey;font-size:125%;')
+      ], [_dom_js__WEBPACK_IMPORTED_MODULE_3__.text('▶')])
+      const content = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element(
+        'div',
+        [_pair_js__WEBPACK_IMPORTED_MODULE_2__.create(
+          'style',
+          `${lineStyle};padding-left:${this.depth * 10}px`
+        )],
+        [triangleDown, triangleRight, _dom_js__WEBPACK_IMPORTED_MODULE_3__.text(' ')].concat(
+          _computeLineSpans(args)
+        )
+      )
+      const nextContainer = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('div', [
+        _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('hidden', collapsed)
+      ])
+      const nextLine = _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('div', [], [content, nextContainer])
+      _dom_js__WEBPACK_IMPORTED_MODULE_3__.append(this.ccontainer, [nextLine])
+      this.ccontainer = nextContainer
+      this.depth++
+      // when header is clicked, collapse/uncollapse container
+      _dom_js__WEBPACK_IMPORTED_MODULE_3__.addEventListener(content, 'click', (_event) => {
+        nextContainer.toggleAttribute('hidden')
+        triangleDown.toggleAttribute('hidden')
+        triangleRight.toggleAttribute('hidden')
+      })
+    })
+  }
+
+  /**
+   * @param {Array<string|Symbol|Object|number>} args
+   */
+  groupCollapsed (args) {
+    this.group(args, true)
+  }
+
+  groupEnd () {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      if (this.depth > 0) {
+        this.depth--
+        // @ts-ignore
+        this.ccontainer = this.ccontainer.parentElement.parentElement
+      }
+    })
+  }
+
+  /**
+   * @param {Array<string|Symbol|Object|number>} args
+   */
+  print (args) {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      _dom_js__WEBPACK_IMPORTED_MODULE_3__.append(this.ccontainer, [
+        _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('div', [
+          _pair_js__WEBPACK_IMPORTED_MODULE_2__.create(
+            'style',
+            `${lineStyle};padding-left:${this.depth * 10}px`
+          )
+        ], _computeLineSpans(args))
+      ])
+    })
+  }
+
+  /**
+   * @param {Error} err
+   */
+  printError (err) {
+    this.print([_logging_common_js__WEBPACK_IMPORTED_MODULE_8__.RED, _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.BOLD, err.toString()])
+  }
+
+  /**
+   * @param {string} url
+   * @param {number} height
+   */
+  printImg (url, height) {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      _dom_js__WEBPACK_IMPORTED_MODULE_3__.append(this.ccontainer, [
+        _dom_js__WEBPACK_IMPORTED_MODULE_3__.element('img', [
+          _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('src', url),
+          _pair_js__WEBPACK_IMPORTED_MODULE_2__.create('height', `${_math_js__WEBPACK_IMPORTED_MODULE_7__.round(height * 1.5)}px`)
+        ])
+      ])
+    })
+  }
+
+  /**
+   * @param {Node} node
+   */
+  printDom (node) {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      _dom_js__WEBPACK_IMPORTED_MODULE_3__.append(this.ccontainer, [node])
+    })
+  }
+
+  destroy () {
+    _eventloop_js__WEBPACK_IMPORTED_MODULE_6__.enqueue(() => {
+      vconsoles.delete(this)
+    })
+  }
+}
+/* c8 ignore stop */
+
+/**
+ * @param {Element} dom
+ */
+/* c8 ignore next */
+const createVConsole = (dom) => new VConsole(dom)
+
+/**
+ * @param {string} moduleName
+ * @return {function(...any):void}
+ */
+const createModuleLogger = (moduleName) => _logging_common_js__WEBPACK_IMPORTED_MODULE_8__.createModuleLogger(print, moduleName)
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/map.js":
+/*!**************************************!*\
+  !*** ../../node_modules/lib0/map.js ***!
+  \**************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   all: () => (/* binding */ all),
+/* harmony export */   any: () => (/* binding */ any),
+/* harmony export */   copy: () => (/* binding */ copy),
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   map: () => (/* binding */ map),
+/* harmony export */   setIfUndefined: () => (/* binding */ setIfUndefined)
+/* harmony export */ });
+/**
+ * Utility module to work with key-value stores.
+ *
+ * @module map
+ */
+
+/**
+ * Creates a new Map instance.
+ *
+ * @function
+ * @return {Map<any, any>}
+ *
+ * @function
+ */
+const create = () => new Map()
+
+/**
+ * Copy a Map object into a fresh Map object.
+ *
+ * @function
+ * @template K,V
+ * @param {Map<K,V>} m
+ * @return {Map<K,V>}
+ */
+const copy = m => {
+  const r = create()
+  m.forEach((v, k) => { r.set(k, v) })
+  return r
+}
+
+/**
+ * Get map property. Create T if property is undefined and set T on map.
+ *
+ * ```js
+ * const listeners = map.setIfUndefined(events, 'eventName', set.create)
+ * listeners.add(listener)
+ * ```
+ *
+ * @function
+ * @template {Map<any, any>} MAP
+ * @template {MAP extends Map<any,infer V> ? function():V : unknown} CF
+ * @param {MAP} map
+ * @param {MAP extends Map<infer K,any> ? K : unknown} key
+ * @param {CF} createT
+ * @return {ReturnType<CF>}
+ */
+const setIfUndefined = (map, key, createT) => {
+  let set = map.get(key)
+  if (set === undefined) {
+    map.set(key, set = createT())
+  }
+  return set
+}
+
+/**
+ * Creates an Array and populates it with the content of all key-value pairs using the `f(value, key)` function.
+ *
+ * @function
+ * @template K
+ * @template V
+ * @template R
+ * @param {Map<K,V>} m
+ * @param {function(V,K):R} f
+ * @return {Array<R>}
+ */
+const map = (m, f) => {
+  const res = []
+  for (const [key, value] of m) {
+    res.push(f(value, key))
+  }
+  return res
+}
+
+/**
+ * Tests whether any key-value pairs pass the test implemented by `f(value, key)`.
+ *
+ * @todo should rename to some - similarly to Array.some
+ *
+ * @function
+ * @template K
+ * @template V
+ * @param {Map<K,V>} m
+ * @param {function(V,K):boolean} f
+ * @return {boolean}
+ */
+const any = (m, f) => {
+  for (const [key, value] of m) {
+    if (f(value, key)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Tests whether all key-value pairs pass the test implemented by `f(value, key)`.
+ *
+ * @function
+ * @template K
+ * @template V
+ * @param {Map<K,V>} m
+ * @param {function(V,K):boolean} f
+ * @return {boolean}
+ */
+const all = (m, f) => {
+  for (const [key, value] of m) {
+    if (!f(value, key)) {
+      return false
+    }
+  }
+  return true
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/math.js":
+/*!***************************************!*\
+  !*** ../../node_modules/lib0/math.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   abs: () => (/* binding */ abs),
+/* harmony export */   add: () => (/* binding */ add),
+/* harmony export */   ceil: () => (/* binding */ ceil),
+/* harmony export */   exp10: () => (/* binding */ exp10),
+/* harmony export */   floor: () => (/* binding */ floor),
+/* harmony export */   imul: () => (/* binding */ imul),
+/* harmony export */   isNaN: () => (/* binding */ isNaN),
+/* harmony export */   isNegativeZero: () => (/* binding */ isNegativeZero),
+/* harmony export */   log: () => (/* binding */ log),
+/* harmony export */   log10: () => (/* binding */ log10),
+/* harmony export */   log2: () => (/* binding */ log2),
+/* harmony export */   max: () => (/* binding */ max),
+/* harmony export */   min: () => (/* binding */ min),
+/* harmony export */   pow: () => (/* binding */ pow),
+/* harmony export */   round: () => (/* binding */ round),
+/* harmony export */   sign: () => (/* binding */ sign),
+/* harmony export */   sqrt: () => (/* binding */ sqrt)
+/* harmony export */ });
+/**
+ * Common Math expressions.
+ *
+ * @module math
+ */
+
+const floor = Math.floor
+const ceil = Math.ceil
+const abs = Math.abs
+const imul = Math.imul
+const round = Math.round
+const log10 = Math.log10
+const log2 = Math.log2
+const log = Math.log
+const sqrt = Math.sqrt
+
+/**
+ * @function
+ * @param {number} a
+ * @param {number} b
+ * @return {number} The sum of a and b
+ */
+const add = (a, b) => a + b
+
+/**
+ * @function
+ * @param {number} a
+ * @param {number} b
+ * @return {number} The smaller element of a and b
+ */
+const min = (a, b) => a < b ? a : b
+
+/**
+ * @function
+ * @param {number} a
+ * @param {number} b
+ * @return {number} The bigger element of a and b
+ */
+const max = (a, b) => a > b ? a : b
+
+const isNaN = Number.isNaN
+
+const pow = Math.pow
+/**
+ * Base 10 exponential function. Returns the value of 10 raised to the power of pow.
+ *
+ * @param {number} exp
+ * @return {number}
+ */
+const exp10 = exp => Math.pow(10, exp)
+
+const sign = Math.sign
+
+/**
+ * @param {number} n
+ * @return {boolean} Wether n is negative. This function also differentiates between -0 and +0
+ */
+const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/metric.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/metric.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   atto: () => (/* binding */ atto),
+/* harmony export */   centi: () => (/* binding */ centi),
+/* harmony export */   deca: () => (/* binding */ deca),
+/* harmony export */   deci: () => (/* binding */ deci),
+/* harmony export */   exa: () => (/* binding */ exa),
+/* harmony export */   femto: () => (/* binding */ femto),
+/* harmony export */   giga: () => (/* binding */ giga),
+/* harmony export */   hecto: () => (/* binding */ hecto),
+/* harmony export */   kilo: () => (/* binding */ kilo),
+/* harmony export */   mega: () => (/* binding */ mega),
+/* harmony export */   micro: () => (/* binding */ micro),
+/* harmony export */   milli: () => (/* binding */ milli),
+/* harmony export */   nano: () => (/* binding */ nano),
+/* harmony export */   peta: () => (/* binding */ peta),
+/* harmony export */   pico: () => (/* binding */ pico),
+/* harmony export */   prefix: () => (/* binding */ prefix),
+/* harmony export */   tera: () => (/* binding */ tera),
+/* harmony export */   yocto: () => (/* binding */ yocto),
+/* harmony export */   yotta: () => (/* binding */ yotta),
+/* harmony export */   zepto: () => (/* binding */ zepto),
+/* harmony export */   zetta: () => (/* binding */ zetta)
+/* harmony export */ });
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/**
+ * Utility module to convert metric values.
+ *
+ * @module metric
+ */
+
+
+
+const yotta = 1e24
+const zetta = 1e21
+const exa = 1e18
+const peta = 1e15
+const tera = 1e12
+const giga = 1e9
+const mega = 1e6
+const kilo = 1e3
+const hecto = 1e2
+const deca = 10
+const deci = 0.1
+const centi = 0.01
+const milli = 1e-3
+const micro = 1e-6
+const nano = 1e-9
+const pico = 1e-12
+const femto = 1e-15
+const atto = 1e-18
+const zepto = 1e-21
+const yocto = 1e-24
+
+const prefixUp = ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+const prefixDown = ['', 'm', 'μ', 'n', 'p', 'f', 'a', 'z', 'y']
+
+/**
+ * Calculate the metric prefix for a number. Assumes E.g. `prefix(1000) = { n: 1, prefix: 'k' }`
+ *
+ * @param {number} n
+ * @param {number} [baseMultiplier] Multiplier of the base (10^(3*baseMultiplier)). E.g. `convert(time, -3)` if time is already in milli seconds
+ * @return {{n:number,prefix:string}}
+ */
+const prefix = (n, baseMultiplier = 0) => {
+  const nPow = n === 0 ? 0 : _math_js__WEBPACK_IMPORTED_MODULE_0__.log10(n)
+  let mult = 0
+  while (nPow < mult * 3 && baseMultiplier > -8) {
+    baseMultiplier--
+    mult--
+  }
+  while (nPow >= 3 + mult * 3 && baseMultiplier < 8) {
+    baseMultiplier++
+    mult++
+  }
+  const prefix = baseMultiplier < 0 ? prefixDown[-baseMultiplier] : prefixUp[baseMultiplier]
+  return {
+    n: _math_js__WEBPACK_IMPORTED_MODULE_0__.round((mult > 0 ? n / _math_js__WEBPACK_IMPORTED_MODULE_0__.exp10(mult * 3) : n * _math_js__WEBPACK_IMPORTED_MODULE_0__.exp10(mult * -3)) * 1e12) / 1e12,
+    prefix
+  }
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/number.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/number.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   HIGHEST_INT32: () => (/* binding */ HIGHEST_INT32),
+/* harmony export */   HIGHEST_UINT32: () => (/* binding */ HIGHEST_UINT32),
+/* harmony export */   LOWEST_INT32: () => (/* binding */ LOWEST_INT32),
+/* harmony export */   MAX_SAFE_INTEGER: () => (/* binding */ MAX_SAFE_INTEGER),
+/* harmony export */   MIN_SAFE_INTEGER: () => (/* binding */ MIN_SAFE_INTEGER),
+/* harmony export */   countBits: () => (/* binding */ countBits),
+/* harmony export */   isInteger: () => (/* binding */ isInteger),
+/* harmony export */   isNaN: () => (/* binding */ isNaN),
+/* harmony export */   parseInt: () => (/* binding */ parseInt)
+/* harmony export */ });
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./binary.js */ "../../node_modules/lib0/binary.js");
+/**
+ * Utility helpers for working with numbers.
+ *
+ * @module number
+ */
+
+
+
+
+const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER
+const MIN_SAFE_INTEGER = Number.MIN_SAFE_INTEGER
+
+const LOWEST_INT32 = 1 << 31
+const HIGHEST_INT32 = _binary_js__WEBPACK_IMPORTED_MODULE_1__.BITS31
+const HIGHEST_UINT32 = _binary_js__WEBPACK_IMPORTED_MODULE_1__.BITS32
+
+/* c8 ignore next */
+const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && _math_js__WEBPACK_IMPORTED_MODULE_0__.floor(num) === num)
+const isNaN = Number.isNaN
+const parseInt = Number.parseInt
+
+/**
+ * Count the number of "1" bits in an unsigned 32bit number.
+ *
+ * Super fun bitcount algorithm by Brian Kernighan.
+ *
+ * @param {number} n
+ */
+const countBits = n => {
+  n &= _binary_js__WEBPACK_IMPORTED_MODULE_1__.BITS32
+  let count = 0
+  while (n) {
+    n &= (n - 1)
+    count++
+  }
+  return count
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/object.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/object.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   assign: () => (/* binding */ assign),
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   deepFreeze: () => (/* binding */ deepFreeze),
+/* harmony export */   equalFlat: () => (/* binding */ equalFlat),
+/* harmony export */   every: () => (/* binding */ every),
+/* harmony export */   forEach: () => (/* binding */ forEach),
+/* harmony export */   freeze: () => (/* binding */ freeze),
+/* harmony export */   hasProperty: () => (/* binding */ hasProperty),
+/* harmony export */   isEmpty: () => (/* binding */ isEmpty),
+/* harmony export */   keys: () => (/* binding */ keys),
+/* harmony export */   length: () => (/* binding */ length),
+/* harmony export */   map: () => (/* binding */ map),
+/* harmony export */   setIfUndefined: () => (/* binding */ setIfUndefined),
+/* harmony export */   size: () => (/* binding */ size),
+/* harmony export */   some: () => (/* binding */ some),
+/* harmony export */   values: () => (/* binding */ values)
+/* harmony export */ });
+/**
+ * Utility functions for working with EcmaScript objects.
+ *
+ * @module object
+ */
+
+/**
+ * @return {Object<string,any>} obj
+ */
+const create = () => Object.create(null)
+
+/**
+ * Object.assign
+ */
+const assign = Object.assign
+
+/**
+ * @param {Object<string,any>} obj
+ */
+const keys = Object.keys
+
+/**
+ * @template V
+ * @param {{[key:string]: V}} obj
+ * @return {Array<V>}
+ */
+const values = Object.values
+
+/**
+ * @template V
+ * @param {{[k:string]:V}} obj
+ * @param {function(V,string):any} f
+ */
+const forEach = (obj, f) => {
+  for (const key in obj) {
+    f(obj[key], key)
+  }
+}
+
+/**
+ * @todo implement mapToArray & map
+ *
+ * @template R
+ * @param {Object<string,any>} obj
+ * @param {function(any,string):R} f
+ * @return {Array<R>}
+ */
+const map = (obj, f) => {
+  const results = []
+  for (const key in obj) {
+    results.push(f(obj[key], key))
+  }
+  return results
+}
+
+/**
+ * @deprecated use object.size instead
+ * @param {Object<string,any>} obj
+ * @return {number}
+ */
+const length = obj => keys(obj).length
+
+/**
+ * @param {Object<string,any>} obj
+ * @return {number}
+ */
+const size = obj => keys(obj).length
+
+/**
+ * @template {{ [key:string|number|symbol]: any }} T
+ * @param {T} obj
+ * @param {(v:T[keyof T],k:keyof T)=>boolean} f
+ * @return {boolean}
+ */
+const some = (obj, f) => {
+  for (const key in obj) {
+    if (f(obj[key], key)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * @param {Object|null|undefined} obj
+ */
+const isEmpty = obj => {
+  // eslint-disable-next-line no-unreachable-loop
+  for (const _k in obj) {
+    return false
+  }
+  return true
+}
+
+/**
+ * @template {{ [key:string|number|symbol]: any }} T
+ * @param {T} obj
+ * @param {(v:T[keyof T],k:keyof T)=>boolean} f
+ * @return {boolean}
+ */
+const every = (obj, f) => {
+  for (const key in obj) {
+    if (!f(obj[key], key)) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Calls `Object.prototype.hasOwnProperty`.
+ *
+ * @param {any} obj
+ * @param {string|number|symbol} key
+ * @return {boolean}
+ */
+const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key)
+
+/**
+ * @param {Object<string,any>} a
+ * @param {Object<string,any>} b
+ * @return {boolean}
+ */
+const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val))
+
+/**
+ * Make an object immutable. This hurts performance and is usually not needed if you perform good
+ * coding practices.
+ */
+const freeze = Object.freeze
+
+/**
+ * Make an object and all its children immutable.
+ * This *really* hurts performance and is usually not needed if you perform good coding practices.
+ *
+ * @template {any} T
+ * @param {T} o
+ * @return {Readonly<T>}
+ */
+const deepFreeze = (o) => {
+  for (const key in o) {
+    const c = o[key]
+    if (typeof c === 'object' || typeof c === 'function') {
+      deepFreeze(o[key])
+    }
+  }
+  return freeze(o)
+}
+
+/**
+ * Get object property. Create T if property is undefined and set T on object.
+ *
+ * @function
+ * @template {object} KV
+ * @template {keyof KV} [K=keyof KV]
+ * @param {KV} o
+ * @param {K} key
+ * @param {() => KV[K]} createT
+ * @return {KV[K]}
+ */
+const setIfUndefined = (o, key, createT) => hasProperty(o, key) ? o[key] : (o[key] = createT())
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/observable.js":
+/*!*********************************************!*\
+  !*** ../../node_modules/lib0/observable.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Observable: () => (/* binding */ Observable),
+/* harmony export */   ObservableV2: () => (/* binding */ ObservableV2)
+/* harmony export */ });
+/* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./map.js */ "../../node_modules/lib0/map.js");
+/* harmony import */ var _set_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./set.js */ "../../node_modules/lib0/set.js");
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./array.js */ "../../node_modules/lib0/array.js");
+/**
+ * Observable class prototype.
+ *
+ * @module observable
+ */
+
+
+
+
+
+/**
+ * Handles named events.
+ * @experimental
+ *
+ * This is basically a (better typed) duplicate of Observable, which will replace Observable in the
+ * next release.
+ *
+ * @template {{[key in keyof EVENTS]: function(...any):void}} EVENTS
+ */
+class ObservableV2 {
+  constructor () {
+    /**
+     * Some desc.
+     * @type {Map<string, Set<any>>}
+     */
+    this._observers = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
+  }
+
+  /**
+   * @template {keyof EVENTS & string} NAME
+   * @param {NAME} name
+   * @param {EVENTS[NAME]} f
+   */
+  on (name, f) {
+    _map_js__WEBPACK_IMPORTED_MODULE_0__.setIfUndefined(this._observers, /** @type {string} */ (name), _set_js__WEBPACK_IMPORTED_MODULE_1__.create).add(f)
+    return f
+  }
+
+  /**
+   * @template {keyof EVENTS & string} NAME
+   * @param {NAME} name
+   * @param {EVENTS[NAME]} f
+   */
+  once (name, f) {
+    /**
+     * @param  {...any} args
+     */
+    const _f = (...args) => {
+      this.off(name, /** @type {any} */ (_f))
+      f(...args)
+    }
+    this.on(name, /** @type {any} */ (_f))
+  }
+
+  /**
+   * @template {keyof EVENTS & string} NAME
+   * @param {NAME} name
+   * @param {EVENTS[NAME]} f
+   */
+  off (name, f) {
+    const observers = this._observers.get(name)
+    if (observers !== undefined) {
+      observers.delete(f)
+      if (observers.size === 0) {
+        this._observers.delete(name)
+      }
+    }
+  }
+
+  /**
+   * Emit a named event. All registered event listeners that listen to the
+   * specified name will receive the event.
+   *
+   * @todo This should catch exceptions
+   *
+   * @template {keyof EVENTS & string} NAME
+   * @param {NAME} name The event name.
+   * @param {Parameters<EVENTS[NAME]>} args The arguments that are applied to the event listener.
+   */
+  emit (name, args) {
+    // copy all listeners to an array first to make sure that no event is emitted to listeners that are subscribed while the event handler is called.
+    return _array_js__WEBPACK_IMPORTED_MODULE_2__.from((this._observers.get(name) || _map_js__WEBPACK_IMPORTED_MODULE_0__.create()).values()).forEach(f => f(...args))
+  }
+
+  destroy () {
+    this._observers = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
+  }
+}
+
+/* c8 ignore start */
+/**
+ * Handles named events.
+ *
+ * @deprecated
+ * @template N
+ */
+class Observable {
+  constructor () {
+    /**
+     * Some desc.
+     * @type {Map<N, any>}
+     */
+    this._observers = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
+  }
+
+  /**
+   * @param {N} name
+   * @param {function} f
+   */
+  on (name, f) {
+    _map_js__WEBPACK_IMPORTED_MODULE_0__.setIfUndefined(this._observers, name, _set_js__WEBPACK_IMPORTED_MODULE_1__.create).add(f)
+  }
+
+  /**
+   * @param {N} name
+   * @param {function} f
+   */
+  once (name, f) {
+    /**
+     * @param  {...any} args
+     */
+    const _f = (...args) => {
+      this.off(name, _f)
+      f(...args)
+    }
+    this.on(name, _f)
+  }
+
+  /**
+   * @param {N} name
+   * @param {function} f
+   */
+  off (name, f) {
+    const observers = this._observers.get(name)
+    if (observers !== undefined) {
+      observers.delete(f)
+      if (observers.size === 0) {
+        this._observers.delete(name)
+      }
+    }
+  }
+
+  /**
+   * Emit a named event. All registered event listeners that listen to the
+   * specified name will receive the event.
+   *
+   * @todo This should catch exceptions
+   *
+   * @param {N} name The event name.
+   * @param {Array<any>} args The arguments that are applied to the event listener.
+   */
+  emit (name, args) {
+    // copy all listeners to an array first to make sure that no event is emitted to listeners that are subscribed while the event handler is called.
+    return _array_js__WEBPACK_IMPORTED_MODULE_2__.from((this._observers.get(name) || _map_js__WEBPACK_IMPORTED_MODULE_0__.create()).values()).forEach(f => f(...args))
+  }
+
+  destroy () {
+    this._observers = _map_js__WEBPACK_IMPORTED_MODULE_0__.create()
+  }
+}
+/* c8 ignore end */
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/pair.js":
+/*!***************************************!*\
+  !*** ../../node_modules/lib0/pair.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Pair: () => (/* binding */ Pair),
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   createReversed: () => (/* binding */ createReversed),
+/* harmony export */   forEach: () => (/* binding */ forEach),
+/* harmony export */   map: () => (/* binding */ map)
+/* harmony export */ });
+/**
+ * Working with value pairs.
+ *
+ * @module pair
+ */
+
+/**
+ * @template L,R
+ */
+class Pair {
+  /**
+   * @param {L} left
+   * @param {R} right
+   */
+  constructor (left, right) {
+    this.left = left
+    this.right = right
+  }
+}
+
+/**
+ * @template L,R
+ * @param {L} left
+ * @param {R} right
+ * @return {Pair<L,R>}
+ */
+const create = (left, right) => new Pair(left, right)
+
+/**
+ * @template L,R
+ * @param {R} right
+ * @param {L} left
+ * @return {Pair<L,R>}
+ */
+const createReversed = (right, left) => new Pair(left, right)
+
+/**
+ * @template L,R
+ * @param {Array<Pair<L,R>>} arr
+ * @param {function(L, R):any} f
+ */
+const forEach = (arr, f) => arr.forEach(p => f(p.left, p.right))
+
+/**
+ * @template L,R,X
+ * @param {Array<Pair<L,R>>} arr
+ * @param {function(L, R):X} f
+ * @return {Array<X>}
+ */
+const map = (arr, f) => arr.map(p => f(p.left, p.right))
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/promise.js":
+/*!******************************************!*\
+  !*** ../../node_modules/lib0/promise.js ***!
+  \******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   all: () => (/* binding */ all),
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   createEmpty: () => (/* binding */ createEmpty),
+/* harmony export */   isPromise: () => (/* binding */ isPromise),
+/* harmony export */   reject: () => (/* binding */ reject),
+/* harmony export */   resolve: () => (/* binding */ resolve),
+/* harmony export */   resolveWith: () => (/* binding */ resolveWith),
+/* harmony export */   until: () => (/* binding */ until),
+/* harmony export */   untilAsync: () => (/* binding */ untilAsync),
+/* harmony export */   wait: () => (/* binding */ wait)
+/* harmony export */ });
+/* harmony import */ var _time_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./time.js */ "../../node_modules/lib0/time.js");
+/**
+ * Utility helpers to work with promises.
+ *
+ * @module promise
+ */
+
+
+
+/**
+ * @template T
+ * @callback PromiseResolve
+ * @param {T|PromiseLike<T>} [result]
+ */
+
+/**
+ * @template T
+ * @param {function(PromiseResolve<T>,function(Error):void):any} f
+ * @return {Promise<T>}
+ */
+const create = f => /** @type {Promise<T>} */ (new Promise(f))
+
+/**
+ * @param {function(function():void,function(Error):void):void} f
+ * @return {Promise<void>}
+ */
+const createEmpty = f => new Promise(f)
+
+/**
+ * `Promise.all` wait for all promises in the array to resolve and return the result
+ * @template {unknown[] | []} PS
+ *
+ * @param {PS} ps
+ * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
+ */
+const all = Promise.all.bind(Promise)
+
+/**
+ * @param {Error} [reason]
+ * @return {Promise<never>}
+ */
+const reject = reason => Promise.reject(reason)
+
+/**
+ * @template T
+ * @param {T|void} res
+ * @return {Promise<T|void>}
+ */
+const resolve = res => Promise.resolve(res)
+
+/**
+ * @template T
+ * @param {T} res
+ * @return {Promise<T>}
+ */
+const resolveWith = res => Promise.resolve(res)
+
+/**
+ * @todo Next version, reorder parameters: check, [timeout, [intervalResolution]]
+ * @deprecated use untilAsync instead
+ *
+ * @param {number} timeout
+ * @param {function():boolean} check
+ * @param {number} [intervalResolution]
+ * @return {Promise<void>}
+ */
+const until = (timeout, check, intervalResolution = 10) => create((resolve, reject) => {
+  const startTime = _time_js__WEBPACK_IMPORTED_MODULE_0__.getUnixTime()
+  const hasTimeout = timeout > 0
+  const untilInterval = () => {
+    if (check()) {
+      clearInterval(intervalHandle)
+      resolve()
+    } else if (hasTimeout) {
+      /* c8 ignore else */
+      if (_time_js__WEBPACK_IMPORTED_MODULE_0__.getUnixTime() - startTime > timeout) {
+        clearInterval(intervalHandle)
+        reject(new Error('Timeout'))
+      }
+    }
+  }
+  const intervalHandle = setInterval(untilInterval, intervalResolution)
+})
+
+/**
+ * @param {()=>Promise<boolean>|boolean} check
+ * @param {number} timeout
+ * @param {number} intervalResolution
+ * @return {Promise<void>}
+ */
+const untilAsync = async (check, timeout = 0, intervalResolution = 10) => {
+  const startTime = _time_js__WEBPACK_IMPORTED_MODULE_0__.getUnixTime()
+  const noTimeout = timeout <= 0
+  // eslint-disable-next-line no-unmodified-loop-condition
+  while (noTimeout || _time_js__WEBPACK_IMPORTED_MODULE_0__.getUnixTime() - startTime <= timeout) {
+    if (await check()) return
+    await wait(intervalResolution)
+  }
+  throw new Error('Timeout')
+}
+
+/**
+ * @param {number} timeout
+ * @return {Promise<undefined>}
+ */
+const wait = timeout => create((resolve, _reject) => setTimeout(resolve, timeout))
+
+/**
+ * Checks if an object is a promise using ducktyping.
+ *
+ * Promises are often polyfilled, so it makes sense to add some additional guarantees if the user of this
+ * library has some insane environment where global Promise objects are overwritten.
+ *
+ * @param {any} p
+ * @return {boolean}
+ */
+const isPromise = p => p instanceof Promise || (p && p.then && p.catch && p.finally)
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/random.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/random.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   oneOf: () => (/* binding */ oneOf),
+/* harmony export */   rand: () => (/* binding */ rand),
+/* harmony export */   uint32: () => (/* binding */ uint32),
+/* harmony export */   uint53: () => (/* binding */ uint53),
+/* harmony export */   uuidv4: () => (/* binding */ uuidv4)
+/* harmony export */ });
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./binary.js */ "../../node_modules/lib0/binary.js");
+/* harmony import */ var lib0_webcrypto__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/webcrypto */ "../../node_modules/lib0/webcrypto.js");
+/**
+ * Isomorphic module for true random numbers / buffers / uuids.
+ *
+ * Attention: falls back to Math.random if the browser does not support crypto.
+ *
+ * @module random
+ */
+
+
+
+
+
+const rand = Math.random
+
+const uint32 = () => (0,lib0_webcrypto__WEBPACK_IMPORTED_MODULE_2__.getRandomValues)(new Uint32Array(1))[0]
+
+const uint53 = () => {
+  const arr = (0,lib0_webcrypto__WEBPACK_IMPORTED_MODULE_2__.getRandomValues)(new Uint32Array(8))
+  return (arr[0] & _binary_js__WEBPACK_IMPORTED_MODULE_1__.BITS21) * (_binary_js__WEBPACK_IMPORTED_MODULE_1__.BITS32 + 1) + (arr[1] >>> 0)
+}
+
+/**
+ * @template T
+ * @param {Array<T>} arr
+ * @return {T}
+ */
+const oneOf = arr => arr[_math_js__WEBPACK_IMPORTED_MODULE_0__.floor(rand() * arr.length)]
+
+// @ts-ignore
+const uuidv4Template = [1e7] + -1e3 + -4e3 + -8e3 + -1e11
+
+/**
+ * @return {string}
+ */
+const uuidv4 = () => uuidv4Template.replace(/[018]/g, /** @param {number} c */ c =>
+  (c ^ uint32() & 15 >> c / 4).toString(16)
+)
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/set.js":
+/*!**************************************!*\
+  !*** ../../node_modules/lib0/set.js ***!
+  \**************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   first: () => (/* binding */ first),
+/* harmony export */   from: () => (/* binding */ from),
+/* harmony export */   toArray: () => (/* binding */ toArray)
+/* harmony export */ });
+/**
+ * Utility module to work with sets.
+ *
+ * @module set
+ */
+
+const create = () => new Set()
+
+/**
+ * @template T
+ * @param {Set<T>} set
+ * @return {Array<T>}
+ */
+const toArray = set => Array.from(set)
+
+/**
+ * @template T
+ * @param {Set<T>} set
+ * @return {T|undefined}
+ */
+const first = set => set.values().next().value
+
+/**
+ * @template T
+ * @param {Iterable<T>} entries
+ * @return {Set<T>}
+ */
+const from = entries => new Set(entries)
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/storage.js":
+/*!******************************************!*\
+  !*** ../../node_modules/lib0/storage.js ***!
+  \******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   offChange: () => (/* binding */ offChange),
+/* harmony export */   onChange: () => (/* binding */ onChange),
+/* harmony export */   varStorage: () => (/* binding */ varStorage)
+/* harmony export */ });
+/* eslint-env browser */
+
+/**
+ * Isomorphic variable storage.
+ *
+ * Uses LocalStorage in the browser and falls back to in-memory storage.
+ *
+ * @module storage
+ */
+
+/* c8 ignore start */
+class VarStoragePolyfill {
+  constructor () {
+    this.map = new Map()
+  }
+
+  /**
+   * @param {string} key
+   * @param {any} newValue
+   */
+  setItem (key, newValue) {
+    this.map.set(key, newValue)
+  }
+
+  /**
+   * @param {string} key
+   */
+  getItem (key) {
+    return this.map.get(key)
+  }
+}
+/* c8 ignore stop */
+
+/**
+ * @type {any}
+ */
+let _localStorage = new VarStoragePolyfill()
+let usePolyfill = true
+
+/* c8 ignore start */
+try {
+  // if the same-origin rule is violated, accessing localStorage might thrown an error
+  if (typeof localStorage !== 'undefined' && localStorage) {
+    _localStorage = localStorage
+    usePolyfill = false
+  }
+} catch (e) { }
+/* c8 ignore stop */
+
+/**
+ * This is basically localStorage in browser, or a polyfill in nodejs
+ */
+/* c8 ignore next */
+const varStorage = _localStorage
+
+/**
+ * A polyfill for `addEventListener('storage', event => {..})` that does nothing if the polyfill is being used.
+ *
+ * @param {function({ key: string, newValue: string, oldValue: string }): void} eventHandler
+ * @function
+ */
+/* c8 ignore next */
+const onChange = eventHandler => usePolyfill || addEventListener('storage', /** @type {any} */ (eventHandler))
+
+/**
+ * A polyfill for `removeEventListener('storage', event => {..})` that does nothing if the polyfill is being used.
+ *
+ * @param {function({ key: string, newValue: string, oldValue: string }): void} eventHandler
+ * @function
+ */
+/* c8 ignore next */
+const offChange = eventHandler => usePolyfill || removeEventListener('storage', /** @type {any} */ (eventHandler))
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/string.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/string.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   MAX_UTF16_CHARACTER: () => (/* binding */ MAX_UTF16_CHARACTER),
+/* harmony export */   _decodeUtf8Native: () => (/* binding */ _decodeUtf8Native),
+/* harmony export */   _decodeUtf8Polyfill: () => (/* binding */ _decodeUtf8Polyfill),
+/* harmony export */   _encodeUtf8Native: () => (/* binding */ _encodeUtf8Native),
+/* harmony export */   _encodeUtf8Polyfill: () => (/* binding */ _encodeUtf8Polyfill),
+/* harmony export */   decodeUtf8: () => (/* binding */ decodeUtf8),
+/* harmony export */   encodeUtf8: () => (/* binding */ encodeUtf8),
+/* harmony export */   escapeHTML: () => (/* binding */ escapeHTML),
+/* harmony export */   fromCamelCase: () => (/* binding */ fromCamelCase),
+/* harmony export */   fromCharCode: () => (/* binding */ fromCharCode),
+/* harmony export */   fromCodePoint: () => (/* binding */ fromCodePoint),
+/* harmony export */   repeat: () => (/* binding */ repeat),
+/* harmony export */   splice: () => (/* binding */ splice),
+/* harmony export */   trimLeft: () => (/* binding */ trimLeft),
+/* harmony export */   unescapeHTML: () => (/* binding */ unescapeHTML),
+/* harmony export */   utf8ByteLength: () => (/* binding */ utf8ByteLength),
+/* harmony export */   utf8TextDecoder: () => (/* binding */ utf8TextDecoder),
+/* harmony export */   utf8TextEncoder: () => (/* binding */ utf8TextEncoder)
+/* harmony export */ });
+/* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./array.js */ "../../node_modules/lib0/array.js");
+
+
+/**
+ * Utility module to work with strings.
+ *
+ * @module string
+ */
+
+const fromCharCode = String.fromCharCode
+const fromCodePoint = String.fromCodePoint
+
+/**
+ * The largest utf16 character.
+ * Corresponds to Uint8Array([255, 255]) or charcodeof(2x2^8)
+ */
+const MAX_UTF16_CHARACTER = fromCharCode(65535)
+
+/**
+ * @param {string} s
+ * @return {string}
+ */
+const toLowerCase = s => s.toLowerCase()
+
+const trimLeftRegex = /^\s*/g
+
+/**
+ * @param {string} s
+ * @return {string}
+ */
+const trimLeft = s => s.replace(trimLeftRegex, '')
+
+const fromCamelCaseRegex = /([A-Z])/g
+
+/**
+ * @param {string} s
+ * @param {string} separator
+ * @return {string}
+ */
+const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`))
+
+/**
+ * Compute the utf8ByteLength
+ * @param {string} str
+ * @return {number}
+ */
+const utf8ByteLength = str => unescape(encodeURIComponent(str)).length
+
+/**
+ * @param {string} str
+ * @return {Uint8Array}
+ */
+const _encodeUtf8Polyfill = str => {
+  const encodedString = unescape(encodeURIComponent(str))
+  const len = encodedString.length
+  const buf = new Uint8Array(len)
+  for (let i = 0; i < len; i++) {
+    buf[i] = /** @type {number} */ (encodedString.codePointAt(i))
+  }
+  return buf
+}
+
+/* c8 ignore next */
+const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null)
+
+/**
+ * @param {string} str
+ * @return {Uint8Array}
+ */
+const _encodeUtf8Native = str => utf8TextEncoder.encode(str)
+
+/**
+ * @param {string} str
+ * @return {Uint8Array}
+ */
+/* c8 ignore next */
+const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill
+
+/**
+ * @param {Uint8Array} buf
+ * @return {string}
+ */
+const _decodeUtf8Polyfill = buf => {
+  let remainingLen = buf.length
+  let encodedString = ''
+  let bufPos = 0
+  while (remainingLen > 0) {
+    const nextLen = remainingLen < 10000 ? remainingLen : 10000
+    const bytes = buf.subarray(bufPos, bufPos + nextLen)
+    bufPos += nextLen
+    // Starting with ES5.1 we can supply a generic array-like object as arguments
+    encodedString += String.fromCodePoint.apply(null, /** @type {any} */ (bytes))
+    remainingLen -= nextLen
+  }
+  return decodeURIComponent(escape(encodedString))
+}
+
+/* c8 ignore next */
+let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
+
+/* c8 ignore start */
+if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
+  // Safari doesn't handle BOM correctly.
+  // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
+  // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
+  // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
+  // Another issue is that from then on no BOM chars are recognized anymore
+  /* c8 ignore next */
+  utf8TextDecoder = null
+}
+/* c8 ignore stop */
+
+/**
+ * @param {Uint8Array} buf
+ * @return {string}
+ */
+const _decodeUtf8Native = buf => /** @type {TextDecoder} */ (utf8TextDecoder).decode(buf)
+
+/**
+ * @param {Uint8Array} buf
+ * @return {string}
+ */
+/* c8 ignore next */
+const decodeUtf8 = utf8TextDecoder ? _decodeUtf8Native : _decodeUtf8Polyfill
+
+/**
+ * @param {string} str The initial string
+ * @param {number} index Starting position
+ * @param {number} remove Number of characters to remove
+ * @param {string} insert New content to insert
+ */
+const splice = (str, index, remove, insert = '') => str.slice(0, index) + insert + str.slice(index + remove)
+
+/**
+ * @param {string} source
+ * @param {number} n
+ */
+const repeat = (source, n) => _array_js__WEBPACK_IMPORTED_MODULE_0__.unfold(n, () => source).join('')
+
+/**
+ * Escape HTML characters &,<,>,'," to their respective HTML entities &amp;,&lt;,&gt;,&#39;,&quot;
+ *
+ * @param {string} str
+ */
+const escapeHTML = str =>
+  str.replace(/[&<>'"]/g, r => /** @type {string} */ ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[r]))
+
+/**
+ * Reverse of `escapeHTML`
+ *
+ * @param {string} str
+ */
+const unescapeHTML = str =>
+  str.replace(/&amp;|&lt;|&gt;|&#39;|&quot;/g, r => /** @type {string} */ ({
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&#39;': "'",
+    '&quot;': '"'
+  }[r]))
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/symbol.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/symbol.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   create: () => (/* binding */ create),
+/* harmony export */   isSymbol: () => (/* binding */ isSymbol)
+/* harmony export */ });
+/**
+ * Utility module to work with EcmaScript Symbols.
+ *
+ * @module symbol
+ */
+
+/**
+ * Return fresh symbol.
+ */
+const create = Symbol
+
+/**
+ * @param {any} s
+ * @return {boolean}
+ */
+const isSymbol = s => typeof s === 'symbol'
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/time.js":
+/*!***************************************!*\
+  !*** ../../node_modules/lib0/time.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getDate: () => (/* binding */ getDate),
+/* harmony export */   getUnixTime: () => (/* binding */ getUnixTime),
+/* harmony export */   humanizeDuration: () => (/* binding */ humanizeDuration)
+/* harmony export */ });
+/* harmony import */ var _metric_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./metric.js */ "../../node_modules/lib0/metric.js");
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./math.js */ "../../node_modules/lib0/math.js");
+/**
+ * Utility module to work with time.
+ *
+ * @module time
+ */
+
+
+
+
+/**
+ * Return current time.
+ *
+ * @return {Date}
+ */
+const getDate = () => new Date()
+
+/**
+ * Return current unix time.
+ *
+ * @return {number}
+ */
+const getUnixTime = Date.now
+
+/**
+ * Transform time (in ms) to a human readable format. E.g. 1100 => 1.1s. 60s => 1min. .001 => 10μs.
+ *
+ * @param {number} d duration in milliseconds
+ * @return {string} humanized approximation of time
+ */
+const humanizeDuration = d => {
+  if (d < 60000) {
+    const p = _metric_js__WEBPACK_IMPORTED_MODULE_0__.prefix(d, -1)
+    return _math_js__WEBPACK_IMPORTED_MODULE_1__.round(p.n * 100) / 100 + p.prefix + 's'
+  }
+  d = _math_js__WEBPACK_IMPORTED_MODULE_1__.floor(d / 1000)
+  const seconds = d % 60
+  const minutes = _math_js__WEBPACK_IMPORTED_MODULE_1__.floor(d / 60) % 60
+  const hours = _math_js__WEBPACK_IMPORTED_MODULE_1__.floor(d / 3600) % 24
+  const days = _math_js__WEBPACK_IMPORTED_MODULE_1__.floor(d / 86400)
+  if (days > 0) {
+    return days + 'd' + ((hours > 0 || minutes > 30) ? ' ' + (minutes > 30 ? hours + 1 : hours) + 'h' : '')
+  }
+  if (hours > 0) {
+    /* c8 ignore next */
+    return hours + 'h' + ((minutes > 0 || seconds > 30) ? ' ' + (seconds > 30 ? minutes + 1 : minutes) + 'min' : '')
+  }
+  return minutes + 'min' + (seconds > 0 ? ' ' + seconds + 's' : '')
+}
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/traits.js":
+/*!*****************************************!*\
+  !*** ../../node_modules/lib0/traits.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   EqualityTraitSymbol: () => (/* binding */ EqualityTraitSymbol)
+/* harmony export */ });
+const EqualityTraitSymbol = Symbol('Equality')
+
+/**
+ * @typedef {{ [EqualityTraitSymbol]:(other:EqualityTrait)=>boolean }} EqualityTrait
+ */
+
+
+/***/ }),
+
+/***/ "../../node_modules/lib0/webcrypto.js":
+/*!********************************************!*\
+  !*** ../../node_modules/lib0/webcrypto.js ***!
+  \********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getRandomValues: () => (/* binding */ getRandomValues),
+/* harmony export */   subtle: () => (/* binding */ subtle)
+/* harmony export */ });
+/* eslint-env browser */
+
+const subtle = crypto.subtle
+const getRandomValues = crypto.getRandomValues.bind(crypto)
+
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js":
+/*!********************************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js ***!
+  \********************************************************************************/
+/***/ ((module) => {
+
+
+
+var stylesInDOM = [];
+function getIndexByIdentifier(identifier) {
+  var result = -1;
+  for (var i = 0; i < stylesInDOM.length; i++) {
+    if (stylesInDOM[i].identifier === identifier) {
+      result = i;
+      break;
+    }
+  }
+  return result;
+}
+function modulesToDom(list, options) {
+  var idCountMap = {};
+  var identifiers = [];
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i];
+    var id = options.base ? item[0] + options.base : item[0];
+    var count = idCountMap[id] || 0;
+    var identifier = "".concat(id, " ").concat(count);
+    idCountMap[id] = count + 1;
+    var indexByIdentifier = getIndexByIdentifier(identifier);
+    var obj = {
+      css: item[1],
+      media: item[2],
+      sourceMap: item[3],
+      supports: item[4],
+      layer: item[5]
+    };
+    if (indexByIdentifier !== -1) {
+      stylesInDOM[indexByIdentifier].references++;
+      stylesInDOM[indexByIdentifier].updater(obj);
+    } else {
+      var updater = addElementStyle(obj, options);
+      options.byIndex = i;
+      stylesInDOM.splice(i, 0, {
+        identifier: identifier,
+        updater: updater,
+        references: 1
+      });
+    }
+    identifiers.push(identifier);
+  }
+  return identifiers;
+}
+function addElementStyle(obj, options) {
+  var api = options.domAPI(options);
+  api.update(obj);
+  var updater = function updater(newObj) {
+    if (newObj) {
+      if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap && newObj.supports === obj.supports && newObj.layer === obj.layer) {
+        return;
+      }
+      api.update(obj = newObj);
+    } else {
+      api.remove();
+    }
+  };
+  return updater;
+}
+module.exports = function (list, options) {
+  options = options || {};
+  list = list || [];
+  var lastIdentifiers = modulesToDom(list, options);
+  return function update(newList) {
+    newList = newList || [];
+    for (var i = 0; i < lastIdentifiers.length; i++) {
+      var identifier = lastIdentifiers[i];
+      var index = getIndexByIdentifier(identifier);
+      stylesInDOM[index].references--;
+    }
+    var newLastIdentifiers = modulesToDom(newList, options);
+    for (var _i = 0; _i < lastIdentifiers.length; _i++) {
+      var _identifier = lastIdentifiers[_i];
+      var _index = getIndexByIdentifier(_identifier);
+      if (stylesInDOM[_index].references === 0) {
+        stylesInDOM[_index].updater();
+        stylesInDOM.splice(_index, 1);
+      }
+    }
+    lastIdentifiers = newLastIdentifiers;
+  };
+};
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/insertBySelector.js":
+/*!************************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/insertBySelector.js ***!
+  \************************************************************************/
+/***/ ((module) => {
+
+
+
+var memo = {};
+
+/* istanbul ignore next  */
+function getTarget(target) {
+  if (typeof memo[target] === "undefined") {
+    var styleTarget = document.querySelector(target);
+
+    // Special case to return head of iframe instead of iframe itself
+    if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+      try {
+        // This will throw an exception if access to iframe is blocked
+        // due to cross-origin restrictions
+        styleTarget = styleTarget.contentDocument.head;
+      } catch (e) {
+        // istanbul ignore next
+        styleTarget = null;
+      }
+    }
+    memo[target] = styleTarget;
+  }
+  return memo[target];
+}
+
+/* istanbul ignore next  */
+function insertBySelector(insert, style) {
+  var target = getTarget(insert);
+  if (!target) {
+    throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
+  }
+  target.appendChild(style);
+}
+module.exports = insertBySelector;
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/insertStyleElement.js":
+/*!**************************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/insertStyleElement.js ***!
+  \**************************************************************************/
+/***/ ((module) => {
+
+
+
+/* istanbul ignore next  */
+function insertStyleElement(options) {
+  var element = document.createElement("style");
+  options.setAttributes(element, options.attributes);
+  options.insert(element, options.options);
+  return element;
+}
+module.exports = insertStyleElement;
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js":
+/*!**************************************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js ***!
+  \**************************************************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+
+
+/* istanbul ignore next  */
+function setAttributesWithoutAttributes(styleElement) {
+  var nonce =  true ? __webpack_require__.nc : 0;
+  if (nonce) {
+    styleElement.setAttribute("nonce", nonce);
+  }
+}
+module.exports = setAttributesWithoutAttributes;
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/styleDomAPI.js":
+/*!*******************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/styleDomAPI.js ***!
+  \*******************************************************************/
+/***/ ((module) => {
+
+
+
+/* istanbul ignore next  */
+function apply(styleElement, options, obj) {
+  var css = "";
+  if (obj.supports) {
+    css += "@supports (".concat(obj.supports, ") {");
+  }
+  if (obj.media) {
+    css += "@media ".concat(obj.media, " {");
+  }
+  var needLayer = typeof obj.layer !== "undefined";
+  if (needLayer) {
+    css += "@layer".concat(obj.layer.length > 0 ? " ".concat(obj.layer) : "", " {");
+  }
+  css += obj.css;
+  if (needLayer) {
+    css += "}";
+  }
+  if (obj.media) {
+    css += "}";
+  }
+  if (obj.supports) {
+    css += "}";
+  }
+  var sourceMap = obj.sourceMap;
+  if (sourceMap && typeof btoa !== "undefined") {
+    css += "\n/*# sourceMappingURL=data:application/json;base64,".concat(btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))), " */");
+  }
+
+  // For old IE
+  /* istanbul ignore if  */
+  options.styleTagTransform(css, styleElement, options.options);
+}
+function removeStyleElement(styleElement) {
+  // istanbul ignore if
+  if (styleElement.parentNode === null) {
+    return false;
+  }
+  styleElement.parentNode.removeChild(styleElement);
+}
+
+/* istanbul ignore next  */
+function domAPI(options) {
+  if (typeof document === "undefined") {
+    return {
+      update: function update() {},
+      remove: function remove() {}
+    };
+  }
+  var styleElement = options.insertStyleElement(options);
+  return {
+    update: function update(obj) {
+      apply(styleElement, options, obj);
+    },
+    remove: function remove() {
+      removeStyleElement(styleElement);
+    }
+  };
+}
+module.exports = domAPI;
+
+/***/ }),
+
+/***/ "../../node_modules/style-loader/dist/runtime/styleTagTransform.js":
+/*!*************************************************************************!*\
+  !*** ../../node_modules/style-loader/dist/runtime/styleTagTransform.js ***!
+  \*************************************************************************/
+/***/ ((module) => {
+
+
+
+/* istanbul ignore next  */
+function styleTagTransform(css, styleElement) {
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = css;
+  } else {
+    while (styleElement.firstChild) {
+      styleElement.removeChild(styleElement.firstChild);
+    }
+    styleElement.appendChild(document.createTextNode(css));
+  }
+}
+module.exports = styleTagTransform;
+
+/***/ }),
+
+/***/ "../../node_modules/tslib/tslib.es6.mjs":
+/*!**********************************************!*\
+  !*** ../../node_modules/tslib/tslib.es6.mjs ***!
+  \**********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   __addDisposableResource: () => (/* binding */ __addDisposableResource),
+/* harmony export */   __assign: () => (/* binding */ __assign),
+/* harmony export */   __asyncDelegator: () => (/* binding */ __asyncDelegator),
+/* harmony export */   __asyncGenerator: () => (/* binding */ __asyncGenerator),
+/* harmony export */   __asyncValues: () => (/* binding */ __asyncValues),
+/* harmony export */   __await: () => (/* binding */ __await),
+/* harmony export */   __awaiter: () => (/* binding */ __awaiter),
+/* harmony export */   __classPrivateFieldGet: () => (/* binding */ __classPrivateFieldGet),
+/* harmony export */   __classPrivateFieldIn: () => (/* binding */ __classPrivateFieldIn),
+/* harmony export */   __classPrivateFieldSet: () => (/* binding */ __classPrivateFieldSet),
+/* harmony export */   __createBinding: () => (/* binding */ __createBinding),
+/* harmony export */   __decorate: () => (/* binding */ __decorate),
+/* harmony export */   __disposeResources: () => (/* binding */ __disposeResources),
+/* harmony export */   __esDecorate: () => (/* binding */ __esDecorate),
+/* harmony export */   __exportStar: () => (/* binding */ __exportStar),
+/* harmony export */   __extends: () => (/* binding */ __extends),
+/* harmony export */   __generator: () => (/* binding */ __generator),
+/* harmony export */   __importDefault: () => (/* binding */ __importDefault),
+/* harmony export */   __importStar: () => (/* binding */ __importStar),
+/* harmony export */   __makeTemplateObject: () => (/* binding */ __makeTemplateObject),
+/* harmony export */   __metadata: () => (/* binding */ __metadata),
+/* harmony export */   __param: () => (/* binding */ __param),
+/* harmony export */   __propKey: () => (/* binding */ __propKey),
+/* harmony export */   __read: () => (/* binding */ __read),
+/* harmony export */   __rest: () => (/* binding */ __rest),
+/* harmony export */   __runInitializers: () => (/* binding */ __runInitializers),
+/* harmony export */   __setFunctionName: () => (/* binding */ __setFunctionName),
+/* harmony export */   __spread: () => (/* binding */ __spread),
+/* harmony export */   __spreadArray: () => (/* binding */ __spreadArray),
+/* harmony export */   __spreadArrays: () => (/* binding */ __spreadArrays),
+/* harmony export */   __values: () => (/* binding */ __values),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol */
+
+var extendStatics = function(d, b) {
+  extendStatics = Object.setPrototypeOf ||
+      ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+      function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+  return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+  if (typeof b !== "function" && b !== null)
+      throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+  extendStatics(d, b);
+  function __() { this.constructor = d; }
+  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+  __assign = Object.assign || function __assign(t) {
+      for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+      }
+      return t;
+  }
+  return __assign.apply(this, arguments);
+}
+
+function __rest(s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+      t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+      for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+          if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+              t[p[i]] = s[p[i]];
+      }
+  return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+  return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+  function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+  var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+  var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+  var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+  var _, done = false;
+  for (var i = decorators.length - 1; i >= 0; i--) {
+      var context = {};
+      for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+      for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+      context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+      var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+      if (kind === "accessor") {
+          if (result === void 0) continue;
+          if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+          if (_ = accept(result.get)) descriptor.get = _;
+          if (_ = accept(result.set)) descriptor.set = _;
+          if (_ = accept(result.init)) initializers.unshift(_);
+      }
+      else if (_ = accept(result)) {
+          if (kind === "field") initializers.unshift(_);
+          else descriptor[key] = _;
+      }
+  }
+  if (target) Object.defineProperty(target, contextIn.name, descriptor);
+  done = true;
+};
+
+function __runInitializers(thisArg, initializers, value) {
+  var useValue = arguments.length > 2;
+  for (var i = 0; i < initializers.length; i++) {
+      value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+  }
+  return useValue ? value : void 0;
+};
+
+function __propKey(x) {
+  return typeof x === "symbol" ? x : "".concat(x);
+};
+
+function __setFunctionName(f, name, prefix) {
+  if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+  return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+};
+
+function __metadata(metadataKey, metadataValue) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+  function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+  return new (P || (P = Promise))(function (resolve, reject) {
+      function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+      function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+      function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+}
+
+function __generator(thisArg, body) {
+  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+  return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+  function verb(n) { return function (v) { return step([n, v]); }; }
+  function step(op) {
+      if (f) throw new TypeError("Generator is already executing.");
+      while (g && (g = 0, op[0] && (_ = 0)), _) try {
+          if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+          if (y = 0, t) op = [op[0] & 2, t.value];
+          switch (op[0]) {
+              case 0: case 1: t = op; break;
+              case 4: _.label++; return { value: op[1], done: false };
+              case 5: _.label++; y = op[1]; op = [0]; continue;
+              case 7: op = _.ops.pop(); _.trys.pop(); continue;
+              default:
+                  if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                  if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                  if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                  if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                  if (t[2]) _.ops.pop();
+                  _.trys.pop(); continue;
+          }
+          op = body.call(thisArg, _);
+      } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+      if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+  }
+}
+
+var __createBinding = Object.create ? (function(o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  var desc = Object.getOwnPropertyDescriptor(m, k);
+  if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+  }
+  Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  o[k2] = m[k];
 });
+
+function __exportStar(m, o) {
+  for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+}
+
+function __values(o) {
+  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  if (m) return m.call(o);
+  if (o && typeof o.length === "number") return {
+      next: function () {
+          if (o && i >= o.length) o = void 0;
+          return { value: o && o[i++], done: !o };
+      }
+  };
+  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+
+function __read(o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+      while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+      try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+      }
+      finally { if (e) throw e.error; }
+  }
+  return ar;
+}
+
+/** @deprecated */
+function __spread() {
+  for (var ar = [], i = 0; i < arguments.length; i++)
+      ar = ar.concat(__read(arguments[i]));
+  return ar;
+}
+
+/** @deprecated */
+function __spreadArrays() {
+  for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+  for (var r = Array(s), k = 0, i = 0; i < il; i++)
+      for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+          r[k] = a[j];
+  return r;
+}
+
+function __spreadArray(to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+      if (ar || !(i in from)) {
+          if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+          ar[i] = from[i];
+      }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+}
+
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+  function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+  function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+  function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+  function fulfill(value) { resume("next", value); }
+  function reject(value) { resume("throw", value); }
+  function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+  var i, p;
+  return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+  function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m = o[Symbol.asyncIterator], i;
+  return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+  function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+  function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+  if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+  return cooked;
+};
+
+var __setModuleDefault = Object.create ? (function(o, v) {
+  Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+  o["default"] = v;
+};
+
+function __importStar(mod) {
+  if (mod && mod.__esModule) return mod;
+  var result = {};
+  if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+  __setModuleDefault(result, mod);
+  return result;
+}
+
+function __importDefault(mod) {
+  return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+  if (kind === "m") throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+}
+
+function __classPrivateFieldIn(state, receiver) {
+  if (receiver === null || (typeof receiver !== "object" && typeof receiver !== "function")) throw new TypeError("Cannot use 'in' operator on non-object");
+  return typeof state === "function" ? receiver === state : state.has(receiver);
+}
+
+function __addDisposableResource(env, value, async) {
+  if (value !== null && value !== void 0) {
+    if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+    var dispose;
+    if (async) {
+        if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+        dispose = value[Symbol.asyncDispose];
+    }
+    if (dispose === void 0) {
+        if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+        dispose = value[Symbol.dispose];
+    }
+    if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    env.stack.push({ value: value, dispose: dispose, async: async });
+  }
+  else if (async) {
+    env.stack.push({ async: true });
+  }
+  return value;
+}
+
+var _SuppressedError = typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+function __disposeResources(env) {
+  function fail(e) {
+    env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+    env.hasError = true;
+  }
+  function next() {
+    while (env.stack.length) {
+      var rec = env.stack.pop();
+      try {
+        var result = rec.dispose && rec.dispose.call(rec.value);
+        if (rec.async) return Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+      }
+      catch (e) {
+          fail(e);
+      }
+    }
+    if (env.hasError) throw env.error;
+  }
+  return next();
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  __extends,
+  __assign,
+  __rest,
+  __decorate,
+  __param,
+  __metadata,
+  __awaiter,
+  __generator,
+  __createBinding,
+  __exportStar,
+  __values,
+  __read,
+  __spread,
+  __spreadArrays,
+  __spreadArray,
+  __await,
+  __asyncGenerator,
+  __asyncDelegator,
+  __asyncValues,
+  __makeTemplateObject,
+  __importStar,
+  __importDefault,
+  __classPrivateFieldGet,
+  __classPrivateFieldSet,
+  __classPrivateFieldIn,
+  __addDisposableResource,
+  __disposeResources,
+});
+
+
+/***/ }),
+
+/***/ "../../node_modules/yjs/dist/yjs.mjs":
+/*!*******************************************!*\
+  !*** ../../node_modules/yjs/dist/yjs.mjs ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   AbsolutePosition: () => (/* binding */ AbsolutePosition),
+/* harmony export */   AbstractConnector: () => (/* binding */ AbstractConnector),
+/* harmony export */   AbstractStruct: () => (/* binding */ AbstractStruct),
+/* harmony export */   AbstractType: () => (/* binding */ AbstractType),
+/* harmony export */   Array: () => (/* binding */ YArray),
+/* harmony export */   ContentAny: () => (/* binding */ ContentAny),
+/* harmony export */   ContentBinary: () => (/* binding */ ContentBinary),
+/* harmony export */   ContentDeleted: () => (/* binding */ ContentDeleted),
+/* harmony export */   ContentDoc: () => (/* binding */ ContentDoc),
+/* harmony export */   ContentEmbed: () => (/* binding */ ContentEmbed),
+/* harmony export */   ContentFormat: () => (/* binding */ ContentFormat),
+/* harmony export */   ContentJSON: () => (/* binding */ ContentJSON),
+/* harmony export */   ContentString: () => (/* binding */ ContentString),
+/* harmony export */   ContentType: () => (/* binding */ ContentType),
+/* harmony export */   Doc: () => (/* binding */ Doc),
+/* harmony export */   GC: () => (/* binding */ GC),
+/* harmony export */   ID: () => (/* binding */ ID),
+/* harmony export */   Item: () => (/* binding */ Item),
+/* harmony export */   Map: () => (/* binding */ YMap),
+/* harmony export */   PermanentUserData: () => (/* binding */ PermanentUserData),
+/* harmony export */   RelativePosition: () => (/* binding */ RelativePosition),
+/* harmony export */   Skip: () => (/* binding */ Skip),
+/* harmony export */   Snapshot: () => (/* binding */ Snapshot),
+/* harmony export */   Text: () => (/* binding */ YText),
+/* harmony export */   Transaction: () => (/* binding */ Transaction),
+/* harmony export */   UndoManager: () => (/* binding */ UndoManager),
+/* harmony export */   UpdateDecoderV1: () => (/* binding */ UpdateDecoderV1),
+/* harmony export */   UpdateDecoderV2: () => (/* binding */ UpdateDecoderV2),
+/* harmony export */   UpdateEncoderV1: () => (/* binding */ UpdateEncoderV1),
+/* harmony export */   UpdateEncoderV2: () => (/* binding */ UpdateEncoderV2),
+/* harmony export */   XmlElement: () => (/* binding */ YXmlElement),
+/* harmony export */   XmlFragment: () => (/* binding */ YXmlFragment),
+/* harmony export */   XmlHook: () => (/* binding */ YXmlHook),
+/* harmony export */   XmlText: () => (/* binding */ YXmlText),
+/* harmony export */   YArrayEvent: () => (/* binding */ YArrayEvent),
+/* harmony export */   YEvent: () => (/* binding */ YEvent),
+/* harmony export */   YMapEvent: () => (/* binding */ YMapEvent),
+/* harmony export */   YTextEvent: () => (/* binding */ YTextEvent),
+/* harmony export */   YXmlEvent: () => (/* binding */ YXmlEvent),
+/* harmony export */   applyUpdate: () => (/* binding */ applyUpdate),
+/* harmony export */   applyUpdateV2: () => (/* binding */ applyUpdateV2),
+/* harmony export */   cleanupYTextFormatting: () => (/* binding */ cleanupYTextFormatting),
+/* harmony export */   compareIDs: () => (/* binding */ compareIDs),
+/* harmony export */   compareRelativePositions: () => (/* binding */ compareRelativePositions),
+/* harmony export */   convertUpdateFormatV1ToV2: () => (/* binding */ convertUpdateFormatV1ToV2),
+/* harmony export */   convertUpdateFormatV2ToV1: () => (/* binding */ convertUpdateFormatV2ToV1),
+/* harmony export */   createAbsolutePositionFromRelativePosition: () => (/* binding */ createAbsolutePositionFromRelativePosition),
+/* harmony export */   createDeleteSet: () => (/* binding */ createDeleteSet),
+/* harmony export */   createDeleteSetFromStructStore: () => (/* binding */ createDeleteSetFromStructStore),
+/* harmony export */   createDocFromSnapshot: () => (/* binding */ createDocFromSnapshot),
+/* harmony export */   createID: () => (/* binding */ createID),
+/* harmony export */   createRelativePositionFromJSON: () => (/* binding */ createRelativePositionFromJSON),
+/* harmony export */   createRelativePositionFromTypeIndex: () => (/* binding */ createRelativePositionFromTypeIndex),
+/* harmony export */   createSnapshot: () => (/* binding */ createSnapshot),
+/* harmony export */   decodeRelativePosition: () => (/* binding */ decodeRelativePosition),
+/* harmony export */   decodeSnapshot: () => (/* binding */ decodeSnapshot),
+/* harmony export */   decodeSnapshotV2: () => (/* binding */ decodeSnapshotV2),
+/* harmony export */   decodeStateVector: () => (/* binding */ decodeStateVector),
+/* harmony export */   decodeUpdate: () => (/* binding */ decodeUpdate),
+/* harmony export */   decodeUpdateV2: () => (/* binding */ decodeUpdateV2),
+/* harmony export */   diffUpdate: () => (/* binding */ diffUpdate),
+/* harmony export */   diffUpdateV2: () => (/* binding */ diffUpdateV2),
+/* harmony export */   emptySnapshot: () => (/* binding */ emptySnapshot),
+/* harmony export */   encodeRelativePosition: () => (/* binding */ encodeRelativePosition),
+/* harmony export */   encodeSnapshot: () => (/* binding */ encodeSnapshot),
+/* harmony export */   encodeSnapshotV2: () => (/* binding */ encodeSnapshotV2),
+/* harmony export */   encodeStateAsUpdate: () => (/* binding */ encodeStateAsUpdate),
+/* harmony export */   encodeStateAsUpdateV2: () => (/* binding */ encodeStateAsUpdateV2),
+/* harmony export */   encodeStateVector: () => (/* binding */ encodeStateVector),
+/* harmony export */   encodeStateVectorFromUpdate: () => (/* binding */ encodeStateVectorFromUpdate),
+/* harmony export */   encodeStateVectorFromUpdateV2: () => (/* binding */ encodeStateVectorFromUpdateV2),
+/* harmony export */   equalDeleteSets: () => (/* binding */ equalDeleteSets),
+/* harmony export */   equalSnapshots: () => (/* binding */ equalSnapshots),
+/* harmony export */   findIndexSS: () => (/* binding */ findIndexSS),
+/* harmony export */   findRootTypeKey: () => (/* binding */ findRootTypeKey),
+/* harmony export */   getItem: () => (/* binding */ getItem),
+/* harmony export */   getItemCleanEnd: () => (/* binding */ getItemCleanEnd),
+/* harmony export */   getItemCleanStart: () => (/* binding */ getItemCleanStart),
+/* harmony export */   getState: () => (/* binding */ getState),
+/* harmony export */   getTypeChildren: () => (/* binding */ getTypeChildren),
+/* harmony export */   isDeleted: () => (/* binding */ isDeleted),
+/* harmony export */   isParentOf: () => (/* binding */ isParentOf),
+/* harmony export */   iterateDeletedStructs: () => (/* binding */ iterateDeletedStructs),
+/* harmony export */   logType: () => (/* binding */ logType),
+/* harmony export */   logUpdate: () => (/* binding */ logUpdate),
+/* harmony export */   logUpdateV2: () => (/* binding */ logUpdateV2),
+/* harmony export */   mergeDeleteSets: () => (/* binding */ mergeDeleteSets),
+/* harmony export */   mergeUpdates: () => (/* binding */ mergeUpdates),
+/* harmony export */   mergeUpdatesV2: () => (/* binding */ mergeUpdatesV2),
+/* harmony export */   obfuscateUpdate: () => (/* binding */ obfuscateUpdate),
+/* harmony export */   obfuscateUpdateV2: () => (/* binding */ obfuscateUpdateV2),
+/* harmony export */   parseUpdateMeta: () => (/* binding */ parseUpdateMeta),
+/* harmony export */   parseUpdateMetaV2: () => (/* binding */ parseUpdateMetaV2),
+/* harmony export */   readUpdate: () => (/* binding */ readUpdate),
+/* harmony export */   readUpdateV2: () => (/* binding */ readUpdateV2),
+/* harmony export */   relativePositionToJSON: () => (/* binding */ relativePositionToJSON),
+/* harmony export */   snapshot: () => (/* binding */ snapshot),
+/* harmony export */   snapshotContainsUpdate: () => (/* binding */ snapshotContainsUpdate),
+/* harmony export */   transact: () => (/* binding */ transact),
+/* harmony export */   tryGc: () => (/* binding */ tryGc),
+/* harmony export */   typeListToArraySnapshot: () => (/* binding */ typeListToArraySnapshot),
+/* harmony export */   typeMapGetAllSnapshot: () => (/* binding */ typeMapGetAllSnapshot),
+/* harmony export */   typeMapGetSnapshot: () => (/* binding */ typeMapGetSnapshot)
+/* harmony export */ });
+/* harmony import */ var lib0_observable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/observable */ "../../node_modules/lib0/observable.js");
+/* harmony import */ var lib0_array__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lib0/array */ "../../node_modules/lib0/array.js");
+/* harmony import */ var lib0_math__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/math */ "../../node_modules/lib0/math.js");
+/* harmony import */ var lib0_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lib0/map */ "../../node_modules/lib0/map.js");
+/* harmony import */ var lib0_encoding__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lib0/encoding */ "../../node_modules/lib0/encoding.js");
+/* harmony import */ var lib0_decoding__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lib0/decoding */ "../../node_modules/lib0/decoding.js");
+/* harmony import */ var lib0_random__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! lib0/random */ "../../node_modules/lib0/random.js");
+/* harmony import */ var lib0_promise__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! lib0/promise */ "../../node_modules/lib0/promise.js");
+/* harmony import */ var lib0_buffer__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! lib0/buffer */ "../../node_modules/lib0/buffer.js");
+/* harmony import */ var lib0_error__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! lib0/error */ "../../node_modules/lib0/error.js");
+/* harmony import */ var lib0_binary__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! lib0/binary */ "../../node_modules/lib0/binary.js");
+/* harmony import */ var lib0_function__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! lib0/function */ "../../node_modules/lib0/function.js");
+/* harmony import */ var lib0_set__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! lib0/set */ "../../node_modules/lib0/set.js");
+/* harmony import */ var lib0_logging__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! lib0/logging */ "../../node_modules/lib0/logging.js");
+/* harmony import */ var lib0_logging__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! lib0/logging */ "../../node_modules/lib0/logging.common.js");
+/* harmony import */ var lib0_time__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! lib0/time */ "../../node_modules/lib0/time.js");
+/* harmony import */ var lib0_string__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! lib0/string */ "../../node_modules/lib0/string.js");
+/* harmony import */ var lib0_iterator__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! lib0/iterator */ "../../node_modules/lib0/iterator.js");
+/* harmony import */ var lib0_object__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! lib0/object */ "../../node_modules/lib0/object.js");
+/* harmony import */ var lib0_environment__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! lib0/environment */ "../../node_modules/lib0/environment.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * This is an abstract interface that all Connectors should implement to keep them interchangeable.
+ *
+ * @note This interface is experimental and it is not advised to actually inherit this class.
+ *       It just serves as typing information.
+ *
+ * @extends {ObservableV2<any>}
+ */
+class AbstractConnector extends lib0_observable__WEBPACK_IMPORTED_MODULE_0__.ObservableV2 {
+  /**
+   * @param {Doc} ydoc
+   * @param {any} awareness
+   */
+  constructor (ydoc, awareness) {
+    super();
+    this.doc = ydoc;
+    this.awareness = awareness;
+  }
+}
 
 class DeleteItem {
   /**
@@ -13637,7 +19556,7 @@ const findIndexDS = (dis, clock) => {
   let left = 0;
   let right = dis.length - 1;
   while (left <= right) {
-    const midindex = floor((left + right) / 2);
+    const midindex = lib0_math__WEBPACK_IMPORTED_MODULE_2__.floor((left + right) / 2);
     const mid = dis[midindex];
     const midclock = mid.clock;
     if (midclock <= clock) {
@@ -13683,7 +19602,7 @@ const sortAndMergeDeleteSet = ds => {
       const left = dels[j - 1];
       const right = dels[i];
       if (left.clock + left.len >= right.clock) {
-        left.len = max(left.len, right.clock + right.len - left.clock);
+        left.len = lib0_math__WEBPACK_IMPORTED_MODULE_2__.max(left.len, right.clock + right.len - left.clock);
       } else {
         if (j < i) {
           dels[j] = right;
@@ -13696,6 +19615,32 @@ const sortAndMergeDeleteSet = ds => {
 };
 
 /**
+ * @param {Array<DeleteSet>} dss
+ * @return {DeleteSet} A fresh DeleteSet
+ */
+const mergeDeleteSets = dss => {
+  const merged = new DeleteSet();
+  for (let dssI = 0; dssI < dss.length; dssI++) {
+    dss[dssI].clients.forEach((delsLeft, client) => {
+      if (!merged.clients.has(client)) {
+        // Write all missing keys from current ds and all following.
+        // If merged already contains `client` current ds has already been added.
+        /**
+         * @type {Array<DeleteItem>}
+         */
+        const dels = delsLeft.slice();
+        for (let i = dssI + 1; i < dss.length; i++) {
+          lib0_array__WEBPACK_IMPORTED_MODULE_1__.appendTo(dels, dss[i].clients.get(client) || []);
+        }
+        merged.clients.set(client, dels);
+      }
+    });
+  }
+  sortAndMergeDeleteSet(merged);
+  return merged
+};
+
+/**
  * @param {DeleteSet} ds
  * @param {number} client
  * @param {number} clock
@@ -13705,7 +19650,43 @@ const sortAndMergeDeleteSet = ds => {
  * @function
  */
 const addToDeleteSet = (ds, client, clock, length) => {
-  setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length));
+  lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length));
+};
+
+const createDeleteSet = () => new DeleteSet();
+
+/**
+ * @param {StructStore} ss
+ * @return {DeleteSet} Merged and sorted DeleteSet
+ *
+ * @private
+ * @function
+ */
+const createDeleteSetFromStructStore = ss => {
+  const ds = createDeleteSet();
+  ss.clients.forEach((structs, client) => {
+    /**
+     * @type {Array<DeleteItem>}
+     */
+    const dsitems = [];
+    for (let i = 0; i < structs.length; i++) {
+      const struct = structs[i];
+      if (struct.deleted) {
+        const clock = struct.id.clock;
+        let len = struct.length;
+        if (i + 1 < structs.length) {
+          for (let next = structs[i + 1]; i + 1 < structs.length && next.deleted; next = structs[++i + 1]) {
+            len += next.length;
+          }
+        }
+        dsitems.push(new DeleteItem(clock, len));
+      }
+    }
+    if (dsitems.length > 0) {
+      ds.clients.set(client, dsitems);
+    }
+  });
+  return ds
 };
 
 /**
@@ -13716,16 +19697,16 @@ const addToDeleteSet = (ds, client, clock, length) => {
  * @function
  */
 const writeDeleteSet = (encoder, ds) => {
-  writeVarUint(encoder.restEncoder, ds.clients.size);
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, ds.clients.size);
 
   // Ensure that the delete set is written in a deterministic order
-  from(ds.clients.entries())
+  lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(ds.clients.entries())
     .sort((a, b) => b[0] - a[0])
     .forEach(([client, dsitems]) => {
       encoder.resetDsCurVal();
-      writeVarUint(encoder.restEncoder, client);
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, client);
       const len = dsitems.length;
-      writeVarUint(encoder.restEncoder, len);
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, len);
       for (let i = 0; i < len; i++) {
         const item = dsitems[i];
         encoder.writeDsClock(item.clock);
@@ -13735,11 +19716,124 @@ const writeDeleteSet = (encoder, ds) => {
 };
 
 /**
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @return {DeleteSet}
+ *
+ * @private
+ * @function
+ */
+const readDeleteSet = decoder => {
+  const ds = new DeleteSet();
+  const numClients = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+  for (let i = 0; i < numClients; i++) {
+    decoder.resetDsCurVal();
+    const client = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    const numberOfDeletes = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    if (numberOfDeletes > 0) {
+      const dsField = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([]));
+      for (let i = 0; i < numberOfDeletes; i++) {
+        dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()));
+      }
+    }
+  }
+  return ds
+};
+
+/**
+ * @todo YDecoder also contains references to String and other Decoders. Would make sense to exchange YDecoder.toUint8Array for YDecoder.DsToUint8Array()..
+ */
+
+/**
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @param {Transaction} transaction
+ * @param {StructStore} store
+ * @return {Uint8Array|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.
+ *
+ * @private
+ * @function
+ */
+const readAndApplyDeleteSet = (decoder, transaction, store) => {
+  const unappliedDS = new DeleteSet();
+  const numClients = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+  for (let i = 0; i < numClients; i++) {
+    decoder.resetDsCurVal();
+    const client = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    const numberOfDeletes = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    const structs = store.clients.get(client) || [];
+    const state = getState(store, client);
+    for (let i = 0; i < numberOfDeletes; i++) {
+      const clock = decoder.readDsClock();
+      const clockEnd = clock + decoder.readDsLen();
+      if (clock < state) {
+        if (state < clockEnd) {
+          addToDeleteSet(unappliedDS, client, state, clockEnd - state);
+        }
+        let index = findIndexSS(structs, clock);
+        /**
+         * We can ignore the case of GC and Delete structs, because we are going to skip them
+         * @type {Item}
+         */
+        // @ts-ignore
+        let struct = structs[index];
+        // split the first item if necessary
+        if (!struct.deleted && struct.id.clock < clock) {
+          structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock));
+          index++; // increase we now want to use the next struct
+        }
+        while (index < structs.length) {
+          // @ts-ignore
+          struct = structs[index++];
+          if (struct.id.clock < clockEnd) {
+            if (!struct.deleted) {
+              if (clockEnd < struct.id.clock + struct.length) {
+                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock));
+              }
+              struct.delete(transaction);
+            }
+          } else {
+            break
+          }
+        }
+      } else {
+        addToDeleteSet(unappliedDS, client, clock, clockEnd - clock);
+      }
+    }
+  }
+  if (unappliedDS.clients.size > 0) {
+    const ds = new UpdateEncoderV2();
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(ds.restEncoder, 0); // encode 0 structs
+    writeDeleteSet(ds, unappliedDS);
+    return ds.toUint8Array()
+  }
+  return null
+};
+
+/**
+ * @param {DeleteSet} ds1
+ * @param {DeleteSet} ds2
+ */
+const equalDeleteSets = (ds1, ds2) => {
+  if (ds1.clients.size !== ds2.clients.size) return false
+  for (const [client, deleteItems1] of ds1.clients.entries()) {
+    const deleteItems2 = /** @type {Array<import('../internals.js').DeleteItem>} */ (ds2.clients.get(client));
+    if (deleteItems2 === undefined || deleteItems1.length !== deleteItems2.length) return false
+    for (let i = 0; i < deleteItems1.length; i++) {
+      const di1 = deleteItems1[i];
+      const di2 = deleteItems2[i];
+      if (di1.clock !== di2.clock || di1.len !== di2.len) {
+        return false
+      }
+    }
+  }
+  return true
+};
+
+/**
  * @module Y
  */
 
 
-const generateNewClientId = uint32;
+const generateNewClientId = lib0_random__WEBPACK_IMPORTED_MODULE_6__.uint32;
 
 /**
  * @typedef {Object} DocOpts
@@ -13772,11 +19866,11 @@ const generateNewClientId = uint32;
  * A Yjs instance handles the state of shared data.
  * @extends ObservableV2<DocEvents>
  */
-class Doc extends ObservableV2 {
+class Doc extends lib0_observable__WEBPACK_IMPORTED_MODULE_0__.ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
-  constructor ({ guid = uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
+  constructor ({ guid = lib0_random__WEBPACK_IMPORTED_MODULE_6__.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
     super();
     this.gc = gc;
     this.gcFilter = gcFilter;
@@ -13827,13 +19921,13 @@ class Doc extends ObservableV2 {
     /**
      * Promise that resolves once the document has been loaded from a persistence provider.
      */
-    this.whenLoaded = create$2(resolve => {
+    this.whenLoaded = lib0_promise__WEBPACK_IMPORTED_MODULE_7__.create(resolve => {
       this.on('load', () => {
         this.isLoaded = true;
         resolve(this);
       });
     });
-    const provideSyncedPromise = () => create$2(resolve => {
+    const provideSyncedPromise = () => lib0_promise__WEBPACK_IMPORTED_MODULE_7__.create(resolve => {
       /**
        * @param {boolean} isSynced
        */
@@ -13884,7 +19978,7 @@ class Doc extends ObservableV2 {
   }
 
   getSubdocGuids () {
-    return new Set(from(this.subdocs).map(doc => doc.guid))
+    return new Set(lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(this.subdocs).map(doc => doc.guid))
   }
 
   /**
@@ -13932,7 +20026,7 @@ class Doc extends ObservableV2 {
    * @public
    */
   get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
-    const type = setIfUndefined(this.share, name, () => {
+    const type = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(this.share, name, () => {
       // @ts-ignore
       const t = new TypeConstructor();
       t._integrate(this, null);
@@ -14043,7 +20137,7 @@ class Doc extends ObservableV2 {
    */
   destroy () {
     this.isDestroyed = true;
-    from(this.subdocs).forEach(subdoc => subdoc.destroy());
+    lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(this.subdocs).forEach(subdoc => subdoc.destroy());
     const item = this._item;
     if (item !== null) {
       this._item = null;
@@ -14065,13 +20159,289 @@ class Doc extends ObservableV2 {
   }
 }
 
+class DSDecoderV1 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    this.restDecoder = decoder;
+  }
+
+  resetDsCurVal () {
+    // nop
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsClock () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder)
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsLen () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder)
+  }
+}
+
+class UpdateDecoderV1 extends DSDecoderV1 {
+  /**
+   * @return {ID}
+   */
+  readLeftID () {
+    return createID(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder), lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder))
+  }
+
+  /**
+   * @return {ID}
+   */
+  readRightID () {
+    return createID(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder), lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder))
+  }
+
+  /**
+   * Read the next client id.
+   * Use this in favor of readID whenever possible to reduce the number of objects created.
+   */
+  readClient () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder)
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readInfo () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readUint8(this.restDecoder)
+  }
+
+  /**
+   * @return {string}
+   */
+  readString () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarString(this.restDecoder)
+  }
+
+  /**
+   * @return {boolean} isKey
+   */
+  readParentInfo () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder) === 1
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readTypeRef () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder)
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @return {number} len
+   */
+  readLen () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder)
+  }
+
+  /**
+   * @return {any}
+   */
+  readAny () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readAny(this.restDecoder)
+  }
+
+  /**
+   * @return {Uint8Array}
+   */
+  readBuf () {
+    return lib0_buffer__WEBPACK_IMPORTED_MODULE_8__.copyUint8Array(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(this.restDecoder))
+  }
+
+  /**
+   * Legacy implementation uses JSON parse. We use any-decoding in v2.
+   *
+   * @return {any}
+   */
+  readJSON () {
+    return JSON.parse(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarString(this.restDecoder))
+  }
+
+  /**
+   * @return {string}
+   */
+  readKey () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarString(this.restDecoder)
+  }
+}
+
+class DSDecoderV2 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    /**
+     * @private
+     */
+    this.dsCurrVal = 0;
+    this.restDecoder = decoder;
+  }
+
+  resetDsCurVal () {
+    this.dsCurrVal = 0;
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsClock () {
+    this.dsCurrVal += lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder);
+    return this.dsCurrVal
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsLen () {
+    const diff = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(this.restDecoder) + 1;
+    this.dsCurrVal += diff;
+    return diff
+  }
+}
+
+class UpdateDecoderV2 extends DSDecoderV2 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    super(decoder);
+    /**
+     * List of cached keys. If the keys[id] does not exist, we read a new key
+     * from stringEncoder and push it to keys.
+     *
+     * @type {Array<string>}
+     */
+    this.keys = [];
+    lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder); // read feature flag - currently unused
+    this.keyClockDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.IntDiffOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.clientDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.UintOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.leftClockDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.IntDiffOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.rightClockDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.IntDiffOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.infoDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.RleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder), lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readUint8);
+    this.stringDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.StringDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.parentInfoDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.RleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder), lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readUint8);
+    this.typeRefDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.UintOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+    this.lenDecoder = new lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.UintOptRleDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(decoder));
+  }
+
+  /**
+   * @return {ID}
+   */
+  readLeftID () {
+    return new ID(this.clientDecoder.read(), this.leftClockDecoder.read())
+  }
+
+  /**
+   * @return {ID}
+   */
+  readRightID () {
+    return new ID(this.clientDecoder.read(), this.rightClockDecoder.read())
+  }
+
+  /**
+   * Read the next client id.
+   * Use this in favor of readID whenever possible to reduce the number of objects created.
+   */
+  readClient () {
+    return this.clientDecoder.read()
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readInfo () {
+    return /** @type {number} */ (this.infoDecoder.read())
+  }
+
+  /**
+   * @return {string}
+   */
+  readString () {
+    return this.stringDecoder.read()
+  }
+
+  /**
+   * @return {boolean}
+   */
+  readParentInfo () {
+    return this.parentInfoDecoder.read() === 1
+  }
+
+  /**
+   * @return {number} An unsigned 8-bit integer
+   */
+  readTypeRef () {
+    return this.typeRefDecoder.read()
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @return {number}
+   */
+  readLen () {
+    return this.lenDecoder.read()
+  }
+
+  /**
+   * @return {any}
+   */
+  readAny () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readAny(this.restDecoder)
+  }
+
+  /**
+   * @return {Uint8Array}
+   */
+  readBuf () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint8Array(this.restDecoder)
+  }
+
+  /**
+   * This is mainly here for legacy purposes.
+   *
+   * Initial we incoded objects using JSON. Now we use the much faster lib0/any-encoder. This method mainly exists for legacy purposes for the v1 encoder.
+   *
+   * @return {any}
+   */
+  readJSON () {
+    return lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readAny(this.restDecoder)
+  }
+
+  /**
+   * @return {string}
+   */
+  readKey () {
+    const keyClock = this.keyClockDecoder.read();
+    if (keyClock < this.keys.length) {
+      return this.keys[keyClock]
+    } else {
+      const key = this.stringDecoder.read();
+      this.keys.push(key);
+      return key
+    }
+  }
+}
+
 class DSEncoderV1 {
   constructor () {
-    this.restEncoder = createEncoder();
+    this.restEncoder = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder();
   }
 
   toUint8Array () {
-    return toUint8Array(this.restEncoder)
+    return lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(this.restEncoder)
   }
 
   resetDsCurVal () {
@@ -14082,14 +20452,14 @@ class DSEncoderV1 {
    * @param {number} clock
    */
   writeDsClock (clock) {
-    writeVarUint(this.restEncoder, clock);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, clock);
   }
 
   /**
    * @param {number} len
    */
   writeDsLen (len) {
-    writeVarUint(this.restEncoder, len);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, len);
   }
 }
 
@@ -14098,16 +20468,16 @@ class UpdateEncoderV1 extends DSEncoderV1 {
    * @param {ID} id
    */
   writeLeftID (id) {
-    writeVarUint(this.restEncoder, id.client);
-    writeVarUint(this.restEncoder, id.clock);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, id.client);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, id.clock);
   }
 
   /**
    * @param {ID} id
    */
   writeRightID (id) {
-    writeVarUint(this.restEncoder, id.client);
-    writeVarUint(this.restEncoder, id.clock);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, id.client);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, id.clock);
   }
 
   /**
@@ -14115,35 +20485,35 @@ class UpdateEncoderV1 extends DSEncoderV1 {
    * @param {number} client
    */
   writeClient (client) {
-    writeVarUint(this.restEncoder, client);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, client);
   }
 
   /**
    * @param {number} info An unsigned 8-bit integer
    */
   writeInfo (info) {
-    writeUint8(this.restEncoder, info);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8(this.restEncoder, info);
   }
 
   /**
    * @param {string} s
    */
   writeString (s) {
-    writeVarString(this.restEncoder, s);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarString(this.restEncoder, s);
   }
 
   /**
    * @param {boolean} isYKey
    */
   writeParentInfo (isYKey) {
-    writeVarUint(this.restEncoder, isYKey ? 1 : 0);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, isYKey ? 1 : 0);
   }
 
   /**
    * @param {number} info An unsigned 8-bit integer
    */
   writeTypeRef (info) {
-    writeVarUint(this.restEncoder, info);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, info);
   }
 
   /**
@@ -14152,46 +20522,46 @@ class UpdateEncoderV1 extends DSEncoderV1 {
    * @param {number} len
    */
   writeLen (len) {
-    writeVarUint(this.restEncoder, len);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, len);
   }
 
   /**
    * @param {any} any
    */
   writeAny (any) {
-    writeAny(this.restEncoder, any);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeAny(this.restEncoder, any);
   }
 
   /**
    * @param {Uint8Array} buf
    */
   writeBuf (buf) {
-    writeVarUint8Array(this.restEncoder, buf);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(this.restEncoder, buf);
   }
 
   /**
    * @param {any} embed
    */
   writeJSON (embed) {
-    writeVarString(this.restEncoder, JSON.stringify(embed));
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarString(this.restEncoder, JSON.stringify(embed));
   }
 
   /**
    * @param {string} key
    */
   writeKey (key) {
-    writeVarString(this.restEncoder, key);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarString(this.restEncoder, key);
   }
 }
 
 class DSEncoderV2 {
   constructor () {
-    this.restEncoder = createEncoder(); // encodes all the rest / non-optimized
+    this.restEncoder = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder(); // encodes all the rest / non-optimized
     this.dsCurrVal = 0;
   }
 
   toUint8Array () {
-    return toUint8Array(this.restEncoder)
+    return lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(this.restEncoder)
   }
 
   resetDsCurVal () {
@@ -14204,7 +20574,7 @@ class DSEncoderV2 {
   writeDsClock (clock) {
     const diff = clock - this.dsCurrVal;
     this.dsCurrVal = clock;
-    writeVarUint(this.restEncoder, diff);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, diff);
   }
 
   /**
@@ -14212,9 +20582,9 @@ class DSEncoderV2 {
    */
   writeDsLen (len) {
     if (len === 0) {
-      unexpectedCase();
+      lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
     }
-    writeVarUint(this.restEncoder, len - 1);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(this.restEncoder, len - 1);
     this.dsCurrVal += len;
   }
 }
@@ -14233,32 +20603,32 @@ class UpdateEncoderV2 extends DSEncoderV2 {
      * @type {number}
      */
     this.keyClock = 0;
-    this.keyClockEncoder = new IntDiffOptRleEncoder();
-    this.clientEncoder = new UintOptRleEncoder();
-    this.leftClockEncoder = new IntDiffOptRleEncoder();
-    this.rightClockEncoder = new IntDiffOptRleEncoder();
-    this.infoEncoder = new RleEncoder(writeUint8);
-    this.stringEncoder = new StringEncoder();
-    this.parentInfoEncoder = new RleEncoder(writeUint8);
-    this.typeRefEncoder = new UintOptRleEncoder();
-    this.lenEncoder = new UintOptRleEncoder();
+    this.keyClockEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.IntDiffOptRleEncoder();
+    this.clientEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.UintOptRleEncoder();
+    this.leftClockEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.IntDiffOptRleEncoder();
+    this.rightClockEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.IntDiffOptRleEncoder();
+    this.infoEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.RleEncoder(lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8);
+    this.stringEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.StringEncoder();
+    this.parentInfoEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.RleEncoder(lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8);
+    this.typeRefEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.UintOptRleEncoder();
+    this.lenEncoder = new lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.UintOptRleEncoder();
   }
 
   toUint8Array () {
-    const encoder = createEncoder();
-    writeVarUint(encoder, 0); // this is a feature flag that we might use in the future
-    writeVarUint8Array(encoder, this.keyClockEncoder.toUint8Array());
-    writeVarUint8Array(encoder, this.clientEncoder.toUint8Array());
-    writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array());
-    writeVarUint8Array(encoder, this.rightClockEncoder.toUint8Array());
-    writeVarUint8Array(encoder, toUint8Array(this.infoEncoder));
-    writeVarUint8Array(encoder, this.stringEncoder.toUint8Array());
-    writeVarUint8Array(encoder, toUint8Array(this.parentInfoEncoder));
-    writeVarUint8Array(encoder, this.typeRefEncoder.toUint8Array());
-    writeVarUint8Array(encoder, this.lenEncoder.toUint8Array());
+    const encoder = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder();
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder, 0); // this is a feature flag that we might use in the future
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.keyClockEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.clientEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.rightClockEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(this.infoEncoder));
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.stringEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(this.parentInfoEncoder));
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.typeRefEncoder.toUint8Array());
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(encoder, this.lenEncoder.toUint8Array());
     // @note The rest encoder is appended! (note the missing var)
-    writeUint8Array(encoder, toUint8Array(this.restEncoder));
-    return toUint8Array(encoder)
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8Array(encoder, lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(this.restEncoder));
+    return lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(encoder)
   }
 
   /**
@@ -14325,14 +20695,14 @@ class UpdateEncoderV2 extends DSEncoderV2 {
    * @param {any} any
    */
   writeAny (any) {
-    writeAny(this.restEncoder, any);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeAny(this.restEncoder, any);
   }
 
   /**
    * @param {Uint8Array} buf
    */
   writeBuf (buf) {
-    writeVarUint8Array(this.restEncoder, buf);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint8Array(this.restEncoder, buf);
   }
 
   /**
@@ -14343,7 +20713,7 @@ class UpdateEncoderV2 extends DSEncoderV2 {
    * @param {any} embed
    */
   writeJSON (embed) {
-    writeAny(this.restEncoder, embed);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeAny(this.restEncoder, embed);
   }
 
   /**
@@ -14406,12 +20776,12 @@ class UpdateEncoderV2 extends DSEncoderV2 {
  */
 const writeStructs = (encoder, structs, client, clock) => {
   // write first id
-  clock = max(clock, structs[0].id.clock); // make sure the first id exists
+  clock = lib0_math__WEBPACK_IMPORTED_MODULE_2__.max(clock, structs[0].id.clock); // make sure the first id exists
   const startNewStructs = findIndexSS(structs, clock);
   // write # encoded structs
-  writeVarUint(encoder.restEncoder, structs.length - startNewStructs);
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, structs.length - startNewStructs);
   encoder.writeClient(client);
-  writeVarUint(encoder.restEncoder, clock);
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, clock);
   const firstStruct = structs[startNewStructs];
   // write first struct with an offset
   firstStruct.write(encoder, clock - firstStruct.id.clock);
@@ -14443,12 +20813,269 @@ const writeClientsStructs = (encoder, store, _sm) => {
     }
   });
   // write # states that were updated
-  writeVarUint(encoder.restEncoder, sm.size);
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, sm.size);
   // Write items with higher client ids first
   // This heavily improves the conflict algorithm.
-  from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+  lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
     writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock);
   });
+};
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
+ * @param {Doc} doc
+ * @return {Map<number, { i: number, refs: Array<Item | GC> }>}
+ *
+ * @private
+ * @function
+ */
+const readClientsStructRefs = (decoder, doc) => {
+  /**
+   * @type {Map<number, { i: number, refs: Array<Item | GC> }>}
+   */
+  const clientRefs = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+  const numOfStateUpdates = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+  for (let i = 0; i < numOfStateUpdates; i++) {
+    const numberOfStructs = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    /**
+     * @type {Array<GC|Item>}
+     */
+    const refs = new Array(numberOfStructs);
+    const client = decoder.readClient();
+    let clock = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    // const start = performance.now()
+    clientRefs.set(client, { i: 0, refs });
+    for (let i = 0; i < numberOfStructs; i++) {
+      const info = decoder.readInfo();
+      switch (lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BITS5 & info) {
+        case 0: { // GC
+          const len = decoder.readLen();
+          refs[i] = new GC(createID(client, clock), len);
+          clock += len;
+          break
+        }
+        case 10: { // Skip Struct (nothing to apply)
+          // @todo we could reduce the amount of checks by adding Skip struct to clientRefs so we know that something is missing.
+          const len = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+          refs[i] = new Skip(createID(client, clock), len);
+          clock += len;
+          break
+        }
+        default: { // Item with content
+          /**
+           * The optimized implementation doesn't use any variables because inlining variables is faster.
+           * Below a non-optimized version is shown that implements the basic algorithm with
+           * a few comments
+           */
+          const cantCopyParentInfo = (info & (lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7 | lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8)) === 0;
+          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+          // and we read the next string as parentYKey.
+          // It indicates how we store/retrieve parent from `y.share`
+          // @type {string|null}
+          const struct = new Item(
+            createID(client, clock),
+            null, // left
+            (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8 ? decoder.readLeftID() : null, // origin
+            null, // right
+            (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7 ? decoder.readRightID() : null, // right origin
+            cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
+            cantCopyParentInfo && (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT6) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT6 ? decoder.readString() : null, // parentSub
+            readItemContent(decoder, info) // item content
+          );
+          /* A non-optimized implementation of the above algorithm:
+
+          // The item that was originally to the left of this item.
+          const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
+          // The item that was originally to the right of this item.
+          const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
+          const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+          const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
+          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+          // and we read the next string as parentYKey.
+          // It indicates how we store/retrieve parent from `y.share`
+          // @type {string|null}
+          const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
+
+          const struct = new Item(
+            createID(client, clock),
+            null, // left
+            origin, // origin
+            null, // right
+            rightOrigin, // right origin
+            cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
+            cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+            readItemContent(decoder, info) // item content
+          )
+          */
+          refs[i] = struct;
+          clock += struct.length;
+        }
+      }
+    }
+    // console.log('time to read: ', performance.now() - start) // @todo remove
+  }
+  return clientRefs
+};
+
+/**
+ * Resume computing structs generated by struct readers.
+ *
+ * While there is something to do, we integrate structs in this order
+ * 1. top element on stack, if stack is not empty
+ * 2. next element from current struct reader (if empty, use next struct reader)
+ *
+ * If struct causally depends on another struct (ref.missing), we put next reader of
+ * `ref.id.client` on top of stack.
+ *
+ * At some point we find a struct that has no causal dependencies,
+ * then we start emptying the stack.
+ *
+ * It is not possible to have circles: i.e. struct1 (from client1) depends on struct2 (from client2)
+ * depends on struct3 (from client1). Therefore the max stack size is equal to `structReaders.length`.
+ *
+ * This method is implemented in a way so that we can resume computation if this update
+ * causally depends on another update.
+ *
+ * @param {Transaction} transaction
+ * @param {StructStore} store
+ * @param {Map<number, { i: number, refs: (GC | Item)[] }>} clientsStructRefs
+ * @return { null | { update: Uint8Array, missing: Map<number,number> } }
+ *
+ * @private
+ * @function
+ */
+const integrateStructs = (transaction, store, clientsStructRefs) => {
+  /**
+   * @type {Array<Item | GC>}
+   */
+  const stack = [];
+  // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
+  let clientsStructRefsIds = lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(clientsStructRefs.keys()).sort((a, b) => a - b);
+  if (clientsStructRefsIds.length === 0) {
+    return null
+  }
+  const getNextStructTarget = () => {
+    if (clientsStructRefsIds.length === 0) {
+      return null
+    }
+    let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]));
+    while (nextStructsTarget.refs.length === nextStructsTarget.i) {
+      clientsStructRefsIds.pop();
+      if (clientsStructRefsIds.length > 0) {
+        nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]));
+      } else {
+        return null
+      }
+    }
+    return nextStructsTarget
+  };
+  let curStructsTarget = getNextStructTarget();
+  if (curStructsTarget === null) {
+    return null
+  }
+
+  /**
+   * @type {StructStore}
+   */
+  const restStructs = new StructStore();
+  const missingSV = new Map();
+  /**
+   * @param {number} client
+   * @param {number} clock
+   */
+  const updateMissingSv = (client, clock) => {
+    const mclock = missingSV.get(client);
+    if (mclock == null || mclock > clock) {
+      missingSV.set(client, clock);
+    }
+  };
+  /**
+   * @type {GC|Item}
+   */
+  let stackHead = /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++];
+  // caching the state because it is used very often
+  const state = new Map();
+
+  const addStackToRestSS = () => {
+    for (const item of stack) {
+      const client = item.id.client;
+      const inapplicableItems = clientsStructRefs.get(client);
+      if (inapplicableItems) {
+        // decrement because we weren't able to apply previous operation
+        inapplicableItems.i--;
+        restStructs.clients.set(client, inapplicableItems.refs.slice(inapplicableItems.i));
+        clientsStructRefs.delete(client);
+        inapplicableItems.i = 0;
+        inapplicableItems.refs = [];
+      } else {
+        // item was the last item on clientsStructRefs and the field was already cleared. Add item to restStructs and continue
+        restStructs.clients.set(client, [item]);
+      }
+      // remove client from clientsStructRefsIds to prevent users from applying the same update again
+      clientsStructRefsIds = clientsStructRefsIds.filter(c => c !== client);
+    }
+    stack.length = 0;
+  };
+
+  // iterate over all struct readers until we are done
+  while (true) {
+    if (stackHead.constructor !== Skip) {
+      const localClock = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(state, stackHead.id.client, () => getState(store, stackHead.id.client));
+      const offset = localClock - stackHead.id.clock;
+      if (offset < 0) {
+        // update from the same client is missing
+        stack.push(stackHead);
+        updateMissingSv(stackHead.id.client, stackHead.id.clock - 1);
+        // hid a dead wall, add all items from stack to restSS
+        addStackToRestSS();
+      } else {
+        const missing = stackHead.getMissing(transaction, store);
+        if (missing !== null) {
+          stack.push(stackHead);
+          // get the struct reader that has the missing struct
+          /**
+           * @type {{ refs: Array<GC|Item>, i: number }}
+           */
+          const structRefs = clientsStructRefs.get(/** @type {number} */ (missing)) || { refs: [], i: 0 };
+          if (structRefs.refs.length === structRefs.i) {
+            // This update message causally depends on another update message that doesn't exist yet
+            updateMissingSv(/** @type {number} */ (missing), getState(store, missing));
+            addStackToRestSS();
+          } else {
+            stackHead = structRefs.refs[structRefs.i++];
+            continue
+          }
+        } else if (offset === 0 || offset < stackHead.length) {
+          // all fine, apply the stackhead
+          stackHead.integrate(transaction, offset);
+          state.set(stackHead.id.client, stackHead.id.clock + stackHead.length);
+        }
+      }
+    }
+    // iterate to next stackHead
+    if (stack.length > 0) {
+      stackHead = /** @type {GC|Item} */ (stack.pop());
+    } else if (curStructsTarget !== null && curStructsTarget.i < curStructsTarget.refs.length) {
+      stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++]);
+    } else {
+      curStructsTarget = getNextStructTarget();
+      if (curStructsTarget === null) {
+        // we are done!
+        break
+      } else {
+        stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++]);
+      }
+    }
+  }
+  if (restStructs.clients.size > 0) {
+    const encoder = new UpdateEncoderV2();
+    writeClientsStructs(encoder, restStructs, new Map());
+    // write empty deleteset
+    // writeDeleteSet(encoder, new DeleteSet())
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, 0); // => no need for an extra function call, just write 0 deletes
+    return { missing: missingSV, update: encoder.toUint8Array() }
+  }
+  return null
 };
 
 /**
@@ -14459,6 +21086,282 @@ const writeClientsStructs = (encoder, store, _sm) => {
  * @function
  */
 const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState);
+
+/**
+ * Read and apply a document update.
+ *
+ * This function has the same effect as `applyUpdate` but accepts a decoder.
+ *
+ * @param {decoding.Decoder} decoder
+ * @param {Doc} ydoc
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} [structDecoder]
+ *
+ * @function
+ */
+const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
+  transact(ydoc, transaction => {
+    // force that transaction.local is set to non-local
+    transaction.local = false;
+    let retry = false;
+    const doc = transaction.doc;
+    const store = doc.store;
+    // let start = performance.now()
+    const ss = readClientsStructRefs(structDecoder, doc);
+    // console.log('time to read structs: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    // console.log('time to merge: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    const restStructs = integrateStructs(transaction, store, ss);
+    const pending = store.pendingStructs;
+    if (pending) {
+      // check if we can apply something
+      for (const [client, clock] of pending.missing) {
+        if (clock < getState(store, client)) {
+          retry = true;
+          break
+        }
+      }
+      if (restStructs) {
+        // merge restStructs into store.pending
+        for (const [client, clock] of restStructs.missing) {
+          const mclock = pending.missing.get(client);
+          if (mclock == null || mclock > clock) {
+            pending.missing.set(client, clock);
+          }
+        }
+        pending.update = mergeUpdatesV2([pending.update, restStructs.update]);
+      }
+    } else {
+      store.pendingStructs = restStructs;
+    }
+    // console.log('time to integrate: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    const dsRest = readAndApplyDeleteSet(structDecoder, transaction, store);
+    if (store.pendingDs) {
+      // @todo we could make a lower-bound state-vector check as we do above
+      const pendingDSUpdate = new UpdateDecoderV2(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(store.pendingDs));
+      lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(pendingDSUpdate.restDecoder); // read 0 structs, because we only encode deletes in pendingdsupdate
+      const dsRest2 = readAndApplyDeleteSet(pendingDSUpdate, transaction, store);
+      if (dsRest && dsRest2) {
+        // case 1: ds1 != null && ds2 != null
+        store.pendingDs = mergeUpdatesV2([dsRest, dsRest2]);
+      } else {
+        // case 2: ds1 != null
+        // case 3: ds2 != null
+        // case 4: ds1 == null && ds2 == null
+        store.pendingDs = dsRest || dsRest2;
+      }
+    } else {
+      // Either dsRest == null && pendingDs == null OR dsRest != null
+      store.pendingDs = dsRest;
+    }
+    // console.log('time to cleanup: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+
+    // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    if (retry) {
+      const update = /** @type {{update: Uint8Array}} */ (store.pendingStructs).update;
+      store.pendingStructs = null;
+      applyUpdateV2(transaction.doc, update);
+    }
+  }, transactionOrigin, false);
+
+/**
+ * Read and apply a document update.
+ *
+ * This function has the same effect as `applyUpdate` but accepts a decoder.
+ *
+ * @param {decoding.Decoder} decoder
+ * @param {Doc} ydoc
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ *
+ * @function
+ */
+const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new UpdateDecoderV1(decoder));
+
+/**
+ * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
+ *
+ * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+ *
+ * @param {Doc} ydoc
+ * @param {Uint8Array} update
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ *
+ * @function
+ */
+const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = UpdateDecoderV2) => {
+  const decoder = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update);
+  readUpdateV2(decoder, ydoc, transactionOrigin, new YDecoder(decoder));
+};
+
+/**
+ * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
+ *
+ * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+ *
+ * @param {Doc} ydoc
+ * @param {Uint8Array} update
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ *
+ * @function
+ */
+const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, UpdateDecoderV1);
+
+/**
+ * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
+ * only write the operations that are missing.
+ *
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+ * @param {Doc} doc
+ * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ *
+ * @function
+ */
+const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
+  writeClientsStructs(encoder, doc.store, targetStateVector);
+  writeDeleteSet(encoder, createDeleteSetFromStructStore(doc.store));
+};
+
+/**
+ * Write all the document as a single update message that can be applied on the remote document. If you specify the state of the remote client (`targetState`) it will
+ * only write the operations that are missing.
+ *
+ * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+ *
+ * @param {Doc} doc
+ * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
+  const targetStateVector = decodeStateVector(encodedTargetStateVector);
+  writeStateAsUpdate(encoder, doc, targetStateVector);
+  const updates = [encoder.toUint8Array()];
+  // also add the pending updates (if there are any)
+  if (doc.store.pendingDs) {
+    updates.push(doc.store.pendingDs);
+  }
+  if (doc.store.pendingStructs) {
+    updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector));
+  }
+  if (updates.length > 1) {
+    if (encoder.constructor === UpdateEncoderV1) {
+      return mergeUpdates(updates.map((update, i) => i === 0 ? update : convertUpdateFormatV2ToV1(update)))
+    } else if (encoder.constructor === UpdateEncoderV2) {
+      return mergeUpdatesV2(updates)
+    }
+  }
+  return updates[0]
+};
+
+/**
+ * Write all the document as a single update message that can be applied on the remote document. If you specify the state of the remote client (`targetState`) it will
+ * only write the operations that are missing.
+ *
+ * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+ *
+ * @param {Doc} doc
+ * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new UpdateEncoderV1());
+
+/**
+ * Read state vector from Decoder and return as Map
+ *
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+const readStateVector = decoder => {
+  const ss = new Map();
+  const ssLength = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+  for (let i = 0; i < ssLength; i++) {
+    const client = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    const clock = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    ss.set(client, clock);
+  }
+  return ss
+};
+
+/**
+ * Read decodedState and return State as Map.
+ *
+ * @param {Uint8Array} decodedState
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+// export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(decoding.createDecoder(decodedState)))
+
+/**
+ * Read decodedState and return State as Map.
+ *
+ * @param {Uint8Array} decodedState
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(decodedState)));
+
+/**
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {Map<number,number>} sv
+ * @function
+ */
+const writeStateVector = (encoder, sv) => {
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, sv.size);
+  lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(sv.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, client); // @todo use a special client decoder that is based on mapping
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, clock);
+  });
+  return encoder
+};
+
+/**
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {Doc} doc
+ *
+ * @function
+ */
+const writeDocumentStateVector = (encoder, doc) => writeStateVector(encoder, getStateVector(doc.store));
+
+/**
+ * Encode State as Uint8Array.
+ *
+ * @param {Doc|Map<number,number>} doc
+ * @param {DSEncoderV1 | DSEncoderV2} [encoder]
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
+  if (doc instanceof Map) {
+    writeStateVector(encoder, doc);
+  } else {
+    writeDocumentStateVector(encoder, doc);
+  }
+  return encoder.toUint8Array()
+};
+
+/**
+ * Encode State as Uint8Array.
+ *
+ * @param {Doc|Map<number,number>} doc
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateVector = doc => encodeStateVectorV2(doc, new DSEncoderV1());
 
 /**
  * General event handler implementation.
@@ -14532,7 +21435,7 @@ const removeEventHandlerListener = (eventHandler, f) => {
  * @function
  */
 const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
-  callAll(eventHandler.l, [arg0, arg1]);
+  lib0_function__WEBPACK_IMPORTED_MODULE_11__.callAll(eventHandler.l, [arg0, arg1]);
 
 class ID {
   /**
@@ -14572,6 +21475,32 @@ const compareIDs = (a, b) => a === b || (a !== null && b !== null && a.client ==
 const createID = (client, clock) => new ID(client, clock);
 
 /**
+ * @param {encoding.Encoder} encoder
+ * @param {ID} id
+ *
+ * @private
+ * @function
+ */
+const writeID = (encoder, id) => {
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder, id.client);
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder, id.clock);
+};
+
+/**
+ * Read ID.
+ * * If first varUint read is 0xFFFFFF a RootID is returned.
+ * * Otherwise an ID is returned
+ *
+ * @param {decoding.Decoder} decoder
+ * @return {ID}
+ *
+ * @private
+ * @function
+ */
+const readID = decoder =>
+  createID(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder), lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder));
+
+/**
  * The top types are mapped from y.share.get(keyname) => type.
  * `type` does not store any information about the `keyname`.
  * This function finds the correct `keyname` for `type` and throws otherwise.
@@ -14589,8 +21518,610 @@ const findRootTypeKey = type => {
       return key
     }
   }
-  throw unexpectedCase()
+  throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
 };
+
+/**
+ * Check if `parent` is a parent of `child`.
+ *
+ * @param {AbstractType<any>} parent
+ * @param {Item|null} child
+ * @return {Boolean} Whether `parent` is a parent of `child`.
+ *
+ * @private
+ * @function
+ */
+const isParentOf = (parent, child) => {
+  while (child !== null) {
+    if (child.parent === parent) {
+      return true
+    }
+    child = /** @type {AbstractType<any>} */ (child.parent)._item;
+  }
+  return false
+};
+
+/**
+ * Convenient helper to log type information.
+ *
+ * Do not use in productive systems as the output can be immense!
+ *
+ * @param {AbstractType<any>} type
+ */
+const logType = type => {
+  const res = [];
+  let n = type._start;
+  while (n) {
+    res.push(n);
+    n = n.right;
+  }
+  console.log('Children: ', res);
+  console.log('Children content: ', res.filter(m => !m.deleted).map(m => m.content));
+};
+
+class PermanentUserData {
+  /**
+   * @param {Doc} doc
+   * @param {YMap<any>} [storeType]
+   */
+  constructor (doc, storeType = doc.getMap('users')) {
+    /**
+     * @type {Map<string,DeleteSet>}
+     */
+    const dss = new Map();
+    this.yusers = storeType;
+    this.doc = doc;
+    /**
+     * Maps from clientid to userDescription
+     *
+     * @type {Map<number,string>}
+     */
+    this.clients = new Map();
+    this.dss = dss;
+    /**
+     * @param {YMap<any>} user
+     * @param {string} userDescription
+     */
+    const initUser = (user, userDescription) => {
+      /**
+       * @type {YArray<Uint8Array>}
+       */
+      const ds = user.get('ds');
+      const ids = user.get('ids');
+      const addClientId = /** @param {number} clientid */ clientid => this.clients.set(clientid, userDescription);
+      ds.observe(/** @param {YArrayEvent<any>} event */ event => {
+        event.changes.added.forEach(item => {
+          item.content.getContent().forEach(encodedDs => {
+            if (encodedDs instanceof Uint8Array) {
+              this.dss.set(userDescription, mergeDeleteSets([this.dss.get(userDescription) || createDeleteSet(), readDeleteSet(new DSDecoderV1(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(encodedDs)))]));
+            }
+          });
+        });
+      });
+      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(new DSDecoderV1(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(encodedDs))))));
+      ids.observe(/** @param {YArrayEvent<any>} event */ event =>
+        event.changes.added.forEach(item => item.content.getContent().forEach(addClientId))
+      );
+      ids.forEach(addClientId);
+    };
+    // observe users
+    storeType.observe(event => {
+      event.keysChanged.forEach(userDescription =>
+        initUser(storeType.get(userDescription), userDescription)
+      );
+    });
+    // add initial data
+    storeType.forEach(initUser);
+  }
+
+  /**
+   * @param {Doc} doc
+   * @param {number} clientid
+   * @param {string} userDescription
+   * @param {Object} conf
+   * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
+   */
+  setUserMapping (doc, clientid, userDescription, { filter = () => true } = {}) {
+    const users = this.yusers;
+    let user = users.get(userDescription);
+    if (!user) {
+      user = new YMap();
+      user.set('ids', new YArray());
+      user.set('ds', new YArray());
+      users.set(userDescription, user);
+    }
+    user.get('ids').push([clientid]);
+    users.observe(_event => {
+      setTimeout(() => {
+        const userOverwrite = users.get(userDescription);
+        if (userOverwrite !== user) {
+          // user was overwritten, port all data over to the next user object
+          // @todo Experiment with Y.Sets here
+          user = userOverwrite;
+          // @todo iterate over old type
+          this.clients.forEach((_userDescription, clientid) => {
+            if (userDescription === _userDescription) {
+              user.get('ids').push([clientid]);
+            }
+          });
+          const encoder = new DSEncoderV1();
+          const ds = this.dss.get(userDescription);
+          if (ds) {
+            writeDeleteSet(encoder, ds);
+            user.get('ds').push([encoder.toUint8Array()]);
+          }
+        }
+      }, 0);
+    });
+    doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
+      setTimeout(() => {
+        const yds = user.get('ds');
+        const ds = transaction.deleteSet;
+        if (transaction.local && ds.clients.size > 0 && filter(transaction, ds)) {
+          const encoder = new DSEncoderV1();
+          writeDeleteSet(encoder, ds);
+          yds.push([encoder.toUint8Array()]);
+        }
+      });
+    });
+  }
+
+  /**
+   * @param {number} clientid
+   * @return {any}
+   */
+  getUserByClientId (clientid) {
+    return this.clients.get(clientid) || null
+  }
+
+  /**
+   * @param {ID} id
+   * @return {string | null}
+   */
+  getUserByDeletedId (id) {
+    for (const [userDescription, ds] of this.dss.entries()) {
+      if (isDeleted(ds, id)) {
+        return userDescription
+      }
+    }
+    return null
+  }
+}
+
+/**
+ * A relative position is based on the Yjs model and is not affected by document changes.
+ * E.g. If you place a relative position before a certain character, it will always point to this character.
+ * If you place a relative position at the end of a type, it will always point to the end of the type.
+ *
+ * A numeric position is often unsuited for user selections, because it does not change when content is inserted
+ * before or after.
+ *
+ * ```Insert(0, 'x')('a|bc') = 'xa|bc'``` Where | is the relative position.
+ *
+ * One of the properties must be defined.
+ *
+ * @example
+ *   // Current cursor position is at position 10
+ *   const relativePosition = createRelativePositionFromIndex(yText, 10)
+ *   // modify yText
+ *   yText.insert(0, 'abc')
+ *   yText.delete(3, 10)
+ *   // Compute the cursor position
+ *   const absolutePosition = createAbsolutePositionFromRelativePosition(y, relativePosition)
+ *   absolutePosition.type === yText // => true
+ *   console.log('cursor location is ' + absolutePosition.index) // => cursor location is 3
+ *
+ */
+class RelativePosition {
+  /**
+   * @param {ID|null} type
+   * @param {string|null} tname
+   * @param {ID|null} item
+   * @param {number} assoc
+   */
+  constructor (type, tname, item, assoc = 0) {
+    /**
+     * @type {ID|null}
+     */
+    this.type = type;
+    /**
+     * @type {string|null}
+     */
+    this.tname = tname;
+    /**
+     * @type {ID | null}
+     */
+    this.item = item;
+    /**
+     * A relative position is associated to a specific character. By default
+     * assoc >= 0, the relative position is associated to the character
+     * after the meant position.
+     * I.e. position 1 in 'ab' is associated to character 'b'.
+     *
+     * If assoc < 0, then the relative position is associated to the character
+     * before the meant position.
+     *
+     * @type {number}
+     */
+    this.assoc = assoc;
+  }
+}
+
+/**
+ * @param {RelativePosition} rpos
+ * @return {any}
+ */
+const relativePositionToJSON = rpos => {
+  const json = {};
+  if (rpos.type) {
+    json.type = rpos.type;
+  }
+  if (rpos.tname) {
+    json.tname = rpos.tname;
+  }
+  if (rpos.item) {
+    json.item = rpos.item;
+  }
+  if (rpos.assoc != null) {
+    json.assoc = rpos.assoc;
+  }
+  return json
+};
+
+/**
+ * @param {any} json
+ * @return {RelativePosition}
+ *
+ * @function
+ */
+const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname ?? null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc);
+
+class AbsolutePosition {
+  /**
+   * @param {AbstractType<any>} type
+   * @param {number} index
+   * @param {number} [assoc]
+   */
+  constructor (type, index, assoc = 0) {
+    /**
+     * @type {AbstractType<any>}
+     */
+    this.type = type;
+    /**
+     * @type {number}
+     */
+    this.index = index;
+    this.assoc = assoc;
+  }
+}
+
+/**
+ * @param {AbstractType<any>} type
+ * @param {number} index
+ * @param {number} [assoc]
+ *
+ * @function
+ */
+const createAbsolutePosition = (type, index, assoc = 0) => new AbsolutePosition(type, index, assoc);
+
+/**
+ * @param {AbstractType<any>} type
+ * @param {ID|null} item
+ * @param {number} [assoc]
+ *
+ * @function
+ */
+const createRelativePosition = (type, item, assoc) => {
+  let typeid = null;
+  let tname = null;
+  if (type._item === null) {
+    tname = findRootTypeKey(type);
+  } else {
+    typeid = createID(type._item.id.client, type._item.id.clock);
+  }
+  return new RelativePosition(typeid, tname, item, assoc)
+};
+
+/**
+ * Create a relativePosition based on a absolute position.
+ *
+ * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
+ * @param {number} index The absolute position.
+ * @param {number} [assoc]
+ * @return {RelativePosition}
+ *
+ * @function
+ */
+const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
+  let t = type._start;
+  if (assoc < 0) {
+    // associated to the left character or the beginning of a type, increment index if possible.
+    if (index === 0) {
+      return createRelativePosition(type, null, assoc)
+    }
+    index--;
+  }
+  while (t !== null) {
+    if (!t.deleted && t.countable) {
+      if (t.length > index) {
+        // case 1: found position somewhere in the linked list
+        return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
+      }
+      index -= t.length;
+    }
+    if (t.right === null && assoc < 0) {
+      // left-associated position, return last available id
+      return createRelativePosition(type, t.lastId, assoc)
+    }
+    t = t.right;
+  }
+  return createRelativePosition(type, null, assoc)
+};
+
+/**
+ * @param {encoding.Encoder} encoder
+ * @param {RelativePosition} rpos
+ *
+ * @function
+ */
+const writeRelativePosition = (encoder, rpos) => {
+  const { type, tname, item, assoc } = rpos;
+  if (item !== null) {
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder, 0);
+    writeID(encoder, item);
+  } else if (tname !== null) {
+    // case 2: found position at the end of the list and type is stored in y.share
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8(encoder, 1);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarString(encoder, tname);
+  } else if (type !== null) {
+    // case 3: found position at the end of the list and type is attached to an item
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8(encoder, 2);
+    writeID(encoder, type);
+  } else {
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
+  }
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarInt(encoder, assoc);
+  return encoder
+};
+
+/**
+ * @param {RelativePosition} rpos
+ * @return {Uint8Array}
+ */
+const encodeRelativePosition = rpos => {
+  const encoder = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder();
+  writeRelativePosition(encoder, rpos);
+  return lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(encoder)
+};
+
+/**
+ * @param {decoding.Decoder} decoder
+ * @return {RelativePosition}
+ *
+ * @function
+ */
+const readRelativePosition = decoder => {
+  let type = null;
+  let tname = null;
+  let itemID = null;
+  switch (lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder)) {
+    case 0:
+      // case 1: found position somewhere in the linked list
+      itemID = readID(decoder);
+      break
+    case 1:
+      // case 2: found position at the end of the list and type is stored in y.share
+      tname = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarString(decoder);
+      break
+    case 2: {
+      // case 3: found position at the end of the list and type is attached to an item
+      type = readID(decoder);
+    }
+  }
+  const assoc = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.hasContent(decoder) ? lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarInt(decoder) : 0;
+  return new RelativePosition(type, tname, itemID, assoc)
+};
+
+/**
+ * @param {Uint8Array} uint8Array
+ * @return {RelativePosition}
+ */
+const decodeRelativePosition = uint8Array => readRelativePosition(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(uint8Array));
+
+/**
+ * @param {StructStore} store
+ * @param {ID} id
+ */
+const getItemWithOffset = (store, id) => {
+  const item = getItem(store, id);
+  const diff = id.clock - item.id.clock;
+  return {
+    item, diff
+  }
+};
+
+/**
+ * Transform a relative position to an absolute position.
+ *
+ * If you want to share the relative position with other users, you should set
+ * `followUndoneDeletions` to false to get consistent results across all clients.
+ *
+ * When calculating the absolute position, we try to follow the "undone deletions". This yields
+ * better results for the user who performed undo. However, only the user who performed the undo
+ * will get the better results, the other users don't know which operations recreated a deleted
+ * range of content. There is more information in this ticket: https://github.com/yjs/yjs/issues/638
+ *
+ * @param {RelativePosition} rpos
+ * @param {Doc} doc
+ * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
+ * @return {AbsolutePosition|null}
+ *
+ * @function
+ */
+const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true) => {
+  const store = doc.store;
+  const rightID = rpos.item;
+  const typeID = rpos.type;
+  const tname = rpos.tname;
+  const assoc = rpos.assoc;
+  let type = null;
+  let index = 0;
+  if (rightID !== null) {
+    if (getState(store, rightID.client) <= rightID.clock) {
+      return null
+    }
+    const res = followUndoneDeletions ? followRedone(store, rightID) : getItemWithOffset(store, rightID);
+    const right = res.item;
+    if (!(right instanceof Item)) {
+      return null
+    }
+    type = /** @type {AbstractType<any>} */ (right.parent);
+    if (type._item === null || !type._item.deleted) {
+      index = (right.deleted || !right.countable) ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)); // adjust position based on left association if necessary
+      let n = right.left;
+      while (n !== null) {
+        if (!n.deleted && n.countable) {
+          index += n.length;
+        }
+        n = n.left;
+      }
+    }
+  } else {
+    if (tname !== null) {
+      type = doc.get(tname);
+    } else if (typeID !== null) {
+      if (getState(store, typeID.client) <= typeID.clock) {
+        // type does not exist yet
+        return null
+      }
+      const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: getItem(store, typeID) };
+      if (item instanceof Item && item.content instanceof ContentType) {
+        type = item.content.type;
+      } else {
+        // struct is garbage collected
+        return null
+      }
+    } else {
+      throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
+    }
+    if (assoc >= 0) {
+      index = type._length;
+    } else {
+      index = 0;
+    }
+  }
+  return createAbsolutePosition(type, index, rpos.assoc)
+};
+
+/**
+ * @param {RelativePosition|null} a
+ * @param {RelativePosition|null} b
+ * @return {boolean}
+ *
+ * @function
+ */
+const compareRelativePositions = (a, b) => a === b || (
+  a !== null && b !== null && a.tname === b.tname && compareIDs(a.item, b.item) && compareIDs(a.type, b.type) && a.assoc === b.assoc
+);
+
+class Snapshot {
+  /**
+   * @param {DeleteSet} ds
+   * @param {Map<number,number>} sv state map
+   */
+  constructor (ds, sv) {
+    /**
+     * @type {DeleteSet}
+     */
+    this.ds = ds;
+    /**
+     * State Map
+     * @type {Map<number,number>}
+     */
+    this.sv = sv;
+  }
+}
+
+/**
+ * @param {Snapshot} snap1
+ * @param {Snapshot} snap2
+ * @return {boolean}
+ */
+const equalSnapshots = (snap1, snap2) => {
+  const ds1 = snap1.ds.clients;
+  const ds2 = snap2.ds.clients;
+  const sv1 = snap1.sv;
+  const sv2 = snap2.sv;
+  if (sv1.size !== sv2.size || ds1.size !== ds2.size) {
+    return false
+  }
+  for (const [key, value] of sv1.entries()) {
+    if (sv2.get(key) !== value) {
+      return false
+    }
+  }
+  for (const [client, dsitems1] of ds1.entries()) {
+    const dsitems2 = ds2.get(client) || [];
+    if (dsitems1.length !== dsitems2.length) {
+      return false
+    }
+    for (let i = 0; i < dsitems1.length; i++) {
+      const dsitem1 = dsitems1[i];
+      const dsitem2 = dsitems2[i];
+      if (dsitem1.clock !== dsitem2.clock || dsitem1.len !== dsitem2.len) {
+        return false
+      }
+    }
+  }
+  return true
+};
+
+/**
+ * @param {Snapshot} snapshot
+ * @param {DSEncoderV1 | DSEncoderV2} [encoder]
+ * @return {Uint8Array}
+ */
+const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
+  writeDeleteSet(encoder, snapshot.ds);
+  writeStateVector(encoder, snapshot.sv);
+  return encoder.toUint8Array()
+};
+
+/**
+ * @param {Snapshot} snapshot
+ * @return {Uint8Array}
+ */
+const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DSEncoderV1());
+
+/**
+ * @param {Uint8Array} buf
+ * @param {DSDecoderV1 | DSDecoderV2} [decoder]
+ * @return {Snapshot}
+ */
+const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(buf))) => {
+  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
+};
+
+/**
+ * @param {Uint8Array} buf
+ * @return {Snapshot}
+ */
+const decodeSnapshot = buf => decodeSnapshotV2(buf, new DSDecoderV1(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(buf)));
+
+/**
+ * @param {DeleteSet} ds
+ * @param {Map<number,number>} sm
+ * @return {Snapshot}
+ */
+const createSnapshot = (ds, sm) => new Snapshot(ds, sm);
+
+const emptySnapshot = createSnapshot(createDeleteSet(), new Map());
+
+/**
+ * @param {Doc} doc
+ * @return {Snapshot}
+ */
+const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc.store), getStateVector(doc.store));
 
 /**
  * @param {Item} item
@@ -14608,7 +22139,7 @@ const isVisible = (item, snapshot) => snapshot === undefined
  * @param {Snapshot} snapshot
  */
 const splitSnapshotAffectedStructs = (transaction, snapshot) => {
-  const meta = setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, create$4);
+  const meta = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, lib0_set__WEBPACK_IMPORTED_MODULE_12__.create);
   const store = transaction.doc.store;
   // check if we already split for this snapshot
   if (!meta.has(snapshot)) {
@@ -14621,6 +22152,85 @@ const splitSnapshotAffectedStructs = (transaction, snapshot) => {
     meta.add(snapshot);
   }
 };
+
+/**
+ * @example
+ *  const ydoc = new Y.Doc({ gc: false })
+ *  ydoc.getText().insert(0, 'world!')
+ *  const snapshot = Y.snapshot(ydoc)
+ *  ydoc.getText().insert(0, 'hello ')
+ *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+ *  assert(restored.getText().toString() === 'world!')
+ *
+ * @param {Doc} originDoc
+ * @param {Snapshot} snapshot
+ * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
+ * @return {Doc}
+ */
+const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
+  if (originDoc.gc) {
+    // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
+    throw new Error('Garbage-collection must be disabled in `originDoc`!')
+  }
+  const { sv, ds } = snapshot;
+
+  const encoder = new UpdateEncoderV2();
+  originDoc.transact(transaction => {
+    let size = 0;
+    sv.forEach(clock => {
+      if (clock > 0) {
+        size++;
+      }
+    });
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, size);
+    // splitting the structs before writing them to the encoder
+    for (const [client, clock] of sv) {
+      if (clock === 0) {
+        continue
+      }
+      if (clock < getState(originDoc.store, client)) {
+        getItemCleanStart(transaction, createID(client, clock));
+      }
+      const structs = originDoc.store.clients.get(client) || [];
+      const lastStructIndex = findIndexSS(structs, clock - 1);
+      // write # encoded structs
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, lastStructIndex + 1);
+      encoder.writeClient(client);
+      // first clock written is 0
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, 0);
+      for (let i = 0; i <= lastStructIndex; i++) {
+        structs[i].write(encoder, 0);
+      }
+    }
+    writeDeleteSet(encoder, ds);
+  });
+
+  applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot');
+  return newDoc
+};
+
+/**
+ * @param {Snapshot} snapshot
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ */
+const snapshotContainsUpdateV2 = (snapshot, update, YDecoder = UpdateDecoderV2) => {
+  const updateDecoder = new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update));
+  const lazyDecoder = new LazyStructReader(updateDecoder, false);
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    if ((snapshot.sv.get(curr.id.client) || 0) < curr.id.clock + curr.length) {
+      return false
+    }
+  }
+  const mergedDS = mergeDeleteSets([snapshot.ds, readDeleteSet(updateDecoder)]);
+  return equalDeleteSets(snapshot.ds, mergedDS)
+};
+
+/**
+ * @param {Snapshot} snapshot
+ * @param {Uint8Array} update
+ */
+const snapshotContainsUpdate = (snapshot, update) => snapshotContainsUpdateV2(snapshot, update, UpdateDecoderV1);
 
 class StructStore {
   constructor () {
@@ -14690,7 +22300,7 @@ const addStruct = (store, struct) => {
   } else {
     const lastStruct = structs[structs.length - 1];
     if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
-      throw unexpectedCase()
+      throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
     }
   }
   structs.push(struct);
@@ -14716,7 +22326,7 @@ const findIndexSS = (structs, clock) => {
   // @todo does it even make sense to pivot the search?
   // If a good split misses, it might actually increase the time to find the correct item.
   // Currently, the only advantage is that search with pivoting might find the item on the first try.
-  let midindex = floor((clock / (midclock + mid.length - 1)) * right); // pivoting the search
+  let midindex = lib0_math__WEBPACK_IMPORTED_MODULE_2__.floor((clock / (midclock + mid.length - 1)) * right); // pivoting the search
   while (left <= right) {
     mid = structs[midindex];
     midclock = mid.id.clock;
@@ -14728,11 +22338,11 @@ const findIndexSS = (structs, clock) => {
     } else {
       right = midindex - 1;
     }
-    midindex = floor((left + right) / 2);
+    midindex = lib0_math__WEBPACK_IMPORTED_MODULE_2__.floor((left + right) / 2);
   }
   // Always check state before looking for a struct in StructStore
   // Therefore the case of not finding a struct is unexpected
-  throw unexpectedCase()
+  throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
 };
 
 /**
@@ -14965,7 +22575,7 @@ class Transaction {
  * @return {boolean} Whether data was written.
  */
 const writeUpdateMessageFromTransaction = (encoder, transaction) => {
-  if (transaction.deleteSet.clients.size === 0 && !any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+  if (transaction.deleteSet.clients.size === 0 && !lib0_map__WEBPACK_IMPORTED_MODULE_3__.any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
     return false
   }
   sortAndMergeDeleteSet(transaction.deleteSet);
@@ -14985,7 +22595,7 @@ const writeUpdateMessageFromTransaction = (encoder, transaction) => {
 const addChangedTypeToTransaction = (transaction, type, parentSub) => {
   const item = type._item;
   if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
-    setIfUndefined(transaction.changed, type, create$4).add(parentSub);
+    lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(transaction.changed, type, lib0_set__WEBPACK_IMPORTED_MODULE_12__.create).add(parentSub);
   }
 };
 
@@ -15057,7 +22667,7 @@ const tryMergeDeleteSet = (ds, store) => {
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di];
       // start with merging the item next to the last deleted item
-      const mostRightIndexToCheck = min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
+      const mostRightIndexToCheck = lib0_math__WEBPACK_IMPORTED_MODULE_2__.min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
       for (
         let si = mostRightIndexToCheck, struct = structs[si];
         si > 0 && struct.id.clock >= deleteItem.clock;
@@ -15067,6 +22677,16 @@ const tryMergeDeleteSet = (ds, store) => {
       }
     }
   });
+};
+
+/**
+ * @param {DeleteSet} ds
+ * @param {StructStore} store
+ * @param {function(Item):boolean} gcFilter
+ */
+const tryGc = (ds, store, gcFilter) => {
+  tryGcDeleteSet(ds, store, gcFilter);
+  tryMergeDeleteSet(ds, store);
 };
 
 /**
@@ -15126,7 +22746,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
         });
       });
       fs.push(() => doc.emit('afterTransaction', [transaction, doc]));
-      callAll(fs, []);
+      (0,lib0_function__WEBPACK_IMPORTED_MODULE_11__.callAll)(fs, []);
       if (transaction._needFormattingCleanup) {
         cleanupYTextAfterTransaction(transaction);
       }
@@ -15144,7 +22764,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
         if (beforeClock !== clock) {
           const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
           // we iterate from right to left so we can safely remove entries
-          const firstChangePos = max(findIndexSS(structs, beforeClock), 1);
+          const firstChangePos = lib0_math__WEBPACK_IMPORTED_MODULE_2__.max(findIndexSS(structs, beforeClock), 1);
           for (let i = structs.length - 1; i >= firstChangePos;) {
             i -= 1 + tryToMergeWithLefts(structs, i);
           }
@@ -15167,7 +22787,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
         }
       }
       if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
-        print(ORANGE, BOLD, '[yjs] ', UNBOLD, RED, 'Changed the client-id because another client seems to be using it.');
+        lib0_logging__WEBPACK_IMPORTED_MODULE_13__.print(lib0_logging__WEBPACK_IMPORTED_MODULE_14__.ORANGE, lib0_logging__WEBPACK_IMPORTED_MODULE_14__.BOLD, '[yjs] ', lib0_logging__WEBPACK_IMPORTED_MODULE_14__.UNBOLD, lib0_logging__WEBPACK_IMPORTED_MODULE_14__.RED, 'Changed the client-id because another client seems to be using it.');
         doc.clientID = generateNewClientId();
       }
       // @todo Merge all the transactions into one and provide send the data as a single update message
@@ -15259,6 +22879,1071 @@ const transact = (doc, f, origin = null, local = true) => {
   return result
 };
 
+class StackItem {
+  /**
+   * @param {DeleteSet} deletions
+   * @param {DeleteSet} insertions
+   */
+  constructor (deletions, insertions) {
+    this.insertions = insertions;
+    this.deletions = deletions;
+    /**
+     * Use this to save and restore metadata like selection range
+     */
+    this.meta = new Map();
+  }
+}
+/**
+ * @param {Transaction} tr
+ * @param {UndoManager} um
+ * @param {StackItem} stackItem
+ */
+const clearUndoManagerStackItem = (tr, um, stackItem) => {
+  iterateDeletedStructs(tr, stackItem.deletions, item => {
+    if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
+      keepItem(item, false);
+    }
+  });
+};
+
+/**
+ * @param {UndoManager} undoManager
+ * @param {Array<StackItem>} stack
+ * @param {'undo'|'redo'} eventType
+ * @return {StackItem?}
+ */
+const popStackItem = (undoManager, stack, eventType) => {
+  /**
+   * Keep a reference to the transaction so we can fire the event with the changedParentTypes
+   * @type {any}
+   */
+  let _tr = null;
+  const doc = undoManager.doc;
+  const scope = undoManager.scope;
+  transact(doc, transaction => {
+    while (stack.length > 0 && undoManager.currStackItem === null) {
+      const store = doc.store;
+      const stackItem = /** @type {StackItem} */ (stack.pop());
+      /**
+       * @type {Set<Item>}
+       */
+      const itemsToRedo = new Set();
+      /**
+       * @type {Array<Item>}
+       */
+      const itemsToDelete = [];
+      let performedChange = false;
+      iterateDeletedStructs(transaction, stackItem.insertions, struct => {
+        if (struct instanceof Item) {
+          if (struct.redone !== null) {
+            let { item, diff } = followRedone(store, struct.id);
+            if (diff > 0) {
+              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff));
+            }
+            struct = item;
+          }
+          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ (struct)))) {
+            itemsToDelete.push(struct);
+          }
+        }
+      });
+      iterateDeletedStructs(transaction, stackItem.deletions, struct => {
+        if (
+          struct instanceof Item &&
+          scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), struct)) &&
+          // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
+          !isDeleted(stackItem.insertions, struct.id)
+        ) {
+          itemsToRedo.add(struct);
+        }
+      });
+      itemsToRedo.forEach(struct => {
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange;
+      });
+      // We want to delete in reverse order so that children are deleted before
+      // parents, so we have more information available when items are filtered.
+      for (let i = itemsToDelete.length - 1; i >= 0; i--) {
+        const item = itemsToDelete[i];
+        if (undoManager.deleteFilter(item)) {
+          item.delete(transaction);
+          performedChange = true;
+        }
+      }
+      undoManager.currStackItem = performedChange ? stackItem : null;
+    }
+    transaction.changed.forEach((subProps, type) => {
+      // destroy search marker if necessary
+      if (subProps.has(null) && type._searchMarker) {
+        type._searchMarker.length = 0;
+      }
+    });
+    _tr = transaction;
+  }, undoManager);
+  const res = undoManager.currStackItem;
+  if (res != null) {
+    const changedParentTypes = _tr.changedParentTypes;
+    undoManager.emit('stack-item-popped', [{ stackItem: res, type: eventType, changedParentTypes, origin: undoManager }, undoManager]);
+    undoManager.currStackItem = null;
+  }
+  return res
+};
+
+/**
+ * @typedef {Object} UndoManagerOptions
+ * @property {number} [UndoManagerOptions.captureTimeout=500]
+ * @property {function(Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
+ * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
+ * it is necessary to filter what an Undo/Redo operation can delete. If this
+ * filter returns false, the type/item won't be deleted even it is in the
+ * undo/redo scope.
+ * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
+ * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
+ * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
+ */
+
+/**
+ * @typedef {Object} StackItemEvent
+ * @property {StackItem} StackItemEvent.stackItem
+ * @property {any} StackItemEvent.origin
+ * @property {'undo'|'redo'} StackItemEvent.type
+ * @property {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
+ */
+
+/**
+ * Fires 'stack-item-added' event when a stack item was added to either the undo- or
+ * the redo-stack. You may store additional stack information via the
+ * metadata property on `event.stackItem.meta` (it is a `Map` of metadata properties).
+ * Fires 'stack-item-popped' event when a stack item was popped from either the
+ * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
+ *
+ * @extends {ObservableV2<{'stack-item-added':function(StackItemEvent, UndoManager):void, 'stack-item-popped': function(StackItemEvent, UndoManager):void, 'stack-cleared': function({ undoStackCleared: boolean, redoStackCleared: boolean }):void, 'stack-item-updated': function(StackItemEvent, UndoManager):void }>}
+ */
+class UndoManager extends lib0_observable__WEBPACK_IMPORTED_MODULE_0__.ObservableV2 {
+  /**
+   * @param {Doc|AbstractType<any>|Array<AbstractType<any>>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
+   * @param {UndoManagerOptions} options
+   */
+  constructor (typeScope, {
+    captureTimeout = 500,
+    captureTransaction = _tr => true,
+    deleteFilter = () => true,
+    trackedOrigins = new Set([null]),
+    ignoreRemoteMapChanges = false,
+    doc = /** @type {Doc} */ (lib0_array__WEBPACK_IMPORTED_MODULE_1__.isArray(typeScope) ? typeScope[0].doc : typeScope instanceof Doc ? typeScope : typeScope.doc)
+  } = {}) {
+    super();
+    /**
+     * @type {Array<AbstractType<any> | Doc>}
+     */
+    this.scope = [];
+    this.doc = doc;
+    this.addToScope(typeScope);
+    this.deleteFilter = deleteFilter;
+    trackedOrigins.add(this);
+    this.trackedOrigins = trackedOrigins;
+    this.captureTransaction = captureTransaction;
+    /**
+     * @type {Array<StackItem>}
+     */
+    this.undoStack = [];
+    /**
+     * @type {Array<StackItem>}
+     */
+    this.redoStack = [];
+    /**
+     * Whether the client is currently undoing (calling UndoManager.undo)
+     *
+     * @type {boolean}
+     */
+    this.undoing = false;
+    this.redoing = false;
+    /**
+     * The currently popped stack item if UndoManager.undoing or UndoManager.redoing
+     *
+     * @type {StackItem|null}
+     */
+    this.currStackItem = null;
+    this.lastChange = 0;
+    this.ignoreRemoteMapChanges = ignoreRemoteMapChanges;
+    this.captureTimeout = captureTimeout;
+    /**
+     * @param {Transaction} transaction
+     */
+    this.afterTransactionHandler = transaction => {
+      // Only track certain transactions
+      if (
+        !this.captureTransaction(transaction) ||
+        !this.scope.some(type => transaction.changedParentTypes.has(/** @type {AbstractType<any>} */ (type)) || type === this.doc) ||
+        (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))
+      ) {
+        return
+      }
+      const undoing = this.undoing;
+      const redoing = this.redoing;
+      const stack = undoing ? this.redoStack : this.undoStack;
+      if (undoing) {
+        this.stopCapturing(); // next undo should not be appended to last stack item
+      } else if (!redoing) {
+        // neither undoing nor redoing: delete redoStack
+        this.clear(false, true);
+      }
+      const insertions = new DeleteSet();
+      transaction.afterState.forEach((endClock, client) => {
+        const startClock = transaction.beforeState.get(client) || 0;
+        const len = endClock - startClock;
+        if (len > 0) {
+          addToDeleteSet(insertions, client, startClock, len);
+        }
+      });
+      const now = lib0_time__WEBPACK_IMPORTED_MODULE_15__.getUnixTime();
+      let didAdd = false;
+      if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
+        // append change to last stack op
+        const lastOp = stack[stack.length - 1];
+        lastOp.deletions = mergeDeleteSets([lastOp.deletions, transaction.deleteSet]);
+        lastOp.insertions = mergeDeleteSets([lastOp.insertions, insertions]);
+      } else {
+        // create a new stack op
+        stack.push(new StackItem(transaction.deleteSet, insertions));
+        didAdd = true;
+      }
+      if (!undoing && !redoing) {
+        this.lastChange = now;
+      }
+      // make sure that deleted structs are not gc'd
+      iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
+        if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
+          keepItem(item, true);
+        }
+      });
+      /**
+       * @type {[StackItemEvent, UndoManager]}
+       */
+      const changeEvent = [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this];
+      if (didAdd) {
+        this.emit('stack-item-added', changeEvent);
+      } else {
+        this.emit('stack-item-updated', changeEvent);
+      }
+    };
+    this.doc.on('afterTransaction', this.afterTransactionHandler);
+    this.doc.on('destroy', () => {
+      this.destroy();
+    });
+  }
+
+  /**
+   * Extend the scope.
+   *
+   * @param {Array<AbstractType<any> | Doc> | AbstractType<any> | Doc} ytypes
+   */
+  addToScope (ytypes) {
+    const tmpSet = new Set(this.scope);
+    ytypes = lib0_array__WEBPACK_IMPORTED_MODULE_1__.isArray(ytypes) ? ytypes : [ytypes];
+    ytypes.forEach(ytype => {
+      if (!tmpSet.has(ytype)) {
+        tmpSet.add(ytype);
+        if (ytype instanceof AbstractType ? ytype.doc !== this.doc : ytype !== this.doc) lib0_logging__WEBPACK_IMPORTED_MODULE_13__.warn('[yjs#509] Not same Y.Doc'); // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
+        this.scope.push(ytype);
+      }
+    });
+  }
+
+  /**
+   * @param {any} origin
+   */
+  addTrackedOrigin (origin) {
+    this.trackedOrigins.add(origin);
+  }
+
+  /**
+   * @param {any} origin
+   */
+  removeTrackedOrigin (origin) {
+    this.trackedOrigins.delete(origin);
+  }
+
+  clear (clearUndoStack = true, clearRedoStack = true) {
+    if ((clearUndoStack && this.canUndo()) || (clearRedoStack && this.canRedo())) {
+      this.doc.transact(tr => {
+        if (clearUndoStack) {
+          this.undoStack.forEach(item => clearUndoManagerStackItem(tr, this, item));
+          this.undoStack = [];
+        }
+        if (clearRedoStack) {
+          this.redoStack.forEach(item => clearUndoManagerStackItem(tr, this, item));
+          this.redoStack = [];
+        }
+        this.emit('stack-cleared', [{ undoStackCleared: clearUndoStack, redoStackCleared: clearRedoStack }]);
+      });
+    }
+  }
+
+  /**
+   * UndoManager merges Undo-StackItem if they are created within time-gap
+   * smaller than `options.captureTimeout`. Call `um.stopCapturing()` so that the next
+   * StackItem won't be merged.
+   *
+   *
+   * @example
+   *     // without stopCapturing
+   *     ytext.insert(0, 'a')
+   *     ytext.insert(1, 'b')
+   *     um.undo()
+   *     ytext.toString() // => '' (note that 'ab' was removed)
+   *     // with stopCapturing
+   *     ytext.insert(0, 'a')
+   *     um.stopCapturing()
+   *     ytext.insert(0, 'b')
+   *     um.undo()
+   *     ytext.toString() // => 'a' (note that only 'b' was removed)
+   *
+   */
+  stopCapturing () {
+    this.lastChange = 0;
+  }
+
+  /**
+   * Undo last changes on type.
+   *
+   * @return {StackItem?} Returns StackItem if a change was applied
+   */
+  undo () {
+    this.undoing = true;
+    let res;
+    try {
+      res = popStackItem(this, this.undoStack, 'undo');
+    } finally {
+      this.undoing = false;
+    }
+    return res
+  }
+
+  /**
+   * Redo last undo operation.
+   *
+   * @return {StackItem?} Returns StackItem if a change was applied
+   */
+  redo () {
+    this.redoing = true;
+    let res;
+    try {
+      res = popStackItem(this, this.redoStack, 'redo');
+    } finally {
+      this.redoing = false;
+    }
+    return res
+  }
+
+  /**
+   * Are undo steps available?
+   *
+   * @return {boolean} `true` if undo is possible
+   */
+  canUndo () {
+    return this.undoStack.length > 0
+  }
+
+  /**
+   * Are redo steps available?
+   *
+   * @return {boolean} `true` if redo is possible
+   */
+  canRedo () {
+    return this.redoStack.length > 0
+  }
+
+  destroy () {
+    this.trackedOrigins.delete(this);
+    this.doc.off('afterTransaction', this.afterTransactionHandler);
+    super.destroy();
+  }
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ */
+function * lazyStructReaderGenerator (decoder) {
+  const numOfStateUpdates = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+  for (let i = 0; i < numOfStateUpdates; i++) {
+    const numberOfStructs = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    const client = decoder.readClient();
+    let clock = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+    for (let i = 0; i < numberOfStructs; i++) {
+      const info = decoder.readInfo();
+      // @todo use switch instead of ifs
+      if (info === 10) {
+        const len = lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.readVarUint(decoder.restDecoder);
+        yield new Skip(createID(client, clock), len);
+        clock += len;
+      } else if ((lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BITS5 & info) !== 0) {
+        const cantCopyParentInfo = (info & (lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7 | lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8)) === 0;
+        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+        // and we read the next string as parentYKey.
+        // It indicates how we store/retrieve parent from `y.share`
+        // @type {string|null}
+        const struct = new Item(
+          createID(client, clock),
+          null, // left
+          (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8 ? decoder.readLeftID() : null, // origin
+          null, // right
+          (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7 ? decoder.readRightID() : null, // right origin
+          // @ts-ignore Force writing a string here.
+          cantCopyParentInfo ? (decoder.readParentInfo() ? decoder.readString() : decoder.readLeftID()) : null, // parent
+          cantCopyParentInfo && (info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT6) === lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT6 ? decoder.readString() : null, // parentSub
+          readItemContent(decoder, info) // item content
+        );
+        yield struct;
+        clock += struct.length;
+      } else {
+        const len = decoder.readLen();
+        yield new GC(createID(client, clock), len);
+        clock += len;
+      }
+    }
+  }
+}
+
+class LazyStructReader {
+  /**
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {boolean} filterSkips
+   */
+  constructor (decoder, filterSkips) {
+    this.gen = lazyStructReaderGenerator(decoder);
+    /**
+     * @type {null | Item | Skip | GC}
+     */
+    this.curr = null;
+    this.done = false;
+    this.filterSkips = filterSkips;
+    this.next();
+  }
+
+  /**
+   * @return {Item | GC | Skip |null}
+   */
+  next () {
+    // ignore "Skip" structs
+    do {
+      this.curr = this.gen.next().value || null;
+    } while (this.filterSkips && this.curr !== null && this.curr.constructor === Skip)
+    return this.curr
+  }
+}
+
+/**
+ * @param {Uint8Array} update
+ *
+ */
+const logUpdate = update => logUpdateV2(update, UpdateDecoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ *
+ */
+const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
+  const structs = [];
+  const updateDecoder = new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update));
+  const lazyDecoder = new LazyStructReader(updateDecoder, false);
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    structs.push(curr);
+  }
+  lib0_logging__WEBPACK_IMPORTED_MODULE_13__.print('Structs: ', structs);
+  const ds = readDeleteSet(updateDecoder);
+  lib0_logging__WEBPACK_IMPORTED_MODULE_13__.print('DeleteSet: ', ds);
+};
+
+/**
+ * @param {Uint8Array} update
+ *
+ */
+const decodeUpdate = (update) => decodeUpdateV2(update, UpdateDecoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ *
+ */
+const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
+  const structs = [];
+  const updateDecoder = new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update));
+  const lazyDecoder = new LazyStructReader(updateDecoder, false);
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    structs.push(curr);
+  }
+  return {
+    structs,
+    ds: readDeleteSet(updateDecoder)
+  }
+};
+
+class LazyStructWriter {
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   */
+  constructor (encoder) {
+    this.currClient = 0;
+    this.startClock = 0;
+    this.written = 0;
+    this.encoder = encoder;
+    /**
+     * We want to write operations lazily, but also we need to know beforehand how many operations we want to write for each client.
+     *
+     * This kind of meta-information (#clients, #structs-per-client-written) is written to the restEncoder.
+     *
+     * We fragment the restEncoder and store a slice of it per-client until we know how many clients there are.
+     * When we flush (toUint8Array) we write the restEncoder using the fragments and the meta-information.
+     *
+     * @type {Array<{ written: number, restEncoder: Uint8Array }>}
+     */
+    this.clientStructs = [];
+  }
+}
+
+/**
+ * @param {Array<Uint8Array>} updates
+ * @return {Uint8Array}
+ */
+const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof DSEncoderV1 | typeof DSEncoderV2} YEncoder
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
+ * @return {Uint8Array}
+ */
+const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YDecoder = UpdateDecoderV2) => {
+  const encoder = new YEncoder();
+  const updateDecoder = new LazyStructReader(new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update)), false);
+  let curr = updateDecoder.curr;
+  if (curr !== null) {
+    let size = 0;
+    let currClient = curr.id.client;
+    let stopCounting = curr.id.clock !== 0; // must start at 0
+    let currClock = stopCounting ? 0 : curr.id.clock + curr.length;
+    for (; curr !== null; curr = updateDecoder.next()) {
+      if (currClient !== curr.id.client) {
+        if (currClock !== 0) {
+          size++;
+          // We found a new client
+          // write what we have to the encoder
+          lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, currClient);
+          lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, currClock);
+        }
+        currClient = curr.id.client;
+        currClock = 0;
+        stopCounting = curr.id.clock !== 0;
+      }
+      // we ignore skips
+      if (curr.constructor === Skip) {
+        stopCounting = true;
+      }
+      if (!stopCounting) {
+        currClock = curr.id.clock + curr.length;
+      }
+    }
+    // write what we have
+    if (currClock !== 0) {
+      size++;
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, currClient);
+      lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, currClock);
+    }
+    // prepend the size of the state vector
+    const enc = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder();
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(enc, size);
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeBinaryEncoder(enc, encoder.restEncoder);
+    encoder.restEncoder = enc;
+    return encoder.toUint8Array()
+  } else {
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, 0);
+    return encoder.toUint8Array()
+  }
+};
+
+/**
+ * @param {Uint8Array} update
+ * @return {Uint8Array}
+ */
+const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
+ * @return {{ from: Map<number,number>, to: Map<number,number> }}
+ */
+const parseUpdateMetaV2 = (update, YDecoder = UpdateDecoderV2) => {
+  /**
+   * @type {Map<number, number>}
+   */
+  const from = new Map();
+  /**
+   * @type {Map<number, number>}
+   */
+  const to = new Map();
+  const updateDecoder = new LazyStructReader(new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update)), false);
+  let curr = updateDecoder.curr;
+  if (curr !== null) {
+    let currClient = curr.id.client;
+    let currClock = curr.id.clock;
+    // write the beginning to `from`
+    from.set(currClient, currClock);
+    for (; curr !== null; curr = updateDecoder.next()) {
+      if (currClient !== curr.id.client) {
+        // We found a new client
+        // write the end to `to`
+        to.set(currClient, currClock);
+        // write the beginning to `from`
+        from.set(curr.id.client, curr.id.clock);
+        // update currClient
+        currClient = curr.id.client;
+      }
+      currClock = curr.id.clock + curr.length;
+    }
+    // write the end to `to`
+    to.set(currClient, currClock);
+  }
+  return { from, to }
+};
+
+/**
+ * @param {Uint8Array} update
+ * @return {{ from: Map<number,number>, to: Map<number,number> }}
+ */
+const parseUpdateMeta = update => parseUpdateMetaV2(update, UpdateDecoderV1);
+
+/**
+ * This method is intended to slice any kind of struct and retrieve the right part.
+ * It does not handle side-effects, so it should only be used by the lazy-encoder.
+ *
+ * @param {Item | GC | Skip} left
+ * @param {number} diff
+ * @return {Item | GC}
+ */
+const sliceStruct = (left, diff) => {
+  if (left.constructor === GC) {
+    const { client, clock } = left.id;
+    return new GC(createID(client, clock + diff), left.length - diff)
+  } else if (left.constructor === Skip) {
+    const { client, clock } = left.id;
+    return new Skip(createID(client, clock + diff), left.length - diff)
+  } else {
+    const leftItem = /** @type {Item} */ (left);
+    const { client, clock } = leftItem.id;
+    return new Item(
+      createID(client, clock + diff),
+      null,
+      createID(client, clock + diff - 1),
+      null,
+      leftItem.rightOrigin,
+      leftItem.parent,
+      leftItem.parentSub,
+      leftItem.content.splice(diff)
+    )
+  }
+};
+
+/**
+ *
+ * This function works similarly to `readUpdateV2`.
+ *
+ * @param {Array<Uint8Array>} updates
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
+ * @return {Uint8Array}
+ */
+const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  if (updates.length === 1) {
+    return updates[0]
+  }
+  const updateDecoders = updates.map(update => new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update)));
+  let lazyStructDecoders = updateDecoders.map(decoder => new LazyStructReader(decoder, true));
+
+  /**
+   * @todo we don't need offset because we always slice before
+   * @type {null | { struct: Item | GC | Skip, offset: number }}
+   */
+  let currWrite = null;
+
+  const updateEncoder = new YEncoder();
+  // write structs lazily
+  const lazyStructEncoder = new LazyStructWriter(updateEncoder);
+
+  // Note: We need to ensure that all lazyStructDecoders are fully consumed
+  // Note: Should merge document updates whenever possible - even from different updates
+  // Note: Should handle that some operations cannot be applied yet ()
+
+  while (true) {
+    // Write higher clients first ⇒ sort by clientID & clock and remove decoders without content
+    lazyStructDecoders = lazyStructDecoders.filter(dec => dec.curr !== null);
+    lazyStructDecoders.sort(
+      /** @type {function(any,any):number} */ (dec1, dec2) => {
+        if (dec1.curr.id.client === dec2.curr.id.client) {
+          const clockDiff = dec1.curr.id.clock - dec2.curr.id.clock;
+          if (clockDiff === 0) {
+            // @todo remove references to skip since the structDecoders must filter Skips.
+            return dec1.curr.constructor === dec2.curr.constructor
+              ? 0
+              : dec1.curr.constructor === Skip ? 1 : -1 // we are filtering skips anyway.
+          } else {
+            return clockDiff
+          }
+        } else {
+          return dec2.curr.id.client - dec1.curr.id.client
+        }
+      }
+    );
+    if (lazyStructDecoders.length === 0) {
+      break
+    }
+    const currDecoder = lazyStructDecoders[0];
+    // write from currDecoder until the next operation is from another client or if filler-struct
+    // then we need to reorder the decoders and find the next operation to write
+    const firstClient = /** @type {Item | GC} */ (currDecoder.curr).id.client;
+
+    if (currWrite !== null) {
+      let curr = /** @type {Item | GC | null} */ (currDecoder.curr);
+      let iterated = false;
+
+      // iterate until we find something that we haven't written already
+      // remember: first the high client-ids are written
+      while (curr !== null && curr.id.clock + curr.length <= currWrite.struct.id.clock + currWrite.struct.length && curr.id.client >= currWrite.struct.id.client) {
+        curr = currDecoder.next();
+        iterated = true;
+      }
+      if (
+        curr === null || // current decoder is empty
+        curr.id.client !== firstClient || // check whether there is another decoder that has has updates from `firstClient`
+        (iterated && curr.id.clock > currWrite.struct.id.clock + currWrite.struct.length) // the above while loop was used and we are potentially missing updates
+      ) {
+        continue
+      }
+
+      if (firstClient !== currWrite.struct.id.client) {
+        writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset);
+        currWrite = { struct: curr, offset: 0 };
+        currDecoder.next();
+      } else {
+        if (currWrite.struct.id.clock + currWrite.struct.length < curr.id.clock) {
+          // @todo write currStruct & set currStruct = Skip(clock = currStruct.id.clock + currStruct.length, length = curr.id.clock - self.clock)
+          if (currWrite.struct.constructor === Skip) {
+            // extend existing skip
+            currWrite.struct.length = curr.id.clock + curr.length - currWrite.struct.id.clock;
+          } else {
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset);
+            const diff = curr.id.clock - currWrite.struct.id.clock - currWrite.struct.length;
+            /**
+             * @type {Skip}
+             */
+            const struct = new Skip(createID(firstClient, currWrite.struct.id.clock + currWrite.struct.length), diff);
+            currWrite = { struct, offset: 0 };
+          }
+        } else { // if (currWrite.struct.id.clock + currWrite.struct.length >= curr.id.clock) {
+          const diff = currWrite.struct.id.clock + currWrite.struct.length - curr.id.clock;
+          if (diff > 0) {
+            if (currWrite.struct.constructor === Skip) {
+              // prefer to slice Skip because the other struct might contain more information
+              currWrite.struct.length -= diff;
+            } else {
+              curr = sliceStruct(curr, diff);
+            }
+          }
+          if (!currWrite.struct.mergeWith(/** @type {any} */ (curr))) {
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset);
+            currWrite = { struct: curr, offset: 0 };
+            currDecoder.next();
+          }
+        }
+      }
+    } else {
+      currWrite = { struct: /** @type {Item | GC} */ (currDecoder.curr), offset: 0 };
+      currDecoder.next();
+    }
+    for (
+      let next = currDecoder.curr;
+      next !== null && next.id.client === firstClient && next.id.clock === currWrite.struct.id.clock + currWrite.struct.length && next.constructor !== Skip;
+      next = currDecoder.next()
+    ) {
+      writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset);
+      currWrite = { struct: next, offset: 0 };
+    }
+  }
+  if (currWrite !== null) {
+    writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset);
+    currWrite = null;
+  }
+  finishLazyStructWriting(lazyStructEncoder);
+
+  const dss = updateDecoders.map(decoder => readDeleteSet(decoder));
+  const ds = mergeDeleteSets(dss);
+  writeDeleteSet(updateEncoder, ds);
+  return updateEncoder.toUint8Array()
+};
+
+/**
+ * @param {Uint8Array} update
+ * @param {Uint8Array} sv
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
+ */
+const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  const state = decodeStateVector(sv);
+  const encoder = new YEncoder();
+  const lazyStructWriter = new LazyStructWriter(encoder);
+  const decoder = new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update));
+  const reader = new LazyStructReader(decoder, false);
+  while (reader.curr) {
+    const curr = reader.curr;
+    const currClient = curr.id.client;
+    const svClock = state.get(currClient) || 0;
+    if (reader.curr.constructor === Skip) {
+      // the first written struct shouldn't be a skip
+      reader.next();
+      continue
+    }
+    if (curr.id.clock + curr.length > svClock) {
+      writeStructToLazyStructWriter(lazyStructWriter, curr, lib0_math__WEBPACK_IMPORTED_MODULE_2__.max(svClock - curr.id.clock, 0));
+      reader.next();
+      while (reader.curr && reader.curr.id.client === currClient) {
+        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0);
+        reader.next();
+      }
+    } else {
+      // read until something new comes up
+      while (reader.curr && reader.curr.id.client === currClient && reader.curr.id.clock + reader.curr.length <= svClock) {
+        reader.next();
+      }
+    }
+  }
+  finishLazyStructWriting(lazyStructWriter);
+  // write ds
+  const ds = readDeleteSet(decoder);
+  writeDeleteSet(encoder, ds);
+  return encoder.toUint8Array()
+};
+
+/**
+ * @param {Uint8Array} update
+ * @param {Uint8Array} sv
+ */
+const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1);
+
+/**
+ * @param {LazyStructWriter} lazyWriter
+ */
+const flushLazyStructWriter = lazyWriter => {
+  if (lazyWriter.written > 0) {
+    lazyWriter.clientStructs.push({ written: lazyWriter.written, restEncoder: lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.toUint8Array(lazyWriter.encoder.restEncoder) });
+    lazyWriter.encoder.restEncoder = lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.createEncoder();
+    lazyWriter.written = 0;
+  }
+};
+
+/**
+ * @param {LazyStructWriter} lazyWriter
+ * @param {Item | GC} struct
+ * @param {number} offset
+ */
+const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
+  // flush curr if we start another client
+  if (lazyWriter.written > 0 && lazyWriter.currClient !== struct.id.client) {
+    flushLazyStructWriter(lazyWriter);
+  }
+  if (lazyWriter.written === 0) {
+    lazyWriter.currClient = struct.id.client;
+    // write next client
+    lazyWriter.encoder.writeClient(struct.id.client);
+    // write startClock
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(lazyWriter.encoder.restEncoder, struct.id.clock + offset);
+  }
+  struct.write(lazyWriter.encoder, offset);
+  lazyWriter.written++;
+};
+/**
+ * Call this function when we collected all parts and want to
+ * put all the parts together. After calling this method,
+ * you can continue using the UpdateEncoder.
+ *
+ * @param {LazyStructWriter} lazyWriter
+ */
+const finishLazyStructWriting = (lazyWriter) => {
+  flushLazyStructWriter(lazyWriter);
+
+  // this is a fresh encoder because we called flushCurr
+  const restEncoder = lazyWriter.encoder.restEncoder;
+
+  /**
+   * Now we put all the fragments together.
+   * This works similarly to `writeClientsStructs`
+   */
+
+  // write # states that were updated - i.e. the clients
+  lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(restEncoder, lazyWriter.clientStructs.length);
+
+  for (let i = 0; i < lazyWriter.clientStructs.length; i++) {
+    const partStructs = lazyWriter.clientStructs[i];
+    /**
+     * Works similarly to `writeStructs`
+     */
+    // write # encoded structs
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(restEncoder, partStructs.written);
+    // write the rest of the fragment
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeUint8Array(restEncoder, partStructs.restEncoder);
+  }
+};
+
+/**
+ * @param {Uint8Array} update
+ * @param {function(Item|GC|Skip):Item|GC|Skip} blockTransformer
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
+ * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
+ */
+const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder) => {
+  const updateDecoder = new YDecoder(lib0_decoding__WEBPACK_IMPORTED_MODULE_5__.createDecoder(update));
+  const lazyDecoder = new LazyStructReader(updateDecoder, false);
+  const updateEncoder = new YEncoder();
+  const lazyWriter = new LazyStructWriter(updateEncoder);
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0);
+  }
+  finishLazyStructWriting(lazyWriter);
+  const ds = readDeleteSet(updateDecoder);
+  writeDeleteSet(updateEncoder, ds);
+  return updateEncoder.toUint8Array()
+};
+
+/**
+ * @typedef {Object} ObfuscatorOptions
+ * @property {boolean} [ObfuscatorOptions.formatting=true]
+ * @property {boolean} [ObfuscatorOptions.subdocs=true]
+ * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
+ */
+
+/**
+ * @param {ObfuscatorOptions} obfuscator
+ */
+const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+  let i = 0;
+  const mapKeyCache = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+  const nodeNameCache = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+  const formattingKeyCache = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+  const formattingValueCache = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+  formattingValueCache.set(null, null); // end of a formatting range should always be the end of a formatting range
+  /**
+   * @param {Item|GC|Skip} block
+   * @return {Item|GC|Skip}
+   */
+  return block => {
+    switch (block.constructor) {
+      case GC:
+      case Skip:
+        return block
+      case Item: {
+        const item = /** @type {Item} */ (block);
+        const content = item.content;
+        switch (content.constructor) {
+          case ContentDeleted:
+            break
+          case ContentType: {
+            if (yxml) {
+              const type = /** @type {ContentType} */ (content).type;
+              if (type instanceof YXmlElement) {
+                type.nodeName = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i);
+              }
+              if (type instanceof YXmlHook) {
+                type.hookName = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i);
+              }
+            }
+            break
+          }
+          case ContentAny: {
+            const c = /** @type {ContentAny} */ (content);
+            c.arr = c.arr.map(() => i);
+            break
+          }
+          case ContentBinary: {
+            const c = /** @type {ContentBinary} */ (content);
+            c.content = new Uint8Array([i]);
+            break
+          }
+          case ContentDoc: {
+            const c = /** @type {ContentDoc} */ (content);
+            if (subdocs) {
+              c.opts = {};
+              c.doc.guid = i + '';
+            }
+            break
+          }
+          case ContentEmbed: {
+            const c = /** @type {ContentEmbed} */ (content);
+            c.embed = {};
+            break
+          }
+          case ContentFormat: {
+            const c = /** @type {ContentFormat} */ (content);
+            if (formatting) {
+              c.key = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(formattingKeyCache, c.key, () => i + '');
+              c.value = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(formattingValueCache, c.value, () => ({ i }));
+            }
+            break
+          }
+          case ContentJSON: {
+            const c = /** @type {ContentJSON} */ (content);
+            c.arr = c.arr.map(() => i);
+            break
+          }
+          case ContentString: {
+            const c = /** @type {ContentString} */ (content);
+            c.str = lib0_string__WEBPACK_IMPORTED_MODULE_16__.repeat((i % 10) + '', c.str.length);
+            break
+          }
+          default:
+            // unknown content type
+            lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
+        }
+        if (item.parentSub) {
+          item.parentSub = lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(mapKeyCache, item.parentSub, () => i + '');
+        }
+        i++;
+        return block
+      }
+      default:
+        // unknown block-type
+        lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
+    }
+  }
+};
+
+/**
+ * This function obfuscates the content of a Yjs update. This is useful to share
+ * buggy Yjs documents while significantly limiting the possibility that a
+ * developer can on the user. Note that it might still be possible to deduce
+ * some information by analyzing the "structure" of the document or by analyzing
+ * the typing behavior using the CRDT-related metadata that is still kept fully
+ * intact.
+ *
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+const obfuscateUpdate = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV1, UpdateEncoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+const obfuscateUpdateV2 = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV2, UpdateEncoderV2);
+
+/**
+ * @param {Uint8Array} update
+ */
+const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, lib0_function__WEBPACK_IMPORTED_MODULE_11__.id, UpdateDecoderV1, UpdateEncoderV2);
+
+/**
+ * @param {Uint8Array} update
+ */
+const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, lib0_function__WEBPACK_IMPORTED_MODULE_11__.id, UpdateDecoderV2, UpdateEncoderV1);
+
 const errorComputeChanges = 'You must not compute changes after the event-handler fired.';
 
 /**
@@ -15339,7 +24024,7 @@ class YEvent {
   get keys () {
     if (this._keys === null) {
       if (this.transaction.doc._transactionCleanups.length === 0) {
-        throw create$3(errorComputeChanges)
+        throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.create(errorComputeChanges)
       }
       const keys = new Map();
       const target = this.target;
@@ -15360,14 +24045,14 @@ class YEvent {
             if (this.deletes(item)) {
               if (prev !== null && this.deletes(prev)) {
                 action = 'delete';
-                oldValue = last(prev.content.getContent());
+                oldValue = lib0_array__WEBPACK_IMPORTED_MODULE_1__.last(prev.content.getContent());
               } else {
                 return
               }
             } else {
               if (prev !== null && this.deletes(prev)) {
                 action = 'update';
-                oldValue = last(prev.content.getContent());
+                oldValue = lib0_array__WEBPACK_IMPORTED_MODULE_1__.last(prev.content.getContent());
               } else {
                 action = 'add';
                 oldValue = undefined;
@@ -15376,7 +24061,7 @@ class YEvent {
           } else {
             if (this.deletes(item)) {
               action = 'delete';
-              oldValue = last(/** @type {Item} */ item.content.getContent());
+              oldValue = lib0_array__WEBPACK_IMPORTED_MODULE_1__.last(/** @type {Item} */ item.content.getContent());
             } else {
               return // nop
             }
@@ -15425,11 +24110,11 @@ class YEvent {
     let changes = this._changes;
     if (changes === null) {
       if (this.transaction.doc._transactionCleanups.length === 0) {
-        throw create$3(errorComputeChanges)
+        throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.create(errorComputeChanges)
       }
       const target = this.target;
-      const added = create$4();
-      const deleted = create$4();
+      const added = lib0_set__WEBPACK_IMPORTED_MODULE_12__.create();
+      const deleted = lib0_set__WEBPACK_IMPORTED_MODULE_12__.create();
       /**
        * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
        */
@@ -15531,7 +24216,7 @@ const getPathTo = (parent, child) => {
 /**
  * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
  */
-const warnPrematureAccess = () => { warn('Invalid access: Add Yjs type to a document before reading data.'); };
+const warnPrematureAccess = () => { lib0_logging__WEBPACK_IMPORTED_MODULE_13__.warn('Invalid access: Add Yjs type to a document before reading data.'); };
 
 const maxSearchMarker = 80;
 
@@ -15612,7 +24297,7 @@ const findMarker = (yarray, index) => {
   if (yarray._start === null || index === 0 || yarray._searchMarker === null) {
     return null
   }
-  const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => abs(index - a.index) < abs(index - b.index) ? a : b);
+  const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => lib0_math__WEBPACK_IMPORTED_MODULE_2__.abs(index - a.index) < lib0_math__WEBPACK_IMPORTED_MODULE_2__.abs(index - b.index) ? a : b);
   let p = yarray._start;
   let pindex = 0;
   if (marker !== null) {
@@ -15671,7 +24356,7 @@ const findMarker = (yarray, index) => {
   //   window.lengths.push(marker.index - pindex)
   //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
   // }
-  if (marker !== null && abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
+  if (marker !== null && lib0_math__WEBPACK_IMPORTED_MODULE_2__.abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
     // adjust existing marker
     overwriteMarker(marker, p, pindex);
     return marker
@@ -15718,9 +24403,26 @@ const updateMarkerChanges = (searchMarker, index, len) => {
       p.marker = true;
     }
     if (index < m.index || (len > 0 && index === m.index)) { // a simple index <= m.index check would actually suffice
-      m.index = max(index, m.index + len);
+      m.index = lib0_math__WEBPACK_IMPORTED_MODULE_2__.max(index, m.index + len);
     }
   }
+};
+
+/**
+ * Accumulate all (list) children of a type and return them as an Array.
+ *
+ * @param {AbstractType<any>} t
+ * @return {Array<Item>}
+ */
+const getTypeChildren = t => {
+  t.doc ?? warnPrematureAccess();
+  let s = t._start;
+  const arr = [];
+  while (s) {
+    arr.push(s);
+    s = s.right;
+  }
+  return arr
 };
 
 /**
@@ -15737,7 +24439,7 @@ const callTypeObservers = (type, transaction, event) => {
   const changedParentTypes = transaction.changedParentTypes;
   while (true) {
     // @ts-ignore
-    setIfUndefined(changedParentTypes, type, () => []).push(event);
+    lib0_map__WEBPACK_IMPORTED_MODULE_3__.setIfUndefined(changedParentTypes, type, () => []).push(event);
     if (type._item === null) {
       break
     }
@@ -15811,7 +24513,7 @@ class AbstractType {
    * @return {AbstractType<EventType>}
    */
   _copy () {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -15822,7 +24524,7 @@ class AbstractType {
    * @return {AbstractType<EventType>}
    */
   clone () {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -15948,6 +24650,29 @@ const typeListToArray = type => {
   let n = type._start;
   while (n !== null) {
     if (n.countable && !n.deleted) {
+      const c = n.content.getContent();
+      for (let i = 0; i < c.length; i++) {
+        cs.push(c[i]);
+      }
+    }
+    n = n.right;
+  }
+  return cs
+};
+
+/**
+ * @param {AbstractType<any>} type
+ * @param {Snapshot} snapshot
+ * @return {Array<any>}
+ *
+ * @private
+ * @function
+ */
+const typeListToArraySnapshot = (type, snapshot) => {
+  const cs = [];
+  let n = type._start;
+  while (n !== null) {
+    if (n.countable && isVisible(n, snapshot)) {
       const c = n.content.getContent();
       for (let i = 0; i < c.length; i++) {
         cs.push(c[i]);
@@ -16141,7 +24866,7 @@ const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content
   packJsonContent();
 };
 
-const lengthExceeded = () => create$3('Length exceeded!');
+const lengthExceeded = () => lib0_error__WEBPACK_IMPORTED_MODULE_9__.create('Length exceeded!');
 
 /**
  * @param {Transaction} transaction
@@ -16373,6 +25098,23 @@ const typeMapHas = (parent, key) => {
 
 /**
  * @param {AbstractType<any>} parent
+ * @param {string} key
+ * @param {Snapshot} snapshot
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+ *
+ * @private
+ * @function
+ */
+const typeMapGetSnapshot = (parent, key, snapshot) => {
+  let v = parent._map.get(key) || null;
+  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+    v = v.left;
+  }
+  return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined
+};
+
+/**
+ * @param {AbstractType<any>} parent
  * @param {Snapshot} snapshot
  * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
  *
@@ -16408,7 +25150,7 @@ const typeMapGetAllSnapshot = (parent, snapshot) => {
  */
 const createMapIterator = type => {
   type.doc ?? warnPrematureAccess();
-  return iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+  return lib0_iterator__WEBPACK_IMPORTED_MODULE_17__.iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
 };
 
 /**
@@ -16661,6 +25403,14 @@ class YArray extends AbstractType {
 }
 
 /**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ *
+ * @private
+ * @function
+ */
+const readYArray = _decoder => new YArray();
+
+/**
  * @module YMap
  */
 
@@ -16797,7 +25547,7 @@ class YMap extends AbstractType {
    * @return {IterableIterator<string>}
    */
   keys () {
-    return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
+    return lib0_iterator__WEBPACK_IMPORTED_MODULE_17__.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
   }
 
   /**
@@ -16806,7 +25556,7 @@ class YMap extends AbstractType {
    * @return {IterableIterator<MapType>}
    */
   values () {
-    return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+    return lib0_iterator__WEBPACK_IMPORTED_MODULE_17__.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
   }
 
   /**
@@ -16815,7 +25565,7 @@ class YMap extends AbstractType {
    * @return {IterableIterator<[string, MapType]>}
    */
   entries () {
-    return iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+    return lib0_iterator__WEBPACK_IMPORTED_MODULE_17__.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
   }
 
   /**
@@ -16919,6 +25669,14 @@ class YMap extends AbstractType {
 }
 
 /**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ *
+ * @private
+ * @function
+ */
+const readYMap = _decoder => new YMap();
+
+/**
  * @module YText
  */
 
@@ -16928,7 +25686,7 @@ class YMap extends AbstractType {
  * @param {any} b
  * @return {boolean}
  */
-const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && equalFlat(a, b));
+const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && lib0_object__WEBPACK_IMPORTED_MODULE_18__.equalFlat(a, b));
 
 class ItemTextListPosition {
   /**
@@ -16949,7 +25707,7 @@ class ItemTextListPosition {
    */
   forward () {
     if (this.right === null) {
-      unexpectedCase();
+      lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
     }
     switch (this.right.content.constructor) {
       case ContentFormat:
@@ -17258,7 +26016,7 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
   /**
    * @type {Map<string,ContentFormat>}
    */
-  const endFormats = create$5();
+  const endFormats = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
   while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
       const cf = /** @type {ContentFormat} */ (end.content);
@@ -17343,8 +26101,8 @@ const cleanupYTextFormatting = type => {
   transact(/** @type {Doc} */ (type.doc), transaction => {
     let start = /** @type {Item} */ (type._start);
     let end = type._start;
-    let startAttributes = create$5();
-    const currentAttributes = copy(startAttributes);
+    let startAttributes = lib0_map__WEBPACK_IMPORTED_MODULE_3__.create();
+    const currentAttributes = lib0_map__WEBPACK_IMPORTED_MODULE_3__.copy(startAttributes);
     while (end) {
       if (end.deleted === false) {
         switch (end.content.constructor) {
@@ -17353,7 +26111,7 @@ const cleanupYTextFormatting = type => {
             break
           default:
             res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes);
-            startAttributes = copy(currentAttributes);
+            startAttributes = lib0_map__WEBPACK_IMPORTED_MODULE_3__.copy(currentAttributes);
             start = end;
             break
         }
@@ -17425,7 +26183,7 @@ const cleanupYTextAfterTransaction = transaction => {
  */
 const deleteText = (transaction, currPos, length) => {
   const startLength = length;
-  const startAttrs = copy(currPos.currentAttributes);
+  const startAttrs = lib0_map__WEBPACK_IMPORTED_MODULE_3__.copy(currPos.currentAttributes);
   const start = currPos.right;
   while (length > 0 && currPos.right !== null) {
     if (currPos.right.deleted === false) {
@@ -17594,8 +26352,8 @@ class YTextEvent extends YEvent {
               case 'retain':
                 if (retain > 0) {
                   op = { retain };
-                  if (!isEmpty(attributes)) {
-                    op.attributes = assign({}, attributes);
+                  if (!lib0_object__WEBPACK_IMPORTED_MODULE_18__.isEmpty(attributes)) {
+                    op.attributes = lib0_object__WEBPACK_IMPORTED_MODULE_18__.assign({}, attributes);
                   }
                 }
                 retain = 0;
@@ -18176,6 +26934,15 @@ class YText extends AbstractType {
 }
 
 /**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ * @return {YText}
+ *
+ * @private
+ * @function
+ */
+const readYText = _decoder => new YText();
+
+/**
  * @module YXml
  */
 
@@ -18405,7 +27172,7 @@ class YXmlFragment extends AbstractType {
   querySelectorAll (query) {
     query = query.toUpperCase();
     // @ts-ignore
-    return from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+    return lib0_array__WEBPACK_IMPORTED_MODULE_1__.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
   }
 
   /**
@@ -18501,7 +27268,7 @@ class YXmlFragment extends AbstractType {
       const pc = /** @type {Array<any>} */ (this._prelimContent);
       const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1;
       if (index === 0 && ref !== null) {
-        throw create$3('Reference item not found')
+        throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.create('Reference item not found')
       }
       pc.splice(index, 0, ...content);
     }
@@ -18596,6 +27363,15 @@ class YXmlFragment extends AbstractType {
 }
 
 /**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ * @return {YXmlFragment}
+ *
+ * @private
+ * @function
+ */
+const readYXmlFragment = _decoder => new YXmlFragment();
+
+/**
  * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
  */
 
@@ -18674,7 +27450,7 @@ class YXmlElement extends YXmlFragment {
      */
     const el = new YXmlElement(this.nodeName);
     const attrs = this.getAttributes();
-    forEach(attrs, (value, key) => {
+    lib0_object__WEBPACK_IMPORTED_MODULE_18__.forEach(attrs, (value, key) => {
       if (typeof value === 'string') {
         el.setAttribute(key, value);
       }
@@ -18835,6 +27611,14 @@ class YXmlElement extends YXmlFragment {
 }
 
 /**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {YXmlElement}
+ *
+ * @function
+ */
+const readYXmlElement = decoder => new YXmlElement(decoder.readKey());
+
+/**
  * @extends YEvent<YXmlElement|YXmlText|YXmlFragment>
  * An Event that describes changes on a YXml Element or Yxml Fragment
  */
@@ -18869,6 +27653,218 @@ class YXmlEvent extends YEvent {
   }
 }
 
+/**
+ * You can manage binding to a custom type with YXmlHook.
+ *
+ * @extends {YMap<any>}
+ */
+class YXmlHook extends YMap {
+  /**
+   * @param {string} hookName nodeName of the Dom Node.
+   */
+  constructor (hookName) {
+    super();
+    /**
+     * @type {string}
+     */
+    this.hookName = hookName;
+  }
+
+  /**
+   * Creates an Item with the same effect as this Item (without position effect)
+   */
+  _copy () {
+    return new YXmlHook(this.hookName)
+  }
+
+  /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
+   * @return {YXmlHook}
+   */
+  clone () {
+    const el = new YXmlHook(this.hookName);
+    this.forEach((value, key) => {
+      el.set(key, value);
+    });
+    return el
+  }
+
+  /**
+   * Creates a Dom Element that mirrors this YXmlElement.
+   *
+   * @param {Document} [_document=document] The document object (you must define
+   *                                        this when calling this method in
+   *                                        nodejs)
+   * @param {Object.<string, any>} [hooks] Optional property to customize how hooks
+   *                                             are presented in the DOM
+   * @param {any} [binding] You should not set this property. This is
+   *                               used if DomBinding wants to create a
+   *                               association to the created DOM type
+   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   *
+   * @public
+   */
+  toDOM (_document = document, hooks = {}, binding) {
+    const hook = hooks[this.hookName];
+    let dom;
+    if (hook !== undefined) {
+      dom = hook.createDom(this);
+    } else {
+      dom = document.createElement(this.hookName);
+    }
+    dom.setAttribute('data-yjs-hook', this.hookName);
+    if (binding !== undefined) {
+      binding._createAssociation(dom, this);
+    }
+    return dom
+  }
+
+  /**
+   * Transform the properties of this type to binary and write it to an
+   * BinaryEncoder.
+   *
+   * This is called when this Item is sent to a remote peer.
+   *
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+   */
+  _write (encoder) {
+    encoder.writeTypeRef(YXmlHookRefID);
+    encoder.writeKey(this.hookName);
+  }
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {YXmlHook}
+ *
+ * @private
+ * @function
+ */
+const readYXmlHook = decoder =>
+  new YXmlHook(decoder.readKey());
+
+/**
+ * Represents text in a Dom Element. In the future this type will also handle
+ * simple formatting information like bold and italic.
+ */
+class YXmlText extends YText {
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get nextSibling () {
+    const n = this._item ? this._item.next : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get prevSibling () {
+    const n = this._item ? this._item.prev : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
+  _copy () {
+    return new YXmlText()
+  }
+
+  /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
+   * @return {YXmlText}
+   */
+  clone () {
+    const text = new YXmlText();
+    text.applyDelta(this.toDelta());
+    return text
+  }
+
+  /**
+   * Creates a Dom Element that mirrors this YXmlText.
+   *
+   * @param {Document} [_document=document] The document object (you must define
+   *                                        this when calling this method in
+   *                                        nodejs)
+   * @param {Object<string, any>} [hooks] Optional property to customize how hooks
+   *                                             are presented in the DOM
+   * @param {any} [binding] You should not set this property. This is
+   *                               used if DomBinding wants to create a
+   *                               association to the created DOM type.
+   * @return {Text} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   *
+   * @public
+   */
+  toDOM (_document = document, hooks, binding) {
+    const dom = _document.createTextNode(this.toString());
+    if (binding !== undefined) {
+      binding._createAssociation(dom, this);
+    }
+    return dom
+  }
+
+  toString () {
+    // @ts-ignore
+    return this.toDelta().map(delta => {
+      const nestedNodes = [];
+      for (const nodeName in delta.attributes) {
+        const attrs = [];
+        for (const key in delta.attributes[nodeName]) {
+          attrs.push({ key, value: delta.attributes[nodeName][key] });
+        }
+        // sort attributes to get a unique order
+        attrs.sort((a, b) => a.key < b.key ? -1 : 1);
+        nestedNodes.push({ nodeName, attrs });
+      }
+      // sort node order to get a unique order
+      nestedNodes.sort((a, b) => a.nodeName < b.nodeName ? -1 : 1);
+      // now convert to dom string
+      let str = '';
+      for (let i = 0; i < nestedNodes.length; i++) {
+        const node = nestedNodes[i];
+        str += `<${node.nodeName}`;
+        for (let j = 0; j < node.attrs.length; j++) {
+          const attr = node.attrs[j];
+          str += ` ${attr.key}="${attr.value}"`;
+        }
+        str += '>';
+      }
+      str += delta.insert;
+      for (let i = nestedNodes.length - 1; i >= 0; i--) {
+        str += `</${nestedNodes[i].nodeName}>`;
+      }
+      return str
+    }).join('')
+  }
+
+  /**
+   * @return {string}
+   */
+  toJSON () {
+    return this.toString()
+  }
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   */
+  _write (encoder) {
+    encoder.writeTypeRef(YXmlTextRefID);
+  }
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {YXmlText}
+ *
+ * @private
+ * @function
+ */
+const readYXmlText = decoder => new YXmlText();
+
 class AbstractStruct {
   /**
    * @param {ID} id
@@ -18883,7 +27879,7 @@ class AbstractStruct {
    * @type {boolean}
    */
   get deleted () {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -18903,7 +27899,7 @@ class AbstractStruct {
    * @param {number} encodingRef
    */
   write (encoder, offset, encodingRef) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -18911,7 +27907,7 @@ class AbstractStruct {
    * @param {number} offset
    */
   integrate (transaction, offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 }
 
@@ -19011,7 +28007,7 @@ class ContentBinary {
    * @return {ContentBinary}
    */
   splice (offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -19050,6 +28046,12 @@ class ContentBinary {
     return 3
   }
 }
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
+ * @return {ContentBinary}
+ */
+const readContentBinary = decoder => new ContentBinary(decoder.readBuf());
 
 class ContentDeleted {
   /**
@@ -19140,6 +28142,14 @@ class ContentDeleted {
 }
 
 /**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
+ * @return {ContentDeleted}
+ */
+const readContentDeleted = decoder => new ContentDeleted(decoder.readLen());
+
+/**
  * @param {string} guid
  * @param {Object<string, any>} opts
  */
@@ -19209,7 +28219,7 @@ class ContentDoc {
    * @return {ContentDoc}
    */
   splice (offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -19268,6 +28278,14 @@ class ContentDoc {
 
 /**
  * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentDoc}
+ */
+const readContentDoc = decoder => new ContentDoc(createDocFromOpts(decoder.readString(), decoder.readAny()));
+
+/**
+ * @private
  */
 class ContentEmbed {
   /**
@@ -19310,7 +28328,7 @@ class ContentEmbed {
    * @return {ContentEmbed}
    */
   splice (offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -19349,6 +28367,14 @@ class ContentEmbed {
     return 5
   }
 }
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentEmbed}
+ */
+const readContentEmbed = decoder => new ContentEmbed(decoder.readJSON());
 
 /**
  * @private
@@ -19396,7 +28422,7 @@ class ContentFormat {
    * @return {ContentFormat}
    */
   splice (_offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -19443,7 +28469,128 @@ class ContentFormat {
   }
 }
 
-const isDevMode = getVariable('node_env') === 'development';
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentFormat}
+ */
+const readContentFormat = decoder => new ContentFormat(decoder.readKey(), decoder.readJSON());
+
+/**
+ * @private
+ */
+class ContentJSON {
+  /**
+   * @param {Array<any>} arr
+   */
+  constructor (arr) {
+    /**
+     * @type {Array<any>}
+     */
+    this.arr = arr;
+  }
+
+  /**
+   * @return {number}
+   */
+  getLength () {
+    return this.arr.length
+  }
+
+  /**
+   * @return {Array<any>}
+   */
+  getContent () {
+    return this.arr
+  }
+
+  /**
+   * @return {boolean}
+   */
+  isCountable () {
+    return true
+  }
+
+  /**
+   * @return {ContentJSON}
+   */
+  copy () {
+    return new ContentJSON(this.arr)
+  }
+
+  /**
+   * @param {number} offset
+   * @return {ContentJSON}
+   */
+  splice (offset) {
+    const right = new ContentJSON(this.arr.slice(offset));
+    this.arr = this.arr.slice(0, offset);
+    return right
+  }
+
+  /**
+   * @param {ContentJSON} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    this.arr = this.arr.concat(right.arr);
+    return true
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {Item} item
+   */
+  integrate (transaction, item) {}
+  /**
+   * @param {Transaction} transaction
+   */
+  delete (transaction) {}
+  /**
+   * @param {StructStore} store
+   */
+  gc (store) {}
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {number} offset
+   */
+  write (encoder, offset) {
+    const len = this.arr.length;
+    encoder.writeLen(len - offset);
+    for (let i = offset; i < len; i++) {
+      const c = this.arr[i];
+      encoder.writeString(c === undefined ? 'undefined' : JSON.stringify(c));
+    }
+  }
+
+  /**
+   * @return {number}
+   */
+  getRef () {
+    return 2
+  }
+}
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentJSON}
+ */
+const readContentJSON = decoder => {
+  const len = decoder.readLen();
+  const cs = [];
+  for (let i = 0; i < len; i++) {
+    const c = decoder.readString();
+    if (c === 'undefined') {
+      cs.push(undefined);
+    } else {
+      cs.push(JSON.parse(c));
+    }
+  }
+  return new ContentJSON(cs)
+};
+
+const isDevMode = lib0_environment__WEBPACK_IMPORTED_MODULE_19__.getVariable('node_env') === 'development';
 
 class ContentAny {
   /**
@@ -19454,7 +28601,7 @@ class ContentAny {
      * @type {Array<any>}
      */
     this.arr = arr;
-    isDevMode && deepFreeze(arr);
+    isDevMode && lib0_object__WEBPACK_IMPORTED_MODULE_18__.deepFreeze(arr);
   }
 
   /**
@@ -19537,6 +28684,19 @@ class ContentAny {
     return 8
   }
 }
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentAny}
+ */
+const readContentAny = decoder => {
+  const len = decoder.readLen();
+  const cs = [];
+  for (let i = 0; i < len; i++) {
+    cs.push(decoder.readAny());
+  }
+  return new ContentAny(cs)
+};
 
 /**
  * @private
@@ -19639,11 +28799,35 @@ class ContentString {
   }
 }
 
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentString}
+ */
+const readContentString = decoder => new ContentString(decoder.readString());
+
+/**
+ * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractType<any>>}
+ * @private
+ */
+const typeRefs = [
+  readYArray,
+  readYMap,
+  readYText,
+  readYXmlElement,
+  readYXmlFragment,
+  readYXmlHook,
+  readYXmlText
+];
+
 const YArrayRefID = 0;
 const YMapRefID = 1;
 const YTextRefID = 2;
 const YXmlElementRefID = 3;
 const YXmlFragmentRefID = 4;
+const YXmlHookRefID = 5;
+const YXmlTextRefID = 6;
 
 /**
  * @private
@@ -19692,7 +28876,7 @@ class ContentType {
    * @return {ContentType}
    */
   splice (offset) {
-    throw methodUnimplemented()
+    throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.methodUnimplemented()
   }
 
   /**
@@ -19775,6 +28959,57 @@ class ContentType {
 }
 
 /**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentType}
+ */
+const readContentType = decoder => new ContentType(typeRefs[decoder.readTypeRef()](decoder));
+
+/**
+ * @todo This should return several items
+ *
+ * @param {StructStore} store
+ * @param {ID} id
+ * @return {{item:Item, diff:number}}
+ */
+const followRedone = (store, id) => {
+  /**
+   * @type {ID|null}
+   */
+  let nextID = id;
+  let diff = 0;
+  let item;
+  do {
+    if (diff > 0) {
+      nextID = createID(nextID.client, nextID.clock + diff);
+    }
+    item = getItem(store, nextID);
+    diff = nextID.clock - item.id.clock;
+    nextID = item.redone;
+  } while (nextID !== null && item instanceof Item)
+  return {
+    item, diff
+  }
+};
+
+/**
+ * Make sure that neither item nor any of its parents is ever deleted.
+ *
+ * This property does not persist when storing it into a database or when
+ * sending it to other peers
+ *
+ * @param {Item|null} item
+ * @param {boolean} keep
+ */
+const keepItem = (item, keep) => {
+  while (item !== null && item.keep !== keep) {
+    item.keep = keep;
+    item = /** @type {AbstractType<any>} */ (item.parent)._item;
+  }
+};
+
+/**
  * Split leftItem into two items
  * @param {Transaction} transaction
  * @param {Item} leftItem
@@ -19820,6 +29055,126 @@ const splitItem = (transaction, leftItem, diff) => {
   }
   leftItem.length = diff;
   return rightItem
+};
+
+/**
+ * @param {Array<StackItem>} stack
+ * @param {ID} id
+ */
+const isDeletedByUndoStack = (stack, id) => lib0_array__WEBPACK_IMPORTED_MODULE_1__.some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id));
+
+/**
+ * Redoes the effect of this operation.
+ *
+ * @param {Transaction} transaction The Yjs instance.
+ * @param {Item} item
+ * @param {Set<Item>} redoitems
+ * @param {DeleteSet} itemsToDelete
+ * @param {boolean} ignoreRemoteMapChanges
+ * @param {import('../utils/UndoManager.js').UndoManager} um
+ *
+ * @return {Item|null}
+ *
+ * @private
+ */
+const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
+  const doc = transaction.doc;
+  const store = doc.store;
+  const ownClientID = doc.clientID;
+  const redone = item.redone;
+  if (redone !== null) {
+    return getItemCleanStart(transaction, redone)
+  }
+  let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item;
+  /**
+   * @type {Item|null}
+   */
+  let left = null;
+  /**
+   * @type {Item|null}
+   */
+  let right;
+  // make sure that parent is redone
+  if (parentItem !== null && parentItem.deleted === true) {
+    // try to undo parent if it will be undone anyway
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) === null)) {
+      return null
+    }
+    while (parentItem.redone !== null) {
+      parentItem = getItemCleanStart(transaction, parentItem.redone);
+    }
+  }
+  const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type;
+
+  if (item.parentSub === null) {
+    // Is an array item. Insert at the old position
+    left = item.left;
+    right = item;
+    // find next cloned_redo items
+    while (left !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let leftTrace = left;
+      // trace redone until parent matches
+      while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
+        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone);
+      }
+      if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
+        left = leftTrace;
+        break
+      }
+      left = left.left;
+    }
+    while (right !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let rightTrace = right;
+      // trace redone until parent matches
+      while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
+        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone);
+      }
+      if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
+        right = rightTrace;
+        break
+      }
+      right = right.right;
+    }
+  } else {
+    right = null;
+    if (item.right && !ignoreRemoteMapChanges) {
+      left = item;
+      // Iterate right while right is in itemsToDelete
+      // If it is intended to delete right while item is redone, we can expect that item should replace right.
+      while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
+        left = left.right;
+        // follow redone
+        while (left.redone) left = getItemCleanStart(transaction, left.redone);
+      }
+      if (left && left.right !== null) {
+        // It is not possible to redo this item because it conflicts with a
+        // change from another client
+        return null
+      }
+    } else {
+      left = parentType._map.get(item.parentSub) || null;
+    }
+  }
+  const nextClock = getState(store, ownClientID);
+  const nextId = createID(ownClientID, nextClock);
+  const redoneItem = new Item(
+    nextId,
+    left, left && left.lastId,
+    right, right && right.id,
+    parentType,
+    item.parentSub,
+    item.content.copy()
+  );
+  item.redone = nextId;
+  keepItem(redoneItem, true);
+  redoneItem.integrate(transaction, 0);
+  return redoneItem
 };
 
 /**
@@ -19887,7 +29242,7 @@ class Item extends AbstractStruct {
      * bit4: mark - mark node as fast-search-marker
      * @type {number} byte
      */
-    this.info = this.content.isCountable() ? BIT2 : 0;
+    this.info = this.content.isCountable() ? lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT2 : 0;
   }
 
   /**
@@ -19896,30 +29251,30 @@ class Item extends AbstractStruct {
    * @type {boolean}
    */
   set marker (isMarked) {
-    if (((this.info & BIT4) > 0) !== isMarked) {
-      this.info ^= BIT4;
+    if (((this.info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT4) > 0) !== isMarked) {
+      this.info ^= lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT4;
     }
   }
 
   get marker () {
-    return (this.info & BIT4) > 0
+    return (this.info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT4) > 0
   }
 
   /**
    * If true, do not garbage collect this Item.
    */
   get keep () {
-    return (this.info & BIT1) > 0
+    return (this.info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT1) > 0
   }
 
   set keep (doKeep) {
     if (this.keep !== doKeep) {
-      this.info ^= BIT1;
+      this.info ^= lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT1;
     }
   }
 
   get countable () {
-    return (this.info & BIT2) > 0
+    return (this.info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT2) > 0
   }
 
   /**
@@ -19927,17 +29282,17 @@ class Item extends AbstractStruct {
    * @type {Boolean}
    */
   get deleted () {
-    return (this.info & BIT3) > 0
+    return (this.info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT3) > 0
   }
 
   set deleted (doDelete) {
     if (this.deleted !== doDelete) {
-      this.info ^= BIT3;
+      this.info ^= lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT3;
     }
   }
 
   markDeleted () {
-    this.info |= BIT3;
+    this.info |= lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT3;
   }
 
   /**
@@ -20211,7 +29566,7 @@ class Item extends AbstractStruct {
    */
   gc (store, parentGCd) {
     if (!this.deleted) {
-      throw unexpectedCase()
+      throw lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase()
     }
     this.content.gc(store);
     if (parentGCd) {
@@ -20234,10 +29589,10 @@ class Item extends AbstractStruct {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin;
     const rightOrigin = this.rightOrigin;
     const parentSub = this.parentSub;
-    const info = (this.content.getRef() & BITS5) |
-      (origin === null ? 0 : BIT8) | // origin is defined
-      (rightOrigin === null ? 0 : BIT7) | // right origin is defined
-      (parentSub === null ? 0 : BIT6); // parentSub is non-null
+    const info = (this.content.getRef() & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BITS5) |
+      (origin === null ? 0 : lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT8) | // origin is defined
+      (rightOrigin === null ? 0 : lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT7) | // right origin is defined
+      (parentSub === null ? 0 : lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BIT6); // parentSub is non-null
     encoder.writeInfo(info);
     if (origin !== null) {
       encoder.writeLeftID(origin);
@@ -20266,13 +29621,91 @@ class Item extends AbstractStruct {
         encoder.writeParentInfo(false); // write parent id
         encoder.writeLeftID(parent);
       } else {
-        unexpectedCase();
+        lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
       }
       if (parentSub !== null) {
         encoder.writeString(parentSub);
       }
     }
     this.content.write(encoder, offset);
+  }
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {number} info
+ */
+const readItemContent = (decoder, info) => contentRefs[info & lib0_binary__WEBPACK_IMPORTED_MODULE_10__.BITS5](decoder);
+
+/**
+ * A lookup map for reading Item content.
+ *
+ * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
+ */
+const contentRefs = [
+  () => { lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase(); }, // GC is not ItemContent
+  readContentDeleted, // 1
+  readContentJSON, // 2
+  readContentBinary, // 3
+  readContentString, // 4
+  readContentEmbed, // 5
+  readContentFormat, // 6
+  readContentType, // 7
+  readContentAny, // 8
+  readContentDoc, // 9
+  () => { lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase(); } // 10 - Skip is not ItemContent
+];
+
+const structSkipRefNumber = 10;
+
+/**
+ * @private
+ */
+class Skip extends AbstractStruct {
+  get deleted () {
+    return true
+  }
+
+  delete () {}
+
+  /**
+   * @param {Skip} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    if (this.constructor !== right.constructor) {
+      return false
+    }
+    this.length += right.length;
+    return true
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {number} offset
+   */
+  integrate (transaction, offset) {
+    // skip structs cannot be integrated
+    lib0_error__WEBPACK_IMPORTED_MODULE_9__.unexpectedCase();
+  }
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {number} offset
+   */
+  write (encoder, offset) {
+    encoder.writeInfo(structSkipRefNumber);
+    // write as VarUint because Skips can't make use of predictable length-encoding
+    lib0_encoding__WEBPACK_IMPORTED_MODULE_4__.writeVarUint(encoder.restEncoder, this.length - offset);
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @return {null | number}
+   */
+  getMissing (transaction, store) {
+    return null
   }
 }
 
@@ -20307,975 +29740,9 @@ if (glo[importIdentifier] === true) {
 }
 glo[importIdentifier] = true;
 
-/**
- * @function createYMap
- * @static
- * @description Creates a YMap and populates it with key-value pairs from a plain object.
- * @param {object} data - The initial data to populate the YMap with.
- * @returns {YMap} A new YMap instance.
- */
-function createYMap(data) {
-    const map = new YMap();
-    for (const [key, value] of Object.entries(data))
-        map.set(key, value);
-    return map;
-}
-/**
- * @function createYArray
- * @static
- * @template DataType - The type of the array's content.
- * @description Creates a YArray and populates it with elements from a plain array.
- * @param {DataType[]} data - The array of data to populate the YArray with.
- * @returns {YArray} A new YArray instance.
- */
-function createYArray(data) {
-    const array = new YArray();
-    array.push(data);
-    return array;
-}
-/**
- * @function addInYMap
- * @static
- * @async
- * @description Adds the provided data in the provided parent in the Yjs document, with a unique ID as its field name.
- * @param {object} data - The data to append to the Yjs document.
- * @param {YMap} parentYMap - The YMap to add the data to.
- * @param {string} [id] - Optional ID to use. If not provided, a unique ID is generated.
- * @returns {Promise<string>} The ID of the inserted data.
- */
-async function addInYMap(data, parentYMap, id) {
-    const generateId = async () => await hashBySize(parentYMap?.doc?.clientID?.toString(32) + randomId());
-    if (!id) {
-        id = await generateId();
-        while (parentYMap?.get(id) !== undefined)
-            id = await generateId();
-    }
-    parentYMap.set(id, data);
-    return id;
-}
-/**
- * @function addInYArray
- * @static
- * @description Adds the provided data in the provided parent array in the Yjs document.
- * @param {object} data - The data to append to the Yjs document.
- * @param {YArray} parentYArray - The YArray to which the data should be appended.
- * @param {number} [index] - The index to insert the data at. If omitted or invalid, it is appended at the end.
- * @returns {number} The index where the data was inserted.
- */
-function addInYArray(data, parentYArray, index) {
-    if (index == undefined || index > parentYArray.length) {
-        index = parentYArray.length;
-        parentYArray.push([data]);
-    }
-    else {
-        if (index < 0)
-            index = 0;
-        parentYArray.insert(index, [data]);
-    }
-    return index;
-}
-/**
- * @function removeFromYArray
- * @static
- * @description Removes the first occurrence of the given entry from the YArray.
- * @param {unknown} entry - The entry to remove.
- * @param {YArray} parentYArray - The parent YArray.
- * @returns {boolean} True if removed, false otherwise.
- */
-function removeFromYArray(entry, parentYArray) {
-    for (const [index, child] of parentYArray.toArray()) {
-        if (entry != child)
-            continue;
-        parentYArray.delete(index);
-        return true;
-    }
-    return false;
-}
-/**
- * @function deepObserveAny
- * @static
- * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
- * changes.
- * @param {YAbstractType} data - The Yjs type to observe.
- * @param {(fieldChanged: string, event: YEvent, target: YAbstractType) => void} callback - The function to call
- * when a matching field changes.
- * @param {...string} fieldNames - List of field names to observe.
- */
-function deepObserveAny(data, callback, ...fieldNames) {
-    if (!data)
-        return;
-    const fields = new Set(fieldNames);
-    data.observeDeep((events) => {
-        for (const event of events) {
-            const target = event.target;
-            const parentMap = target._item?.parent;
-            const key = target._item?.parentSub;
-            for (const field of fields) {
-                if ((event instanceof YMapEvent && event.changes.keys.has(field)) ||
-                    (event instanceof YArrayEvent && parentMap instanceof YMap && key === field) ||
-                    (event.path?.some(segment => segment === field))) {
-                    callback(field, event, target);
-                    return;
-                }
-            }
-        }
-    });
-}
-/**
- * @function deepObserveAll
- * @static
- * @description Observes deeply for changes to all specified fields and invokes callback only when all fields
- * have changed.
- * @param {YAbstractType} data - The Yjs type to observe.
- * @param {(event: YEvent, target: YAbstractType) => void} callback - The function to call when all fields change.
- * @param {...string} fieldNames - List of field names to observe.
- */
-function deepObserveAll(data, callback, ...fieldNames) {
-    if (!data)
-        return;
-    const fields = new Set(fieldNames);
-    data.observeDeep(events => {
-        const changedFields = new Set();
-        for (const event of events) {
-            const target = event.target;
-            const parentMap = target._item?.parent;
-            const key = target._item?.parentSub;
-            for (const field of fields) {
-                if ((event instanceof YMapEvent && event.changes.keys.has(field)) ||
-                    (event instanceof YArrayEvent && parentMap instanceof YMap && key === field) ||
-                    (event.path?.some(segment => segment === field)))
-                    changedFields.add(field);
-            }
-            if (changedFields.size === fields.size) {
-                callback(event, target);
-                return;
-            }
-        }
-    });
-}
 
+//# sourceMappingURL=yjs.mjs.map
 
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/main.css":
-/*!****************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/main.css ***!
-  \****************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `:root {
-    --bg: #01163b;
-    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);
-    --surface: rgba(255, 255, 255, 0.07);
-    --surface-2: rgba(255, 255, 255, 0.03);
-    --border: rgba(255, 255, 255, 0.14);
-
-    --font-family: "Roboto";
-    --text: rgba(220, 232, 255, 0.9);
-    --text-2: rgba(234, 242, 255, 0.8);
-    --text-muted: rgba(212, 224, 244, 0.6);
-
-    --accent: #ff6bd6;
-    --accent-2: #5ee7ff;
-    --accent-contrast: #0b0f1e;
-
-    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);
-    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);
-    --blur: 10px;
-
-    --gap-big: 28px;
-    --gap-medium: 18px;
-    --gap-small: 12px;
-    --gap-tiny: 4px;
-
-    --radius-big: 16px;
-    --radius-small: 12px;
-    --radius-tiny: 8px;
-}
-
-
-body {
-    width: calc(100vw - var(--gap-big) * 2);
-    height: calc(100vh - var(--gap-big) * 2);
-    overflow: hidden;
-
-    margin: 0;
-    padding: var(--gap-big);
-
-    background: var(--bg);
-    background: var(--bg-gradient);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    color: var(--text);
-    font-family: var(--font-family), sans-serif;
-}
-
-.turbo-icon {
-    display: block;
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-.turbo-icon > svg {
-    fill: var(--text);
-    width: 100%;
-    height: 100%;
-}
-
-#canvas {
-    position: absolute;
-    display: block;
-    overflow: visible;
-    top: 0;
-    left: 0;
-    -webkit-backface-visibility: hidden;
-    -moz-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-#canvas * {
-    -webkit-backface-visibility: hidden;
-    -moz-backface-visibility: hidden;
-    backface-visibility: hidden;
-}`, "",{"version":3,"sources":["webpack://./src/main.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,4EAA4E;IAC5E,oCAAoC;IACpC,sCAAsC;IACtC,mCAAmC;;IAEnC,uBAAuB;IACvB,gCAAgC;IAChC,kCAAkC;IAClC,sCAAsC;;IAEtC,iBAAiB;IACjB,mBAAmB;IACnB,0BAA0B;;IAE1B,2CAA2C;IAC3C,gDAAgD;IAChD,YAAY;;IAEZ,eAAe;IACf,kBAAkB;IAClB,iBAAiB;IACjB,eAAe;;IAEf,kBAAkB;IAClB,oBAAoB;IACpB,kBAAkB;AACtB;;;AAGA;IACI,uCAAuC;IACvC,wCAAwC;IACxC,gBAAgB;;IAEhB,SAAS;IACT,uBAAuB;;IAEvB,qBAAqB;IACrB,8BAA8B;AAClC;;AAEA;IACI,SAAS;IACT,UAAU;IACV,kBAAkB;IAClB,2CAA2C;AAC/C;;AAEA;IACI,cAAc;IACd,aAAa;IACb,cAAc;AAClB;;AAEA;IACI,iBAAiB;IACjB,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,kBAAkB;IAClB,cAAc;IACd,iBAAiB;IACjB,MAAM;IACN,OAAO;IACP,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B;;AAEA;IACI,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B","sourcesContent":[":root {\r\n    --bg: #01163b;\r\n    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);\r\n    --surface: rgba(255, 255, 255, 0.07);\r\n    --surface-2: rgba(255, 255, 255, 0.03);\r\n    --border: rgba(255, 255, 255, 0.14);\r\n\r\n    --font-family: \"Roboto\";\r\n    --text: rgba(220, 232, 255, 0.9);\r\n    --text-2: rgba(234, 242, 255, 0.8);\r\n    --text-muted: rgba(212, 224, 244, 0.6);\r\n\r\n    --accent: #ff6bd6;\r\n    --accent-2: #5ee7ff;\r\n    --accent-contrast: #0b0f1e;\r\n\r\n    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);\r\n    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);\r\n    --blur: 10px;\r\n\r\n    --gap-big: 28px;\r\n    --gap-medium: 18px;\r\n    --gap-small: 12px;\r\n    --gap-tiny: 4px;\r\n\r\n    --radius-big: 16px;\r\n    --radius-small: 12px;\r\n    --radius-tiny: 8px;\r\n}\r\n\r\n\r\nbody {\r\n    width: calc(100vw - var(--gap-big) * 2);\r\n    height: calc(100vh - var(--gap-big) * 2);\r\n    overflow: hidden;\r\n\r\n    margin: 0;\r\n    padding: var(--gap-big);\r\n\r\n    background: var(--bg);\r\n    background: var(--bg-gradient);\r\n}\r\n\r\n* {\r\n    margin: 0;\r\n    padding: 0;\r\n    color: var(--text);\r\n    font-family: var(--font-family), sans-serif;\r\n}\r\n\r\n.turbo-icon {\r\n    display: block;\r\n    width: 1.5rem;\r\n    height: 1.5rem;\r\n}\r\n\r\n.turbo-icon > svg {\r\n    fill: var(--text);\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n#canvas {\r\n    position: absolute;\r\n    display: block;\r\n    overflow: visible;\r\n    top: 0;\r\n    left: 0;\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}\r\n\r\n#canvas * {\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/playlist/playlist.css":
-/*!*****************************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/playlist/playlist.css ***!
-  \*****************************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `turbo-playlist {
-    position: absolute;
-}
-
-turbo-playlist > .turbo-rich-element {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-tiny);
-    align-items: center;
-}
-
-turbo-playlist > .turbo-rich-element .turbo-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-small);
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-}
-
-turbo-playlist > .turbo-rich-element > * {
-    text-wrap: nowrap;
-}
-
-turbo-playlist > .turbo-drawer {
-    position: absolute;
-    min-width: 300px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-turbo-playlist * {
-    transition: all 0.05s ease-in-out;
-}
-
-turbo-playlist > .turbo-drawer .turbo-drawer-panel {
-    padding: var(--gap-medium);
-    border-radius: var(--radius-small);
-
-    background-color: var(--surface-2);
-    border: 1px solid var(--border);
-    height: 300px;
-
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-small);
-    backdrop-filter: blur(10px);
-}
-
-turbo-playlist .empty-playlist-placeholder {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-medium);
-
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: var(--gap-medium);
-}
-
-turbo-playlist .empty-playlist-placeholder .turbo-icon {
-    width: 32px;
-    height: 32px;
-}
-
-`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;IAChB,2BAA2B;AAC/B;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,iCAAiC;AACrC;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\r\n    position: absolute;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n    align-items: center;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element .turbo-icon {\r\n    width: 56px;\r\n    height: 56px;\r\n    border-radius: var(--radius-small);\r\n    overflow: hidden;\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element > * {\r\n    text-wrap: nowrap;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer {\r\n    position: absolute;\r\n    min-width: 300px;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n}\r\n\r\nturbo-playlist * {\r\n    transition: all 0.05s ease-in-out;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\r\n    padding: var(--gap-medium);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    height: 300px;\r\n\r\n    overflow: auto;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-small);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder {\r\n    flex-grow: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-medium);\r\n\r\n    align-items: center;\r\n    justify-content: center;\r\n    text-align: center;\r\n    padding: var(--gap-medium);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\r\n    width: 32px;\r\n    height: 32px;\r\n}\r\n\r\n"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/scrollbar.css":
-/*!*********************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/scrollbar.css ***!
-  \*********************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--surface);
-    border-radius: 1000px;
-}
-
-::-webkit-scrollbar-button {
-    display: none;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--accent-2);
-    border-radius: 1000px;
-    border: 2px solid var(--surface);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-}
-
-::-webkit-scrollbar-corner {
-    background: var(--surface);
-}`, "",{"version":3,"sources":["webpack://./src/scrollbar.css"],"names":[],"mappings":"AAAA;IACI,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,0BAA0B;IAC1B,qBAAqB;AACzB;;AAEA;IACI,aAAa;AACjB;;AAEA;IACI,2BAA2B;IAC3B,qBAAqB;IACrB,gCAAgC;AACpC;;AAEA;IACI,yBAAyB;AAC7B;;AAEA;IACI,0BAA0B;AAC9B","sourcesContent":["::-webkit-scrollbar {\r\n    width: 10px;\r\n    height: 10px;\r\n}\r\n\r\n::-webkit-scrollbar-track {\r\n    background: var(--surface);\r\n    border-radius: 1000px;\r\n}\r\n\r\n::-webkit-scrollbar-button {\r\n    display: none;\r\n}\r\n\r\n::-webkit-scrollbar-thumb {\r\n    background: var(--accent-2);\r\n    border-radius: 1000px;\r\n    border: 2px solid var(--surface);\r\n}\r\n\r\n::-webkit-scrollbar-thumb:hover {\r\n    background: var(--accent);\r\n}\r\n\r\n::-webkit-scrollbar-corner {\r\n    background: var(--surface);\r\n}"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/song/song.css":
-/*!*********************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/song/song.css ***!
-  \*********************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `turbo-song {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--gap-small);
-    padding: var(--gap-small);
-
-    background-color: var(--surface);
-    border-radius: var(--radius-small);
-    border: 1px solid var(--border);
-}
-
-turbo-song .song-cover {
-    width: 54px;
-    height: 54px;
-    border-radius: var(--radius-tiny);
-}
-
-turbo-song > :nth-child(2) {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-tiny);
-}
-
-turbo-song .song-artist {
-    font-weight: normal;
-    color: var(--text-2);
-}
-
-turbo-song .song-duration {
-    color: var(--text-muted);
-    font-weight: normal;
-}`, "",{"version":3,"sources":["webpack://./src/song/song.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;;IAEzB,gCAAgC;IAChC,kCAAkC;IAClC,+BAA+B;AACnC;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,iCAAiC;AACrC;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;AACxB;;AAEA;IACI,mBAAmB;IACnB,oBAAoB;AACxB;;AAEA;IACI,wBAAwB;IACxB,mBAAmB;AACvB","sourcesContent":["turbo-song {\r\n    display: flex;\r\n    flex-direction: row;\r\n    align-items: center;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n\r\n    background-color: var(--surface);\r\n    border-radius: var(--radius-small);\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-song .song-cover {\r\n    width: 54px;\r\n    height: 54px;\r\n    border-radius: var(--radius-tiny);\r\n}\r\n\r\nturbo-song > :nth-child(2) {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n}\r\n\r\nturbo-song .song-artist {\r\n    font-weight: normal;\r\n    color: var(--text-2);\r\n}\r\n\r\nturbo-song .song-duration {\r\n    color: var(--text-muted);\r\n    font-weight: normal;\r\n}"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/songsPanel/songsPanel.css":
-/*!*********************************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/songsPanel/songsPanel.css ***!
-  \*********************************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `turbo-songs-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-big);
-    padding: var(--gap-big);
-    border-radius: var(--radius-big);
-
-    width: 40vw;
-    min-width: 300px;
-    max-width: 550px;
-    height: calc(100% - 2 * var(--gap-big));
-
-    background-color: var(--surface-2);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-}
-
-turbo-songs-panel > .turbo-rich-element {
-    background-color: var(--surface);
-    border-radius: 1000px;
-    border: 1px solid var(--border);
-}
-
-turbo-songs-panel > .turbo-rich-element > div {
-    display: flex;
-    flex-direction: row;
-    gap: var(--gap-medium);
-    padding: var(--gap-small) calc(1.5 * var(--gap-small));
-}
-
-turbo-songs-panel > .turbo-rich-element input {
-    flex-grow: 1;
-    background-color: transparent;
-    border: none;
-}
-
-turbo-songs-panel > .songs-panel-container {
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-    gap: var(--gap-medium);
-    padding-inline-end: var(--gap-small);
-}
-
-`, "",{"version":3,"sources":["webpack://./src/songsPanel/songsPanel.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,sBAAsB;IACtB,mBAAmB;IACnB,uBAAuB;IACvB,gCAAgC;;IAEhC,WAAW;IACX,gBAAgB;IAChB,gBAAgB;IAChB,uCAAuC;;IAEvC,kCAAkC;IAClC,+BAA+B;IAC/B,2BAA2B;AAC/B;;AAEA;IACI,gCAAgC;IAChC,qBAAqB;IACrB,+BAA+B;AACnC;;AAEA;IACI,aAAa;IACb,mBAAmB;IACnB,sBAAsB;IACtB,sDAAsD;AAC1D;;AAEA;IACI,YAAY;IACZ,6BAA6B;IAC7B,YAAY;AAChB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,cAAc;IACd,sBAAsB;IACtB,oCAAoC;AACxC","sourcesContent":["turbo-songs-panel {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-big);\r\n    padding: var(--gap-big);\r\n    border-radius: var(--radius-big);\r\n\r\n    width: 40vw;\r\n    min-width: 300px;\r\n    max-width: 550px;\r\n    height: calc(100% - 2 * var(--gap-big));\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element {\r\n    background-color: var(--surface);\r\n    border-radius: 1000px;\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element > div {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-medium);\r\n    padding: var(--gap-small) calc(1.5 * var(--gap-small));\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element input {\r\n    flex-grow: 1;\r\n    background-color: transparent;\r\n    border: none;\r\n}\r\n\r\nturbo-songs-panel > .songs-panel-container {\r\n    display: flex;\r\n    flex-direction: column;\r\n    overflow: auto;\r\n    gap: var(--gap-medium);\r\n    padding-inline-end: var(--gap-small);\r\n}\r\n\r\n"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/cjs.js!./src/toolbar/toolbar.css":
-/*!***************************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/cjs.js!./src/toolbar/toolbar.css ***!
-  \***************************************************************************/
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/sourceMaps.js */ "../../node_modules/css-loader/dist/runtime/sourceMaps.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "../../node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
-// Imports
-
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, `turbo-toolbar {
-    display: flex;
-    flex-direction: row;
-    gap: var(--gap-small);
-    padding: var(--gap-small);
-    border-radius: var(--radius-small);
-
-    background-color: var(--surface-2);
-    border: 1px solid var(--border);
-
-    position: absolute;
-    top: var(--gap-big);
-    right: var(--gap-big);
-    backdrop-filter: blur(10px);
-}
-
-turbo-toolbar > * {
-    padding: var(--gap-tiny);
-    border-radius: var(--radius-tiny);
-    transition: all 0.1s ease-in-out;
-}
-
-turbo-toolbar > *:hover, turbo-toolbar > .selected:hover {
-    scale: 1.2;
-}
-
-turbo-toolbar > .selected {
-    background-color: var(--surface);
-    scale: 1.1;
-}
-
-turbo-toolbar svg {
-    fill: white;
-}`, "",{"version":3,"sources":["webpack://./src/toolbar/toolbar.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;IACzB,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;;IAE/B,kBAAkB;IAClB,mBAAmB;IACnB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,wBAAwB;IACxB,iCAAiC;IACjC,gCAAgC;AACpC;;AAEA;IACI,UAAU;AACd;;AAEA;IACI,gCAAgC;IAChC,UAAU;AACd;;AAEA;IACI,WAAW;AACf","sourcesContent":["turbo-toolbar {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n\r\n    position: absolute;\r\n    top: var(--gap-big);\r\n    right: var(--gap-big);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-toolbar > * {\r\n    padding: var(--gap-tiny);\r\n    border-radius: var(--radius-tiny);\r\n    transition: all 0.1s ease-in-out;\r\n}\r\n\r\nturbo-toolbar > *:hover, turbo-toolbar > .selected:hover {\r\n    scale: 1.2;\r\n}\r\n\r\nturbo-toolbar > .selected {\r\n    background-color: var(--surface);\r\n    scale: 1.1;\r\n}\r\n\r\nturbo-toolbar svg {\r\n    fill: white;\r\n}"],"sourceRoot":""}]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/runtime/api.js":
-/*!*********************************************************!*\
-  !*** ../../node_modules/css-loader/dist/runtime/api.js ***!
-  \*********************************************************/
-/***/ ((module) => {
-
-
-
-/*
-  MIT License http://www.opensource.org/licenses/mit-license.php
-  Author Tobias Koppers @sokra
-*/
-module.exports = function (cssWithMappingToString) {
-  var list = [];
-
-  // return the list of modules as css string
-  list.toString = function toString() {
-    return this.map(function (item) {
-      var content = "";
-      var needLayer = typeof item[5] !== "undefined";
-      if (item[4]) {
-        content += "@supports (".concat(item[4], ") {");
-      }
-      if (item[2]) {
-        content += "@media ".concat(item[2], " {");
-      }
-      if (needLayer) {
-        content += "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {");
-      }
-      content += cssWithMappingToString(item);
-      if (needLayer) {
-        content += "}";
-      }
-      if (item[2]) {
-        content += "}";
-      }
-      if (item[4]) {
-        content += "}";
-      }
-      return content;
-    }).join("");
-  };
-
-  // import a list of modules into the list
-  list.i = function i(modules, media, dedupe, supports, layer) {
-    if (typeof modules === "string") {
-      modules = [[null, modules, undefined]];
-    }
-    var alreadyImportedModules = {};
-    if (dedupe) {
-      for (var k = 0; k < this.length; k++) {
-        var id = this[k][0];
-        if (id != null) {
-          alreadyImportedModules[id] = true;
-        }
-      }
-    }
-    for (var _k = 0; _k < modules.length; _k++) {
-      var item = [].concat(modules[_k]);
-      if (dedupe && alreadyImportedModules[item[0]]) {
-        continue;
-      }
-      if (typeof layer !== "undefined") {
-        if (typeof item[5] === "undefined") {
-          item[5] = layer;
-        } else {
-          item[1] = "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {").concat(item[1], "}");
-          item[5] = layer;
-        }
-      }
-      if (media) {
-        if (!item[2]) {
-          item[2] = media;
-        } else {
-          item[1] = "@media ".concat(item[2], " {").concat(item[1], "}");
-          item[2] = media;
-        }
-      }
-      if (supports) {
-        if (!item[4]) {
-          item[4] = "".concat(supports);
-        } else {
-          item[1] = "@supports (".concat(item[4], ") {").concat(item[1], "}");
-          item[4] = supports;
-        }
-      }
-      list.push(item);
-    }
-  };
-  return list;
-};
-
-/***/ }),
-
-/***/ "../../node_modules/css-loader/dist/runtime/sourceMaps.js":
-/*!****************************************************************!*\
-  !*** ../../node_modules/css-loader/dist/runtime/sourceMaps.js ***!
-  \****************************************************************/
-/***/ ((module) => {
-
-
-
-module.exports = function (item) {
-  var content = item[1];
-  var cssMapping = item[3];
-  if (!cssMapping) {
-    return content;
-  }
-  if (typeof btoa === "function") {
-    var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(cssMapping))));
-    var data = "sourceMappingURL=data:application/json;charset=utf-8;base64,".concat(base64);
-    var sourceMapping = "/*# ".concat(data, " */");
-    return [content].concat([sourceMapping]).join("\n");
-  }
-  return [content].join("\n");
-};
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js":
-/*!********************************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js ***!
-  \********************************************************************************/
-/***/ ((module) => {
-
-
-
-var stylesInDOM = [];
-function getIndexByIdentifier(identifier) {
-  var result = -1;
-  for (var i = 0; i < stylesInDOM.length; i++) {
-    if (stylesInDOM[i].identifier === identifier) {
-      result = i;
-      break;
-    }
-  }
-  return result;
-}
-function modulesToDom(list, options) {
-  var idCountMap = {};
-  var identifiers = [];
-  for (var i = 0; i < list.length; i++) {
-    var item = list[i];
-    var id = options.base ? item[0] + options.base : item[0];
-    var count = idCountMap[id] || 0;
-    var identifier = "".concat(id, " ").concat(count);
-    idCountMap[id] = count + 1;
-    var indexByIdentifier = getIndexByIdentifier(identifier);
-    var obj = {
-      css: item[1],
-      media: item[2],
-      sourceMap: item[3],
-      supports: item[4],
-      layer: item[5]
-    };
-    if (indexByIdentifier !== -1) {
-      stylesInDOM[indexByIdentifier].references++;
-      stylesInDOM[indexByIdentifier].updater(obj);
-    } else {
-      var updater = addElementStyle(obj, options);
-      options.byIndex = i;
-      stylesInDOM.splice(i, 0, {
-        identifier: identifier,
-        updater: updater,
-        references: 1
-      });
-    }
-    identifiers.push(identifier);
-  }
-  return identifiers;
-}
-function addElementStyle(obj, options) {
-  var api = options.domAPI(options);
-  api.update(obj);
-  var updater = function updater(newObj) {
-    if (newObj) {
-      if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap && newObj.supports === obj.supports && newObj.layer === obj.layer) {
-        return;
-      }
-      api.update(obj = newObj);
-    } else {
-      api.remove();
-    }
-  };
-  return updater;
-}
-module.exports = function (list, options) {
-  options = options || {};
-  list = list || [];
-  var lastIdentifiers = modulesToDom(list, options);
-  return function update(newList) {
-    newList = newList || [];
-    for (var i = 0; i < lastIdentifiers.length; i++) {
-      var identifier = lastIdentifiers[i];
-      var index = getIndexByIdentifier(identifier);
-      stylesInDOM[index].references--;
-    }
-    var newLastIdentifiers = modulesToDom(newList, options);
-    for (var _i = 0; _i < lastIdentifiers.length; _i++) {
-      var _identifier = lastIdentifiers[_i];
-      var _index = getIndexByIdentifier(_identifier);
-      if (stylesInDOM[_index].references === 0) {
-        stylesInDOM[_index].updater();
-        stylesInDOM.splice(_index, 1);
-      }
-    }
-    lastIdentifiers = newLastIdentifiers;
-  };
-};
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/insertBySelector.js":
-/*!************************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/insertBySelector.js ***!
-  \************************************************************************/
-/***/ ((module) => {
-
-
-
-var memo = {};
-
-/* istanbul ignore next  */
-function getTarget(target) {
-  if (typeof memo[target] === "undefined") {
-    var styleTarget = document.querySelector(target);
-
-    // Special case to return head of iframe instead of iframe itself
-    if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
-      try {
-        // This will throw an exception if access to iframe is blocked
-        // due to cross-origin restrictions
-        styleTarget = styleTarget.contentDocument.head;
-      } catch (e) {
-        // istanbul ignore next
-        styleTarget = null;
-      }
-    }
-    memo[target] = styleTarget;
-  }
-  return memo[target];
-}
-
-/* istanbul ignore next  */
-function insertBySelector(insert, style) {
-  var target = getTarget(insert);
-  if (!target) {
-    throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
-  }
-  target.appendChild(style);
-}
-module.exports = insertBySelector;
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/insertStyleElement.js":
-/*!**************************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/insertStyleElement.js ***!
-  \**************************************************************************/
-/***/ ((module) => {
-
-
-
-/* istanbul ignore next  */
-function insertStyleElement(options) {
-  var element = document.createElement("style");
-  options.setAttributes(element, options.attributes);
-  options.insert(element, options.options);
-  return element;
-}
-module.exports = insertStyleElement;
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js":
-/*!**************************************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js ***!
-  \**************************************************************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-
-
-/* istanbul ignore next  */
-function setAttributesWithoutAttributes(styleElement) {
-  var nonce =  true ? __webpack_require__.nc : 0;
-  if (nonce) {
-    styleElement.setAttribute("nonce", nonce);
-  }
-}
-module.exports = setAttributesWithoutAttributes;
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/styleDomAPI.js":
-/*!*******************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/styleDomAPI.js ***!
-  \*******************************************************************/
-/***/ ((module) => {
-
-
-
-/* istanbul ignore next  */
-function apply(styleElement, options, obj) {
-  var css = "";
-  if (obj.supports) {
-    css += "@supports (".concat(obj.supports, ") {");
-  }
-  if (obj.media) {
-    css += "@media ".concat(obj.media, " {");
-  }
-  var needLayer = typeof obj.layer !== "undefined";
-  if (needLayer) {
-    css += "@layer".concat(obj.layer.length > 0 ? " ".concat(obj.layer) : "", " {");
-  }
-  css += obj.css;
-  if (needLayer) {
-    css += "}";
-  }
-  if (obj.media) {
-    css += "}";
-  }
-  if (obj.supports) {
-    css += "}";
-  }
-  var sourceMap = obj.sourceMap;
-  if (sourceMap && typeof btoa !== "undefined") {
-    css += "\n/*# sourceMappingURL=data:application/json;base64,".concat(btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))), " */");
-  }
-
-  // For old IE
-  /* istanbul ignore if  */
-  options.styleTagTransform(css, styleElement, options.options);
-}
-function removeStyleElement(styleElement) {
-  // istanbul ignore if
-  if (styleElement.parentNode === null) {
-    return false;
-  }
-  styleElement.parentNode.removeChild(styleElement);
-}
-
-/* istanbul ignore next  */
-function domAPI(options) {
-  if (typeof document === "undefined") {
-    return {
-      update: function update() {},
-      remove: function remove() {}
-    };
-  }
-  var styleElement = options.insertStyleElement(options);
-  return {
-    update: function update(obj) {
-      apply(styleElement, options, obj);
-    },
-    remove: function remove() {
-      removeStyleElement(styleElement);
-    }
-  };
-}
-module.exports = domAPI;
-
-/***/ }),
-
-/***/ "../../node_modules/style-loader/dist/runtime/styleTagTransform.js":
-/*!*************************************************************************!*\
-  !*** ../../node_modules/style-loader/dist/runtime/styleTagTransform.js ***!
-  \*************************************************************************/
-/***/ ((module) => {
-
-
-
-/* istanbul ignore next  */
-function styleTagTransform(css, styleElement) {
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = css;
-  } else {
-    while (styleElement.firstChild) {
-      styleElement.removeChild(styleElement.firstChild);
-    }
-    styleElement.appendChild(document.createTextNode(css));
-  }
-}
-module.exports = styleTagTransform;
 
 /***/ }),
 
@@ -21481,9 +29948,6 @@ let PlaylistModel = (() => {
     let _name_decorators;
     let _name_initializers = [];
     let _name_extraInitializers = [];
-    let _color_decorators;
-    let _color_initializers = [];
-    let _color_extraInitializers = [];
     let _songs_decorators;
     let _songs_initializers = [];
     let _songs_extraInitializers = [];
@@ -21494,8 +29958,7 @@ let PlaylistModel = (() => {
             constructor() {
                 super(...arguments);
                 this.name = __runInitializers(this, _name_initializers, void 0);
-                this.color = (__runInitializers(this, _name_extraInitializers), __runInitializers(this, _color_initializers, void 0));
-                this.songs = (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _songs_initializers, void 0));
+                this.songs = (__runInitializers(this, _name_extraInitializers), __runInitializers(this, _songs_initializers, void 0));
                 this.origin = (__runInitializers(this, _songs_extraInitializers), __runInitializers(this, _origin_initializers, void 0));
                 __runInitializers(this, _origin_extraInitializers);
             }
@@ -21504,11 +29967,9 @@ let PlaylistModel = (() => {
             var _b;
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create((_b = _classSuper[Symbol.metadata]) !== null && _b !== void 0 ? _b : null) : void 0;
             _name_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("name")];
-            _color_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("color")];
             _songs_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("songs")];
             _origin_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("origin")];
             __esDecorate(null, null, _name_decorators, { kind: "field", name: "name", static: false, private: false, access: { has: obj => "name" in obj, get: obj => obj.name, set: (obj, value) => { obj.name = value; } }, metadata: _metadata }, _name_initializers, _name_extraInitializers);
-            __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
             __esDecorate(null, null, _songs_decorators, { kind: "field", name: "songs", static: false, private: false, access: { has: obj => "songs" in obj, get: obj => obj.songs, set: (obj, value) => { obj.songs = value; } }, metadata: _metadata }, _songs_initializers, _songs_extraInitializers);
             __esDecorate(null, null, _origin_decorators, { kind: "field", name: "origin", static: false, private: false, access: { has: obj => "origin" in obj, get: obj => obj.origin, set: (obj, value) => { obj.origin = value; } }, metadata: _metadata }, _origin_initializers, _origin_extraInitializers);
             if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -21741,7 +30202,6 @@ let PlaylistView = (() => {
     var _a;
     let _classSuper = _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.TurboView;
     let _instanceExtraInitializers = [];
-    let _updateColor_decorators;
     let _updateName_decorators;
     let _updatePosition_decorators;
     let _updateSongs_decorators;
@@ -21772,9 +30232,6 @@ let PlaylistView = (() => {
                     this.drawer.open = !this.drawer.open;
                     return true;
                 });
-            }
-            updateColor() {
-                this.toggle.leftIcon.style.fill = this.model.color;
             }
             updateName() {
                 const newEl = !this.toggle.element;
@@ -21808,11 +30265,9 @@ let PlaylistView = (() => {
         (() => {
             var _b;
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create((_b = _classSuper[Symbol.metadata]) !== null && _b !== void 0 ? _b : null) : void 0;
-            _updateColor_decorators = [_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.effect];
             _updateName_decorators = [_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.effect];
             _updatePosition_decorators = [_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.effect];
             _updateSongs_decorators = [_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.effect];
-            __esDecorate(_a, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _updateName_decorators, { kind: "method", name: "updateName", static: false, private: false, access: { has: obj => "updateName" in obj, get: obj => obj.updateName }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _updatePosition_decorators, { kind: "method", name: "updatePosition", static: false, private: false, access: { has: obj => "updatePosition" in obj, get: obj => obj.updatePosition }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _updateSongs_decorators, { kind: "method", name: "updateSongs", static: false, private: false, access: { has: obj => "updateSongs" in obj, get: obj => obj.updateSongs }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -22015,12 +30470,12 @@ let SongModel = (() => {
         (() => {
             var _b;
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create((_b = _classSuper[Symbol.metadata]) !== null && _b !== void 0 ? _b : null) : void 0;
-            _id_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("id")];
-            _title_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("title")];
-            _artist_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("artist")];
-            _album_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("album")];
-            _cover_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("cover")];
-            _duration_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)("duration")];
+            _id_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
+            _title_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
+            _artist_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
+            _album_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
+            _cover_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
+            _duration_decorators = [(0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.modelSignal)()];
             _state_decorators = [_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.signal];
             __esDecorate(null, null, _id_decorators, { kind: "field", name: "id", static: false, private: false, access: { has: obj => "id" in obj, get: obj => obj.id, set: (obj, value) => { obj.id = value; } }, metadata: _metadata }, _id_initializers, _id_extraInitializers);
             __esDecorate(null, null, _title_decorators, { kind: "field", name: "title", static: false, private: false, access: { has: obj => "title" in obj, get: obj => obj.title, set: (obj, value) => { obj.title = value; } }, metadata: _metadata }, _title_initializers, _title_extraInitializers);
@@ -22571,7 +31026,7 @@ class SongsPanelView extends _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE
         super.setupUIListeners();
         (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this.search).on(_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.DefaultEventName.input, () => {
             const value = this.search.value.toLowerCase();
-            this.select.entriesArray.forEach(entry => {
+            this.select.entries.forEach(entry => {
                 const enable = entry.title.toLowerCase().includes(value)
                     || entry.artist.toLowerCase().includes(value)
                     || entry.album.toLowerCase().includes(value);
@@ -22788,7 +31243,6 @@ class NewPlaylistTool extends _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODUL
     constructor() {
         super(...arguments);
         this.toolName = "newPlaylist";
-        this.clickMode = _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.ClickMode.left;
     }
     onActivation() {
         (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this).toggleClass("selected", true);
@@ -22801,7 +31255,6 @@ class NewPlaylistTool extends _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODUL
             return;
         (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this.model.target).addChild((0,_playlist_playlist__WEBPACK_IMPORTED_MODULE_2__.playlist)({
             data: {
-                color: (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.randomColor)(),
                 name: "Playlist " + _newPlaylist_model__WEBPACK_IMPORTED_MODULE_1__.NewPlaylistModel.playlistCount,
                 songs: [],
                 origin: e.scaledPosition

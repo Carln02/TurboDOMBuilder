@@ -3,7 +3,6 @@ import {PlaylistData} from "./playlist.types";
 
 export class PlaylistModel extends TurboModel<PlaylistData> {
     @modelSignal("name") public name: string;
-    @modelSignal("color") public color: string;
     @modelSignal("songs") public songs: string[];
     @modelSignal("origin") public origin: Coordinate;
 }

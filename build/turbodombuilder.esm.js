@@ -2,6 +2,7 @@
  * @typedef {Object} AutoOptions
  * @template Type
  * @description Options for configuring the `@auto` decorator.
+ * @property {boolean} [override] - If true, will try to override the defined property in `super`.
  * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
  * current value. Defaults to `true`.
  * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
@@ -534,7 +535,7 @@ class AutoUtils {
 
 function getFirstDescriptorInChain(object, key) {
     let currentObject = object;
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         if (descriptor)
             return descriptor;
@@ -544,7 +545,7 @@ function getFirstDescriptorInChain(object, key) {
 }
 function hasPropertyInChain(object, key) {
     let currentObject = object;
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         if (Object.prototype.hasOwnProperty.call(currentObject, key))
             return true;
         currentObject = Object.getPrototypeOf(currentObject);
@@ -553,7 +554,7 @@ function hasPropertyInChain(object, key) {
 }
 function getFirstPrototypeInChainWith(object, key) {
     let currentObject = Object.getPrototypeOf(object);
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         if (descriptor)
             return currentObject;
@@ -563,7 +564,7 @@ function getFirstPrototypeInChainWith(object, key) {
 }
 function getSuperMethod(object, key, wrapperFn) {
     let currentObject = Object.getPrototypeOf(object);
-    while (currentObject && currentObject !== HTMLElement.prototype) {
+    while (currentObject && currentObject !== Object.prototype) {
         const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
         const fn = descriptor?.value ?? descriptor?.get ?? descriptor?.set;
         if (typeof fn === "function" && fn !== wrapperFn)
@@ -572,6 +573,18 @@ function getSuperMethod(object, key, wrapperFn) {
     }
     return undefined;
 }
+const getSuperDescriptor = (object, key) => {
+    let currentObject = Object.getPrototypeOf(object);
+    if (currentObject)
+        currentObject = Object.getPrototypeOf(currentObject);
+    while (currentObject && currentObject !== Object.prototype) {
+        const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
+        if (descriptor)
+            return descriptor;
+        currentObject = Object.getPrototypeOf(currentObject);
+    }
+    return undefined;
+};
 
 function isNull(value) {
     return value == null && value != undefined;
@@ -625,24 +638,20 @@ function auto(options) {
         const backing = Symbol(`__auto_${key}`);
         context.addInitializer(function () {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
+            // const superDescriptor = getSuperDescriptor(this, key);
             let customGetter;
             let customSetter;
-            const write = function (value) {
-                options.callBefore?.call(this, value);
-                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && this[backing] === next)
-                    return;
-                if (options.executeSetterBeforeStoring && customSetter)
-                    customSetter.call(this, next);
-                this[backing] = next;
-                if (!options.executeSetterBeforeStoring && customSetter)
-                    customSetter.call(this, next);
-                options.callAfter?.call(this, next);
+            const baseRead = function () {
+                if (customGetter && options?.returnDefinedGetterValue)
+                    return customGetter.call(this);
+                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                return this[backing];
+            };
+            const baseWrite = function (value) {
+                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                this[backing] = value;
             };
             let undefinedFlag = false;
-            const baseRead = function () {
-                return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
-            };
             const read = function () {
                 let value = baseRead.call(this);
                 if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
@@ -659,7 +668,19 @@ function auto(options) {
                 }
                 return value;
             };
-            if (isUndefined(this[backing])) {
+            const write = function (value) {
+                options.callBefore?.call(this, value);
+                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next)
+                    return;
+                if (options.executeSetterBeforeStoring && customSetter)
+                    customSetter.call(this, next);
+                baseWrite.call(this, next);
+                if (!options.executeSetterBeforeStoring && customSetter)
+                    customSetter.call(this, next);
+                options.callAfter?.call(this, next);
+            };
+            if (isUndefined(baseRead.call(this))) {
                 let initialValue = kind === "field" ? value : undefined;
                 if (isUndefined(initialValue)) {
                     if (options.initialValue)
@@ -677,10 +698,10 @@ function auto(options) {
                     customGetter = accessor.get;
                 if (accessor?.set)
                     customSetter = accessor.set;
-                const descriptor = getFirstDescriptorInChain(this, key);
+                const descriptor = getFirstDescriptorInChain(this, key) ?? { enumerable: true };
                 Object.defineProperty(this, key, {
                     configurable: true,
-                    enumerable: descriptor?.enumerable ?? true,
+                    enumerable: descriptor.enumerable ?? true,
                     get: () => read.call(this),
                     set: (value) => write.call(this, value),
                 });
@@ -690,14 +711,14 @@ function auto(options) {
                 if (installed.get(key))
                     return;
                 installed.set(key, true);
-                const descriptor = getFirstDescriptorInChain(prototype, key) ?? {};
+                const descriptor = getFirstDescriptorInChain(prototype, key) ?? { enumerable: true };
                 if (typeof descriptor.get === "function")
                     customGetter = descriptor.get;
                 if (typeof descriptor.set === "function")
                     customSetter = descriptor.set;
                 Object.defineProperty(prototype, key, {
                     configurable: true,
-                    enumerable: !!descriptor?.enumerable,
+                    enumerable: descriptor.enumerable ?? true,
                     get: function () { return read.call(this); },
                     set: function (value) { write.call(this, value); },
                 });
@@ -2431,6 +2452,33 @@ function modelSignal(dataKey, blockKey) {
     return function (value, context) {
         const key = dataKey ?? String(context.name);
         return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
+    };
+}
+/**
+ * @decorator
+ * @function blockSignal
+ * Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockSignal(blockKey, id) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); });
+    };
+}
+/**
+ * @decorator
+ * @function blockIdSignal
+ * Same idea but binds the block **id**.
+ */
+function blockIdSignal(blockKey) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); });
     };
 }
 function effect(...args) {
@@ -9937,7 +9985,6 @@ let TurboSelect = (() => {
             this.clear();
             this._entries = (Array.isArray(value) ? value : Array.from(value))
                 .filter(entry => entry !== this.inputField);
-            console.log(this.entries);
             if (value instanceof HTMLCollection && value.item(0))
                 this.parent = value.item(0).parentElement;
             const array = this.entries;
@@ -9967,7 +10014,6 @@ let TurboSelect = (() => {
                     $(this.parent).addChild(entry);
                 entries.push(entry);
             });
-            console.log(entries);
             this.entries = entries;
         }
         get selectedEntries() {
@@ -10551,7 +10597,7 @@ let TurboDrawer = (() => {
             _set_panel_decorators = [auto({
                     setIfUndefined: true,
                     callBefore: function () { if (this.panel)
-                        $(this).remChild(this.panel); },
+                        $(this).remChild(this.panel); console.log("EWFFEWFWWWWWWWWWWWWWW"); },
                     preprocessValue: (value) => value instanceof HTMLElement ? value : div(value)
                 })];
             _set_icon_decorators = [auto({
@@ -10621,6 +10667,7 @@ let TurboDrawer = (() => {
         }
         get thumb() { return; }
         set panel(value) {
+            console.log("WEEWFEFEFEFEFFEWFWEFEWFEW");
             $(value).addClass("turbo-drawer-panel");
             if (this.initialized)
                 this.setupUILayout();
@@ -10665,9 +10712,9 @@ let TurboDrawer = (() => {
         }
         set open(value) {
             if (value)
-                this.resizeObserver.observe(this.panel, { box: "border-box" });
+                this.resizeObserver?.observe(this.panel, { box: "border-box" });
             else
-                this.resizeObserver.unobserve(this.panel);
+                this.resizeObserver?.unobserve(this.panel);
             this.refresh();
         }
         set translation(value) {
@@ -10703,21 +10750,19 @@ let TurboDrawer = (() => {
         initialize() {
             super.initialize();
             this.transition.attachAll(this, this.panelContainer);
-            let pending = false;
-            this.resizeObserver = new ResizeObserver(entries => {
-                if (!this.open || this.dragging)
-                    return;
-                if (pending)
-                    return;
-                pending = true;
-                requestAnimationFrame(() => {
-                    const size = Array.isArray(entries[0].borderBoxSize)
-                        ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
-                    this.translation = (this.open ? this.offset.open : this.offset.closed)
-                        + (this.isVertical ? size.blockSize : size.inlineSize);
-                    pending = false;
-                });
-            });
+            // this.resizeObserver = new ResizeObserver(entries => {
+            //     if (!this.open || this.dragging) return;
+            //     requestAnimationFrame(() => {
+            //         const isVertical = this.isVertical;
+            //         const size1 = getSize(entries[0], isVertical);
+            //         requestAnimationFrame(() => {
+            //             const size2 = getSize(entries[0], isVertical);
+            //             console.log(size1, size2);
+            //             if (size1 !== size2) return;
+            //             this.translation = (this.open ? this.offset.open : this.offset.closed) + size2;
+            //         });
+            //     });
+            // });
             this.animationOn = true;
         }
         setupUIElements() {
@@ -11996,71 +12041,64 @@ class YComponentModel extends YModel {
  * @template {YMap | YArray} YType - The type of the Yjs data (YMap or YArray).
  * @template {string | number | symbol} IdType - The type of the block IDs.
  * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
- * @template {YManagerDataBlock<YType, IdType, ComponentType, KeyType>} BlockType - The structure of each data block.
+ * @template {YDataBlock<YType, IdType>} BlockType - The structure of each data block.
  * @description MVC model that manages Yjs data and synchronizes it with a map or array of components, each attached to
  * one entry of the data object.
  */
 class YManagerModel extends YModel {
-    onAdded = new Delegate();
-    onUpdated = new Delegate();
-    onDeleted = new Delegate();
+    changeObservers = new TurboWeakSet();
+    /**
+     * @constructor
+     * @param {DataType} [data] - Initial data. Not initialized if provided.
+     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+     */
     constructor(data, dataBlocksType) {
         super(data, dataBlocksType);
-        this.onUpdated.add((data, instance, id) => {
-            if (!(instance instanceof TurboElement || instance instanceof TurboProxiedElement))
-                return;
-            instance.data
-                = data;
-            instance.dataId = id.toString();
-        });
-        this.onDeleted.add((_data, instance, id, blockKey) => {
-            this.removeInstance(instance);
-            this.getBlock(blockKey).instances?.delete(id);
-        });
     }
-    /**
-     * @function createBlock
-     * @description Creates a data block entry.
-     * @param {YType} value - The data of the block.
-     * @param {IdType} [id] - The optional ID of the data.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
-     * @protected
-     * @return {BlockType} - The created block.
-     */
-    createBlock(value, id, blockKey = this.defaultBlockKey) {
-        return {
-            ...super.createBlock(value, id, blockKey),
+    generateObserver(properties = {}) {
+        const observer = {
+            onAdded: new Delegate(),
+            onUpdated: new Delegate(),
+            onDeleted: new Delegate(),
             instances: new Map(),
+            getInstance: (key, blockKey = this.defaultComputationBlockKey) => this.getInstance(observer, key, blockKey),
+            getAllInstances: (blockKey = this.defaultComputationBlockKey) => this.getAllInstances(observer, blockKey),
+            initialize: (blockKey) => {
+                if (!this.isInitialized.get(blockKey))
+                    return;
+                for (const key of this.getAllKeys(blockKey)) {
+                    this.fireKeyChangedCallbackForObserver(observer, this.getData(key, blockKey), key, blockKey);
+                }
+            },
+            clear: (blockKey = this.defaultComputationBlockKey) => this.clearInstances(observer, blockKey),
+            destroy: () => {
+                this.getAllBlockKeys().forEach(blockKey => observer.clear(blockKey));
+                this.changeObservers?.delete(observer);
+            }
         };
-    }
-    getInstance(key, blockKey = this.defaultComputationBlockKey) {
-        for (const block of this.getAllBlocks(blockKey)) {
-            if (!block.instances)
-                continue;
-            if (block.instances.has(key))
-                return block.instances.get(key);
-        }
-        return null;
-    }
-    getAllComponents(blockKey = this.defaultComputationBlockKey) {
-        const block = this.getBlock(blockKey);
-        if (block && block.data instanceof Array$1) {
-            const instancesMap = this.getBlock(blockKey)?.instances;
-            if (!instancesMap)
-                return [];
-            const instances = [];
-            for (const [index, instance] of instancesMap.entries())
-                instances.push([index, instance]);
-            instances.sort((a, b) => {
-                if (typeof a[0] == "string" && typeof b[0] == "string")
-                    return a[0].localeCompare(b[0]);
-                else if (typeof a[0] == "number" && typeof b[0] == "number")
-                    return a[0] - b[0];
-                return 0;
-            });
-            return instances.map(([, instance]) => instance);
-        }
-        return this.getAllBlocks(blockKey).flatMap(block => Array.from(block.instances?.values()) || []);
+        observer.onUpdated.add((data, instance, id) => {
+            if (typeof instance === "object") {
+                if ("data" in instance)
+                    instance.data = data;
+                if ("dataId" in instance)
+                    instance.dataId = id.toString();
+            }
+        });
+        observer.onDeleted.add((_data, instance, id, blockKey) => {
+            this.removeInstance(instance);
+            this.getInstancesMaps(observer, blockKey).forEach(map => map.delete(id));
+        });
+        if (properties.onAdded)
+            observer.onAdded.add((data, id, blockKey) => properties.onAdded(data, id, blockKey));
+        if (properties.onUpdated)
+            observer.onUpdated.add((data, instance, id, blockKey) => properties.onUpdated(data, instance, id, blockKey));
+        if (properties.onDeleted)
+            observer.onDeleted.add((data, instance, id, blockKey) => properties.onDeleted(data, instance, id, blockKey));
+        if (properties.initialize)
+            for (const blockKey of this.getAllBlockKeys())
+                observer.initialize(blockKey);
+        this.changeObservers?.add(observer);
+        return observer;
     }
     /**
      * @function clear
@@ -12069,10 +12107,7 @@ class YManagerModel extends YModel {
      */
     clear(blockKey = this.defaultComputationBlockKey) {
         super.clear(blockKey);
-        this.getAllBlocks(blockKey).forEach(block => {
-            block?.instances?.forEach(instance => this.removeInstance(instance));
-            block?.instances?.clear();
-        });
+        this.changeObservers?.toArray().forEach(observer => this.clearInstances(observer, blockKey));
     }
     getAllData(blockKey = this.defaultComputationBlockKey) {
         return super.getAllData(blockKey);
@@ -12085,25 +12120,85 @@ class YManagerModel extends YModel {
      * @param {boolean} [deleted=false] - Whether the key was deleted.
      */
     fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
-        if (!this.getAllKeys(blockKey).includes(key)) {
+        if (!this.getAllKeys(blockKey).includes(key))
             return super.fireKeyChangedCallback(key, blockKey, deleted);
-        }
         const data = this.getData(key, blockKey);
-        const instance = this.onAdded.fire(data, key, blockKey);
+        this.changeObservers?.toArray().forEach(observer => this.fireKeyChangedCallbackForObserver(observer, data, key, blockKey));
+    }
+    fireKeyChangedCallbackForObserver(observer, data, key, blockKey = this.defaultBlockKey) {
+        if (!observer.instances.has(blockKey))
+            observer.instances.set(blockKey, new Map());
+        const map = observer.instances.get(blockKey);
+        const existingInstance = map.get(key);
+        if (existingInstance) {
+            observer.onUpdated.fire(data, existingInstance, key, blockKey);
+            return;
+        }
+        const instance = observer.onAdded.fire(data, key, blockKey);
         if (!instance)
             return;
-        this.getBlock(blockKey).instances?.set(key, instance);
-        if (typeof instance === "object") {
-            if ("data" in instance)
-                instance.data = data;
-            if ("dataId" in instance)
-                instance.dataId = key.toString();
+        map.set(key, instance);
+        observer.onUpdated.fire(data, instance, key, blockKey);
+    }
+    /*
+     *
+     * Utilities
+     *
+     */
+    getInstancesMaps(observer, blockKey, sort = false) {
+        const maps = [];
+        if (blockKey !== null) {
+            const map = observer.instances.get(blockKey);
+            if (map)
+                maps.push(map);
         }
-        this.onUpdated.fire(data, instance, key, blockKey);
+        else {
+            const blockKeys = this.getAllBlockKeys();
+            if (sort)
+                blockKeys.sort(this.sortingFunction);
+            for (const curKey of blockKeys) {
+                const map = observer.instances.get(curKey);
+                if (map)
+                    maps.push(map);
+            }
+        }
+        return maps;
+    }
+    getInstance(observer, key, blockKey = this.defaultComputationBlockKey) {
+        for (const map of this.getInstancesMaps(observer, blockKey)) {
+            if (map.has(key))
+                return map.get(key);
+        }
+        return null;
+    }
+    getAllInstances(observer, blockKey = this.defaultComputationBlockKey) {
+        const maps = this.getInstancesMaps(observer, blockKey, true);
+        if (!this.isDataBlocksArray)
+            return maps.flatMap(map => Array.from(map.values()) || []);
+        let instances = [];
+        for (const map of maps) {
+            const tempInstances = Array.from(map.entries());
+            tempInstances.sort((a, b) => this.sortingFunction(a[0], b[0]));
+            instances = instances.concat(...tempInstances.map(entry => entry[1]));
+        }
+        return instances;
     }
     removeInstance(instance) {
         if (instance && typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
             instance?.remove();
+    }
+    clearInstances(observer, blockKey = this.defaultComputationBlockKey) {
+        this.getInstancesMaps(observer, blockKey).forEach(map => {
+            map.forEach(instance => this.removeInstance(instance));
+            map.clear();
+        });
+    }
+    sortingFunction(a, b) {
+        if (typeof a == "string" && typeof b == "string")
+            return a.localeCompare(b);
+        else if (typeof a == "number" && typeof b == "number")
+            return a - b;
+        return 0;
     }
     observeChanges(event, transaction, blockKey = this.defaultBlockKey) {
         //TODO
@@ -12117,10 +12212,10 @@ class YManagerModel extends YModel {
                         this.fireKeyChangedCallback(key, blockKey);
                         break;
                     case "delete":
-                        this.onDeleted.fire(change.oldValue, this.getInstance(key, blockKey), key, blockKey);
+                        this.changeObservers?.toArray().forEach(observer => observer.onDeleted.fire(change.oldValue, this.getInstance(observer, key, blockKey), key, blockKey));
                         break;
                     case "update":
-                        this.onUpdated.fire(this.getData(key, blockKey), this.getInstance(key, blockKey), key, blockKey);
+                        this.changeObservers?.toArray().forEach(observer => observer.onUpdated.fire(this.getData(key, blockKey), this.getInstance(observer, key, blockKey), key, blockKey));
                         break;
                 }
             });
@@ -12133,7 +12228,7 @@ class YManagerModel extends YModel {
                 else if (delta.insert) {
                     const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                     const count = insertedItems.length;
-                    this.shiftIndices(currentIndex, count, blockKey);
+                    this.changeObservers?.toArray().forEach(observer => this.shiftIndices(observer, currentIndex, count, blockKey));
                     for (let i = 0; i < count; i++)
                         this.fireKeyChangedCallback((currentIndex + i), blockKey);
                     currentIndex += count;
@@ -12141,15 +12236,15 @@ class YManagerModel extends YModel {
                 else if (delta.delete) {
                     const count = delta.delete;
                     for (let i = 0; i < count; i++) {
-                        this.onDeleted.fire(undefined, this.getInstance((currentIndex + i), blockKey), (currentIndex + i), blockKey);
+                        this.changeObservers?.toArray().forEach(observer => observer.onDeleted.fire(undefined, this.getInstance(observer, (currentIndex + i), blockKey), (currentIndex + i), blockKey));
                     }
-                    this.shiftIndices(currentIndex + count, -count, blockKey);
+                    this.changeObservers?.toArray().forEach(observer => this.shiftIndices(observer, currentIndex + count, -count, blockKey));
                 }
             }
         }
     }
-    shiftIndices(fromIndex, offset, blockKey = this.defaultBlockKey) {
-        const block = this.getBlock(blockKey)?.instances;
+    shiftIndices(observer, fromIndex, offset, blockKey = this.defaultBlockKey) {
+        const block = this.getInstancesMaps(observer, blockKey)[0];
         if (!block)
             return;
         const itemsToShift = [];
@@ -12317,4 +12412,4 @@ function deepObserveAll(data, callback, ...fieldNames) {
     });
 }
 
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Range, Reifect, ReifectHandler, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboPopup, TurboProxiedElement, TurboRichElement, TurboSelect, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, YComponentModel, YManagerModel, YModel, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Range, Reifect, ReifectHandler, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboPopup, TurboProxiedElement, TurboRichElement, TurboSelect, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, YComponentModel, YManagerModel, YModel, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isMathMLTag, isNull, isSvgTag, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, setupClassFunctions, setupElementFunctions, setupEventFunctions, setupHierarchyFunctions, setupMiscFunctions, setupReifectFunctions, setupStyleFunctions, setupSubstrateFunctions, setupToolFunctions, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

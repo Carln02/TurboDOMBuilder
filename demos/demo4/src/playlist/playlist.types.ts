@@ -4,7 +4,6 @@ import {PlaylistModel} from "./playlist.model";
 
 export type PlaylistData = {
     name: string,
-    color: string,
     songs: string[],
     origin: Coordinate
 }

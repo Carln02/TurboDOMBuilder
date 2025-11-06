@@ -2,7 +2,8 @@ import {AutoOptions} from "./auto.types";
 import {AutoUtils} from "./auto.utils";
 import {
     getFirstDescriptorInChain,
-    getFirstPrototypeInChainWith
+    getFirstPrototypeInChainWith,
+    getSuperDescriptor
 } from "../../utils/dataManipulation/prototypeManipulation";
 import {isNull, isUndefined} from "../../utils/dataManipulation/misc";
 
@@ -64,26 +65,23 @@ function auto(options?: AutoOptions) {
 
         context.addInitializer(function (this: any) {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
+            // const superDescriptor = getSuperDescriptor(this, key);
 
             let customGetter: (this: any) => Value;
             let customSetter: (this: any, value: Value) => void;
 
-            const write = function (this: any, value: Value): void {
-                options.callBefore?.call(this, value);
-                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && this[backing] === next) return;
-                if (options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
-                this[backing] = next;
-                if (!options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
-                options.callAfter?.call(this, next);
-            };
-
-            let undefinedFlag = false;
-
             const baseRead = function (this: any) {
-                return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
+                if (customGetter && options?.returnDefinedGetterValue) return customGetter.call(this);
+                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                return this[backing];
             }
 
+            const baseWrite = function (this: any, value: any) {
+                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                this[backing] = value;
+            }
+
+            let undefinedFlag = false;
             const read = function (this: any) {
                 let value = baseRead.call(this);
                 if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
@@ -98,8 +96,18 @@ function auto(options?: AutoOptions) {
                 return value;
             };
 
-            if (isUndefined(this[backing])) {
-                let initialValue = kind === "field" ? value : undefined;
+            const write = function (this: any, value: Value): void {
+                options.callBefore?.call(this, value);
+                let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) return;
+                if (options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
+                baseWrite.call(this, next);
+                if (!options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
+                options.callAfter?.call(this, next);
+            };
+
+            if (isUndefined(baseRead.call(this))) {
+                let initialValue: any = kind === "field" ? value : undefined;
                 if (isUndefined(initialValue)) {
                     if (options.initialValue) initialValue = options.initialValue;
                     else if (options.initialValueCallback) initialValue = options.initialValueCallback.call(this);
@@ -113,10 +121,10 @@ function auto(options?: AutoOptions) {
                 if (accessor?.get) customGetter = accessor.get;
                 if (accessor?.set) customSetter = accessor.set;
 
-                const descriptor = getFirstDescriptorInChain(this, key);
+                const descriptor = getFirstDescriptorInChain(this, key) ?? {enumerable: true};
                 Object.defineProperty(this, key, {
                     configurable: true,
-                    enumerable: descriptor?.enumerable ?? true,
+                    enumerable: descriptor.enumerable ?? true,
                     get: () => read.call(this),
                     set: (value: Value) => write.call(this, value),
                 });
@@ -125,13 +133,13 @@ function auto(options?: AutoOptions) {
                 if (installed.get(key)) return;
                 installed.set(key, true);
 
-                const descriptor = getFirstDescriptorInChain(prototype, key) ?? {};
+                const descriptor = getFirstDescriptorInChain(prototype, key) ?? {enumerable: true};
                 if (typeof descriptor.get === "function") customGetter = descriptor.get;
                 if (typeof descriptor.set === "function") customSetter = descriptor.set;
 
                 Object.defineProperty(prototype, key, {
                     configurable: true,
-                    enumerable: !!descriptor?.enumerable,
+                    enumerable: descriptor.enumerable ?? true,
                     get: function (this: any) {return read.call(this)},
                     set: function (this: any, value: Value) {write.call(this, value)},
                 });

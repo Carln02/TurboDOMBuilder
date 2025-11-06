@@ -12,7 +12,6 @@ import {playlist} from "../../playlist/playlist";
 
 export class NewPlaylistTool extends TurboTool<TurboElement, TurboView, NewPlaylistModel> {
     public toolName = "newPlaylist";
-    public clickMode = ClickMode.left;
 
     public onActivation() {
         turbo(this).toggleClass("selected", true);
@@ -26,7 +25,6 @@ export class NewPlaylistTool extends TurboTool<TurboElement, TurboView, NewPlayl
         if (target !== this.model.target && target !== document.body) return;
         turbo(this.model.target).addChild(playlist({
             data: {
-                color: randomColor(),
                 name: "Playlist " + NewPlaylistModel.playlistCount,
                 songs: [],
                 origin: e.scaledPosition

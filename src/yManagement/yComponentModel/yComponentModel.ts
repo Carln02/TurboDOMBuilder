@@ -1,6 +1,7 @@
-import {YMap, YMapEvent} from "../../yManagement.types";
-import {YModel} from "../yModel";
-import {MvcBlockKeyType} from "../../../mvc/core/core.types";
+import {YModel} from "../yModel/yModel";
+import {YMap} from "yjs/dist/src/types/YMap";
+import {YMapEvent} from "yjs";
+import {MvcBlockKeyType} from "../../mvc/core/core.types";
 
 /**
  * @class YComponentModel
@@ -9,7 +10,7 @@ import {MvcBlockKeyType} from "../../../mvc/core/core.types";
  * callbacks at the keys that changed through the emitter.
  */
 class YComponentModel extends YModel<any, YMap, string> {
-    protected observeChanges(event: YMapEvent, transaction: any, blockKey?: MvcBlockKeyType<"map">): void {
+    protected observeChanges(event: YMapEvent, transaction: any, blockKey?: MvcBlockKeyType): void {
         event.keysChanged.forEach(key => {
             const change = event.changes.keys.get(key);
             if (!change) {

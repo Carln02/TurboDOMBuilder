@@ -2,6 +2,7 @@ import {ReactivityUtils} from "./reactivity.utils";
 import {SignalBox, SignalEntry} from "./reactivity.types";
 import {SignalUtils} from "./reactivity.signal";
 import {EffectUtils} from "./reactivity.effect";
+import {TurboModel} from "../mvc/core/model";
 
 const utils = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils);
@@ -100,7 +101,7 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
             | ((initial: Value) => Value)
             | ((this: Type) => Value)
             | ((this: Type, v: Value) => void)
-            | {get?: (this: Type) => Value; set?: (this: Type, value: Value) => void},
+            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
         context:
             | ClassFieldDecoratorContext<Type, Value>
             | ClassGetterDecoratorContext<Type, Value>
@@ -111,6 +112,59 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
         return signalUtils.signalDecorator(value, context, function () {return this.getData?.(key, blockKey)},
             function (value) {this.setData?.(key, value, blockKey);});
     }
+}
+
+/**
+ * @decorator
+ * @function blockSignal
+ * Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockSignal(blockKey?: string | number, id?: string | number) {
+    return function <Type extends TurboModel<any, any, any, any>, Value>(
+        value:
+            | ((initial: Value) => Value)
+            | ((this: Type) => Value)
+            | ((this: Type, v: Value) => void)
+            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
+        context:
+            | ClassFieldDecoratorContext<Type, Value>
+            | ClassGetterDecoratorContext<Type, Value>
+            | ClassSetterDecoratorContext<Type, Value>
+            | ClassAccessorDecoratorContext<Type, Value>
+    ): any {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () {return this.getBlockData?.(key)},
+            function (value) {this.setBlock?.(value, id, key)});
+    }
+}
+
+/**
+ * @decorator
+ * @function blockIdSignal
+ * Same idea but binds the block **id**.
+ */
+function blockIdSignal(blockKey?: string | number) {
+    return function <Type extends TurboModel<any, any, any, any>, Value>(
+        value:
+            | ((initial: Value) => Value)
+            | ((this: Type) => Value)
+            | ((this: Type, v: Value) => void)
+            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
+        context:
+            | ClassFieldDecoratorContext<Type, Value>
+            | ClassGetterDecoratorContext<Type, Value>
+            | ClassSetterDecoratorContext<Type, Value>
+            | ClassAccessorDecoratorContext<Type, Value>
+    ): any {
+        const key = blockKey ?? String(context.name);
+        return signalUtils.signalDecorator(value, context, function () {return this.getBlockId?.(key)},
+            function (value) {this.setBlockId?.(value, key)});
+    };
 }
 
 /**
@@ -161,7 +215,7 @@ function effect(...args: any[]): any {
     const context = args[1];
     if (context && typeof context === "object" && "kind" in context
         && "name" in context && "static" in context && "private" in context) {
-        const { kind, name, static: isStatic } = context as any;
+        const {kind, name, static: isStatic} = context as any;
         const key = String(name);
 
         if (kind !== "method" && kind !== "getter" && !(kind === "field" && typeof value === "function"))
@@ -248,4 +302,16 @@ function disposeEffects(target: object) {
     }
 }
 
-export {effect, setSignal, signal, modelSignal, getSignal, markDirty, initializeEffects, disposeEffect, disposeEffects};
+export {
+    effect,
+    setSignal,
+    signal,
+    modelSignal,
+    blockSignal,
+    blockIdSignal,
+    getSignal,
+    markDirty,
+    initializeEffects,
+    disposeEffect,
+    disposeEffects
+};

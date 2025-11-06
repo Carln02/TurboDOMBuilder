@@ -1,7 +1,8 @@
-import {YAbstractType, YMap, YArray, YEvent, YDataBlock} from "../yManagement.types";
+import {YAbstractType, YMap, YArray, YEvent} from "../yManagement.types";
 import {auto} from "../../decorators/auto/auto";
 import {TurboModel} from "../../mvc/core/model";
 import {MvcBlockKeyType} from "../../mvc/core/core.types";
+import {YDataBlock} from "./yModel.types";
 
 /**
  * @class YModel

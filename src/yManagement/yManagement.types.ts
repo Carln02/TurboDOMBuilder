@@ -12,8 +12,6 @@ import {TurboElementProperties} from "../turboElement/turboElement.types";
 import {TurboView} from "../mvc/core/view";
 import {TurboModel} from "../mvc/core/model";
 import {TurboEmitter} from "../mvc/core/emitter";
-import {MvcBlockKeyType, MvcDataBlock} from "../mvc/core/core.types";
-import {Delegate} from "../eventHandling/delegate/delegate";
 
 declare module "yjs" {
     interface Map<MapType = any> {}
@@ -38,23 +36,6 @@ type YDocumentProperties<
     document: YDoc
 };
 
-type YDataBlock<
-    DataType = any,
-    IdType extends string | number | symbol = any
-> = MvcDataBlock<DataType, IdType> & {
-    observer: (event: YEvent, transaction: any) => void,
-    data: DataType,
-};
-
-type YManagerDataBlock<
-    DataType = any,
-    IdType extends string | number | symbol = any,
-    ComponentType = object,
-    KeyType extends string | number = string | number,
-> = YDataBlock<DataType, IdType> & {
-    instances: Map<KeyType, ComponentType>
-};
-
 export {
     YMap,
     YArray,
@@ -65,6 +46,4 @@ export {
     YMapEvent,
     YArrayEvent,
     YDocumentProperties,
-    YDataBlock,
-    YManagerDataBlock
 };
