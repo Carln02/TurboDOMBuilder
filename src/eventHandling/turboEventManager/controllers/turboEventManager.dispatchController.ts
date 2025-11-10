@@ -3,9 +3,9 @@ import {TurboEventManager} from "../turboEventManager";
 import {ClickMode} from "../turboEventManager.types";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
-import {TurboKeyEventName} from "../../eventNaming";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {TurboController} from "../../../mvc/logic/controller";
+import {TurboKeyEventName} from "../../../types/eventNaming.types";
 
 export class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "dispatch";

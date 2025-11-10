@@ -1,6 +1,9 @@
 import {contrast} from "./contrast";
 
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
  * (for readability).
  * @param {string} baseColor - The base color in Hex format.

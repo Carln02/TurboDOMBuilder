@@ -9,7 +9,7 @@ import {TurboButton} from "../../turboComponents/basics/button/button";
 
 const utils = new EventFunctionsUtils();
 
-function setupEventFunctions() {
+export function setupEventFunctions() {
     /**
      * @description Initializes a `boundListeners` set in the Node prototype, that will hold all the element's bound
      * listeners.
@@ -338,5 +338,3 @@ function setupEventFunctions() {
         return this;
     }
 }
-
-export {setupEventFunctions};

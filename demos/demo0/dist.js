@@ -1,10 +1,8443 @@
 (function () {
   'use strict';
 
+  /******************************************************************************
+  Copyright (c) Microsoft Corporation.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  PERFORMANCE OF THIS SOFTWARE.
+  ***************************************************************************** */
+  /* global Reflect, Promise, SuppressedError, Symbol */
+
+
+  function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+  }
+  function __runInitializers(thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+  }
+  typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+  };
+
+  /**
+   * Utility module to work with key-value stores.
+   *
+   * @module map
+   */
+
+  /**
+   * Creates a new Map instance.
+   *
+   * @function
+   * @return {Map<any, any>}
+   *
+   * @function
+   */
+  const create$5 = () => new Map();
+
+  /**
+   * Copy a Map object into a fresh Map object.
+   *
+   * @function
+   * @template K,V
+   * @param {Map<K,V>} m
+   * @return {Map<K,V>}
+   */
+  const copy = m => {
+    const r = create$5();
+    m.forEach((v, k) => { r.set(k, v); });
+    return r
+  };
+
+  /**
+   * Get map property. Create T if property is undefined and set T on map.
+   *
+   * ```js
+   * const listeners = map.setIfUndefined(events, 'eventName', set.create)
+   * listeners.add(listener)
+   * ```
+   *
+   * @function
+   * @template {Map<any, any>} MAP
+   * @template {MAP extends Map<any,infer V> ? function():V : unknown} CF
+   * @param {MAP} map
+   * @param {MAP extends Map<infer K,any> ? K : unknown} key
+   * @param {CF} createT
+   * @return {ReturnType<CF>}
+   */
+  const setIfUndefined = (map, key, createT) => {
+    let set = map.get(key);
+    if (set === undefined) {
+      map.set(key, set = createT());
+    }
+    return set
+  };
+
+  /**
+   * Creates an Array and populates it with the content of all key-value pairs using the `f(value, key)` function.
+   *
+   * @function
+   * @template K
+   * @template V
+   * @template R
+   * @param {Map<K,V>} m
+   * @param {function(V,K):R} f
+   * @return {Array<R>}
+   */
+  const map = (m, f) => {
+    const res = [];
+    for (const [key, value] of m) {
+      res.push(f(value, key));
+    }
+    return res
+  };
+
+  /**
+   * Tests whether any key-value pairs pass the test implemented by `f(value, key)`.
+   *
+   * @todo should rename to some - similarly to Array.some
+   *
+   * @function
+   * @template K
+   * @template V
+   * @param {Map<K,V>} m
+   * @param {function(V,K):boolean} f
+   * @return {boolean}
+   */
+  const any = (m, f) => {
+    for (const [key, value] of m) {
+      if (f(value, key)) {
+        return true
+      }
+    }
+    return false
+  };
+
+  /**
+   * Utility module to work with sets.
+   *
+   * @module set
+   */
+
+  const create$4 = () => new Set();
+
+  /**
+   * Utility module to work with Arrays.
+   *
+   * @module array
+   */
+
+
+  /**
+   * Return the last element of an array. The element must exist
+   *
+   * @template L
+   * @param {ArrayLike<L>} arr
+   * @return {L}
+   */
+  const last = arr => arr[arr.length - 1];
+
+  /**
+   * Transforms something array-like to an actual Array.
+   *
+   * @function
+   * @template T
+   * @param {ArrayLike<T>|Iterable<T>} arraylike
+   * @return {T}
+   */
+  const from = Array.from;
+
+  const isArray = Array.isArray;
+
+  /**
+   * Observable class prototype.
+   *
+   * @module observable
+   */
+
+
+  /**
+   * Handles named events.
+   * @experimental
+   *
+   * This is basically a (better typed) duplicate of Observable, which will replace Observable in the
+   * next release.
+   *
+   * @template {{[key in keyof EVENTS]: function(...any):void}} EVENTS
+   */
+  class ObservableV2 {
+    constructor () {
+      /**
+       * Some desc.
+       * @type {Map<string, Set<any>>}
+       */
+      this._observers = create$5();
+    }
+
+    /**
+     * @template {keyof EVENTS & string} NAME
+     * @param {NAME} name
+     * @param {EVENTS[NAME]} f
+     */
+    on (name, f) {
+      setIfUndefined(this._observers, /** @type {string} */ (name), create$4).add(f);
+      return f
+    }
+
+    /**
+     * @template {keyof EVENTS & string} NAME
+     * @param {NAME} name
+     * @param {EVENTS[NAME]} f
+     */
+    once (name, f) {
+      /**
+       * @param  {...any} args
+       */
+      const _f = (...args) => {
+        this.off(name, /** @type {any} */ (_f));
+        f(...args);
+      };
+      this.on(name, /** @type {any} */ (_f));
+    }
+
+    /**
+     * @template {keyof EVENTS & string} NAME
+     * @param {NAME} name
+     * @param {EVENTS[NAME]} f
+     */
+    off (name, f) {
+      const observers = this._observers.get(name);
+      if (observers !== undefined) {
+        observers.delete(f);
+        if (observers.size === 0) {
+          this._observers.delete(name);
+        }
+      }
+    }
+
+    /**
+     * Emit a named event. All registered event listeners that listen to the
+     * specified name will receive the event.
+     *
+     * @todo This should catch exceptions
+     *
+     * @template {keyof EVENTS & string} NAME
+     * @param {NAME} name The event name.
+     * @param {Parameters<EVENTS[NAME]>} args The arguments that are applied to the event listener.
+     */
+    emit (name, args) {
+      // copy all listeners to an array first to make sure that no event is emitted to listeners that are subscribed while the event handler is called.
+      return from((this._observers.get(name) || create$5()).values()).forEach(f => f(...args))
+    }
+
+    destroy () {
+      this._observers = create$5();
+    }
+  }
+  /* c8 ignore end */
+
+  /**
+   * Common Math expressions.
+   *
+   * @module math
+   */
+
+  const floor = Math.floor;
+  const abs = Math.abs;
+
+  /**
+   * @function
+   * @param {number} a
+   * @param {number} b
+   * @return {number} The smaller element of a and b
+   */
+  const min = (a, b) => a < b ? a : b;
+
+  /**
+   * @function
+   * @param {number} a
+   * @param {number} b
+   * @return {number} The bigger element of a and b
+   */
+  const max = (a, b) => a > b ? a : b;
+
+  /**
+   * @param {number} n
+   * @return {boolean} Wether n is negative. This function also differentiates between -0 and +0
+   */
+  const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0;
+
+  /* eslint-env browser */
+
+  /**
+   * Binary data constants.
+   *
+   * @module binary
+   */
+
+  /**
+   * n-th bit activated.
+   *
+   * @type {number}
+   */
+  const BIT1 = 1;
+  const BIT2 = 2;
+  const BIT3 = 4;
+  const BIT4 = 8;
+  const BIT6 = 32;
+  const BIT7 = 64;
+  const BIT8 = 128;
+  const BITS5 = 31;
+  const BITS6 = 63;
+  const BITS7 = 127;
+  /**
+   * @type {number}
+   */
+  const BITS31 = 0x7FFFFFFF;
+
+  /**
+   * Utility helpers for working with numbers.
+   *
+   * @module number
+   */
+
+
+  /* c8 ignore next */
+  const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && floor(num) === num);
+
+  /**
+   * @param {string} s
+   * @return {string}
+   */
+  const toLowerCase = s => s.toLowerCase();
+
+  const trimLeftRegex = /^\s*/g;
+
+  /**
+   * @param {string} s
+   * @return {string}
+   */
+  const trimLeft = s => s.replace(trimLeftRegex, '');
+
+  const fromCamelCaseRegex = /([A-Z])/g;
+
+  /**
+   * @param {string} s
+   * @param {string} separator
+   * @return {string}
+   */
+  const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`));
+
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  const _encodeUtf8Polyfill = str => {
+    const encodedString = unescape(encodeURIComponent(str));
+    const len = encodedString.length;
+    const buf = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      buf[i] = /** @type {number} */ (encodedString.codePointAt(i));
+    }
+    return buf
+  };
+
+  /* c8 ignore next */
+  const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
+
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  const _encodeUtf8Native = str => utf8TextEncoder.encode(str);
+
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  /* c8 ignore next */
+  const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill;
+
+  /* c8 ignore next */
+  let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+  /* c8 ignore start */
+  if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
+    // Safari doesn't handle BOM correctly.
+    // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
+    // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
+    // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
+    // Another issue is that from then on no BOM chars are recognized anymore
+    /* c8 ignore next */
+    utf8TextDecoder = null;
+  }
+
+  /**
+   * Efficient schema-less binary encoding with support for variable length encoding.
+   *
+   * Use [lib0/encoding] with [lib0/decoding]. Every encoding function has a corresponding decoding function.
+   *
+   * Encodes numbers in little-endian order (least to most significant byte order)
+   * and is compatible with Golang's binary encoding (https://golang.org/pkg/encoding/binary/)
+   * which is also used in Protocol Buffers.
+   *
+   * ```js
+   * // encoding step
+   * const encoder = encoding.createEncoder()
+   * encoding.writeVarUint(encoder, 256)
+   * encoding.writeVarString(encoder, 'Hello world!')
+   * const buf = encoding.toUint8Array(encoder)
+   * ```
+   *
+   * ```js
+   * // decoding step
+   * const decoder = decoding.createDecoder(buf)
+   * decoding.readVarUint(decoder) // => 256
+   * decoding.readVarString(decoder) // => 'Hello world!'
+   * decoding.hasContent(decoder) // => false - all data is read
+   * ```
+   *
+   * @module encoding
+   */
+
+
+  /**
+   * A BinaryEncoder handles the encoding to an Uint8Array.
+   */
+  class Encoder {
+    constructor () {
+      this.cpos = 0;
+      this.cbuf = new Uint8Array(100);
+      /**
+       * @type {Array<Uint8Array>}
+       */
+      this.bufs = [];
+    }
+  }
+
+  /**
+   * @function
+   * @return {Encoder}
+   */
+  const createEncoder = () => new Encoder();
+
+  /**
+   * The current length of the encoded data.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @return {number}
+   */
+  const length = encoder => {
+    let len = encoder.cpos;
+    for (let i = 0; i < encoder.bufs.length; i++) {
+      len += encoder.bufs[i].length;
+    }
+    return len
+  };
+
+  /**
+   * Transform to Uint8Array.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @return {Uint8Array} The created ArrayBuffer.
+   */
+  const toUint8Array = encoder => {
+    const uint8arr = new Uint8Array(length(encoder));
+    let curPos = 0;
+    for (let i = 0; i < encoder.bufs.length; i++) {
+      const d = encoder.bufs[i];
+      uint8arr.set(d, curPos);
+      curPos += d.length;
+    }
+    uint8arr.set(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos), curPos);
+    return uint8arr
+  };
+
+  /**
+   * Verify that it is possible to write `len` bytes wtihout checking. If
+   * necessary, a new Buffer with the required length is attached.
+   *
+   * @param {Encoder} encoder
+   * @param {number} len
+   */
+  const verifyLen = (encoder, len) => {
+    const bufferLen = encoder.cbuf.length;
+    if (bufferLen - encoder.cpos < len) {
+      encoder.bufs.push(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos));
+      encoder.cbuf = new Uint8Array(max(bufferLen, len) * 2);
+      encoder.cpos = 0;
+    }
+  };
+
+  /**
+   * Write one byte to the encoder.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {number} num The byte that is to be encoded.
+   */
+  const write = (encoder, num) => {
+    const bufferLen = encoder.cbuf.length;
+    if (encoder.cpos === bufferLen) {
+      encoder.bufs.push(encoder.cbuf);
+      encoder.cbuf = new Uint8Array(bufferLen * 2);
+      encoder.cpos = 0;
+    }
+    encoder.cbuf[encoder.cpos++] = num;
+  };
+
+  /**
+   * Write one byte as an unsigned integer.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {number} num The number that is to be encoded.
+   */
+  const writeUint8 = write;
+
+  /**
+   * Write a variable length unsigned integer. Max encodable integer is 2^53.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {number} num The number that is to be encoded.
+   */
+  const writeVarUint = (encoder, num) => {
+    while (num > BITS7) {
+      write(encoder, BIT8 | (BITS7 & num));
+      num = floor(num / 128); // shift >>> 7
+    }
+    write(encoder, BITS7 & num);
+  };
+
+  /**
+   * Write a variable length integer.
+   *
+   * We use the 7th bit instead for signaling that this is a negative number.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {number} num The number that is to be encoded.
+   */
+  const writeVarInt = (encoder, num) => {
+    const isNegative = isNegativeZero(num);
+    if (isNegative) {
+      num = -num;
+    }
+    //             |- whether to continue reading         |- whether is negative     |- number
+    write(encoder, (num > BITS6 ? BIT8 : 0) | (isNegative ? BIT7 : 0) | (BITS6 & num));
+    num = floor(num / 64); // shift >>> 6
+    // We don't need to consider the case of num === 0 so we can use a different
+    // pattern here than above.
+    while (num > 0) {
+      write(encoder, (num > BITS7 ? BIT8 : 0) | (BITS7 & num));
+      num = floor(num / 128); // shift >>> 7
+    }
+  };
+
+  /**
+   * A cache to store strings temporarily
+   */
+  const _strBuffer = new Uint8Array(30000);
+  const _maxStrBSize = _strBuffer.length / 3;
+
+  /**
+   * Write a variable length string.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {String} str The string that is to be encoded.
+   */
+  const _writeVarStringNative = (encoder, str) => {
+    if (str.length < _maxStrBSize) {
+      // We can encode the string into the existing buffer
+      /* c8 ignore next */
+      const written = utf8TextEncoder.encodeInto(str, _strBuffer).written || 0;
+      writeVarUint(encoder, written);
+      for (let i = 0; i < written; i++) {
+        write(encoder, _strBuffer[i]);
+      }
+    } else {
+      writeVarUint8Array(encoder, encodeUtf8(str));
+    }
+  };
+
+  /**
+   * Write a variable length string.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {String} str The string that is to be encoded.
+   */
+  const _writeVarStringPolyfill = (encoder, str) => {
+    const encodedString = unescape(encodeURIComponent(str));
+    const len = encodedString.length;
+    writeVarUint(encoder, len);
+    for (let i = 0; i < len; i++) {
+      write(encoder, /** @type {number} */ (encodedString.codePointAt(i)));
+    }
+  };
+
+  /**
+   * Write a variable length string.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {String} str The string that is to be encoded.
+   */
+  /* c8 ignore next */
+  const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
+
+  /**
+   * Append fixed-length Uint8Array to the encoder.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {Uint8Array} uint8Array
+   */
+  const writeUint8Array = (encoder, uint8Array) => {
+    const bufferLen = encoder.cbuf.length;
+    const cpos = encoder.cpos;
+    const leftCopyLen = min(bufferLen - cpos, uint8Array.length);
+    const rightCopyLen = uint8Array.length - leftCopyLen;
+    encoder.cbuf.set(uint8Array.subarray(0, leftCopyLen), cpos);
+    encoder.cpos += leftCopyLen;
+    if (rightCopyLen > 0) {
+      // Still something to write, write right half..
+      // Append new buffer
+      encoder.bufs.push(encoder.cbuf);
+      // must have at least size of remaining buffer
+      encoder.cbuf = new Uint8Array(max(bufferLen * 2, rightCopyLen));
+      // copy array
+      encoder.cbuf.set(uint8Array.subarray(leftCopyLen));
+      encoder.cpos = rightCopyLen;
+    }
+  };
+
+  /**
+   * Append an Uint8Array to Encoder.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {Uint8Array} uint8Array
+   */
+  const writeVarUint8Array = (encoder, uint8Array) => {
+    writeVarUint(encoder, uint8Array.byteLength);
+    writeUint8Array(encoder, uint8Array);
+  };
+
+  /**
+   * Create an DataView of the next `len` bytes. Use it to write data after
+   * calling this function.
+   *
+   * ```js
+   * // write float32 using DataView
+   * const dv = writeOnDataView(encoder, 4)
+   * dv.setFloat32(0, 1.1)
+   * // read float32 using DataView
+   * const dv = readFromDataView(encoder, 4)
+   * dv.getFloat32(0) // => 1.100000023841858 (leaving it to the reader to find out why this is the correct result)
+   * ```
+   *
+   * @param {Encoder} encoder
+   * @param {number} len
+   * @return {DataView}
+   */
+  const writeOnDataView = (encoder, len) => {
+    verifyLen(encoder, len);
+    const dview = new DataView(encoder.cbuf.buffer, encoder.cpos, len);
+    encoder.cpos += len;
+    return dview
+  };
+
+  /**
+   * @param {Encoder} encoder
+   * @param {number} num
+   */
+  const writeFloat32 = (encoder, num) => writeOnDataView(encoder, 4).setFloat32(0, num, false);
+
+  /**
+   * @param {Encoder} encoder
+   * @param {number} num
+   */
+  const writeFloat64 = (encoder, num) => writeOnDataView(encoder, 8).setFloat64(0, num, false);
+
+  /**
+   * @param {Encoder} encoder
+   * @param {bigint} num
+   */
+  const writeBigInt64 = (encoder, num) => /** @type {any} */ (writeOnDataView(encoder, 8)).setBigInt64(0, num, false);
+
+  const floatTestBed = new DataView(new ArrayBuffer(4));
+  /**
+   * Check if a number can be encoded as a 32 bit float.
+   *
+   * @param {number} num
+   * @return {boolean}
+   */
+  const isFloat32 = num => {
+    floatTestBed.setFloat32(0, num);
+    return floatTestBed.getFloat32(0) === num
+  };
+
+  /**
+   * Encode data with efficient binary format.
+   *
+   * Differences to JSON:
+   * • Transforms data to a binary format (not to a string)
+   * • Encodes undefined, NaN, and ArrayBuffer (these can't be represented in JSON)
+   * • Numbers are efficiently encoded either as a variable length integer, as a
+   *   32 bit float, as a 64 bit float, or as a 64 bit bigint.
+   *
+   * Encoding table:
+   *
+   * | Data Type           | Prefix   | Encoding Method    | Comment |
+   * | ------------------- | -------- | ------------------ | ------- |
+   * | undefined           | 127      |                    | Functions, symbol, and everything that cannot be identified is encoded as undefined |
+   * | null                | 126      |                    | |
+   * | integer             | 125      | writeVarInt        | Only encodes 32 bit signed integers |
+   * | float32             | 124      | writeFloat32       | |
+   * | float64             | 123      | writeFloat64       | |
+   * | bigint              | 122      | writeBigInt64      | |
+   * | boolean (false)     | 121      |                    | True and false are different data types so we save the following byte |
+   * | boolean (true)      | 120      |                    | - 0b01111000 so the last bit determines whether true or false |
+   * | string              | 119      | writeVarString     | |
+   * | object<string,any>  | 118      | custom             | Writes {length} then {length} key-value pairs |
+   * | array<any>          | 117      | custom             | Writes {length} then {length} json values |
+   * | Uint8Array          | 116      | writeVarUint8Array | We use Uint8Array for any kind of binary data |
+   *
+   * Reasons for the decreasing prefix:
+   * We need the first bit for extendability (later we may want to encode the
+   * prefix with writeVarUint). The remaining 7 bits are divided as follows:
+   * [0-30]   the beginning of the data range is used for custom purposes
+   *          (defined by the function that uses this library)
+   * [31-127] the end of the data range is used for data encoding by
+   *          lib0/encoding.js
+   *
+   * @param {Encoder} encoder
+   * @param {undefined|null|number|bigint|boolean|string|Object<string,any>|Array<any>|Uint8Array} data
+   */
+  const writeAny = (encoder, data) => {
+    switch (typeof data) {
+      case 'string':
+        // TYPE 119: STRING
+        write(encoder, 119);
+        writeVarString(encoder, data);
+        break
+      case 'number':
+        if (isInteger(data) && abs(data) <= BITS31) {
+          // TYPE 125: INTEGER
+          write(encoder, 125);
+          writeVarInt(encoder, data);
+        } else if (isFloat32(data)) {
+          // TYPE 124: FLOAT32
+          write(encoder, 124);
+          writeFloat32(encoder, data);
+        } else {
+          // TYPE 123: FLOAT64
+          write(encoder, 123);
+          writeFloat64(encoder, data);
+        }
+        break
+      case 'bigint':
+        // TYPE 122: BigInt
+        write(encoder, 122);
+        writeBigInt64(encoder, data);
+        break
+      case 'object':
+        if (data === null) {
+          // TYPE 126: null
+          write(encoder, 126);
+        } else if (isArray(data)) {
+          // TYPE 117: Array
+          write(encoder, 117);
+          writeVarUint(encoder, data.length);
+          for (let i = 0; i < data.length; i++) {
+            writeAny(encoder, data[i]);
+          }
+        } else if (data instanceof Uint8Array) {
+          // TYPE 116: ArrayBuffer
+          write(encoder, 116);
+          writeVarUint8Array(encoder, data);
+        } else {
+          // TYPE 118: Object
+          write(encoder, 118);
+          const keys = Object.keys(data);
+          writeVarUint(encoder, keys.length);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            writeVarString(encoder, key);
+            writeAny(encoder, data[key]);
+          }
+        }
+        break
+      case 'boolean':
+        // TYPE 120/121: boolean (true/false)
+        write(encoder, data ? 120 : 121);
+        break
+      default:
+        // TYPE 127: undefined
+        write(encoder, 127);
+    }
+  };
+
+  /**
+   * Now come a few stateful encoder that have their own classes.
+   */
+
+  /**
+   * Basic Run Length Encoder - a basic compression implementation.
+   *
+   * Encodes [1,1,1,7] to [1,3,7,1] (3 times 1, 1 time 7). This encoder might do more harm than good if there are a lot of values that are not repeated.
+   *
+   * It was originally used for image compression. Cool .. article http://csbruce.com/cbm/transactor/pdfs/trans_v7_i06.pdf
+   *
+   * @note T must not be null!
+   *
+   * @template T
+   */
+  class RleEncoder extends Encoder {
+    /**
+     * @param {function(Encoder, T):void} writer
+     */
+    constructor (writer) {
+      super();
+      /**
+       * The writer
+       */
+      this.w = writer;
+      /**
+       * Current state
+       * @type {T|null}
+       */
+      this.s = null;
+      this.count = 0;
+    }
+
+    /**
+     * @param {T} v
+     */
+    write (v) {
+      if (this.s === v) {
+        this.count++;
+      } else {
+        if (this.count > 0) {
+          // flush counter, unless this is the first value (count = 0)
+          writeVarUint(this, this.count - 1); // since count is always > 0, we can decrement by one. non-standard encoding ftw
+        }
+        this.count = 1;
+        // write first value
+        this.w(this, v);
+        this.s = v;
+      }
+    }
+  }
+
+  /**
+   * @param {UintOptRleEncoder} encoder
+   */
+  const flushUintOptRleEncoder = encoder => {
+    if (encoder.count > 0) {
+      // flush counter, unless this is the first value (count = 0)
+      // case 1: just a single value. set sign to positive
+      // case 2: write several values. set sign to negative to indicate that there is a length coming
+      writeVarInt(encoder.encoder, encoder.count === 1 ? encoder.s : -encoder.s);
+      if (encoder.count > 1) {
+        writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+      }
+    }
+  };
+
+  /**
+   * Optimized Rle encoder that does not suffer from the mentioned problem of the basic Rle encoder.
+   *
+   * Internally uses VarInt encoder to write unsigned integers. If the input occurs multiple times, we write
+   * write it as a negative number. The UintOptRleDecoder then understands that it needs to read a count.
+   *
+   * Encodes [1,2,3,3,3] as [1,2,-3,3] (once 1, once 2, three times 3)
+   */
+  class UintOptRleEncoder {
+    constructor () {
+      this.encoder = new Encoder();
+      /**
+       * @type {number}
+       */
+      this.s = 0;
+      this.count = 0;
+    }
+
+    /**
+     * @param {number} v
+     */
+    write (v) {
+      if (this.s === v) {
+        this.count++;
+      } else {
+        flushUintOptRleEncoder(this);
+        this.count = 1;
+        this.s = v;
+      }
+    }
+
+    /**
+     * Flush the encoded state and transform this to a Uint8Array.
+     *
+     * Note that this should only be called once.
+     */
+    toUint8Array () {
+      flushUintOptRleEncoder(this);
+      return toUint8Array(this.encoder)
+    }
+  }
+
+  /**
+   * @param {IntDiffOptRleEncoder} encoder
+   */
+  const flushIntDiffOptRleEncoder = encoder => {
+    if (encoder.count > 0) {
+      //          31 bit making up the diff | wether to write the counter
+      // const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1)
+      const encodedDiff = encoder.diff * 2 + (encoder.count === 1 ? 0 : 1);
+      // flush counter, unless this is the first value (count = 0)
+      // case 1: just a single value. set first bit to positive
+      // case 2: write several values. set first bit to negative to indicate that there is a length coming
+      writeVarInt(encoder.encoder, encodedDiff);
+      if (encoder.count > 1) {
+        writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+      }
+    }
+  };
+
+  /**
+   * A combination of the IntDiffEncoder and the UintOptRleEncoder.
+   *
+   * The count approach is similar to the UintDiffOptRleEncoder, but instead of using the negative bitflag, it encodes
+   * in the LSB whether a count is to be read. Therefore this Encoder only supports 31 bit integers!
+   *
+   * Encodes [1, 2, 3, 2] as [3, 1, 6, -1] (more specifically [(1 << 1) | 1, (3 << 0) | 0, -1])
+   *
+   * Internally uses variable length encoding. Contrary to normal UintVar encoding, the first byte contains:
+   * * 1 bit that denotes whether the next value is a count (LSB)
+   * * 1 bit that denotes whether this value is negative (MSB - 1)
+   * * 1 bit that denotes whether to continue reading the variable length integer (MSB)
+   *
+   * Therefore, only five bits remain to encode diff ranges.
+   *
+   * Use this Encoder only when appropriate. In most cases, this is probably a bad idea.
+   */
+  class IntDiffOptRleEncoder {
+    constructor () {
+      this.encoder = new Encoder();
+      /**
+       * @type {number}
+       */
+      this.s = 0;
+      this.count = 0;
+      this.diff = 0;
+    }
+
+    /**
+     * @param {number} v
+     */
+    write (v) {
+      if (this.diff === v - this.s) {
+        this.s = v;
+        this.count++;
+      } else {
+        flushIntDiffOptRleEncoder(this);
+        this.count = 1;
+        this.diff = v - this.s;
+        this.s = v;
+      }
+    }
+
+    /**
+     * Flush the encoded state and transform this to a Uint8Array.
+     *
+     * Note that this should only be called once.
+     */
+    toUint8Array () {
+      flushIntDiffOptRleEncoder(this);
+      return toUint8Array(this.encoder)
+    }
+  }
+
+  /**
+   * Optimized String Encoder.
+   *
+   * Encoding many small strings in a simple Encoder is not very efficient. The function call to decode a string takes some time and creates references that must be eventually deleted.
+   * In practice, when decoding several million small strings, the GC will kick in more and more often to collect orphaned string objects (or maybe there is another reason?).
+   *
+   * This string encoder solves the above problem. All strings are concatenated and written as a single string using a single encoding call.
+   *
+   * The lengths are encoded using a UintOptRleEncoder.
+   */
+  class StringEncoder {
+    constructor () {
+      /**
+       * @type {Array<string>}
+       */
+      this.sarr = [];
+      this.s = '';
+      this.lensE = new UintOptRleEncoder();
+    }
+
+    /**
+     * @param {string} string
+     */
+    write (string) {
+      this.s += string;
+      if (this.s.length > 19) {
+        this.sarr.push(this.s);
+        this.s = '';
+      }
+      this.lensE.write(string.length);
+    }
+
+    toUint8Array () {
+      const encoder = new Encoder();
+      this.sarr.push(this.s);
+      this.s = '';
+      writeVarString(encoder, this.sarr.join(''));
+      writeUint8Array(encoder, this.lensE.toUint8Array());
+      return toUint8Array(encoder)
+    }
+  }
+
+  /**
+   * Error helpers.
+   *
+   * @module error
+   */
+
+  /**
+   * @param {string} s
+   * @return {Error}
+   */
+  /* c8 ignore next */
+  const create$3 = s => new Error(s);
+
+  /**
+   * @throws {Error}
+   * @return {never}
+   */
+  /* c8 ignore next 3 */
+  const methodUnimplemented = () => {
+    throw create$3('Method unimplemented')
+  };
+
+  /**
+   * @throws {Error}
+   * @return {never}
+   */
+  /* c8 ignore next 3 */
+  const unexpectedCase = () => {
+    throw create$3('Unexpected case')
+  };
+
+  /* eslint-env browser */
+
+  const getRandomValues = crypto.getRandomValues.bind(crypto);
+
+  /**
+   * Isomorphic module for true random numbers / buffers / uuids.
+   *
+   * Attention: falls back to Math.random if the browser does not support crypto.
+   *
+   * @module random
+   */
+
+
+  const uint32 = () => getRandomValues(new Uint32Array(1))[0];
+
+  // @ts-ignore
+  const uuidv4Template = [1e7] + -1e3 + -4e3 + -8e3 + -1e11;
+
+  /**
+   * @return {string}
+   */
+  const uuidv4 = () => uuidv4Template.replace(/[018]/g, /** @param {number} c */ c =>
+    (c ^ uint32() & 15 >> c / 4).toString(16)
+  );
+
+  /**
+   * Utility helpers to work with promises.
+   *
+   * @module promise
+   */
+
+
+  /**
+   * @template T
+   * @callback PromiseResolve
+   * @param {T|PromiseLike<T>} [result]
+   */
+
+  /**
+   * @template T
+   * @param {function(PromiseResolve<T>,function(Error):void):any} f
+   * @return {Promise<T>}
+   */
+  const create$2 = f => /** @type {Promise<T>} */ (new Promise(f));
+
+  /**
+   * `Promise.all` wait for all promises in the array to resolve and return the result
+   * @template {unknown[] | []} PS
+   *
+   * @param {PS} ps
+   * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
+   */
+  Promise.all.bind(Promise);
+
+  /**
+   * Often used conditions.
+   *
+   * @module conditions
+   */
+
+  /**
+   * @template T
+   * @param {T|null|undefined} v
+   * @return {T|null}
+   */
+  /* c8 ignore next */
+  const undefinedToNull = v => v === undefined ? null : v;
+
+  /* eslint-env browser */
+
+  /**
+   * Isomorphic variable storage.
+   *
+   * Uses LocalStorage in the browser and falls back to in-memory storage.
+   *
+   * @module storage
+   */
+
+  /* c8 ignore start */
+  class VarStoragePolyfill {
+    constructor () {
+      this.map = new Map();
+    }
+
+    /**
+     * @param {string} key
+     * @param {any} newValue
+     */
+    setItem (key, newValue) {
+      this.map.set(key, newValue);
+    }
+
+    /**
+     * @param {string} key
+     */
+    getItem (key) {
+      return this.map.get(key)
+    }
+  }
+  /* c8 ignore stop */
+
+  /**
+   * @type {any}
+   */
+  let _localStorage = new VarStoragePolyfill();
+  let usePolyfill = true;
+
+  /* c8 ignore start */
+  try {
+    // if the same-origin rule is violated, accessing localStorage might thrown an error
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      _localStorage = localStorage;
+      usePolyfill = false;
+    }
+  } catch (e) { }
+  /* c8 ignore stop */
+
+  /**
+   * This is basically localStorage in browser, or a polyfill in nodejs
+   */
+  /* c8 ignore next */
+  const varStorage = _localStorage;
+
+  /**
+   * Utility functions for working with EcmaScript objects.
+   *
+   * @module object
+   */
+
+
+  /**
+   * Object.assign
+   */
+  const assign = Object.assign;
+
+  /**
+   * @param {Object<string,any>} obj
+   */
+  const keys$1 = Object.keys;
+
+  /**
+   * @template V
+   * @param {{[k:string]:V}} obj
+   * @param {function(V,string):any} f
+   */
+  const forEach = (obj, f) => {
+    for (const key in obj) {
+      f(obj[key], key);
+    }
+  };
+
+  /**
+   * @param {Object<string,any>} obj
+   * @return {number}
+   */
+  const size = obj => keys$1(obj).length;
+
+  /**
+   * @param {Object|null|undefined} obj
+   */
+  const isEmpty = obj => {
+    // eslint-disable-next-line no-unreachable-loop
+    for (const _k in obj) {
+      return false
+    }
+    return true
+  };
+
+  /**
+   * @template {{ [key:string|number|symbol]: any }} T
+   * @param {T} obj
+   * @param {(v:T[keyof T],k:keyof T)=>boolean} f
+   * @return {boolean}
+   */
+  const every = (obj, f) => {
+    for (const key in obj) {
+      if (!f(obj[key], key)) {
+        return false
+      }
+    }
+    return true
+  };
+
+  /**
+   * Calls `Object.prototype.hasOwnProperty`.
+   *
+   * @param {any} obj
+   * @param {string|number|symbol} key
+   * @return {boolean}
+   */
+  const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+  /**
+   * @param {Object<string,any>} a
+   * @param {Object<string,any>} b
+   * @return {boolean}
+   */
+  const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
+
+  /**
+   * Make an object immutable. This hurts performance and is usually not needed if you perform good
+   * coding practices.
+   */
+  const freeze = Object.freeze;
+
+  /**
+   * Make an object and all its children immutable.
+   * This *really* hurts performance and is usually not needed if you perform good coding practices.
+   *
+   * @template {any} T
+   * @param {T} o
+   * @return {Readonly<T>}
+   */
+  const deepFreeze = (o) => {
+    for (const key in o) {
+      const c = o[key];
+      if (typeof c === 'object' || typeof c === 'function') {
+        deepFreeze(o[key]);
+      }
+    }
+    return freeze(o)
+  };
+
+  /**
+   * Common functions and function call helpers.
+   *
+   * @module function
+   */
+
+
+  /**
+   * Calls all functions in `fs` with args. Only throws after all functions were called.
+   *
+   * @param {Array<function>} fs
+   * @param {Array<any>} args
+   */
+  const callAll = (fs, args, i = 0) => {
+    try {
+      for (; i < fs.length; i++) {
+        fs[i](...args);
+      }
+    } finally {
+      if (i < fs.length) {
+        callAll(fs, args, i + 1);
+      }
+    }
+  };
+
+  /**
+   * @template V
+   * @template {V} OPTS
+   *
+   * @param {V} value
+   * @param {Array<OPTS>} options
+   */
+  // @ts-ignore
+  const isOneOf = (value, options) => options.includes(value);
+
+  /**
+   * Isomorphic module to work access the environment (query params, env variables).
+   *
+   * @module environment
+   */
+
+
+  /* c8 ignore next 2 */
+  // @ts-ignore
+  const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+
+  /**
+   * @type {Map<string,string>}
+   */
+  let params;
+
+  /* c8 ignore start */
+  const computeParams = () => {
+    if (params === undefined) {
+      if (isNode) {
+        params = create$5();
+        const pargs = process.argv;
+        let currParamName = null;
+        for (let i = 0; i < pargs.length; i++) {
+          const parg = pargs[i];
+          if (parg[0] === '-') {
+            if (currParamName !== null) {
+              params.set(currParamName, '');
+            }
+            currParamName = parg;
+          } else {
+            if (currParamName !== null) {
+              params.set(currParamName, parg);
+              currParamName = null;
+            }
+          }
+        }
+        if (currParamName !== null) {
+          params.set(currParamName, '');
+        }
+        // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
+      } else if (typeof location === 'object') {
+        params = create$5(); // eslint-disable-next-line no-undef
+        (location.search || '?').slice(1).split('&').forEach((kv) => {
+          if (kv.length !== 0) {
+            const [key, value] = kv.split('=');
+            params.set(`--${fromCamelCase(key, '-')}`, value);
+            params.set(`-${fromCamelCase(key, '-')}`, value);
+          }
+        });
+      } else {
+        params = create$5();
+      }
+    }
+    return params
+  };
+  /* c8 ignore stop */
+
+  /**
+   * @param {string} name
+   * @return {boolean}
+   */
+  /* c8 ignore next */
+  const hasParam = (name) => computeParams().has(name);
+
+  /**
+   * @param {string} name
+   * @return {string|null}
+   */
+  /* c8 ignore next 4 */
+  const getVariable = (name) =>
+    isNode
+      ? undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
+      : undefinedToNull(varStorage.getItem(name));
+
+  /**
+   * @param {string} name
+   * @return {boolean}
+   */
+  /* c8 ignore next 2 */
+  const hasConf = (name) =>
+    hasParam('--' + name) || getVariable(name) !== null;
+
+  /* c8 ignore next */
+  hasConf('production');
+
+  /* c8 ignore next 2 */
+  const forceColor = isNode &&
+    isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
+
+  /* c8 ignore start */
+  /**
+   * Color is enabled by default if the terminal supports it.
+   *
+   * Explicitly enable color using `--color` parameter
+   * Disable color using `--no-color` parameter or using `NO_COLOR=1` environment variable.
+   * `FORCE_COLOR=1` enables color and takes precedence over all.
+   */
+  const supportsColor = forceColor || (
+    !hasParam('--no-colors') && // @todo deprecate --no-colors
+    !hasConf('no-color') &&
+    (!isNode || process.stdout.isTTY) && (
+      !isNode ||
+      hasParam('--color') ||
+      getVariable('COLORTERM') !== null ||
+      (getVariable('TERM') || '').includes('color')
+    )
+  );
+  /* c8 ignore stop */
+
+  /**
+   * Working with value pairs.
+   *
+   * @module pair
+   */
+
+  /**
+   * @template L,R
+   */
+  class Pair {
+    /**
+     * @param {L} left
+     * @param {R} right
+     */
+    constructor (left, right) {
+      this.left = left;
+      this.right = right;
+    }
+  }
+
+  /**
+   * @template L,R
+   * @param {L} left
+   * @param {R} right
+   * @return {Pair<L,R>}
+   */
+  const create$1 = (left, right) => new Pair(left, right);
+
+  /* eslint-env browser */
+
+
+  /** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null);
+
+  /**
+   * @param {Map<string,string>} m
+   * @return {string}
+   */
+  const mapToStyleString = m => map(m, (value, key) => `${key}:${value};`).join('');
+  /* c8 ignore stop */
+
+  /**
+   * Utility module to work with EcmaScript Symbols.
+   *
+   * @module symbol
+   */
+
+  /**
+   * Return fresh symbol.
+   */
+  const create = Symbol;
+
+  const BOLD = create();
+  const UNBOLD = create();
+  const BLUE = create();
+  const GREY = create();
+  const GREEN = create();
+  const RED = create();
+  const PURPLE = create();
+  const ORANGE = create();
+  const UNCOLOR = create();
+
+  /* c8 ignore start */
+  /**
+   * @param {Array<undefined|string|Symbol|Object|number|function():any>} args
+   * @return {Array<string|object|number|undefined>}
+   */
+  const computeNoColorLoggingArgs = args => {
+    if (args.length === 1 && args[0]?.constructor === Function) {
+      args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+    }
+    const strBuilder = [];
+    const logArgs = [];
+    // try with formatting until we find something unsupported
+    let i = 0;
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      if (arg === undefined) {
+        break
+      } else if (arg.constructor === String || arg.constructor === Number) {
+        strBuilder.push(arg);
+      } else if (arg.constructor === Object) {
+        break
+      }
+    }
+    if (i > 0) {
+      // create logArgs with what we have so far
+      logArgs.push(strBuilder.join(''));
+    }
+    // append the rest
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      if (!(arg instanceof Symbol)) {
+        logArgs.push(arg);
+      }
+    }
+    return logArgs
+  };
+  /* c8 ignore stop */
+
+  /**
+   * Isomorphic logging module with support for colors!
+   *
+   * @module logging
+   */
+
+
+  /**
+   * @type {Object<Symbol,pair.Pair<string,string>>}
+   */
+  const _browserStyleMap = {
+    [BOLD]: create$1('font-weight', 'bold'),
+    [UNBOLD]: create$1('font-weight', 'normal'),
+    [BLUE]: create$1('color', 'blue'),
+    [GREEN]: create$1('color', 'green'),
+    [GREY]: create$1('color', 'grey'),
+    [RED]: create$1('color', 'red'),
+    [PURPLE]: create$1('color', 'purple'),
+    [ORANGE]: create$1('color', 'orange'), // not well supported in chrome when debugging node with inspector - TODO: deprecate
+    [UNCOLOR]: create$1('color', 'black')
+  };
+
+  /**
+   * @param {Array<string|Symbol|Object|number|function():any>} args
+   * @return {Array<string|object|number>}
+   */
+  /* c8 ignore start */
+  const computeBrowserLoggingArgs = (args) => {
+    if (args.length === 1 && args[0]?.constructor === Function) {
+      args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+    }
+    const strBuilder = [];
+    const styles = [];
+    const currentStyle = create$5();
+    /**
+     * @type {Array<string|Object|number>}
+     */
+    let logArgs = [];
+    // try with formatting until we find something unsupported
+    let i = 0;
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      // @ts-ignore
+      const style = _browserStyleMap[arg];
+      if (style !== undefined) {
+        currentStyle.set(style.left, style.right);
+      } else {
+        if (arg === undefined) {
+          break
+        }
+        if (arg.constructor === String || arg.constructor === Number) {
+          const style = mapToStyleString(currentStyle);
+          if (i > 0 || style.length > 0) {
+            strBuilder.push('%c' + arg);
+            styles.push(style);
+          } else {
+            strBuilder.push(arg);
+          }
+        } else {
+          break
+        }
+      }
+    }
+    if (i > 0) {
+      // create logArgs with what we have so far
+      logArgs = styles;
+      logArgs.unshift(strBuilder.join(''));
+    }
+    // append the rest
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      if (!(arg instanceof Symbol)) {
+        logArgs.push(arg);
+      }
+    }
+    return logArgs
+  };
+  /* c8 ignore stop */
+
+  /* c8 ignore start */
+  const computeLoggingArgs = supportsColor
+    ? computeBrowserLoggingArgs
+    : computeNoColorLoggingArgs;
+  /* c8 ignore stop */
+
+  /**
+   * @param {Array<string|Symbol|Object|number>} args
+   */
+  const print = (...args) => {
+    console.log(...computeLoggingArgs(args));
+    /* c8 ignore next */
+    vconsoles.forEach((vc) => vc.print(args));
+  };
+
+  /* c8 ignore start */
+  /**
+   * @param {Array<string|Symbol|Object|number>} args
+   */
+  const warn = (...args) => {
+    console.warn(...computeLoggingArgs(args));
+    args.unshift(ORANGE);
+    vconsoles.forEach((vc) => vc.print(args));
+  };
+
+  const vconsoles = create$4();
+
+  /**
+   * Utility module to create and manipulate Iterators.
+   *
+   * @module iterator
+   */
+
+
+  /**
+   * @template T
+   * @param {function():IteratorResult<T>} next
+   * @return {IterableIterator<T>}
+   */
+  const createIterator = next => ({
+    /**
+     * @return {IterableIterator<T>}
+     */
+    [Symbol.iterator] () {
+      return this
+    },
+    // @ts-ignore
+    next
+  });
+
+  /**
+   * @template T
+   * @param {Iterator<T>} iterator
+   * @param {function(T):boolean} filter
+   */
+  const iteratorFilter = (iterator, filter) => createIterator(() => {
+    let res;
+    do {
+      res = iterator.next();
+    } while (!res.done && !filter(res.value))
+    return res
+  });
+
+  /**
+   * @template T,M
+   * @param {Iterator<T>} iterator
+   * @param {function(T):M} fmap
+   */
+  const iteratorMap = (iterator, fmap) => createIterator(() => {
+    const { done, value } = iterator.next();
+    return { done, value: done ? undefined : fmap(value) }
+  });
+
+  class DeleteItem {
+    /**
+     * @param {number} clock
+     * @param {number} len
+     */
+    constructor (clock, len) {
+      /**
+       * @type {number}
+       */
+      this.clock = clock;
+      /**
+       * @type {number}
+       */
+      this.len = len;
+    }
+  }
+
+  /**
+   * We no longer maintain a DeleteStore. DeleteSet is a temporary object that is created when needed.
+   * - When created in a transaction, it must only be accessed after sorting, and merging
+   *   - This DeleteSet is send to other clients
+   * - We do not create a DeleteSet when we send a sync message. The DeleteSet message is created directly from StructStore
+   * - We read a DeleteSet as part of a sync/update message. In this case the DeleteSet is already sorted and merged.
+   */
+  class DeleteSet {
+    constructor () {
+      /**
+       * @type {Map<number,Array<DeleteItem>>}
+       */
+      this.clients = new Map();
+    }
+  }
+
+  /**
+   * Iterate over all structs that the DeleteSet gc's.
+   *
+   * @param {Transaction} transaction
+   * @param {DeleteSet} ds
+   * @param {function(GC|Item):void} f
+   *
+   * @function
+   */
+  const iterateDeletedStructs = (transaction, ds, f) =>
+    ds.clients.forEach((deletes, clientid) => {
+      const structs = /** @type {Array<GC|Item>} */ (transaction.doc.store.clients.get(clientid));
+      if (structs != null) {
+        const lastStruct = structs[structs.length - 1];
+        const clockState = lastStruct.id.clock + lastStruct.length;
+        for (let i = 0, del = deletes[i]; i < deletes.length && del.clock < clockState; del = deletes[++i]) {
+          iterateStructs(transaction, structs, del.clock, del.len, f);
+        }
+      }
+    });
+
+  /**
+   * @param {Array<DeleteItem>} dis
+   * @param {number} clock
+   * @return {number|null}
+   *
+   * @private
+   * @function
+   */
+  const findIndexDS = (dis, clock) => {
+    let left = 0;
+    let right = dis.length - 1;
+    while (left <= right) {
+      const midindex = floor((left + right) / 2);
+      const mid = dis[midindex];
+      const midclock = mid.clock;
+      if (midclock <= clock) {
+        if (clock < midclock + mid.len) {
+          return midindex
+        }
+        left = midindex + 1;
+      } else {
+        right = midindex - 1;
+      }
+    }
+    return null
+  };
+
+  /**
+   * @param {DeleteSet} ds
+   * @param {ID} id
+   * @return {boolean}
+   *
+   * @private
+   * @function
+   */
+  const isDeleted = (ds, id) => {
+    const dis = ds.clients.get(id.client);
+    return dis !== undefined && findIndexDS(dis, id.clock) !== null
+  };
+
+  /**
+   * @param {DeleteSet} ds
+   *
+   * @private
+   * @function
+   */
+  const sortAndMergeDeleteSet = ds => {
+    ds.clients.forEach(dels => {
+      dels.sort((a, b) => a.clock - b.clock);
+      // merge items without filtering or splicing the array
+      // i is the current pointer
+      // j refers to the current insert position for the pointed item
+      // try to merge dels[i] into dels[j-1] or set dels[j]=dels[i]
+      let i, j;
+      for (i = 1, j = 1; i < dels.length; i++) {
+        const left = dels[j - 1];
+        const right = dels[i];
+        if (left.clock + left.len >= right.clock) {
+          left.len = max(left.len, right.clock + right.len - left.clock);
+        } else {
+          if (j < i) {
+            dels[j] = right;
+          }
+          j++;
+        }
+      }
+      dels.length = j;
+    });
+  };
+
+  /**
+   * @param {DeleteSet} ds
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} length
+   *
+   * @private
+   * @function
+   */
+  const addToDeleteSet = (ds, client, clock, length) => {
+    setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length));
+  };
+
+  /**
+   * @param {DSEncoderV1 | DSEncoderV2} encoder
+   * @param {DeleteSet} ds
+   *
+   * @private
+   * @function
+   */
+  const writeDeleteSet = (encoder, ds) => {
+    writeVarUint(encoder.restEncoder, ds.clients.size);
+
+    // Ensure that the delete set is written in a deterministic order
+    from(ds.clients.entries())
+      .sort((a, b) => b[0] - a[0])
+      .forEach(([client, dsitems]) => {
+        encoder.resetDsCurVal();
+        writeVarUint(encoder.restEncoder, client);
+        const len = dsitems.length;
+        writeVarUint(encoder.restEncoder, len);
+        for (let i = 0; i < len; i++) {
+          const item = dsitems[i];
+          encoder.writeDsClock(item.clock);
+          encoder.writeDsLen(item.len);
+        }
+      });
+  };
+
+  /**
+   * @module Y
+   */
+
+
+  const generateNewClientId = uint32;
+
+  /**
+   * @typedef {Object} DocOpts
+   * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
+   * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
+   * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
+   * @property {string | null} [DocOpts.collectionid] Associate this document with a collection. This only plays a role if your provider has a concept of collection.
+   * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
+   * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
+   * @property {boolean} [DocOpts.shouldLoad] Whether the document should be synced by the provider now. This is toggled to true when you call ydoc.load()
+   */
+
+  /**
+   * @typedef {Object} DocEvents
+   * @property {function(Doc):void} DocEvents.destroy
+   * @property {function(Doc):void} DocEvents.load
+   * @property {function(boolean, Doc):void} DocEvents.sync
+   * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
+   * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+   * @property {function(Doc):void} DocEvents.beforeAllTransactions
+   * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
+   * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
+   * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
+   * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
+   * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+   * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
+   */
+
+  /**
+   * A Yjs instance handles the state of shared data.
+   * @extends ObservableV2<DocEvents>
+   */
+  class Doc extends ObservableV2 {
+    /**
+     * @param {DocOpts} opts configuration
+     */
+    constructor ({ guid = uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
+      super();
+      this.gc = gc;
+      this.gcFilter = gcFilter;
+      this.clientID = generateNewClientId();
+      this.guid = guid;
+      this.collectionid = collectionid;
+      /**
+       * @type {Map<string, AbstractType<YEvent<any>>>}
+       */
+      this.share = new Map();
+      this.store = new StructStore();
+      /**
+       * @type {Transaction | null}
+       */
+      this._transaction = null;
+      /**
+       * @type {Array<Transaction>}
+       */
+      this._transactionCleanups = [];
+      /**
+       * @type {Set<Doc>}
+       */
+      this.subdocs = new Set();
+      /**
+       * If this document is a subdocument - a document integrated into another document - then _item is defined.
+       * @type {Item?}
+       */
+      this._item = null;
+      this.shouldLoad = shouldLoad;
+      this.autoLoad = autoLoad;
+      this.meta = meta;
+      /**
+       * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
+       * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
+       *
+       * @type {boolean}
+       */
+      this.isLoaded = false;
+      /**
+       * This is set to true when the connection provider has successfully synced with a backend.
+       * Note that when using peer-to-peer providers this event may not provide very useful.
+       * Also note that not all providers implement this feature. Provider authors are encouraged to fire
+       * the `sync` event when the doc has been synced (with `true` as a parameter) or if connection is
+       * lost (with false as a parameter).
+       */
+      this.isSynced = false;
+      this.isDestroyed = false;
+      /**
+       * Promise that resolves once the document has been loaded from a persistence provider.
+       */
+      this.whenLoaded = create$2(resolve => {
+        this.on('load', () => {
+          this.isLoaded = true;
+          resolve(this);
+        });
+      });
+      const provideSyncedPromise = () => create$2(resolve => {
+        /**
+         * @param {boolean} isSynced
+         */
+        const eventHandler = (isSynced) => {
+          if (isSynced === undefined || isSynced === true) {
+            this.off('sync', eventHandler);
+            resolve();
+          }
+        };
+        this.on('sync', eventHandler);
+      });
+      this.on('sync', isSynced => {
+        if (isSynced === false && this.isSynced) {
+          this.whenSynced = provideSyncedPromise();
+        }
+        this.isSynced = isSynced === undefined || isSynced === true;
+        if (this.isSynced && !this.isLoaded) {
+          this.emit('load', [this]);
+        }
+      });
+      /**
+       * Promise that resolves once the document has been synced with a backend.
+       * This promise is recreated when the connection is lost.
+       * Note the documentation about the `isSynced` property.
+       */
+      this.whenSynced = provideSyncedPromise();
+    }
+
+    /**
+     * Notify the parent document that you request to load data into this subdocument (if it is a subdocument).
+     *
+     * `load()` might be used in the future to request any provider to load the most current data.
+     *
+     * It is safe to call `load()` multiple times.
+     */
+    load () {
+      const item = this._item;
+      if (item !== null && !this.shouldLoad) {
+        transact(/** @type {any} */ (item.parent).doc, transaction => {
+          transaction.subdocsLoaded.add(this);
+        }, null, true);
+      }
+      this.shouldLoad = true;
+    }
+
+    getSubdocs () {
+      return this.subdocs
+    }
+
+    getSubdocGuids () {
+      return new Set(from(this.subdocs).map(doc => doc.guid))
+    }
+
+    /**
+     * Changes that happen inside of a transaction are bundled. This means that
+     * the observer fires _after_ the transaction is finished and that all changes
+     * that happened inside of the transaction are sent as one message to the
+     * other peers.
+     *
+     * @template T
+     * @param {function(Transaction):T} f The function that should be executed as a transaction
+     * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+     * @return T
+     *
+     * @public
+     */
+    transact (f, origin = null) {
+      return transact(this, f, origin)
+    }
+
+    /**
+     * Define a shared data type.
+     *
+     * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
+     * and do not overwrite each other. I.e.
+     * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
+     *
+     * After this method is called, the type is also available on `ydoc.share.get(name)`.
+     *
+     * *Best Practices:*
+     * Define all types right after the Y.Doc instance is created and store them in a separate object.
+     * Also use the typed methods `getText(name)`, `getArray(name)`, ..
+     *
+     * @template {typeof AbstractType<any>} Type
+     * @example
+     *   const ydoc = new Y.Doc(..)
+     *   const appState = {
+     *     document: ydoc.getText('document')
+     *     comments: ydoc.getArray('comments')
+     *   }
+     *
+     * @param {string} name
+     * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+     * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
+     *
+     * @public
+     */
+    get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
+      const type = setIfUndefined(this.share, name, () => {
+        // @ts-ignore
+        const t = new TypeConstructor();
+        t._integrate(this, null);
+        return t
+      });
+      const Constr = type.constructor;
+      if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
+        if (Constr === AbstractType) {
+          // @ts-ignore
+          const t = new TypeConstructor();
+          t._map = type._map;
+          type._map.forEach(/** @param {Item?} n */ n => {
+            for (; n !== null; n = n.left) {
+              // @ts-ignore
+              n.parent = t;
+            }
+          });
+          t._start = type._start;
+          for (let n = t._start; n !== null; n = n.right) {
+            n.parent = t;
+          }
+          t._length = type._length;
+          this.share.set(name, t);
+          t._integrate(this, null);
+          return /** @type {InstanceType<Type>} */ (t)
+        } else {
+          throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
+        }
+      }
+      return /** @type {InstanceType<Type>} */ (type)
+    }
+
+    /**
+     * @template T
+     * @param {string} [name]
+     * @return {YArray<T>}
+     *
+     * @public
+     */
+    getArray (name = '') {
+      return /** @type {YArray<T>} */ (this.get(name, YArray))
+    }
+
+    /**
+     * @param {string} [name]
+     * @return {YText}
+     *
+     * @public
+     */
+    getText (name = '') {
+      return this.get(name, YText)
+    }
+
+    /**
+     * @template T
+     * @param {string} [name]
+     * @return {YMap<T>}
+     *
+     * @public
+     */
+    getMap (name = '') {
+      return /** @type {YMap<T>} */ (this.get(name, YMap))
+    }
+
+    /**
+     * @param {string} [name]
+     * @return {YXmlElement}
+     *
+     * @public
+     */
+    getXmlElement (name = '') {
+      return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
+    }
+
+    /**
+     * @param {string} [name]
+     * @return {YXmlFragment}
+     *
+     * @public
+     */
+    getXmlFragment (name = '') {
+      return this.get(name, YXmlFragment)
+    }
+
+    /**
+     * Converts the entire document into a js object, recursively traversing each yjs type
+     * Doesn't log types that have not been defined (using ydoc.getType(..)).
+     *
+     * @deprecated Do not use this method and rather call toJSON directly on the shared types.
+     *
+     * @return {Object<string, any>}
+     */
+    toJSON () {
+      /**
+       * @type {Object<string, any>}
+       */
+      const doc = {};
+
+      this.share.forEach((value, key) => {
+        doc[key] = value.toJSON();
+      });
+
+      return doc
+    }
+
+    /**
+     * Emit `destroy` event and unregister all event handlers.
+     */
+    destroy () {
+      this.isDestroyed = true;
+      from(this.subdocs).forEach(subdoc => subdoc.destroy());
+      const item = this._item;
+      if (item !== null) {
+        this._item = null;
+        const content = /** @type {ContentDoc} */ (item.content);
+        content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false });
+        content.doc._item = item;
+        transact(/** @type {any} */ (item).parent.doc, transaction => {
+          const doc = content.doc;
+          if (!item.deleted) {
+            transaction.subdocsAdded.add(doc);
+          }
+          transaction.subdocsRemoved.add(this);
+        }, null, true);
+      }
+      // @ts-ignore
+      this.emit('destroyed', [true]); // DEPRECATED!
+      this.emit('destroy', [this]);
+      super.destroy();
+    }
+  }
+
+  class DSEncoderV1 {
+    constructor () {
+      this.restEncoder = createEncoder();
+    }
+
+    toUint8Array () {
+      return toUint8Array(this.restEncoder)
+    }
+
+    resetDsCurVal () {
+      // nop
+    }
+
+    /**
+     * @param {number} clock
+     */
+    writeDsClock (clock) {
+      writeVarUint(this.restEncoder, clock);
+    }
+
+    /**
+     * @param {number} len
+     */
+    writeDsLen (len) {
+      writeVarUint(this.restEncoder, len);
+    }
+  }
+
+  class UpdateEncoderV1 extends DSEncoderV1 {
+    /**
+     * @param {ID} id
+     */
+    writeLeftID (id) {
+      writeVarUint(this.restEncoder, id.client);
+      writeVarUint(this.restEncoder, id.clock);
+    }
+
+    /**
+     * @param {ID} id
+     */
+    writeRightID (id) {
+      writeVarUint(this.restEncoder, id.client);
+      writeVarUint(this.restEncoder, id.clock);
+    }
+
+    /**
+     * Use writeClient and writeClock instead of writeID if possible.
+     * @param {number} client
+     */
+    writeClient (client) {
+      writeVarUint(this.restEncoder, client);
+    }
+
+    /**
+     * @param {number} info An unsigned 8-bit integer
+     */
+    writeInfo (info) {
+      writeUint8(this.restEncoder, info);
+    }
+
+    /**
+     * @param {string} s
+     */
+    writeString (s) {
+      writeVarString(this.restEncoder, s);
+    }
+
+    /**
+     * @param {boolean} isYKey
+     */
+    writeParentInfo (isYKey) {
+      writeVarUint(this.restEncoder, isYKey ? 1 : 0);
+    }
+
+    /**
+     * @param {number} info An unsigned 8-bit integer
+     */
+    writeTypeRef (info) {
+      writeVarUint(this.restEncoder, info);
+    }
+
+    /**
+     * Write len of a struct - well suited for Opt RLE encoder.
+     *
+     * @param {number} len
+     */
+    writeLen (len) {
+      writeVarUint(this.restEncoder, len);
+    }
+
+    /**
+     * @param {any} any
+     */
+    writeAny (any) {
+      writeAny(this.restEncoder, any);
+    }
+
+    /**
+     * @param {Uint8Array} buf
+     */
+    writeBuf (buf) {
+      writeVarUint8Array(this.restEncoder, buf);
+    }
+
+    /**
+     * @param {any} embed
+     */
+    writeJSON (embed) {
+      writeVarString(this.restEncoder, JSON.stringify(embed));
+    }
+
+    /**
+     * @param {string} key
+     */
+    writeKey (key) {
+      writeVarString(this.restEncoder, key);
+    }
+  }
+
+  class DSEncoderV2 {
+    constructor () {
+      this.restEncoder = createEncoder(); // encodes all the rest / non-optimized
+      this.dsCurrVal = 0;
+    }
+
+    toUint8Array () {
+      return toUint8Array(this.restEncoder)
+    }
+
+    resetDsCurVal () {
+      this.dsCurrVal = 0;
+    }
+
+    /**
+     * @param {number} clock
+     */
+    writeDsClock (clock) {
+      const diff = clock - this.dsCurrVal;
+      this.dsCurrVal = clock;
+      writeVarUint(this.restEncoder, diff);
+    }
+
+    /**
+     * @param {number} len
+     */
+    writeDsLen (len) {
+      if (len === 0) {
+        unexpectedCase();
+      }
+      writeVarUint(this.restEncoder, len - 1);
+      this.dsCurrVal += len;
+    }
+  }
+
+  class UpdateEncoderV2 extends DSEncoderV2 {
+    constructor () {
+      super();
+      /**
+       * @type {Map<string,number>}
+       */
+      this.keyMap = new Map();
+      /**
+       * Refers to the next unique key-identifier to me used.
+       * See writeKey method for more information.
+       *
+       * @type {number}
+       */
+      this.keyClock = 0;
+      this.keyClockEncoder = new IntDiffOptRleEncoder();
+      this.clientEncoder = new UintOptRleEncoder();
+      this.leftClockEncoder = new IntDiffOptRleEncoder();
+      this.rightClockEncoder = new IntDiffOptRleEncoder();
+      this.infoEncoder = new RleEncoder(writeUint8);
+      this.stringEncoder = new StringEncoder();
+      this.parentInfoEncoder = new RleEncoder(writeUint8);
+      this.typeRefEncoder = new UintOptRleEncoder();
+      this.lenEncoder = new UintOptRleEncoder();
+    }
+
+    toUint8Array () {
+      const encoder = createEncoder();
+      writeVarUint(encoder, 0); // this is a feature flag that we might use in the future
+      writeVarUint8Array(encoder, this.keyClockEncoder.toUint8Array());
+      writeVarUint8Array(encoder, this.clientEncoder.toUint8Array());
+      writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array());
+      writeVarUint8Array(encoder, this.rightClockEncoder.toUint8Array());
+      writeVarUint8Array(encoder, toUint8Array(this.infoEncoder));
+      writeVarUint8Array(encoder, this.stringEncoder.toUint8Array());
+      writeVarUint8Array(encoder, toUint8Array(this.parentInfoEncoder));
+      writeVarUint8Array(encoder, this.typeRefEncoder.toUint8Array());
+      writeVarUint8Array(encoder, this.lenEncoder.toUint8Array());
+      // @note The rest encoder is appended! (note the missing var)
+      writeUint8Array(encoder, toUint8Array(this.restEncoder));
+      return toUint8Array(encoder)
+    }
+
+    /**
+     * @param {ID} id
+     */
+    writeLeftID (id) {
+      this.clientEncoder.write(id.client);
+      this.leftClockEncoder.write(id.clock);
+    }
+
+    /**
+     * @param {ID} id
+     */
+    writeRightID (id) {
+      this.clientEncoder.write(id.client);
+      this.rightClockEncoder.write(id.clock);
+    }
+
+    /**
+     * @param {number} client
+     */
+    writeClient (client) {
+      this.clientEncoder.write(client);
+    }
+
+    /**
+     * @param {number} info An unsigned 8-bit integer
+     */
+    writeInfo (info) {
+      this.infoEncoder.write(info);
+    }
+
+    /**
+     * @param {string} s
+     */
+    writeString (s) {
+      this.stringEncoder.write(s);
+    }
+
+    /**
+     * @param {boolean} isYKey
+     */
+    writeParentInfo (isYKey) {
+      this.parentInfoEncoder.write(isYKey ? 1 : 0);
+    }
+
+    /**
+     * @param {number} info An unsigned 8-bit integer
+     */
+    writeTypeRef (info) {
+      this.typeRefEncoder.write(info);
+    }
+
+    /**
+     * Write len of a struct - well suited for Opt RLE encoder.
+     *
+     * @param {number} len
+     */
+    writeLen (len) {
+      this.lenEncoder.write(len);
+    }
+
+    /**
+     * @param {any} any
+     */
+    writeAny (any) {
+      writeAny(this.restEncoder, any);
+    }
+
+    /**
+     * @param {Uint8Array} buf
+     */
+    writeBuf (buf) {
+      writeVarUint8Array(this.restEncoder, buf);
+    }
+
+    /**
+     * This is mainly here for legacy purposes.
+     *
+     * Initial we incoded objects using JSON. Now we use the much faster lib0/any-encoder. This method mainly exists for legacy purposes for the v1 encoder.
+     *
+     * @param {any} embed
+     */
+    writeJSON (embed) {
+      writeAny(this.restEncoder, embed);
+    }
+
+    /**
+     * Property keys are often reused. For example, in y-prosemirror the key `bold` might
+     * occur very often. For a 3d application, the key `position` might occur very often.
+     *
+     * We cache these keys in a Map and refer to them via a unique number.
+     *
+     * @param {string} key
+     */
+    writeKey (key) {
+      const clock = this.keyMap.get(key);
+      if (clock === undefined) {
+        /**
+         * @todo uncomment to introduce this feature finally
+         *
+         * Background. The ContentFormat object was always encoded using writeKey, but the decoder used to use readString.
+         * Furthermore, I forgot to set the keyclock. So everything was working fine.
+         *
+         * However, this feature here is basically useless as it is not being used (it actually only consumes extra memory).
+         *
+         * I don't know yet how to reintroduce this feature..
+         *
+         * Older clients won't be able to read updates when we reintroduce this feature. So this should probably be done using a flag.
+         *
+         */
+        // this.keyMap.set(key, this.keyClock)
+        this.keyClockEncoder.write(this.keyClock++);
+        this.stringEncoder.write(key);
+      } else {
+        this.keyClockEncoder.write(clock);
+      }
+    }
+  }
+
+  /**
+   * @module encoding
+   */
+  /*
+   * We use the first five bits in the info flag for determining the type of the struct.
+   *
+   * 0: GC
+   * 1: Item with Deleted content
+   * 2: Item with JSON content
+   * 3: Item with Binary content
+   * 4: Item with String content
+   * 5: Item with Embed content (for richtext content)
+   * 6: Item with Format content (a formatting marker for richtext content)
+   * 7: Item with Type
+   */
+
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {Array<GC|Item>} structs All structs by `client`
+   * @param {number} client
+   * @param {number} clock write structs starting with `ID(client,clock)`
+   *
+   * @function
+   */
+  const writeStructs = (encoder, structs, client, clock) => {
+    // write first id
+    clock = max(clock, structs[0].id.clock); // make sure the first id exists
+    const startNewStructs = findIndexSS(structs, clock);
+    // write # encoded structs
+    writeVarUint(encoder.restEncoder, structs.length - startNewStructs);
+    encoder.writeClient(client);
+    writeVarUint(encoder.restEncoder, clock);
+    const firstStruct = structs[startNewStructs];
+    // write first struct with an offset
+    firstStruct.write(encoder, clock - firstStruct.id.clock);
+    for (let i = startNewStructs + 1; i < structs.length; i++) {
+      structs[i].write(encoder, 0);
+    }
+  };
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {StructStore} store
+   * @param {Map<number,number>} _sm
+   *
+   * @private
+   * @function
+   */
+  const writeClientsStructs = (encoder, store, _sm) => {
+    // we filter all valid _sm entries into sm
+    const sm = new Map();
+    _sm.forEach((clock, client) => {
+      // only write if new structs are available
+      if (getState(store, client) > clock) {
+        sm.set(client, clock);
+      }
+    });
+    getStateVector(store).forEach((_clock, client) => {
+      if (!_sm.has(client)) {
+        sm.set(client, 0);
+      }
+    });
+    // write # states that were updated
+    writeVarUint(encoder.restEncoder, sm.size);
+    // Write items with higher client ids first
+    // This heavily improves the conflict algorithm.
+    from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+      writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock);
+    });
+  };
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {Transaction} transaction
+   *
+   * @private
+   * @function
+   */
+  const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState);
+
+  /**
+   * General event handler implementation.
+   *
+   * @template ARG0, ARG1
+   *
+   * @private
+   */
+  class EventHandler {
+    constructor () {
+      /**
+       * @type {Array<function(ARG0, ARG1):void>}
+       */
+      this.l = [];
+    }
+  }
+
+  /**
+   * @template ARG0,ARG1
+   * @returns {EventHandler<ARG0,ARG1>}
+   *
+   * @private
+   * @function
+   */
+  const createEventHandler = () => new EventHandler();
+
+  /**
+   * Adds an event listener that is called when
+   * {@link EventHandler#callEventListeners} is called.
+   *
+   * @template ARG0,ARG1
+   * @param {EventHandler<ARG0,ARG1>} eventHandler
+   * @param {function(ARG0,ARG1):void} f The event handler.
+   *
+   * @private
+   * @function
+   */
+  const addEventHandlerListener = (eventHandler, f) =>
+    eventHandler.l.push(f);
+
+  /**
+   * Removes an event listener.
+   *
+   * @template ARG0,ARG1
+   * @param {EventHandler<ARG0,ARG1>} eventHandler
+   * @param {function(ARG0,ARG1):void} f The event handler that was added with
+   *                     {@link EventHandler#addEventListener}
+   *
+   * @private
+   * @function
+   */
+  const removeEventHandlerListener = (eventHandler, f) => {
+    const l = eventHandler.l;
+    const len = l.length;
+    eventHandler.l = l.filter(g => f !== g);
+    if (len === eventHandler.l.length) {
+      console.error('[yjs] Tried to remove event handler that doesn\'t exist.');
+    }
+  };
+
+  /**
+   * Call all event listeners that were added via
+   * {@link EventHandler#addEventListener}.
+   *
+   * @template ARG0,ARG1
+   * @param {EventHandler<ARG0,ARG1>} eventHandler
+   * @param {ARG0} arg0
+   * @param {ARG1} arg1
+   *
+   * @private
+   * @function
+   */
+  const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
+    callAll(eventHandler.l, [arg0, arg1]);
+
+  class ID {
+    /**
+     * @param {number} client client id
+     * @param {number} clock unique per client id, continuous number
+     */
+    constructor (client, clock) {
+      /**
+       * Client id
+       * @type {number}
+       */
+      this.client = client;
+      /**
+       * unique per client id, continuous number
+       * @type {number}
+       */
+      this.clock = clock;
+    }
+  }
+
+  /**
+   * @param {ID | null} a
+   * @param {ID | null} b
+   * @return {boolean}
+   *
+   * @function
+   */
+  const compareIDs = (a, b) => a === b || (a !== null && b !== null && a.client === b.client && a.clock === b.clock);
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   *
+   * @private
+   * @function
+   */
+  const createID = (client, clock) => new ID(client, clock);
+
+  /**
+   * The top types are mapped from y.share.get(keyname) => type.
+   * `type` does not store any information about the `keyname`.
+   * This function finds the correct `keyname` for `type` and throws otherwise.
+   *
+   * @param {AbstractType<any>} type
+   * @return {string}
+   *
+   * @private
+   * @function
+   */
+  const findRootTypeKey = type => {
+    // @ts-ignore _y must be defined, otherwise unexpected case
+    for (const [key, value] of type.doc.share.entries()) {
+      if (value === type) {
+        return key
+      }
+    }
+    throw unexpectedCase()
+  };
+
+  /**
+   * @param {Item} item
+   * @param {Snapshot|undefined} snapshot
+   *
+   * @protected
+   * @function
+   */
+  const isVisible = (item, snapshot) => snapshot === undefined
+    ? !item.deleted
+    : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !isDeleted(snapshot.ds, item.id);
+
+  /**
+   * @param {Transaction} transaction
+   * @param {Snapshot} snapshot
+   */
+  const splitSnapshotAffectedStructs = (transaction, snapshot) => {
+    const meta = setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, create$4);
+    const store = transaction.doc.store;
+    // check if we already split for this snapshot
+    if (!meta.has(snapshot)) {
+      snapshot.sv.forEach((clock, client) => {
+        if (clock < getState(store, client)) {
+          getItemCleanStart(transaction, createID(client, clock));
+        }
+      });
+      iterateDeletedStructs(transaction, snapshot.ds, _item => {});
+      meta.add(snapshot);
+    }
+  };
+
+  class StructStore {
+    constructor () {
+      /**
+       * @type {Map<number,Array<GC|Item>>}
+       */
+      this.clients = new Map();
+      /**
+       * @type {null | { missing: Map<number, number>, update: Uint8Array }}
+       */
+      this.pendingStructs = null;
+      /**
+       * @type {null | Uint8Array}
+       */
+      this.pendingDs = null;
+    }
+  }
+
+  /**
+   * Return the states as a Map<client,clock>.
+   * Note that clock refers to the next expected clock id.
+   *
+   * @param {StructStore} store
+   * @return {Map<number,number>}
+   *
+   * @public
+   * @function
+   */
+  const getStateVector = store => {
+    const sm = new Map();
+    store.clients.forEach((structs, client) => {
+      const struct = structs[structs.length - 1];
+      sm.set(client, struct.id.clock + struct.length);
+    });
+    return sm
+  };
+
+  /**
+   * @param {StructStore} store
+   * @param {number} client
+   * @return {number}
+   *
+   * @public
+   * @function
+   */
+  const getState = (store, client) => {
+    const structs = store.clients.get(client);
+    if (structs === undefined) {
+      return 0
+    }
+    const lastStruct = structs[structs.length - 1];
+    return lastStruct.id.clock + lastStruct.length
+  };
+
+  /**
+   * @param {StructStore} store
+   * @param {GC|Item} struct
+   *
+   * @private
+   * @function
+   */
+  const addStruct = (store, struct) => {
+    let structs = store.clients.get(struct.id.client);
+    if (structs === undefined) {
+      structs = [];
+      store.clients.set(struct.id.client, structs);
+    } else {
+      const lastStruct = structs[structs.length - 1];
+      if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
+        throw unexpectedCase()
+      }
+    }
+    structs.push(struct);
+  };
+
+  /**
+   * Perform a binary search on a sorted array
+   * @param {Array<Item|GC>} structs
+   * @param {number} clock
+   * @return {number}
+   *
+   * @private
+   * @function
+   */
+  const findIndexSS = (structs, clock) => {
+    let left = 0;
+    let right = structs.length - 1;
+    let mid = structs[right];
+    let midclock = mid.id.clock;
+    if (midclock === clock) {
+      return right
+    }
+    // @todo does it even make sense to pivot the search?
+    // If a good split misses, it might actually increase the time to find the correct item.
+    // Currently, the only advantage is that search with pivoting might find the item on the first try.
+    let midindex = floor((clock / (midclock + mid.length - 1)) * right); // pivoting the search
+    while (left <= right) {
+      mid = structs[midindex];
+      midclock = mid.id.clock;
+      if (midclock <= clock) {
+        if (clock < midclock + mid.length) {
+          return midindex
+        }
+        left = midindex + 1;
+      } else {
+        right = midindex - 1;
+      }
+      midindex = floor((left + right) / 2);
+    }
+    // Always check state before looking for a struct in StructStore
+    // Therefore the case of not finding a struct is unexpected
+    throw unexpectedCase()
+  };
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   *
+   * @param {StructStore} store
+   * @param {ID} id
+   * @return {GC|Item}
+   *
+   * @private
+   * @function
+   */
+  const find = (store, id) => {
+    /**
+     * @type {Array<GC|Item>}
+     */
+    // @ts-ignore
+    const structs = store.clients.get(id.client);
+    return structs[findIndexSS(structs, id.clock)]
+  };
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   * @private
+   * @function
+   */
+  const getItem = /** @type {function(StructStore,ID):Item} */ (find);
+
+  /**
+   * @param {Transaction} transaction
+   * @param {Array<Item|GC>} structs
+   * @param {number} clock
+   */
+  const findIndexCleanStart = (transaction, structs, clock) => {
+    const index = findIndexSS(structs, clock);
+    const struct = structs[index];
+    if (struct.id.clock < clock && struct instanceof Item) {
+      structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock));
+      return index + 1
+    }
+    return index
+  };
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   *
+   * @param {Transaction} transaction
+   * @param {ID} id
+   * @return {Item}
+   *
+   * @private
+   * @function
+   */
+  const getItemCleanStart = (transaction, id) => {
+    const structs = /** @type {Array<Item>} */ (transaction.doc.store.clients.get(id.client));
+    return structs[findIndexCleanStart(transaction, structs, id.clock)]
+  };
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   *
+   * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @param {ID} id
+   * @return {Item}
+   *
+   * @private
+   * @function
+   */
+  const getItemCleanEnd = (transaction, store, id) => {
+    /**
+     * @type {Array<Item>}
+     */
+    // @ts-ignore
+    const structs = store.clients.get(id.client);
+    const index = findIndexSS(structs, id.clock);
+    const struct = structs[index];
+    if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
+      structs.splice(index + 1, 0, splitItem(transaction, struct, id.clock - struct.id.clock + 1));
+    }
+    return struct
+  };
+
+  /**
+   * Replace `item` with `newitem` in store
+   * @param {StructStore} store
+   * @param {GC|Item} struct
+   * @param {GC|Item} newStruct
+   *
+   * @private
+   * @function
+   */
+  const replaceStruct = (store, struct, newStruct) => {
+    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(struct.id.client));
+    structs[findIndexSS(structs, struct.id.clock)] = newStruct;
+  };
+
+  /**
+   * Iterate over a range of structs
+   *
+   * @param {Transaction} transaction
+   * @param {Array<Item|GC>} structs
+   * @param {number} clockStart Inclusive start
+   * @param {number} len
+   * @param {function(GC|Item):void} f
+   *
+   * @function
+   */
+  const iterateStructs = (transaction, structs, clockStart, len, f) => {
+    if (len === 0) {
+      return
+    }
+    const clockEnd = clockStart + len;
+    let index = findIndexCleanStart(transaction, structs, clockStart);
+    let struct;
+    do {
+      struct = structs[index++];
+      if (clockEnd < struct.id.clock + struct.length) {
+        findIndexCleanStart(transaction, structs, clockEnd);
+      }
+      f(struct);
+    } while (index < structs.length && structs[index].id.clock < clockEnd)
+  };
+
+  /**
+   * A transaction is created for every change on the Yjs model. It is possible
+   * to bundle changes on the Yjs model in a single transaction to
+   * minimize the number on messages sent and the number of observer calls.
+   * If possible the user of this library should bundle as many changes as
+   * possible. Here is an example to illustrate the advantages of bundling:
+   *
+   * @example
+   * const ydoc = new Y.Doc()
+   * const map = ydoc.getMap('map')
+   * // Log content when change is triggered
+   * map.observe(() => {
+   *   console.log('change triggered')
+   * })
+   * // Each change on the map type triggers a log message:
+   * map.set('a', 0) // => "change triggered"
+   * map.set('b', 0) // => "change triggered"
+   * // When put in a transaction, it will trigger the log after the transaction:
+   * ydoc.transact(() => {
+   *   map.set('a', 1)
+   *   map.set('b', 1)
+   * }) // => "change triggered"
+   *
+   * @public
+   */
+  class Transaction {
+    /**
+     * @param {Doc} doc
+     * @param {any} origin
+     * @param {boolean} local
+     */
+    constructor (doc, origin, local) {
+      /**
+       * The Yjs instance.
+       * @type {Doc}
+       */
+      this.doc = doc;
+      /**
+       * Describes the set of deleted items by ids
+       * @type {DeleteSet}
+       */
+      this.deleteSet = new DeleteSet();
+      /**
+       * Holds the state before the transaction started.
+       * @type {Map<Number,Number>}
+       */
+      this.beforeState = getStateVector(doc.store);
+      /**
+       * Holds the state after the transaction.
+       * @type {Map<Number,Number>}
+       */
+      this.afterState = new Map();
+      /**
+       * All types that were directly modified (property added or child
+       * inserted/deleted). New types are not included in this Set.
+       * Maps from type to parentSubs (`item.parentSub = null` for YArray)
+       * @type {Map<AbstractType<YEvent<any>>,Set<String|null>>}
+       */
+      this.changed = new Map();
+      /**
+       * Stores the events for the types that observe also child elements.
+       * It is mainly used by `observeDeep`.
+       * @type {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>}
+       */
+      this.changedParentTypes = new Map();
+      /**
+       * @type {Array<AbstractStruct>}
+       */
+      this._mergeStructs = [];
+      /**
+       * @type {any}
+       */
+      this.origin = origin;
+      /**
+       * Stores meta information on the transaction
+       * @type {Map<any,any>}
+       */
+      this.meta = new Map();
+      /**
+       * Whether this change originates from this doc.
+       * @type {boolean}
+       */
+      this.local = local;
+      /**
+       * @type {Set<Doc>}
+       */
+      this.subdocsAdded = new Set();
+      /**
+       * @type {Set<Doc>}
+       */
+      this.subdocsRemoved = new Set();
+      /**
+       * @type {Set<Doc>}
+       */
+      this.subdocsLoaded = new Set();
+      /**
+       * @type {boolean}
+       */
+      this._needFormattingCleanup = false;
+    }
+  }
+
+  /**
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {Transaction} transaction
+   * @return {boolean} Whether data was written.
+   */
+  const writeUpdateMessageFromTransaction = (encoder, transaction) => {
+    if (transaction.deleteSet.clients.size === 0 && !any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+      return false
+    }
+    sortAndMergeDeleteSet(transaction.deleteSet);
+    writeStructsFromTransaction(encoder, transaction);
+    writeDeleteSet(encoder, transaction.deleteSet);
+    return true
+  };
+
+  /**
+   * If `type.parent` was added in current transaction, `type` technically
+   * did not change, it was just added and we should not fire events for `type`.
+   *
+   * @param {Transaction} transaction
+   * @param {AbstractType<YEvent<any>>} type
+   * @param {string|null} parentSub
+   */
+  const addChangedTypeToTransaction = (transaction, type, parentSub) => {
+    const item = type._item;
+    if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
+      setIfUndefined(transaction.changed, type, create$4).add(parentSub);
+    }
+  };
+
+  /**
+   * @param {Array<AbstractStruct>} structs
+   * @param {number} pos
+   * @return {number} # of merged structs
+   */
+  const tryToMergeWithLefts = (structs, pos) => {
+    let right = structs[pos];
+    let left = structs[pos - 1];
+    let i = pos;
+    for (; i > 0; right = left, left = structs[--i - 1]) {
+      if (left.deleted === right.deleted && left.constructor === right.constructor) {
+        if (left.mergeWith(right)) {
+          if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
+            /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left));
+          }
+          continue
+        }
+      }
+      break
+    }
+    const merged = pos - i;
+    if (merged) {
+      // remove all merged structs from the array
+      structs.splice(pos + 1 - merged, merged);
+    }
+    return merged
+  };
+
+  /**
+   * @param {DeleteSet} ds
+   * @param {StructStore} store
+   * @param {function(Item):boolean} gcFilter
+   */
+  const tryGcDeleteSet = (ds, store, gcFilter) => {
+    for (const [client, deleteItems] of ds.clients.entries()) {
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+      for (let di = deleteItems.length - 1; di >= 0; di--) {
+        const deleteItem = deleteItems[di];
+        const endDeleteItemClock = deleteItem.clock + deleteItem.len;
+        for (
+          let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
+          si < structs.length && struct.id.clock < endDeleteItemClock;
+          struct = structs[++si]
+        ) {
+          const struct = structs[si];
+          if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
+            break
+          }
+          if (struct instanceof Item && struct.deleted && !struct.keep && gcFilter(struct)) {
+            struct.gc(store, false);
+          }
+        }
+      }
+    }
+  };
+
+  /**
+   * @param {DeleteSet} ds
+   * @param {StructStore} store
+   */
+  const tryMergeDeleteSet = (ds, store) => {
+    // try to merge deleted / gc'd items
+    // merge from right to left for better efficiency and so we don't miss any merge targets
+    ds.clients.forEach((deleteItems, client) => {
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+      for (let di = deleteItems.length - 1; di >= 0; di--) {
+        const deleteItem = deleteItems[di];
+        // start with merging the item next to the last deleted item
+        const mostRightIndexToCheck = min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
+        for (
+          let si = mostRightIndexToCheck, struct = structs[si];
+          si > 0 && struct.id.clock >= deleteItem.clock;
+          struct = structs[si]
+        ) {
+          si -= 1 + tryToMergeWithLefts(structs, si);
+        }
+      }
+    });
+  };
+
+  /**
+   * @param {Array<Transaction>} transactionCleanups
+   * @param {number} i
+   */
+  const cleanupTransactions = (transactionCleanups, i) => {
+    if (i < transactionCleanups.length) {
+      const transaction = transactionCleanups[i];
+      const doc = transaction.doc;
+      const store = doc.store;
+      const ds = transaction.deleteSet;
+      const mergeStructs = transaction._mergeStructs;
+      try {
+        sortAndMergeDeleteSet(ds);
+        transaction.afterState = getStateVector(transaction.doc.store);
+        doc.emit('beforeObserverCalls', [transaction, doc]);
+        /**
+         * An array of event callbacks.
+         *
+         * Each callback is called even if the other ones throw errors.
+         *
+         * @type {Array<function():void>}
+         */
+        const fs = [];
+        // observe events on changed types
+        transaction.changed.forEach((subs, itemtype) =>
+          fs.push(() => {
+            if (itemtype._item === null || !itemtype._item.deleted) {
+              itemtype._callObserver(transaction, subs);
+            }
+          })
+        );
+        fs.push(() => {
+          // deep observe events
+          transaction.changedParentTypes.forEach((events, type) => {
+            // We need to think about the possibility that the user transforms the
+            // Y.Doc in the event.
+            if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
+              events = events
+                .filter(event =>
+                  event.target._item === null || !event.target._item.deleted
+                );
+              events
+                .forEach(event => {
+                  event.currentTarget = type;
+                  // path is relative to the current target
+                  event._path = null;
+                });
+              // sort events by path length so that top-level events are fired first.
+              events
+                .sort((event1, event2) => event1.path.length - event2.path.length);
+              // We don't need to check for events.length
+              // because we know it has at least one element
+              callEventHandlerListeners(type._dEH, events, transaction);
+            }
+          });
+        });
+        fs.push(() => doc.emit('afterTransaction', [transaction, doc]));
+        callAll(fs, []);
+        if (transaction._needFormattingCleanup) {
+          cleanupYTextAfterTransaction(transaction);
+        }
+      } finally {
+        // Replace deleted items with ItemDeleted / GC.
+        // This is where content is actually remove from the Yjs Doc.
+        if (doc.gc) {
+          tryGcDeleteSet(ds, store, doc.gcFilter);
+        }
+        tryMergeDeleteSet(ds, store);
+
+        // on all affected store.clients props, try to merge
+        transaction.afterState.forEach((clock, client) => {
+          const beforeClock = transaction.beforeState.get(client) || 0;
+          if (beforeClock !== clock) {
+            const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+            // we iterate from right to left so we can safely remove entries
+            const firstChangePos = max(findIndexSS(structs, beforeClock), 1);
+            for (let i = structs.length - 1; i >= firstChangePos;) {
+              i -= 1 + tryToMergeWithLefts(structs, i);
+            }
+          }
+        });
+        // try to merge mergeStructs
+        // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
+        //        but at the moment DS does not handle duplicates
+        for (let i = mergeStructs.length - 1; i >= 0; i--) {
+          const { client, clock } = mergeStructs[i].id;
+          const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+          const replacedStructPos = findIndexSS(structs, clock);
+          if (replacedStructPos + 1 < structs.length) {
+            if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
+              continue // no need to perform next check, both are already merged
+            }
+          }
+          if (replacedStructPos > 0) {
+            tryToMergeWithLefts(structs, replacedStructPos);
+          }
+        }
+        if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
+          print(ORANGE, BOLD, '[yjs] ', UNBOLD, RED, 'Changed the client-id because another client seems to be using it.');
+          doc.clientID = generateNewClientId();
+        }
+        // @todo Merge all the transactions into one and provide send the data as a single update message
+        doc.emit('afterTransactionCleanup', [transaction, doc]);
+        if (doc._observers.has('update')) {
+          const encoder = new UpdateEncoderV1();
+          const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+          if (hasContent) {
+            doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction]);
+          }
+        }
+        if (doc._observers.has('updateV2')) {
+          const encoder = new UpdateEncoderV2();
+          const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+          if (hasContent) {
+            doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction]);
+          }
+        }
+        const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction;
+        if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
+          subdocsAdded.forEach(subdoc => {
+            subdoc.clientID = doc.clientID;
+            if (subdoc.collectionid == null) {
+              subdoc.collectionid = doc.collectionid;
+            }
+            doc.subdocs.add(subdoc);
+          });
+          subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc));
+          doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction]);
+          subdocsRemoved.forEach(subdoc => subdoc.destroy());
+        }
+
+        if (transactionCleanups.length <= i + 1) {
+          doc._transactionCleanups = [];
+          doc.emit('afterAllTransactions', [doc, transactionCleanups]);
+        } else {
+          cleanupTransactions(transactionCleanups, i + 1);
+        }
+      }
+    }
+  };
+
+  /**
+   * Implements the functionality of `y.transact(()=>{..})`
+   *
+   * @template T
+   * @param {Doc} doc
+   * @param {function(Transaction):T} f
+   * @param {any} [origin=true]
+   * @return {T}
+   *
+   * @function
+   */
+  const transact = (doc, f, origin = null, local = true) => {
+    const transactionCleanups = doc._transactionCleanups;
+    let initialCall = false;
+    /**
+     * @type {any}
+     */
+    let result = null;
+    if (doc._transaction === null) {
+      initialCall = true;
+      doc._transaction = new Transaction(doc, origin, local);
+      transactionCleanups.push(doc._transaction);
+      if (transactionCleanups.length === 1) {
+        doc.emit('beforeAllTransactions', [doc]);
+      }
+      doc.emit('beforeTransaction', [doc._transaction, doc]);
+    }
+    try {
+      result = f(doc._transaction);
+    } finally {
+      if (initialCall) {
+        const finishCleanup = doc._transaction === transactionCleanups[0];
+        doc._transaction = null;
+        if (finishCleanup) {
+          // The first transaction ended, now process observer calls.
+          // Observer call may create new transactions for which we need to call the observers and do cleanup.
+          // We don't want to nest these calls, so we execute these calls one after
+          // another.
+          // Also we need to ensure that all cleanups are called, even if the
+          // observes throw errors.
+          // This file is full of hacky try {} finally {} blocks to ensure that an
+          // event can throw errors and also that the cleanup is called.
+          cleanupTransactions(transactionCleanups, 0);
+        }
+      }
+    }
+    return result
+  };
+
+  const errorComputeChanges = 'You must not compute changes after the event-handler fired.';
+
+  /**
+   * @template {AbstractType<any>} T
+   * YEvent describes the changes on a YType.
+   */
+  class YEvent {
+    /**
+     * @param {T} target The changed type.
+     * @param {Transaction} transaction
+     */
+    constructor (target, transaction) {
+      /**
+       * The type on which this event was created on.
+       * @type {T}
+       */
+      this.target = target;
+      /**
+       * The current target on which the observe callback is called.
+       * @type {AbstractType<any>}
+       */
+      this.currentTarget = target;
+      /**
+       * The transaction that triggered this event.
+       * @type {Transaction}
+       */
+      this.transaction = transaction;
+      /**
+       * @type {Object|null}
+       */
+      this._changes = null;
+      /**
+       * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+       */
+      this._keys = null;
+      /**
+       * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
+       */
+      this._delta = null;
+      /**
+       * @type {Array<string|number>|null}
+       */
+      this._path = null;
+    }
+
+    /**
+     * Computes the path from `y` to the changed type.
+     *
+     * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.
+     *
+     * The following property holds:
+     * @example
+     *   let type = y
+     *   event.path.forEach(dir => {
+     *     type = type.get(dir)
+     *   })
+     *   type === event.target // => true
+     */
+    get path () {
+      return this._path || (this._path = getPathTo(this.currentTarget, this.target))
+    }
+
+    /**
+     * Check if a struct is deleted by this event.
+     *
+     * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
+     *
+     * @param {AbstractStruct} struct
+     * @return {boolean}
+     */
+    deletes (struct) {
+      return isDeleted(this.transaction.deleteSet, struct.id)
+    }
+
+    /**
+     * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+     */
+    get keys () {
+      if (this._keys === null) {
+        if (this.transaction.doc._transactionCleanups.length === 0) {
+          throw create$3(errorComputeChanges)
+        }
+        const keys = new Map();
+        const target = this.target;
+        const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target));
+        changed.forEach(key => {
+          if (key !== null) {
+            const item = /** @type {Item} */ (target._map.get(key));
+            /**
+             * @type {'delete' | 'add' | 'update'}
+             */
+            let action;
+            let oldValue;
+            if (this.adds(item)) {
+              let prev = item.left;
+              while (prev !== null && this.adds(prev)) {
+                prev = prev.left;
+              }
+              if (this.deletes(item)) {
+                if (prev !== null && this.deletes(prev)) {
+                  action = 'delete';
+                  oldValue = last(prev.content.getContent());
+                } else {
+                  return
+                }
+              } else {
+                if (prev !== null && this.deletes(prev)) {
+                  action = 'update';
+                  oldValue = last(prev.content.getContent());
+                } else {
+                  action = 'add';
+                  oldValue = undefined;
+                }
+              }
+            } else {
+              if (this.deletes(item)) {
+                action = 'delete';
+                oldValue = last(/** @type {Item} */ item.content.getContent());
+              } else {
+                return // nop
+              }
+            }
+            keys.set(key, { action, oldValue });
+          }
+        });
+        this._keys = keys;
+      }
+      return this._keys
+    }
+
+    /**
+     * This is a computed property. Note that this can only be safely computed during the
+     * event call. Computing this property after other changes happened might result in
+     * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+     * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+     *
+     * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
+     */
+    get delta () {
+      return this.changes.delta
+    }
+
+    /**
+     * Check if a struct is added by this event.
+     *
+     * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
+     *
+     * @param {AbstractStruct} struct
+     * @return {boolean}
+     */
+    adds (struct) {
+      return struct.id.clock >= (this.transaction.beforeState.get(struct.id.client) || 0)
+    }
+
+    /**
+     * This is a computed property. Note that this can only be safely computed during the
+     * event call. Computing this property after other changes happened might result in
+     * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+     * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+     *
+     * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+     */
+    get changes () {
+      let changes = this._changes;
+      if (changes === null) {
+        if (this.transaction.doc._transactionCleanups.length === 0) {
+          throw create$3(errorComputeChanges)
+        }
+        const target = this.target;
+        const added = create$4();
+        const deleted = create$4();
+        /**
+         * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
+         */
+        const delta = [];
+        changes = {
+          added,
+          deleted,
+          delta,
+          keys: this.keys
+        };
+        const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target));
+        if (changed.has(null)) {
+          /**
+           * @type {any}
+           */
+          let lastOp = null;
+          const packOp = () => {
+            if (lastOp) {
+              delta.push(lastOp);
+            }
+          };
+          for (let item = target._start; item !== null; item = item.right) {
+            if (item.deleted) {
+              if (this.deletes(item) && !this.adds(item)) {
+                if (lastOp === null || lastOp.delete === undefined) {
+                  packOp();
+                  lastOp = { delete: 0 };
+                }
+                lastOp.delete += item.length;
+                deleted.add(item);
+              } // else nop
+            } else {
+              if (this.adds(item)) {
+                if (lastOp === null || lastOp.insert === undefined) {
+                  packOp();
+                  lastOp = { insert: [] };
+                }
+                lastOp.insert = lastOp.insert.concat(item.content.getContent());
+                added.add(item);
+              } else {
+                if (lastOp === null || lastOp.retain === undefined) {
+                  packOp();
+                  lastOp = { retain: 0 };
+                }
+                lastOp.retain += item.length;
+              }
+            }
+          }
+          if (lastOp !== null && lastOp.retain === undefined) {
+            packOp();
+          }
+        }
+        this._changes = changes;
+      }
+      return /** @type {any} */ (changes)
+    }
+  }
+
+  /**
+   * Compute the path from this type to the specified target.
+   *
+   * @example
+   *   // `child` should be accessible via `type.get(path[0]).get(path[1])..`
+   *   const path = type.getPathTo(child)
+   *   // assuming `type instanceof YArray`
+   *   console.log(path) // might look like => [2, 'key1']
+   *   child === type.get(path[0]).get(path[1])
+   *
+   * @param {AbstractType<any>} parent
+   * @param {AbstractType<any>} child target
+   * @return {Array<string|number>} Path to the target
+   *
+   * @private
+   * @function
+   */
+  const getPathTo = (parent, child) => {
+    const path = [];
+    while (child._item !== null && child !== parent) {
+      if (child._item.parentSub !== null) {
+        // parent is map-ish
+        path.unshift(child._item.parentSub);
+      } else {
+        // parent is array-ish
+        let i = 0;
+        let c = /** @type {AbstractType<any>} */ (child._item.parent)._start;
+        while (c !== child._item && c !== null) {
+          if (!c.deleted && c.countable) {
+            i += c.length;
+          }
+          c = c.right;
+        }
+        path.unshift(i);
+      }
+      child = /** @type {AbstractType<any>} */ (child._item.parent);
+    }
+    return path
+  };
+
+  /**
+   * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
+   */
+  const warnPrematureAccess = () => { warn('Invalid access: Add Yjs type to a document before reading data.'); };
+
+  const maxSearchMarker = 80;
+
+  /**
+   * A unique timestamp that identifies each marker.
+   *
+   * Time is relative,.. this is more like an ever-increasing clock.
+   *
+   * @type {number}
+   */
+  let globalSearchMarkerTimestamp = 0;
+
+  class ArraySearchMarker {
+    /**
+     * @param {Item} p
+     * @param {number} index
+     */
+    constructor (p, index) {
+      p.marker = true;
+      this.p = p;
+      this.index = index;
+      this.timestamp = globalSearchMarkerTimestamp++;
+    }
+  }
+
+  /**
+   * @param {ArraySearchMarker} marker
+   */
+  const refreshMarkerTimestamp = marker => { marker.timestamp = globalSearchMarkerTimestamp++; };
+
+  /**
+   * This is rather complex so this function is the only thing that should overwrite a marker
+   *
+   * @param {ArraySearchMarker} marker
+   * @param {Item} p
+   * @param {number} index
+   */
+  const overwriteMarker = (marker, p, index) => {
+    marker.p.marker = false;
+    marker.p = p;
+    p.marker = true;
+    marker.index = index;
+    marker.timestamp = globalSearchMarkerTimestamp++;
+  };
+
+  /**
+   * @param {Array<ArraySearchMarker>} searchMarker
+   * @param {Item} p
+   * @param {number} index
+   */
+  const markPosition = (searchMarker, p, index) => {
+    if (searchMarker.length >= maxSearchMarker) {
+      // override oldest marker (we don't want to create more objects)
+      const marker = searchMarker.reduce((a, b) => a.timestamp < b.timestamp ? a : b);
+      overwriteMarker(marker, p, index);
+      return marker
+    } else {
+      // create new marker
+      const pm = new ArraySearchMarker(p, index);
+      searchMarker.push(pm);
+      return pm
+    }
+  };
+
+  /**
+   * Search marker help us to find positions in the associative array faster.
+   *
+   * They speed up the process of finding a position without much bookkeeping.
+   *
+   * A maximum of `maxSearchMarker` objects are created.
+   *
+   * This function always returns a refreshed marker (updated timestamp)
+   *
+   * @param {AbstractType<any>} yarray
+   * @param {number} index
+   */
+  const findMarker = (yarray, index) => {
+    if (yarray._start === null || index === 0 || yarray._searchMarker === null) {
+      return null
+    }
+    const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => abs(index - a.index) < abs(index - b.index) ? a : b);
+    let p = yarray._start;
+    let pindex = 0;
+    if (marker !== null) {
+      p = marker.p;
+      pindex = marker.index;
+      refreshMarkerTimestamp(marker); // we used it, we might need to use it again
+    }
+    // iterate to right if possible
+    while (p.right !== null && pindex < index) {
+      if (!p.deleted && p.countable) {
+        if (index < pindex + p.length) {
+          break
+        }
+        pindex += p.length;
+      }
+      p = p.right;
+    }
+    // iterate to left if necessary (might be that pindex > index)
+    while (p.left !== null && pindex > index) {
+      p = p.left;
+      if (!p.deleted && p.countable) {
+        pindex -= p.length;
+      }
+    }
+    // we want to make sure that p can't be merged with left, because that would screw up everything
+    // in that cas just return what we have (it is most likely the best marker anyway)
+    // iterate to left until p can't be merged with left
+    while (p.left !== null && p.left.id.client === p.id.client && p.left.id.clock + p.left.length === p.id.clock) {
+      p = p.left;
+      if (!p.deleted && p.countable) {
+        pindex -= p.length;
+      }
+    }
+
+    // @todo remove!
+    // assure position
+    // {
+    //   let start = yarray._start
+    //   let pos = 0
+    //   while (start !== p) {
+    //     if (!start.deleted && start.countable) {
+    //       pos += start.length
+    //     }
+    //     start = /** @type {Item} */ (start.right)
+    //   }
+    //   if (pos !== pindex) {
+    //     debugger
+    //     throw new Error('Gotcha position fail!')
+    //   }
+    // }
+    // if (marker) {
+    //   if (window.lengths == null) {
+    //     window.lengths = []
+    //     window.getLengths = () => window.lengths.sort((a, b) => a - b)
+    //   }
+    //   window.lengths.push(marker.index - pindex)
+    //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
+    // }
+    if (marker !== null && abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
+      // adjust existing marker
+      overwriteMarker(marker, p, pindex);
+      return marker
+    } else {
+      // create new marker
+      return markPosition(yarray._searchMarker, p, pindex)
+    }
+  };
+
+  /**
+   * Update markers when a change happened.
+   *
+   * This should be called before doing a deletion!
+   *
+   * @param {Array<ArraySearchMarker>} searchMarker
+   * @param {number} index
+   * @param {number} len If insertion, len is positive. If deletion, len is negative.
+   */
+  const updateMarkerChanges = (searchMarker, index, len) => {
+    for (let i = searchMarker.length - 1; i >= 0; i--) {
+      const m = searchMarker[i];
+      if (len > 0) {
+        /**
+         * @type {Item|null}
+         */
+        let p = m.p;
+        p.marker = false;
+        // Ideally we just want to do a simple position comparison, but this will only work if
+        // search markers don't point to deleted items for formats.
+        // Iterate marker to prev undeleted countable position so we know what to do when updating a position
+        while (p && (p.deleted || !p.countable)) {
+          p = p.left;
+          if (p && !p.deleted && p.countable) {
+            // adjust position. the loop should break now
+            m.index -= p.length;
+          }
+        }
+        if (p === null || p.marker === true) {
+          // remove search marker if updated position is null or if position is already marked
+          searchMarker.splice(i, 1);
+          continue
+        }
+        m.p = p;
+        p.marker = true;
+      }
+      if (index < m.index || (len > 0 && index === m.index)) { // a simple index <= m.index check would actually suffice
+        m.index = max(index, m.index + len);
+      }
+    }
+  };
+
+  /**
+   * Call event listeners with an event. This will also add an event to all
+   * parents (for `.observeDeep` handlers).
+   *
+   * @template EventType
+   * @param {AbstractType<EventType>} type
+   * @param {Transaction} transaction
+   * @param {EventType} event
+   */
+  const callTypeObservers = (type, transaction, event) => {
+    const changedType = type;
+    const changedParentTypes = transaction.changedParentTypes;
+    while (true) {
+      // @ts-ignore
+      setIfUndefined(changedParentTypes, type, () => []).push(event);
+      if (type._item === null) {
+        break
+      }
+      type = /** @type {AbstractType<any>} */ (type._item.parent);
+    }
+    callEventHandlerListeners(changedType._eH, event, transaction);
+  };
+
+  /**
+   * @template EventType
+   * Abstract Yjs Type class
+   */
+  class AbstractType {
+    constructor () {
+      /**
+       * @type {Item|null}
+       */
+      this._item = null;
+      /**
+       * @type {Map<string,Item>}
+       */
+      this._map = new Map();
+      /**
+       * @type {Item|null}
+       */
+      this._start = null;
+      /**
+       * @type {Doc|null}
+       */
+      this.doc = null;
+      this._length = 0;
+      /**
+       * Event handlers
+       * @type {EventHandler<EventType,Transaction>}
+       */
+      this._eH = createEventHandler();
+      /**
+       * Deep event handlers
+       * @type {EventHandler<Array<YEvent<any>>,Transaction>}
+       */
+      this._dEH = createEventHandler();
+      /**
+       * @type {null | Array<ArraySearchMarker>}
+       */
+      this._searchMarker = null;
+    }
+
+    /**
+     * @return {AbstractType<any>|null}
+     */
+    get parent () {
+      return this._item ? /** @type {AbstractType<any>} */ (this._item.parent) : null
+    }
+
+    /**
+     * Integrate this type into the Yjs instance.
+     *
+     * * Save this struct in the os
+     * * This type is sent to other client
+     * * Observer functions are fired
+     *
+     * @param {Doc} y The Yjs instance
+     * @param {Item|null} item
+     */
+    _integrate (y, item) {
+      this.doc = y;
+      this._item = item;
+    }
+
+    /**
+     * @return {AbstractType<EventType>}
+     */
+    _copy () {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {AbstractType<EventType>}
+     */
+    clone () {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+     */
+    _write (_encoder) { }
+
+    /**
+     * The first non-deleted item
+     */
+    get _first () {
+      let n = this._start;
+      while (n !== null && n.deleted) {
+        n = n.right;
+      }
+      return n
+    }
+
+    /**
+     * Creates YEvent and calls all type observers.
+     * Must be implemented by each type.
+     *
+     * @param {Transaction} transaction
+     * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
+     */
+    _callObserver (transaction, _parentSubs) {
+      if (!transaction.local && this._searchMarker) {
+        this._searchMarker.length = 0;
+      }
+    }
+
+    /**
+     * Observe all events that are created on this type.
+     *
+     * @param {function(EventType, Transaction):void} f Observer function
+     */
+    observe (f) {
+      addEventHandlerListener(this._eH, f);
+    }
+
+    /**
+     * Observe all events that are created by this type and its children.
+     *
+     * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+     */
+    observeDeep (f) {
+      addEventHandlerListener(this._dEH, f);
+    }
+
+    /**
+     * Unregister an observer function.
+     *
+     * @param {function(EventType,Transaction):void} f Observer function
+     */
+    unobserve (f) {
+      removeEventHandlerListener(this._eH, f);
+    }
+
+    /**
+     * Unregister an observer function.
+     *
+     * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+     */
+    unobserveDeep (f) {
+      removeEventHandlerListener(this._dEH, f);
+    }
+
+    /**
+     * @abstract
+     * @return {any}
+     */
+    toJSON () {}
+  }
+
+  /**
+   * @param {AbstractType<any>} type
+   * @param {number} start
+   * @param {number} end
+   * @return {Array<any>}
+   *
+   * @private
+   * @function
+   */
+  const typeListSlice = (type, start, end) => {
+    type.doc ?? warnPrematureAccess();
+    if (start < 0) {
+      start = type._length + start;
+    }
+    if (end < 0) {
+      end = type._length + end;
+    }
+    let len = end - start;
+    const cs = [];
+    let n = type._start;
+    while (n !== null && len > 0) {
+      if (n.countable && !n.deleted) {
+        const c = n.content.getContent();
+        if (c.length <= start) {
+          start -= c.length;
+        } else {
+          for (let i = start; i < c.length && len > 0; i++) {
+            cs.push(c[i]);
+            len--;
+          }
+          start = 0;
+        }
+      }
+      n = n.right;
+    }
+    return cs
+  };
+
+  /**
+   * @param {AbstractType<any>} type
+   * @return {Array<any>}
+   *
+   * @private
+   * @function
+   */
+  const typeListToArray = type => {
+    type.doc ?? warnPrematureAccess();
+    const cs = [];
+    let n = type._start;
+    while (n !== null) {
+      if (n.countable && !n.deleted) {
+        const c = n.content.getContent();
+        for (let i = 0; i < c.length; i++) {
+          cs.push(c[i]);
+        }
+      }
+      n = n.right;
+    }
+    return cs
+  };
+
+  /**
+   * Executes a provided function on once on every element of this YArray.
+   *
+   * @param {AbstractType<any>} type
+   * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
+   *
+   * @private
+   * @function
+   */
+  const typeListForEach = (type, f) => {
+    let index = 0;
+    let n = type._start;
+    type.doc ?? warnPrematureAccess();
+    while (n !== null) {
+      if (n.countable && !n.deleted) {
+        const c = n.content.getContent();
+        for (let i = 0; i < c.length; i++) {
+          f(c[i], index++, type);
+        }
+      }
+      n = n.right;
+    }
+  };
+
+  /**
+   * @template C,R
+   * @param {AbstractType<any>} type
+   * @param {function(C,number,AbstractType<any>):R} f
+   * @return {Array<R>}
+   *
+   * @private
+   * @function
+   */
+  const typeListMap = (type, f) => {
+    /**
+     * @type {Array<any>}
+     */
+    const result = [];
+    typeListForEach(type, (c, i) => {
+      result.push(f(c, i, type));
+    });
+    return result
+  };
+
+  /**
+   * @param {AbstractType<any>} type
+   * @return {IterableIterator<any>}
+   *
+   * @private
+   * @function
+   */
+  const typeListCreateIterator = type => {
+    let n = type._start;
+    /**
+     * @type {Array<any>|null}
+     */
+    let currentContent = null;
+    let currentContentIndex = 0;
+    return {
+      [Symbol.iterator] () {
+        return this
+      },
+      next: () => {
+        // find some content
+        if (currentContent === null) {
+          while (n !== null && n.deleted) {
+            n = n.right;
+          }
+          // check if we reached the end, no need to check currentContent, because it does not exist
+          if (n === null) {
+            return {
+              done: true,
+              value: undefined
+            }
+          }
+          // we found n, so we can set currentContent
+          currentContent = n.content.getContent();
+          currentContentIndex = 0;
+          n = n.right; // we used the content of n, now iterate to next
+        }
+        const value = currentContent[currentContentIndex++];
+        // check if we need to empty currentContent
+        if (currentContent.length <= currentContentIndex) {
+          currentContent = null;
+        }
+        return {
+          done: false,
+          value
+        }
+      }
+    }
+  };
+
+  /**
+   * @param {AbstractType<any>} type
+   * @param {number} index
+   * @return {any}
+   *
+   * @private
+   * @function
+   */
+  const typeListGet = (type, index) => {
+    type.doc ?? warnPrematureAccess();
+    const marker = findMarker(type, index);
+    let n = type._start;
+    if (marker !== null) {
+      n = marker.p;
+      index -= marker.index;
+    }
+    for (; n !== null; n = n.right) {
+      if (!n.deleted && n.countable) {
+        if (index < n.length) {
+          return n.content.getContent()[index]
+        }
+        index -= n.length;
+      }
+    }
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {Item?} referenceItem
+   * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} content
+   *
+   * @private
+   * @function
+   */
+  const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
+    let left = referenceItem;
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    const store = doc.store;
+    const right = referenceItem === null ? parent._start : referenceItem.right;
+    /**
+     * @type {Array<Object|Array<any>|number|null>}
+     */
+    let jsonContent = [];
+    const packJsonContent = () => {
+      if (jsonContent.length > 0) {
+        left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent));
+        left.integrate(transaction, 0);
+        jsonContent = [];
+      }
+    };
+    content.forEach(c => {
+      if (c === null) {
+        jsonContent.push(c);
+      } else {
+        switch (c.constructor) {
+          case Number:
+          case Object:
+          case Boolean:
+          case Array:
+          case String:
+            jsonContent.push(c);
+            break
+          default:
+            packJsonContent();
+            switch (c.constructor) {
+              case Uint8Array:
+              case ArrayBuffer:
+                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))));
+                left.integrate(transaction, 0);
+                break
+              case Doc:
+                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)));
+                left.integrate(transaction, 0);
+                break
+              default:
+                if (c instanceof AbstractType) {
+                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c));
+                  left.integrate(transaction, 0);
+                } else {
+                  throw new Error('Unexpected content type in insert operation')
+                }
+            }
+        }
+      }
+    });
+    packJsonContent();
+  };
+
+  const lengthExceeded = () => create$3('Length exceeded!');
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {number} index
+   * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
+   *
+   * @private
+   * @function
+   */
+  const typeListInsertGenerics = (transaction, parent, index, content) => {
+    if (index > parent._length) {
+      throw lengthExceeded()
+    }
+    if (index === 0) {
+      if (parent._searchMarker) {
+        updateMarkerChanges(parent._searchMarker, index, content.length);
+      }
+      return typeListInsertGenericsAfter(transaction, parent, null, content)
+    }
+    const startIndex = index;
+    const marker = findMarker(parent, index);
+    let n = parent._start;
+    if (marker !== null) {
+      n = marker.p;
+      index -= marker.index;
+      // we need to iterate one to the left so that the algorithm works
+      if (index === 0) {
+        // @todo refactor this as it actually doesn't consider formats
+        n = n.prev; // important! get the left undeleted item so that we can actually decrease index
+        index += (n && n.countable && !n.deleted) ? n.length : 0;
+      }
+    }
+    for (; n !== null; n = n.right) {
+      if (!n.deleted && n.countable) {
+        if (index <= n.length) {
+          if (index < n.length) {
+            // insert in-between
+            getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index));
+          }
+          break
+        }
+        index -= n.length;
+      }
+    }
+    if (parent._searchMarker) {
+      updateMarkerChanges(parent._searchMarker, startIndex, content.length);
+    }
+    return typeListInsertGenericsAfter(transaction, parent, n, content)
+  };
+
+  /**
+   * Pushing content is special as we generally want to push after the last item. So we don't have to update
+   * the search marker.
+   *
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
+   *
+   * @private
+   * @function
+   */
+  const typeListPushGenerics = (transaction, parent, content) => {
+    // Use the marker with the highest index and iterate to the right.
+    const marker = (parent._searchMarker || []).reduce((maxMarker, currMarker) => currMarker.index > maxMarker.index ? currMarker : maxMarker, { index: 0, p: parent._start });
+    let n = marker.p;
+    if (n) {
+      while (n.right) {
+        n = n.right;
+      }
+    }
+    return typeListInsertGenericsAfter(transaction, parent, n, content)
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {number} index
+   * @param {number} length
+   *
+   * @private
+   * @function
+   */
+  const typeListDelete = (transaction, parent, index, length) => {
+    if (length === 0) { return }
+    const startIndex = index;
+    const startLength = length;
+    const marker = findMarker(parent, index);
+    let n = parent._start;
+    if (marker !== null) {
+      n = marker.p;
+      index -= marker.index;
+    }
+    // compute the first item to be deleted
+    for (; n !== null && index > 0; n = n.right) {
+      if (!n.deleted && n.countable) {
+        if (index < n.length) {
+          getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index));
+        }
+        index -= n.length;
+      }
+    }
+    // delete all items until done
+    while (length > 0 && n !== null) {
+      if (!n.deleted) {
+        if (length < n.length) {
+          getItemCleanStart(transaction, createID(n.id.client, n.id.clock + length));
+        }
+        n.delete(transaction);
+        length -= n.length;
+      }
+      n = n.right;
+    }
+    if (length > 0) {
+      throw lengthExceeded()
+    }
+    if (parent._searchMarker) {
+      updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */);
+    }
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {string} key
+   *
+   * @private
+   * @function
+   */
+  const typeMapDelete = (transaction, parent, key) => {
+    const c = parent._map.get(key);
+    if (c !== undefined) {
+      c.delete(transaction);
+    }
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {string} key
+   * @param {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} value
+   *
+   * @private
+   * @function
+   */
+  const typeMapSet = (transaction, parent, key, value) => {
+    const left = parent._map.get(key) || null;
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    let content;
+    if (value == null) {
+      content = new ContentAny([value]);
+    } else {
+      switch (value.constructor) {
+        case Number:
+        case Object:
+        case Boolean:
+        case Array:
+        case String:
+        case Date:
+        case BigInt:
+          content = new ContentAny([value]);
+          break
+        case Uint8Array:
+          content = new ContentBinary(/** @type {Uint8Array} */ (value));
+          break
+        case Doc:
+          content = new ContentDoc(/** @type {Doc} */ (value));
+          break
+        default:
+          if (value instanceof AbstractType) {
+            content = new ContentType(value);
+          } else {
+            throw new Error('Unexpected content type')
+          }
+      }
+    }
+    new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0);
+  };
+
+  /**
+   * @param {AbstractType<any>} parent
+   * @param {string} key
+   * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+   *
+   * @private
+   * @function
+   */
+  const typeMapGet = (parent, key) => {
+    parent.doc ?? warnPrematureAccess();
+    const val = parent._map.get(key);
+    return val !== undefined && !val.deleted ? val.content.getContent()[val.length - 1] : undefined
+  };
+
+  /**
+   * @param {AbstractType<any>} parent
+   * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+   *
+   * @private
+   * @function
+   */
+  const typeMapGetAll = (parent) => {
+    /**
+     * @type {Object<string,any>}
+     */
+    const res = {};
+    parent.doc ?? warnPrematureAccess();
+    parent._map.forEach((value, key) => {
+      if (!value.deleted) {
+        res[key] = value.content.getContent()[value.length - 1];
+      }
+    });
+    return res
+  };
+
+  /**
+   * @param {AbstractType<any>} parent
+   * @param {string} key
+   * @return {boolean}
+   *
+   * @private
+   * @function
+   */
+  const typeMapHas = (parent, key) => {
+    parent.doc ?? warnPrematureAccess();
+    const val = parent._map.get(key);
+    return val !== undefined && !val.deleted
+  };
+
+  /**
+   * @param {AbstractType<any>} parent
+   * @param {Snapshot} snapshot
+   * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+   *
+   * @private
+   * @function
+   */
+  const typeMapGetAllSnapshot = (parent, snapshot) => {
+    /**
+     * @type {Object<string,any>}
+     */
+    const res = {};
+    parent._map.forEach((value, key) => {
+      /**
+       * @type {Item|null}
+       */
+      let v = value;
+      while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+        v = v.left;
+      }
+      if (v !== null && isVisible(v, snapshot)) {
+        res[key] = v.content.getContent()[v.length - 1];
+      }
+    });
+    return res
+  };
+
+  /**
+   * @param {AbstractType<any> & { _map: Map<string, Item> }} type
+   * @return {IterableIterator<Array<any>>}
+   *
+   * @private
+   * @function
+   */
+  const createMapIterator = type => {
+    type.doc ?? warnPrematureAccess();
+    return iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+  };
+
+  /**
+   * @module YArray
+   */
+
+
+  /**
+   * Event that describes the changes on a YArray
+   * @template T
+   * @extends YEvent<YArray<T>>
+   */
+  class YArrayEvent extends YEvent {}
+
+  /**
+   * A shared Array implementation.
+   * @template T
+   * @extends AbstractType<YArrayEvent<T>>
+   * @implements {Iterable<T>}
+   */
+  class YArray extends AbstractType {
+    constructor () {
+      super();
+      /**
+       * @type {Array<any>?}
+       * @private
+       */
+      this._prelimContent = [];
+      /**
+       * @type {Array<ArraySearchMarker>}
+       */
+      this._searchMarker = [];
+    }
+
+    /**
+     * Construct a new YArray containing the specified items.
+     * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
+     * @param {Array<T>} items
+     * @return {YArray<T>}
+     */
+    static from (items) {
+      /**
+       * @type {YArray<T>}
+       */
+      const a = new YArray();
+      a.push(items);
+      return a
+    }
+
+    /**
+     * Integrate this type into the Yjs instance.
+     *
+     * * Save this struct in the os
+     * * This type is sent to other client
+     * * Observer functions are fired
+     *
+     * @param {Doc} y The Yjs instance
+     * @param {Item} item
+     */
+    _integrate (y, item) {
+      super._integrate(y, item);
+      this.insert(0, /** @type {Array<any>} */ (this._prelimContent));
+      this._prelimContent = null;
+    }
+
+    /**
+     * @return {YArray<T>}
+     */
+    _copy () {
+      return new YArray()
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {YArray<T>}
+     */
+    clone () {
+      /**
+       * @type {YArray<T>}
+       */
+      const arr = new YArray();
+      arr.insert(0, this.toArray().map(el =>
+        el instanceof AbstractType ? /** @type {typeof el} */ (el.clone()) : el
+      ));
+      return arr
+    }
+
+    get length () {
+      this.doc ?? warnPrematureAccess();
+      return this._length
+    }
+
+    /**
+     * Creates YArrayEvent and calls observers.
+     *
+     * @param {Transaction} transaction
+     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     */
+    _callObserver (transaction, parentSubs) {
+      super._callObserver(transaction, parentSubs);
+      callTypeObservers(this, transaction, new YArrayEvent(this, transaction));
+    }
+
+    /**
+     * Inserts new content at an index.
+     *
+     * Important: This function expects an array of content. Not just a content
+     * object. The reason for this "weirdness" is that inserting several elements
+     * is very efficient when it is done as a single operation.
+     *
+     * @example
+     *  // Insert character 'a' at position 0
+     *  yarray.insert(0, ['a'])
+     *  // Insert numbers 1, 2 at position 1
+     *  yarray.insert(1, [1, 2])
+     *
+     * @param {number} index The index to insert content at.
+     * @param {Array<T>} content The array of content
+     */
+    insert (index, content) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeListInsertGenerics(transaction, this, index, /** @type {any} */ (content));
+        });
+      } else {
+        /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content);
+      }
+    }
+
+    /**
+     * Appends content to this YArray.
+     *
+     * @param {Array<T>} content Array of content to append.
+     *
+     * @todo Use the following implementation in all types.
+     */
+    push (content) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeListPushGenerics(transaction, this, /** @type {any} */ (content));
+        });
+      } else {
+        /** @type {Array<any>} */ (this._prelimContent).push(...content);
+      }
+    }
+
+    /**
+     * Prepends content to this YArray.
+     *
+     * @param {Array<T>} content Array of content to prepend.
+     */
+    unshift (content) {
+      this.insert(0, content);
+    }
+
+    /**
+     * Deletes elements starting from an index.
+     *
+     * @param {number} index Index at which to start deleting elements
+     * @param {number} length The number of elements to remove. Defaults to 1.
+     */
+    delete (index, length = 1) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeListDelete(transaction, this, index, length);
+        });
+      } else {
+        /** @type {Array<any>} */ (this._prelimContent).splice(index, length);
+      }
+    }
+
+    /**
+     * Returns the i-th element from a YArray.
+     *
+     * @param {number} index The index of the element to return from the YArray
+     * @return {T}
+     */
+    get (index) {
+      return typeListGet(this, index)
+    }
+
+    /**
+     * Transforms this YArray to a JavaScript Array.
+     *
+     * @return {Array<T>}
+     */
+    toArray () {
+      return typeListToArray(this)
+    }
+
+    /**
+     * Returns a portion of this YArray into a JavaScript Array selected
+     * from start to end (end not included).
+     *
+     * @param {number} [start]
+     * @param {number} [end]
+     * @return {Array<T>}
+     */
+    slice (start = 0, end = this.length) {
+      return typeListSlice(this, start, end)
+    }
+
+    /**
+     * Transforms this Shared Type to a JSON object.
+     *
+     * @return {Array<any>}
+     */
+    toJSON () {
+      return this.map(c => c instanceof AbstractType ? c.toJSON() : c)
+    }
+
+    /**
+     * Returns an Array with the result of calling a provided function on every
+     * element of this YArray.
+     *
+     * @template M
+     * @param {function(T,number,YArray<T>):M} f Function that produces an element of the new Array
+     * @return {Array<M>} A new array with each element being the result of the
+     *                 callback function
+     */
+    map (f) {
+      return typeListMap(this, /** @type {any} */ (f))
+    }
+
+    /**
+     * Executes a provided function once on every element of this YArray.
+     *
+     * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
+     */
+    forEach (f) {
+      typeListForEach(this, f);
+    }
+
+    /**
+     * @return {IterableIterator<T>}
+     */
+    [Symbol.iterator] () {
+      return typeListCreateIterator(this)
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     */
+    _write (encoder) {
+      encoder.writeTypeRef(YArrayRefID);
+    }
+  }
+
+  /**
+   * @module YMap
+   */
+
+
+  /**
+   * @template T
+   * @extends YEvent<YMap<T>>
+   * Event that describes the changes on a YMap.
+   */
+  class YMapEvent extends YEvent {
+    /**
+     * @param {YMap<T>} ymap The YArray that changed.
+     * @param {Transaction} transaction
+     * @param {Set<any>} subs The keys that changed.
+     */
+    constructor (ymap, transaction, subs) {
+      super(ymap, transaction);
+      this.keysChanged = subs;
+    }
+  }
+
+  /**
+   * @template MapType
+   * A shared Map implementation.
+   *
+   * @extends AbstractType<YMapEvent<MapType>>
+   * @implements {Iterable<[string, MapType]>}
+   */
+  class YMap extends AbstractType {
+    /**
+     *
+     * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+     */
+    constructor (entries) {
+      super();
+      /**
+       * @type {Map<string,any>?}
+       * @private
+       */
+      this._prelimContent = null;
+
+      if (entries === undefined) {
+        this._prelimContent = new Map();
+      } else {
+        this._prelimContent = new Map(entries);
+      }
+    }
+
+    /**
+     * Integrate this type into the Yjs instance.
+     *
+     * * Save this struct in the os
+     * * This type is sent to other client
+     * * Observer functions are fired
+     *
+     * @param {Doc} y The Yjs instance
+     * @param {Item} item
+     */
+    _integrate (y, item) {
+      super._integrate(y, item)
+      ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
+        this.set(key, value);
+      });
+      this._prelimContent = null;
+    }
+
+    /**
+     * @return {YMap<MapType>}
+     */
+    _copy () {
+      return new YMap()
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {YMap<MapType>}
+     */
+    clone () {
+      /**
+       * @type {YMap<MapType>}
+       */
+      const map = new YMap();
+      this.forEach((value, key) => {
+        map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value);
+      });
+      return map
+    }
+
+    /**
+     * Creates YMapEvent and calls observers.
+     *
+     * @param {Transaction} transaction
+     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     */
+    _callObserver (transaction, parentSubs) {
+      callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs));
+    }
+
+    /**
+     * Transforms this Shared Type to a JSON object.
+     *
+     * @return {Object<string,any>}
+     */
+    toJSON () {
+      this.doc ?? warnPrematureAccess();
+      /**
+       * @type {Object<string,MapType>}
+       */
+      const map = {};
+      this._map.forEach((item, key) => {
+        if (!item.deleted) {
+          const v = item.content.getContent()[item.length - 1];
+          map[key] = v instanceof AbstractType ? v.toJSON() : v;
+        }
+      });
+      return map
+    }
+
+    /**
+     * Returns the size of the YMap (count of key/value pairs)
+     *
+     * @return {number}
+     */
+    get size () {
+      return [...createMapIterator(this)].length
+    }
+
+    /**
+     * Returns the keys for each element in the YMap Type.
+     *
+     * @return {IterableIterator<string>}
+     */
+    keys () {
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
+    }
+
+    /**
+     * Returns the values for each element in the YMap Type.
+     *
+     * @return {IterableIterator<MapType>}
+     */
+    values () {
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+    }
+
+    /**
+     * Returns an Iterator of [key, value] pairs
+     *
+     * @return {IterableIterator<[string, MapType]>}
+     */
+    entries () {
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+    }
+
+    /**
+     * Executes a provided function on once on every key-value pair.
+     *
+     * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
+     */
+    forEach (f) {
+      this.doc ?? warnPrematureAccess();
+      this._map.forEach((item, key) => {
+        if (!item.deleted) {
+          f(item.content.getContent()[item.length - 1], key, this);
+        }
+      });
+    }
+
+    /**
+     * Returns an Iterator of [key, value] pairs
+     *
+     * @return {IterableIterator<[string, MapType]>}
+     */
+    [Symbol.iterator] () {
+      return this.entries()
+    }
+
+    /**
+     * Remove a specified element from this YMap.
+     *
+     * @param {string} key The key of the element to remove.
+     */
+    delete (key) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapDelete(transaction, this, key);
+        });
+      } else {
+        /** @type {Map<string, any>} */ (this._prelimContent).delete(key);
+      }
+    }
+
+    /**
+     * Adds or updates an element with a specified key and value.
+     * @template {MapType} VAL
+     *
+     * @param {string} key The key of the element to add to this YMap
+     * @param {VAL} value The value of the element to add
+     * @return {VAL}
+     */
+    set (key, value) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapSet(transaction, this, key, /** @type {any} */ (value));
+        });
+      } else {
+        /** @type {Map<string, any>} */ (this._prelimContent).set(key, value);
+      }
+      return value
+    }
+
+    /**
+     * Returns a specified element from this YMap.
+     *
+     * @param {string} key
+     * @return {MapType|undefined}
+     */
+    get (key) {
+      return /** @type {any} */ (typeMapGet(this, key))
+    }
+
+    /**
+     * Returns a boolean indicating whether the specified key exists or not.
+     *
+     * @param {string} key The key to test.
+     * @return {boolean}
+     */
+    has (key) {
+      return typeMapHas(this, key)
+    }
+
+    /**
+     * Removes all elements from this YMap.
+     */
+    clear () {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          this.forEach(function (_value, key, map) {
+            typeMapDelete(transaction, map, key);
+          });
+        });
+      } else {
+        /** @type {Map<string, any>} */ (this._prelimContent).clear();
+      }
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     */
+    _write (encoder) {
+      encoder.writeTypeRef(YMapRefID);
+    }
+  }
+
+  /**
+   * @module YText
+   */
+
+
+  /**
+   * @param {any} a
+   * @param {any} b
+   * @return {boolean}
+   */
+  const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && equalFlat(a, b));
+
+  class ItemTextListPosition {
+    /**
+     * @param {Item|null} left
+     * @param {Item|null} right
+     * @param {number} index
+     * @param {Map<string,any>} currentAttributes
+     */
+    constructor (left, right, index, currentAttributes) {
+      this.left = left;
+      this.right = right;
+      this.index = index;
+      this.currentAttributes = currentAttributes;
+    }
+
+    /**
+     * Only call this if you know that this.right is defined
+     */
+    forward () {
+      if (this.right === null) {
+        unexpectedCase();
+      }
+      switch (this.right.content.constructor) {
+        case ContentFormat:
+          if (!this.right.deleted) {
+            updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content));
+          }
+          break
+        default:
+          if (!this.right.deleted) {
+            this.index += this.right.length;
+          }
+          break
+      }
+      this.left = this.right;
+      this.right = this.right.right;
+    }
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {ItemTextListPosition} pos
+   * @param {number} count steps to move forward
+   * @return {ItemTextListPosition}
+   *
+   * @private
+   * @function
+   */
+  const findNextPosition = (transaction, pos, count) => {
+    while (pos.right !== null && count > 0) {
+      switch (pos.right.content.constructor) {
+        case ContentFormat:
+          if (!pos.right.deleted) {
+            updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content));
+          }
+          break
+        default:
+          if (!pos.right.deleted) {
+            if (count < pos.right.length) {
+              // split right
+              getItemCleanStart(transaction, createID(pos.right.id.client, pos.right.id.clock + count));
+            }
+            pos.index += pos.right.length;
+            count -= pos.right.length;
+          }
+          break
+      }
+      pos.left = pos.right;
+      pos.right = pos.right.right;
+      // pos.forward() - we don't forward because that would halve the performance because we already do the checks above
+    }
+    return pos
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {number} index
+   * @param {boolean} useSearchMarker
+   * @return {ItemTextListPosition}
+   *
+   * @private
+   * @function
+   */
+  const findPosition = (transaction, parent, index, useSearchMarker) => {
+    const currentAttributes = new Map();
+    const marker = useSearchMarker ? findMarker(parent, index) : null;
+    if (marker) {
+      const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes);
+      return findNextPosition(transaction, pos, index - marker.index)
+    } else {
+      const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes);
+      return findNextPosition(transaction, pos, index)
+    }
+  };
+
+  /**
+   * Negate applied formats
+   *
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {ItemTextListPosition} currPos
+   * @param {Map<string,any>} negatedAttributes
+   *
+   * @private
+   * @function
+   */
+  const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes) => {
+    // check if we really need to remove attributes
+    while (
+      currPos.right !== null && (
+        currPos.right.deleted === true || (
+          currPos.right.content.constructor === ContentFormat &&
+          equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
+        )
+      )
+    ) {
+      if (!currPos.right.deleted) {
+        negatedAttributes.delete(/** @type {ContentFormat} */ (currPos.right.content).key);
+      }
+      currPos.forward();
+    }
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    negatedAttributes.forEach((val, key) => {
+      const left = currPos.left;
+      const right = currPos.right;
+      const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+      nextFormat.integrate(transaction, 0);
+      currPos.right = nextFormat;
+      currPos.forward();
+    });
+  };
+
+  /**
+   * @param {Map<string,any>} currentAttributes
+   * @param {ContentFormat} format
+   *
+   * @private
+   * @function
+   */
+  const updateCurrentAttributes = (currentAttributes, format) => {
+    const { key, value } = format;
+    if (value === null) {
+      currentAttributes.delete(key);
+    } else {
+      currentAttributes.set(key, value);
+    }
+  };
+
+  /**
+   * @param {ItemTextListPosition} currPos
+   * @param {Object<string,any>} attributes
+   *
+   * @private
+   * @function
+   */
+  const minimizeAttributeChanges = (currPos, attributes) => {
+    // go right while attributes[right.key] === right.value (or right is deleted)
+    while (true) {
+      if (currPos.right === null) {
+        break
+      } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) ; else {
+        break
+      }
+      currPos.forward();
+    }
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {ItemTextListPosition} currPos
+   * @param {Object<string,any>} attributes
+   * @return {Map<string,any>}
+   *
+   * @private
+   * @function
+   **/
+  const insertAttributes = (transaction, parent, currPos, attributes) => {
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    const negatedAttributes = new Map();
+    // insert format-start items
+    for (const key in attributes) {
+      const val = attributes[key];
+      const currentVal = currPos.currentAttributes.get(key) ?? null;
+      if (!equalAttrs(currentVal, val)) {
+        // save negated attribute (set null if currentVal undefined)
+        negatedAttributes.set(key, currentVal);
+        const { left, right } = currPos;
+        currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+        currPos.right.integrate(transaction, 0);
+        currPos.forward();
+      }
+    }
+    return negatedAttributes
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {ItemTextListPosition} currPos
+   * @param {string|object|AbstractType<any>} text
+   * @param {Object<string,any>} attributes
+   *
+   * @private
+   * @function
+   **/
+  const insertText = (transaction, parent, currPos, text, attributes) => {
+    currPos.currentAttributes.forEach((_val, key) => {
+      if (attributes[key] === undefined) {
+        attributes[key] = null;
+      }
+    });
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    minimizeAttributeChanges(currPos, attributes);
+    const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
+    // insert content
+    const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof AbstractType ? new ContentType(text) : new ContentEmbed(text));
+    let { left, right, index } = currPos;
+    if (parent._searchMarker) {
+      updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength());
+    }
+    right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content);
+    right.integrate(transaction, 0);
+    currPos.right = right;
+    currPos.index = index;
+    currPos.forward();
+    insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {ItemTextListPosition} currPos
+   * @param {number} length
+   * @param {Object<string,any>} attributes
+   *
+   * @private
+   * @function
+   */
+  const formatText = (transaction, parent, currPos, length, attributes) => {
+    const doc = transaction.doc;
+    const ownClientId = doc.clientID;
+    minimizeAttributeChanges(currPos, attributes);
+    const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
+    // iterate until first non-format or null is found
+    // delete all formats with attributes[format.key] != null
+    // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+    // eslint-disable-next-line no-labels
+    iterationLoop: while (
+      currPos.right !== null &&
+      (length > 0 ||
+        (
+          negatedAttributes.size > 0 &&
+          (currPos.right.deleted || currPos.right.content.constructor === ContentFormat)
+        )
+      )
+    ) {
+      if (!currPos.right.deleted) {
+        switch (currPos.right.content.constructor) {
+          case ContentFormat: {
+            const { key, value } = /** @type {ContentFormat} */ (currPos.right.content);
+            const attr = attributes[key];
+            if (attr !== undefined) {
+              if (equalAttrs(attr, value)) {
+                negatedAttributes.delete(key);
+              } else {
+                if (length === 0) {
+                  // no need to further extend negatedAttributes
+                  // eslint-disable-next-line no-labels
+                  break iterationLoop
+                }
+                negatedAttributes.set(key, value);
+              }
+              currPos.right.delete(transaction);
+            } else {
+              currPos.currentAttributes.set(key, value);
+            }
+            break
+          }
+          default:
+            if (length < currPos.right.length) {
+              getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
+            }
+            length -= currPos.right.length;
+            break
+        }
+      }
+      currPos.forward();
+    }
+    // Quill just assumes that the editor starts with a newline and that it always
+    // ends with a newline. We only insert that newline when a new newline is
+    // inserted - i.e when length is bigger than type.length
+    if (length > 0) {
+      let newlines = '';
+      for (; length > 0; length--) {
+        newlines += '\n';
+      }
+      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines));
+      currPos.right.integrate(transaction, 0);
+      currPos.forward();
+    }
+    insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
+  };
+
+  /**
+   * Call this function after string content has been deleted in order to
+   * clean up formatting Items.
+   *
+   * @param {Transaction} transaction
+   * @param {Item} start
+   * @param {Item|null} curr exclusive end, automatically iterates to the next Content Item
+   * @param {Map<string,any>} startAttributes
+   * @param {Map<string,any>} currAttributes
+   * @return {number} The amount of formatting Items deleted.
+   *
+   * @function
+   */
+  const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
+    /**
+     * @type {Item|null}
+     */
+    let end = start;
+    /**
+     * @type {Map<string,ContentFormat>}
+     */
+    const endFormats = create$5();
+    while (end && (!end.countable || end.deleted)) {
+      if (!end.deleted && end.content.constructor === ContentFormat) {
+        const cf = /** @type {ContentFormat} */ (end.content);
+        endFormats.set(cf.key, cf);
+      }
+      end = end.right;
+    }
+    let cleanups = 0;
+    let reachedCurr = false;
+    while (start !== end) {
+      if (curr === start) {
+        reachedCurr = true;
+      }
+      if (!start.deleted) {
+        const content = start.content;
+        switch (content.constructor) {
+          case ContentFormat: {
+            const { key, value } = /** @type {ContentFormat} */ (content);
+            const startAttrValue = startAttributes.get(key) ?? null;
+            if (endFormats.get(key) !== content || startAttrValue === value) {
+              // Either this format is overwritten or it is not necessary because the attribute already existed.
+              start.delete(transaction);
+              cleanups++;
+              if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
+                if (startAttrValue === null) {
+                  currAttributes.delete(key);
+                } else {
+                  currAttributes.set(key, startAttrValue);
+                }
+              }
+            }
+            if (!reachedCurr && !start.deleted) {
+              updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content));
+            }
+            break
+          }
+        }
+      }
+      start = /** @type {Item} */ (start.right);
+    }
+    return cleanups
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {Item | null} item
+   */
+  const cleanupContextlessFormattingGap = (transaction, item) => {
+    // iterate until item.right is null or content
+    while (item && item.right && (item.right.deleted || !item.right.countable)) {
+      item = item.right;
+    }
+    const attrs = new Set();
+    // iterate back until a content item is found
+    while (item && (item.deleted || !item.countable)) {
+      if (!item.deleted && item.content.constructor === ContentFormat) {
+        const key = /** @type {ContentFormat} */ (item.content).key;
+        if (attrs.has(key)) {
+          item.delete(transaction);
+        } else {
+          attrs.add(key);
+        }
+      }
+      item = item.left;
+    }
+  };
+
+  /**
+   * This function is experimental and subject to change / be removed.
+   *
+   * Ideally, we don't need this function at all. Formatting attributes should be cleaned up
+   * automatically after each change. This function iterates twice over the complete YText type
+   * and removes unnecessary formatting attributes. This is also helpful for testing.
+   *
+   * This function won't be exported anymore as soon as there is confidence that the YText type works as intended.
+   *
+   * @param {YText} type
+   * @return {number} How many formatting attributes have been cleaned up.
+   */
+  const cleanupYTextFormatting = type => {
+    let res = 0;
+    transact(/** @type {Doc} */ (type.doc), transaction => {
+      let start = /** @type {Item} */ (type._start);
+      let end = type._start;
+      let startAttributes = create$5();
+      const currentAttributes = copy(startAttributes);
+      while (end) {
+        if (end.deleted === false) {
+          switch (end.content.constructor) {
+            case ContentFormat:
+              updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (end.content));
+              break
+            default:
+              res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes);
+              startAttributes = copy(currentAttributes);
+              start = end;
+              break
+          }
+        }
+        end = end.right;
+      }
+    });
+    return res
+  };
+
+  /**
+   * This will be called by the transaction once the event handlers are called to potentially cleanup
+   * formatting attributes.
+   *
+   * @param {Transaction} transaction
+   */
+  const cleanupYTextAfterTransaction = transaction => {
+    /**
+     * @type {Set<YText>}
+     */
+    const needFullCleanup = new Set();
+    // check if another formatting item was inserted
+    const doc = transaction.doc;
+    for (const [client, afterClock] of transaction.afterState.entries()) {
+      const clock = transaction.beforeState.get(client) || 0;
+      if (afterClock === clock) {
+        continue
+      }
+      iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
+        if (
+          !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+        ) {
+          needFullCleanup.add(/** @type {any} */ (item).parent);
+        }
+      });
+    }
+    // cleanup in a new transaction
+    transact(doc, (t) => {
+      iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+        if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+          return
+        }
+        const parent = /** @type {YText} */ (item.parent);
+        if (item.content.constructor === ContentFormat) {
+          needFullCleanup.add(parent);
+        } else {
+          // If no formatting attribute was inserted or deleted, we can make due with contextless
+          // formatting cleanups.
+          // Contextless: it is not necessary to compute currentAttributes for the affected position.
+          cleanupContextlessFormattingGap(t, item);
+        }
+      });
+      // If a formatting item was inserted, we simply clean the whole type.
+      // We need to compute currentAttributes for the current position anyway.
+      for (const yText of needFullCleanup) {
+        cleanupYTextFormatting(yText);
+      }
+    });
+  };
+
+  /**
+   * @param {Transaction} transaction
+   * @param {ItemTextListPosition} currPos
+   * @param {number} length
+   * @return {ItemTextListPosition}
+   *
+   * @private
+   * @function
+   */
+  const deleteText = (transaction, currPos, length) => {
+    const startLength = length;
+    const startAttrs = copy(currPos.currentAttributes);
+    const start = currPos.right;
+    while (length > 0 && currPos.right !== null) {
+      if (currPos.right.deleted === false) {
+        switch (currPos.right.content.constructor) {
+          case ContentType:
+          case ContentEmbed:
+          case ContentString:
+            if (length < currPos.right.length) {
+              getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
+            }
+            length -= currPos.right.length;
+            currPos.right.delete(transaction);
+            break
+        }
+      }
+      currPos.forward();
+    }
+    if (start) {
+      cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes);
+    }
+    const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent);
+    if (parent._searchMarker) {
+      updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length);
+    }
+    return currPos
+  };
+
+  /**
+   * The Quill Delta format represents changes on a text document with
+   * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+   *
+   * @example
+   *   {
+   *     ops: [
+   *       { insert: 'Gandalf', attributes: { bold: true } },
+   *       { insert: ' the ' },
+   *       { insert: 'Grey', attributes: { color: '#cccccc' } }
+   *     ]
+   *   }
+   *
+   */
+
+  /**
+    * Attributes that can be assigned to a selection of text.
+    *
+    * @example
+    *   {
+    *     bold: true,
+    *     font-size: '40px'
+    *   }
+    *
+    * @typedef {Object} TextAttributes
+    */
+
+  /**
+   * @extends YEvent<YText>
+   * Event that describes the changes on a YText type.
+   */
+  class YTextEvent extends YEvent {
+    /**
+     * @param {YText} ytext
+     * @param {Transaction} transaction
+     * @param {Set<any>} subs The keys that changed
+     */
+    constructor (ytext, transaction, subs) {
+      super(ytext, transaction);
+      /**
+       * Whether the children changed.
+       * @type {Boolean}
+       * @private
+       */
+      this.childListChanged = false;
+      /**
+       * Set of all changed attributes.
+       * @type {Set<string>}
+       */
+      this.keysChanged = new Set();
+      subs.forEach((sub) => {
+        if (sub === null) {
+          this.childListChanged = true;
+        } else {
+          this.keysChanged.add(sub);
+        }
+      });
+    }
+
+    /**
+     * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+     */
+    get changes () {
+      if (this._changes === null) {
+        /**
+         * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string|AbstractType<any>|object, delete?:number, retain?:number}>}}
+         */
+        const changes = {
+          keys: this.keys,
+          delta: this.delta,
+          added: new Set(),
+          deleted: new Set()
+        };
+        this._changes = changes;
+      }
+      return /** @type {any} */ (this._changes)
+    }
+
+    /**
+     * Compute the changes in the delta format.
+     * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
+     *
+     * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+     *
+     * @public
+     */
+    get delta () {
+      if (this._delta === null) {
+        const y = /** @type {Doc} */ (this.target.doc);
+        /**
+         * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+         */
+        const delta = [];
+        transact(y, transaction => {
+          const currentAttributes = new Map(); // saves all current attributes for insert
+          const oldAttributes = new Map();
+          let item = this.target._start;
+          /**
+           * @type {string?}
+           */
+          let action = null;
+          /**
+           * @type {Object<string,any>}
+           */
+          const attributes = {}; // counts added or removed new attributes for retain
+          /**
+           * @type {string|object}
+           */
+          let insert = '';
+          let retain = 0;
+          let deleteLen = 0;
+          const addOp = () => {
+            if (action !== null) {
+              /**
+               * @type {any}
+               */
+              let op = null;
+              switch (action) {
+                case 'delete':
+                  if (deleteLen > 0) {
+                    op = { delete: deleteLen };
+                  }
+                  deleteLen = 0;
+                  break
+                case 'insert':
+                  if (typeof insert === 'object' || insert.length > 0) {
+                    op = { insert };
+                    if (currentAttributes.size > 0) {
+                      op.attributes = {};
+                      currentAttributes.forEach((value, key) => {
+                        if (value !== null) {
+                          op.attributes[key] = value;
+                        }
+                      });
+                    }
+                  }
+                  insert = '';
+                  break
+                case 'retain':
+                  if (retain > 0) {
+                    op = { retain };
+                    if (!isEmpty(attributes)) {
+                      op.attributes = assign({}, attributes);
+                    }
+                  }
+                  retain = 0;
+                  break
+              }
+              if (op) delta.push(op);
+              action = null;
+            }
+          };
+          while (item !== null) {
+            switch (item.content.constructor) {
+              case ContentType:
+              case ContentEmbed:
+                if (this.adds(item)) {
+                  if (!this.deletes(item)) {
+                    addOp();
+                    action = 'insert';
+                    insert = item.content.getContent()[0];
+                    addOp();
+                  }
+                } else if (this.deletes(item)) {
+                  if (action !== 'delete') {
+                    addOp();
+                    action = 'delete';
+                  }
+                  deleteLen += 1;
+                } else if (!item.deleted) {
+                  if (action !== 'retain') {
+                    addOp();
+                    action = 'retain';
+                  }
+                  retain += 1;
+                }
+                break
+              case ContentString:
+                if (this.adds(item)) {
+                  if (!this.deletes(item)) {
+                    if (action !== 'insert') {
+                      addOp();
+                      action = 'insert';
+                    }
+                    insert += /** @type {ContentString} */ (item.content).str;
+                  }
+                } else if (this.deletes(item)) {
+                  if (action !== 'delete') {
+                    addOp();
+                    action = 'delete';
+                  }
+                  deleteLen += item.length;
+                } else if (!item.deleted) {
+                  if (action !== 'retain') {
+                    addOp();
+                    action = 'retain';
+                  }
+                  retain += item.length;
+                }
+                break
+              case ContentFormat: {
+                const { key, value } = /** @type {ContentFormat} */ (item.content);
+                if (this.adds(item)) {
+                  if (!this.deletes(item)) {
+                    const curVal = currentAttributes.get(key) ?? null;
+                    if (!equalAttrs(curVal, value)) {
+                      if (action === 'retain') {
+                        addOp();
+                      }
+                      if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
+                        delete attributes[key];
+                      } else {
+                        attributes[key] = value;
+                      }
+                    } else if (value !== null) {
+                      item.delete(transaction);
+                    }
+                  }
+                } else if (this.deletes(item)) {
+                  oldAttributes.set(key, value);
+                  const curVal = currentAttributes.get(key) ?? null;
+                  if (!equalAttrs(curVal, value)) {
+                    if (action === 'retain') {
+                      addOp();
+                    }
+                    attributes[key] = curVal;
+                  }
+                } else if (!item.deleted) {
+                  oldAttributes.set(key, value);
+                  const attr = attributes[key];
+                  if (attr !== undefined) {
+                    if (!equalAttrs(attr, value)) {
+                      if (action === 'retain') {
+                        addOp();
+                      }
+                      if (value === null) {
+                        delete attributes[key];
+                      } else {
+                        attributes[key] = value;
+                      }
+                    } else if (attr !== null) { // this will be cleaned up automatically by the contextless cleanup function
+                      item.delete(transaction);
+                    }
+                  }
+                }
+                if (!item.deleted) {
+                  if (action === 'insert') {
+                    addOp();
+                  }
+                  updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (item.content));
+                }
+                break
+              }
+            }
+            item = item.right;
+          }
+          addOp();
+          while (delta.length > 0) {
+            const lastOp = delta[delta.length - 1];
+            if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
+              // retain delta's if they don't assign attributes
+              delta.pop();
+            } else {
+              break
+            }
+          }
+        });
+        this._delta = delta;
+      }
+      return /** @type {any} */ (this._delta)
+    }
+  }
+
+  /**
+   * Type that represents text with formatting information.
+   *
+   * This type replaces y-richtext as this implementation is able to handle
+   * block formats (format information on a paragraph), embeds (complex elements
+   * like pictures and videos), and text formats (**bold**, *italic*).
+   *
+   * @extends AbstractType<YTextEvent>
+   */
+  class YText extends AbstractType {
+    /**
+     * @param {String} [string] The initial value of the YText.
+     */
+    constructor (string) {
+      super();
+      /**
+       * Array of pending operations on this type
+       * @type {Array<function():void>?}
+       */
+      this._pending = string !== undefined ? [() => this.insert(0, string)] : [];
+      /**
+       * @type {Array<ArraySearchMarker>|null}
+       */
+      this._searchMarker = [];
+      /**
+       * Whether this YText contains formatting attributes.
+       * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
+       */
+      this._hasFormatting = false;
+    }
+
+    /**
+     * Number of characters of this text type.
+     *
+     * @type {number}
+     */
+    get length () {
+      this.doc ?? warnPrematureAccess();
+      return this._length
+    }
+
+    /**
+     * @param {Doc} y
+     * @param {Item} item
+     */
+    _integrate (y, item) {
+      super._integrate(y, item);
+      try {
+        /** @type {Array<function>} */ (this._pending).forEach(f => f());
+      } catch (e) {
+        console.error(e);
+      }
+      this._pending = null;
+    }
+
+    _copy () {
+      return new YText()
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {YText}
+     */
+    clone () {
+      const text = new YText();
+      text.applyDelta(this.toDelta());
+      return text
+    }
+
+    /**
+     * Creates YTextEvent and calls observers.
+     *
+     * @param {Transaction} transaction
+     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     */
+    _callObserver (transaction, parentSubs) {
+      super._callObserver(transaction, parentSubs);
+      const event = new YTextEvent(this, transaction, parentSubs);
+      callTypeObservers(this, transaction, event);
+      // If a remote change happened, we try to cleanup potential formatting duplicates.
+      if (!transaction.local && this._hasFormatting) {
+        transaction._needFormattingCleanup = true;
+      }
+    }
+
+    /**
+     * Returns the unformatted string representation of this YText type.
+     *
+     * @public
+     */
+    toString () {
+      this.doc ?? warnPrematureAccess();
+      let str = '';
+      /**
+       * @type {Item|null}
+       */
+      let n = this._start;
+      while (n !== null) {
+        if (!n.deleted && n.countable && n.content.constructor === ContentString) {
+          str += /** @type {ContentString} */ (n.content).str;
+        }
+        n = n.right;
+      }
+      return str
+    }
+
+    /**
+     * Returns the unformatted string representation of this YText type.
+     *
+     * @return {string}
+     * @public
+     */
+    toJSON () {
+      return this.toString()
+    }
+
+    /**
+     * Apply a {@link Delta} on this shared YText type.
+     *
+     * @param {Array<any>} delta The changes to apply on this element.
+     * @param {object}  opts
+     * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
+     *
+     *
+     * @public
+     */
+    applyDelta (delta, { sanitize = true } = {}) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          const currPos = new ItemTextListPosition(null, this._start, 0, new Map());
+          for (let i = 0; i < delta.length; i++) {
+            const op = delta[i];
+            if (op.insert !== undefined) {
+              // Quill assumes that the content starts with an empty paragraph.
+              // Yjs/Y.Text assumes that it starts empty. We always hide that
+              // there is a newline at the end of the content.
+              // If we omit this step, clients will see a different number of
+              // paragraphs, but nothing bad will happen.
+              const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert;
+              if (typeof ins !== 'string' || ins.length > 0) {
+                insertText(transaction, this, currPos, ins, op.attributes || {});
+              }
+            } else if (op.retain !== undefined) {
+              formatText(transaction, this, currPos, op.retain, op.attributes || {});
+            } else if (op.delete !== undefined) {
+              deleteText(transaction, currPos, op.delete);
+            }
+          }
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.applyDelta(delta));
+      }
+    }
+
+    /**
+     * Returns the Delta representation of this YText type.
+     *
+     * @param {Snapshot} [snapshot]
+     * @param {Snapshot} [prevSnapshot]
+     * @param {function('removed' | 'added', ID):any} [computeYChange]
+     * @return {any} The Delta representation of this type.
+     *
+     * @public
+     */
+    toDelta (snapshot, prevSnapshot, computeYChange) {
+      this.doc ?? warnPrematureAccess();
+      /**
+       * @type{Array<any>}
+       */
+      const ops = [];
+      const currentAttributes = new Map();
+      const doc = /** @type {Doc} */ (this.doc);
+      let str = '';
+      let n = this._start;
+      function packStr () {
+        if (str.length > 0) {
+          // pack str with attributes to ops
+          /**
+           * @type {Object<string,any>}
+           */
+          const attributes = {};
+          let addAttributes = false;
+          currentAttributes.forEach((value, key) => {
+            addAttributes = true;
+            attributes[key] = value;
+          });
+          /**
+           * @type {Object<string,any>}
+           */
+          const op = { insert: str };
+          if (addAttributes) {
+            op.attributes = attributes;
+          }
+          ops.push(op);
+          str = '';
+        }
+      }
+      const computeDelta = () => {
+        while (n !== null) {
+          if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
+            switch (n.content.constructor) {
+              case ContentString: {
+                const cur = currentAttributes.get('ychange');
+                if (snapshot !== undefined && !isVisible(n, snapshot)) {
+                  if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
+                    packStr();
+                    currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' });
+                  }
+                } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+                  if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
+                    packStr();
+                    currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' });
+                  }
+                } else if (cur !== undefined) {
+                  packStr();
+                  currentAttributes.delete('ychange');
+                }
+                str += /** @type {ContentString} */ (n.content).str;
+                break
+              }
+              case ContentType:
+              case ContentEmbed: {
+                packStr();
+                /**
+                 * @type {Object<string,any>}
+                 */
+                const op = {
+                  insert: n.content.getContent()[0]
+                };
+                if (currentAttributes.size > 0) {
+                  const attrs = /** @type {Object<string,any>} */ ({});
+                  op.attributes = attrs;
+                  currentAttributes.forEach((value, key) => {
+                    attrs[key] = value;
+                  });
+                }
+                ops.push(op);
+                break
+              }
+              case ContentFormat:
+                if (isVisible(n, snapshot)) {
+                  packStr();
+                  updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content));
+                }
+                break
+            }
+          }
+          n = n.right;
+        }
+        packStr();
+      };
+      if (snapshot || prevSnapshot) {
+        // snapshots are merged again after the transaction, so we need to keep the
+        // transaction alive until we are done
+        transact(doc, transaction => {
+          if (snapshot) {
+            splitSnapshotAffectedStructs(transaction, snapshot);
+          }
+          if (prevSnapshot) {
+            splitSnapshotAffectedStructs(transaction, prevSnapshot);
+          }
+          computeDelta();
+        }, 'cleanup');
+      } else {
+        computeDelta();
+      }
+      return ops
+    }
+
+    /**
+     * Insert text at a given index.
+     *
+     * @param {number} index The index at which to start inserting.
+     * @param {String} text The text to insert at the specified position.
+     * @param {TextAttributes} [attributes] Optionally define some formatting
+     *                                    information to apply on the inserted
+     *                                    Text.
+     * @public
+     */
+    insert (index, text, attributes) {
+      if (text.length <= 0) {
+        return
+      }
+      const y = this.doc;
+      if (y !== null) {
+        transact(y, transaction => {
+          const pos = findPosition(transaction, this, index, !attributes);
+          if (!attributes) {
+            attributes = {};
+            // @ts-ignore
+            pos.currentAttributes.forEach((v, k) => { attributes[k] = v; });
+          }
+          insertText(transaction, this, pos, text, attributes);
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.insert(index, text, attributes));
+      }
+    }
+
+    /**
+     * Inserts an embed at a index.
+     *
+     * @param {number} index The index to insert the embed at.
+     * @param {Object | AbstractType<any>} embed The Object that represents the embed.
+     * @param {TextAttributes} [attributes] Attribute information to apply on the
+     *                                    embed
+     *
+     * @public
+     */
+    insertEmbed (index, embed, attributes) {
+      const y = this.doc;
+      if (y !== null) {
+        transact(y, transaction => {
+          const pos = findPosition(transaction, this, index, !attributes);
+          insertText(transaction, this, pos, embed, attributes || {});
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes || {}));
+      }
+    }
+
+    /**
+     * Deletes text starting from an index.
+     *
+     * @param {number} index Index at which to start deleting.
+     * @param {number} length The number of characters to remove. Defaults to 1.
+     *
+     * @public
+     */
+    delete (index, length) {
+      if (length === 0) {
+        return
+      }
+      const y = this.doc;
+      if (y !== null) {
+        transact(y, transaction => {
+          deleteText(transaction, findPosition(transaction, this, index, true), length);
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length));
+      }
+    }
+
+    /**
+     * Assigns properties to a range of text.
+     *
+     * @param {number} index The position where to start formatting.
+     * @param {number} length The amount of characters to assign properties to.
+     * @param {TextAttributes} attributes Attribute information to apply on the
+     *                                    text.
+     *
+     * @public
+     */
+    format (index, length, attributes) {
+      if (length === 0) {
+        return
+      }
+      const y = this.doc;
+      if (y !== null) {
+        transact(y, transaction => {
+          const pos = findPosition(transaction, this, index, false);
+          if (pos.right === null) {
+            return
+          }
+          formatText(transaction, this, pos, length, attributes);
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes));
+      }
+    }
+
+    /**
+     * Removes an attribute.
+     *
+     * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+     *
+     * @param {String} attributeName The attribute name that is to be removed.
+     *
+     * @public
+     */
+    removeAttribute (attributeName) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapDelete(transaction, this, attributeName);
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.removeAttribute(attributeName));
+      }
+    }
+
+    /**
+     * Sets or updates an attribute.
+     *
+     * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+     *
+     * @param {String} attributeName The attribute name that is to be set.
+     * @param {any} attributeValue The attribute value that is to be set.
+     *
+     * @public
+     */
+    setAttribute (attributeName, attributeValue) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapSet(transaction, this, attributeName, attributeValue);
+        });
+      } else {
+        /** @type {Array<function>} */ (this._pending).push(() => this.setAttribute(attributeName, attributeValue));
+      }
+    }
+
+    /**
+     * Returns an attribute value that belongs to the attribute name.
+     *
+     * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+     *
+     * @param {String} attributeName The attribute name that identifies the
+     *                               queried value.
+     * @return {any} The queried attribute value.
+     *
+     * @public
+     */
+    getAttribute (attributeName) {
+      return /** @type {any} */ (typeMapGet(this, attributeName))
+    }
+
+    /**
+     * Returns all attribute name/value pairs in a JSON Object.
+     *
+     * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+     *
+     * @return {Object<string, any>} A JSON Object that describes the attributes.
+     *
+     * @public
+     */
+    getAttributes () {
+      return typeMapGetAll(this)
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     */
+    _write (encoder) {
+      encoder.writeTypeRef(YTextRefID);
+    }
+  }
+
+  /**
+   * @module YXml
+   */
+
+
+  /**
+   * Define the elements to which a set of CSS queries apply.
+   * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
+   *
+   * @example
+   *   query = '.classSelector'
+   *   query = 'nodeSelector'
+   *   query = '#idSelector'
+   *
+   * @typedef {string} CSS_Selector
+   */
+
+  /**
+   * Dom filter function.
+   *
+   * @callback domFilter
+   * @param {string} nodeName The nodeName of the element
+   * @param {Map} attributes The map of attributes.
+   * @return {boolean} Whether to include the Dom node in the YXmlElement.
+   */
+
+  /**
+   * Represents a subset of the nodes of a YXmlElement / YXmlFragment and a
+   * position within them.
+   *
+   * Can be created with {@link YXmlFragment#createTreeWalker}
+   *
+   * @public
+   * @implements {Iterable<YXmlElement|YXmlText|YXmlElement|YXmlHook>}
+   */
+  class YXmlTreeWalker {
+    /**
+     * @param {YXmlFragment | YXmlElement} root
+     * @param {function(AbstractType<any>):boolean} [f]
+     */
+    constructor (root, f = () => true) {
+      this._filter = f;
+      this._root = root;
+      /**
+       * @type {Item}
+       */
+      this._currentNode = /** @type {Item} */ (root._start);
+      this._firstCall = true;
+      root.doc ?? warnPrematureAccess();
+    }
+
+    [Symbol.iterator] () {
+      return this
+    }
+
+    /**
+     * Get the next node.
+     *
+     * @return {IteratorResult<YXmlElement|YXmlText|YXmlHook>} The next node.
+     *
+     * @public
+     */
+    next () {
+      /**
+       * @type {Item|null}
+       */
+      let n = this._currentNode;
+      let type = n && n.content && /** @type {any} */ (n.content).type;
+      if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
+        do {
+          type = /** @type {any} */ (n.content).type;
+          if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
+            // walk down in the tree
+            n = type._start;
+          } else {
+            // walk right or up in the tree
+            while (n !== null) {
+              /**
+               * @type {Item | null}
+               */
+              const nxt = n.next;
+              if (nxt !== null) {
+                n = nxt;
+                break
+              } else if (n.parent === this._root) {
+                n = null;
+              } else {
+                n = /** @type {AbstractType<any>} */ (n.parent)._item;
+              }
+            }
+          }
+        } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */ (n.content).type)))
+      }
+      this._firstCall = false;
+      if (n === null) {
+        // @ts-ignore
+        return { value: undefined, done: true }
+      }
+      this._currentNode = n;
+      return { value: /** @type {any} */ (n.content).type, done: false }
+    }
+  }
+
+  /**
+   * Represents a list of {@link YXmlElement}.and {@link YXmlText} types.
+   * A YxmlFragment is similar to a {@link YXmlElement}, but it does not have a
+   * nodeName and it does not have attributes. Though it can be bound to a DOM
+   * element - in this case the attributes and the nodeName are not shared.
+   *
+   * @public
+   * @extends AbstractType<YXmlEvent>
+   */
+  class YXmlFragment extends AbstractType {
+    constructor () {
+      super();
+      /**
+       * @type {Array<any>|null}
+       */
+      this._prelimContent = [];
+    }
+
+    /**
+     * @type {YXmlElement|YXmlText|null}
+     */
+    get firstChild () {
+      const first = this._first;
+      return first ? first.content.getContent()[0] : null
+    }
+
+    /**
+     * Integrate this type into the Yjs instance.
+     *
+     * * Save this struct in the os
+     * * This type is sent to other client
+     * * Observer functions are fired
+     *
+     * @param {Doc} y The Yjs instance
+     * @param {Item} item
+     */
+    _integrate (y, item) {
+      super._integrate(y, item);
+      this.insert(0, /** @type {Array<any>} */ (this._prelimContent));
+      this._prelimContent = null;
+    }
+
+    _copy () {
+      return new YXmlFragment()
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {YXmlFragment}
+     */
+    clone () {
+      const el = new YXmlFragment();
+      // @ts-ignore
+      el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
+      return el
+    }
+
+    get length () {
+      this.doc ?? warnPrematureAccess();
+      return this._prelimContent === null ? this._length : this._prelimContent.length
+    }
+
+    /**
+     * Create a subtree of childNodes.
+     *
+     * @example
+     * const walker = elem.createTreeWalker(dom => dom.nodeName === 'div')
+     * for (let node in walker) {
+     *   // `node` is a div node
+     *   nop(node)
+     * }
+     *
+     * @param {function(AbstractType<any>):boolean} filter Function that is called on each child element and
+     *                          returns a Boolean indicating whether the child
+     *                          is to be included in the subtree.
+     * @return {YXmlTreeWalker} A subtree and a position within it.
+     *
+     * @public
+     */
+    createTreeWalker (filter) {
+      return new YXmlTreeWalker(this, filter)
+    }
+
+    /**
+     * Returns the first YXmlElement that matches the query.
+     * Similar to DOM's {@link querySelector}.
+     *
+     * Query support:
+     *   - tagname
+     * TODO:
+     *   - id
+     *   - attribute
+     *
+     * @param {CSS_Selector} query The query on the children.
+     * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
+     *
+     * @public
+     */
+    querySelector (query) {
+      query = query.toUpperCase();
+      // @ts-ignore
+      const iterator = new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query);
+      const next = iterator.next();
+      if (next.done) {
+        return null
+      } else {
+        return next.value
+      }
+    }
+
+    /**
+     * Returns all YXmlElements that match the query.
+     * Similar to Dom's {@link querySelectorAll}.
+     *
+     * @todo Does not yet support all queries. Currently only query by tagName.
+     *
+     * @param {CSS_Selector} query The query on the children
+     * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
+     *
+     * @public
+     */
+    querySelectorAll (query) {
+      query = query.toUpperCase();
+      // @ts-ignore
+      return from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+    }
+
+    /**
+     * Creates YXmlEvent and calls observers.
+     *
+     * @param {Transaction} transaction
+     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     */
+    _callObserver (transaction, parentSubs) {
+      callTypeObservers(this, transaction, new YXmlEvent(this, parentSubs, transaction));
+    }
+
+    /**
+     * Get the string representation of all the children of this YXmlFragment.
+     *
+     * @return {string} The string representation of all children.
+     */
+    toString () {
+      return typeListMap(this, xml => xml.toString()).join('')
+    }
+
+    /**
+     * @return {string}
+     */
+    toJSON () {
+      return this.toString()
+    }
+
+    /**
+     * Creates a Dom Element that mirrors this YXmlElement.
+     *
+     * @param {Document} [_document=document] The document object (you must define
+     *                                        this when calling this method in
+     *                                        nodejs)
+     * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
+     *                                             are presented in the DOM
+     * @param {any} [binding] You should not set this property. This is
+     *                               used if DomBinding wants to create a
+     *                               association to the created DOM type.
+     * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+     *
+     * @public
+     */
+    toDOM (_document = document, hooks = {}, binding) {
+      const fragment = _document.createDocumentFragment();
+      if (binding !== undefined) {
+        binding._createAssociation(fragment, this);
+      }
+      typeListForEach(this, xmlType => {
+        fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null);
+      });
+      return fragment
+    }
+
+    /**
+     * Inserts new content at an index.
+     *
+     * @example
+     *  // Insert character 'a' at position 0
+     *  xml.insert(0, [new Y.XmlText('text')])
+     *
+     * @param {number} index The index to insert content at
+     * @param {Array<YXmlElement|YXmlText>} content The array of content
+     */
+    insert (index, content) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeListInsertGenerics(transaction, this, index, content);
+        });
+      } else {
+        // @ts-ignore _prelimContent is defined because this is not yet integrated
+        this._prelimContent.splice(index, 0, ...content);
+      }
+    }
+
+    /**
+     * Inserts new content at an index.
+     *
+     * @example
+     *  // Insert character 'a' at position 0
+     *  xml.insert(0, [new Y.XmlText('text')])
+     *
+     * @param {null|Item|YXmlElement|YXmlText} ref The index to insert content at
+     * @param {Array<YXmlElement|YXmlText>} content The array of content
+     */
+    insertAfter (ref, content) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          const refItem = (ref && ref instanceof AbstractType) ? ref._item : ref;
+          typeListInsertGenericsAfter(transaction, this, refItem, content);
+        });
+      } else {
+        const pc = /** @type {Array<any>} */ (this._prelimContent);
+        const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1;
+        if (index === 0 && ref !== null) {
+          throw create$3('Reference item not found')
+        }
+        pc.splice(index, 0, ...content);
+      }
+    }
+
+    /**
+     * Deletes elements starting from an index.
+     *
+     * @param {number} index Index at which to start deleting elements
+     * @param {number} [length=1] The number of elements to remove. Defaults to 1.
+     */
+    delete (index, length = 1) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeListDelete(transaction, this, index, length);
+        });
+      } else {
+        // @ts-ignore _prelimContent is defined because this is not yet integrated
+        this._prelimContent.splice(index, length);
+      }
+    }
+
+    /**
+     * Transforms this YArray to a JavaScript Array.
+     *
+     * @return {Array<YXmlElement|YXmlText|YXmlHook>}
+     */
+    toArray () {
+      return typeListToArray(this)
+    }
+
+    /**
+     * Appends content to this YArray.
+     *
+     * @param {Array<YXmlElement|YXmlText>} content Array of content to append.
+     */
+    push (content) {
+      this.insert(this.length, content);
+    }
+
+    /**
+     * Prepends content to this YArray.
+     *
+     * @param {Array<YXmlElement|YXmlText>} content Array of content to prepend.
+     */
+    unshift (content) {
+      this.insert(0, content);
+    }
+
+    /**
+     * Returns the i-th element from a YArray.
+     *
+     * @param {number} index The index of the element to return from the YArray
+     * @return {YXmlElement|YXmlText}
+     */
+    get (index) {
+      return typeListGet(this, index)
+    }
+
+    /**
+     * Returns a portion of this YXmlFragment into a JavaScript Array selected
+     * from start to end (end not included).
+     *
+     * @param {number} [start]
+     * @param {number} [end]
+     * @return {Array<YXmlElement|YXmlText>}
+     */
+    slice (start = 0, end = this.length) {
+      return typeListSlice(this, start, end)
+    }
+
+    /**
+     * Executes a provided function on once on every child element.
+     *
+     * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
+     */
+    forEach (f) {
+      typeListForEach(this, f);
+    }
+
+    /**
+     * Transform the properties of this type to binary and write it to an
+     * BinaryEncoder.
+     *
+     * This is called when this Item is sent to a remote peer.
+     *
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+     */
+    _write (encoder) {
+      encoder.writeTypeRef(YXmlFragmentRefID);
+    }
+  }
+
+  /**
+   * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+   */
+
+  /**
+   * An YXmlElement imitates the behavior of a
+   * https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element
+   *
+   * * An YXmlElement has attributes (key value pairs)
+   * * An YXmlElement has childElements that must inherit from YXmlElement
+   *
+   * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
+   */
+  class YXmlElement extends YXmlFragment {
+    constructor (nodeName = 'UNDEFINED') {
+      super();
+      this.nodeName = nodeName;
+      /**
+       * @type {Map<string, any>|null}
+       */
+      this._prelimAttrs = new Map();
+    }
+
+    /**
+     * @type {YXmlElement|YXmlText|null}
+     */
+    get nextSibling () {
+      const n = this._item ? this._item.next : null;
+      return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+    }
+
+    /**
+     * @type {YXmlElement|YXmlText|null}
+     */
+    get prevSibling () {
+      const n = this._item ? this._item.prev : null;
+      return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+    }
+
+    /**
+     * Integrate this type into the Yjs instance.
+     *
+     * * Save this struct in the os
+     * * This type is sent to other client
+     * * Observer functions are fired
+     *
+     * @param {Doc} y The Yjs instance
+     * @param {Item} item
+     */
+    _integrate (y, item) {
+      super._integrate(y, item)
+      ;(/** @type {Map<string, any>} */ (this._prelimAttrs)).forEach((value, key) => {
+        this.setAttribute(key, value);
+      });
+      this._prelimAttrs = null;
+    }
+
+    /**
+     * Creates an Item with the same effect as this Item (without position effect)
+     *
+     * @return {YXmlElement}
+     */
+    _copy () {
+      return new YXmlElement(this.nodeName)
+    }
+
+    /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
+     * @return {YXmlElement<KV>}
+     */
+    clone () {
+      /**
+       * @type {YXmlElement<KV>}
+       */
+      const el = new YXmlElement(this.nodeName);
+      const attrs = this.getAttributes();
+      forEach(attrs, (value, key) => {
+        if (typeof value === 'string') {
+          el.setAttribute(key, value);
+        }
+      });
+      // @ts-ignore
+      el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
+      return el
+    }
+
+    /**
+     * Returns the XML serialization of this YXmlElement.
+     * The attributes are ordered by attribute-name, so you can easily use this
+     * method to compare YXmlElements
+     *
+     * @return {string} The string representation of this type.
+     *
+     * @public
+     */
+    toString () {
+      const attrs = this.getAttributes();
+      const stringBuilder = [];
+      const keys = [];
+      for (const key in attrs) {
+        keys.push(key);
+      }
+      keys.sort();
+      const keysLen = keys.length;
+      for (let i = 0; i < keysLen; i++) {
+        const key = keys[i];
+        stringBuilder.push(key + '="' + attrs[key] + '"');
+      }
+      const nodeName = this.nodeName.toLocaleLowerCase();
+      const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : '';
+      return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
+    }
+
+    /**
+     * Removes an attribute from this YXmlElement.
+     *
+     * @param {string} attributeName The attribute name that is to be removed.
+     *
+     * @public
+     */
+    removeAttribute (attributeName) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapDelete(transaction, this, attributeName);
+        });
+      } else {
+        /** @type {Map<string,any>} */ (this._prelimAttrs).delete(attributeName);
+      }
+    }
+
+    /**
+     * Sets or updates an attribute.
+     *
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that is to be set.
+     * @param {KV[KEY]} attributeValue The attribute value that is to be set.
+     *
+     * @public
+     */
+    setAttribute (attributeName, attributeValue) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          typeMapSet(transaction, this, attributeName, attributeValue);
+        });
+      } else {
+        /** @type {Map<string, any>} */ (this._prelimAttrs).set(attributeName, attributeValue);
+      }
+    }
+
+    /**
+     * Returns an attribute value that belongs to the attribute name.
+     *
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that identifies the
+     *                               queried value.
+     * @return {KV[KEY]|undefined} The queried attribute value.
+     *
+     * @public
+     */
+    getAttribute (attributeName) {
+      return /** @type {any} */ (typeMapGet(this, attributeName))
+    }
+
+    /**
+     * Returns whether an attribute exists
+     *
+     * @param {string} attributeName The attribute name to check for existence.
+     * @return {boolean} whether the attribute exists.
+     *
+     * @public
+     */
+    hasAttribute (attributeName) {
+      return /** @type {any} */ (typeMapHas(this, attributeName))
+    }
+
+    /**
+     * Returns all attribute name/value pairs in a JSON Object.
+     *
+     * @param {Snapshot} [snapshot]
+     * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
+     *
+     * @public
+     */
+    getAttributes (snapshot) {
+      return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
+    }
+
+    /**
+     * Creates a Dom Element that mirrors this YXmlElement.
+     *
+     * @param {Document} [_document=document] The document object (you must define
+     *                                        this when calling this method in
+     *                                        nodejs)
+     * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
+     *                                             are presented in the DOM
+     * @param {any} [binding] You should not set this property. This is
+     *                               used if DomBinding wants to create a
+     *                               association to the created DOM type.
+     * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+     *
+     * @public
+     */
+    toDOM (_document = document, hooks = {}, binding) {
+      const dom = _document.createElement(this.nodeName);
+      const attrs = this.getAttributes();
+      for (const key in attrs) {
+        const value = attrs[key];
+        if (typeof value === 'string') {
+          dom.setAttribute(key, value);
+        }
+      }
+      typeListForEach(this, yxml => {
+        dom.appendChild(yxml.toDOM(_document, hooks, binding));
+      });
+      if (binding !== undefined) {
+        binding._createAssociation(dom, this);
+      }
+      return dom
+    }
+
+    /**
+     * Transform the properties of this type to binary and write it to an
+     * BinaryEncoder.
+     *
+     * This is called when this Item is sent to a remote peer.
+     *
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+     */
+    _write (encoder) {
+      encoder.writeTypeRef(YXmlElementRefID);
+      encoder.writeKey(this.nodeName);
+    }
+  }
+
+  /**
+   * @extends YEvent<YXmlElement|YXmlText|YXmlFragment>
+   * An Event that describes changes on a YXml Element or Yxml Fragment
+   */
+  class YXmlEvent extends YEvent {
+    /**
+     * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
+     * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
+     *                   child list changed.
+     * @param {Transaction} transaction The transaction instance with which the
+     *                                  change was created.
+     */
+    constructor (target, subs, transaction) {
+      super(target, transaction);
+      /**
+       * Whether the children changed.
+       * @type {Boolean}
+       * @private
+       */
+      this.childListChanged = false;
+      /**
+       * Set of all changed attributes.
+       * @type {Set<string>}
+       */
+      this.attributesChanged = new Set();
+      subs.forEach((sub) => {
+        if (sub === null) {
+          this.childListChanged = true;
+        } else {
+          this.attributesChanged.add(sub);
+        }
+      });
+    }
+  }
+
+  class AbstractStruct {
+    /**
+     * @param {ID} id
+     * @param {number} length
+     */
+    constructor (id, length) {
+      this.id = id;
+      this.length = length;
+    }
+
+    /**
+     * @type {boolean}
+     */
+    get deleted () {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * Merge this struct with the item to the right.
+     * This method is already assuming that `this.id.clock + this.length === this.id.clock`.
+     * Also this method does *not* remove right from StructStore!
+     * @param {AbstractStruct} right
+     * @return {boolean} whether this merged with right
+     */
+    mergeWith (right) {
+      return false
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+     * @param {number} offset
+     * @param {number} encodingRef
+     */
+    write (encoder, offset, encodingRef) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {number} offset
+     */
+    integrate (transaction, offset) {
+      throw methodUnimplemented()
+    }
+  }
+
+  const structGCRefNumber = 0;
+
+  /**
+   * @private
+   */
+  class GC extends AbstractStruct {
+    get deleted () {
+      return true
+    }
+
+    delete () {}
+
+    /**
+     * @param {GC} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      if (this.constructor !== right.constructor) {
+        return false
+      }
+      this.length += right.length;
+      return true
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {number} offset
+     */
+    integrate (transaction, offset) {
+      if (offset > 0) {
+        this.id.clock += offset;
+        this.length -= offset;
+      }
+      addStruct(transaction.doc.store, this);
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeInfo(structGCRefNumber);
+      encoder.writeLen(this.length - offset);
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {StructStore} store
+     * @return {null | number}
+     */
+    getMissing (transaction, store) {
+      return null
+    }
+  }
+
+  class ContentBinary {
+    /**
+     * @param {Uint8Array} content
+     */
+    constructor (content) {
+      this.content = content;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return 1
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return [this.content]
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentBinary}
+     */
+    copy () {
+      return new ContentBinary(this.content)
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentBinary}
+     */
+    splice (offset) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {ContentBinary} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      return false
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {}
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeBuf(this.content);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 3
+    }
+  }
+
+  class ContentDeleted {
+    /**
+     * @param {number} len
+     */
+    constructor (len) {
+      this.len = len;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return this.len
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return []
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return false
+    }
+
+    /**
+     * @return {ContentDeleted}
+     */
+    copy () {
+      return new ContentDeleted(this.len)
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentDeleted}
+     */
+    splice (offset) {
+      const right = new ContentDeleted(this.len - offset);
+      this.len = offset;
+      return right
+    }
+
+    /**
+     * @param {ContentDeleted} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      this.len += right.len;
+      return true
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {
+      addToDeleteSet(transaction.deleteSet, item.id.client, item.id.clock, this.len);
+      item.markDeleted();
+    }
+
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeLen(this.len - offset);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 1
+    }
+  }
+
+  /**
+   * @param {string} guid
+   * @param {Object<string, any>} opts
+   */
+  const createDocFromOpts = (guid, opts) => new Doc({ guid, ...opts, shouldLoad: opts.shouldLoad || opts.autoLoad || false });
+
+  /**
+   * @private
+   */
+  class ContentDoc {
+    /**
+     * @param {Doc} doc
+     */
+    constructor (doc) {
+      if (doc._item) {
+        console.error('This document was already integrated as a sub-document. You should create a second instance instead with the same guid.');
+      }
+      /**
+       * @type {Doc}
+       */
+      this.doc = doc;
+      /**
+       * @type {any}
+       */
+      const opts = {};
+      this.opts = opts;
+      if (!doc.gc) {
+        opts.gc = false;
+      }
+      if (doc.autoLoad) {
+        opts.autoLoad = true;
+      }
+      if (doc.meta !== null) {
+        opts.meta = doc.meta;
+      }
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return 1
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return [this.doc]
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentDoc}
+     */
+    copy () {
+      return new ContentDoc(createDocFromOpts(this.doc.guid, this.opts))
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentDoc}
+     */
+    splice (offset) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {ContentDoc} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      return false
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {
+      // this needs to be reflected in doc.destroy as well
+      this.doc._item = item;
+      transaction.subdocsAdded.add(this.doc);
+      if (this.doc.shouldLoad) {
+        transaction.subdocsLoaded.add(this.doc);
+      }
+    }
+
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {
+      if (transaction.subdocsAdded.has(this.doc)) {
+        transaction.subdocsAdded.delete(this.doc);
+      } else {
+        transaction.subdocsRemoved.add(this.doc);
+      }
+    }
+
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) { }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeString(this.doc.guid);
+      encoder.writeAny(this.opts);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 9
+    }
+  }
+
+  /**
+   * @private
+   */
+  class ContentEmbed {
+    /**
+     * @param {Object} embed
+     */
+    constructor (embed) {
+      this.embed = embed;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return 1
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return [this.embed]
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentEmbed}
+     */
+    copy () {
+      return new ContentEmbed(this.embed)
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentEmbed}
+     */
+    splice (offset) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {ContentEmbed} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      return false
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {}
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeJSON(this.embed);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 5
+    }
+  }
+
+  /**
+   * @private
+   */
+  class ContentFormat {
+    /**
+     * @param {string} key
+     * @param {Object} value
+     */
+    constructor (key, value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return 1
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return []
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return false
+    }
+
+    /**
+     * @return {ContentFormat}
+     */
+    copy () {
+      return new ContentFormat(this.key, this.value)
+    }
+
+    /**
+     * @param {number} _offset
+     * @return {ContentFormat}
+     */
+    splice (_offset) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {ContentFormat} _right
+     * @return {boolean}
+     */
+    mergeWith (_right) {
+      return false
+    }
+
+    /**
+     * @param {Transaction} _transaction
+     * @param {Item} item
+     */
+    integrate (_transaction, item) {
+      // @todo searchmarker are currently unsupported for rich text documents
+      const p = /** @type {YText} */ (item.parent);
+      p._searchMarker = null;
+      p._hasFormatting = true;
+    }
+
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeKey(this.key);
+      encoder.writeJSON(this.value);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 6
+    }
+  }
+
+  const isDevMode = getVariable('node_env') === 'development';
+
+  class ContentAny {
+    /**
+     * @param {Array<any>} arr
+     */
+    constructor (arr) {
+      /**
+       * @type {Array<any>}
+       */
+      this.arr = arr;
+      isDevMode && deepFreeze(arr);
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return this.arr.length
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return this.arr
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentAny}
+     */
+    copy () {
+      return new ContentAny(this.arr)
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentAny}
+     */
+    splice (offset) {
+      const right = new ContentAny(this.arr.slice(offset));
+      this.arr = this.arr.slice(0, offset);
+      return right
+    }
+
+    /**
+     * @param {ContentAny} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      this.arr = this.arr.concat(right.arr);
+      return true
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {}
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      const len = this.arr.length;
+      encoder.writeLen(len - offset);
+      for (let i = offset; i < len; i++) {
+        const c = this.arr[i];
+        encoder.writeAny(c);
+      }
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 8
+    }
+  }
+
+  /**
+   * @private
+   */
+  class ContentString {
+    /**
+     * @param {string} str
+     */
+    constructor (str) {
+      /**
+       * @type {string}
+       */
+      this.str = str;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return this.str.length
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return this.str.split('')
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentString}
+     */
+    copy () {
+      return new ContentString(this.str)
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentString}
+     */
+    splice (offset) {
+      const right = new ContentString(this.str.slice(offset));
+      this.str = this.str.slice(0, offset);
+
+      // Prevent encoding invalid documents because of splitting of surrogate pairs: https://github.com/yjs/yjs/issues/248
+      const firstCharCode = this.str.charCodeAt(offset - 1);
+      if (firstCharCode >= 0xD800 && firstCharCode <= 0xDBFF) {
+        // Last character of the left split is the start of a surrogate utf16/ucs2 pair.
+        // We don't support splitting of surrogate pairs because this may lead to invalid documents.
+        // Replace the invalid character with a unicode replacement character (� / U+FFFD)
+        this.str = this.str.slice(0, offset - 1) + '�';
+        // replace right as well
+        right.str = '�' + right.str.slice(1);
+      }
+      return right
+    }
+
+    /**
+     * @param {ContentString} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      this.str += right.str;
+      return true
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {}
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {}
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {}
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      encoder.writeString(offset === 0 ? this.str : this.str.slice(offset));
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 4
+    }
+  }
+
+  const YArrayRefID = 0;
+  const YMapRefID = 1;
+  const YTextRefID = 2;
+  const YXmlElementRefID = 3;
+  const YXmlFragmentRefID = 4;
+
+  /**
+   * @private
+   */
+  class ContentType {
+    /**
+     * @param {AbstractType<any>} type
+     */
+    constructor (type) {
+      /**
+       * @type {AbstractType<any>}
+       */
+      this.type = type;
+    }
+
+    /**
+     * @return {number}
+     */
+    getLength () {
+      return 1
+    }
+
+    /**
+     * @return {Array<any>}
+     */
+    getContent () {
+      return [this.type]
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCountable () {
+      return true
+    }
+
+    /**
+     * @return {ContentType}
+     */
+    copy () {
+      return new ContentType(this.type._copy())
+    }
+
+    /**
+     * @param {number} offset
+     * @return {ContentType}
+     */
+    splice (offset) {
+      throw methodUnimplemented()
+    }
+
+    /**
+     * @param {ContentType} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      return false
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item} item
+     */
+    integrate (transaction, item) {
+      this.type._integrate(transaction.doc, item);
+    }
+
+    /**
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {
+      let item = this.type._start;
+      while (item !== null) {
+        if (!item.deleted) {
+          item.delete(transaction);
+        } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+          // This will be gc'd later and we want to merge it if possible
+          // We try to merge all deleted items after each transaction,
+          // but we have no knowledge about that this needs to be merged
+          // since it is not in transaction.ds. Hence we add it to transaction._mergeStructs
+          transaction._mergeStructs.push(item);
+        }
+        item = item.right;
+      }
+      this.type._map.forEach(item => {
+        if (!item.deleted) {
+          item.delete(transaction);
+        } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+          // same as above
+          transaction._mergeStructs.push(item);
+        }
+      });
+      transaction.changed.delete(this.type);
+    }
+
+    /**
+     * @param {StructStore} store
+     */
+    gc (store) {
+      let item = this.type._start;
+      while (item !== null) {
+        item.gc(store, true);
+        item = item.right;
+      }
+      this.type._start = null;
+      this.type._map.forEach(/** @param {Item | null} item */ (item) => {
+        while (item !== null) {
+          item.gc(store, true);
+          item = item.left;
+        }
+      });
+      this.type._map = new Map();
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      this.type._write(encoder);
+    }
+
+    /**
+     * @return {number}
+     */
+    getRef () {
+      return 7
+    }
+  }
+
+  /**
+   * Split leftItem into two items
+   * @param {Transaction} transaction
+   * @param {Item} leftItem
+   * @param {number} diff
+   * @return {Item}
+   *
+   * @function
+   * @private
+   */
+  const splitItem = (transaction, leftItem, diff) => {
+    // create rightItem
+    const { client, clock } = leftItem.id;
+    const rightItem = new Item(
+      createID(client, clock + diff),
+      leftItem,
+      createID(client, clock + diff - 1),
+      leftItem.right,
+      leftItem.rightOrigin,
+      leftItem.parent,
+      leftItem.parentSub,
+      leftItem.content.splice(diff)
+    );
+    if (leftItem.deleted) {
+      rightItem.markDeleted();
+    }
+    if (leftItem.keep) {
+      rightItem.keep = true;
+    }
+    if (leftItem.redone !== null) {
+      rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff);
+    }
+    // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
+    leftItem.right = rightItem;
+    // update right
+    if (rightItem.right !== null) {
+      rightItem.right.left = rightItem;
+    }
+    // right is more specific.
+    transaction._mergeStructs.push(rightItem);
+    // update parent._map
+    if (rightItem.parentSub !== null && rightItem.right === null) {
+      /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem);
+    }
+    leftItem.length = diff;
+    return rightItem
+  };
+
+  /**
+   * Abstract class that represents any content.
+   */
+  class Item extends AbstractStruct {
+    /**
+     * @param {ID} id
+     * @param {Item | null} left
+     * @param {ID | null} origin
+     * @param {Item | null} right
+     * @param {ID | null} rightOrigin
+     * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+     * @param {string | null} parentSub
+     * @param {AbstractContent} content
+     */
+    constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+      super(id, content.getLength());
+      /**
+       * The item that was originally to the left of this item.
+       * @type {ID | null}
+       */
+      this.origin = origin;
+      /**
+       * The item that is currently to the left of this item.
+       * @type {Item | null}
+       */
+      this.left = left;
+      /**
+       * The item that is currently to the right of this item.
+       * @type {Item | null}
+       */
+      this.right = right;
+      /**
+       * The item that was originally to the right of this item.
+       * @type {ID | null}
+       */
+      this.rightOrigin = rightOrigin;
+      /**
+       * @type {AbstractType<any>|ID|null}
+       */
+      this.parent = parent;
+      /**
+       * If the parent refers to this item with some kind of key (e.g. YMap, the
+       * key is specified here. The key is then used to refer to the list in which
+       * to insert this item. If `parentSub = null` type._start is the list in
+       * which to insert to. Otherwise it is `parent._map`.
+       * @type {String | null}
+       */
+      this.parentSub = parentSub;
+      /**
+       * If this type's effect is redone this type refers to the type that undid
+       * this operation.
+       * @type {ID | null}
+       */
+      this.redone = null;
+      /**
+       * @type {AbstractContent}
+       */
+      this.content = content;
+      /**
+       * bit1: keep
+       * bit2: countable
+       * bit3: deleted
+       * bit4: mark - mark node as fast-search-marker
+       * @type {number} byte
+       */
+      this.info = this.content.isCountable() ? BIT2 : 0;
+    }
+
+    /**
+     * This is used to mark the item as an indexed fast-search marker
+     *
+     * @type {boolean}
+     */
+    set marker (isMarked) {
+      if (((this.info & BIT4) > 0) !== isMarked) {
+        this.info ^= BIT4;
+      }
+    }
+
+    get marker () {
+      return (this.info & BIT4) > 0
+    }
+
+    /**
+     * If true, do not garbage collect this Item.
+     */
+    get keep () {
+      return (this.info & BIT1) > 0
+    }
+
+    set keep (doKeep) {
+      if (this.keep !== doKeep) {
+        this.info ^= BIT1;
+      }
+    }
+
+    get countable () {
+      return (this.info & BIT2) > 0
+    }
+
+    /**
+     * Whether this item was deleted or not.
+     * @type {Boolean}
+     */
+    get deleted () {
+      return (this.info & BIT3) > 0
+    }
+
+    set deleted (doDelete) {
+      if (this.deleted !== doDelete) {
+        this.info ^= BIT3;
+      }
+    }
+
+    markDeleted () {
+      this.info |= BIT3;
+    }
+
+    /**
+     * Return the creator clientID of the missing op or define missing items and return null.
+     *
+     * @param {Transaction} transaction
+     * @param {StructStore} store
+     * @return {null | number}
+     */
+    getMissing (transaction, store) {
+      if (this.origin && this.origin.client !== this.id.client && this.origin.clock >= getState(store, this.origin.client)) {
+        return this.origin.client
+      }
+      if (this.rightOrigin && this.rightOrigin.client !== this.id.client && this.rightOrigin.clock >= getState(store, this.rightOrigin.client)) {
+        return this.rightOrigin.client
+      }
+      if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
+        return this.parent.client
+      }
+
+      // We have all missing ids, now find the items
+
+      if (this.origin) {
+        this.left = getItemCleanEnd(transaction, store, this.origin);
+        this.origin = this.left.lastId;
+      }
+      if (this.rightOrigin) {
+        this.right = getItemCleanStart(transaction, this.rightOrigin);
+        this.rightOrigin = this.right.id;
+      }
+      if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
+        this.parent = null;
+      } else if (!this.parent) {
+        // only set parent if this shouldn't be garbage collected
+        if (this.left && this.left.constructor === Item) {
+          this.parent = this.left.parent;
+          this.parentSub = this.left.parentSub;
+        } else if (this.right && this.right.constructor === Item) {
+          this.parent = this.right.parent;
+          this.parentSub = this.right.parentSub;
+        }
+      } else if (this.parent.constructor === ID) {
+        const parentItem = getItem(store, this.parent);
+        if (parentItem.constructor === GC) {
+          this.parent = null;
+        } else {
+          this.parent = /** @type {ContentType} */ (parentItem.content).type;
+        }
+      }
+      return null
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {number} offset
+     */
+    integrate (transaction, offset) {
+      if (offset > 0) {
+        this.id.clock += offset;
+        this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1));
+        this.origin = this.left.lastId;
+        this.content = this.content.splice(offset);
+        this.length -= offset;
+      }
+
+      if (this.parent) {
+        if ((!this.left && (!this.right || this.right.left !== null)) || (this.left && this.left.right !== this.right)) {
+          /**
+           * @type {Item|null}
+           */
+          let left = this.left;
+
+          /**
+           * @type {Item|null}
+           */
+          let o;
+          // set o to the first conflicting item
+          if (left !== null) {
+            o = left.right;
+          } else if (this.parentSub !== null) {
+            o = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+            while (o !== null && o.left !== null) {
+              o = o.left;
+            }
+          } else {
+            o = /** @type {AbstractType<any>} */ (this.parent)._start;
+          }
+          // TODO: use something like DeleteSet here (a tree implementation would be best)
+          // @todo use global set definitions
+          /**
+           * @type {Set<Item>}
+           */
+          const conflictingItems = new Set();
+          /**
+           * @type {Set<Item>}
+           */
+          const itemsBeforeOrigin = new Set();
+          // Let c in conflictingItems, b in itemsBeforeOrigin
+          // ***{origin}bbbb{this}{c,b}{c,b}{o}***
+          // Note that conflictingItems is a subset of itemsBeforeOrigin
+          while (o !== null && o !== this.right) {
+            itemsBeforeOrigin.add(o);
+            conflictingItems.add(o);
+            if (compareIDs(this.origin, o.origin)) {
+              // case 1
+              if (o.id.client < this.id.client) {
+                left = o;
+                conflictingItems.clear();
+              } else if (compareIDs(this.rightOrigin, o.rightOrigin)) {
+                // this and o are conflicting and point to the same integration points. The id decides which item comes first.
+                // Since this is to the left of o, we can break here
+                break
+              } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
+            } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
+              // case 2
+              if (!conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
+                left = o;
+                conflictingItems.clear();
+              }
+            } else {
+              break
+            }
+            o = o.right;
+          }
+          this.left = left;
+        }
+        // reconnect left/right + update parent map/start if necessary
+        if (this.left !== null) {
+          const right = this.left.right;
+          this.right = right;
+          this.left.right = this;
+        } else {
+          let r;
+          if (this.parentSub !== null) {
+            r = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+            while (r !== null && r.left !== null) {
+              r = r.left;
+            }
+          } else {
+            r = /** @type {AbstractType<any>} */ (this.parent)._start
+            ;/** @type {AbstractType<any>} */ (this.parent)._start = this;
+          }
+          this.right = r;
+        }
+        if (this.right !== null) {
+          this.right.left = this;
+        } else if (this.parentSub !== null) {
+          // set as current parent value if right === null and this is parentSub
+          /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this);
+          if (this.left !== null) {
+            // this is the current attribute value of parent. delete right
+            this.left.delete(transaction);
+          }
+        }
+        // adjust length of parent
+        if (this.parentSub === null && this.countable && !this.deleted) {
+          /** @type {AbstractType<any>} */ (this.parent)._length += this.length;
+        }
+        addStruct(transaction.doc.store, this);
+        this.content.integrate(transaction, this);
+        // add parent to transaction.changed
+        addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub);
+        if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
+          // delete if parent is deleted or if this is not the current attribute value of parent
+          this.delete(transaction);
+        }
+      } else {
+        // parent is not defined. Integrate GC struct instead
+        new GC(this.id, this.length).integrate(transaction, 0);
+      }
+    }
+
+    /**
+     * Returns the next non-deleted item
+     */
+    get next () {
+      let n = this.right;
+      while (n !== null && n.deleted) {
+        n = n.right;
+      }
+      return n
+    }
+
+    /**
+     * Returns the previous non-deleted item
+     */
+    get prev () {
+      let n = this.left;
+      while (n !== null && n.deleted) {
+        n = n.left;
+      }
+      return n
+    }
+
+    /**
+     * Computes the last content address of this Item.
+     */
+    get lastId () {
+      // allocating ids is pretty costly because of the amount of ids created, so we try to reuse whenever possible
+      return this.length === 1 ? this.id : createID(this.id.client, this.id.clock + this.length - 1)
+    }
+
+    /**
+     * Try to merge two items
+     *
+     * @param {Item} right
+     * @return {boolean}
+     */
+    mergeWith (right) {
+      if (
+        this.constructor === right.constructor &&
+        compareIDs(right.origin, this.lastId) &&
+        this.right === right &&
+        compareIDs(this.rightOrigin, right.rightOrigin) &&
+        this.id.client === right.id.client &&
+        this.id.clock + this.length === right.id.clock &&
+        this.deleted === right.deleted &&
+        this.redone === null &&
+        right.redone === null &&
+        this.content.constructor === right.content.constructor &&
+        this.content.mergeWith(right.content)
+      ) {
+        const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker;
+        if (searchMarker) {
+          searchMarker.forEach(marker => {
+            if (marker.p === right) {
+              // right is going to be "forgotten" so we need to update the marker
+              marker.p = this;
+              // adjust marker index
+              if (!this.deleted && this.countable) {
+                marker.index -= this.length;
+              }
+            }
+          });
+        }
+        if (right.keep) {
+          this.keep = true;
+        }
+        this.right = right.right;
+        if (this.right !== null) {
+          this.right.left = this;
+        }
+        this.length += right.length;
+        return true
+      }
+      return false
+    }
+
+    /**
+     * Mark this Item as deleted.
+     *
+     * @param {Transaction} transaction
+     */
+    delete (transaction) {
+      if (!this.deleted) {
+        const parent = /** @type {AbstractType<any>} */ (this.parent);
+        // adjust the length of parent
+        if (this.countable && this.parentSub === null) {
+          parent._length -= this.length;
+        }
+        this.markDeleted();
+        addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length);
+        addChangedTypeToTransaction(transaction, parent, this.parentSub);
+        this.content.delete(transaction);
+      }
+    }
+
+    /**
+     * @param {StructStore} store
+     * @param {boolean} parentGCd
+     */
+    gc (store, parentGCd) {
+      if (!this.deleted) {
+        throw unexpectedCase()
+      }
+      this.content.gc(store);
+      if (parentGCd) {
+        replaceStruct(store, this, new GC(this.id, this.length));
+      } else {
+        this.content = new ContentDeleted(this.length);
+      }
+    }
+
+    /**
+     * Transform the properties of this type to binary and write it to an
+     * BinaryEncoder.
+     *
+     * This is called when this Item is sent to a remote peer.
+     *
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+     * @param {number} offset
+     */
+    write (encoder, offset) {
+      const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin;
+      const rightOrigin = this.rightOrigin;
+      const parentSub = this.parentSub;
+      const info = (this.content.getRef() & BITS5) |
+        (origin === null ? 0 : BIT8) | // origin is defined
+        (rightOrigin === null ? 0 : BIT7) | // right origin is defined
+        (parentSub === null ? 0 : BIT6); // parentSub is non-null
+      encoder.writeInfo(info);
+      if (origin !== null) {
+        encoder.writeLeftID(origin);
+      }
+      if (rightOrigin !== null) {
+        encoder.writeRightID(rightOrigin);
+      }
+      if (origin === null && rightOrigin === null) {
+        const parent = /** @type {AbstractType<any>} */ (this.parent);
+        if (parent._item !== undefined) {
+          const parentItem = parent._item;
+          if (parentItem === null) {
+            // parent type on y._map
+            // find the correct key
+            const ykey = findRootTypeKey(parent);
+            encoder.writeParentInfo(true); // write parentYKey
+            encoder.writeString(ykey);
+          } else {
+            encoder.writeParentInfo(false); // write parent id
+            encoder.writeLeftID(parentItem.id);
+          }
+        } else if (parent.constructor === String) { // this edge case was added by differential updates
+          encoder.writeParentInfo(true); // write parentYKey
+          encoder.writeString(parent);
+        } else if (parent.constructor === ID) {
+          encoder.writeParentInfo(false); // write parent id
+          encoder.writeLeftID(parent);
+        } else {
+          unexpectedCase();
+        }
+        if (parentSub !== null) {
+          encoder.writeString(parentSub);
+        }
+      }
+      this.content.write(encoder, offset);
+    }
+  }
+
+  /** eslint-env browser */
+
+
+  const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
+    ? globalThis
+    : typeof window !== 'undefined'
+      ? window
+      // @ts-ignore
+      : typeof global !== 'undefined' ? global : {});
+
+  const importIdentifier = '__ $YJS$ __';
+
+  if (glo[importIdentifier] === true) {
+    /**
+     * Dear reader of this message. Please take this seriously.
+     *
+     * If you see this message, make sure that you only import one version of Yjs. In many cases,
+     * your package manager installs two versions of Yjs that are used by different packages within your project.
+     * Another reason for this message is that some parts of your project use the commonjs version of Yjs
+     * and others use the EcmaScript version of Yjs.
+     *
+     * This often leads to issues that are hard to debug. We often need to perform constructor checks,
+     * e.g. `struct instanceof GC`. If you imported different versions of Yjs, it is impossible for us to
+     * do the constructor checks anymore - which might break the CRDT algorithm.
+     *
+     * https://github.com/yjs/yjs/issues/438
+     */
+    console.error('Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438');
+  }
+  glo[importIdentifier] = true;
+
   /**
    * @typedef {Object} AutoOptions
+   * @group Decorators
+   * @category Augmentation
+   *
    * @template Type
    * @description Options for configuring the `@auto` decorator.
+   * @property {boolean} [override] - If true, will try to override the defined property in `super`.
    * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
    * current value. Defaults to `true`.
    * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
@@ -29,274 +8462,6 @@
    * return value of `initialValueCallback`.
    */
 
-  /**
-   * @typedef {Object} CacheOptions
-   * @description Options for configuring the `@cache` decorator.
-   *
-   * Defines when and how cached values should expire, refresh, or invalidate.
-   * These options apply equally to cached **methods**, **getters**, and **accessors**.
-   *
-   * @property {number} [timeout]
-   *  Duration in milliseconds after which the cached value automatically expires.
-   *  Useful for time-based caching where values should refresh periodically.
-   *
-   * @property {string | string[]} [onEvent]
-   *  One or more event names (space-separated string or array) that, when fired on the instance,
-   *  immediately clear the cache.
-   *  This allows integration with custom event systems or reactive models.
-   *
-   * @property {() => boolean | Promise<boolean>} [onCallback]
-   *  Function (sync or async) periodically called to decide whether to invalidate the cache.
-   *  If it returns `true`, the cache is cleared.
-   *
-   * @property {number} [onCallbackFrequency]
-   *  Frequency in milliseconds at which `onCallback` should be executed.
-   *  Ignored if `onCallback` is not provided.
-   *
-   * @property {string | Function | (string | Function)[]} [onFieldChange]
-   *  One or more property names or methods to watch for changes.
-   *  Whenever any of these fields or functions change, the cache for the decorated member is cleared.
-   *  Can be a string, a function reference, or an array of both.
-   *
-   * @property {boolean} [clearOnNextFrame]
-   *  If `true`, clears the cache automatically on the **next animation frame** (or equivalent microtask fallback).
-   *  Useful when the cached value is only valid for the current render/update cycle.
-   */
-
-  /**
-   * @typedef {Object} TurboHeadlessProperties
-   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
-   * @template {object} DataType - The element's data type, if initializing MVC.
-   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
-   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
-   * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
-   */
-
-  /**
-   * @typedef {Object} ElementTagDefinition
-   * @template {ValidTag} Tag
-   * @description Represents an element's definition of its tag and its namespace (both optional).
-   *
-   * @property {Tag} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
-   * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML" is provided,
-   * the corresponding namespace will be used to create the element. Otherwise, the custom namespace provided will be used.
-   */
-
-  /**
-   * @typedef {Object} TurboProperties
-   * @template {ValidTag} Tag - The HTML (or other) tag of the element, if passing it as a property. Defaults to "div".
-   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
-   * @template {object} DataType - The element's data type, if initializing MVC.
-   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
-   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
-   *
-   * @description Object containing properties for configuring a TurboElement, or any Element. A tag (and
-   * possibly a namespace) can be provided for element creation. TurboElements will ignore these
-   * properties if set.
-   * Any HTML attribute can be passed as key to be processed by the class/function. The type has the following
-   * described custom properties:
-   *
-   * @property {string} [id] - The ID of the element.
-   * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
-   * space-separated classes or an array of class names).
-   * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
-   * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
-   * generate automatically a new style element in the element's corresponding root. Use the css literal function
-   * for autocompletion.
-   * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => boolean)>} [listeners]
-   * - An object containing event listeners to be applied to this element.
-   * @property {(e: Event, el: Element) => boolean} [onClick] - Click event listener.
-   * @property {(e: Event, el: Element) => boolean} [onDrag] - Drag event listener.
-   * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
-   * the created element.
-   * @property {Element} [parent] - The parent element to which the created element will be appended.
-   * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the given value
-   * as name.
-   * @property {string} [text] - The text content of the element (if any).
-   * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
-   */
-
-  /**
-   * @typedef {Object} StylesRoot
-   * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
-   */
-
-  /**
-   * @typedef {Object} StylesType
-   * @description A type that represents types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
-   * method).
-   */
-
-  /**
-   * @typedef {Object} TurboElementProperties
-   * @extends TurboProperties
-   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
-   * @template {object} DataType - The element's data type, if initializing MVC.
-   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
-   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
-   *
-   * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
-   * without the tag.
-   */
-
-  /**
-   * @typedef {Object} TurboIconProperties
-   * @description Properties object that extends TurboElementProperties with properties specific to icons.
-   * @extends TurboProperties
-   *
-   * @property {string} icon - The name of the icon.
-   * @property {string} [iconColor] - The color of the icon.
-   * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
-   * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
-   *
-   * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
-   * TurboIcon.config.type (whose default value is "svgManipulation").
-   * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
-   * TurboIcon.config.directory.
-   * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
-   * TurboIcon.config.defaultClasses to this instance of Icon.
-   */
-
-  /**
-   * @typedef {Object} TurboIconConfig
-   * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
-   *
-   * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
-   * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
-   * directory once here to not type it again at every Icon generation.
-   * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
-   */
-
-  /**
-   * @typedef {Object} TurboRichElementProperties
-   * @description Properties object for configuring a Button. Extends TurboElementProperties.
-   * @extends TurboProperties
-   *
-   * @property {string} [text] - The text to set to the rich element's main element.
-   *
-   * @property {Element | Element[]} [leftCustomElements] - Custom elements
-   * to be placed on the left side of the button (before the left icon).
-   * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
-   * string (icon name/path) or an Icon instance.
-   * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
-   * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
-   * string (icon name/path) or an Icon instance.
-   * @property {Element | Element[]} [rightCustomElements] - Custom elements
-   * to be placed on the right side of the button (after the right icon).
-   *
-   * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
-   * a string). If not specified, the default text tag specified in the Button class will be used.
-   * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
-   * to this instance of Button.
-   *
-   * @template {ValidTag} ElementTag="p"
-   */
-
-  /**
-   * @typedef {Object} TurboRichElementConfig
-   * @description Configuration object for the Button class. Set it via TurboConfig.Button.
-   *
-   * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
-   * element in the button.
-   * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
-   */
-
-  /**
-   * @typedef {Object} TurboButtonConfig
-   * @description Configuration object for the Button class. Set it via TurboConfig.Button.
-   *
-   * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
-   * element in the button.
-   * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
-   */
-
-  /**
-   * @typedef {Object} TurboDropdownProperties
-   * @description Properties for configuring a Dropdown.
-   * @extends TurboProperties
-   *
-   * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
-   * string is passed, a Button with the given string as text will be assigned as the selector.
-   * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
-   *
-   * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
-   *
-   * @property {ValidTag} [customSelectorTag] - Custom HTML tag for the selector's text. Overrides the
-   * default tag set in TurboConfig.Dropdown.
-   * @property {ValidTag} [customEntryTag] - Custom HTML tag for dropdown entries.  Overrides the
-   * default tag set in TurboConfig.Dropdown.
-   *
-   * @property {string | string[]} [customSelectorClasses] - Custom CSS class(es) for the selector. Overrides the default
-   * classes set in TurboConfig.Dropdown.
-   * @property {string | string[]} [customPopupClasses] - Custom CSS class(es) for the popup container. Overrides the
-   * default classes set in TurboConfig.Dropdown.
-   * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
-   * default classes set in TurboConfig.Dropdown.
-   * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
-   * the default classes set in TurboConfig.Dropdown.
-   */
-
-  /**
-   * @typedef {Object} TurboDropdownConfig
-   * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
-   *
-   * @property {ValidTag} [defaultEntryTag] - The default HTML tag for the creation of generic
-   * dropdown entries.
-   * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
-   * element in generic selectors (which are Buttons).
-   *
-   * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
-   * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
-   * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
-   * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
-   * dropdown entries.
-   */
-
-  /**
-   * @typedef {Object} ChildHandler
-   * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
-   */
-
-  /**
-   * @typedef {Object} MakeToolOptions
-   * @description Options used when turning an element into a tool via `makeTool`.
-   * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to
-   * (defaults to the framework's default click event name).
-   * @property {ClickMode} [clickMode] -  Click mode that will hold this tool when activated (defaults to `ClickMode.left`).
-   * @property {(el: Turbo, manager: TurboEventManager) => void} [activateOn] - Custom activator. If provided, is called with `(el, manager)` and should wire activation itself.
-   * @property {string} [key] - Optional keyboard key to map to this tool. When pressed, it will be set as the current key tool.
-   * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults to `TurboEventManager.instance`.
-   */
-
-  /**
-   * @typedef {Object} ToolBehaviorCallback
-   * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed.
-   * @param {Event} event - The original DOM/Turbo event.
-   * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
-   * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
-   * @return {boolean} Whether the behavior handled the action.
-   */
-
-  /**
-   * @typedef {Object} ToolBehaviorOptions
-   * @description Options passed to tool behaviors at execution time.
-   * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node (so behaviors may adjust accordingly).
-   * @property {Node} [embeddedTarget] - The embedded target node, if any. Behaviors can use this as the operation target when appropriate.
-   */
-
-  /**
-   * @typedef {Object} FontProperties
-   * @description An object representing a local font, or a family of fonts.
-   *
-   * @property {string} name - The name of the font. The font's filename should also match.
-   * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
-   * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
-   * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
-   * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
-   * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
-   * @property {string} [format] - The format of the font. Defaults to "woff2".
-   * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
-   */
 
   /**
    * @internal
@@ -313,9 +8478,16 @@
       }
   }
 
+  function isNull(value) {
+      return value == null && value != undefined;
+  }
+  function isUndefined(value) {
+      return typeof value == "undefined";
+  }
+
   function getFirstDescriptorInChain(object, key) {
       let currentObject = object;
-      while (currentObject && currentObject !== HTMLElement.prototype) {
+      while (currentObject && currentObject !== Object.prototype) {
           const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
           if (descriptor)
               return descriptor;
@@ -325,7 +8497,7 @@
   }
   function getFirstPrototypeInChainWith(object, key) {
       let currentObject = Object.getPrototypeOf(object);
-      while (currentObject && currentObject !== HTMLElement.prototype) {
+      while (currentObject && currentObject !== Object.prototype) {
           const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
           if (descriptor)
               return currentObject;
@@ -335,7 +8507,7 @@
   }
   function getSuperMethod(object, key, wrapperFn) {
       let currentObject = Object.getPrototypeOf(object);
-      while (currentObject && currentObject !== HTMLElement.prototype) {
+      while (currentObject && currentObject !== Object.prototype) {
           const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
           const fn = descriptor?.value ?? descriptor?.get ?? descriptor?.set;
           if (typeof fn === "function" && fn !== wrapperFn)
@@ -345,17 +8517,13 @@
       return undefined;
   }
 
-  function isNull(value) {
-      return value == null && value != undefined;
-  }
-  function isUndefined(value) {
-      return typeof value == "undefined";
-  }
-
   const utils$a = new AutoUtils();
   /**
    * @decorator
    * @function auto
+   * @group Decorators
+   * @category Augmentation
+   *
    * @description Stage-3 decorator that augments fields, getters, setters, and accessors. Useful to quickly create a setter
    * and only define additional functionality on set. The decorator takes an optional object as parameter to configure
    * it, allowing you to, among other things:
@@ -364,7 +8532,7 @@
    * - Define a default value to return instead of `undefined` when calling the getter, and
    * - Fire the setter when the underlying value is `undefined`.
    *
-   * *Note: If you want to chain decorators, place @auto closest to the property to ensure it runs first and sets
+   * *Note: If you want to chain decorators, place `@auto` closest to the property to ensure it runs first and sets
    * up the accessor for other decorators.*
    *
    * @param {AutoOptions} [options] - Options object to define custom behaviors.
@@ -397,24 +8565,20 @@
           const backing = Symbol(`__auto_${key}`);
           context.addInitializer(function () {
               const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
+              // const superDescriptor = getSuperDescriptor(this, key);
               let customGetter;
               let customSetter;
-              const write = function (value) {
-                  options.callBefore?.call(this, value);
-                  let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                  if ((options.cancelIfUnchanged ?? true) && this[backing] === next)
-                      return;
-                  if (options.executeSetterBeforeStoring && customSetter)
-                      customSetter.call(this, next);
-                  this[backing] = next;
-                  if (!options.executeSetterBeforeStoring && customSetter)
-                      customSetter.call(this, next);
-                  options.callAfter?.call(this, next);
+              const baseRead = function () {
+                  if (customGetter && options?.returnDefinedGetterValue)
+                      return customGetter.call(this);
+                  // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                  return this[backing];
+              };
+              const baseWrite = function (value) {
+                  // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                  this[backing] = value;
               };
               let undefinedFlag = false;
-              const baseRead = function () {
-                  return customGetter && options?.returnDefinedGetterValue ? customGetter.call(this) : this[backing];
-              };
               const read = function () {
                   let value = baseRead.call(this);
                   if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
@@ -431,7 +8595,19 @@
                   }
                   return value;
               };
-              if (isUndefined(this[backing])) {
+              const write = function (value) {
+                  options.callBefore?.call(this, value);
+                  let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
+                  if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next)
+                      return;
+                  if (options.executeSetterBeforeStoring && customSetter)
+                      customSetter.call(this, next);
+                  baseWrite.call(this, next);
+                  if (!options.executeSetterBeforeStoring && customSetter)
+                      customSetter.call(this, next);
+                  options.callAfter?.call(this, next);
+              };
+              if (isUndefined(baseRead.call(this))) {
                   let initialValue = kind === "field" ? value : undefined;
                   if (isUndefined(initialValue)) {
                       if (options.initialValue)
@@ -449,10 +8625,10 @@
                       customGetter = accessor.get;
                   if (accessor?.set)
                       customSetter = accessor.set;
-                  const descriptor = getFirstDescriptorInChain(this, key);
+                  const descriptor = getFirstDescriptorInChain(this, key) ?? { enumerable: true };
                   Object.defineProperty(this, key, {
                       configurable: true,
-                      enumerable: descriptor?.enumerable ?? true,
+                      enumerable: descriptor.enumerable ?? true,
                       get: () => read.call(this),
                       set: (value) => write.call(this, value),
                   });
@@ -462,14 +8638,14 @@
                   if (installed.get(key))
                       return;
                   installed.set(key, true);
-                  const descriptor = getFirstDescriptorInChain(prototype, key) ?? {};
+                  const descriptor = getFirstDescriptorInChain(prototype, key) ?? { enumerable: true };
                   if (typeof descriptor.get === "function")
                       customGetter = descriptor.get;
                   if (typeof descriptor.set === "function")
                       customSetter = descriptor.set;
                   Object.defineProperty(prototype, key, {
                       configurable: true,
-                      enumerable: !!descriptor?.enumerable,
+                      enumerable: descriptor.enumerable ?? true,
                       get: function () { return read.call(this); },
                       set: function (value) { write.call(this, value); },
                   });
@@ -478,11 +8654,19 @@
       };
   }
 
+  /**
+   * @class TurboSelector
+   * @group TurboSelector
+   *
+   * @template {object} Type - The type of the object it wraps.
+   * @description Selector class that wraps an object and augments it with useful functions to manipulate it. It also
+   * proxies the object, so you can access properties and methods on the underlying object directly through the selector.
+   */
   class TurboSelector {
+      /**
+       * @description The underlying, wrapped object.
+       */
       element;
-      constructor() {
-          return this.#generateProxy();
-      }
       #generateProxy() {
           return new Proxy(this, {
               get(target, prop, receiver) {
@@ -509,6 +8693,9 @@
                       || undefined;
               }
           });
+      }
+      constructor() {
+          return this.#generateProxy();
       }
   }
 
@@ -896,6 +9083,12 @@
       };
   }
 
+  /**
+   * @constant
+   * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
+   */
+  const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"];
+
   function setupMiscFunctions() {
       /**
        * @description Execute a callback on the node while still benefiting from chaining.
@@ -904,6 +9097,28 @@
        */
       TurboSelector.prototype.execute = function _execute(callback) {
           callback(this);
+          return this;
+      };
+      TurboSelector.prototype.applyDefaults = function applyDefaults(defaults, options = {}) {
+          if (!this.element || typeof this.element !== "object")
+              return this;
+          const { mergeProperties = ApplyDefaultsMergeProperties, removeDuplicates = true } = options;
+          for (const [key, value] of Object.entries(defaults)) {
+              const isMergeKey = mergeProperties?.includes(key);
+              if (isMergeKey) {
+                  const defaultArray = Array.isArray(value) ? value : [value];
+                  const currentArray = isUndefined(this.element[key]) ? []
+                      : Array.isArray(this.element[key]) ? this.element[key].slice()
+                          : [this.element[key]];
+                  let merged = currentArray.concat(defaultArray);
+                  if (removeDuplicates)
+                      merged = Array.from(new Set(merged));
+                  this.element[key] = merged;
+              }
+              else if (isUndefined(this.element[key])) {
+                  this.element[key] = value;
+              }
+          }
           return this;
       };
   }
@@ -984,8 +9199,17 @@
       };
   }
 
+  /**
+   * @group Element Creation
+   * @category Namespaces
+   * @description URL to the SVG namespace.
+   */
   const SvgNamespace = "http://www.w3.org/2000/svg";
-  const MathMLNamespace = "http://www.w3.org/1998/Math/MathML";
+  /**
+   * @group Element Creation
+   * @category Namespaces
+   * @description Set of Valid SVG tags.
+   */
   const SvgTags = new Set([
       "a", "animate", "animateMotion", "animateTransform", "circle", "clipPath", "defs", "desc", "ellipse",
       "feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting",
@@ -996,29 +9220,27 @@
       "radialGradient", "rect", "script", "set", "stop", "style", "svg", "switch", "symbol", "text", "textPath",
       "title", "tspan", "use", "view",
   ]);
+
+  /**
+   * @group Element Creation
+   * @category Namespaces
+   * @description URL to the MathML namespace.
+   */
+  const MathMLNamespace = "http://www.w3.org/1998/Math/MathML";
+  /**
+   * @group Element Creation
+   * @category Namespaces
+   * @description Set of Valid MathML tags.
+   */
   const MathMLTags = new Set([
       "annotation", "annotation-xml", "maction", "math", "merror", "mfrac", "mi", "mmultiscripts", "mn", "mo",
       "mover", "mpadded", "mphantom", "mprescripts", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub",
       "msubsup", "msup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "semantics",
   ]);
   /**
-   * @description Evaluates whether the provided string is an SVG tag.
-   * @param {string} [tag] - The string to evaluate
-   * @return A boolean indicating whether the tag is in the SVG namespace or not.
-   */
-  function isSvgTag(tag) {
-      return SvgTags.has(tag) || tag?.startsWith("svg");
-  }
-  /**
-   * @description Evaluates whether the provided string is a MathML tag.
-   * @param {string} [tag] - The string to evaluate
-   * @return A boolean indicating whether the tag is in the MathML namespace or not.
-   */
-  function isMathMLTag(tag) {
-      return MathMLTags.has(tag) || tag?.startsWith("math");
-  }
-
-  /**
+   * @group Element Creation
+   * @category Creation Functions
+   *
    * @description Create an element with the specified properties (and the specified namespace if applicable).
    * @param {TurboProperties<Tag>} [properties] - Object containing properties of the element.
    * @returns {ValidElement<Tag>} The created element.
@@ -1043,6 +9265,9 @@
       return element;
   }
   /**
+   * @group Element Creation
+   * @category Creation Functions
+   *
    * @description Create an element with the specified properties. Supports SVG and MathML.
    * @param {TurboProperties<Tag>} [properties] - Object containing properties of the element.
    * @returns {ValidElement<Tag>} The created element.
@@ -1062,6 +9287,31 @@
       return element;
   }
   /**
+   * @group Element Creation
+   * @category Tag Functions
+   *
+   * @description Evaluates whether the provided string is an SVG tag.
+   * @param {string} [tag] - The string to evaluate
+   * @return A boolean indicating whether the tag is in the SVG namespace or not.
+   */
+  function isSvgTag(tag) {
+      return SvgTags.has(tag) || tag?.startsWith("svg");
+  }
+  /**
+   * @group Element Creation
+   * @category Tag Functions
+   *
+   * @description Evaluates whether the provided string is a MathML tag.
+   * @param {string} [tag] - The string to evaluate
+   * @return A boolean indicating whether the tag is in the MathML namespace or not.
+   */
+  function isMathMLTag(tag) {
+      return MathMLTags.has(tag) || tag?.startsWith("math");
+  }
+  /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Creates a "div" element with the specified properties.
    * @param {TurboProperties<"div">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"div">} The created element.
@@ -1070,6 +9320,9 @@
       return element({ ...properties, tag: "div" });
   }
   /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Creates an "img" element with the specified properties.
    * @param {TurboProperties<"img">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"img">} The created element.
@@ -1078,6 +9331,9 @@
       return element({ ...properties, tag: "img" });
   }
   /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Creates an "input" element with the specified properties.
    * @param {TurboProperties<"input">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"input">} The created element.
@@ -1086,6 +9342,9 @@
       return element({ ...properties, tag: "input" });
   }
   /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Creates a "style" element with the specified properties.
    * @param {TurboProperties<"style">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"style">} The created element.
@@ -1095,6 +9354,9 @@
   }
 
   /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Adds the provided string as a new style element to the provided root.
    * @param {string} [styles] - The css string. Use the css literal function for autocompletion.
    * @param {StylesRoot} [root] - The root to which the style element will be added.
@@ -1108,6 +9370,9 @@
 
   /**
    * @class TurboEmitter
+   * @group MVC
+   * @category Emitter
+   *
    * @template {TurboModel} ModelType -The element's MVC model type.
    * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
    * MVC structure to fire events or listen to some, with various methods.
@@ -1251,14 +9516,20 @@
 
   /**
    * @class Mvc
+   * @group MVC
+   * @category MVC
+   *
    * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
    * @template {object} ElementType - The type of the object that will be turned into MVC.
-   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
-   * @template {object} DataType - The element's data type, if initializing MVC.
-   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
-   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+   * @template {TurboView} ViewType - The element's view type.
+   * @template {object} DataType - The element's data type.
+   * @template {TurboModel<DataType>} ModelType - The element's model type.
+   * @template {TurboEmitter} EmitterType - The element's emitter type.
    * */
   class Mvc {
+      /**
+       * @description The element/root of the MVC structure.
+       */
       element;
       _view;
       _model;
@@ -1276,8 +9547,8 @@
           this.generate(properties);
       }
       /**
-       * @description The view (if any) of the current MVC structure. Setting it will link the current model (if any)
-       * to this new view.
+       * @description The view (if any) of the current MVC structure. Setting it will update the view and link it
+       * with the existing pieces.
        */
       get view() {
           return this._view;
@@ -1287,8 +9558,8 @@
           this.linkPieces();
       }
       /**
-       * @description The model (if any) of the current MVC structure. Setting it will de-link the previous model and link
-       * the new one to the current view (if any) and emitter (if any).
+       * @description The model (if any) of the current MVC structure. Setting it will update the model and link it
+       * with the existing pieces.
        */
       get model() {
           return this._model;
@@ -1301,8 +9572,8 @@
           this.linkPieces();
       }
       /**
-       * @description The emitter (if any) of the current MVC structure. Setting it will link the current model (if any)
-       * to this new emitter.
+       * @description The emitter (if any) of the current MVC structure. Setting it will update the emitter and link it
+       * with the existing pieces.
        */
       get emitter() {
           return this._emitter;
@@ -1311,24 +9582,59 @@
           this._emitter = this.generateInstance(emitter);
           this.linkPieces();
       }
+      /**
+       * @description The controllers (if any) of the current MVC structure. Setting it will not override the existing
+       * controllers, but only add the new values and link them with the existing pieces.
+       */
+      get controllers() {
+          return Array.from(this._controllers.values()) || [];
+      }
       set controllers(value) {
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addController(instance));
           this.linkPieces();
       }
+      /**
+       * @description The handlers (if any) of the current MVC structure. Setting it will not override the existing
+       * handlers, but only add the new values and link them with the existing pieces.
+       */
+      get handlers() {
+          return Array.from(this._handlers.values()) || [];
+      }
       set handlers(value) {
           this.generateInstances(value).forEach(instance => this.addHandler(instance));
           this.linkPieces();
+      }
+      /**
+       * @description The interactors (if any) of the current MVC structure. Setting it will not override the existing
+       * interactors, but only add the new values and link them with the existing pieces.
+       */
+      get interactors() {
+          return Array.from(this._interactors.values()) || [];
       }
       set interactors(value) {
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addInteractor(instance));
           this.linkPieces();
       }
+      /**
+       * @description The tools (if any) of the current MVC structure. Setting it will not override the existing
+       * tools, but only add the new values and link them with the existing pieces.
+       */
+      get tools() {
+          return Array.from(this._tools.values()) || [];
+      }
       set tools(value) {
           this.generateInstances(value, { element: this.element })
               .forEach(instance => this.addTool(instance));
           this.linkPieces();
+      }
+      /**
+       * @description The substrates (if any) of the current MVC structure. Setting it will not override the existing
+       * substrates, but only add the new values and link them with the existing pieces.
+       */
+      get substrates() {
+          return Array.from(this._substrates.values()) || [];
       }
       set substrates(value) {
           this.generateInstances(value, { element: this.element })
@@ -1336,7 +9642,7 @@
           this.linkPieces();
       }
       /**
-       * @description The main data block (if any) attached to the element, taken from its model (if any).
+       * @description The main data block (if any) attached to the model (if any).
        */
       get data() {
           return this.model?.data;
@@ -1346,7 +9652,7 @@
               this.model.data = data;
       }
       /**
-       * @description The ID of the main data block (if any) of the element, taken from its model (if any).
+       * @description The ID of the main data block (if any) attached to the model (if any).
        */
       get dataId() {
           return this.model?.dataId;
@@ -1356,7 +9662,7 @@
               this.model.dataId = value;
       }
       /**
-       * @description The numerical index of the main data block (if any) of the element, taken from its model (if any).
+       * @description The numerical index of the main data block (if any) attached to the model (if any).
        */
       get dataIndex() {
           return Number.parseInt(this.dataId);
@@ -1366,7 +9672,7 @@
               this.model.dataId = value.toString();
       }
       /**
-       * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
+       * @description The size (number) of the main data block (if any) attached to the model (if any).
        */
       get dataSize() {
           return this.model?.getSize?.();
@@ -1486,6 +9792,42 @@
           this._substrates.set(substrate.keyName, substrate);
           this.updateSubstrate(substrate);
       }
+      /**
+       * @function generate
+       * @description Generates the MVC structure based on the provided properties.
+       * If no model or model constructor is defined, no model will be generated. The same applies for the view.
+       * If not defined, a default emitter will be created.
+       * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
+       * to generate the MVC structure.
+       */
+      generate(properties = {}) {
+          for (const property of Object.keys(properties)) {
+              const value = properties[property];
+              if (value === undefined || property === "initialize" || property === "data")
+                  continue;
+              this[property] = value;
+          }
+          if (!this._emitter)
+              this.emitter = new TurboEmitter();
+          if (properties.data && this.model)
+              this.model.setBlock(properties.data, undefined, undefined, false);
+          if (properties.initialize === undefined || properties.initialize)
+              this.initialize();
+      }
+      /**
+       * @function initialize
+       * @description Initializes the MVC parts: the view, the controllers, the interactors, the tools, the substrates,
+       * and the model (in this order). The model is initialized last to allow for the view and controllers to set up
+       * their change callbacks.
+       */
+      initialize() {
+          this.view?.initialize();
+          this._controllers.forEach(controller => controller.initialize());
+          this._interactors.forEach(interactor => interactor.initialize());
+          this._tools.forEach(tool => tool.initialize());
+          this._substrates.forEach(substrate => substrate.initialize());
+          this.model?.initialize();
+      }
       updateController(controller) {
           controller.emitter = this.emitter;
           controller.model = this.model;
@@ -1525,26 +9867,6 @@
           this._tools.forEach(tool => this.updateTool(tool));
           this._substrates.forEach(substrate => this.updateSubstrate(substrate));
       }
-      /**
-       * @function generate
-       * @description Generates the MVC structure based on the provided properties.
-       * If no model or modelConstructor is defined, no model will be generated. Similarly for the view.
-       * If the structure contains a model, an emitter will be created, even if it is not defined in the properties.
-       * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
-       * to generate the MVC structure.
-       */
-      generate(properties = {}) {
-          for (const property of Object.keys(properties)) {
-              const value = properties[property];
-              if (value === undefined || property === "initialize" || property === "data")
-                  continue;
-              this[property] = value;
-          }
-          if (properties.data && this.model)
-              this.model.setBlock(properties.data, undefined, undefined, false);
-          if (properties.initialize === undefined || properties.initialize)
-              this.initialize();
-      }
       generateInstance(data, properties, shallowCopyProperties = true) {
           if (!data)
               return undefined;
@@ -1568,19 +9890,6 @@
           });
           return result;
       }
-      /**
-       * @function initialize
-       * @description Initializes the MVC parts: the view, the controllers, and the model (in this order). The model is
-       * initialized last to allow for the view and controllers to setup their change callbacks.
-       */
-      initialize() {
-          this.view?.initialize();
-          this._controllers.forEach(controller => controller.initialize());
-          this.model?.initialize();
-          this._interactors.forEach(interactor => interactor.initialize());
-          this._tools.forEach(tool => tool.initialize());
-          this._substrates.forEach(substrate => substrate.initialize());
-      }
       emitterFireCallback = (keyName, blockKey, ...args) => this.emitter?.fireWithBlock(keyName, blockKey, ...args);
       extractClassEssenceName(constructor, type) {
           let className = constructor.name;
@@ -1596,104 +9905,6 @@
           if (className.endsWith(type))
               className = className.slice(0, -(type.length));
           return className.charAt(0).toLowerCase() + className.slice(1);
-      }
-  }
-
-  /******************************************************************************
-  Copyright (c) Microsoft Corporation.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted.
-
-  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-  PERFORMANCE OF THIS SOFTWARE.
-  ***************************************************************************** */
-  /* global Reflect, Promise, SuppressedError, Symbol */
-
-
-  function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-      function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-      var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-      var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-      var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-      var _, done = false;
-      for (var i = decorators.length - 1; i >= 0; i--) {
-          var context = {};
-          for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-          for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-          context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-          var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-          if (kind === "accessor") {
-              if (result === void 0) continue;
-              if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-              if (_ = accept(result.get)) descriptor.get = _;
-              if (_ = accept(result.set)) descriptor.set = _;
-              if (_ = accept(result.init)) initializers.unshift(_);
-          }
-          else if (_ = accept(result)) {
-              if (kind === "field") initializers.unshift(_);
-              else descriptor[key] = _;
-          }
-      }
-      if (target) Object.defineProperty(target, contextIn.name, descriptor);
-      done = true;
-  }
-  function __runInitializers(thisArg, initializers, value) {
-      var useValue = arguments.length > 2;
-      for (var i = 0; i < initializers.length; i++) {
-          value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-      }
-      return useValue ? value : void 0;
-  }
-  typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-      var e = new Error(message);
-      return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-  };
-
-  class Delegate {
-      callbacks = new Set();
-      /**
-       * @description Adds a callback to the list.
-       * @param callback - The callback function to add.
-       */
-      add(callback) {
-          this.callbacks.add(callback);
-      }
-      /**
-       * @description Removes a callback from the list.
-       * @param callback - The callback function to remove.
-       * @returns A boolean indicating whether the callback was found and removed.
-       */
-      remove(callback) {
-          return this.callbacks.delete(callback);
-      }
-      has(callback) {
-          return this.callbacks.has(callback);
-      }
-      /**
-       * @description Invokes all callbacks with the provided arguments.
-       * @param args - The arguments to pass to the callbacks.
-       */
-      fire(...args) {
-          for (const callback of this.callbacks) {
-              try {
-                  callback(...args);
-              }
-              catch (error) {
-                  console.error("Error invoking callback:", error);
-              }
-          }
-      }
-      /**
-       * @description Clears added callbacks
-       */
-      clear() {
-          this.callbacks.clear();
       }
   }
 
@@ -1713,53 +9924,57 @@
           return obj;
       }
       data(target) {
-          let map = this.dataMap.get(target);
-          if (!map) {
-              map = new Map();
-              this.dataMap.set(target, map);
+          let obj = this.dataMap.get(target);
+          if (!obj) {
+              obj = { propertyKeyMap: new Map(), blockKeyMap: new Map() };
+              this.dataMap.set(target, obj);
           }
-          return map;
+          return obj;
       }
       track(entry) {
           if (this.activeEffect)
               this.activeEffect.dependencies.add(entry);
       }
-      createSignalEntry(targetOrInitial, key, read, write, options) {
+      createSignalEntry(initial, target, key, read, write, options) {
           const subs = new Set();
           const self = this;
-          const isBound = key !== undefined || read !== undefined;
-          let underlyingValue = targetOrInitial;
           if (!options)
               options = { diffOnWrite: true };
+          if (!write)
+              write = (value) => Reflect.set(target, key, value, target);
+          if (!read) {
+              if (target && !isUndefined(key))
+                  read = () => Reflect.get(target, key);
+              else
+                  read = () => initial;
+          }
           const entry = {
               get() {
                   self.track(entry);
-                  return isBound ? read() : underlyingValue;
+                  return read();
               },
               set(value) {
-                  if (!isBound) {
-                      const prev = underlyingValue;
-                      underlyingValue = value;
+                  if (!target || isUndefined(key)) {
+                      const prev = initial;
+                      initial = value;
                       if (!Object.is(prev, value))
                           entry.emit();
                   }
                   //If "write" is passed, setup emit() behavior. Otherwise, reflect to already defined setter.
-                  else if (write && !options.diffOnWrite) {
+                  else if (!options.diffOnWrite) {
                       write(value);
                       entry.emit();
                   }
-                  else if (write) {
+                  else {
                       const prev = read();
                       write(value);
                       const next = read();
                       if (!Object.is(prev, next))
                           entry.emit();
                   }
-                  else
-                      Reflect.set(targetOrInitial, key, value, targetOrInitial);
               },
               update(updater) {
-                  entry.set(updater(isBound ? read() : underlyingValue));
+                  entry.set(updater(read()));
               },
               sub(fn) {
                   subs.add(fn);
@@ -1770,10 +9985,12 @@
                       queueMicrotask(fn);
               }
           };
+          if (target && !isUndefined(key))
+              this.getReactivityData(target, key).signal = entry;
           return entry;
       }
       getReactivityData(target, key) {
-          const data = this.data(target);
+          const data = this.data(target).propertyKeyMap;
           if (!data.has(key))
               data.set(key, {});
           return data.get(key);
@@ -1806,52 +10023,609 @@
               effect.run();
           });
       }
+      bindBlockKey(target, key, dataKey, blockKey) {
+          blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
+          const map = this.data(target).blockKeyMap;
+          if (!map.has(blockKey))
+              map.set(blockKey, new Map());
+          map.get(blockKey).set(dataKey, key);
+      }
+      getKeyFromBlockKey(target, dataKey, blockKey) {
+          blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
+          return this.data(target).blockKeyMap.get(blockKey)?.get(dataKey);
+      }
+  }
+
+  class SignalUtils {
+      utils;
+      constructor(utils) {
+          this.utils = utils;
+      }
+      createBoxFromEntry(entry) {
+          return new Proxy({
+              ...entry,
+              toJSON: () => entry.get(),
+              valueOf: () => entry.get(),
+              [Symbol.toPrimitive]: (hint) => {
+                  const value = entry.get();
+                  if (hint === "string")
+                      return String(value);
+                  if (typeof value === "number")
+                      return value;
+                  if (value != null && typeof value.valueOf === "function")
+                      return value.valueOf();
+                  return value;
+              },
+              get value() {
+                  return entry.get();
+              },
+              set value(value) {
+                  entry.set(value);
+              }
+          }, {
+              get(target, key, receiver) {
+                  return Reflect.get(target, key, receiver);
+              },
+              set(target, key, value, receiver) {
+                  if (key === "value") {
+                      target.value = value;
+                      return true;
+                  }
+                  return Reflect.set(target, key, value, receiver);
+              }
+          });
+      }
+      signalDecorator(value, context, baseGetter, baseSetter) {
+          const { kind, name, static: isStatic, private: isPrivate } = context;
+          if (isPrivate)
+              throw new Error("@signal does not support private class elements.");
+          const key = name;
+          const backingKey = Symbol(`[[signal:${String(key)}]]`);
+          const shadowKey = Symbol(`[[signal:${String(key)}:shadow]]`);
+          const utils = this.utils;
+          context.addInitializer(function () {
+              const prototype = isStatic ? this : this.constructor.prototype;
+              let customGetter;
+              let customSetter;
+              const read = function () {
+                  if (baseGetter && !this[shadowKey])
+                      return baseGetter.call(this);
+                  if (customGetter && !this[shadowKey])
+                      return customGetter.call(this);
+                  return this[backingKey];
+              };
+              const write = function (v) {
+                  if (!customSetter && !baseSetter) {
+                      this[backingKey] = v;
+                      this[shadowKey] = true;
+                  }
+                  else {
+                      if (baseSetter)
+                          baseSetter.call(this, v);
+                      if (customSetter)
+                          customSetter.call(this, v);
+                      if (!customGetter && !baseGetter) {
+                          this[backingKey] = v;
+                          this[shadowKey] = true;
+                      }
+                  }
+              };
+              const ensureEntry = (self, diffOnWrite = true) => {
+                  let entry = utils.getSignal(self, key);
+                  if (entry)
+                      return entry;
+                  if (kind === "field" && !customGetter && !baseGetter)
+                      self[backingKey] = self[key];
+                  entry = utils.createSignalEntry(undefined, self, key, () => read.call(self), (v) => write.call(self, v), { diffOnWrite });
+                  if (kind === "field")
+                      delete self[key];
+                  return entry;
+              };
+              if (kind === "field" || kind === "accessor") {
+                  const acc = value;
+                  if (acc?.get)
+                      customGetter = acc.get;
+                  if (acc?.set)
+                      customSetter = acc.set;
+                  const entry = ensureEntry(this, !customGetter && !baseGetter);
+                  const descriptor = getFirstDescriptorInChain(this, key);
+                  Object.defineProperty(this, key, {
+                      configurable: descriptor?.configurable ?? true,
+                      enumerable: descriptor?.enumerable ?? true,
+                      get: () => {
+                          utils.track(entry);
+                          return read.call(this);
+                      },
+                      set: (v) => entry.set(v),
+                  });
+              }
+              else if (kind === "getter" || kind === "setter") {
+                  const installed = utils.constructorData(prototype).installed;
+                  if (installed.get(key))
+                      return;
+                  installed.set(key, true);
+                  const descriptor = getFirstDescriptorInChain(prototype, key) ?? {};
+                  if (typeof descriptor.get === "function")
+                      customGetter = descriptor.get;
+                  if (typeof descriptor.set === "function")
+                      customSetter = descriptor.set;
+                  Object.defineProperty(prototype, key, {
+                      configurable: descriptor?.configurable ?? true,
+                      enumerable: !!descriptor?.enumerable,
+                      get: function () {
+                          const e = ensureEntry(this, !customGetter && !baseGetter);
+                          utils.track(e);
+                          return read.call(this);
+                      },
+                      set: function (v) {
+                          const e = ensureEntry(this, !customGetter && !baseGetter);
+                          e.set(v);
+                      },
+                  });
+              }
+          });
+      }
   }
 
   const utils$7 = new ReactivityUtils();
-  function markDirty(target, key) {
-      return utils$7.markDirty(target, key);
+  const signalUtils = new SignalUtils(utils$7);
+  function signal(...args) {
+      //Decorator
+      if (args.length === 2 && args[1] && typeof args[1] === "object"
+          && "kind" in args[1] && "name" in args[1] && "static" in args[1] && "private" in args[1]) {
+          return signalUtils.signalDecorator(args[0], args[1]);
+      }
+      //Getter setter
+      if (typeof args[0] === "function" && typeof args[1] === "function") {
+          return signalUtils.createBoxFromEntry(utils$7.createSignalEntry(undefined, args[2], args[3], args[0], args[1]));
+      }
+      //From value
+      return signalUtils.createBoxFromEntry(utils$7.createSignalEntry(args[0], args[1], args[2]));
   }
+  function markDirty(target, key, blockKey) {
+      let computedKey;
+      if (!isUndefined(blockKey))
+          computedKey = utils$7.getKeyFromBlockKey(target, key, blockKey);
+      if (isUndefined(computedKey))
+          computedKey = key;
+      return utils$7.markDirty(target, computedKey);
+  }
+  /**
+   * @function initializeEffects
+   * @group Reactivity
+   * @category Utilities
+   *
+   * @description Initializes and runs all the effects attached to the given `target`.
+   * @param {object} target - The target to which the effects are bound.
+   */
   function initializeEffects(target) {
-      for (const [, entry] of utils$7.data(target))
+      for (const [, entry] of utils$7.data(target).propertyKeyMap)
           entry.effect?.run();
   }
 
+  class TurboWeakSet {
+      _weakRefs;
+      constructor() {
+          this._weakRefs = new Set();
+      }
+      // Add an object as a WeakRef if it's not already in the set
+      add(obj) {
+          if (!this.has(obj))
+              this._weakRefs.add(new WeakRef(obj));
+          return this;
+      }
+      // Check if the set contains a WeakRef to the given object
+      has(obj) {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === obj)
+                  return true;
+          }
+          return false;
+      }
+      // Delete the WeakRef associated with the given object
+      delete(obj) {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === obj) {
+                  this._weakRefs.delete(weakRef);
+                  return true;
+              }
+          }
+          return false;
+      }
+      // Clean up any WeakRefs whose objects have been garbage-collected
+      cleanup() {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === undefined)
+                  this._weakRefs.delete(weakRef);
+          }
+      }
+      // Convert live objects in the TurboWeakSet to an array
+      toArray() {
+          const result = [];
+          for (const weakRef of this._weakRefs) {
+              const obj = weakRef.deref();
+              if (obj !== undefined)
+                  result.push(obj);
+              else
+                  this._weakRefs.delete(weakRef);
+          }
+          return result;
+      }
+      // Get the size of the TurboWeakSet (only live objects)
+      get size() {
+          this.cleanup();
+          return this.toArray().length;
+      }
+      // Clear all weak references
+      clear() {
+          this._weakRefs.clear();
+      }
+  }
+
+  /**
+   * @class Delegate
+   * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+   * @description Class representing a set of callbacks that can be maintained and executed together.
+   */
+  class SimpleDelegate {
+      callbacks = new Set();
+      /**
+       * @description Adds a callback to the list.
+       * @param callback - The callback function to add.
+       */
+      add(callback) {
+          this.callbacks.add(callback);
+      }
+      /**
+       * @description Removes a callback from the list.
+       * @param callback - The callback function to remove.
+       * @returns A boolean indicating whether the callback was found and removed.
+       */
+      remove(callback) {
+          return this.callbacks.delete(callback);
+      }
+      /**
+       * @description Checks whether a callback is in the list.
+       * @param callback - The callback function to check for.
+       * @returns A boolean indicating whether the callback was found.
+       */
+      has(callback) {
+          return this.callbacks.has(callback);
+      }
+      /**
+       * @description Invokes all callbacks with the provided arguments.
+       * @param args - The arguments to pass to the callbacks.
+       */
+      fire(...args) {
+          let returnValue;
+          for (const callback of this.callbacks) {
+              try {
+                  const value = callback(...args);
+                  if (!isUndefined(value))
+                      returnValue = value;
+              }
+              catch (error) {
+                  console.error("Error invoking callback:", error);
+              }
+          }
+          return returnValue;
+      }
+      /**
+       * @description Clears added callbacks
+       */
+      clear() {
+          this.callbacks.clear();
+      }
+  }
+  /**
+   * @class Delegate
+   * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+   * @description Class representing a set of callbacks that can be maintained and executed together.
+   */
+  class Delegate extends SimpleDelegate {
+      /**
+       * @description Delegate fired when a callback is added.
+       */
+      onAdded = new SimpleDelegate();
+      /**
+       * @description Adds a callback to the list.
+       * @param callback - The callback function to add.
+       */
+      add(callback) {
+          super.add(callback);
+          this.onAdded.fire(callback);
+      }
+  }
+
+  let TurboDataBlock = (() => {
+      let _enabledCallbacks_decorators;
+      let _enabledCallbacks_initializers = [];
+      let _enabledCallbacks_extraInitializers = [];
+      return class TurboDataBlock {
+          static {
+              const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+              _enabledCallbacks_decorators = [auto({ defaultValue: true })];
+              __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
+              if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+          }
+          id;
+          data;
+          #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
+          get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
+          set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
+          isInitialized = (__runInitializers(this, _enabledCallbacks_extraInitializers), false);
+          host;
+          signals = new Map();
+          changeObservers = new TurboWeakSet();
+          onKeyChanged = new Delegate();
+          constructor(properties = {}) {
+              this.id = properties.id;
+              this.data = properties.data;
+          }
+          /*
+           *
+           * Basics
+           *
+           */
+          get(key) {
+              if (this.data instanceof Map)
+                  return this.data.get(key);
+              return this.data?.[key];
+          }
+          set(key, value) {
+              if (!this.data)
+                  return;
+              const prev = this.get(key);
+              if (Object.is(prev, value))
+                  return;
+              if (this.data instanceof Map)
+                  this.data.set(key, value);
+              else
+                  this.data[key] = value;
+              this.keyChanged(key, value);
+          }
+          has(key) {
+              if (this.data instanceof Map)
+                  return this.data.has(key);
+              return this.data?.[key] !== undefined;
+          }
+          delete(key) {
+              if (!this.data || !this.has(key))
+                  return;
+              if (this.data instanceof Map)
+                  this.data.delete(key);
+              else
+                  delete this.data[key];
+              this.keyChanged(key, undefined, true);
+          }
+          get keys() {
+              if (!this.data || typeof this.data !== "object")
+                  return [];
+              if (this.data instanceof Map)
+                  return Array.from(this.data.keys());
+              return [
+                  ...Object.keys(this.data),
+                  ...Object.getOwnPropertySymbols(this.data)
+              ];
+          }
+          get values() {
+              return this.keys.map(key => this.get(key));
+          }
+          get size() {
+              return this.keys.length;
+          }
+          /*
+           *
+           * Utilities
+           *
+           */
+          initialize() {
+              if (!this.data)
+                  return;
+              for (const key of this.keys)
+                  this.keyChanged(key);
+              this.isInitialized = true;
+              this.changeObservers.toArray().forEach(observer => observer.initialize());
+          }
+          /**
+           * @function clear
+           * @description Clears the block data.
+           */
+          clear(clearData = true) {
+              if (clearData)
+                  this.data = undefined;
+              this.changeObservers?.toArray().forEach(observer => observer.clear());
+          }
+          toJSON() {
+              if (this.data instanceof Map)
+                  return Object.fromEntries(this.data);
+              if (this.data && typeof this.data === "object") {
+                  const out = {};
+                  for (const k of this.keys)
+                      out[k] = this.get(k);
+                  return out;
+              }
+              return {};
+          }
+          /*
+           *
+           * Host
+           *
+           */
+          link(host) {
+              this.host = host;
+          }
+          unlink() {
+              this.host = undefined;
+          }
+          /*
+           *
+           * Signals
+           *
+           */
+          makeSignal(key) {
+              if (this.signals.has(key))
+                  return this.signals.get(key);
+              const sig = signal(() => this.get(key), (value) => this.set(key, value), this, key);
+              this.signals.set(key, sig);
+              return sig;
+          }
+          getSignal(key) {
+              return this.signals.get(key);
+          }
+          makeAllSignals() {
+              this.keys.forEach(key => this.makeSignal(key));
+          }
+          /*
+           *
+           * Change observers
+           *
+           */
+          generateObserver(properties = {}) {
+              const observer = {
+                  onAdded: new Delegate(),
+                  onUpdated: new Delegate(),
+                  onDeleted: new Delegate(),
+                  instances: new Map(),
+                  getInstance: (key) => observer.instances.get(key),
+                  getAllInstances: () => {
+                      const temp = Array.from(observer.instances.entries());
+                      temp.sort((a, b) => this.sortingFunction(a[0], b[0]));
+                      return temp.map(entry => entry[1]);
+                  },
+                  initialize: () => {
+                      if (!this.isInitialized)
+                          return;
+                      for (const key of this.keys)
+                          this.observerKeyChanged(observer, key);
+                  },
+                  clear: () => {
+                      observer.instances.forEach(instance => this.removeInstance(instance));
+                      observer.instances.clear();
+                  },
+                  destroy: () => {
+                      observer.clear();
+                      this.changeObservers?.delete(observer);
+                  }
+              };
+              observer.onUpdated.add((data, instance, id) => {
+                  if (typeof instance === "object") {
+                      if ("data" in instance)
+                          instance.data = data;
+                      if ("dataId" in instance)
+                          instance.dataId = id.toString();
+                  }
+              });
+              observer.onDeleted.add((_data, instance, id) => {
+                  this.removeInstance(instance);
+                  observer.instances.delete(id);
+              });
+              if (properties.onAdded)
+                  observer.onAdded.add((data, id) => properties.onAdded(data, id));
+              if (properties.onUpdated)
+                  observer.onUpdated.add((data, instance, id) => properties.onUpdated(data, instance, id));
+              if (properties.onDeleted)
+                  observer.onDeleted.add((data, instance, id) => properties.onDeleted(data, instance, id));
+              if (properties.initialize)
+                  observer.initialize();
+              this.changeObservers?.add(observer);
+              return observer;
+          }
+          observerKeyChanged(observer, key, value = this.get(key), deleted = false) {
+              const existingInstance = observer.instances.get(key);
+              if (existingInstance) {
+                  if (deleted) {
+                      observer.onDeleted.fire(value, existingInstance, key);
+                      observer.instances.delete(key);
+                      this.removeInstance(existingInstance);
+                  }
+                  else
+                      observer.onUpdated.fire(value, existingInstance, key);
+                  return;
+              }
+              if (deleted)
+                  return;
+              const instance = observer.onAdded.fire(value, key);
+              if (!instance)
+                  return;
+              observer.instances.set(key, instance);
+              observer.onUpdated.fire(value, instance, key);
+          }
+          /*
+           *
+           * Internal utilities
+           *
+           */
+          keyChanged(key, value = this.get(key), deleted = false) {
+              this.signals.get(key)?.emit();
+              this.host?.onDirty?.(key, this);
+              if (deleted)
+                  this.signals.delete(key);
+              if (!this.enabledCallbacks)
+                  return;
+              this.onKeyChanged.fire(key, value);
+              this.host?.onChange?.(key, value, this);
+              this.changeObservers?.toArray().forEach(observer => this.observerKeyChanged(observer, key, value, deleted));
+          }
+          sortingFunction(a, b) {
+              if (typeof a == "string" && typeof b == "string")
+                  return a.localeCompare(b);
+              else if (typeof a == "number" && typeof b == "number")
+                  return a - b;
+              return 0;
+          }
+          removeInstance(instance) {
+              if (instance && typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
+                  instance?.remove();
+          }
+      };
+  })();
+
   /**
    * @class TurboModel
+   * @group MVC
+   * @category Model
+   *
    * @template DataType - The type of the data stored in each block.
    * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
    * @template {string | number | symbol} IdType - The type of the block IDs.
    * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
-   * @template {MvcDataBlock<DataType, IdType>} BlockType - The structure of each data block.
+   * @template {TurboDataBlock<DataType, KeyType, IdType>} BlockType - The structure of each data block.
    * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
    * propagation.
    */
   let TurboModel = (() => {
-      let _enabledCallbacks_decorators;
-      let _enabledCallbacks_initializers = [];
-      let _enabledCallbacks_extraInitializers = [];
+      let _instanceExtraInitializers = [];
+      let _set_enabledCallbacks_decorators;
       return class TurboModel {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-              _enabledCallbacks_decorators = [auto()];
-              __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
+              _set_enabledCallbacks_decorators = [auto()];
+              __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
-          isDataBlocksArray = false;
+          isDataBlocksArray = (__runInitializers(this, _instanceExtraInitializers), false);
           dataBlocks;
+          /**
+           * @description Map of MVC handlers bound to this model.
+           */
           handlers;
           /**
            * @description Delegate triggered when a key changes.
            */
           keyChangedCallback;
+          onDirty(key, block) {
+              markDirty(this, key, this.getBlockKey(block));
+          }
+          onChange(key, value, block) {
+              this.keyChangedCallback.fire(key, this.getBlockKey(block), value);
+          }
           /**
            * @constructor
            * @param {DataType} [data] - Initial data. Not initialized if provided.
            * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
            */
           constructor(data, dataBlocksType) {
-              __runInitializers(this, _enabledCallbacks_extraInitializers);
               this.keyChangedCallback = new Delegate();
               if (dataBlocksType === "array") {
                   this.isDataBlocksArray = true;
@@ -1863,6 +10637,15 @@
               }
               this.enabledCallbacks = true;
               this.setBlock(data, undefined, this.defaultBlockKey, false);
+          }
+          /**
+           * @description The default block.
+           */
+          get block() {
+              return this.getBlock();
+          }
+          set block(value) {
+              this.setBlock(value);
           }
           /**
            * @description The data of the default block.
@@ -1882,49 +10665,11 @@
           set dataId(value) {
               this.setBlockId(value);
           }
-          #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
           /**
-           * @description Whether callbacks are enabled or disabled.
+           * @description Whether callbacks are enabled or not.
            */
-          get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
-          set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
-          /**
-           * @function getData
-           * @description Retrieves the value associated with a given key in the specified block.
-           * @param {KeyType} key - The key to retrieve.
-           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
-           * data.
-           * @returns {unknown} The value associated with the key, or null if not found.
-           */
-          getData(key, blockKey = this.defaultBlockKey) {
-              if (!this.isValidBlockKey(blockKey))
-                  return null;
-              return this.getBlockData(blockKey)?.[key];
-          }
-          /**
-           * @function setData
-           * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-           * @param {KeyType} key - The key to update.
-           * @param {unknown} value - The value to assign.
-           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
-           */
-          setData(key, value, blockKey = this.defaultBlockKey) {
-              if (!this.isValidBlockKey(blockKey))
-                  return;
-              const data = this.getBlockData(blockKey);
-              if (data)
-                  data[key] = value;
-              if (this.enabledCallbacks)
-                  this.fireKeyChangedCallback(key, blockKey);
-          }
-          /**
-           * @function getSize
-           * @description Returns the size of the specified block.
-           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
-           * @returns {number} The size.
-           */
-          getSize(blockKey = this.defaultBlockKey) {
-              return this.getAllKeys(blockKey)?.length ?? 0;
+          set enabledCallbacks(value) {
+              this.getAllBlocks().forEach(block => block.enabledCallbacks = value);
           }
           /**
            * @function getBlock
@@ -1934,15 +10679,15 @@
            */
           getBlock(blockKey = this.defaultBlockKey) {
               if (!this.isValidBlockKey(blockKey))
-                  return null;
+                  return;
               if (this.isDataBlocksArray) {
                   const index = Number(blockKey);
-                  return Number.isInteger(index) && index >= 0
-                      ? this.dataBlocks[index] ?? null
-                      : null;
+                  if (Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length) {
+                      return this.dataBlocks[index];
+                  }
               }
               else {
-                  return this.dataBlocks.get(blockKey.toString()) ?? null;
+                  return this.dataBlocks.get(blockKey.toString());
               }
           }
           /**
@@ -1950,12 +10695,13 @@
            * @description Creates a data block entry.
            * @param {DataType} value - The data of the block.
            * @param {IdType} [id] - The optional ID of the data.
-           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
            * @protected
            * @return {BlockType} - The created block.
            */
-          createBlock(value, id, blockKey = this.defaultBlockKey) {
-              return { id: id ?? null, data: value };
+          createBlock(value, id) {
+              const block = value instanceof TurboDataBlock ? value : new TurboDataBlock({ id: id, data: value });
+              block.link(this);
+              return block;
           }
           /**
            * @function setBlock
@@ -1968,7 +10714,10 @@
           setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
               if (!this.isValidBlockKey(blockKey) || value === null || value === undefined)
                   return;
-              const block = this.createBlock(value, id, blockKey);
+              const prev = this.getBlock(blockKey);
+              prev?.clear();
+              prev?.unlink();
+              const block = this.createBlock(value, id);
               if (this.isDataBlocksArray) {
                   const index = Number(blockKey);
                   if (Number.isInteger(index) && index >= 0) {
@@ -1994,6 +10743,22 @@
               }
               return this.dataBlocks.has(blockKey.toString());
           }
+          deleteBlock(blockKey) {
+              const block = this.getBlock(blockKey);
+              if (!block)
+                  return;
+              block.clear();
+              block.unlink();
+              if (this.isDataBlocksArray) {
+                  const index = Number(blockKey);
+                  if (Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length) {
+                      this.dataBlocks.splice(index, 1);
+                  }
+              }
+              else {
+                  this.dataBlocks.delete(blockKey.toString());
+              }
+          }
           /**
            * @function addBlock
            * @description Adds a new block into the structure. Appends or inserts based on key if using array.
@@ -2007,7 +10772,7 @@
                   return;
               if (!this.isDataBlocksArray)
                   return this.setBlock(value, id, blockKey, initialize);
-              const block = this.createBlock(value, id, blockKey);
+              const block = this.createBlock(value, id);
               let index = Number(blockKey);
               if (!Number.isInteger(index) || index < 0)
                   index = this.dataBlocks.length;
@@ -2016,24 +10781,67 @@
                   this.initialize(index);
           }
           /**
+           * @function getData
+           * @description Retrieves the value associated with a given key in the specified block.
+           * @param {KeyType} key - The key to retrieve.
+           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
+           * data.
+           * @returns {unknown} The value associated with the key, or null if not found.
+           */
+          getData(key, blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.get(key);
+          }
+          /**
+           * @function setData
+           * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+           * @param {KeyType} key - The key to update.
+           * @param {unknown} value - The value to assign.
+           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+           */
+          setData(key, value, blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.set(key, value);
+          }
+          /**
+           * @function hasData
+           * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+           * @param {KeyType} key - The key to update.
+           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+           */
+          hasData(key, blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.has(key);
+          }
+          deleteData(key, blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.delete(key);
+          }
+          /**
+           * @function getSize
+           * @description Returns the size of the specified block.
+           * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
+           * @returns {number} The size.
+           */
+          getSize(blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.size ?? 0;
+          }
+          toJSON(blockKey = this.defaultBlockKey) {
+              return this.getBlock(blockKey)?.toJSON();
+          }
+          /**
            * @function getBlockData
            * @description Retrieves the data from a specific block.
            * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-           * @returns {DataType | null} The block's data or  if it doesn't exist.
+           * @returns {DataType} The block's data or  if it doesn't exist.
            */
           getBlockData(blockKey = this.defaultBlockKey) {
-              const block = this.getBlock(blockKey);
-              return block ? block.data : null;
+              return this.getBlock(blockKey)?.data;
           }
           /**
            * @function getBlockId
            * @description Retrieves the ID from a specific block.
            * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-           * @returns {IdType | null} The block ID or null.
+           * @returns {IdType} The block ID or null.
            */
           getBlockId(blockKey = this.defaultBlockKey) {
-              const block = this.getBlock(blockKey);
-              return block ? block.id : null;
+              return this.getBlock(blockKey)?.id;
           }
           /**
            * @function setBlockId
@@ -2048,19 +10856,18 @@
               if (block)
                   block.id = value;
           }
-          /**
-           * @function fireKeyChangedCallback
-           * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
-           * @param {KeyType} key - The key that changed.
-           * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
-           * @param {boolean} [deleted=false] - Whether the key was deleted.
-           */
-          fireKeyChangedCallback(key, blockKey = this.defaultBlockKey, deleted = false) {
-              if (!this.isValidBlockKey(blockKey))
-                  blockKey = this.getAllBlockKeys()[0];
-              markDirty(this, key); //TODO CHECK
-              this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
-          }
+          // /**
+          //  * @function fireKeyChangedCallback
+          //  * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
+          //  * @param {KeyType} key - The key that changed.
+          //  * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
+          //  * @param {boolean} [deleted=false] - Whether the key was deleted.
+          //  */
+          // protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
+          //     if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
+          //     markDirty(this, key, blockKey);
+          //     this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
+          // }
           /**
            * @function fireCallback
            * @description Fires the emitter's change callback for the given key in the default blocks.
@@ -2088,17 +10895,16 @@
            * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
            */
           initialize(blockKey = this.defaultBlockKey) {
-              const keys = this.getAllKeys(blockKey);
-              if (!keys || !this.enabledCallbacks)
-                  return;
-              keys.forEach(key => this.fireKeyChangedCallback(key, blockKey));
+              this.getBlock(blockKey)?.initialize();
           }
           /**
            * @function clear
            * @description Clears the block data at the given key.
+           * @param clearData
            * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
            */
-          clear(blockKey = this.defaultBlockKey) {
+          clear(clearData = true, blockKey = this.defaultBlockKey) {
+              this.getBlock(blockKey)?.clear(clearData);
           }
           /**
            * @description The default block key based on whether the data structure is an array or map.
@@ -2138,15 +10944,12 @@
                   return Array.from(this.dataBlocks.keys());
           }
           /**
-           * @function getAllIds
+           * @function getAllBlockIds
            * @description Retrieves all block (data) IDs in the model.
            * @returns {IdType[]} Array of IDs.
            */
-          getAllIds() {
-              if (this.isDataBlocksArray)
-                  return this.dataBlocks.map(entry => entry.id);
-              else
-                  return Array.from(this.dataBlocks.values()).map(entry => entry.id);
+          getAllBlockIds() {
+              return this.getAllBlocks().map(block => block.id);
           }
           /**
            * @function getAllBlocks
@@ -2170,6 +10973,12 @@
               }
               return output;
           }
+          getBlockKey(block) {
+              for (const blockKey of this.getAllBlockKeys()) {
+                  if (this.getBlock(blockKey) === block)
+                      return blockKey;
+              }
+          }
           /**
            * @function getAllKeys
            * @description Retrieves all keys within the given block(s).
@@ -2177,16 +10986,16 @@
            * @returns {KeyType[]} Array of keys.
            */
           getAllKeys(blockKey = this.defaultComputationBlockKey) {
-              return this.getAllBlocks(blockKey).flatMap(block => Object.keys(block.data));
+              return this.getAllBlocks(blockKey).flatMap(block => block.keys);
           }
           /**
-           * @function getAllData
+           * @function getAllValues
            * @description Retrieves all values across block(s).
            * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
            * @returns {unknown[]} Array of values.
            */
-          getAllData(blockKey = this.defaultComputationBlockKey) {
-              return this.getAllBlocks(blockKey).flatMap(block => Object.values(block.data));
+          getAllValues(blockKey = this.defaultComputationBlockKey) {
+              return this.getAllBlocks(blockKey).flatMap(block => block.values);
           }
           /**
            * @function getHandler
@@ -2197,7 +11006,7 @@
            * @return {TurboHandler} - The handler.
            */
           getHandler(key) {
-              return this.handlers.get(key);
+              return this.handlers?.get(key);
           }
           /**
            * @function addHandler
@@ -2207,57 +11016,101 @@
           addHandler(handler) {
               if (!handler.keyName)
                   return;
-              this.handlers.set(handler.keyName, handler);
+              this.handlers?.set(handler.keyName, handler);
           }
       };
   })();
 
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboKeyEventName = {
       keyPressed: "turbo-key-pressed",
       keyReleased: "turbo-key-released"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const DefaultKeyEventName = {
       keyPressed: "keydown",
       keyReleased: "keyup",
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboClickEventName = {
       click: "turbo-click",
       clickStart: "turbo-click-start",
       clickEnd: "turbo-click-end",
       longPress: "turbo-long-press"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const DefaultClickEventName = {
       click: "click",
       clickStart: "mousedown",
       clickEnd: "mouseup",
       longPress: TurboClickEventName.longPress
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboMoveEventName = {
       move: "turbo-move"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const DefaultMoveEventName = {
       move: "mousemove"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboDragEventName = {
       drag: "turbo-drag",
       dragStart: "turbo-drag-start",
       dragEnd: "turbo-drag-end"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const DefaultDragEventName = {
       drag: TurboDragEventName.drag,
       dragStart: TurboDragEventName.dragStart,
       dragEnd: TurboDragEventName.dragEnd,
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboWheelEventName = {
       trackpadScroll: "turbo-trackpad-scroll",
       trackpadPinch: "turbo-trackpad-pinch",
       mouseWheel: "turbo-mouse-wheel"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const DefaultWheelEventName = {
       trackpadScroll: "wheel",
       trackpadPinch: "wheel",
       mouseWheel: "wheel"
   };
+  /**
+   * @group Event Handling
+   * @category Event Names
+   */
   const TurboEventName = {
       ...TurboClickEventName,
       ...TurboKeyEventName,
@@ -2265,6 +11118,9 @@
       ...TurboDragEventName,
       ...TurboWheelEventName};
   /**
+   * @group Event Handling
+   * @category Event Names
+   *
    * @description Object containing the names of events fired by default by the turboComponents. Modifying it (prior to
    * setting up new turbo components) will subsequently alter the events that the instantiated components will listen for.
    */
@@ -2287,107 +11143,185 @@
       compositionEnd: "compositionend",
   };
 
-  /**
-   * @description Converts the passed variable into a string.
-   * @param value - The variable to convert to string
-   * @returns {string} - The string representation of the value
-   */
-  function stringify(value) {
-      if (value === null || value === undefined)
-          return undefined;
-      switch (typeof value) {
-          case "string":
-              return value;
-          case "number":
-          case "boolean":
-          case "bigint":
-          case "symbol":
-          case "function":
-              return value.toString();
-          case "object":
-              if (Array.isArray(value))
-                  return JSON.stringify(value);
-              else if (value instanceof Date)
-                  return value.toISOString();
-              else {
-                  try {
-                      return JSON.stringify(value);
-                  }
-                  catch {
-                      return "[object Object]";
-                  }
-              }
-          default:
-              return String(value);
-      }
-  }
-  /**
-   * @description Attempts to convert the passed string back to its original type.
-   * @param str - The string to convert back to its original type
-   * @returns {any} - The original value
-   */
-  function parse(str) {
-      if (isUndefined(str))
-          return undefined;
-      switch (str) {
-          case "null":
-              return null;
-          case "true":
-              return true;
-          case "false":
-              return false;
-      }
-      if (!isNaN(Number(str)))
-          return Number(str);
-      if (/^\d+n$/.test(str))
-          return BigInt(str.slice(0, -1));
-      if (str.startsWith("function") || str.startsWith("(")) {
-          try {
-              const parsedFunction = new Function(`return (${str})`)();
-              if (typeof parsedFunction === "function")
-                  return parsedFunction;
+  const VOID       = -1;
+  const PRIMITIVE  = 0;
+  const ARRAY      = 1;
+  const OBJECT     = 2;
+  const DATE       = 3;
+  const REGEXP     = 4;
+  const MAP        = 5;
+  const SET        = 6;
+  const ERROR      = 7;
+  const BIGINT     = 8;
+  // export const SYMBOL = 9;
+
+  const EMPTY = '';
+
+  const {toString} = {};
+  const {keys} = Object;
+
+  const typeOf = value => {
+    const type = typeof value;
+    if (type !== 'object' || !value)
+      return [PRIMITIVE, type];
+
+    const asString = toString.call(value).slice(8, -1);
+    switch (asString) {
+      case 'Array':
+        return [ARRAY, EMPTY];
+      case 'Object':
+        return [OBJECT, EMPTY];
+      case 'Date':
+        return [DATE, EMPTY];
+      case 'RegExp':
+        return [REGEXP, EMPTY];
+      case 'Map':
+        return [MAP, EMPTY];
+      case 'Set':
+        return [SET, EMPTY];
+    }
+
+    if (asString.includes('Array'))
+      return [ARRAY, asString];
+
+    if (asString.includes('Error'))
+      return [ERROR, asString];
+
+    return [OBJECT, asString];
+  };
+
+  const shouldSkip = ([TYPE, type]) => (
+    TYPE === PRIMITIVE &&
+    (type === 'function' || type === 'symbol')
+  );
+
+  const serializer = (strict, json, $, _) => {
+
+    const as = (out, value) => {
+      const index = _.push(out) - 1;
+      $.set(value, index);
+      return index;
+    };
+
+    const pair = value => {
+      if ($.has(value))
+        return $.get(value);
+
+      let [TYPE, type] = typeOf(value);
+      switch (TYPE) {
+        case PRIMITIVE: {
+          let entry = value;
+          switch (type) {
+            case 'bigint':
+              TYPE = BIGINT;
+              entry = value.toString();
+              break;
+            case 'function':
+            case 'symbol':
+              if (strict)
+                throw new TypeError('unable to serialize ' + type);
+              entry = null;
+              break;
+            case 'undefined':
+              return as([VOID], value);
           }
-          catch {
+          return as([TYPE, entry], value);
+        }
+        case ARRAY: {
+          if (type)
+            return as([type, [...value]], value);
+    
+          const arr = [];
+          const index = as([TYPE, arr], value);
+          for (const entry of value)
+            arr.push(pair(entry));
+          return index;
+        }
+        case OBJECT: {
+          if (type) {
+            switch (type) {
+              case 'BigInt':
+                return as([type, value.toString()], value);
+              case 'Boolean':
+              case 'Number':
+              case 'String':
+                return as([type, value.valueOf()], value);
+            }
           }
+
+          if (json && ('toJSON' in value))
+            return pair(value.toJSON());
+
+          const entries = [];
+          const index = as([TYPE, entries], value);
+          for (const key of keys(value)) {
+            if (strict || !shouldSkip(typeOf(value[key])))
+              entries.push([pair(key), pair(value[key])]);
+          }
+          return index;
+        }
+        case DATE:
+          return as([TYPE, value.toISOString()], value);
+        case REGEXP: {
+          const {source, flags} = value;
+          return as([TYPE, {source, flags}], value);
+        }
+        case MAP: {
+          const entries = [];
+          const index = as([TYPE, entries], value);
+          for (const [key, entry] of value) {
+            if (strict || !(shouldSkip(typeOf(key)) || shouldSkip(typeOf(entry))))
+              entries.push([pair(key), pair(entry)]);
+          }
+          return index;
+        }
+        case SET: {
+          const entries = [];
+          const index = as([TYPE, entries], value);
+          for (const entry of value) {
+            if (strict || !shouldSkip(typeOf(entry)))
+              entries.push(pair(entry));
+          }
+          return index;
+        }
       }
-      try {
-          const parsed = JSON.parse(str);
-          if (typeof parsed === "object" && parsed != null)
-              return parsed;
-      }
-      catch {
-      }
-      return str;
-  }
+
+      const {message} = value;
+      return as([TYPE, {name: type, message}], value);
+    };
+
+    return pair;
+  };
+
   /**
-   * @description Extracts the extension from the given filename or path (e.g.: ".png").
-   * @param {string} str - The filename or path
-   * @return The extension, or an empty string if not found.
+   * @typedef {Array<string,any>} Record a type representation
    */
-  function getFileExtension(str) {
-      if (!str || str.length == 0)
-          return "";
-      const match = str.match(/\.\S{1,4}$/);
-      return match ? match[0] : "";
-  }
+
   /**
-   * @description converts the provided string from camelCase to kebab-case.
-   * @param {string} str - The string to convert
+   * Returns an array of serialized Records.
+   * @param {any} value a serializable value.
+   * @param {{json?: boolean, lossy?: boolean}?} options an object with a `lossy` or `json` property that,
+   *  if `true`, will not throw errors on incompatible types, and behave more
+   *  like JSON stringify would behave. Symbol and Function will be discarded.
+   * @returns {Record[]}
    */
-  function camelToKebabCase(str) {
-      if (!str || str.length == 0)
-          return;
-      return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-  }
+   const serialize = (value, {json, lossy} = {}) => {
+    const _ = [];
+    return serializer(!(json || lossy), !!json, new Map, _)(value), _;
+  };
+
+  /*! (c) Andrea Giammarchi - ISC */
+
+
+  const {stringify: $stringify} = JSON;
+  const options = {json: true, lossy: true};
+
   /**
-   * @description converts the provided string from kebab-case to camelCase.
-   * @param {string} str - The string to convert
+   * Represent a structured clone value as string.
+   * @param {any} any some clone-able value to stringify.
+   * @returns {string} the value stringified.
    */
-  function kebabToCamelCase(str) {
-      if (!str || str.length == 0)
-          return;
-      return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
-  }
+  const stringify$1 = any => $stringify(serialize(any, options));
 
   function setupElementFunctions() {
       /**
@@ -2493,7 +11427,7 @@
                       }
                       catch (e) {
                           try {
-                              this.setAttribute(property, stringify(value));
+                              this.setAttribute(property, stringify$1(value));
                           }
                           catch (e) {
                               console.error(e);
@@ -2509,6 +11443,15 @@
                   mvc.initialize();
           }
           return this;
+      };
+      TurboSelector.prototype.setMvc = function _setMvc(properties) {
+          if (!this.element)
+              return undefined;
+          if ("mvc" in this.element && this.element.mvc instanceof Mvc) {
+              this.element.mvc.generate(properties);
+              return this.element.mvc;
+          }
+          return new Mvc({ ...properties, element: this.element });
       };
       /**
        * @description Destroys the node by removing it from the document and removing all its bound listeners.
@@ -2574,6 +11517,10 @@
       "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
   ];
 
+  /**
+   * @group Event Handling
+   * @category Enums
+   */
   var ActionMode;
   (function (ActionMode) {
       ActionMode[ActionMode["none"] = 0] = "none";
@@ -2581,6 +11528,10 @@
       ActionMode[ActionMode["longPress"] = 2] = "longPress";
       ActionMode[ActionMode["drag"] = 3] = "drag";
   })(ActionMode || (ActionMode = {}));
+  /**
+   * @group Event Handling
+   * @category Enums
+   */
   var ClickMode;
   (function (ClickMode) {
       ClickMode[ClickMode["none"] = 0] = "none";
@@ -2590,6 +11541,10 @@
       ClickMode[ClickMode["other"] = 4] = "other";
       ClickMode[ClickMode["key"] = 5] = "key";
   })(ClickMode || (ClickMode = {}));
+  /**
+   * @group Event Handling
+   * @category Enums
+   */
   var InputDevice;
   (function (InputDevice) {
       InputDevice[InputDevice["unknown"] = 0] = "unknown";
@@ -2597,6 +11552,118 @@
       InputDevice[InputDevice["trackpad"] = 2] = "trackpad";
       InputDevice[InputDevice["touch"] = 3] = "touch";
   })(InputDevice || (InputDevice = {}));
+
+  /**
+   * @internal
+   */
+  function inferKey(name, type, context) {
+      return (String(context.name).endsWith(type)
+          ? String(context.name).slice(0, -type.length)
+          : String(context.name));
+  }
+  /**
+   * @internal
+   */
+  function generateField(context, type, name) {
+      const cacheKey = Symbol(`__${type.toLowerCase()}_${String(context.name)}`);
+      const keyName = inferKey(name, type, context);
+      context.addInitializer(function () {
+          Object.defineProperty(this, context.name, {
+              configurable: true,
+              enumerable: false,
+              get: function () {
+                  if (this[cacheKey])
+                      return this[cacheKey];
+                  let value;
+                  let functionName;
+                  switch (type) {
+                      case "Controller":
+                          functionName = "getController";
+                          break;
+                      case "Handler":
+                          functionName = "getHandler";
+                          break;
+                      case "Interactor":
+                          functionName = "getInteractor";
+                          break;
+                      case "Tool":
+                          functionName = "getTool";
+                          break;
+                      case "Substrate":
+                          functionName = "getSubstrate";
+                          break;
+                  }
+                  if (!functionName)
+                      return;
+                  if (this.mvc && this.mvc instanceof Mvc)
+                      value = this.mvc[functionName](keyName);
+                  else if (this[functionName] && typeof this[functionName] === "function")
+                      value = this[functionName](keyName);
+                  if (!value)
+                      throw new Error(`${type} "${keyName}" not found on ${this?.constructor?.name}.`);
+                  this[cacheKey] = value;
+                  return value;
+              },
+              set: function (value) { this[cacheKey] = value; }
+          });
+      });
+  }
+  /**
+   * @decorator
+   * @function controller
+   * @group Decorators
+   * @category MVC
+   *
+   * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+   * fetched controller.
+   * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
+   * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+   *
+   * @example
+   * ```ts
+   * @controller() protected textController: TurboController;
+   * ```
+   * Is equivalent to:
+   * ```ts
+   * protected get textController(): TurboController {
+   *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
+   *    if (typeof this.getController === "function") return this.getController("text");
+   * }
+   * ```
+   */
+  function controller(name) {
+      return function (_unused, context) {
+          generateField(context, "Controller", name);
+      };
+  }
+  /**
+   * @decorator
+   * @function handler
+   * @group Decorators
+   * @category MVC
+   *
+   * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+   * fetched handler.
+   * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
+   * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
+   *
+   * @example
+   * ```ts
+   * @handler() protected textHandler: TurboHandler;
+   * ```
+   * Is equivalent to:
+   * ```ts
+   * protected get textHandler(): TurboHandler {
+   *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
+   *    if (typeof this.getHandler === "function") return this.getHandler("text");
+   * }
+   * ```
+   */
+  function handler(name) {
+      return function (_unused, context) {
+          generateField(context, "Handler", name);
+      };
+  }
 
   class TurboMap extends Map {
       enforceImmutability = true;
@@ -2669,100 +11736,6 @@
       }
   }
 
-  /**
-   * @internal
-   */
-  function inferKey(name, type, context) {
-      return (String(context.name).endsWith(type)
-          ? String(context.name).slice(0, -type.length)
-          : String(context.name));
-  }
-  /**
-   * @internal
-   */
-  function generateField(context, type, name) {
-      const cacheKey = Symbol(`__${type.toLowerCase()}_${String(context.name)}`);
-      const keyName = inferKey(name, type, context);
-      context.addInitializer(function () {
-          Object.defineProperty(this, context.name, {
-              configurable: true,
-              enumerable: false,
-              get: function () {
-                  if (this[cacheKey])
-                      return this[cacheKey];
-                  let value;
-                  if (type === "Controller") {
-                      if (this.mvc && this.mvc instanceof Mvc)
-                          value = this.mvc.getController(keyName);
-                      else if (this.getController && typeof this.getController === "function")
-                          value = this.getController(keyName);
-                  }
-                  else {
-                      if (this.mvc && this.mvc instanceof Mvc)
-                          value = this.mvc.getHandler(keyName);
-                      else if (this.getHandler && typeof this.getHandler === "function")
-                          value = this.getHandler(keyName);
-                  }
-                  if (!value)
-                      throw new Error(`${type} "${keyName}" not found on ${this?.constructor?.name}.`);
-                  this[cacheKey] = value;
-                  return value;
-              },
-              set: function (value) { this[cacheKey] = value; }
-          });
-      });
-  }
-  /**
-   * @decorator
-   * @function controller
-   * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-   * fetched controller.
-   * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
-   * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
-   *
-   * @example
-   * ```ts
-   * @controller() protected textController: TurboController;
-   * ```
-   * Is equivalent to:
-   * ```ts
-   * protected get textController(): TurboController {
-   *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
-   *    if (typeof this.getController === "function") return this.getController("text");
-   * }
-   * ```
-   */
-  function controller(name) {
-      return function (_unused, context) {
-          generateField(context, "Controller", name);
-      };
-  }
-  /**
-   * @decorator
-   * @function handler
-   * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-   * fetched handler.
-   * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
-   * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
-   *
-   * @example
-   * ```ts
-   * @handler() protected textHandler: TurboHandler;
-   * ```
-   * Is equivalent to:
-   * ```ts
-   * protected get textHandler(): TurboHandler {
-   *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
-   *    if (typeof this.getHandler === "function") return this.getHandler("text");
-   * }
-   * ```
-   */
-  function handler(name) {
-      return function (_unused, context) {
-          generateField(context, "Handler", name);
-      };
-  }
-
   let TurboEventManagerModel = (() => {
       let _classSuper = TurboModel;
       let _instanceExtraInitializers = [];
@@ -2820,6 +11793,10 @@
       };
   })();
 
+  /**
+   * @group Event Handling
+   * @category Enums
+   */
   var ClosestOrigin;
   (function (ClosestOrigin) {
       ClosestOrigin["target"] = "target";
@@ -2827,7 +11804,10 @@
   })(ClosestOrigin || (ClosestOrigin = {}));
 
   /**
-   * Generic turbo event
+   * @class TurboEvent
+   * @group Event Handling
+   * @category TurboEvents
+   * @description Generic turbo event.
    */
   let TurboEvent = (() => {
       let _classSuper = Event;
@@ -2960,6 +11940,9 @@
 
   /**
    * @class TurboKeyEvent
+   * @group Event Handling
+   * @category TurboEvents
+   *
    * @extends TurboEvent
    * @description Custom key event
    */
@@ -2981,10 +11964,13 @@
 
   /**
    * @class TurboController
-   * @description The MVC base controller class. Its main job is to handle  (some part of or all of) the logic of the
+   * @group MVC
+   * @category Controller
+   *
+   * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
    * component. It has access to the element, the model to read and write data, the view to update the UI, and the
-   * emitter to listen for changes in the model. It can only communicate with other controllers via the emitter
-   * (by firing or listening for changes on a certain key).
+   * emitter to listen for changes in the model or any other internal events. It can only communicate with other
+   * controllers via the emitter (by firing or listening for changes on a certain key).
    * @template {object} ElementType - The type of the main component.
    * @template {TurboView} ViewType - The element's MVC view type.
    * @template {TurboModel} ModelType - The element's MVC model type.
@@ -2998,23 +11984,19 @@
        */
       keyName;
       /**
-       * @description A reference to the component.
-       * @protected
+       * @description The element it is bound to.
        */
       element;
       /**
-       * @description A reference to the MVC view.
-       * @protected
+       * @description The MVC view.
        */
       view;
       /**
-       * @description A reference to the MVC model.
-       * @protected
+       * @description The MVC model.
        */
       model;
       /**
-       * @description A reference to the MVC emitter.
-       * @protected
+       * @description The MVC emitter.
        */
       emitter;
       constructor(properties) {
@@ -3028,7 +12010,7 @@
       }
       /**
        * @function initialize
-       * @description Initializes the controller. Specifically, it will setup the change callbacks.
+       * @description Initializes the controller. Specifically, it will set up the change callbacks.
        */
       initialize() {
           this.setupChangedCallbacks();
@@ -3073,6 +12055,9 @@
 
   /**
    * @class TurboWheelEvent
+   * @group Event Handling
+   * @category TurboEvents
+   *
    * @extends TurboEvent
    * @description Custom wheel event
    */
@@ -3290,6 +12275,9 @@
 
   /**
    * @class TurboDragEvent
+   * @group Event Handling
+   * @category TurboEvents
+   *
    * @extends TurboEvent
    * @description Turbo drag event class, fired on turbo-drag, turbo-drag-start, turbo-drag-end, etc.
    */
@@ -3573,65 +12561,6 @@
       }
   }
 
-  class TurboWeakSet {
-      _weakRefs;
-      constructor() {
-          this._weakRefs = new Set();
-      }
-      // Add an object as a WeakRef if it's not already in the set
-      add(obj) {
-          if (!this.has(obj))
-              this._weakRefs.add(new WeakRef(obj));
-          return this;
-      }
-      // Check if the set contains a WeakRef to the given object
-      has(obj) {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === obj)
-                  return true;
-          }
-          return false;
-      }
-      // Delete the WeakRef associated with the given object
-      delete(obj) {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === obj) {
-                  this._weakRefs.delete(weakRef);
-                  return true;
-              }
-          }
-          return false;
-      }
-      // Clean up any WeakRefs whose objects have been garbage-collected
-      cleanup() {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === undefined)
-                  this._weakRefs.delete(weakRef);
-          }
-      }
-      // Convert live objects in the TurboWeakSet to an array
-      toArray() {
-          const result = [];
-          for (const weakRef of this._weakRefs) {
-              const obj = weakRef.deref();
-              if (obj !== undefined)
-                  result.push(obj);
-              else
-                  this._weakRefs.delete(weakRef);
-          }
-          return result;
-      }
-      // Get the size of the TurboWeakSet (only live objects)
-      get size() {
-          this.cleanup();
-          return this.toArray().length;
-      }
-      // Clear all weak references
-      clear() {
-          this._weakRefs.clear();
-      }
-  }
-
   class TurboEventManagerDispatchController extends TurboController {
       keyName = "dispatch";
       boundHooks = new Map();
@@ -3693,8 +12622,11 @@
 
   /**
    * @class TurboHandler
+   * @group MVC
+   * @category Handler
+   *
    * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
-   * functions to manipulate the model's data.
+   * functions to manipulate some of (or all of) the model's data.
    * @template {TurboModel} ModelType - The element's MVC model type.
    */
   class TurboHandler {
@@ -3705,7 +12637,7 @@
        */
       keyName;
       /**
-       * @description A reference to the MVC model.
+       * @description The MVC model.
        * @protected
        */
       model;
@@ -3905,6 +12837,9 @@
 
   /**
    * @class TurboHeadlessElement
+   * @group TurboElement
+   * @category TurboHeadlessElement
+   *
    * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
    * @template {TurboView} ViewType - The element's view type, if initializing MVC.
    * @template {object} DataType - The element's data type, if initializing MVC.
@@ -3943,6 +12878,10 @@
   //TODO Create merged events maybe --> fire event x when "mousedown" | "touchstart" | "mousemove" etc.
   //ToDO Create "interaction" event --> when element interacted with
   /**
+   * @class TurboEventManager
+   * @group Event Handling
+   * @category TurboEventManager
+   *
    * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
    * easier management of input.
    */
@@ -4162,7 +13101,6 @@
               this.applyAndHookEvents(TurboMoveEventName, DefaultMoveEventName, value);
           }
           set mouseEventsEnabled(value) {
-              $(document);
               //TODO
               // if (value) {
               //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
@@ -4177,7 +13115,6 @@
               // }
           }
           set touchEventsEnabled(value) {
-              $(document);
               // if (value) {
               //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
               //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
@@ -4430,6 +13367,7 @@
               this.dragEventEnabled = false;
               this.clickEventEnabled = false;
               this.onToolChange.clear();
+              return this;
           }
       };
   })();
@@ -4462,6 +13400,10 @@
           return map;
       }
       bypassManager(element, eventManager, bypassResults) {
+          if (element instanceof TurboSelector)
+              element = element.element;
+          if (!element)
+              return;
           if (typeof bypassResults == "boolean")
               eventManager.lock(element, {
                   enabled: bypassResults,
@@ -4478,6 +13420,10 @@
               });
       }
       getBoundListeners(element, type, toolName, options, manager = TurboEventManager.instance) {
+          if (element instanceof TurboSelector)
+              element = element.element;
+          if (!element)
+              return [];
           if (!options)
               options = {};
           return [...this.getBoundListenersSet(element)]
@@ -4912,6 +13858,7 @@
           const es = this.getOrCreate(this.elements, element, () => new WeakMap());
           return this.getOrCreate(es, manager, () => ({
               tools: new Set(),
+              ignoreAllTools: false,
               ignoredTools: new Map(),
               activationDelegates: new Map(),
               deactivationDelegates: new Map(),
@@ -5028,8 +13975,9 @@
           if (!options.manager)
               options.manager = TurboEventManager.instance;
           options.manager.addTool(toolName, this.element, options.key);
-          if (options.customActivation && typeof options.customActivation === "function")
+          if (options.customActivation && typeof options.customActivation === "function") {
               options.customActivation(this, options.manager);
+          }
           else {
               options.activationEvent ??= DefaultEventName.click;
               options.clickMode ??= ClickMode.left;
@@ -5062,9 +14010,13 @@
        *
        */
       TurboSelector.prototype.onToolActivate = function _onActivate(toolName, manager = TurboEventManager.instance) {
+          if (!toolName)
+              toolName = this.getToolName(manager);
           return utils$4.getActivationDelegate(this, toolName, manager);
       };
       TurboSelector.prototype.onToolDeactivate = function _onDeactivate(toolName, manager = TurboEventManager.instance) {
+          if (!toolName)
+              toolName = this.getToolName(manager);
           return utils$4.getDeactivationDelegate(this, toolName, manager);
       };
       /*
@@ -5130,7 +14082,13 @@
           utils$4.ignoreTool(this.element, toolName, type, ignore, manager);
           return this;
       };
+      TurboSelector.prototype.ignoreAllTools = function _ignoreAllTools(ignore = true, manager = TurboEventManager.instance) {
+          utils$4.getElementData(this.element, manager).ignoreAllTools = ignore;
+          return this;
+      };
       TurboSelector.prototype.isToolIgnored = function _isToolIgnored(toolName, type, manager = TurboEventManager.instance) {
+          if (utils$4.getElementData(this.element, manager).ignoreAllTools)
+              return true;
           return utils$4.isToolIgnored(this.element, toolName, type, manager);
       };
   }
@@ -5221,8 +14179,33 @@
               this.currentSubstrate = name;
           return this;
       };
-      TurboSelector.prototype.getSubstrates = function _getSubstrates() {
-          return utils$3.getSubstrates(this);
+      Object.defineProperty(TurboSelector.prototype, "substrates", {
+          get: function () { return utils$3.getSubstrates(this.element); },
+          configurable: false,
+          enumerable: true
+      });
+      Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
+          get: function () { return utils$3.data(this).current; },
+          set: function (value) {
+              if (!value)
+                  return;
+              const prev = this.currentSubstrate;
+              if (utils$3.setCurrent(this, value))
+                  this.onSubstrateChange.fire(prev, value);
+          },
+          configurable: false,
+          enumerable: true
+      });
+      Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
+          get: function () { return utils$3.data(this).onChange; },
+          configurable: false,
+          enumerable: true
+      });
+      TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(name = this.currentSubstrate) {
+          return utils$3.getSubstrateData(this, name)?.onActivate ?? new Delegate();
+      };
+      TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(name = this.currentSubstrate) {
+          return utils$3.getSubstrateData(this, name)?.onDeactivate ?? new Delegate();
       };
       TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = this.currentSubstrate) {
           const set = new Set();
@@ -5278,32 +14261,6 @@
               return false;
           return !!utils$3.getTemporaryMetadata(this, substrate, object)?.processed;
       };
-      TurboSelector.prototype.setSubstrate = function _setSubstrate(name) {
-          if (!name)
-              return this;
-          const prev = this.currentSubstrate;
-          if (!utils$3.setCurrent(this, name))
-              return this;
-          this.onSubstrateChange.fire(prev, name);
-          return this;
-      };
-      Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
-          set: function (value) { this.setSubstrate(value); },
-          get: function () { return utils$3.data(this).current; },
-          configurable: false,
-          enumerable: true
-      });
-      Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
-          get: function () { return utils$3.data(this).onChange; },
-          configurable: false,
-          enumerable: true
-      });
-      TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(name = this.currentSubstrate) {
-          return utils$3.getSubstrateData(this, name)?.onActivate ?? new Delegate();
-      };
-      TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(name = this.currentSubstrate) {
-          return utils$3.getSubstrateData(this, name)?.onDeactivate ?? new Delegate();
-      };
       TurboSelector.prototype.addSolver = function _addSolver(callback, name = this.currentSubstrate) {
           utils$3.getSubstrateData(this, name).solvers?.add(callback);
           return this;
@@ -5316,11 +14273,12 @@
           utils$3.getSubstrateData(this, name).solvers?.clear();
           return this;
       };
-      TurboSelector.prototype.resolveSubstrate = function _resolveSubstrate(properties = {}) {
+      TurboSelector.prototype.resolveSubstrate = function _resolveSubstrate(properties = {}, substrate = this.currentSubstrate) {
           if (!properties)
               properties = {};
+          properties.substrate = properties.substrate ?? substrate;
           if (!properties.substrate)
-              properties.substrate = this.currentSubstrate;
+              return this;
           if (!properties.manager)
               properties.manager = TurboEventManager.instance;
           if (!properties.eventOptions)
@@ -5352,6 +14310,9 @@
   const onceRegistry = new WeakMap();
   /**
    * @function callOnce
+   * @group Decorators
+   * @category Augmentation
+   *
    * @template {(...args: any[]) => any} Type
    * @description Function wrapper that ensures the passed function is called only once.
    * Subsequent calls will just return the cached computed result (if any) of the first call of that function.
@@ -5401,29 +14362,6 @@
       onceRegistry.set(fn, wrapper);
       return wrapper;
   }
-  function equalToAny(entry, ...values) {
-      if (values.length < 1)
-          return true;
-      for (const value of values) {
-          if (entry == value)
-              return true;
-      }
-      return false;
-  }
-  function eachEqualToAny(values, ...entries) {
-      if (entries.length < 1)
-          return true;
-      for (const entry of entries) {
-          let equals = false;
-          for (const value of values) {
-              if (entry == value)
-                  equals = true;
-          }
-          if (!equals)
-              return false;
-      }
-      return true;
-  }
 
   function trim(value, max, min = 0) {
       if (value < min)
@@ -5442,6 +14380,9 @@
 
   /**
    * @class StatefulReifect
+   * @group Components
+   * @category StatefulReifect
+   *
    * @description A class to manage and apply dynamic state-based properties, styles, classes, and transitions to a
    * set of objects.
    *
@@ -5450,12 +14391,10 @@
    */
   let StatefulReifect = (() => {
       let _instanceExtraInitializers = [];
-      let _set_enabled_decorators;
-      let _set_propertiesEnabled_decorators;
-      let _set_stylesEnabled_decorators;
-      let _set_classesEnabled_decorators;
-      let _set_replaceWithEnabled_decorators;
-      let _set_transitionEnabled_decorators;
+      let _states_decorators;
+      let _states_initializers = [];
+      let _states_extraInitializers = [];
+      let _get_enabled_decorators;
       let _set_properties_decorators;
       let _set_styles_decorators;
       let _set_classes_decorators;
@@ -5464,31 +14403,49 @@
       let _set_transitionDuration_decorators;
       let _set_transitionTimingFunction_decorators;
       let _set_transitionDelay_decorators;
-      let _set_transition_decorators;
       return class StatefulReifect {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-              _set_enabled_decorators = [auto()];
-              _set_propertiesEnabled_decorators = [auto()];
-              _set_stylesEnabled_decorators = [auto()];
-              _set_classesEnabled_decorators = [auto()];
-              _set_replaceWithEnabled_decorators = [auto()];
-              _set_transitionEnabled_decorators = [auto()];
-              _set_properties_decorators = [auto()];
-              _set_styles_decorators = [auto()];
-              _set_classes_decorators = [auto()];
-              _set_replaceWith_decorators = [auto()];
-              _set_transitionProperties_decorators = [auto()];
-              _set_transitionDuration_decorators = [auto()];
-              _set_transitionTimingFunction_decorators = [auto()];
-              _set_transitionDelay_decorators = [auto()];
-              _set_transition_decorators = [auto()];
-              __esDecorate(this, null, _set_enabled_decorators, { kind: "setter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, set: (obj, value) => { obj.enabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_propertiesEnabled_decorators, { kind: "setter", name: "propertiesEnabled", static: false, private: false, access: { has: obj => "propertiesEnabled" in obj, set: (obj, value) => { obj.propertiesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_stylesEnabled_decorators, { kind: "setter", name: "stylesEnabled", static: false, private: false, access: { has: obj => "stylesEnabled" in obj, set: (obj, value) => { obj.stylesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_classesEnabled_decorators, { kind: "setter", name: "classesEnabled", static: false, private: false, access: { has: obj => "classesEnabled" in obj, set: (obj, value) => { obj.classesEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_replaceWithEnabled_decorators, { kind: "setter", name: "replaceWithEnabled", static: false, private: false, access: { has: obj => "replaceWithEnabled" in obj, set: (obj, value) => { obj.replaceWithEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_transitionEnabled_decorators, { kind: "setter", name: "transitionEnabled", static: false, private: false, access: { has: obj => "transitionEnabled" in obj, set: (obj, value) => { obj.transitionEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              _states_decorators = [auto({ defaultValueCallback: function () { return this.getAllStates(); } })];
+              _get_enabled_decorators = [auto({
+                      defaultValueCallback: () => {
+                          return { global: true, properties: true, classes: true, styles: true, replaceWith: true, transition: true };
+                      },
+                      preprocessValue: function (value) { return typeof value === "boolean" ? { ...this.enabled, global: value } : value; }
+                  })];
+              _set_properties_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.properties, value); }
+                  })];
+              _set_styles_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.styles, value); }
+                  })];
+              _set_classes_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.classes, value); }
+                  })];
+              _set_replaceWith_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.replaceWith, value); }
+                  })];
+              _set_transitionProperties_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionProperties, value); }
+                  })];
+              _set_transitionDuration_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionDuration, value); }
+                  })];
+              _set_transitionTimingFunction_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionTimingFunction, value); }
+                  })];
+              _set_transitionDelay_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionDelay, value); }
+                  })];
+              __esDecorate(this, null, _get_enabled_decorators, { kind: "getter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, get: obj => obj.enabled }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_classes_decorators, { kind: "setter", name: "classes", static: false, private: false, access: { has: obj => "classes" in obj, set: (obj, value) => { obj.classes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -5497,43 +14454,186 @@
               __esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_transition_decorators, { kind: "setter", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate(null, null, _states_decorators, { kind: "field", name: "states", static: false, private: false, access: { has: obj => "states" in obj, get: obj => obj.states, set: (obj, value) => { obj.states = value; } }, metadata: _metadata }, _states_initializers, _states_extraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
+          static fields = ["properties", "classes", "styles",
+              "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
           timeRegex = (__runInitializers(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
-          //List of attached objects
           attachedObjects = [];
-          _states;
-          values;
+          /**
+           * @description All possible states.
+           */
+          states = __runInitializers(this, _states_initializers, void 0);
+          get enabled() { return; }
+          set enabled(value) {
+              const object = value;
+              if (!isUndefined(object.global)) {
+                  this.refreshResolvedValues();
+                  return;
+              }
+              if (!isUndefined(object.properties))
+                  this.refreshProperties();
+              if (!isUndefined(object.styles))
+                  this.refreshStyles();
+              if (!isUndefined(object.classes))
+                  this.refreshClasses();
+              if (!isUndefined(object.replaceWith))
+                  this.refreshReplaceWith();
+              if (!isUndefined(object.transition))
+                  this.refreshTransition();
+          }
+          /**
+           * @description The properties to be assigned to the objects. It could take:
+           * - A record of `{key: value}` pairs.
+           * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
+           * {key: value} pairs}`.
+           * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set properties(value) { }
+          get properties() { return; }
+          /**
+           * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+           * - A record of `{CSS property: value}` pairs.
+           * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
+           * {key: value} pairs}`.
+           * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set styles(value) { }
+          get styles() { return; }
+          /**
+           * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+           * - A string of space-separated classes.
+           * - An array of classes.
+           * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
+           * return any of the latter}`.
+           * - An interpolation function that would return a string of space-separated classes or an array of classes based
+           * on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set classes(value) { }
+          get classes() { return; }
+          /**
+           * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+           * - The object to be replaced with.
+           * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
+           * to be replaced with}`.
+           * - An interpolation function that would return the object to be replaced with based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set replaceWith(value) { }
+          get replaceWith() { return; }
+          /**
+           * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+           * could take:
+           * - A string of space-separated CSS properties.
+           * - An array of CSS properties.
+           * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
+           * function that would return any of the latter}`.
+           * - An interpolation function that would return a string of space-separated CSS properties or an array of
+           * CSS properties based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set transitionProperties(value) { }
+          get transitionProperties() { return; }
+          /**
+           * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+           * - A numerical value (in seconds).
+           * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
+           * (number in seconds)}`.
+           * - An interpolation function that would return a duration (number in seconds) based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set transitionDuration(value) { }
+          get transitionDuration() { return; }
+          /**
+           * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+           * It could take:
+           * - A string representing the timing function to apply.
+           * - A record of `{state: timing function (string) or an interpolation function that would return a timing
+           * function (string)}`.
+           * - An interpolation function that would return a timing function (string) based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set transitionTimingFunction(value) { }
+          get transitionTimingFunction() { return; }
+          /**
+           * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+           * - A numerical value (in seconds).
+           * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
+           * (number in seconds)}`.
+           * - An interpolation function that would return a delay (number in seconds) based on the state value.
+           *
+           * The interpolation function would take as arguments:
+           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+           * defined for the whole field (and not for a specific state).
+           * - `index: number`: the index of the object in the applied list.
+           * - `total: number`: the total number of objects in the applied list.
+           * - `object: ClassType`: the object itself.
+           */
+          set transitionDelay(value) { }
+          get transitionDelay() { return; }
           /**
            * @description Creates an instance of StatefulReifier.
            * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
            */
           constructor(properties) {
-              //Initializing enabled state
-              this.enable({
-                  global: true, properties: true, classes: true, styles: true,
-                  replaceWith: true, transition: true
+              __runInitializers(this, _states_extraInitializers);
+              if (properties.states)
+                  this.states = properties.states;
+              Object.entries(properties).forEach(([key, value]) => {
+                  if (key === "attachedObjects" || key === "states")
+                      return;
+                  this[key] = value;
               });
-              this.properties = properties.properties || {};
-              this.classes = properties.classes || {};
-              this.styles = properties.styles || {};
-              this.replaceWith = properties.replaceWith || {};
-              this.transition = properties.transition ?? "all 0s linear 0s";
-              if (properties.transitionProperties)
-                  this.transitionProperties = properties.transitionProperties;
-              if (properties.transitionDuration !== undefined)
-                  this.transitionDuration = properties.transitionDuration;
-              if (properties.transitionTimingFunction)
-                  this.transitionTimingFunction = properties.transitionTimingFunction;
-              if (properties.transitionDelay !== undefined)
-                  this.transitionDelay = properties.transitionDelay;
               //Disable transition if undefined
               if (!properties.transition && !properties.transitionProperties && !properties.transitionDuration
                   && !properties.transitionTimingFunction && !properties.transitionDelay)
-                  this.transitionEnabled = false;
-              if (properties.states)
-                  this.states = properties.states;
+                  this.enabled.transition = false;
               if (properties.attachedObjects)
                   this.attachAll(...properties.attachedObjects);
           }
@@ -5564,9 +14664,8 @@
               const data = this.getData(object);
               if (data && onSwitch)
                   data.onSwitch = onSwitch;
-              if (data)
-                  return;
-              this.attachObject(object, index, onSwitch);
+              if (!data)
+                  this.attachObject(object, index, onSwitch);
               return this;
           }
           /**
@@ -5577,9 +14676,8 @@
            */
           attachAll(...objects) {
               objects.forEach(object => {
-                  if (this.getData(object))
-                      return;
-                  this.attachObject(object);
+                  if (!this.getData(object))
+                      this.attachObject(object);
               });
               return this;
           }
@@ -5593,9 +14691,8 @@
            */
           attachAllAt(index, ...objects) {
               objects.forEach((object, count) => {
-                  if (this.getData(object))
-                      return;
-                  this.attachObject(object, index + count);
+                  if (!this.getData(object))
+                      this.attachObject(object, index + count);
               });
               return this;
           }
@@ -5608,9 +14705,8 @@
           detach(...objects) {
               objects.forEach(object => {
                   const data = this.getData(object);
-                  if (!data)
-                      return;
-                  this.detachObject(data);
+                  if (data)
+                      this.detachObject(data);
               });
               return this;
           }
@@ -5637,7 +14733,7 @@
                   index = 0;
               const data = this.generateNewData(object, onSwitch);
               this.attachedObjects.splice(index, 0, data);
-              $(object).reifects?.attach(this);
+              turbo(object).attachReifect(this);
               data.lastState = this.stateOf(object);
               this.applyResolvedValues(data, false, true);
               // this.applyTransition(data);
@@ -5650,7 +14746,12 @@
            * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
            */
           detachObject(data) {
+              if (!this.attachedObjects.includes(data))
+                  return;
+              const object = data.object.deref();
               this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
+              if (object)
+                  turbo(object).detachReifect(this);
           }
           /**
            * @function getData
@@ -5660,13 +14761,13 @@
            */
           getData(object) {
               if (!object)
-                  return null;
+                  return;
               for (const entry of this.attachedObjects) {
                   const entryObject = this.getObject(entry);
                   if (entryObject && entryObject == object)
                       return entry;
               }
-              return null;
+              return;
           }
           /**
            * @function getObject
@@ -5676,9 +14777,8 @@
            */
           getObject(data) {
               if (!data)
-                  return null;
-              const object = data.object.deref();
-              return object || null;
+                  return;
+              return data.object.deref();
           }
           /*
            *
@@ -5690,18 +14790,6 @@
            *
            */
           /**
-           * @description All possible states.
-           */
-          get states() {
-              return this._states;
-          }
-          set states(value) {
-              if (!value)
-                  this._states = this.getAllStates();
-              else
-                  this._states = value;
-          }
-          /**
            * @function stateOf
            * @description Determine the current state of the reifect on the provided object.
            * @param {ClassType} object - The object to determine the state for.
@@ -5709,10 +14797,10 @@
            */
           stateOf(object) {
               if (!object)
-                  return undefined;
+                  return;
               const data = this.getData(object);
               if (!data)
-                  return undefined;
+                  return;
               if (data.lastState)
                   return data.lastState;
               if (!(object instanceof HTMLElement))
@@ -5737,19 +14825,15 @@
               return this.states[0];
           }
           getAllStates() {
-              const states = [...this.states];
-              for (const values of [this.properties,
-                  this.classes, this.styles, this.replaceWith]) {
-                  if (typeof values != "object")
+              const set = new Set();
+              for (const field of StatefulReifect.fields) {
+                  const value = this[field];
+                  if (!value || typeof value !== "object")
                       continue;
-                  for (const state of Object.keys(values)) {
-                      if (!states.includes(state))
-                          states.push(state);
-                  }
+                  for (const state of Object.keys(value))
+                      set.add(state);
               }
-              if (states.length == 0)
-                  console.warn("No states found for this particular reifect:", this);
-              return states;
+              return Array.from(set);
           }
           /**
            * @protected
@@ -5779,24 +14863,6 @@
            * *********************************
            *
            */
-          set enabled(value) {
-              this.refreshResolvedValues();
-          }
-          set propertiesEnabled(value) {
-              this.refreshProperties();
-          }
-          set stylesEnabled(value) {
-              this.refreshStyles();
-          }
-          set classesEnabled(value) {
-              this.refreshClasses();
-          }
-          set replaceWithEnabled(value) {
-              this.refreshReplaceWith();
-          }
-          set transitionEnabled(value) {
-              this.refreshTransition();
-          }
           /**
            * @function enable
            * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
@@ -5805,28 +14871,14 @@
            * accordingly update the value of `enabled.global`.
            */
           enable(value, object) {
-              if (typeof value === "boolean")
-                  this.enabled = value;
-              else if (!value)
-                  return;
-              else
-                  Object.entries(value).forEach(([key, value]) => {
-                      if (key == "global")
-                          this.enabled = value;
-                      else
-                          this[key + "Enabled"] = value;
-                  });
-          }
-          enableObject(object, value) {
               const data = this.getData(object);
               if (!data)
-                  return;
-              if (typeof value == "boolean")
+                  return this.enabled = value;
+              if (typeof value === "boolean")
                   data.enabled.global = value;
-              else if (!value)
-                  return;
-              else
-                  Object.entries(value).forEach(([key, value]) => data.enabled[key] = value);
+              else if (typeof value === "object")
+                  Object.entries(value)
+                      .forEach(([key, value]) => data.enabled[key] = value);
           }
           /**
            * @function getObjectEnabledState
@@ -5846,154 +14898,13 @@
            * *********************************
            *
            */
-          /**
-           * @description The properties to be assigned to the objects. It could take:
-           * - A record of `{key: value}` pairs.
-           * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
-           * {key: value} pairs}`.
-           * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set properties(value) {
-          }
-          /**
-           * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
-           * - A record of `{CSS property: value}` pairs.
-           * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
-           * {key: value} pairs}`.
-           * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set styles(value) {
-          }
-          /**
-           * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
-           * - A string of space-separated classes.
-           * - An array of classes.
-           * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
-           * return any of the latter}`.
-           * - An interpolation function that would return a string of space-separated classes or an array of classes based
-           * on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set classes(value) {
-          }
-          /**
-           * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
-           * - The object to be replaced with.
-           * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
-           * to be replaced with}`.
-           * - An interpolation function that would return the object to be replaced with based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set replaceWith(value) {
-          }
-          /**
-           * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-           * could take:
-           * - A string of space-separated CSS properties.
-           * - An array of CSS properties.
-           * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
-           * function that would return any of the latter}`.
-           * - An interpolation function that would return a string of space-separated CSS properties or an array of
-           * CSS properties based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set transitionProperties(value) {
-          }
-          /**
-           * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-           * - A numerical value (in seconds).
-           * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
-           * (number in seconds)}`.
-           * - An interpolation function that would return a duration (number in seconds) based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set transitionDuration(value) {
-          }
-          /**
-           * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-           * It could take:
-           * - A string representing the timing function to apply.
-           * - A record of `{state: timing function (string) or an interpolation function that would return a timing
-           * function (string)}`.
-           * - An interpolation function that would return a timing function (string) based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set transitionTimingFunction(value) {
-          }
-          /**
-           * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-           * - A numerical value (in seconds).
-           * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
-           * (number in seconds)}`.
-           * - An interpolation function that would return a delay (number in seconds) based on the state value.
-           *
-           * The interpolation function would take as arguments:
-           * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-           * defined for the whole field (and not for a specific state).
-           * - `index: number`: the index of the object in the applied list.
-           * - `total: number`: the total number of objects in the applied list.
-           * - `object: ClassType`: the object itself.
-           */
-          set transitionDelay(value) {
-          }
           set transition(value) {
               if (!value)
                   return;
               const object = typeof value === "string"
                   ? this.processTransitionString(value)
                   : this.processTransitionObject(value);
-              if (object.transitionProperties !== undefined)
-                  this.transitionProperties = object.transitionProperties;
-              if (object.transitionDuration !== undefined)
-                  this.transitionDuration = object.transitionDuration;
-              if (object.transitionDelay !== undefined)
-                  this.transitionDelay = object.transitionDelay;
-              if (object.transitionTimingFunction !== undefined)
-                  this.transitionTimingFunction = object.transitionTimingFunction;
+              Object.entries(object).forEach(([key, value]) => this[key] = value);
           }
           processTransitionObject(transitionObject) {
               const transitionValues = {};
@@ -6002,15 +14913,11 @@
                       continue;
                   if (typeof entry !== "string")
                       continue;
-                  const object = this.processTransitionString(entry);
-                  if (object.transitionProperties !== undefined)
-                      transitionValues.transitionProperties[state] = object.transitionProperties;
-                  if (object.transitionDuration !== undefined)
-                      transitionValues.transitionDuration[state] = object.transitionDuration;
-                  if (object.transitionDelay !== undefined)
-                      transitionValues.transitionDelay[state] = object.transitionDelay;
-                  if (object.transitionTimingFunction !== undefined)
-                      transitionValues.transitionTimingFunction[state] = object.transitionTimingFunction;
+                  Object.entries(this.processTransitionString(entry)).forEach(([key, value]) => {
+                      if (!transitionValues[key])
+                          transitionValues[key] = {};
+                      transitionValues[key][state] = value;
+                  });
               }
               return transitionValues;
           }
@@ -6019,24 +14926,20 @@
               const tokens = transitionString.trim().replace(/,/g, " ").split(/\s+/).filter(t => t.length > 0);
               const object = { transitionProperties: [] };
               let i = 0;
-              //Properties
               while (i < tokens.length && !this.timeRegex.test(tokens[i])) {
                   object.transitionProperties.push(tokens[i]);
                   i++;
               }
-              //Duration
               if (i < tokens.length) {
                   const duration = this.parseTime(tokens[i]);
                   if (!isNaN(duration))
                       object.transitionDuration = duration;
                   i++;
               }
-              //Timing function
               if (i < tokens.length) {
                   object.transitionTimingFunction = tokens[i];
                   i++;
               }
-              //Delay
               if (i < tokens.length) {
                   const delay = this.parseTime(tokens[i]);
                   if (!isNaN(delay))
@@ -6053,12 +14956,13 @@
            * @returns {string} The CSS transition string.
            */
           getTransitionString(data, state = data.lastState) {
-              let transitionString = "";
-              data.resolvedValues.transitionProperties[state].forEach(property => transitionString
-                  += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
-                      + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
-                      + (data.resolvedValues.transitionDelay[state] || 0) + "s");
-              return transitionString.substring(2);
+              if (!data.resolvedValues)
+                  return "";
+              const properties = this.cleanTransitionProperties(data.resolvedValues.transitionProperties[state]);
+              const duration = data.resolvedValues.transitionDuration[state] ?? 0;
+              const timing = data.resolvedValues.transitionTimingFunction[state] ?? "linear";
+              const delay = data.resolvedValues.transitionDelay[state] ?? 0;
+              return properties.map(property => `${property} ${duration}s ${timing} ${delay}s`).join(", ");
           }
           /*
            *
@@ -6118,7 +15022,7 @@
            * @returns {this} Itself for method chaining.
            */
           reloadFor(object) {
-              if (!this.enabled)
+              if (!this.enabled.global)
                   return this;
               const data = this.getData(object);
               if (!data || !data.enabled || !data.enabled.global)
@@ -6127,7 +15031,7 @@
               return this;
           }
           reloadTransitionFor(object) {
-              if (!this.enabled || !this.transitionEnabled)
+              if (!this.enabled.global || !this.enabled.transition)
                   return this;
               const data = this.getData(object);
               if (!data || !data.enabled || !data.enabled.global || !data.enabled.transition)
@@ -6185,9 +15089,8 @@
           applyResolvedValues(data, skipTransition = false, applyStylesInstantly = false) {
               this.applyStyles(data, data.lastState, applyStylesInstantly);
               if (!skipTransition) {
-                  const handler = $(data.object.deref()).reifects;
-                  if (this.attachedObjects.includes(data) && handler)
-                      handler.reloadTransitions();
+                  if (this.attachedObjects.includes(data))
+                      turbo(data.object.deref()).reloadTransitions();
                   else
                       this.applyTransition(data, data.lastState);
               }
@@ -6203,7 +15106,7 @@
               this.refreshTransition();
           }
           applyProperties(data, state = data.lastState) {
-              if (!this.enabled || !this.propertiesEnabled)
+              if (!this.enabled || !this.enabled.properties)
                   return;
               if (!data.enabled.global || !data.enabled.properties)
                   return;
@@ -6225,12 +15128,12 @@
               }
           }
           refreshProperties() {
-              if (!this.enabled || !this.propertiesEnabled)
+              if (!this.enabled || !this.enabled.properties)
                   return;
               this.attachedObjects.forEach(data => this.applyProperties(data));
           }
           applyReplaceWith(data, state = data.lastState) {
-              if (!this.enabled || !this.replaceWithEnabled)
+              if (!this.enabled || !this.enabled.replaceWith)
                   return;
               if (!data.enabled.global || !data.enabled.replaceWith)
                   return;
@@ -6248,12 +15151,12 @@
               }
           }
           refreshReplaceWith() {
-              if (!this.enabled || !this.replaceWithEnabled)
+              if (!this.enabled || !this.enabled.replaceWith)
                   return;
               this.attachedObjects.forEach(data => this.applyReplaceWith(data));
           }
           applyClasses(data, state = data.lastState) {
-              if (!this.enabled || !this.classesEnabled)
+              if (!this.enabled || !this.enabled.classes)
                   return;
               if (!data.enabled.global || !data.enabled.classes)
                   return;
@@ -6264,16 +15167,16 @@
               if (!object || !(object instanceof Element))
                   return;
               for (const [key, value] of Object.entries(classes)) {
-                  $(object).toggleClass(value, state == key);
+                  turbo(object).toggleClass(value, state == key);
               }
           }
           refreshClasses() {
-              if (!this.enabled || !this.classesEnabled)
+              if (!this.enabled || !this.enabled.classes)
                   return;
               this.attachedObjects.forEach(data => this.applyClasses(data));
           }
           applyStyles(data, state = data.lastState, applyStylesInstantly = false) {
-              if (!this.enabled || !this.stylesEnabled)
+              if (!this.enabled || !this.enabled.styles)
                   return;
               if (!data.enabled.global || !data.enabled.styles)
                   return;
@@ -6282,28 +15185,26 @@
               const object = data.object.deref();
               if (!object || !(object instanceof Element))
                   return;
-              $(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
+              turbo(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
           }
           refreshStyles() {
-              if (!this.enabled || !this.stylesEnabled)
+              if (!this.enabled || !this.enabled.styles)
                   return;
               this.attachedObjects.forEach(data => this.applyStyles(data));
           }
           applyTransition(data, state = data.lastState) {
-              if (!this.enabled || !this.transitionEnabled)
+              if (!this.enabled || !this.enabled.transition)
                   return;
               if (!data.enabled.global || !data.enabled.transition)
                   return;
               const object = data.object.deref();
               if (!object || !(object instanceof Element) || !data.resolvedValues)
                   return;
-              $(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
+              turbo(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
           }
           refreshTransition() {
               for (const data of this.attachedObjects) {
-                  const handler = $(data.object?.deref()).reifects;
-                  if (handler)
-                      handler.reloadTransitions();
+                  turbo(data.object?.deref()).reloadTransitions();
               }
           }
           //General methods (to be overridden for custom functionalities)
@@ -6318,40 +15219,20 @@
           //Utilities
           processRawProperties(data, override) {
               if (!data.resolvedValues)
-                  data.resolvedValues = {
-                      properties: undefined,
-                      styles: undefined,
-                      classes: undefined,
-                      replaceWith: undefined,
-                      transitionProperties: undefined,
-                      transitionDuration: undefined,
-                      transitionTimingFunction: undefined,
-                      transitionDelay: undefined
-                  };
+                  data.resolvedValues = {};
               if (isNull(override))
                   return;
-              const rawProperties = {
-                  properties: this.properties,
-                  styles: this.styles,
-                  classes: this.classes,
-                  replaceWith: this.replaceWith,
-                  transitionProperties: this.transitionProperties,
-                  transitionDuration: this.transitionDuration,
-                  transitionTimingFunction: this.transitionTimingFunction,
-                  transitionDelay: this.transitionDelay,
-                  ...(override || {})
-              };
-              data.resolvedValues.properties = {};
-              this.states.forEach(state => this.processRawPropertyForState(data, "properties", rawProperties.properties, state));
-              if ("transitionProperties" in rawProperties) {
-                  data.resolvedValues.transitionProperties = {};
-                  this.states.forEach(state => this.processRawPropertyForState(data, "transitionProperties", rawProperties.transitionProperties, state));
-              }
-              for (const [field, values] of Object.entries(rawProperties)) {
-                  if (field == "transitionProperties" || field == "properties")
-                      continue;
-                  data.resolvedValues[field] = {};
-                  this.states.forEach(state => this.processRawPropertyForState(data, field, values, state));
+              const object = data.object.deref();
+              if (!object)
+                  return;
+              const index = data.objectIndex ?? 0;
+              const total = data.totalObjectCount ?? 1;
+              for (const field of StatefulReifect.fields) {
+                  const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
+                  if (!data.resolvedValues[field])
+                      data.resolvedValues[field] = {};
+                  for (const state of this.states)
+                      data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
               }
           }
           generateNewData(object, onSwitch) {
@@ -6393,44 +15274,41 @@
                   transitionDelay: this.transitionDelay,
               });
           }
-          processRawPropertyForState(data, field, value, state) {
-              let resolvedValue;
-              const object = data.object.deref();
-              if (!object)
-                  return;
-              if (typeof value == "function") {
-                  resolvedValue = value(state, data.objectIndex, data.totalObjectCount, object);
+          normalizePropertyConfig(currentConfig, newConfig) {
+              const out = currentConfig ? { ...currentConfig } : {};
+              if (isUndefined(newConfig))
+                  return out;
+              const isObject = typeof newConfig === "object" && newConfig !== null && !Array.isArray(newConfig);
+              const keys = isObject ? Reflect.ownKeys(newConfig) : [];
+              const isStateRecord = isObject && keys.length > 0 &&
+                  keys.every(key => this.states.includes(key));
+              if (isObject && keys.length === 0)
+                  return out;
+              if (typeof newConfig === "function")
+                  this.states.forEach(state => {
+                      out[state] = (index, total, object) => newConfig(state, index, total, object);
+                  });
+              else if (isStateRecord)
+                  this.states.forEach(state => {
+                      const entry = newConfig[state];
+                      if (!isUndefined(entry))
+                          out[state] = typeof entry === "function"
+                              ? entry
+                              : () => entry;
+                  });
+              else {
+                  const value = () => newConfig;
+                  this.states.forEach(state => out[state] = value);
               }
-              else if (typeof value == "object" && eachEqualToAny(this.states, ...Object.keys(value))) {
-                  const currentValue = value[state];
-                  if (typeof currentValue == "function")
-                      resolvedValue = currentValue(data.objectIndex, data.totalObjectCount, object);
-                  else
-                      resolvedValue = currentValue;
-              }
-              else
-                  resolvedValue = value;
-              if ((field == "properties" || field == "transitionProperties") && typeof resolvedValue == "string") {
-                  resolvedValue = resolvedValue.split(" ");
-              }
-              else if (field == "styles") {
-                  if (data.resolvedValues.styles[state] == undefined)
-                      data.resolvedValues.styles[state] = {};
-                  if (typeof resolvedValue == "number") {
-                      data.resolvedValues.transitionProperties[state].forEach(property => data.resolvedValues.styles[state][property] = resolvedValue);
-                      return;
-                  }
-                  else if (typeof resolvedValue == "string") {
-                      const splitStyles = resolvedValue.split(";")
-                          .map(entry => entry.split(":")
-                          .map(part => part.trim()));
-                      if (splitStyles.length == 1 && splitStyles[0].length == 1) {
-                          data.resolvedValues.transitionProperties[state].forEach(property => data.resolvedValues.styles[state][property] = splitStyles[0][0]);
-                          return;
-                      }
-                  }
-              }
-              data.resolvedValues[field][state] = resolvedValue;
+              return out;
+          }
+          cleanTransitionProperties(value) {
+              if (!value)
+                  return ["all"];
+              if (Array.isArray(value))
+                  return value.length ? value : ["all"];
+              const split = value.split(/\s+/).map(s => s.trim()).filter(Boolean);
+              return split.length ? split : ["all"];
           }
           /**
            * @description Processes string durations like "200ms" or "0.3s", or even "100".
@@ -6447,6 +15325,196 @@
           }
       };
   })();
+
+  class ReifectFunctionsUtils {
+      dataMap = new WeakMap;
+      data(element) {
+          if (element instanceof TurboSelector)
+              element = element.element;
+          if (this.dataMap.has(element))
+              return this.dataMap.get(element);
+          const newMap = {
+              reifects: new TurboWeakSet(),
+              enabled: {},
+              onTransitionStart: new Delegate(),
+              onTransitionEnd: new Delegate(),
+          };
+          if (element)
+              this.dataMap.set(element, newMap);
+          return newMap;
+      }
+      attachReifect(element, reifect) {
+          const data = this.data(element).reifects;
+          if (!data.has(reifect))
+              data.add(reifect);
+      }
+      detachReifect(element, reifect) {
+          const data = this.data(element).reifects;
+          if (data.has(reifect))
+              data.delete(reifect);
+      }
+  }
+
+  //@ts-nocheck
+  /**
+   * @class Reifect
+   * @group Components
+   * @category Reifect
+   *
+   * @description A class to manage and apply dynamic properties, styles, classes, and transitions to a
+   * set of objects.
+   *
+   * @template {object} ClassType - The object type this reifier will be applied to.
+   */
+  class Reifect extends StatefulReifect {
+      /**
+       * @description Creates an instance of StatefulReifier.
+       * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
+       */
+      constructor(properties) {
+          properties.states = ["default"];
+          super(properties);
+      }
+      /**
+       * @description The properties to be assigned to the objects. It could take:
+       * - A record of `{key: value}` pairs.
+       * - An interpolation function that would return a record of `{key: value}` pairs.
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get properties() {
+          return super.properties?.["default"];
+      }
+      set properties(value) {
+          super.properties = value;
+      }
+      /**
+       * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+       * - A record of `{CSS property: value}` pairs.
+       * - An interpolation function that would return a record of `{key: value}` pairs.
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get styles() {
+          return super.styles?.["default"];
+      }
+      set styles(value) {
+          super.styles = value;
+      }
+      /**
+       * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+       * - A string of space-separated classes.
+       * - An array of classes.
+       * - An interpolation function that would return a string of space-separated classes or an array of classes.
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get classes() {
+          return super.classes?.["default"];
+      }
+      set classes(value) {
+          super.classes = value;
+      }
+      /**
+       * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+       * - The object to be replaced with.
+       * - An interpolation function that would return the object to be replaced with.
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get replaceWith() {
+          return super.replaceWith?.["default"];
+      }
+      set replaceWith(value) {
+          super.replaceWith = value;
+      }
+      /**
+       * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+       * could take:
+       * - A string of space-separated CSS properties.
+       * - An array of CSS properties.
+       * - An interpolation function that would return a string of space-separated CSS properties or an array of
+       * CSS properties.
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get transitionProperties() {
+          return super.transitionProperties?.["default"];
+      }
+      set transitionProperties(value) {
+          super.transitionProperties = value;
+      }
+      /**
+       * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+       * - A numerical value (in seconds).
+       * - An interpolation function that would return a duration (number in seconds).
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get transitionDuration() {
+          return super.transitionDuration?.["default"];
+      }
+      set transitionDuration(value) {
+          super.transitionDuration = value;
+      }
+      /**
+       * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+       * It could take:
+       * - A string representing the timing function to apply.
+       * - An interpolation function that would return a timing function (string).
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get transitionTimingFunction() {
+          return super.transitionTimingFunction?.["default"];
+      }
+      set transitionTimingFunction(value) {
+          super.transitionTimingFunction = value;
+      }
+      /**
+       * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+       * - A numerical value (in seconds).
+       * - An interpolation function that would return a delay (number in seconds).
+       *
+       * The interpolation function would take as arguments:
+       * - `index: number`: the index of the object in the applied list.
+       * - `total: number`: the total number of objects in the applied list.
+       * - `object: ClassType`: the object itself.
+       */
+      get transitionDelay() {
+          return super.transitionDelay?.["default"];
+      }
+      set transitionDelay(value) {
+          super.transitionDelay = value;
+      }
+      initialize(objects, options) {
+          super.initialize("default", objects, options);
+      }
+      apply(objects, options) {
+          super.apply("default", objects, options);
+      }
+  }
 
   var Direction;
   (function (Direction) {
@@ -6502,166 +15570,6 @@
       Range["max"] = "max";
   })(Range || (Range = {}));
 
-  /**
-   * @class ReifectHandler
-   * @description A class to handle reifects for an attached element.
-   * @template {object = Node} ClassType
-   */
-  class ReifectHandler {
-      attachedNode;
-      reifects;
-      _enabled;
-      /**
-       * @constructor
-       * @param {Node} attachedNode - The element to attach transitions to.
-       */
-      constructor(attachedNode) {
-          this.attachedNode = attachedNode;
-          this.reifects = [];
-          this._enabled = {};
-          this.enabled = true;
-      }
-      //Set management
-      /**
-       * @function attach
-       * @description Attach one or more transitions to the element.
-       * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to attach.
-       * @returns {this} The element's TransitionHandler instance.
-       */
-      attach(...reifects) {
-          reifects.forEach(entry => {
-              if (this.reifects.some(ref => ref.deref() == entry))
-                  return;
-              this.reifects.push(new WeakRef(entry));
-              entry.attach(this.attachedNode);
-          });
-          return this;
-      }
-      /**
-       * @function detach
-       * @description Detach one or more transitions from the element.
-       * @param {StatefulReifect<any, ClassType>[]} reifects - The transition(s) to detach.
-       * @returns {this} The element's TransitionHandler instance.
-       */
-      detach(...reifects) {
-          reifects.forEach(entry => {
-              const attachedEntry = this.reifects.find(ref => ref.deref() == entry);
-              if (!attachedEntry)
-                  return;
-              this.reifects.splice(this.reifects.indexOf(attachedEntry), 1);
-              entry.detach(this.attachedNode);
-          });
-          return this;
-      }
-      //Transition methods
-      /**
-       * @function initialize
-       * @description Initializes the element to the corresponding transition direction and styles.
-       * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
-       * @param {InOut} direction - The direction of the transition.
-       * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
-       * `null` to not set any styles on the element.
-       * @returns {this} The element's TransitionHandler instance.
-       * @template {string | symbol | number} State
-       * @template {object} ClassType
-       */
-      initialize(reifect, direction, options) {
-          reifect.initialize(direction, this.attachedNode, options);
-          return this;
-      }
-      /**
-       * @function initialize
-       * @description Initializes the element to the corresponding transition direction and styles.
-       * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
-       * @param {InOut} direction - The direction of the transition.
-       * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to `null` to
-       * not set any styles on the element.
-       * @returns {this} The element's TransitionHandler instance.
-       * @template {string | symbol | number} State
-       * @template {object} ClassType
-       */
-      apply(reifect, direction, options) {
-          reifect.apply(direction, this.attachedNode, options);
-          return this;
-      }
-      /**
-       * @function initialize
-       * @description Initializes the element to the corresponding transition direction and styles.
-       * @param {StatefulReifect<State, ClassType>} reifect - The transition to initialize.
-       * @param {ReifectAppliedOptions<State, ClassType>} [options] - Optional styles to override the defaults. Set to
-       * `null` to not set any styles on the element.
-       * @returns {this} The element's TransitionHandler instance.
-       * @template {string | symbol | number} State
-       * @template {object} ClassType
-       */
-      toggle(reifect, options) {
-          reifect.toggle(this.attachedNode, options);
-          return this;
-      }
-      /**
-       * @private
-       * @function clear
-       * @description Clears the set transition styles on the element.
-       */
-      clear() {
-          if (!(this.attachedNode instanceof Node))
-              return;
-          $(this.attachedNode).setStyle("transition", "", true);
-      }
-      /**
-       * @function reload
-       * @description Reloads all transitions attached to the element. Doesn't recompute styles.
-       */
-      reload() {
-          this.clear();
-          this.reifects.forEach(reifect => reifect.deref()?.reloadFor(this.attachedNode));
-      }
-      /**
-       * @function reload
-       * @description Reloads all transitions attached to the element. Doesn't recompute styles.
-       */
-      reloadTransitions() {
-          this.clear();
-          this.reifects.forEach(reifect => reifect.deref()?.reloadTransitionFor(this.attachedNode));
-      }
-      //State management
-      /**
-       * @description The enabled state of the reifect (as a {@link ReifectEnabledObject}). Setting it to a boolean will
-       * accordingly update the value of `enabled.global`.
-       */
-      get enabled() {
-          return this._enabled;
-      }
-      set enabled(value) {
-          if (typeof value == "boolean")
-              this._enabled.global = value;
-          else if (!value)
-              return;
-          else
-              for (const [key, state] of Object.entries(value))
-                  this._enabled[key] = state;
-      }
-      getReifectEnabledState(reifect) {
-          return reifect.getObjectEnabledState(this.attachedNode);
-      }
-      enableReifect(reifect, value) {
-          reifect.enableObject(this.attachedNode, value);
-      }
-  }
-
-  class ReifectFunctionsUtils {
-      dataMap = new WeakMap;
-      data(element) {
-          if (element instanceof TurboSelector)
-              element = element.element;
-          if (!element)
-              return {};
-          if (!this.dataMap.has(element))
-              this.dataMap.set(element, {});
-          return this.dataMap.get(element);
-      }
-  }
-
   const utils$2 = new ReifectFunctionsUtils();
   const showTransition = new StatefulReifect({
       states: [Shown.visible, Shown.hidden],
@@ -6674,11 +15582,22 @@
       Object.defineProperty(TurboSelector.prototype, "reifects", {
           get: function () {
               if (!this.element)
-                  return;
-              const data = utils$2.data(this.element);
-              if (!data.reifects)
-                  data.reifects = new ReifectHandler(this);
-              return data.reifects;
+                  return new Set();
+              return new Set(utils$2.data(this.element).reifects?.toArray());
+          },
+          configurable: false,
+          enumerable: true
+      });
+      Object.defineProperty(TurboSelector.prototype, "onTransitionStart", {
+          get: function () {
+              return utils$2.data(this.element).onTransitionStart;
+          },
+          configurable: false,
+          enumerable: true
+      });
+      Object.defineProperty(TurboSelector.prototype, "onTransitionEnd", {
+          get: function () {
+              return utils$2.data(this.element).onTransitionEnd;
           },
           configurable: false,
           enumerable: true
@@ -6711,12 +15630,14 @@
           get: function () {
               if (!this.element)
                   return;
-              const state = this.showTransition.stateOf(this);
+              const state = this.showTransition.stateOf(this.element);
               if (state == Shown.visible)
                   return true;
               else if (state == Shown.hidden)
                   return false;
-              return this.element.style.display != "none" && this.element.style.visibility != "hidden" && this.element.style.opacity != "0";
+              return this.element.style.display != "none"
+                  && this.element.style.visibility != "hidden"
+                  && this.element.style.opacity != "0";
           },
           configurable: false,
           enumerable: true
@@ -6728,31 +15649,129 @@
        * execution.
        * @returns {this} Itself, allowing for method chaining.
        */
-      TurboSelector.prototype.show = function _show(b, options = { executeForAll: false }) {
+      TurboSelector.prototype.show = function _show(b, options = {}) {
           if (!this.element)
-              return;
+              return this;
+          if (!options.executeForAll)
+              options.executeForAll = false;
           this.showTransition.apply(b ? Shown.visible : Shown.hidden, this.element, options);
+          return this;
+      };
+      TurboSelector.prototype.attachReifect = function _attachReifect(...reifects) {
+          if (!this.element || typeof this.element !== "object")
+              return this;
+          reifects.forEach(entry => {
+              if (this.reifects.has(entry))
+                  return;
+              utils$2.attachReifect(this.element, entry);
+              entry.attach(this.element);
+          });
+          return this;
+      };
+      TurboSelector.prototype.detachReifect = function _detachReifect(...reifects) {
+          if (!this.element || typeof this.element !== "object")
+              return this;
+          reifects.forEach(entry => {
+              if (!this.reifects.has(entry))
+                  return;
+              utils$2.detachReifect(this.element, entry);
+              entry.detach(this.element);
+          });
+          return this;
+      };
+      TurboSelector.prototype.initializeReifect = function _initializeReifect(reifect, state, options) {
+          if (!this.element)
+              return this;
+          if (reifect instanceof Reifect)
+              reifect.initialize(this.element, options);
+          else
+              reifect.initialize(this.element, state, options);
+          return this;
+      };
+      TurboSelector.prototype.applyReifect = function _applyReifect(reifect, state, options) {
+          if (!this.element)
+              return this;
+          if (reifect instanceof Reifect)
+              reifect.apply(this.element, options);
+          else
+              reifect.apply(this.element, state, options);
+          return this;
+      };
+      TurboSelector.prototype.toggleReifect = function _toggleReifect(reifect, options) {
+          if (!this.element)
+              return this;
+          if (reifect instanceof Reifect)
+              return this;
+          else
+              reifect.toggle(this.element, options);
+          return this;
+      };
+      TurboSelector.prototype.reloadReifects = function _reloadReifects() {
+          if (!this.element)
+              return this;
+          this.setStyle("transition", "", true);
+          this.reifects.forEach(reifect => reifect.reloadFor(this.element));
+          return this;
+      };
+      TurboSelector.prototype.reloadTransitions = function _reloadTransitions() {
+          if (!this.element)
+              return this;
+          this.setStyle("transition", "", true);
+          this.reifects.forEach(reifect => reifect.reloadTransitionFor(this.element));
+          return this;
+      };
+      TurboSelector.prototype.reifectEnabledState = function _reifectEnabledState(reifect) {
+          if (!this.element)
+              return {};
+          if (reifect)
+              return reifect.getObjectEnabledState(this.element);
+          return utils$2.data(this.element).enabled;
+      };
+      TurboSelector.prototype.enableReifect = function _enableReifect(value, reifect) {
+          if (!this.element)
+              return this;
+          if (reifect) {
+              reifect.enable(value, this.element);
+              return this;
+          }
+          const enabled = utils$2.data(this.element).enabled;
+          if (typeof value === "boolean")
+              enabled.global = value;
+          else if (typeof value === "object")
+              Object.entries(value)
+                  .forEach(([key, value]) => enabled[key] = value);
           return this;
       };
   }
 
-  function $(element) {
+  const cache$1 = new WeakMap();
+  function turbo(tagOrElement) {
       turbofy();
-      if (!element)
-          return new TurboSelector();
-      if (element instanceof TurboSelector)
-          return element;
+      let el;
+      if (!tagOrElement)
+          tagOrElement = "div";
+      if (typeof tagOrElement === "string")
+          el = element({ tag: tagOrElement });
+      else if (typeof tagOrElement === "object") {
+          if (tagOrElement instanceof TurboSelector)
+              return tagOrElement;
+          if (tagOrElement instanceof Node)
+              el = tagOrElement;
+          else if (tagOrElement["element"] && typeof tagOrElement["element"] === "object")
+              el = tagOrElement["element"];
+          else
+              el = tagOrElement;
+      }
+      const cached = cache$1.get(el);
+      if (cached)
+          return cached;
       const turboSelector = new TurboSelector();
-      if (element instanceof Node)
-          turboSelector.element = element;
-      else if (element["element"] && element["element"] instanceof Node)
-          turboSelector.element = element["element"];
-      else
-          turboSelector.element = element;
+      turboSelector.element = el;
+      cache$1.set(el, turboSelector);
       return turboSelector;
   }
-  function turbo(element) {
-      return $(element);
+  function $(tagOrElement) {
+      return turbo(tagOrElement);
   }
   const turbofy = callOnce(function (options = {}) {
       if (!options.excludeHierarchyFunctions)
@@ -6889,6 +15908,9 @@
   /**
    * @decorator
    * @function cache
+   * @group Decorators
+   * @category Cache
+   *
    * @description Stage-3 decorator that memorizes expensive reads.
    *
    * **What it does**
@@ -7034,6 +16056,9 @@
   }
   /**
    * @function clearCache
+   * @group Decorators
+   * @category Cache
+   *
    * @description Clear *all* cache entries created by `@cache` on an instance.
    * @param {any} instance - The instance for which the cache should be cleared.
    */
@@ -7043,6 +16068,108 @@
               delete instance[sym];
           }
       }
+  }
+
+  /**
+   * @description Converts the passed variable into a string.
+   * @param value - The variable to convert to string
+   * @returns {string} - The string representation of the value
+   */
+  function stringify(value) {
+      if (value === null || value === undefined)
+          return undefined;
+      switch (typeof value) {
+          case "string":
+              return value;
+          case "number":
+          case "boolean":
+          case "bigint":
+          case "symbol":
+          case "function":
+              return value.toString();
+          case "object":
+              if (Array.isArray(value))
+                  return JSON.stringify(value);
+              else if (value instanceof Date)
+                  return value.toISOString();
+              else {
+                  try {
+                      return JSON.stringify(value);
+                  }
+                  catch {
+                      return "[object Object]";
+                  }
+              }
+          default:
+              return String(value);
+      }
+  }
+  /**
+   * @description Attempts to convert the passed string back to its original type.
+   * @param str - The string to convert back to its original type
+   * @returns {any} - The original value
+   */
+  function parse(str) {
+      if (isUndefined(str))
+          return undefined;
+      switch (str) {
+          case "null":
+              return null;
+          case "true":
+              return true;
+          case "false":
+              return false;
+      }
+      if (!isNaN(Number(str)))
+          return Number(str);
+      if (/^\d+n$/.test(str))
+          return BigInt(str.slice(0, -1));
+      if (str.startsWith("function") || str.startsWith("(")) {
+          try {
+              const parsedFunction = new Function(`return (${str})`)();
+              if (typeof parsedFunction === "function")
+                  return parsedFunction;
+          }
+          catch {
+          }
+      }
+      try {
+          const parsed = JSON.parse(str);
+          if (typeof parsed === "object" && parsed != null)
+              return parsed;
+      }
+      catch {
+      }
+      return str;
+  }
+  /**
+   * @description Extracts the extension from the given filename or path (e.g.: ".png").
+   * @param {string} str - The filename or path
+   * @return The extension, or an empty string if not found.
+   */
+  function getFileExtension(str) {
+      if (!str || str.length == 0)
+          return "";
+      const match = str.match(/\.\S{1,4}$/);
+      return match ? match[0] : "";
+  }
+  /**
+   * @description converts the provided string from camelCase to kebab-case.
+   * @param {string} str - The string to convert
+   */
+  function camelToKebabCase(str) {
+      if (!str || str.length == 0)
+          return;
+      return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+  }
+  /**
+   * @description converts the provided string from kebab-case to camelCase.
+   * @param {string} str - The string to convert
+   */
+  function kebabToCamelCase(str) {
+      if (!str || str.length == 0)
+          return;
+      return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
   }
 
   class DefineDecoratorUtils {
@@ -7094,6 +16221,9 @@
   /**
    * @decorator
    * @function define
+   * @group Decorators
+   * @category Attributes & DOM
+   *
    * @description Stage-3 **class** decorator factory. It:
    * - Registers the element with customElements (name inferred if omitted).
    * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
@@ -7193,23 +16323,65 @@
       };
   }
 
-  function expose(rootKey) {
+  /**
+   * @decorator
+   * @function expose
+   * @group Decorators
+   * @category Augmentation
+   *
+   * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
+   * from inner instances.
+   * @param {string} rootKey - The property key of the instance to expose from.
+   * @param {boolean} [exposeSetter=true] - Whether to expose a setter for the property. Defaults to true.
+   *
+   * @example
+   * ```ts
+   * protected model: TurboModel;
+   * @expose("model") public color: string;
+   * ```
+   * Is equivalent to:
+   * ```ts
+   * protected model: TurboModel;
+   *
+   * public get color(): string {
+   *    return this.model.color;
+   * }
+   *
+   * public set color(value: string) {
+   *    this.model.color = value;
+   * }
+   * ```
+   */
+  function expose(rootKey, exposeSetter = true) {
       return function (value, context) {
           const { kind, name } = context;
           const key = String(name);
+          const nestedRoots = rootKey.split(".").filter(Boolean);
+          const getLowestRoot = function (host) {
+              if (!host)
+                  return;
+              let parent = host;
+              for (const root of nestedRoots) {
+                  parent = parent[root];
+                  if (!parent)
+                      return;
+              }
+              return parent;
+          };
           if (kind === "method") {
               return function (...args) {
-                  const root = this[rootKey];
+                  const root = getLowestRoot(this);
                   const fn = root?.[key];
                   if (typeof fn === "function")
                       return fn.apply(root, args);
               };
           }
           context.addInitializer(function () {
-              const read = function () { return this[rootKey]?.[key]; };
+              const read = function () { return getLowestRoot(this)?.[key]; };
               const write = function (value) {
-                  if (this[rootKey])
-                      this[rootKey][key] = value;
+                  const root = getLowestRoot(this);
+                  if (root)
+                      root[key] = value;
               };
               if (kind === "field" || kind === "accessor") {
                   const descriptor = getFirstDescriptorInChain(this, key);
@@ -7217,7 +16389,10 @@
                       configurable: true,
                       enumerable: descriptor?.enumerable ?? true,
                       get: () => read.call(this),
-                      set: (value) => write.call(this, value),
+                      set: (value) => {
+                          if (exposeSetter)
+                              write.call(this, value);
+                      },
                   });
               }
           });
@@ -7246,9 +16421,12 @@
   /**
    * @decorator
    * @function observe
+   * @group Decorators
+   * @category Attributes & DOM
+   *
    * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
    * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
-   * It also records the attribute name into the class's`observedAttributed` to listen for changes on the HTML.
+   * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.
    *
    * @example
    * ```ts
@@ -7337,12 +16515,41 @@
       });
   }
 
+  /**
+   * @class TurboInteractor
+   * @group MVC
+   * @category Interactor
+   *
+   * @extends TurboController
+   * @template {object} ElementType - The type of the main component.
+   * @template {TurboView} ViewType - The element's MVC view type.
+   * @template {TurboModel} ModelType - The element's MVC model type.
+   * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
+   * @description Class representing an MVC interactor. It holds event listeners to set up on the element itself, or
+   * the custom defined target.
+   */
   class TurboInteractor extends TurboController {
       #target_accessor_storage;
+      /**
+       * @description The target of the event listeners. Defaults to the element itself.
+       */
       get target() { return this.#target_accessor_storage; }
       set target(value) { this.#target_accessor_storage = value; }
+      /**
+       * @readonly
+       * @description The name of the tool (if any) to listen for.
+       */
       toolName;
+      /**
+       * @readonly
+       * @description The associated event manager. Defaults to `TurboEventManager.instance`.
+       */
       manager;
+      /**
+       *
+       * @readonly
+       * @description Optional custom options to define per event type.
+       */
       options;
       constructor(properties) {
           super(properties);
@@ -7354,6 +16561,10 @@
               : host?.element instanceof Node ? host.element
                   : undefined;
       }
+      /**
+       * @function initialize
+       * @description Initialization function that sets up all the defined evnt listeners and attaches them to the target.
+       */
       initialize() {
           super.initialize();
           const target = this.target ?? this;
@@ -7400,6 +16611,138 @@
   var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
   styleInject(css_248z$3);
 
+  function defineUIPrototype(constructor) {
+      const prototype = constructor.prototype;
+      const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
+      Object.defineProperty(prototype, "unsetDefaultClasses", {
+          get: function () { return this[unsetDefaultClassesKey] ?? false; },
+          set: function (value) {
+              this[unsetDefaultClassesKey] = value;
+              const defaultClasses = this.constructor?.config?.defaultClasses;
+              if (!defaultClasses)
+                  return;
+              $(this).toggleClass(defaultClasses, value);
+          },
+          enumerable: true,
+          configurable: true,
+      });
+  }
+
+  /**
+   * @class TurboElement
+   * @group TurboElement
+   * @category TurboElement
+   *
+   * @extends HTMLElement
+   * @description Base TurboElement class, extending the base HTML element with a few useful tools and functions.
+   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+   * @template {object} DataType - The element's data type, if initializing MVC.
+   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+   * */
+  class TurboElement extends HTMLElement {
+      /**
+       * @description Static configuration object.
+       */
+      static config = {
+          shadowDOM: false,
+          defaultSelectedClass: "selected"
+      };
+      /**
+       * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+       * @protected
+       */
+      mvc = new Mvc({ element: this });
+      /**
+       * @description Delegate fired when the element is attached to DOM.
+       */
+      onAttach = new Delegate();
+      /**
+       * @description Delegate fired when the element is detached from the DOM.
+       */
+      onDetach = new Delegate();
+      /**
+       * @description Delegate fired when the element is adopted by a new parent in the DOM.
+       */
+      onAdopt = new Delegate();
+      /**
+       * @description Update the class's static configurations. Will only overwrite the set properties.
+       * @property {typeof this.config} value - The object containing the new configurations.
+       */
+      static configure(value) {
+          Object.entries(value).forEach(([key, val]) => {
+              if (val !== undefined)
+                  this.config[key] = val;
+          });
+      }
+      /**
+       * @function setupChangedCallbacks
+       * @description Setup method intended to initialize change listeners and callbacks. Called on `initialize()`.
+       * @protected
+       */
+      setupChangedCallbacks() {
+      }
+      /**
+       * @function setupUIElements
+       * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+       * them in fields. Called on `initialize()`.
+       * @protected
+       */
+      setupUIElements() {
+      }
+      /**
+       * @function setupUILayout
+       * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+       * this element's child tree. Called on `initialize()`.
+       * @protected
+       */
+      setupUILayout() {
+      }
+      /**
+       * @function setupUIListeners
+       * @description Setup method to initialize and define all input/DOM event listeners of the element. Called on
+       * `initialize()`.
+       * @protected
+       */
+      setupUIListeners() {
+      }
+      /**
+       * @function connectedCallback
+       * @description function called when the element is attached to the DOM.
+       */
+      connectedCallback() {
+          this.onAttach.fire();
+      }
+      /**
+       * @function disconnectedCallback
+       * @description function called when the element is detached from the DOM.
+       */
+      disconnectedCallback() {
+          this.onDetach.fire();
+      }
+      /**
+       * @function adoptedCallback
+       * @description function called when the element is adopted by a new parent in the DOM.
+       */
+      adoptedCallback() {
+          this.onAdopt.fire();
+      }
+  }
+  (() => {
+      defineDefaultProperties(TurboElement);
+      defineMvcAccessors(TurboElement);
+      defineUIPrototype(TurboElement);
+  })();
+  function equalToAny(entry, ...values) {
+      if (values.length < 1)
+          return true;
+      for (const value of values) {
+          if (entry == value)
+              return true;
+      }
+      return false;
+  }
+
   /**
    * @description Converts a string of tags into an Element.
    * @param {string} text - The string to convert
@@ -7444,116 +16787,12 @@
       });
   }
 
-  function defineUIPrototype(constructor) {
-      const prototype = constructor.prototype;
-      const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
-      Object.defineProperty(prototype, "unsetDefaultClasses", {
-          get: function () { return this[unsetDefaultClassesKey] ?? false; },
-          set: function (value) {
-              this[unsetDefaultClassesKey] = value;
-              const defaultClasses = this.constructor?.config?.defaultClasses;
-              if (!defaultClasses)
-                  return;
-              $(this).toggleClass(defaultClasses, value);
-          },
-          enumerable: true,
-          configurable: true,
-      });
-  }
-
   /**
-   * @class TurboElement
-   * @extends HTMLElement
-   * @description Base TurboElement class, extending the base HTML element with a few powerful tools and functions.
-   * @template {TurboView} ViewType - The element's view type, if initializing MVC.
-   * @template {object} DataType - The element's data type, if initializing MVC.
-   * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
-   * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
-   * */
-  class TurboElement extends HTMLElement {
-      /**
-       * @description Static configuration object.
-       */
-      static config = {
-          shadowDOM: false,
-          defaultSelectedClass: "selected"
-      };
-      /**
-       * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-       * @protected
-       */
-      mvc = new Mvc({ element: this });
-      /**
-       * @description Delegate fired when the element is attached to DOM.
-       */
-      onAttach = new Delegate();
-      /**
-       * @description Delegate fired when the element is detached from the DOM.
-       */
-      onDetach = new Delegate();
-      /**
-       * @description Delegate fired when the element is adopted by a new parent in the DOM.
-       */
-      onAdopt = new Delegate();
-      /**
-       * @description Update the class's static configurations. Will only overwrite the set properties.
-       * @property {typeof this.config} value - The object containing the new configurations.
-       */
-      static configure(value) {
-          Object.entries(value).forEach(([key, val]) => {
-              if (val !== undefined)
-                  this.config[key] = val;
-          });
-      }
-      /**
-       * @function setupChangedCallbacks
-       * @description Setup method intended to initialize change listeners and callbacks.
-       * @protected
-       */
-      setupChangedCallbacks() {
-      }
-      /**
-       * @function setupUIElements
-       * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
-       * them in fields.
-       * @protected
-       */
-      setupUIElements() {
-      }
-      /**
-       * @function setupUILayout
-       * @description Setup method to create the layout structure of the element by adding all created sub-elements to
-       * this element's child tree.
-       * @protected
-       */
-      setupUILayout() {
-      }
-      /**
-       * @function setupUIListeners
-       * @description Setup method to initialize and define all input/DOM event listeners of the element.
-       * @protected
-       */
-      setupUIListeners() {
-      }
-      connectedCallback() {
-          this.onAttach.fire();
-      }
-      disconnectedCallback() {
-          this.onDetach.fire();
-      }
-      adoptedCallback() {
-          this.onAdopt.fire();
-      }
-  }
-  (() => {
-      defineDefaultProperties(TurboElement);
-      defineMvcAccessors(TurboElement);
-      defineUIPrototype(TurboElement);
-  })();
-
-  /**
-   * Icon class for creating icon elements.
    * @class TurboIcon
+   * @group Components
+   * @category TurboIcon
+   *
+   * @description Icon class for creating icon elements.
    * @extends TurboElement
    */
   let TurboIcon = (() => {
@@ -7684,7 +16923,7 @@
                   return;
               }
               this.clear();
-              if (!this.icon)
+              if (!this.icon || this.icon.length === 0)
                   return;
               const token = ++this._loadToken;
               const element = this.getLoader(type)(path);
@@ -7733,6 +16972,11 @@
       });
       return _classThis;
   })();
+  /**
+   * @group Components
+   * @category TurboIcon
+   * @param properties
+   */
   function icon(properties) {
       if (!properties.tag)
           properties.tag = "turbo-icon";
@@ -7740,9 +16984,12 @@
   }
 
   /**
-   * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
-   * its left and/or right).
    * @class TurboRichElement
+   * @group Components
+   * @category TurboRichElement
+   *
+   * @description Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
+   * its left and/or right).
    * @extends TurboElement
    * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
    */
@@ -7957,6 +17204,11 @@
       });
       return _classThis;
   })();
+  /**
+   * @group Components
+   * @category TurboRichElement
+   * @param properties
+   */
   function richElement(properties) {
       if (properties.text && !properties.element)
           properties.element = properties.text;
@@ -7969,8 +17221,11 @@
   }
 
   /**
-   * Button class for creating Turbo button elements.
    * @class TurboButton
+   * @group Components
+   * @category TurboButton
+   *
+   * @description Button class for creating Turbo button elements.
    * @extends TurboElement
    */
   let TurboButton = (() => {
@@ -7994,12 +17249,21 @@
       });
       return _classThis;
   })();
+  /**
+   * @group Components
+   * @category TurboButton
+   * @param properties
+   */
   function button(properties) {
       if (!properties.tag)
           properties.tag = "turbo-button";
       return richElement({ ...properties });
   }
 
+  /**
+   * @group Components
+   * @category TurboIconSwitch
+   */
   let TurboIconSwitch = (() => {
       let _classDecorators = [define("turbo-icon-switch")];
       let _classDescriptor;
@@ -8044,28 +17308,35 @@
           }
           set appendStateToIconName(value) {
               if (value) {
-                  const reifectProperties = this.switchReifect?.properties;
+                  const properties = this.switchReifect.properties;
                   this.switchReifect.states.forEach(state => {
-                      if (!reifectProperties[state])
-                          reifectProperties[state] = {};
-                      reifectProperties[state].icon = this.icon + "-" + state.toString();
+                      properties[state] = { ...properties[state], icon: this.icon + "-" + state.toString() };
                   });
+                  this.switchReifect.properties = properties;
               }
           }
           initialize() {
               super.initialize();
-              if (this.defaultState && this.switchReifect)
-                  this.switchReifect.apply(this.defaultState, this);
+              if (this.defaultState)
+                  this.switchReifect?.apply(this.defaultState, this);
           }
       });
       return _classThis;
   })();
+  /**
+   * @group Components
+   * @category TurboIconSwitch
+   */
   function iconSwitch(properties) {
       if (!properties.tag)
           properties.tag = "turbo-icon-switch";
       return icon({ ...properties });
   }
 
+  /**
+   * @group Components
+   * @category TurboIconToggle
+   */
   (() => {
       let _classDecorators = [define("turbo-icon-toggle")];
       let _classDescriptor;
@@ -8221,6 +17492,10 @@
       }
   }
 
+  /**
+   * @group Components
+   * @category TurboInput
+   */
   let TurboInput = (() => {
       let _classDecorators = [define("turbo-input")];
       let _classDescriptor;
@@ -8375,6 +17650,10 @@
       return _classThis;
   })();
 
+  /**
+   * @group Components
+   * @category TurboNumericalInput
+   */
   (() => {
       let _classDecorators = [define("turbo-numerical-input")];
       let _classDescriptor;
@@ -8416,6 +17695,10 @@
       return _classThis;
   })();
 
+  /**
+   * @group Event Handling
+   * @category TurboEvents
+   */
   class TurboSelectInputEvent extends TurboEvent {
       toggledEntry;
       values;
@@ -8428,6 +17711,9 @@
 
   /**
    * @class TurboBaseElement
+   * @group TurboElement
+   * @category TurboBaseElement
+   *
    * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
    * @template {TurboView} ViewType - The element's view type, if initializing MVC.
    * @template {object} DataType - The element's data type, if initializing MVC.
@@ -8455,8 +17741,12 @@
   })();
 
   /**
-   * Base class for creating a selection menu
    * @class TurboSelect
+   * @group Components
+   * @category TurboSelect
+   *
+   * @description Base class for creating a selection menu
+
    * @extends TurboElement
    */
   let TurboSelect = (() => {
@@ -8497,7 +17787,7 @@
                   })];
               _getSecondaryValue_decorators = [auto({ defaultValue: () => "" })];
               _createEntry_decorators = [auto({
-                      defaultValue: (value) => richElement({ text: stringify(value) })
+                      defaultValue: (value) => richElement({ text: stringify$1(value) })
                   })];
               _onEntryAdded_decorators = [auto({
                       defaultValue: function (entry) {
@@ -8514,7 +17804,9 @@
               _set_multiSelection_decorators = [auto({ defaultValue: false })];
               _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
               _selectedEntryClasses_decorators = [auto({
-                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); }
+                      callBefore: function () { this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses)); },
+                      callAfter: function () { this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses)); },
+                      initialValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses"); },
                   })];
               __esDecorate(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -8544,10 +17836,11 @@
               this.enableObserver(false);
               const previouslySelectedValues = this.selectedValues;
               this.clear();
-              this._entries = value;
+              this._entries = (Array.isArray(value) ? value : Array.from(value))
+                  .filter(entry => entry !== this.inputField);
               if (value instanceof HTMLCollection && value.item(0))
                   this.parent = value.item(0).parentElement;
-              const array = this.entriesArray;
+              const array = this.entries;
               for (let i = 0; i < array.length; i++)
                   this.onEntryAdded?.call(this, array[i], i);
               this.deselectAll();
@@ -8560,15 +17853,11 @@
               this.refreshInputField();
               this.enableObserver(true);
           }
-          get entriesArray() {
-              const array = Array.isArray(this.entries) ? this.entries : Array.from(this.entries);
-              return (array ?? []).filter(entry => entry !== this.inputField);
-          }
           /**
            * @description The dropdown's values. Setting it will update the dropdown accordingly.
            */
           get values() {
-              return this.entriesArray.map(entry => this.getValue(entry));
+              return this.entries.map(entry => this.getValue(entry));
           }
           set values(values) {
               const entries = [];
@@ -8581,7 +17870,7 @@
               this.entries = entries;
           }
           get selectedEntries() {
-              return this.entriesArray.filter(entry => this.getEntryData(entry).selected);
+              return this.entries.filter(entry => this.getEntryData(entry).selected);
           }
           set selectedEntries(value) {
               this.deselectAll();
@@ -8590,11 +17879,11 @@
               value.forEach(entry => this.select(entry));
           }
           set parent(value) {
-              if (!(this.parent instanceof Element))
+              if (!(value instanceof Element))
                   return;
-              $(this.parent).addChild(this.entriesArray.filter(entry => entry instanceof Node));
+              $(value).addChild(this.entries.filter(entry => entry instanceof Node));
               if (this.inputField)
-                  this.parent.appendChild(this.inputField);
+                  value.appendChild(this.inputField);
               this.setupParentObserver();
           }
           getValue = __runInitializers(this, _getValue_initializers, void 0);
@@ -8656,7 +17945,7 @@
               }
               if (!this.forceSelection)
                   this.deselectAll();
-              this.entriesArray.forEach(entry => {
+              this.entries.forEach(entry => {
                   if (selectedValues.includes(this.getValue(entry))) {
                       this.select(entry);
                   }
@@ -8674,10 +17963,13 @@
           }
           clearEntryData(entry) {
               this._entriesData.delete(entry);
+              const index = this.entries.indexOf(entry);
+              if (index >= 0)
+                  this.entries.splice(index, 1);
           }
-          addEntry(entry, index = this.entriesArray.length) {
+          addEntry(entry, index = this.entries.length) {
               if (index === undefined || typeof index !== "number" || index > this.entries.length)
-                  index = this.entriesArray.length;
+                  index = this.entries.length;
               if (index < 0)
                   index = 0;
               this.enableObserver(false);
@@ -8690,7 +17982,7 @@
               requestAnimationFrame(() => this.select(this.selectedEntry));
           }
           getEntryFromSecondaryValue(value) {
-              return this.entriesArray.find((entry) => this.getSecondaryValue(entry) === value);
+              return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
           }
           isSelected(entry) {
               return this.selectedEntries.includes(entry);
@@ -8702,7 +17994,7 @@
                   if (fromValue)
                       entry = fromValue;
                   else {
-                      const isEntry = this.entriesArray.find(entry => entry === value);
+                      const isEntry = this.entries.find(entry => entry === value);
                       if (isEntry)
                           entry = isEntry;
                   }
@@ -8725,7 +18017,7 @@
                   if (fromValue)
                       entry = fromValue;
                   else {
-                      const isEntry = this.entriesArray.find(entry => entry === value);
+                      const isEntry = this.entries.find(entry => entry === value);
                       if (isEntry)
                           entry = isEntry;
                   }
@@ -8761,10 +18053,10 @@
            */
           selectByIndex(index, preprocess = trim) {
               index = preprocess(index, this.entries.length - 1, 0);
-              return this.select(this.entriesArray[index]);
+              return this.select(this.entries[index]);
           }
           getIndex(entry) {
-              return this.entriesArray.indexOf(entry);
+              return this.entries.indexOf(entry);
           }
           deselectAll() {
               this.selectedEntries.forEach(entry => {
@@ -8779,7 +18071,7 @@
               // todo this.onEntryClick(this.enabledEntries[0]);
           }
           get enabledEntries() {
-              return this.entriesArray.filter(entry => this.getEntryData(entry).enabled);
+              return this.entries.filter(entry => this.getEntryData(entry).enabled);
           }
           get enabledValues() {
               return this.enabledEntries.map(entry => this.getValue(entry));
@@ -8788,20 +18080,20 @@
               return this.enabledEntries.map(entry => this.getSecondaryValue(entry));
           }
           find(value) {
-              return this.entriesArray.find((entry) => this.getValue(entry) === value);
+              return this.entries.find((entry) => this.getValue(entry) === value);
           }
           findBySecondaryValue(value) {
-              return this.entriesArray.find((entry) => this.getSecondaryValue(entry) === value);
+              return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
           }
           findAll(...values) {
-              return this.entriesArray.filter(entry => values.includes(this.getValue(entry)));
+              return this.entries.filter(entry => values.includes(this.getValue(entry)));
           }
           findAllBySecondaryValue(...values) {
-              return this.entriesArray.filter((entry) => values.includes(this.getSecondaryValue(entry)));
+              return this.entries.filter((entry) => values.includes(this.getSecondaryValue(entry)));
           }
           enable(b, ...entries) {
               if (!entries || entries.length === 0)
-                  entries = this.entriesArray;
+                  entries = this.entries;
               entries.forEach(value => {
                   const entry = this.getEntry(value);
                   if (!entry)
@@ -8838,11 +18130,11 @@
               return this.getSecondaryValue(selectedEntry);
           }
           get stringSelectedValue() {
-              return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
+              return this.selectedEntries.map(entry => stringify$1(this.getValue(entry))).join(", ");
           }
           clear() {
               this.enableObserver(false);
-              for (const entry of this.entriesArray) {
+              for (const entry of this.entries) {
                   this.clearEntryData(entry);
                   this.onEntryRemoved(entry);
                   if (this.parent && entry instanceof HTMLElement)
@@ -8859,6 +18151,7 @@
           destroy() {
               this.enableObserver(false);
               this.parentObserver = null;
+              return this;
           }
           enableObserver(value) {
               if (!value)
@@ -8878,14 +18171,28 @@
               this.parentObserver = new MutationObserver(records => {
                   for (const record of records) {
                       for (const node of record.addedNodes) {
-                          if (node.nodeType !== Node.ELEMENT_NODE || node.parentElement !== this.parent)
+                          if (!(node instanceof Element) || node.parentElement !== this.parent)
                               continue;
                           if (node === this.inputField)
                               continue;
-                          this.onEntryAdded?.call(this, node, this.getIndex(node));
+                          const entry = node;
+                          const children = Array.from(this.parent.children)
+                              .filter(el => el !== this.inputField)
+                              .filter(el => this.entries.includes(el) || el === entry);
+                          const targetIndex = children.indexOf(entry);
+                          if (targetIndex < 0)
+                              continue;
+                          if (targetIndex === 0)
+                              this.entries.splice(targetIndex, 0, entry);
+                          else {
+                              const previousIndex = this.entries.indexOf(children[targetIndex - 1]);
+                              this.entries.splice(previousIndex + 1, 0, entry);
+                          }
+                          this.getEntryData(entry);
+                          this.onEntryAdded?.call(this, entry, this.getIndex(entry));
                       }
                       for (const node of record.removedNodes) {
-                          if (node.nodeType !== Node.ELEMENT_NODE)
+                          if (!(node instanceof Element))
                               continue;
                           if (node === this.inputField)
                               continue;
@@ -8910,203 +18217,204 @@
       };
   })();
 
-  var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{overflow:hidden}.turbo-drawer.top-drawer{flex-direction:column}.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.turbo-drawer.left-drawer{flex-direction:row}.turbo-drawer.right-drawer{flex-direction:row-reverse}.turbo-drawer>div:first-child{display:inline-block;position:relative}.turbo-drawer>div:nth-child(2){align-items:center;display:flex;position:relative}";
+  (() => {
+      let _classSuper = TurboDataBlock;
+      let _instanceExtraInitializers = [];
+      let _set_enabledCallbacks_decorators;
+      return class TurboYBlock extends _classSuper {
+          static {
+              const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+              _set_enabledCallbacks_decorators = [auto({ })];
+              __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+          }
+          observer = (__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+          set enabledCallbacks(value) {
+              if (!this.data)
+                  return;
+              if (value)
+                  this.data.observe(this.observer);
+              else
+                  this.data.unobserve(this.observer);
+          }
+          /*
+           *
+           * Basics
+           *
+           */
+          /**
+           * @function get
+           * @description Retrieves the value associated with a given key in the specified block.
+           * @param {KeyType} key - The key to retrieve.
+           * @returns {unknown} The value associated with the key, or null if not found.
+           */
+          get(key) {
+              if (!this.data || typeof this.data !== "object")
+                  return;
+              if (this.data instanceof YMap)
+                  return this.data.get(key.toString());
+              if (this.data instanceof YArray)
+                  return this.data.get(trim(Number(key), this.data.length));
+              return super.get(key);
+          }
+          /**
+           * @function set
+           * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+           * @param {KeyType} key - The key to update.
+           * @param {unknown} value - The value to assign.
+           */
+          set(key, value) {
+              if (!this.data || typeof this.data !== "object")
+                  return;
+              if (this.data instanceof YMap)
+                  this.data.set(key.toString(), value);
+              else if (this.data instanceof YArray) {
+                  const index = trim(Number(key), this.data.length + 1);
+                  if (index < this.data.length)
+                      this.data.delete(index, 1);
+                  this.data.insert(index, [value]);
+              }
+              else
+                  super.set(key, value);
+          }
+          has(key) {
+              if (!this.data || typeof this.data !== "object")
+                  return false;
+              if (this.data instanceof YMap)
+                  return this.data.has(key.toString());
+              if (this.data instanceof YArray)
+                  return typeof key === "number" && key >= 0 && key < this.size;
+              return super.has(key);
+          }
+          delete(key) {
+              if (!this.data || typeof this.data !== "object")
+                  return;
+              if (this.data instanceof YMap)
+                  this.data.delete(key.toString());
+              else if (this.data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size)
+                  this.data.delete(key, 1);
+              else
+                  super.delete(key);
+          }
+          /**
+           * @function keys
+           * @description Retrieves all keys within the given block(s).
+           * @returns {KeyType[]} Array of keys.
+           */
+          get keys() {
+              if (this.data instanceof YMap)
+                  return Array.from(this.data.keys());
+              if (this.data instanceof YArray) {
+                  const output = [];
+                  for (let i = 0; i < this.data.length; i++)
+                      output.push(i);
+                  return output;
+              }
+              return super.keys;
+          }
+          /**
+           * @function size
+           * @description Returns the size of the specified block.
+           * @returns {number} The size.
+           */
+          get size() {
+              if (this.data instanceof YMap)
+                  return this.data.size;
+              if (this.data instanceof YArray)
+                  return this.data.length;
+              return 0;
+          }
+          /*
+           *
+           * Utilities
+           *
+           */
+          /**
+           * @function initialize
+           * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+           */
+          initialize() {
+              super.initialize();
+              if (this.enabledCallbacks && this.data instanceof AbstractType)
+                  this.data?.observe(this.observer);
+          }
+          clear(clearData = true) {
+              if (clearData)
+                  this.data?.unobserve(this.observer);
+              super.clear(clearData);
+          }
+          /*
+           *
+           * Utilities
+           *
+           */
+          observeChanges(event, transaction) {
+              //TODO
+              !!transaction?.local;
+              transaction?.origin;
+              if (event instanceof YMapEvent) {
+                  event.keysChanged.forEach(key => {
+                      const change = event.changes.keys.get(key);
+                      if (!change)
+                          return;
+                      if (change.action === "delete")
+                          this.keyChanged(key, undefined, true);
+                      else
+                          this.keyChanged(key);
+                  });
+              }
+              else if (event instanceof YArrayEvent) {
+                  let currentIndex = 0;
+                  for (const delta of event.delta) {
+                      if (delta.retain !== undefined)
+                          currentIndex += delta.retain;
+                      else if (delta.insert) {
+                          const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
+                          const count = insertedItems.length;
+                          this.shiftIndices(currentIndex, count);
+                          for (let i = 0; i < count; i++)
+                              this.keyChanged((currentIndex + i));
+                          currentIndex += count;
+                      }
+                      else if (delta.delete) {
+                          const count = delta.delete;
+                          for (let i = 0; i < count; i++)
+                              this.keyChanged((currentIndex + i), undefined, true);
+                          this.shiftIndices(currentIndex + count, -count);
+                      }
+                  }
+              }
+          }
+          shiftIndices(fromIndex, offset) {
+              this.changeObservers?.toArray().forEach(observer => {
+                  const itemsToShift = [];
+                  for (const [oldIndexStr, instance] of observer.instances.entries()) {
+                      const oldIndex = Number(oldIndexStr);
+                      if (oldIndex >= fromIndex)
+                          itemsToShift.push([oldIndex, instance]);
+                  }
+                  itemsToShift.sort((a, b) => a[0] - b[0]);
+                  for (const [oldIndex] of itemsToShift)
+                      observer.instances.delete(oldIndex);
+                  for (const [oldIndex, instance] of itemsToShift) {
+                      const newIndex = oldIndex + offset;
+                      if (typeof instance === "object" && "dataId" in instance)
+                          instance.dataId = newIndex;
+                      observer.instances.set((oldIndex + offset), instance);
+                  }
+              });
+          }
+      };
+  })();
+
+  var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
   styleInject(css_248z$2);
 
-  //@ts-nocheck
-  /**
-   * @class Reifect
-   * @description A class to manage and apply dynamic properties, styles, classes, and transitions to a
-   * set of objects.
-   *
-   * @template {object} ClassType - The object type this reifier will be applied to.
-   */
-  class Reifect extends StatefulReifect {
-      /**
-       * @description Creates an instance of StatefulReifier.
-       * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
-       */
-      constructor(properties) {
-          properties.states = [""];
-          super(properties);
-      }
-      /**
-       * @description The properties to be assigned to the objects. It could take:
-       * - A record of `{key: value}` pairs.
-       * - An interpolation function that would return a record of `{key: value}` pairs.
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get properties() {
-          const properties = super.properties;
-          if (typeof properties == "object" && "" in properties)
-              return properties[""];
-          else
-              return properties;
-      }
-      set properties(value) {
-          super.properties = value;
-      }
-      /**
-       * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
-       * - A record of `{CSS property: value}` pairs.
-       * - An interpolation function that would return a record of `{key: value}` pairs.
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get styles() {
-          const styles = super.styles;
-          if (typeof styles == "object" && "" in styles)
-              return styles[""];
-          else
-              return styles;
-      }
-      set styles(value) {
-          super.styles = value;
-      }
-      /**
-       * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
-       * - A string of space-separated classes.
-       * - An array of classes.
-       * - An interpolation function that would return a string of space-separated classes or an array of classes.
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get classes() {
-          const classes = super.classes;
-          if (typeof classes == "object" && "" in classes)
-              return classes[""];
-          else
-              return classes;
-      }
-      set classes(value) {
-          super.classes = value;
-      }
-      /**
-       * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
-       * - The object to be replaced with.
-       * - An interpolation function that would return the object to be replaced with.
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get replaceWith() {
-          const replaceWith = super.replaceWith;
-          if (typeof replaceWith == "object" && "" in replaceWith)
-              return replaceWith[""];
-          else
-              return replaceWith;
-      }
-      set replaceWith(value) {
-          super.replaceWith = value;
-      }
-      set transition(value) {
-          super.transition = value;
-      }
-      /**
-       * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-       * could take:
-       * - A string of space-separated CSS properties.
-       * - An array of CSS properties.
-       * - An interpolation function that would return a string of space-separated CSS properties or an array of
-       * CSS properties.
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get transitionProperties() {
-          const transitionProperties = super.transitionProperties;
-          if (typeof transitionProperties == "object" && "" in transitionProperties)
-              return transitionProperties[""];
-          else
-              return transitionProperties;
-      }
-      set transitionProperties(value) {
-          super.transitionProperties = value;
-      }
-      /**
-       * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-       * - A numerical value (in seconds).
-       * - An interpolation function that would return a duration (number in seconds).
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get transitionDuration() {
-          const transitionDuration = super.transitionDuration;
-          if (typeof transitionDuration == "object" && "" in transitionDuration)
-              return transitionDuration[""];
-          else
-              return transitionDuration;
-      }
-      set transitionDuration(value) {
-          super.transitionDuration = value;
-      }
-      /**
-       * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-       * It could take:
-       * - A string representing the timing function to apply.
-       * - An interpolation function that would return a timing function (string).
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get transitionTimingFunction() {
-          const transitionTimingFunction = super.transitionTimingFunction;
-          if (typeof transitionTimingFunction == "object" && "" in transitionTimingFunction)
-              return transitionTimingFunction[""];
-          else
-              return transitionTimingFunction;
-      }
-      set transitionTimingFunction(value) {
-          super.transitionTimingFunction = value;
-      }
-      /**
-       * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-       * - A numerical value (in seconds).
-       * - An interpolation function that would return a delay (number in seconds).
-       *
-       * The interpolation function would take as arguments:
-       * - `index: number`: the index of the object in the applied list.
-       * - `total: number`: the total number of objects in the applied list.
-       * - `object: ClassType`: the object itself.
-       */
-      get transitionDelay() {
-          const transitionDelay = super.transitionDelay;
-          if (typeof transitionDelay == "object" && "" in transitionDelay)
-              return transitionDelay[""];
-          else
-              return transitionDelay;
-      }
-      set transitionDelay(value) {
-          super.transitionDelay = value;
-      }
-      initialize(objects, options) {
-          super.initialize("", objects, options);
-      }
-      apply(objects, options) {
-          super.apply("", objects, options);
-      }
-  }
-
   //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
+  /**
+   * @group Components
+   * @category TurboDrawer
+   */
   (() => {
       let _classDecorators = [define("turbo-drawer")];
       let _classDescriptor;
@@ -9134,13 +18442,13 @@
               _set_thumb_decorators = [auto({
                       setIfUndefined: true,
                       callBefore: function () { if (this.thumb)
-                          $(this).remChild(this.thumb); },
+                          turbo(this).remChild(this.thumb); },
                       preprocessValue: (value) => value instanceof HTMLElement ? value : div(value)
                   })];
               _set_panel_decorators = [auto({
                       setIfUndefined: true,
                       callBefore: function () { if (this.panel)
-                          $(this).remChild(this.panel); },
+                          turbo(this).remChild(this.panel); },
                       preprocessValue: (value) => value instanceof HTMLElement ? value : div(value)
                   })];
               _set_icon_decorators = [auto({
@@ -9201,16 +18509,15 @@
           _panelContainer = __runInitializers(this, _instanceExtraInitializers);
           get panelContainer() { return this._panelContainer; }
           dragging = false;
-          animationOn = false;
           resizeObserver;
           set thumb(value) {
-              $(value).addClass("turbo-drawer-thumb");
+              turbo(value).addClass("turbo-drawer-thumb");
               if (this.initialized)
                   this.setupUILayout();
           }
           get thumb() { return; }
           set panel(value) {
-              $(value).addClass("turbo-drawer-panel");
+              turbo(value).addClass("turbo-drawer-panel");
               if (this.initialized)
                   this.setupUILayout();
           }
@@ -9221,7 +18528,7 @@
           }
           get icon() { return; }
           set hideOverflow(value) {
-              $(this.panelContainer).setStyle("overflow", value ? "hidden" : "");
+              turbo(this.panelContainer).setStyle("overflow", value ? "hidden" : "");
           }
           set attachSideToIconName(value) {
               if (this.icon instanceof TurboIconSwitch)
@@ -9241,10 +18548,10 @@
                   };
           }
           set side(value) {
-              $(this).toggleClass("top-drawer", value == Side.top);
-              $(this).toggleClass("bottom-drawer", value == Side.bottom);
-              $(this).toggleClass("left-drawer", value == Side.left);
-              $(this).toggleClass("right-drawer", value == Side.right);
+              turbo(this).toggleClass("top-drawer", value == Side.top)
+                  .toggleClass("bottom-drawer", value == Side.bottom)
+                  .toggleClass("left-drawer", value == Side.left)
+                  .toggleClass("right-drawer", value == Side.right);
               this.refresh();
           }
           set offset(value) { }
@@ -9254,36 +18561,36 @@
           }
           set open(value) {
               if (value)
-                  this.resizeObserver.observe(this.panel, { box: "border-box" });
+                  this.resizeObserver?.observe(this.panel, { box: "border-box" });
               else
-                  this.resizeObserver.unobserve(this.panel);
+                  this.resizeObserver?.unobserve(this.panel);
               this.refresh();
           }
           set translation(value) {
               switch (this.side) {
                   case Side.top:
                       if (this.hideOverflow)
-                          $(this.panelContainer).setStyle("height", value + "px");
+                          turbo(this.panelContainer).setStyle("height", value + "px");
                       else
-                          $(this).setStyle("transform", `translateY(${-value}px)`);
+                          turbo(this).setStyle("transform", `translateY(${-value}px)`);
                       break;
                   case Side.bottom:
                       if (this.hideOverflow)
-                          $(this.panelContainer).setStyle("height", value + "px");
+                          turbo(this.panelContainer).setStyle("height", value + "px");
                       else
-                          $(this).setStyle("transform", `translateY(${-value}px)`);
+                          turbo(this).setStyle("transform", `translateY(${-value}px)`);
                       break;
                   case Side.left:
                       if (this.hideOverflow)
-                          $(this.panelContainer).setStyle("width", value + "px");
+                          turbo(this.panelContainer).setStyle("width", value + "px");
                       else
-                          $(this).setStyle("transform", `translateX(${-value}px)`);
+                          turbo(this).setStyle("transform", `translateX(${-value}px)`);
                       break;
                   case Side.right:
                       if (this.hideOverflow)
-                          $(this.panelContainer).setStyle("width", value + "px");
+                          turbo(this.panelContainer).setStyle("width", value + "px");
                       else
-                          $(this).setStyle("transform", `translateX(${-value}px)`);
+                          turbo(this).setStyle("transform", `translateX(${-value}px)`);
                       break;
               }
           }
@@ -9291,23 +18598,14 @@
           get translation() { return; }
           initialize() {
               super.initialize();
-              this.transition.attachAll(this, this.panelContainer);
-              let pending = false;
-              this.resizeObserver = new ResizeObserver(entries => {
-                  if (!this.open || this.dragging)
-                      return;
-                  if (pending)
-                      return;
-                  pending = true;
-                  requestAnimationFrame(() => {
-                      const size = Array.isArray(entries[0].borderBoxSize)
-                          ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
-                      this.translation = (this.open ? this.offset.open : this.offset.closed)
-                          + (this.isVertical ? size.blockSize : size.inlineSize);
-                      pending = false;
-                  });
+              turbo(this).show(false);
+              this.enableTransition(false);
+              this.setupResizeObserver();
+              this.open = false;
+              requestAnimationFrame(() => {
+                  turbo(this).show(true);
+                  this.enableTransition(true);
               });
-              this.animationOn = true;
           }
           setupUIElements() {
               super.setupUIElements();
@@ -9315,36 +18613,29 @@
           }
           setupUILayout() {
               super.setupUILayout();
-              console.log(this);
-              console.log(this.panel);
-              $(this).childHandler = this;
-              $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
-              $(this).addChild([this.thumb, this.panelContainer]);
-              $(this.panelContainer).addChild(this.panel);
-              $(this.thumb).addChild(this.icon);
-              $(this).childHandler = this.panel;
+              turbo(this).childHandler = this;
+              turbo(this.panel).addChild(turbo(this).childrenArray.filter(el => el !== this.panelContainer));
+              turbo(this).addChild([this.thumb, this.panelContainer]);
+              turbo(this.panelContainer).addChild(this.panel);
+              turbo(this.thumb).addChild(this.icon);
+              turbo(this).childHandler = this.panel;
           }
           setupUIListeners() {
-              this.thumb.addEventListener(DefaultEventName.click, (e) => {
-                  e.stopImmediatePropagation();
+              turbo(this.thumb).on(DefaultEventName.click, (e) => {
                   this.open = !this.open;
-              });
-              this.thumb.addEventListener(TurboEventName.dragStart, (e) => {
-                  e.stopImmediatePropagation();
+                  return true;
+              }).on(TurboEventName.dragStart, (e) => {
                   this.dragging = true;
-                  if (this.animationOn)
-                      this.transition.enabled = false;
-              });
-              this.thumb.addEventListener(TurboEventName.drag, (e) => {
+                  this.enableTransition(false);
+                  return true;
+              }).on(TurboEventName.drag, (e) => {
                   if (!this.dragging)
                       return;
-                  e.stopImmediatePropagation();
                   this.translation += this.isVertical ? e.scaledDeltaPosition.y : e.scaledDeltaPosition.x;
-              });
-              this.thumb.addEventListener(TurboEventName.dragEnd, (e) => {
+                  return true;
+              }).on(TurboEventName.dragEnd, (e) => {
                   if (!this.dragging)
                       return;
-                  e.stopImmediatePropagation();
                   this.dragging = false;
                   const delta = e.positions.first.sub(e.origins.first);
                   switch (this.side) {
@@ -9373,7 +18664,9 @@
                               this.open = true;
                           break;
                   }
+                  this.enableTransition(true);
                   this.refresh();
+                  return true;
               });
           }
           getOppositeSide(side = this.side) {
@@ -9401,19 +18694,34 @@
               }
           }
           refresh() {
-              if (this.animationOn) {
-                  this.transition.enabled = true;
-                  this.transition.apply();
-              }
               if (this.hideOverflow)
-                  $(this.panel).setStyle("position", "absolute", true);
+                  turbo(this.panel).setStyle("position", "absolute", true);
               if (this.icon instanceof TurboIconSwitch)
                   this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
               requestAnimationFrame(() => {
                   this.translation = (this.open ? this.offset.open : this.offset.closed)
                       + (this.open ? (this.isVertical ? this.panel.offsetHeight : this.panel.offsetWidth) : 0);
                   if (this.hideOverflow)
-                      $(this.panel).setStyle("position", "relative", true);
+                      turbo(this.panel).setStyle("position", "relative", true);
+              });
+          }
+          enableTransition(b) {
+              this.transition.enabled = b;
+              this.transition.apply();
+          }
+          setupResizeObserver() {
+              let mutex = 0;
+              let initializationLock = true;
+              turbo(this).on("transitionstart", () => mutex++)
+                  .on("transitionend", () => { mutex--; initializationLock = false; });
+              turbo(this.panelContainer).on("transitionstart", () => mutex++)
+                  .on("transitionend", () => mutex--);
+              this.resizeObserver = new ResizeObserver(entries => {
+                  if (!this.open || this.dragging || mutex > 0 || initializationLock)
+                      return;
+                  const entry = Array.isArray(entries[0].borderBoxSize) ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
+                  const size = entry[this.isVertical ? "blockSize" : "inlineSize"];
+                  this.translation = (this.open ? this.offset.open : this.offset.closed) + size;
               });
           }
           constructor() {
@@ -9424,6 +18732,10 @@
       return _classThis;
   })();
 
+  /**
+   * @group Components
+   * @category TurboPopup
+   */
   var PopupFallbackMode;
   (function (PopupFallbackMode) {
       PopupFallbackMode["invert"] = "invert";
@@ -9434,6 +18746,10 @@
   var css_248z$1 = "#turbo-popup-parent-element{display:block;left:0;position:fixed;top:0;z-index:1000}.turbo-popup{display:block;inset:auto;overflow:auto;position:fixed}";
   styleInject(css_248z$1);
 
+  /**
+   * @group Components
+   * @category TurboPopup
+   */
   let TurboPopup = (() => {
       let _classDecorators = [define("turbo-popup")];
       let _classDescriptor;
@@ -9556,15 +18872,15 @@
               super.initialize();
               this.show(false);
               if (!this.parentElement)
-                  $(this).addToParent(TurboPopup.parentElement);
+                  turbo(this).addToParent(TurboPopup.parentElement);
           }
           setupUIListeners() {
               super.setupUIListeners();
               document.addEventListener(DefaultEventName.scroll, () => this.show(false), { capture: true, passive: true });
-              window.addEventListener(DefaultEventName.resize, () => { if ($(this).isShown)
+              window.addEventListener(DefaultEventName.resize, () => { if (turbo(this).isShown)
                   this.recomputePosition(); }, { passive: true });
-              $(document).on(DefaultEventName.click, e => {
-                  if (!$(this).isShown)
+              turbo(document.body).on(DefaultEventName.click, e => {
+                  if (!turbo(this).isShown)
                       return;
                   const t = e.target;
                   if (this.contains(t))
@@ -9572,20 +18888,19 @@
                   if (this.anchor instanceof Node && this.anchor.contains(t))
                       return;
                   this.show(false);
-                  return true;
-              });
+              }, { capture: true });
           }
           recomputePosition() {
               if (!this.anchor)
                   return;
-              $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
+              turbo(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
               const left = this.computeAxis(Direction.horizontal);
               const top = this.computeAxis(Direction.vertical);
-              $(this).setStyles({ left: `${left}px`, top: `${top}px` });
+              turbo(this).setStyles({ left: `${left}px`, top: `${top}px` });
               const maxWidth = Math.max(0, Math.min(window.innerWidth - 2 * this.viewportMargin.x, window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x));
               const maxHeight = Math.max(0, Math.min(window.innerHeight - 2 * this.viewportMargin.y, window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y));
-              $(this).setStyle("maxWidth", `${maxWidth}px`);
-              $(this).setStyle("maxHeight", `${maxHeight}px`);
+              turbo(this).setStyle("maxWidth", `${maxWidth}px`);
+              turbo(this).setStyle("maxHeight", `${maxHeight}px`);
           }
           computeAxis(direction) {
               const axis = direction === Direction.horizontal ? "x" : "y";
@@ -9617,19 +18932,15 @@
               return finalOffset;
           }
           show(b) {
-              const sel = $(this);
-              if (sel.isShown === b)
-                  return this;
               if (b) {
                   this.style.visibility = "hidden";
                   this.style.display = "";
                   this.recomputePosition();
                   this.style.visibility = "";
-                  sel.show(true);
+                  turbo(this).show(true);
               }
               else {
-                  $(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
-                  sel.show(false);
+                  turbo(this).setStyles({ maxHeight: "", maxWidth: "" }, true).show(false);
               }
               return this;
           }
@@ -9644,6 +18955,10 @@
       };
       return TurboPopup = _classThis;
   })();
+  /**
+   * @group Components
+   * @category TurboPopup
+   */
   function popup(properties = {}) {
       return element({ ...properties, text: undefined, tag: "turbo-popup" });
   }
@@ -9652,8 +18967,11 @@
   styleInject(css_248z);
 
   /**
-   * Dropdown class for creating Turbo button elements.
    * @class TurboDropdown
+   * @group Components
+   * @category TurboDropdown
+   *
+   * @description Dropdown class for creating Turbo button elements.
    * @extends TurboElement
    */
   (() => {
@@ -9663,11 +18981,15 @@
       let _classThis;
       let _classSuper = TurboElement;
       let _instanceExtraInitializers = [];
-      let _customSelectorTag_decorators;
-      let _customSelectorTag_initializers = [];
-      let _customSelectorTag_extraInitializers = [];
-      let _set_customSelectorClasses_decorators;
-      let _set_customPopupClasses_decorators;
+      let _selectorTag_decorators;
+      let _selectorTag_initializers = [];
+      let _selectorTag_extraInitializers = [];
+      let _selectorClasses_decorators;
+      let _selectorClasses_initializers = [];
+      let _selectorClasses_extraInitializers = [];
+      let _popupClasses_decorators;
+      let _popupClasses_initializers = [];
+      let _popupClasses_extraInitializers = [];
       let _entries_decorators;
       let _entries_initializers = [];
       let _entries_extraInitializers = [];
@@ -9680,9 +19002,17 @@
           static { _classThis = this; }
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _customSelectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
-              _set_customSelectorClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); } })];
-              _set_customPopupClasses_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); } })];
+              _selectorTag_decorators = [auto({ defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorTag"); } })];
+              _selectorClasses_decorators = [auto({
+                      defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultSelectorClasses"); },
+                      callBefore: function () { turbo(this.selector).removeClass(this.selectorClasses); },
+                      callAfter: function () { turbo(this.selector).addClass(this.selectorClasses); }
+                  })];
+              _popupClasses_decorators = [auto({
+                      defaultValueCallback: function () { return this.getPropertiesValue(undefined, "defaultPopupClasses"); },
+                      callBefore: function () { turbo(this.popup).removeClass(this.popupClasses); },
+                      callAfter: function () { turbo(this.popup).addClass(this.popupClasses); }
+                  })];
               _entries_decorators = [expose("select")];
               _values_decorators = [expose("select")];
               _set_selector_decorators = [auto({
@@ -9690,19 +19020,19 @@
                       preprocessValue: function (value) {
                           if (value instanceof HTMLElement)
                               return value;
-                          const text = typeof value === "string" ? value : stringify(this.select.getValue(this.entries[0]));
+                          const text = typeof value === "string" ? value : stringify$1(this.select.getValue(this.entries[0]));
                           if (this.selector instanceof TurboButton)
                               this.selector.text = text;
                           else
-                              return button({ text, elementTag: this.customSelectorTag });
+                              return button({ text, elementTag: this.selectorTag });
                       }
                   })];
               _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
-              __esDecorate(this, null, _set_customSelectorClasses_decorators, { kind: "setter", name: "customSelectorClasses", static: false, private: false, access: { has: obj => "customSelectorClasses" in obj, set: (obj, value) => { obj.customSelectorClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(this, null, _set_customPopupClasses_decorators, { kind: "setter", name: "customPopupClasses", static: false, private: false, access: { has: obj => "customPopupClasses" in obj, set: (obj, value) => { obj.customPopupClasses = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate(null, null, _customSelectorTag_decorators, { kind: "field", name: "customSelectorTag", static: false, private: false, access: { has: obj => "customSelectorTag" in obj, get: obj => obj.customSelectorTag, set: (obj, value) => { obj.customSelectorTag = value; } }, metadata: _metadata }, _customSelectorTag_initializers, _customSelectorTag_extraInitializers);
+              __esDecorate(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
+              __esDecorate(null, null, _selectorClasses_decorators, { kind: "field", name: "selectorClasses", static: false, private: false, access: { has: obj => "selectorClasses" in obj, get: obj => obj.selectorClasses, set: (obj, value) => { obj.selectorClasses = value; } }, metadata: _metadata }, _selectorClasses_initializers, _selectorClasses_extraInitializers);
+              __esDecorate(null, null, _popupClasses_decorators, { kind: "field", name: "popupClasses", static: false, private: false, access: { has: obj => "popupClasses" in obj, get: obj => obj.popupClasses, set: (obj, value) => { obj.popupClasses = value; } }, metadata: _metadata }, _popupClasses_initializers, _popupClasses_extraInitializers);
               __esDecorate(null, null, _entries_decorators, { kind: "field", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
               __esDecorate(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
               __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -9711,42 +19041,45 @@
           }
           //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
           static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
-          popupOpen = (__runInitializers(this, _instanceExtraInitializers), false);
-          customSelectorTag = __runInitializers(this, _customSelectorTag_initializers, void 0);
-          set customSelectorClasses(value) {
-              $(this.selector).addClass(value);
-          }
-          set customPopupClasses(value) {
-              $(this.popup).addClass(value);
-          }
-          entries = (__runInitializers(this, _customSelectorTag_extraInitializers), __runInitializers(this, _entries_initializers, void 0));
+          select = (__runInitializers(this, _instanceExtraInitializers), new TurboSelect({
+              onEntryAdded: (entry) => this.onEntryAdded(entry),
+          }));
+          popupOpen = false;
+          selectorTag = __runInitializers(this, _selectorTag_initializers, void 0);
+          selectorClasses = (__runInitializers(this, _selectorTag_extraInitializers), __runInitializers(this, _selectorClasses_initializers, void 0));
+          popupClasses = (__runInitializers(this, _selectorClasses_extraInitializers), __runInitializers(this, _popupClasses_initializers, void 0));
+          entries = (__runInitializers(this, _popupClasses_extraInitializers), __runInitializers(this, _entries_initializers, void 0));
+          // public set values(values: ValueType[]) {
+          //     this.select.values = values;
+          // }
+          //
+          // public get values(): ValueType[] {
+          //     return this.select.values;
+          // }
           values = (__runInitializers(this, _entries_extraInitializers), __runInitializers(this, _values_initializers, void 0));
           onEntryAdded(entry) {
               this.select.initializeSelection();
-              $(entry).on(DefaultEventName.click, () => {
+              turbo(entry).on(DefaultEventName.click, () => {
                   this.select.select(entry, !this.select.isSelected(entry));
                   this.openPopup(false);
                   return true;
               });
           }
-          select = (__runInitializers(this, _values_extraInitializers), new TurboSelect({
-              onEntryAdded: (entry) => this.onEntryAdded(entry),
-          }));
           /**
            * The dropdown's selector element.
            */
           set selector(value) {
               if (!(value instanceof HTMLElement))
                   return;
-              $(value)
-                  .addClass(this.customSelectorClasses)
+              turbo(value)
+                  .addClass(this.selectorClasses)
                   .on(DefaultEventName.click, (e) => {
                   this.openPopup(!this.popupOpen);
                   return true;
               });
               if (this.popup instanceof TurboPopup)
                   this.popup.anchor = value;
-              $(this).addChild(value);
+              turbo(this).addChild(value);
               if (value instanceof TurboButton)
                   this.select.onSelect = () => value.text = this.stringSelectedValue;
           }
@@ -9757,19 +19090,16 @@
           set popup(value) {
               if (value instanceof TurboPopup)
                   value.anchor = this.selector;
-              $(value).addClass(this.customPopupClasses);
+              turbo(value).addClass(this.popupClasses);
               this.select.parent = value;
           }
           initialize() {
               super.initialize();
               this.selector;
-          }
-          connectedCallback() {
-              super.connectedCallback();
-              $(document).on(DefaultEventName.click, e => {
+              turbo(document.body).on(DefaultEventName.click, () => e => {
                   if (this.popupOpen && !this.contains(e.target))
                       this.openPopup(false);
-              });
+              }, { capture: true });
           }
           openPopup(b) {
               if (this.popupOpen == b)
@@ -9778,7 +19108,7 @@
               if ("show" in this.popup && typeof this.popup.show === "function")
                   this.popup.show(b);
               else
-                  $(this.popup).show(b);
+                  turbo(this.popup).show(b);
           }
           get selectedValues() {
               return this.select.selectedValues;
@@ -9795,6 +19125,10 @@
           get stringSelectedValue() {
               return this.select.stringSelectedValue;
           }
+          constructor() {
+              super(...arguments);
+              __runInitializers(this, _values_extraInitializers);
+          }
           static {
               __runInitializers(_classThis, _classExtraInitializers);
           }
@@ -9802,6 +19136,10 @@
       return _classThis;
   })();
 
+  /**
+   * @group Components
+   * @category TurboMarkingMenu
+   */
   (() => {
       let _classDecorators = [define("turbo-marking-menu")];
       let _classDescriptor;
@@ -9850,6 +19188,9 @@
 
   /**
    * @class TurboSelectWheel
+   * @group Components
+   * @category TurboSelectWheel
+   *
    * @extends TurboSelect
    * @description Class to create a dynamic selection wheel.
    * @template {string} ValueType
@@ -10156,6 +19497,9 @@
 
   /**
    * @class TurboProxiedElement
+   * @group TurboElement
+   * @category TurboProxiedElement
+   *
    * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
    * @template {TurboView} ViewType - The element's view type, if initializing MVC.
    * @template {object} DataType - The element's data type, if initializing MVC.
@@ -10203,478 +19547,6 @@
       defineMvcAccessors(TurboProxiedElement);
       defineUIPrototype(TurboProxiedElement);
   })();
-
-  /**
-   * Utility module to work with key-value stores.
-   *
-   * @module map
-   */
-
-  /**
-   * Creates a new Map instance.
-   *
-   * @function
-   * @return {Map<any, any>}
-   *
-   * @function
-   */
-  const create$5 = () => new Map();
-  /* c8 ignore end */
-
-  /**
-   * Common Math expressions.
-   *
-   * @module math
-   */
-
-  const floor = Math.floor;
-
-  /**
-   * @function
-   * @param {number} a
-   * @param {number} b
-   * @return {number} The smaller element of a and b
-   */
-  const min = (a, b) => a < b ? a : b;
-
-  /**
-   * @function
-   * @param {number} a
-   * @param {number} b
-   * @return {number} The bigger element of a and b
-   */
-  const max = (a, b) => a > b ? a : b;
-  const BIT8 = 128;
-  const BITS7 = 127;
-
-  /**
-   * @param {string} s
-   * @return {string}
-   */
-  const toLowerCase = s => s.toLowerCase();
-
-  const trimLeftRegex = /^\s*/g;
-
-  /**
-   * @param {string} s
-   * @return {string}
-   */
-  const trimLeft = s => s.replace(trimLeftRegex, '');
-
-  const fromCamelCaseRegex = /([A-Z])/g;
-
-  /**
-   * @param {string} s
-   * @param {string} separator
-   * @return {string}
-   */
-  const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`));
-
-  /**
-   * @param {string} str
-   * @return {Uint8Array}
-   */
-  const _encodeUtf8Polyfill = str => {
-    const encodedString = unescape(encodeURIComponent(str));
-    const len = encodedString.length;
-    const buf = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      buf[i] = /** @type {number} */ (encodedString.codePointAt(i));
-    }
-    return buf
-  };
-
-  /* c8 ignore next */
-  const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
-
-  /**
-   * @param {string} str
-   * @return {Uint8Array}
-   */
-  const _encodeUtf8Native = str => utf8TextEncoder.encode(str);
-
-  /**
-   * @param {string} str
-   * @return {Uint8Array}
-   */
-  /* c8 ignore next */
-  const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill;
-
-  /* c8 ignore next */
-  let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
-
-  /* c8 ignore start */
-  if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
-    // Safari doesn't handle BOM correctly.
-    // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
-    // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
-    // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
-    // Another issue is that from then on no BOM chars are recognized anymore
-    /* c8 ignore next */
-    utf8TextDecoder = null;
-  }
-
-  /**
-   * Write one byte to the encoder.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {number} num The byte that is to be encoded.
-   */
-  const write = (encoder, num) => {
-    const bufferLen = encoder.cbuf.length;
-    if (encoder.cpos === bufferLen) {
-      encoder.bufs.push(encoder.cbuf);
-      encoder.cbuf = new Uint8Array(bufferLen * 2);
-      encoder.cpos = 0;
-    }
-    encoder.cbuf[encoder.cpos++] = num;
-  };
-
-  /**
-   * Write a variable length unsigned integer. Max encodable integer is 2^53.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {number} num The number that is to be encoded.
-   */
-  const writeVarUint = (encoder, num) => {
-    while (num > BITS7) {
-      write(encoder, BIT8 | (BITS7 & num));
-      num = floor(num / 128); // shift >>> 7
-    }
-    write(encoder, BITS7 & num);
-  };
-
-  /**
-   * A cache to store strings temporarily
-   */
-  const _strBuffer = new Uint8Array(30000);
-  const _maxStrBSize = _strBuffer.length / 3;
-
-  /**
-   * Write a variable length string.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {String} str The string that is to be encoded.
-   */
-  const _writeVarStringNative = (encoder, str) => {
-    if (str.length < _maxStrBSize) {
-      // We can encode the string into the existing buffer
-      /* c8 ignore next */
-      const written = utf8TextEncoder.encodeInto(str, _strBuffer).written || 0;
-      writeVarUint(encoder, written);
-      for (let i = 0; i < written; i++) {
-        write(encoder, _strBuffer[i]);
-      }
-    } else {
-      writeVarUint8Array(encoder, encodeUtf8(str));
-    }
-  };
-
-  /**
-   * Write a variable length string.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {String} str The string that is to be encoded.
-   */
-  const _writeVarStringPolyfill = (encoder, str) => {
-    const encodedString = unescape(encodeURIComponent(str));
-    const len = encodedString.length;
-    writeVarUint(encoder, len);
-    for (let i = 0; i < len; i++) {
-      write(encoder, /** @type {number} */ (encodedString.codePointAt(i)));
-    }
-  };
-
-  /**
-   * Write a variable length string.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {String} str The string that is to be encoded.
-   */
-  /* c8 ignore next */
-  (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
-
-  /**
-   * Append fixed-length Uint8Array to the encoder.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {Uint8Array} uint8Array
-   */
-  const writeUint8Array = (encoder, uint8Array) => {
-    const bufferLen = encoder.cbuf.length;
-    const cpos = encoder.cpos;
-    const leftCopyLen = min(bufferLen - cpos, uint8Array.length);
-    const rightCopyLen = uint8Array.length - leftCopyLen;
-    encoder.cbuf.set(uint8Array.subarray(0, leftCopyLen), cpos);
-    encoder.cpos += leftCopyLen;
-    if (rightCopyLen > 0) {
-      // Still something to write, write right half..
-      // Append new buffer
-      encoder.bufs.push(encoder.cbuf);
-      // must have at least size of remaining buffer
-      encoder.cbuf = new Uint8Array(max(bufferLen * 2, rightCopyLen));
-      // copy array
-      encoder.cbuf.set(uint8Array.subarray(leftCopyLen));
-      encoder.cpos = rightCopyLen;
-    }
-  };
-
-  /**
-   * Append an Uint8Array to Encoder.
-   *
-   * @function
-   * @param {Encoder} encoder
-   * @param {Uint8Array} uint8Array
-   */
-  const writeVarUint8Array = (encoder, uint8Array) => {
-    writeVarUint(encoder, uint8Array.byteLength);
-    writeUint8Array(encoder, uint8Array);
-  };
-
-  /* eslint-env browser */
-
-  crypto.getRandomValues.bind(crypto);
-
-  /**
-   * `Promise.all` wait for all promises in the array to resolve and return the result
-   * @template {unknown[] | []} PS
-   *
-   * @param {PS} ps
-   * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
-   */
-  Promise.all.bind(Promise);
-
-  /**
-   * Often used conditions.
-   *
-   * @module conditions
-   */
-
-  /**
-   * @template T
-   * @param {T|null|undefined} v
-   * @return {T|null}
-   */
-  /* c8 ignore next */
-  const undefinedToNull = v => v === undefined ? null : v;
-
-  /* eslint-env browser */
-
-  /**
-   * Isomorphic variable storage.
-   *
-   * Uses LocalStorage in the browser and falls back to in-memory storage.
-   *
-   * @module storage
-   */
-
-  /* c8 ignore start */
-  class VarStoragePolyfill {
-    constructor () {
-      this.map = new Map();
-    }
-
-    /**
-     * @param {string} key
-     * @param {any} newValue
-     */
-    setItem (key, newValue) {
-      this.map.set(key, newValue);
-    }
-
-    /**
-     * @param {string} key
-     */
-    getItem (key) {
-      return this.map.get(key)
-    }
-  }
-  /* c8 ignore stop */
-
-  /**
-   * @type {any}
-   */
-  let _localStorage = new VarStoragePolyfill();
-  let usePolyfill = true;
-
-  /* c8 ignore start */
-  try {
-    // if the same-origin rule is violated, accessing localStorage might thrown an error
-    if (typeof localStorage !== 'undefined' && localStorage) {
-      _localStorage = localStorage;
-      usePolyfill = false;
-    }
-  } catch (e) { }
-  /* c8 ignore stop */
-
-  /**
-   * This is basically localStorage in browser, or a polyfill in nodejs
-   */
-  /* c8 ignore next */
-  const varStorage = _localStorage;
-
-  /**
-   * @template V
-   * @template {V} OPTS
-   *
-   * @param {V} value
-   * @param {Array<OPTS>} options
-   */
-  // @ts-ignore
-  const isOneOf = (value, options) => options.includes(value);
-
-  /**
-   * Isomorphic module to work access the environment (query params, env variables).
-   *
-   * @module environment
-   */
-
-
-  /* c8 ignore next 2 */
-  // @ts-ignore
-  const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
-
-  /**
-   * @type {Map<string,string>}
-   */
-  let params;
-
-  /* c8 ignore start */
-  const computeParams = () => {
-    if (params === undefined) {
-      if (isNode) {
-        params = create$5();
-        const pargs = process.argv;
-        let currParamName = null;
-        for (let i = 0; i < pargs.length; i++) {
-          const parg = pargs[i];
-          if (parg[0] === '-') {
-            if (currParamName !== null) {
-              params.set(currParamName, '');
-            }
-            currParamName = parg;
-          } else {
-            if (currParamName !== null) {
-              params.set(currParamName, parg);
-              currParamName = null;
-            }
-          }
-        }
-        if (currParamName !== null) {
-          params.set(currParamName, '');
-        }
-        // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
-      } else if (typeof location === 'object') {
-        params = create$5(); // eslint-disable-next-line no-undef
-        (location.search || '?').slice(1).split('&').forEach((kv) => {
-          if (kv.length !== 0) {
-            const [key, value] = kv.split('=');
-            params.set(`--${fromCamelCase(key, '-')}`, value);
-            params.set(`-${fromCamelCase(key, '-')}`, value);
-          }
-        });
-      } else {
-        params = create$5();
-      }
-    }
-    return params
-  };
-  /* c8 ignore stop */
-
-  /**
-   * @param {string} name
-   * @return {boolean}
-   */
-  /* c8 ignore next */
-  const hasParam = (name) => computeParams().has(name);
-
-  /**
-   * @param {string} name
-   * @return {string|null}
-   */
-  /* c8 ignore next 4 */
-  const getVariable = (name) =>
-    isNode
-      ? undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
-      : undefinedToNull(varStorage.getItem(name));
-
-  /**
-   * @param {string} name
-   * @return {boolean}
-   */
-  /* c8 ignore next 2 */
-  const hasConf = (name) =>
-    hasParam('--' + name) || getVariable(name) !== null;
-
-  /* c8 ignore next */
-  hasConf('production');
-
-  /* c8 ignore next 2 */
-  const forceColor = isNode &&
-    isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
-
-  /* c8 ignore start */
-  /**
-   * Color is enabled by default if the terminal supports it.
-   *
-   * Explicitly enable color using `--color` parameter
-   * Disable color using `--no-color` parameter or using `NO_COLOR=1` environment variable.
-   * `FORCE_COLOR=1` enables color and takes precedence over all.
-   */
-  forceColor || (
-    !hasParam('--no-colors') && // @todo deprecate --no-colors
-    !hasConf('no-color') &&
-    (!isNode || process.stdout.isTTY) && (
-      !isNode ||
-      hasParam('--color') ||
-      getVariable('COLORTERM') !== null ||
-      (getVariable('TERM') || '').includes('color')
-    )
-  );
-
-  /* eslint-env browser */
-
-
-  /** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null);
-
-  getVariable('node_env') === 'development';
-
-  /** eslint-env browser */
-
-
-  const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
-    ? globalThis
-    : typeof window !== 'undefined'
-      ? window
-      // @ts-ignore
-      : typeof global !== 'undefined' ? global : {});
-
-  const importIdentifier = '__ $YJS$ __';
-
-  if (glo[importIdentifier] === true) {
-    /**
-     * Dear reader of this message. Please take this seriously.
-     *
-     * If you see this message, make sure that you only import one version of Yjs. In many cases,
-     * your package manager installs two versions of Yjs that are used by different packages within your project.
-     * Another reason for this message is that some parts of your project use the commonjs version of Yjs
-     * and others use the EcmaScript version of Yjs.
-     *
-     * This often leads to issues that are hard to debug. We often need to perform constructor checks,
-     * e.g. `struct instanceof GC`. If you imported different versions of Yjs, it is impossible for us to
-     * do the constructor checks anymore - which might break the CRDT algorithm.
-     *
-     * https://github.com/yjs/yjs/issues/438
-     */
-    console.error('Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438');
-  }
-  glo[importIdentifier] = true;
 
   //Creating an element in JS and adding it to the document
   const heading = document.createElement("h1");

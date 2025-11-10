@@ -1,6 +1,4 @@
 import {TurboIconProperties, TurboIconConfig} from "./icon.types";
-import {fetchSvg} from "../../../utils/dataManipulation/svgManipulation";
-import {getFileExtension} from "../../../utils/dataManipulation/stringManipulation";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
@@ -14,10 +12,15 @@ import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
 import {cache} from "../../../decorators/cache/cache";
 import {isUndefined} from "../../../utils/dataManipulation/misc";
+import {getFileExtension} from "../../../utils/dataManipulation/string";
+import {fetchSvg} from "../../../utils/dataManipulation/svg";
 
 /**
- * Icon class for creating icon elements.
  * @class TurboIcon
+ * @group Components
+ * @category TurboIcon
+ *
+ * @description Icon class for creating icon elements.
  * @extends TurboElement
  */
 @define("turbo-icon")
@@ -132,7 +135,7 @@ class TurboIcon<
         }
 
         this.clear();
-        if (!this.icon) return;
+        if (!this.icon || this.icon.length === 0) return;
 
         const token = ++this._loadToken;
         const element = this.getLoader(type)(path);
@@ -171,6 +174,11 @@ class TurboIcon<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboIcon
+ * @param properties
+ */
 function icon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

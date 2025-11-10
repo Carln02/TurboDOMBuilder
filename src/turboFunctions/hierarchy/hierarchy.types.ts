@@ -1,7 +1,8 @@
-import {ValidElement, ValidTag} from "../../core.types";
-
 /**
  * @type {ChildHandler}
+ * @group Types
+ * @category Hierarchy
+ *
  * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
  */
 type ChildHandler = Node | ShadowRoot;

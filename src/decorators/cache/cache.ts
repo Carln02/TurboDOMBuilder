@@ -4,6 +4,9 @@ import {cacheKeySymbolFor, initInvalidation, keyFromArgs} from "./cache.utils";
 /**
  * @decorator
  * @function cache
+ * @group Decorators
+ * @category Cache
+ *
  * @description Stage-3 decorator that memorizes expensive reads.
  *
  * **What it does**
@@ -171,6 +174,9 @@ function cache(options: CacheOptions = {}) {
 
 /**
  * @function clearCache
+ * @group Decorators
+ * @category Cache
+ *
  * @description Clear *all* cache entries created by `@cache` on an instance.
  * @param {any} instance - The instance for which the cache should be cleared.
  */
@@ -184,6 +190,9 @@ function clearCache(instance: any): void {
 
 /**
  * @function clearCacheEntry
+ * @group Decorators
+ * @category Cache
+ *
  * @description Clear a specific cache entry for a given method, function, or getter.
  * @param {any} instance - The instance for which the cache should be cleared.
  * @param {string | Function} field - The name (or the function itself) of the field to clear.

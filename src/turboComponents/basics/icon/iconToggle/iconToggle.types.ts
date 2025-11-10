@@ -4,6 +4,10 @@ import {TurboView} from "../../../../mvc/core/view";
 import {TurboModel} from "../../../../mvc/core/model";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 
+/**
+ * @group Components
+ * @category TurboIconToggle
+ */
 type TurboIconToggleProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
@@ -16,7 +20,7 @@ type TurboIconToggleProperties<
     onToggle?: (value: boolean, el: TurboIconToggle) => void,
 }
 
-declare module "../../../../core.types" {
+declare module "../../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-icon-toggle": TurboIconToggle
     }

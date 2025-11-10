@@ -1,7 +1,6 @@
 import {icon, TurboIcon} from "../icon/icon";
 import {TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
 import {TurboView} from "../../../mvc/core/view";
-import {ValidElement, ValidTag} from "../../../core.types";
 import {TurboModel} from "../../../mvc/core/model";
 import {define} from "../../../decorators/define/define";
 import {TurboElement} from "../../../turboElement/turboElement";
@@ -10,11 +9,15 @@ import {auto} from "../../../decorators/auto/auto";
 import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {ValidElement, ValidTag} from "../../../types/element.types";
 
 /**
- * Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
- * its left and/or right).
  * @class TurboRichElement
+ * @group Components
+ * @category TurboRichElement
+ *
+ * @description Class for creating a rich turbo element (an element that is possibly accompanied by icons (or other elements) on
+ * its left and/or right).
  * @extends TurboElement
  * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
@@ -205,6 +208,11 @@ class TurboRichElement<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboRichElement
+ * @param properties
+ */
 function richElement<
     ElementTag extends ValidTag = any,
     ViewType extends TurboView = TurboView<any, any>,

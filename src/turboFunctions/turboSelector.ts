@@ -1,5 +1,7 @@
 /**
  * @class TurboSelector
+ * @group TurboSelector
+ *
  * @template {object} Type - The type of the object it wraps.
  * @description Selector class that wraps an object and augments it with useful functions to manipulate it. It also
  * proxies the object, so you can access properties and methods on the underlying object directly through the selector.

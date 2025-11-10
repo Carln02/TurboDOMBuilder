@@ -5,8 +5,20 @@ import {
     TurboEventManagerProperties,
     TurboEventManagerStateProperties
 } from "./turboEventManager.types";
-import {Delegate} from "../delegate/delegate";
-import {Point} from "../../utils/datatypes/point/point";
+import {$} from "../../turboFunctions/turboFunctions";
+import {auto} from "../../decorators/auto/auto";
+import {TurboEventManagerModel} from "./turboEventManager.model";
+import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
+import {TurboEventManagerWheelController} from "./controllers/turboEventManager.wheelController";
+import {TurboEventManagerPointerController} from "./controllers/turboEventManager.pointerController";
+import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
+import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
+import {controller} from "../../decorators/mvc";
+import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
+import {isUndefined} from "../../utils/dataManipulation/misc";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
+import {Point} from "../../turboComponents/datatypes/point/point";
+import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
 import {
     DefaultClickEventName,
     DefaultDragEventName,
@@ -19,24 +31,16 @@ import {
     TurboKeyEventName,
     TurboMoveEventName,
     TurboWheelEventName
-} from "../eventNaming";
-import {$} from "../../turboFunctions/turboFunctions";
-import {auto} from "../../decorators/auto/auto";
-import {TurboEventManagerModel} from "./turboEventManager.model";
-import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
-import {TurboEventManagerWheelController} from "./controllers/turboEventManager.wheelController";
-import {TurboEventManagerPointerController} from "./controllers/turboEventManager.pointerController";
-import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
-import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
-import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
-import {controller} from "../../decorators/mvc";
-import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
-import {isUndefined} from "../../utils/dataManipulation/misc";
+} from "../../types/eventNaming.types";
 
 //TODO Create merged events maybe --> fire event x when "mousedown" | "touchstart" | "mousemove" etc.
 //ToDO Create "interaction" event --> when element interacted with
 
 /**
+ * @class TurboEventManager
+ * @group Event Handling
+ * @category TurboEventManager
+ *
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
  * easier management of input.
  */

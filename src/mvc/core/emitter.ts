@@ -2,6 +2,9 @@ import {TurboModel} from "./model";
 
 /**
  * @class TurboEmitter
+ * @group MVC
+ * @category Emitter
+ *
  * @template {TurboModel} ModelType -The element's MVC model type.
  * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
  * MVC structure to fire events or listen to some, with various methods.

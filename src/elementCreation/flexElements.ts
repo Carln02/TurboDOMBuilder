@@ -1,9 +1,12 @@
 import {element} from "./element";
-import {HTMLTag, ValidHTMLElement} from "../core.types";
 import {$} from "../turboFunctions/turboFunctions";
 import {TurboProperties} from "../turboFunctions/element/element.types";
+import {HTMLTag, ValidHTMLElement} from "../types/htmlElement.types";
 
 /**
+ * @group Element Creation
+ * @category Flex Elements
+ *
  * @description Create a flex column element.
  * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
  * @returns {ValidHTMLElement<Tag>} The created flex element.
@@ -16,6 +19,9 @@ function flexCol<Tag extends HTMLTag>(properties?: TurboProperties<Tag>): ValidH
 }
 
 /**
+ * @group Element Creation
+ * @category Flex Elements
+ *
  * @description Create a flex column element.
  * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
  * @returns {ValidHTMLElement<Tag>} The created flex element.
@@ -28,6 +34,9 @@ function flexColCenter<Tag extends HTMLTag>(properties?: TurboProperties<Tag>): 
 }
 
 /**
+ * @group Element Creation
+ * @category Flex Elements
+ *
  * @description Create a flex row element.
  * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
  * @returns {ValidHTMLElement<Tag>} The created flex element.
@@ -40,6 +49,9 @@ function flexRow<Tag extends HTMLTag>(properties?: TurboProperties<Tag>): ValidH
 }
 
 /**
+ * @group Element Creation
+ * @category Flex Elements
+ *
  * @description Create a flex row element.
  * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
  * @returns {ValidHTMLElement<Tag>} The created flex element.
@@ -52,6 +64,9 @@ function flexRowCenter<Tag extends HTMLTag>(properties?: TurboProperties<Tag>): 
 }
 
 /**
+ * @group Element Creation
+ * @category Flex Elements
+ *
  * @description Create a spacer element.
  * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
  * @returns {ValidHTMLElement<Tag>} The created spacer element.

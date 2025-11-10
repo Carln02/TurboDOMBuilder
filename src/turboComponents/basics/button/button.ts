@@ -3,14 +3,17 @@ import "./button.css";
 import {richElement, TurboRichElement} from "../richElement/richElement";
 import {TurboRichElementProperties} from "../richElement/richElement.types";
 import {define} from "../../../decorators/define/define";
-import {ValidTag} from "../../../core.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {ValidTag} from "../../../types/element.types";
 
 /**
- * Button class for creating Turbo button elements.
  * @class TurboButton
+ * @group Components
+ * @category TurboButton
+ *
+ * @description Button class for creating Turbo button elements.
  * @extends TurboElement
  */
 @define("turbo-button")
@@ -24,6 +27,11 @@ class TurboButton<
     public static readonly config: TurboButtonConfig = {...TurboRichElement.config, defaultElementTag: "h4"};
 }
 
+/**
+ * @group Components
+ * @category TurboButton
+ * @param properties
+ */
 function button<
     ElementTag extends ValidTag = "p",
     ViewType extends TurboView = TurboView<any, any>,

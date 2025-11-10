@@ -1,13 +1,16 @@
-import {camelToKebabCase, kebabToCamelCase, parse, stringify} from "../../utils/dataManipulation/stringManipulation";
+import {camelToKebabCase, kebabToCamelCase, parse, stringify} from "../../utils/dataManipulation/string";
 import {DefineOptions} from "./define.types";
 import {DefineDecoratorUtils} from "./define.utils";
-import {getSuperMethod} from "../../utils/dataManipulation/prototypeManipulation";
+import {getSuperMethod} from "../../utils/dataManipulation/prototype";
 
 const utils = new DefineDecoratorUtils();
 
 /**
  * @decorator
  * @function define
+ * @group Decorators
+ * @category Attributes & DOM
+ *
  * @description Stage-3 **class** decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
  * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).

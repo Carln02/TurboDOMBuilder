@@ -1,9 +1,12 @@
-import {Delegate} from "../../eventHandling/delegate/delegate";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ListenerOptions} from "../event/event.types";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 /**
  * @type {MakeSubstrateOptions}
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
  * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
  * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
@@ -15,6 +18,9 @@ type MakeSubstrateOptions = {
 
 /**
  * @type {SubstrateSolverProperties}
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
  * solvers when executing them via {@link resolveSubstrate}.
  * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
@@ -41,6 +47,9 @@ type SubstrateSolverProperties = {
 
 /**
  * @type {SubstrateSolver}
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing the signature of solver functions that substrates expect.
  */
 type SubstrateSolver = (properties: SubstrateSolverProperties, ...args: any[]) => any;

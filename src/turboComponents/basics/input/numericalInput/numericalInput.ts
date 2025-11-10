@@ -7,6 +7,10 @@ import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {element} from "../../../../elementCreation/element";
 import {TurboNumericalInputProperties} from "./numericalInput.types";
 
+/**
+ * @group Components
+ * @category TurboNumericalInput
+ */
 @define("turbo-numerical-input")
 class TurboNumericalInput<
     ViewType extends TurboView = TurboView<any, any>,
@@ -41,6 +45,10 @@ class TurboNumericalInput<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboNumericalInput
+ */
 function numericalInput<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

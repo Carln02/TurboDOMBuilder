@@ -54,8 +54,12 @@ async function processDirectory(dirPath) {
                 const match = exportLine.match(/export\s*{\s*([^}]*)\s*}/);
                 if (match) {
                     const exportContent = match[1];
-                    indexContent += `import {${exportContent}} from "./${relativePath}";\n`;
-                    indexContent += `export {${exportContent}};\n`;
+                    if (exportContent) {
+                        indexContent += `import {${exportContent}} from "./${relativePath}";\n`;
+                        indexContent += `export {${exportContent}};\n`;
+                    } else {
+                        indexContent += `import "./${relativePath}";\n`;
+                    }
                 } else {
                     console.error(`Failed to match export line: ${exportLine}`);
                 }

@@ -1,9 +1,3 @@
-import {TurboMarkingMenuProperties} from "./markingMenu.types";
-import {TurboSelect} from "../../basics/select/select";
-import {Point} from "../../../utils/datatypes/point/point";
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
-import {getEventPosition} from "../../../utils/events/events";
 import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboView} from "../../../mvc/core/view";
@@ -12,7 +6,13 @@ import {TurboModel} from "../../../mvc/core/model";
 import {auto} from "../../../decorators/auto/auto";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {TurboElement} from "../../../turboElement/turboElement";
+import {InOut} from "../../../types/enums.types";
+import {Point} from "../../datatypes/point/point";
 
+/**
+ * @group Components
+ * @category TurboMarkingMenu
+ */
 @define("turbo-marking-menu")
 class TurboMarkingMenu<
     ValueType = string,

@@ -1,3 +1,7 @@
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function areEqual<Type = any>(...entries: Type[]): boolean {
     if (entries.length < 2) return true;
     for (let i = 0; i < entries.length - 1; i++) {
@@ -6,6 +10,10 @@ function areEqual<Type = any>(...entries: Type[]): boolean {
     return true;
 }
 
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function equalToAny<Type = any>(entry: Type, ...values: Type[]): boolean {
     if (values.length < 1) return true;
     for (const value of values) {
@@ -14,6 +22,10 @@ function equalToAny<Type = any>(entry: Type, ...values: Type[]): boolean {
     return false;
 }
 
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]): boolean {
     if (entries.length < 1) return true;
     for (const entry of entries) {

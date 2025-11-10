@@ -6,6 +6,9 @@ import {TurboIcon} from "./icon";
 
 /**
  * @type {TurboIconProperties}
+ * @group Components
+ * @category TurboIcon
+ *
  * @description Properties object that extends TurboElementProperties with properties specific to icons.
  * @extends TurboProperties
  *
@@ -39,6 +42,9 @@ type TurboIconProperties<
 
 /**
  * @type {TurboIconConfig}
+ * @group Components
+ * @category TurboIcon
+ *
  * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
  *
  * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
@@ -52,7 +58,7 @@ type TurboIconConfig = TurboElementConfig & {
     customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>
 }
 
-declare module "../../../core.types" {
+declare module "../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-icon": TurboIcon
     }

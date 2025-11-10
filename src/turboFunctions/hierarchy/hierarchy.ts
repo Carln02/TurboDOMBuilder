@@ -1,13 +1,12 @@
 import "./hierarchy.types";
-import {ValidElement, ValidTag} from "../../core.types";
 import {$} from "../turboFunctions";
 import {HierarchyFunctionsUtils} from "./hierarchy.utils";
 import {TurboSelector} from "../turboSelector";
-import {element} from "../../elementCreation/element";
+import {ValidElement, ValidTag} from "../../types/element.types";
 
 const utils = new HierarchyFunctionsUtils();
 
-function setupHierarchyFunctions() {
+export function setupHierarchyFunctions() {
     //Readonly fields
 
     /**
@@ -391,5 +390,3 @@ function setupHierarchyFunctions() {
         return this;
     };
 }
-
-export {setupHierarchyFunctions};

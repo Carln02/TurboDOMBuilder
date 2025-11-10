@@ -1,7 +1,7 @@
 import {TurboSelector} from "../turboSelector";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ToolBehaviorCallback} from "./tool.types";
-import {Delegate} from "../../eventHandling/delegate/delegate";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 type ElementData = {
     tools: Set<string>,

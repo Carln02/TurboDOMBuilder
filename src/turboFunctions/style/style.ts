@@ -1,11 +1,11 @@
 import {StylesType} from "./style.types";
 import {TurboSelector} from "../turboSelector";
-import {PartialRecord} from "../../core.types";
 import {StyleFunctionsUtils} from "./style.utils";
+import {PartialRecord} from "../../types/basic.types";
 
 const utils = new StyleFunctionsUtils();
 
-function setupStyleFunctions() {
+export function setupStyleFunctions() {
     /**
      * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
      */
@@ -86,5 +86,3 @@ function setupStyleFunctions() {
         return this;
     };
 }
-
-export {setupStyleFunctions};

@@ -1,11 +1,14 @@
-import {DefaultEventNameEntry} from "../../eventHandling/eventNaming";
-import {Delegate} from "../../eventHandling/delegate/delegate";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Turbo} from "../turboFunctions.types";
+import {DefaultEventNameEntry} from "../../types/eventNaming.types";
 
 /**
  * @type {MakeToolOptions}
+ * @group Types
+ * @category Tool
+ *
  * @description Options used to create a new tool attached to an element via {@link makeTool}.
  * @property {() => void} [onActivate] - Function to execute when the tool is activated.
  * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
@@ -31,6 +34,9 @@ type MakeToolOptions = {
 
 /**
  * @type {ToolBehaviorCallback}
+ * @group Types
+ * @category Tool
+ *
  * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
  * leading to stopping the propagation of the event.
  * @param {Event} event - The original DOM/Turbo event.
@@ -42,6 +48,9 @@ type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorO
 
 /**
  * @type {ToolBehaviorOptions}
+ * @group Types
+ * @category Tool
+ *
  * @description Options object passed to tool behaviors at execution time.
  * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
  * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.

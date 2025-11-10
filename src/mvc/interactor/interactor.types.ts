@@ -1,14 +1,17 @@
 import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {PartialRecord} from "../../core.types";
-import {DefaultEventNameKey} from "../../eventHandling/eventNaming";
 import {ListenerOptions} from "../../turboFunctions/event/event.types";
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
+import {DefaultEventNameKey} from "../../types/eventNaming.types";
+import {PartialRecord} from "../../types/basic.types";
 
 /**
  * @type {TurboInteractorProperties}
+ * @group MVC
+ * @category Interactor
+ *
  * @extends {TurboControllerProperties}
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.

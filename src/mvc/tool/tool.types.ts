@@ -1,14 +1,17 @@
 import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {DefaultEventNameEntry} from "../../eventHandling/eventNaming";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Turbo} from "../../turboFunctions/turboFunctions.types";
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
+import {DefaultEventNameEntry} from "../../types/eventNaming.types";
 
 /**
  * @type {TurboToolProperties}
+ * @group MVC
+ * @category Tool
+ *
  * @extends TurboControllerProperties
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.

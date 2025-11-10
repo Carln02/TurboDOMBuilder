@@ -1,9 +1,17 @@
+/**
+ * @group Utilities
+ * @category Numbers
+ */
 function trim(value: number, max: number, min: number = 0): number {
     if (value < min) value = min;
     if (value > max) value = max;
     return value;
 }
 
+/**
+ * @group Utilities
+ * @category Numbers
+ */
 function mod(value: number, modValue: number = 0): number {
     while (value < 0) value += modValue;
     while (value >= modValue) value -= modValue;

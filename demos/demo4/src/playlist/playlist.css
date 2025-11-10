@@ -28,10 +28,6 @@ turbo-playlist > .turbo-drawer {
     transform: translateX(-50%);
 }
 
-turbo-playlist * {
-    transition: all 0.05s ease-in-out;
-}
-
 turbo-playlist > .turbo-drawer .turbo-drawer-panel {
     padding: var(--gap-medium);
     border-radius: var(--radius-small);

@@ -1,4 +1,6 @@
 /**
+ * @group Utilities
+ * @category CSS
  * @description Constructs a single CSS string from a template literal containing CSS rules.
  */
 function css(strings: TemplateStringsArray, ...values: any[]): string {

@@ -4,7 +4,7 @@ import {ClassFunctionsUtils} from "./class.utils";
 
 const utils = new ClassFunctionsUtils();
 
-function setupClassFunctions() {
+export function setupClassFunctions() {
     /**
      * @description Add one or more CSS classes to the element.
      * @param {string | string[]} [classes] - String of classes separated by spaces, or array of strings.
@@ -53,5 +53,3 @@ function setupClassFunctions() {
         return true;
     }
 }
-
-export {setupClassFunctions};

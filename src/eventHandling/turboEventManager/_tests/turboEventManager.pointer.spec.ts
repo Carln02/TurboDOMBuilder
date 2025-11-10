@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {TurboEventManager} from "../turboEventManager";
-import {TurboEventName} from "../../eventNaming";
+import {TurboEventName} from "../../../types/eventNaming.types";
 
 function patchElementFromPoint(target: Element) {
     const orig = document.elementFromPoint;

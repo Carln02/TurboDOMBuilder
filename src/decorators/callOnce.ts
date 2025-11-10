@@ -2,6 +2,9 @@ const onceRegistry = new WeakMap<(...args: any[]) => any, (...args: any[]) => an
 
 /**
  * @function callOnce
+ * @group Decorators
+ * @category Augmentation
+ *
  * @template {(...args: any[]) => any} Type
  * @description Function wrapper that ensures the passed function is called only once.
  * Subsequent calls will just return the cached computed result (if any) of the first call of that function.
@@ -52,6 +55,9 @@ function callOnce<Type extends (...args: any[]) => any>(fn: Type): Type {
 /**
  * @decorator
  * @function callOncePerInstance
+ * @group Decorators
+ * @category Augmentation
+ *
  * @description Stage-3 method decorator. It ensures a method in a class is called only once per instance.
  * Subsequent calls will be canceled and log a warning. Works for instance or static methods.
  *

@@ -2,24 +2,27 @@ import {TurboDrawerProperties} from "./drawer.types";
 import "./drawer.css";
 import {iconSwitch, TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
-import {Direction, Open, Side} from "../../../utils/datatypes/basicDatatypes.types";
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
-import {DefaultEventName, TurboEventName} from "../../../eventHandling/eventNaming";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElement} from "../../../turboElement/turboElement";
-import {PartialRecord} from "../../../core.types";
-import {$, turbo} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
 import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {element} from "../../../elementCreation/element";
-import {isUndefined} from "../../../utils/dataManipulation/misc";
+import {Open, Side} from "../../../types/enums.types";
+import {DefaultEventName, TurboEventName} from "../../../types/eventNaming.types";
+import {PartialRecord} from "../../../types/basic.types";
 
 //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
+/**
+ * @group Components
+ * @category TurboDrawer
+ */
 @define("turbo-drawer")
 class TurboDrawer<
     ViewType extends TurboView = TurboView<any, any>,
@@ -31,16 +34,15 @@ class TurboDrawer<
     public get panelContainer(): HTMLElement {return this._panelContainer}
 
     private dragging: boolean = false;
-    private animationOn: boolean = false;
 
     protected resizeObserver: ResizeObserver;
 
     @auto({
         setIfUndefined: true,
-        callBefore: function () {if (this.thumb) $(this).remChild(this.thumb)},
+        callBefore: function () {if (this.thumb) turbo(this).remChild(this.thumb)},
         preprocessValue: (value: TurboProperties | HTMLElement) => value instanceof HTMLElement ? value : div(value)
     }) public set thumb(value: TurboProperties | HTMLElement) {
-        $(value).addClass("turbo-drawer-thumb");
+        turbo(value).addClass("turbo-drawer-thumb");
         if (this.initialized) this.setupUILayout();
     }
 
@@ -48,12 +50,11 @@ class TurboDrawer<
 
     @auto({
         setIfUndefined: true,
-        callBefore: function () {if (this.panel) $(this).remChild(this.panel); console.log("EWFFEWFWWWWWWWWWWWWWW")},
+        callBefore: function () {if (this.panel) turbo(this).remChild(this.panel)},
         preprocessValue: (value: TurboProperties | HTMLElement) =>
             value instanceof HTMLElement ? value : div(value)
     }) public set panel(value: TurboProperties | HTMLElement) {
-        console.log("WEEWFEFEFEFEFFEWFWEFEWFEW")
-        $(value).addClass("turbo-drawer-panel");
+        turbo(value).addClass("turbo-drawer-panel");
         if (this.initialized) this.setupUILayout();
     }
 
@@ -78,7 +79,7 @@ class TurboDrawer<
     public get icon(): TurboIconSwitch<Side> | Element {return}
 
     @auto({defaultValue: false}) public set hideOverflow(value: boolean) {
-        $(this.panelContainer).setStyle("overflow", value ? "hidden" : "");
+        turbo(this.panelContainer).setStyle("overflow", value ? "hidden" : "");
     }
 
     @auto({defaultValue: false}) public set attachSideToIconName(value: boolean) {
@@ -97,10 +98,10 @@ class TurboDrawer<
     }
 
     @auto({defaultValue: Side.bottom, cancelIfUnchanged: false}) public set side(value: Side) {
-        $(this).toggleClass("top-drawer", value == Side.top);
-        $(this).toggleClass("bottom-drawer", value == Side.bottom);
-        $(this).toggleClass("left-drawer", value == Side.left);
-        $(this).toggleClass("right-drawer", value == Side.right);
+        turbo(this).toggleClass("top-drawer", value == Side.top)
+            .toggleClass("bottom-drawer", value == Side.bottom)
+            .toggleClass("left-drawer", value == Side.left)
+            .toggleClass("right-drawer", value == Side.right);
         this.refresh();
     }
 
@@ -128,20 +129,20 @@ class TurboDrawer<
     @auto() private set translation(value: number) {
         switch (this.side) {
             case Side.top:
-                if (this.hideOverflow) $(this.panelContainer).setStyle("height", value + "px");
-                else $(this).setStyle("transform", `translateY(${-value}px)`);
+                if (this.hideOverflow) turbo(this.panelContainer).setStyle("height", value + "px");
+                else turbo(this).setStyle("transform", `translateY(${-value}px)`);
                 break;
             case Side.bottom:
-                if (this.hideOverflow) $(this.panelContainer).setStyle("height", value + "px");
-                else $(this).setStyle("transform", `translateY(${-value}px)`);
+                if (this.hideOverflow) turbo(this.panelContainer).setStyle("height", value + "px");
+                else turbo(this).setStyle("transform", `translateY(${-value}px)`);
                 break;
             case Side.left:
-                if (this.hideOverflow) $(this.panelContainer).setStyle("width", value + "px");
-                else $(this).setStyle("transform", `translateX(${-value}px)`);
+                if (this.hideOverflow) turbo(this.panelContainer).setStyle("width", value + "px");
+                else turbo(this).setStyle("transform", `translateX(${-value}px)`);
                 break;
             case Side.right:
-                if (this.hideOverflow) $(this.panelContainer).setStyle("width", value + "px");
-                else $(this).setStyle("transform", `translateX(${-value}px)`);
+                if (this.hideOverflow) turbo(this.panelContainer).setStyle("width", value + "px");
+                else turbo(this).setStyle("transform", `translateX(${-value}px)`);
                 break;
         }
     }
@@ -161,28 +162,15 @@ class TurboDrawer<
 
     public initialize() {
         super.initialize();
-        this.transition.attachAll(this, this.panelContainer);
+        turbo(this).show(false);
+        this.enableTransition(false);
 
-        const getSize = (entry: any, isVertical: boolean) => (
-            Array.isArray(entry.borderBoxSize) ? entry.borderBoxSize[0] : entry.borderBoxSize
-        )[isVertical ? "blockSize" : "inlineSize"];
-
-        //TODO
-        // this.resizeObserver = new ResizeObserver(entries => {
-        //     if (!this.open || this.dragging) return;
-        //     requestAnimationFrame(() => {
-        //         const isVertical = this.isVertical;
-        //         const size1 = getSize(entries[0], isVertical);
-        //         requestAnimationFrame(() => {
-        //             const size2 = getSize(entries[0], isVertical);
-        //             console.log(size1, size2);
-        //             if (size1 !== size2) return;
-        //             this.translation = (this.open ? this.offset.open : this.offset.closed) + size2;
-        //         });
-        //     });
-        // });
-
-        this.animationOn = true;
+        this.setupResizeObserver();
+        this.open = false;
+        requestAnimationFrame(() => {
+            turbo(this).show(true);
+            this.enableTransition(true);
+        });
     }
 
     protected setupUIElements() {
@@ -193,35 +181,28 @@ class TurboDrawer<
     protected setupUILayout() {
         super.setupUILayout();
 
-        $(this).childHandler = this;
-        $(this.panel).addChild($(this).childrenArray.filter(el => el !== this.panelContainer));
-        $(this).addChild([this.thumb, this.panelContainer]);
-        $(this.panelContainer).addChild(this.panel);
-        $(this.thumb).addChild(this.icon);
-        $(this).childHandler = this.panel;
+        turbo(this).childHandler = this;
+        turbo(this.panel).addChild(turbo(this).childrenArray.filter(el => el !== this.panelContainer));
+        turbo(this).addChild([this.thumb, this.panelContainer]);
+        turbo(this.panelContainer).addChild(this.panel);
+        turbo(this.thumb).addChild(this.icon);
+        turbo(this).childHandler = this.panel;
     }
 
     protected setupUIListeners() {
-        this.thumb.addEventListener(DefaultEventName.click, (e) => {
-            e.stopImmediatePropagation();
+        turbo(this.thumb).on(DefaultEventName.click, (e) => {
             this.open = !this.open;
-        });
-
-        this.thumb.addEventListener(TurboEventName.dragStart, (e: TurboDragEvent) => {
-            e.stopImmediatePropagation();
+            return true;
+        }).on(TurboEventName.dragStart, (e: TurboDragEvent) => {
             this.dragging = true;
-            if (this.animationOn) this.transition.enabled = false;
-        });
-
-        this.thumb.addEventListener(TurboEventName.drag, (e: TurboDragEvent) => {
+            this.enableTransition(false);
+            return true;
+        }).on(TurboEventName.drag, (e: TurboDragEvent) => {
             if (!this.dragging) return;
-            e.stopImmediatePropagation();
             this.translation += this.isVertical ? e.scaledDeltaPosition.y : e.scaledDeltaPosition.x;
-        });
-
-        this.thumb.addEventListener(TurboEventName.dragEnd, (e: TurboDragEvent) => {
+            return true;
+        }).on(TurboEventName.dragEnd, (e: TurboDragEvent) => {
             if (!this.dragging) return;
-            e.stopImmediatePropagation();
             this.dragging = false;
             const delta = e.positions.first.sub(e.origins.first);
 
@@ -243,7 +224,10 @@ class TurboDrawer<
                     else if (!this.open && delta.x > 100) this.open = true;
                     break;
             }
+
+            this.enableTransition(true);
             this.refresh();
+            return true;
         });
     }
 
@@ -274,25 +258,43 @@ class TurboDrawer<
     }
 
     public refresh() {
-        if (this.animationOn) {
-            this.transition.enabled = true;
-            this.transition.apply();
-        }
-
-        if (this.hideOverflow) $(this.panel).setStyle("position", "absolute", true);
-
-        if (this.icon instanceof TurboIconSwitch)
-            this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
+        if (this.hideOverflow) turbo(this.panel).setStyle("position", "absolute", true);
+        if (this.icon instanceof TurboIconSwitch) this.icon.switchReifect.apply(this.open ? this.getOppositeSide() : this.side);
 
         requestAnimationFrame(() => {
             this.translation = (this.open ? this.offset.open : this.offset.closed)
                 + (this.open ? (this.isVertical ? this.panel.offsetHeight : this.panel.offsetWidth) : 0);
+            if (this.hideOverflow) turbo(this.panel).setStyle("position", "relative", true);
+        });
+    }
 
-            if (this.hideOverflow) $(this.panel).setStyle("position", "relative", true);
+    protected enableTransition(b: boolean) {
+        this.transition.enabled = b;
+        this.transition.apply();
+    }
+
+    protected setupResizeObserver() {
+        let mutex = 0;
+        let initializationLock = true;
+
+        turbo(this).on("transitionstart", () => mutex++)
+            .on("transitionend", () => {mutex--; initializationLock = false});
+        turbo(this.panelContainer).on("transitionstart", () => mutex++)
+            .on("transitionend", () => mutex--);
+
+        this.resizeObserver = new ResizeObserver(entries => {
+            if (!this.open || this.dragging || mutex > 0 || initializationLock) return;
+            const entry = Array.isArray(entries[0].borderBoxSize) ? entries[0].borderBoxSize[0] : entries[0].borderBoxSize;
+            const size = entry[this.isVertical ? "blockSize" : "inlineSize"];
+            this.translation = (this.open ? this.offset.open : this.offset.closed) + size;
         });
     }
 }
 
+/**
+ * @group Components
+ * @category TurboDrawer
+ */
 function drawer<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

@@ -1,5 +1,5 @@
 import {Effect, Read, SignalEntry, SignalSubscriber, Write} from "./reactivity.types";
-import {Type} from "typedoc";
+import {isUndefined} from "../utils/dataManipulation/misc";
 
 /**
  * @internal
@@ -7,6 +7,11 @@ import {Type} from "typedoc";
 type SignalConstructorType = {
     installed: Map<PropertyKey, boolean>
 };
+
+type ReactivityData = {
+    propertyKeyMap: Map<PropertyKey, ReactivityDataEntry>,
+    blockKeyMap: Map<PropertyKey, Map<PropertyKey, PropertyKey>>
+}
 
 type ReactivityDataEntry = {
     signal?: SignalEntry,
@@ -18,7 +23,7 @@ type ReactivityDataEntry = {
  */
 export class ReactivityUtils {
     private constructorMap = new WeakMap<object, SignalConstructorType>();
-    private dataMap = new WeakMap<object, Map<PropertyKey, ReactivityDataEntry>>();
+    private dataMap = new WeakMap<object, ReactivityData>();
 
     public activeEffect: Effect = null;
 
@@ -32,64 +37,60 @@ export class ReactivityUtils {
     }
 
     public data(target: object) {
-        let map = this.dataMap.get(target);
-        if (!map) {
-            map = new Map();
-            this.dataMap.set(target, map);
+        let obj = this.dataMap.get(target);
+        if (!obj) {
+            obj = {propertyKeyMap: new Map(), blockKeyMap: new Map()};
+            this.dataMap.set(target, obj);
         }
-        return map!;
+        return obj!;
     }
 
     public track(entry: SignalEntry) {
         if (this.activeEffect) this.activeEffect.dependencies.add(entry);
     }
 
-    public createSignalEntry<Type>(initial: Type): SignalEntry<Type>;
     public createSignalEntry<Type>(
-        target: object,
-        key: PropertyKey,
-        read: Read<Type>,
-        write?: Write<Type>,
-        options?: {diffOnWrite: boolean}
-    ): SignalEntry<Type>;
-    public createSignalEntry<Type>(
-        targetOrInitial: any,
+        initial?: Type,
+        target?: object,
         key?: PropertyKey,
         read?: Read<Type>,
         write?: Write<Type>,
-        options?: {diffOnWrite: boolean}
+        options?: { diffOnWrite: boolean }
     ): SignalEntry<Type> {
         const subs = new Set<SignalSubscriber>();
         const self = this;
-        const isBound = key !== undefined || read !== undefined;
 
-        let underlyingValue = targetOrInitial;
         if (!options) options = {diffOnWrite: true};
+        if (!write) write = (value) => Reflect.set(target, key, value, target);
+        if (!read) {
+            if (target && !isUndefined(key)) read = () => Reflect.get(target, key);
+            else read = () => initial;
+        }
 
         const entry: SignalEntry<Type> = {
             get(): Type {
                 self.track(entry);
-                return isBound ? read() : underlyingValue;
+                return read();
             },
             set(value: Type) {
-                if (!isBound) {
-                    const prev = underlyingValue;
-                    underlyingValue = value;
+                if (!target || isUndefined(key)) {
+                    const prev = initial;
+                    initial = value;
                     if (!Object.is(prev, value)) entry.emit();
                 }
                 //If "write" is passed, setup emit() behavior. Otherwise, reflect to already defined setter.
-                else if (write && !options.diffOnWrite) {
+                else if (!options.diffOnWrite) {
                     write(value);
                     entry.emit();
-                } else if (write) {
+                } else {
                     const prev = read();
                     write(value);
                     const next = read();
                     if (!Object.is(prev, next)) entry.emit();
-                } else Reflect.set(targetOrInitial, key, value, targetOrInitial);
+                }
             },
             update(updater: (previous: Type) => Type) {
-                entry.set(updater(isBound ? read() : underlyingValue));
+                entry.set(updater(read()));
             },
             sub(fn: SignalSubscriber) {
                 subs.add(fn);
@@ -100,11 +101,13 @@ export class ReactivityUtils {
             }
         };
 
+        if (target && !isUndefined(key)) this.getReactivityData(target, key).signal = entry;
+
         return entry;
     }
 
     public getReactivityData(target: object, key: PropertyKey): ReactivityDataEntry {
-        const data = this.data(target);
+        const data = this.data(target).propertyKeyMap;
         if (!data.has(key)) data.set(key, {});
         return data.get(key);
     }
@@ -138,5 +141,17 @@ export class ReactivityUtils {
             effect.scheduled = false;
             effect.run();
         });
+    }
+
+    public bindBlockKey(target: object, key: PropertyKey, dataKey: PropertyKey, blockKey?: PropertyKey) {
+        blockKey = blockKey ?? (target as any)?.defaultBlockKey ?? "__default__";
+        const map = this.data(target).blockKeyMap;
+        if (!map.has(blockKey)) map.set(blockKey, new Map());
+        map.get(blockKey).set(dataKey, key);
+    }
+
+    public getKeyFromBlockKey(target: object, dataKey: PropertyKey, blockKey?: PropertyKey) {
+        blockKey = blockKey ?? (target as any)?.defaultBlockKey ?? "__default__";
+        return this.data(target).blockKeyMap.get(blockKey)?.get(dataKey);
     }
 }

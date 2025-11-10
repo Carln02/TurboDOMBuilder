@@ -1,21 +1,26 @@
 import {TurboModel} from "./model";
 import {TurboEmitter} from "./emitter";
+import {TurboDataBlock} from "../../turboComponents/blocks/dataBlock/dataBlock";
 
+/**
+ * @group MVC
+ * @category Model
+ */
 type MvcBlocksType<
     Type extends "array" | "map" = "map",
-    BlockType extends MvcDataBlock = MvcDataBlock
+    BlockType extends TurboDataBlock = TurboDataBlock
 > = Type extends "map" ? Map<string, BlockType> : BlockType[];
 
+/**
+ * @group MVC
+ * @category Model
+ */
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
 
-type MvcDataBlock<
-    DataType = any,
-    IdType extends string | number | symbol = any
-> = {
-    id: IdType,
-    data: DataType,
-};
-
+/**
+ * @group MVC
+ * @category View
+ */
 type TurboViewProperties<
     ElementType extends object = object,
     ModelType extends TurboModel = TurboModel,
@@ -26,4 +31,4 @@ type TurboViewProperties<
     emitter?: EmitterType,
 };
 
-export {TurboViewProperties, MvcBlockKeyType, MvcBlocksType, MvcDataBlock};
+export {TurboViewProperties, MvcBlockKeyType, MvcBlocksType};

@@ -71,8 +71,8 @@ describe("TurboModel (map mode)", () => {
         model.setBlock({a: 1, b: 2}, "id-1", model.defaultBlockKey, false);
 
         expect(model.getAllKeys()).toEqual(["a", "b"]);
-        expect(model.getAllData()).toEqual([1, 2]);
-        expect(model.getAllIds()).toEqual(["id-1"]);
+        expect(model.getAllValues()).toEqual([1, 2]);
+        expect(model.getAllBlockIds()).toEqual(["id-1"]);
     });
 
     it("hasBlock works and getAllBlockKeys returns keys", () => {

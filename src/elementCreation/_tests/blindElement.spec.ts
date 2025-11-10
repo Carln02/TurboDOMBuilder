@@ -1,7 +1,8 @@
 import {describe, it, expect, vi} from "vitest";
 import {TurboSelector} from "../../turboFunctions/turboSelector";
-import {MathMLNamespace, SvgNamespace} from "../namespaceIdentification";
 import {blindElement} from "../element";
+import {SvgNamespace} from "../../types/svgElement.types";
+import {MathMLNamespace} from "../../types/mathMlElement.types";
 
 describe("blindElement(properties)", () => {
     it("creates HTML element when tag is a regular HTML tag", () => {

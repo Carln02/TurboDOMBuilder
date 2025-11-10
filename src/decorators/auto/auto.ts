@@ -1,17 +1,16 @@
 import {AutoOptions} from "./auto.types";
 import {AutoUtils} from "./auto.utils";
-import {
-    getFirstDescriptorInChain,
-    getFirstPrototypeInChainWith,
-    getSuperDescriptor
-} from "../../utils/dataManipulation/prototypeManipulation";
 import {isNull, isUndefined} from "../../utils/dataManipulation/misc";
+import {getFirstDescriptorInChain, getFirstPrototypeInChainWith} from "../../utils/dataManipulation/prototype";
 
 const utils = new AutoUtils();
 
 /**
  * @decorator
  * @function auto
+ * @group Decorators
+ * @category Augmentation
+ *
  * @description Stage-3 decorator that augments fields, getters, setters, and accessors. Useful to quickly create a setter
  * and only define additional functionality on set. The decorator takes an optional object as parameter to configure
  * it, allowing you to, among other things:

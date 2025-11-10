@@ -1,12 +1,12 @@
 import {SubstrateFunctionsUtils} from "./substrate.utils";
 import {TurboSelector} from "../turboSelector";
 import {MakeSubstrateOptions, SubstrateSolver, SubstrateSolverProperties} from "./substrate.types";
-import {Delegate} from "../../eventHandling/delegate/delegate";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 const utils = new SubstrateFunctionsUtils();
 
-function setupSubstrateFunctions() {
+export function setupSubstrateFunctions() {
     TurboSelector.prototype.makeSubstrate = function _makeSubstrate(
         this: TurboSelector,
         name: string,
@@ -189,5 +189,3 @@ function setupSubstrateFunctions() {
         return this;
     }
 }
-
-export {setupSubstrateFunctions};

@@ -1,6 +1,6 @@
 import {ReactivityUtils} from "./reactivity.utils";
 import {SignalBox, SignalEntry} from "./reactivity.types";
-import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototypeManipulation";
+import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototype";
 
 export class SignalUtils {
     public constructor(private readonly utils: ReactivityUtils) {}
@@ -91,10 +91,7 @@ export class SignalUtils {
                 if (entry) return entry;
 
                 if (kind === "field" && !customGetter && !baseGetter) self[backingKey] = self[key];
-
-                entry = utils.createSignalEntry<Value>(self, key, () => read.call(self), (v) => write.call(self, v), {diffOnWrite});
-                utils.getReactivityData(self, key).signal = entry;
-
+                entry = utils.createSignalEntry<Value>(undefined, self, key, () => read.call(self), (v) => write.call(self, v), {diffOnWrite});
                 if (kind === "field") delete self[key];
                 return entry;
             };

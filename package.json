@@ -45,11 +45,15 @@
   },
   "homepage": "https://carln02.github.io/TurboDOMBuilder/",
   "devDependencies": {
+    "@openmrs/typedoc-plugin-file-categories": "^8.0.0",
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@types/ungap__structured-clone": "^1.2.0",
+    "@ungap/structured-clone": "^1.2.0",
     "autoprefixer": "^10.4.19",
+    "better-docs": "^2.7.3",
     "css-loader": "^7.1.2",
     "cssnano": "^6.1.2",
     "del": "^7.1.0",
@@ -64,6 +68,7 @@
     "through2": "^4.0.2",
     "ts-loader": "^9.5.1",
     "ts-morph": "^27.0.0",
+    "tslib": "^2.6.2",
     "typedoc": "^0.28.13",
     "typedoc-plugin-extras": "^4.0.1",
     "typedoc-plugin-mdn-links": "^5.0.9",
@@ -74,9 +79,6 @@
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2",
-    "@types/ungap__structured-clone": "^1.2.0",
-    "@ungap/structured-clone": "^1.2.0",
-    "tslib": "^2.6.2",
     "yjs": "^13.6.27"
   },
   "peerDependencies": {

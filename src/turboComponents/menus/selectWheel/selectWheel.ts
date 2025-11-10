@@ -1,22 +1,24 @@
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {linearInterpolation} from "../../../utils/computations/interpolation";
 import {trim} from "../../../utils/computations/misc";
 import {TurboSelectWheelProperties, TurboSelectWheelStylingProperties} from "./selectWheel.types";
-import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
-import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
-import {Point} from "../../../utils/datatypes/point/point";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {PartialRecord} from "../../../core.types";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
 import {TurboElement} from "../../../turboElement/turboElement";
+import {Direction, Range} from "../../../types/enums.types";
+import {DefaultEventName} from "../../../types/eventNaming.types";
+import {Point} from "../../datatypes/point/point";
+import {PartialRecord} from "../../../types/basic.types";
 
 /**
  * @class TurboSelectWheel
+ * @group Components
+ * @category TurboSelectWheel
+ *
  * @extends TurboSelect
  * @description Class to create a dynamic selection wheel.
  * @template {string} ValueType

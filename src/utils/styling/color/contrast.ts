@@ -1,6 +1,9 @@
 import {luminance} from "./luminance";
 
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Computes the contrast between two colors.
  * @param {string} color1 - The first color in Hex format
  * @param {string} color2 - The second color in Hex format

@@ -1,5 +1,8 @@
 /**
  * @type {CacheOptions}
+ * @group Decorators
+ * @category Cache
+ *
  * @description Options for configuring the `@cache` decorator.
  *
  * Defines when and how cached values should expire, refresh, or invalidate.

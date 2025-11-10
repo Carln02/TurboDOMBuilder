@@ -1,18 +1,16 @@
 import "./element.types";
 import {TurboSelector} from "../turboSelector";
-import {PartialRecord, ValidElement, ValidTag} from "../../core.types";
 import {TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
 import {$} from "../turboFunctions";
 import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/core/model";
-import {DefaultEventName} from "../../eventHandling/eventNaming";
-import {stringify} from "../../utils/dataManipulation/stringManipulation";
-import {TurboEmitter} from "../../mvc/core/emitter";
-import {Type} from "typedoc";
 import {MvcGenerationProperties} from "../../mvc/mvc.types";
+import {ValidElement, ValidTag} from "../../types/element.types";
+import {DefaultEventName} from "../../types/eventNaming.types";
+import {stringify} from "../../utils/dataManipulation/string";
 
-function setupElementFunctions() {
+export function setupElementFunctions() {
     /**
      * Sets the declared properties to the element.
      * @param {TurboProperties<Tag>} [properties] - The properties object.
@@ -188,5 +186,3 @@ function setupElementFunctions() {
         return this;
     };
 }
-
-export {setupElementFunctions};

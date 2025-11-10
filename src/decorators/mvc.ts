@@ -62,6 +62,9 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
 /**
  * @decorator
  * @function controller
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
  * fetched controller.
  * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
@@ -88,6 +91,9 @@ function controller(name?: string) {
 /**
  * @decorator
  * @function handler
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
  * fetched handler.
  * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
@@ -114,6 +120,9 @@ function handler(name?: string) {
 /**
  * @decorator
  * @function interactor
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
  * fetched interactor.
  * @param {string} [name] - The key name of the interactor in the MVC instance (if any). By default, it is inferred
@@ -140,6 +149,9 @@ function interactor(name?: string) {
 /**
  * @decorator
  * @function tool
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
  * fetched tool.
  * @param {string} [name] - The key name of the tool in the MVC instance (if any). By default, it is inferred
@@ -166,6 +178,9 @@ function tool(name?: string) {
 /**
  * @decorator
  * @function substrate
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
  * fetched substrate.
  * @param {string} [name] - The key name of the substrate in the MVC instance (if any). By default, it is inferred

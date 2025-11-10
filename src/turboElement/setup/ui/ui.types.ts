@@ -1,3 +1,6 @@
+/**
+ * @internal
+ */
 interface TurboElementUiInterface {
     /**
      * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS

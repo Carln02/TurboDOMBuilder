@@ -6,6 +6,9 @@ import {initializeEffects} from "../../reactivity/reactivity";
 
 /**
  * @class TurboController
+ * @group MVC
+ * @category Controller
+ *
  * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
  * component. It has access to the element, the model to read and write data, the view to update the UI, and the
  * emitter to listen for changes in the model or any other internal events. It can only communicate with other

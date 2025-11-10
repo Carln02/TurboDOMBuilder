@@ -1,16 +1,21 @@
 import {auto} from "../../decorators/auto/auto";
-import {Delegate} from "../../eventHandling/delegate/delegate";
-import {MvcBlockKeyType, MvcBlocksType, MvcDataBlock} from "./core.types";
+import {MvcBlockKeyType, MvcBlocksType} from "./core.types";
 import {TurboHandler} from "../logic/handler";
 import {markDirty} from "../../reactivity/reactivity";
+import {TurboDataBlock} from "../../turboComponents/blocks/dataBlock/dataBlock";
+import {DataBlockHost} from "../../turboComponents/blocks/dataBlock/dataBlock.types";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 /**
  * @class TurboModel
+ * @group MVC
+ * @category Model
+ *
  * @template DataType - The type of the data stored in each block.
  * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
  * @template {string | number | symbol} IdType - The type of the block IDs.
  * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
- * @template {MvcDataBlock<DataType, IdType>} BlockType - The structure of each data block.
+ * @template {TurboDataBlock<DataType, KeyType, IdType>} BlockType - The structure of each data block.
  * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
  * propagation.
  */
@@ -19,9 +24,8 @@ class TurboModel<
     KeyType extends string | number | symbol = any,
     IdType extends string | number | symbol = any,
     BlocksType extends "array" | "map" = "array" | "map",
-    BlockType extends MvcDataBlock<DataType, IdType> = MvcDataBlock<DataType, IdType>
-> {
-    protected readonly isInitialized: Map<MvcBlockKeyType<BlocksType>, boolean> = new Map();
+    BlockType extends TurboDataBlock<DataType, KeyType, IdType> = TurboDataBlock<DataType, KeyType, IdType>
+> implements DataBlockHost<DataType, KeyType, IdType> {
     protected readonly isDataBlocksArray: boolean = false;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
 
@@ -34,6 +38,14 @@ class TurboModel<
      * @description Delegate triggered when a key changes.
      */
     public keyChangedCallback: Delegate<(keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void>;
+
+    public onDirty(key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>): void {
+        markDirty(this, key, this.getBlockKey(block));
+    }
+
+    public onChange(key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) {
+        this.keyChangedCallback.fire(key, this.getBlockKey(block), value);
+    }
 
     /**
      * @constructor
@@ -53,6 +65,17 @@ class TurboModel<
 
         this.enabledCallbacks = true;
         this.setBlock(data, undefined, this.defaultBlockKey, false);
+    }
+
+    /**
+     * @description The default block.
+     */
+    public get block(): BlockType {
+        return this.getBlock();
+    }
+
+    public set block(value: BlockType) {
+        this.setBlock(value);
     }
 
     /**
@@ -80,43 +103,8 @@ class TurboModel<
     /**
      * @description Whether callbacks are enabled or not.
      */
-    @auto() public accessor enabledCallbacks: boolean;
-
-    /**
-     * @function getData
-     * @description Retrieves the value associated with a given key in the specified block.
-     * @param {KeyType} key - The key to retrieve.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
-     * data.
-     * @returns {unknown} The value associated with the key, or null if not found.
-     */
-    public getData(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): unknown {
-        if (!this.isValidBlockKey(blockKey)) return null;
-        return this.getBlockData(blockKey)?.[key as any];
-    }
-
-    /**
-     * @function setData
-     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-     * @param {KeyType} key - The key to update.
-     * @param {unknown} value - The value to assign.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
-     */
-    public setData(key: KeyType, value: unknown, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): void {
-        if (!this.isValidBlockKey(blockKey)) return;
-        const data = this.getBlockData(blockKey);
-        if (data) (data as any)[key] = value;
-        if (this.enabledCallbacks) this.fireKeyChangedCallback(key, blockKey);
-    }
-
-    /**
-     * @function getSize
-     * @description Returns the size of the specified block.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
-     * @returns {number} The size.
-     */
-    public getSize(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): number {
-        return this.getAllKeys(blockKey)?.length ?? 0;
+    @auto() public set enabledCallbacks(value: boolean) {
+        this.getAllBlocks().forEach(block => block.enabledCallbacks = value);
     }
 
     /**
@@ -125,16 +113,16 @@ class TurboModel<
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key to retrieve.
      * @returns {BlockType | null} The block or null if it doesn't exist.
      */
-    public getBlock(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): BlockType | null {
-        if (!this.isValidBlockKey(blockKey)) return null;
+    public getBlock(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): BlockType {
+        if (!this.isValidBlockKey(blockKey)) return;
 
         if (this.isDataBlocksArray) {
             const index = Number(blockKey);
-            return Number.isInteger(index) && index >= 0
-                ? (this.dataBlocks as BlockType[])[index] ?? null
-                : null;
+            if (Number.isInteger(index) && index >= 0 && index < (this.dataBlocks as BlockType[]).length) {
+                return (this.dataBlocks as BlockType[])[index];
+            }
         } else {
-            return (this.dataBlocks as Map<string, BlockType>).get(blockKey.toString()) ?? null;
+            return (this.dataBlocks as Map<string, BlockType>).get(blockKey.toString());
         }
     }
 
@@ -143,12 +131,13 @@ class TurboModel<
      * @description Creates a data block entry.
      * @param {DataType} value - The data of the block.
      * @param {IdType} [id] - The optional ID of the data.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
      * @protected
      * @return {BlockType} - The created block.
      */
-    protected createBlock(value: DataType, id?: IdType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): BlockType {
-        return {id: id ?? null, data: value} as BlockType;
+    protected createBlock(value: DataType | BlockType, id?: IdType): BlockType {
+        const block = value instanceof TurboDataBlock ? value : new TurboDataBlock({id: id, data: value}) as BlockType;
+        block.link(this);
+        return block;
     }
 
     /**
@@ -160,13 +149,17 @@ class TurboModel<
      * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
      */
     public setBlock(
-        value: DataType,
+        value: DataType | BlockType,
         id?: IdType,
         blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey,
         initialize: boolean = true
     ) {
         if (!this.isValidBlockKey(blockKey) || value === null || value === undefined) return;
-        const block = this.createBlock(value, id, blockKey);
+        const prev = this.getBlock(blockKey);
+        prev?.clear();
+        prev?.unlink();
+
+        const block = this.createBlock(value, id);
 
         if (this.isDataBlocksArray) {
             const index = Number(blockKey);
@@ -178,7 +171,6 @@ class TurboModel<
         }
 
         if (initialize) this.initialize(blockKey);
-        else this.isInitialized.set(blockKey, false);
     }
 
     /**
@@ -195,6 +187,21 @@ class TurboModel<
         return (this.dataBlocks as Map<string, BlockType>).has(blockKey.toString());
     }
 
+    public deleteBlock(blockKey: MvcBlockKeyType<BlocksType>) {
+        const block = this.getBlock(blockKey);
+        if (!block) return;
+        block.clear();
+        block.unlink();
+        if (this.isDataBlocksArray) {
+            const index = Number(blockKey);
+            if (Number.isInteger(index) && index >= 0 && index < (this.dataBlocks as BlockType[]).length) {
+                (this.dataBlocks as BlockType[]).splice(index, 1);
+            }
+        } else {
+            (this.dataBlocks as Map<string, BlockType>).delete(blockKey.toString());
+        }
+    }
+
     /**
      * @function addBlock
      * @description Adds a new block into the structure. Appends or inserts based on key if using array.
@@ -203,10 +210,10 @@ class TurboModel<
      * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
      * @param {boolean} [initialize=true] - Whether to initialize after adding.
      */
-    public addBlock(value: DataType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize: boolean = true): void {
+    public addBlock(value: DataType | BlockType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize: boolean = true): void {
         if (!value) return;
         if (!this.isDataBlocksArray) return this.setBlock(value, id, blockKey, initialize);
-        const block = this.createBlock(value, id, blockKey);
+        const block = this.createBlock(value, id);
 
         let index = Number(blockKey);
         if (!Number.isInteger(index) || index < 0) index = (this.dataBlocks as BlockType[]).length;
@@ -215,25 +222,74 @@ class TurboModel<
     }
 
     /**
+     * @function getData
+     * @description Retrieves the value associated with a given key in the specified block.
+     * @param {KeyType} key - The key to retrieve.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
+     * data.
+     * @returns {unknown} The value associated with the key, or null if not found.
+     */
+    public getData(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): unknown {
+        return this.getBlock(blockKey)?.get(key);
+    }
+
+    /**
+     * @function setData
+     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @param {KeyType} key - The key to update.
+     * @param {unknown} value - The value to assign.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     */
+    public setData(key: KeyType, value: unknown, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): void {
+        return this.getBlock(blockKey)?.set(key, value);
+    }
+
+    /**
+     * @function hasData
+     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @param {KeyType} key - The key to update.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     */
+    public hasData(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): boolean {
+        return this.getBlock(blockKey)?.has(key);
+    }
+
+    public deleteData(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
+        return this.getBlock(blockKey)?.delete(key);
+    }
+
+    /**
+     * @function getSize
+     * @description Returns the size of the specified block.
+     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
+     * @returns {number} The size.
+     */
+    public getSize(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): number {
+        return this.getBlock(blockKey)?.size ?? 0;
+    }
+
+    public toJSON(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
+        return this.getBlock(blockKey)?.toJSON();
+    }
+
+    /**
      * @function getBlockData
      * @description Retrieves the data from a specific block.
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-     * @returns {DataType | null} The block's data or  if it doesn't exist.
+     * @returns {DataType} The block's data or  if it doesn't exist.
      */
-    public getBlockData(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): DataType | null {
-        const block = this.getBlock(blockKey);
-        return block ? block.data : null;
+    public getBlockData(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): DataType {
+        return this.getBlock(blockKey)?.data;
     }
 
     /**
      * @function getBlockId
      * @description Retrieves the ID from a specific block.
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-     * @returns {IdType | null} The block ID or null.
+     * @returns {IdType} The block ID or null.
      */
-    public getBlockId(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): IdType | null {
-        const block = this.getBlock(blockKey);
-        return block ? block.id : null;
+    public getBlockId(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey): IdType {
+        return this.getBlock(blockKey)?.id;
     }
 
     /**
@@ -248,18 +304,18 @@ class TurboModel<
         if (block) block.id = value;
     }
 
-    /**
-     * @function fireKeyChangedCallback
-     * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
-     * @param {KeyType} key - The key that changed.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
-     * @param {boolean} [deleted=false] - Whether the key was deleted.
-     */
-    protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
-        if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
-        markDirty(this, key); //TODO CHECK
-        this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
-    }
+    // /**
+    //  * @function fireKeyChangedCallback
+    //  * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
+    //  * @param {KeyType} key - The key that changed.
+    //  * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
+    //  * @param {boolean} [deleted=false] - Whether the key was deleted.
+    //  */
+    // protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
+    //     if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
+    //     markDirty(this, key, blockKey);
+    //     this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
+    // }
 
     /**
      * @function fireCallback
@@ -289,18 +345,17 @@ class TurboModel<
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
      */
     public initialize(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
-        const keys = this.getAllKeys(blockKey);
-        if (!keys || !this.enabledCallbacks) return;
-        keys.forEach(key => this.fireKeyChangedCallback(key as KeyType, blockKey));
-        this.isInitialized.set(blockKey, true);
+        this.getBlock(blockKey)?.initialize();
     }
 
     /**
      * @function clear
      * @description Clears the block data at the given key.
+     * @param clearData
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
      */
-    public clear(blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
+    public clear(clearData: boolean = true, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey) {
+        this.getBlock(blockKey)?.clear(clearData)
     }
 
     /**
@@ -343,13 +398,12 @@ class TurboModel<
     }
 
     /**
-     * @function getAllIds
+     * @function getAllBlockIds
      * @description Retrieves all block (data) IDs in the model.
      * @returns {IdType[]} Array of IDs.
      */
-    public getAllIds(): IdType[] {
-        if (this.isDataBlocksArray) return (this.dataBlocks as BlockType[]).map(entry => entry.id);
-        else return Array.from((this.dataBlocks as Map<string, BlockType>).values()).map(entry => entry.id);
+    public getAllBlockIds(): IdType[] {
+        return this.getAllBlocks().map(block => block.id);
     }
 
     /**
@@ -374,6 +428,12 @@ class TurboModel<
         return output;
     }
 
+    public getBlockKey(block: TurboDataBlock<DataType, KeyType, IdType>): MvcBlockKeyType<BlocksType> {
+        for (const blockKey of this.getAllBlockKeys()) {
+            if (this.getBlock(blockKey) === block) return blockKey;
+        }
+    }
+
     /**
      * @function getAllKeys
      * @description Retrieves all keys within the given block(s).
@@ -381,17 +441,17 @@ class TurboModel<
      * @returns {KeyType[]} Array of keys.
      */
     public getAllKeys(blockKey: MvcBlockKeyType<BlocksType> = this.defaultComputationBlockKey): KeyType[] {
-        return this.getAllBlocks(blockKey).flatMap(block => Object.keys(block.data)) as KeyType[];
+        return this.getAllBlocks(blockKey).flatMap(block => block.keys);
     }
 
     /**
-     * @function getAllData
+     * @function getAllValues
      * @description Retrieves all values across block(s).
      * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
      * @returns {unknown[]} Array of values.
      */
-    public getAllData(blockKey: MvcBlockKeyType<BlocksType> = this.defaultComputationBlockKey): unknown[] {
-        return this.getAllBlocks(blockKey).flatMap(block => Object.values(block.data));
+    public getAllValues(blockKey: MvcBlockKeyType<BlocksType> = this.defaultComputationBlockKey): unknown[] {
+        return this.getAllBlocks(blockKey).flatMap(block => block.values);
     }
 
     /**
@@ -403,7 +463,7 @@ class TurboModel<
      * @return {TurboHandler} - The handler.
      */
     public getHandler(key: string): TurboHandler {
-        return this.handlers.get(key);
+        return this.handlers?.get(key);
     }
 
     /**
@@ -413,7 +473,7 @@ class TurboModel<
      */
     public addHandler(handler: TurboHandler) {
         if (!handler.keyName) return;
-        this.handlers.set(handler.keyName, handler);
+        this.handlers?.set(handler.keyName, handler);
     }
 }
 

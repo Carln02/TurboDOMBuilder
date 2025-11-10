@@ -1,21 +1,12 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-
   "entryPoints": ["src/index.ts"],
   "entryPointStrategy": "expand",
-
   "out": "docs",
   "tsconfig": "tsconfig.json",
-  "exclude": [
-    "**/*.spec.ts",
-    "**/_tests/**",
-    "**/internal/**"
-  ],
-  "externalPattern": [
-    "**/node_modules/**"
-  ],
 
-  "excludeTags": ["@function", "@decorator"],
+  "exclude": ["**/*.spec.ts", "**/_tests/**", "**/internal/**", "src/types/yjs.types.ts"],
+  "externalPattern": ["**/node_modules/**"],
 
   "excludeExternals": true,
   "excludePrivate": true,
@@ -23,18 +14,22 @@
   "excludeInternal": true,
 
   "readme": "README.md",
-  "categorizeByGroup": true,
-  "hideGenerator": true,
   "includeVersion": true,
   "gitRevision": "HEAD",
+  "hideGenerator": true,
+
+  "categorizeByGroup": true,
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+
   "plugin": [
     "typedoc-plugin-mdn-links",
-    "typedoc-plugin-extras"
+    "typedoc-plugin-extras",
+    "@openmrs/typedoc-plugin-file-categories"
   ],
+
   "cleanOutputDir": true,
-  "sort": [
-    "source-order",
-    "visibility",
-    "kind"
-  ]
+  "sort": ["source-order", "visibility", "kind"]
 }

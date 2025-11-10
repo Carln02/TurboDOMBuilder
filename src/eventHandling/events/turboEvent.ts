@@ -1,13 +1,16 @@
 import {ClickMode} from "../turboEventManager/turboEventManager.types";
-import {Point} from "../../utils/datatypes/point/point";
 import {ClosestOrigin, TurboEventProperties} from "./turboEvent.types";
-import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
-import {TurboEventNameEntry} from "../eventNaming";
 import {cache} from "../../decorators/cache/cache";
 import {TurboEventManager} from "../turboEventManager/turboEventManager";
+import {Point} from "../../turboComponents/datatypes/point/point";
+import {TurboMap} from "../../turboComponents/datatypes/map/map";
+import {TurboEventNameEntry} from "../../types/eventNaming.types";
 
 /**
- * Generic turbo event
+ * @class TurboEvent
+ * @group Event Handling
+ * @category TurboEvents
+ * @description Generic turbo event.
  */
 class TurboEvent extends Event {
     /**

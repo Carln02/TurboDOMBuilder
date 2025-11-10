@@ -1,14 +1,18 @@
 import {TurboIcon} from "../icon/icon";
 import {TurboView} from "../../../mvc/core/view";
-import {HTMLTag, ValidElement, ValidTag} from "../../../core.types";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {TurboRichElement} from "./richElement";
+import {ValidElement, ValidTag} from "../../../types/element.types";
+import {HTMLTag} from "../../../types/htmlElement.types";
 
 /**
  * @type {TurboRichElementProperties}
+ * @group Components
+ * @category TurboRichElement
+ *
  * @description Properties object for configuring a Button. Extends TurboElementProperties.
  * @extends TurboProperties
  *
@@ -52,6 +56,8 @@ type TurboRichElementProperties<
 
 /**
  * @type {TurboRichElementConfig}
+ * @group Components
+ * @category TurboRichElement
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
  * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
@@ -62,7 +68,7 @@ type TurboRichElementConfig = TurboElementConfig & {
     defaultElementTag?: HTMLTag
 }
 
-declare module "../../../core.types" {
+declare module "../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-rich-element": TurboRichElement
     }

@@ -1,11 +1,14 @@
 import {TurboDragEventProperties} from "./turboEvent.types";
 import {TurboEvent} from "./turboEvent";
-import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
-import {Point} from "../../utils/datatypes/point/point";
 import {cache} from "../../decorators/cache/cache";
+import {TurboMap} from "../../turboComponents/datatypes/map/map";
+import {Point} from "../../turboComponents/datatypes/point/point";
 
 /**
  * @class TurboDragEvent
+ * @group Event Handling
+ * @category TurboEvents
+ *
  * @extends TurboEvent
  * @description Turbo drag event class, fired on turbo-drag, turbo-drag-start, turbo-drag-end, etc.
  */

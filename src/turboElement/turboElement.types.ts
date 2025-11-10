@@ -8,6 +8,9 @@ import {TurboElementUiInterface} from "./setup/ui/ui.types";
 
 /**
  * @type {TurboElementProperties}
+ * @group TurboElement
+ * @category TurboElement
+ *
  * @extends TurboProperties
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {object} DataType - The element's data type, if any.
@@ -24,6 +27,10 @@ type TurboElementProperties<
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboProxiedProperties<"div", ViewType, DataType, ModelType, EmitterType>;
 
+/**
+ * @group TurboElement
+ * @category TurboElement
+ */
 type TurboElementConfig = {
     shadowDOM?: boolean,
     defaultSelectedClass?: string | string[]

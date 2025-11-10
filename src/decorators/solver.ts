@@ -1,6 +1,9 @@
 /**
  * @decorator
  * @function solver
+ * @group Decorators
+ * @category MVC
+ *
  * @description Stage-3 decorator that turns methods into substrate solvers.
  * @example
  * ```ts

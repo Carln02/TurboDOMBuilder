@@ -15,6 +15,9 @@ import {TurboControllerProperties} from "./logic/logic.types";
 
 /**
  * @class Mvc
+ * @group MVC
+ * @category MVC
+ * 
  * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
  * @template {object} ElementType - The type of the object that will be turned into MVC.
  * @template {TurboView} ViewType - The element's view type.

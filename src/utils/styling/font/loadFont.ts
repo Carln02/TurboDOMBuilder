@@ -1,9 +1,10 @@
 import {css} from "../css";
 import {FontProperties} from "./font.types";
-import {getFileExtension} from "../../dataManipulation/stringManipulation";
+import {getFileExtension} from "../../dataManipulation/string";
 import {stylesheet} from "../../../elementCreation/miscElements";
 
 /**
+ * @internal
  * @description Default font weights, sub-names, and styles when loading a font family.
  */
 const defaultFamilyWeights = {
@@ -18,7 +19,14 @@ const defaultFamilyWeights = {
     100: {"Thin": "normal", "ThinItalic": "italic"},
 };
 
-
+/**
+ * @internal
+ * @param name
+ * @param path
+ * @param format
+ * @param weight
+ * @param style
+ */
 function createFontFace(name: string, path: string, format: string, weight: string | number, style: string): string {
     return css`
         @font-face {
@@ -32,6 +40,8 @@ function createFontFace(name: string, path: string, format: string, weight: stri
 }
 
 /**
+ * @group Utilities
+ * @category Font
  * @description Loads a local font file, or a family of fonts from a directory.
  * @param {FontProperties} font - The font properties
  */

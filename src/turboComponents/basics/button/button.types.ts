@@ -1,9 +1,11 @@
-import {HTMLTag} from "../../../core.types";
 import {TurboButton} from "./button";
 import {TurboRichElementConfig} from "../richElement/richElement.types";
 
 /**
  * @type {TurboButtonConfig}
+ * @group Components
+ * @category TurboButton
+ *
  * @description Configuration object for the Button class. Set it via TurboConfig.Button.
  *
  * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
@@ -12,7 +14,7 @@ import {TurboRichElementConfig} from "../richElement/richElement.types";
  */
 type TurboButtonConfig = TurboRichElementConfig;
 
-declare module "../../../core.types" {
+declare module "../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-button": TurboButton
     }

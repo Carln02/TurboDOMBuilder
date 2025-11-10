@@ -5,14 +5,14 @@ import {
     TurboEventManagerLockStateProperties,
     TurboEventManagerStateProperties
 } from "./turboEventManager.types";
-import {TurboMap} from "../../utils/datatypes/turboMap/turboMap";
-import {Point} from "../../utils/datatypes/point/point";
-import {Delegate} from "../delegate/delegate";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
-import {TurboWeakSet} from "../../utils/datatypes/weakSet/weakSet";
 import {handler} from "../../decorators/mvc";
 import {TurboModel} from "../../mvc/core/model";
 import {auto} from "../../decorators/auto/auto";
+import {Point} from "../../turboComponents/datatypes/point/point";
+import {TurboMap} from "../../turboComponents/datatypes/map/map";
+import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 export class TurboEventManagerModel extends TurboModel {
     @handler() public utils: TurboEventManagerUtilsHandler;

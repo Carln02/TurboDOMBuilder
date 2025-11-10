@@ -13,6 +13,9 @@ import {TurboSubstrate} from "./substrate/substrate";
 import {TurboSubstrateProperties} from "./substrate/substrate.types";
 
 /**
+ * @group MVC
+ * @category MVC
+ *
  * @type {MvcInstanceOrConstructor}
  * @template Type
  * @template PropertiesType
@@ -22,6 +25,9 @@ import {TurboSubstrateProperties} from "./substrate/substrate.types";
 export type MvcInstanceOrConstructor<Type, PropertiesType = any> = Type | (new (properties: PropertiesType) => Type);
 
 /**
+ * @group MVC
+ * @category MVC
+ *
  * @type {MvcManyInstancesOrConstructors}
  * @template Type
  * @template PropertiesType
@@ -33,6 +39,9 @@ export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInst
 
 /**
  * @type {MvcGenerationProperties}
+ * @group MVC
+ * @category MVC
+ *
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {object} DataType - The element's data type, if any.
  * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
@@ -80,6 +89,9 @@ type MvcGenerationProperties<
 
 /**
  * @type {MvcProperties}
+ * @group MVC
+ * @category MVC
+ *
  * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {object} DataType - The element's data type, if any.

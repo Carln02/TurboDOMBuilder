@@ -2,12 +2,12 @@ import {TurboController} from "../../../mvc/logic/controller";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ActionMode, ClickMode, InputDevice} from "../turboEventManager.types";
-import {Point} from "../../../utils/datatypes/point/point";
-import {TurboMap} from "../../../utils/datatypes/turboMap/turboMap";
+import {Point} from "../../../turboComponents/datatypes/point/point";
+import {TurboMap} from "../../../turboComponents/datatypes/map/map";
 import {TurboEvent} from "../../events/turboEvent";
-import {TurboEventName, TurboEventNameEntry} from "../../eventNaming";
 import {TurboDragEvent} from "../../events/turboDragEvent";
 import {clearCache} from "../../../decorators/cache/cache";
+import {TurboEventName, TurboEventNameEntry} from "../../../types/eventNaming.types";
 
 export class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     public keyName = "pointer";

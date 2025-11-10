@@ -5,6 +5,9 @@ import {TurboEmitter} from "../core/emitter";
 
 /**
  * @type {TurboControllerProperties}
+ * @group MVC
+ * @category Controller
+ *
  * @extends {TurboViewProperties}
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.

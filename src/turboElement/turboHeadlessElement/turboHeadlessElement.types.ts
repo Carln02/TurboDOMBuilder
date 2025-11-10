@@ -7,6 +7,9 @@ import {TurboElementDefaultInterface} from "../setup/default/default.types";
 
 /**
  * @type {TurboHeadlessProperties}
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.
  * @template {object} DataType - The element's data type, if initializing MVC.
  * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.

@@ -1,7 +1,6 @@
 import {icon, TurboIcon} from "../icon";
 import {TurboIconSwitchProperties} from "./iconSwitch.types";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
-import {OnOff} from "../../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/core/view";
@@ -9,7 +8,12 @@ import {TurboModel} from "../../../../mvc/core/model";
 import {auto} from "../../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {TurboIconConfig} from "../icon.types";
+import {OnOff} from "../../../../types/enums.types";
 
+/**
+ * @group Components
+ * @category TurboIconSwitch
+ */
 @define("turbo-icon-switch")
 class TurboIconSwitch<
     State extends string | number | symbol = OnOff,
@@ -38,20 +42,24 @@ class TurboIconSwitch<
 
     @auto() public set appendStateToIconName(value: boolean) {
         if (value) {
-            const reifectProperties = this.switchReifect?.properties as any;
+            const properties: any = this.switchReifect.properties;
             this.switchReifect.states.forEach(state => {
-                if (!reifectProperties[state]) reifectProperties[state] = {};
-                reifectProperties[state].icon = this.icon + "-" + state.toString();
+               properties[state] = {...properties[state], icon: this.icon + "-" + state.toString()};
             });
+            this.switchReifect.properties = properties;
         }
     }
 
     public initialize() {
         super.initialize();
-        if (this.defaultState && this.switchReifect) this.switchReifect.apply(this.defaultState, this);
+        if (this.defaultState) this.switchReifect?.apply(this.defaultState, this);
     }
 }
 
+/**
+ * @group Components
+ * @category TurboIconSwitch
+ */
 function iconSwitch<
     State extends string | number | symbol = OnOff,
     ViewType extends TurboView = TurboView<any, any>,

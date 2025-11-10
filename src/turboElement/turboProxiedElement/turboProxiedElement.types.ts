@@ -1,4 +1,3 @@
-import {ValidTag} from "../../core.types";
 import {TurboProperties} from "../../turboFunctions/element/element.types";
 import {TurboHeadlessProperties} from "../turboHeadlessElement/turboHeadlessElement.types";
 import {TurboView} from "../../mvc/core/view";
@@ -7,7 +6,12 @@ import {TurboModel} from "../../mvc/core/model";
 import {TurboElementDefaultInterface} from "../setup/default/default.types";
 import {TurboElementMvcInterface} from "../setup/mvc/mvc.types";
 import {TurboElementUiInterface} from "../setup/ui/ui.types";
+import {ValidTag} from "../../types/element.types";
 
+/**
+ * @group TurboElement
+ * @category TurboProxiedElement
+ */
 type TurboProxiedProperties<
     Tag extends ValidTag = "div",
     ViewType extends TurboView = TurboView,

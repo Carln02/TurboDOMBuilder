@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {TurboEventManager} from "../turboEventManager";
-import {TurboEventName} from "../../eventNaming";
+import {TurboEventName} from "../../../types/eventNaming.types";
 
 describe("Wheel controller → TurboWheelEvent dispatch", () => {
     it("emits trackpadScroll for small delta; later mouseWheel after timeout", () => {

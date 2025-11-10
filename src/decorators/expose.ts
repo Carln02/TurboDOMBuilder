@@ -1,8 +1,11 @@
-import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototypeManipulation";
+import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototype";
 
 /**
  * @decorator
  * @function expose
+ * @group Decorators
+ * @category Augmentation
+ *
  * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
  * from inner instances.
  * @param {string} rootKey - The property key of the instance to expose from.

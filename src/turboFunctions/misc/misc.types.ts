@@ -1,11 +1,16 @@
 /**
  * @constant
+ * @group Types
+ * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
 const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"] as const;
 
 /**
  * @type {ApplyDefaultsOptions}
+ * @group Types
+ * @category Misc
+ *
  * @description Options for {@link TurboSelector.applyDefaults}.
  * @property {string[]} [mergeProperties] - Array-like keys to merge. Defaults to {@link ApplyDefaultsMergeProperties}.
  * @property {boolean} [removeDuplicates] - Whether to remove duplicates when merging arrays. Defaults to `true`.

@@ -1,64 +1,265 @@
 import {
-    StatefulReifectProperties,
-    StatefulReifectCoreProperties,
-    ReifectObjectData,
+    BasicPropertyConfig,
     PropertyConfig,
-    ReifectAppliedOptions, ReifectEnabledObject, StateSpecificProperty, BasicPropertyConfig
+    ReifectAppliedOptions,
+    ReifectEnabledObject,
+    ReifectInterpolator,
+    ReifectObjectData,
+    StatefulReifectCoreProperties,
+    StatefulReifectProperties,
+    StateInterpolator
 } from "./statefulReifect.types";
-import {isNull} from "../../../utils/dataManipulation/misc";
-import {eachEqualToAny} from "../../../utils/computations/equity";
+import {isNull, isUndefined} from "../../../utils/dataManipulation/misc";
 import {mod} from "../../../utils/computations/misc";
 import {auto} from "../../../decorators/auto/auto";
-import {PartialRecord} from "../../../core.types";
 import {StylesType} from "../../../turboFunctions/style/style.types";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
+import {PartialRecord} from "../../../types/basic.types";
 
 /**
  * @class StatefulReifect
+ * @group Components
+ * @category StatefulReifect
+ *
  * @description A class to manage and apply dynamic state-based properties, styles, classes, and transitions to a
  * set of objects.
  *
  * @template {string | number | symbol} State - The type of the reifier's states.
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
-class StatefulReifect<State extends string | number | symbol, ClassType extends object = Node> {
+class StatefulReifect<State extends string | number | symbol = any, ClassType extends object = object> {
+    protected static readonly fields = ["properties", "classes", "styles",
+        "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"] as const;
+
     protected readonly timeRegex: RegExp = /^(\d+(?:\.\d+)?)(ms|s)?$/i;
 
-    //List of attached objects
     protected readonly attachedObjects: ReifectObjectData<State, ClassType>[] = [];
 
-    protected _states: State[];
+    /**
+     * @description All possible states.
+     */
+    @auto({defaultValueCallback: function () {return this.getAllStates()}})
+    public states: State[];
 
-    protected readonly values: StatefulReifectCoreProperties<State, ClassType>;
+    @auto({
+        defaultValueCallback: () => {
+            return {global: true, properties: true, classes: true, styles: true, replaceWith: true, transition: true}
+        },
+        preprocessValue: function (value) {return typeof value === "boolean" ? {...this.enabled, global: value} : value}
+    })
+    public get enabled(): ReifectEnabledObject {return}
+
+    public set enabled(value: boolean | ReifectEnabledObject) {
+        const object = value as ReifectEnabledObject;
+        if (!isUndefined(object.global)) {
+            this.refreshResolvedValues();
+            return;
+        }
+        if (!isUndefined(object.properties)) this.refreshProperties();
+        if (!isUndefined(object.styles)) this.refreshStyles();
+        if (!isUndefined(object.classes)) this.refreshClasses();
+        if (!isUndefined(object.replaceWith)) this.refreshReplaceWith();
+        if (!isUndefined(object.transition)) this.refreshTransition();
+    }
+
+    /**
+     * @description The properties to be assigned to the objects. It could take:
+     * - A record of `{key: value}` pairs.
+     * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.properties, value)}
+    })
+    public set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>) {}
+
+    public get properties(): PartialRecord<State, ReifectInterpolator<PartialRecord<keyof ClassType, any>, ClassType>> {return}
+
+    /**
+     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A record of `{CSS property: value}` pairs.
+     * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
+     * {key: value} pairs}`.
+     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.styles, value)}
+    })
+    public set styles(value: PropertyConfig<StylesType, State, ClassType>) {}
+
+    public get styles(): PartialRecord<State, ReifectInterpolator<StylesType, ClassType>> {return}
+
+    /**
+     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
+     * - A string of space-separated classes.
+     * - An array of classes.
+     * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
+     * return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated classes or an array of classes based
+     * on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.classes, value)}
+    })
+    public set classes(value: PropertyConfig<string | string[], State, ClassType>) {}
+
+    public get classes(): PartialRecord<State, ReifectInterpolator<string | string[], ClassType>> {return}
+
+    /**
+     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
+     * - The object to be replaced with.
+     * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
+     * to be replaced with}`.
+     * - An interpolation function that would return the object to be replaced with based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.replaceWith, value)}
+    })
+    public set replaceWith(value: PropertyConfig<ClassType, State, ClassType>) {}
+
+    public get replaceWith(): PartialRecord<State, ReifectInterpolator<ClassType, ClassType>> {return}
+
+    /**
+     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
+     * could take:
+     * - A string of space-separated CSS properties.
+     * - An array of CSS properties.
+     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
+     * function that would return any of the latter}`.
+     * - An interpolation function that would return a string of space-separated CSS properties or an array of
+     * CSS properties based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.transitionProperties, value)}
+    })
+    public set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>) {}
+
+    public get transitionProperties(): PartialRecord<State, ReifectInterpolator<string | string[], ClassType>> {return}
+
+    /**
+     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
+     * (number in seconds)}`.
+     * - An interpolation function that would return a duration (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.transitionDuration, value)}
+    })
+    public set transitionDuration(value: PropertyConfig<number, State, ClassType>) {}
+
+    public get transitionDuration(): PartialRecord<State, ReifectInterpolator<number, ClassType>> {return}
+
+    /**
+     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
+     * It could take:
+     * - A string representing the timing function to apply.
+     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
+     * function (string)}`.
+     * - An interpolation function that would return a timing function (string) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.transitionTimingFunction, value)}
+    })
+    public set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>) {}
+
+    public get transitionTimingFunction(): PartialRecord<State, ReifectInterpolator<string, ClassType>> {return}
+
+    /**
+     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
+     * - A numerical value (in seconds).
+     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
+     * (number in seconds)}`.
+     * - An interpolation function that would return a delay (number in seconds) based on the state value.
+     *
+     * The interpolation function would take as arguments:
+     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
+     * defined for the whole field (and not for a specific state).
+     * - `index: number`: the index of the object in the applied list.
+     * - `total: number`: the total number of objects in the applied list.
+     * - `object: ClassType`: the object itself.
+     */
+    @auto({
+        setIfUndefined: true,
+        preprocessValue: function (value) {return this.normalizePropertyConfig(this.transitionDelay, value)}
+    })
+    public set transitionDelay(value: PropertyConfig<number, State, ClassType>) {}
+
+    public get transitionDelay(): PartialRecord<State, ReifectInterpolator<number, ClassType>> {return}
 
     /**
      * @description Creates an instance of StatefulReifier.
      * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
      */
     public constructor(properties: StatefulReifectProperties<State, ClassType>) {
-        //Initializing enabled state
-        this.enable({
-            global: true, properties: true, classes: true, styles: true,
-            replaceWith: true, transition: true
+        if (properties.states) this.states = properties.states;
+        Object.entries(properties).forEach(([key, value]) => {
+            if (key === "attachedObjects" || key === "states") return;
+            this[key] = value;
         });
-
-        this.properties = properties.properties || {};
-        this.classes = properties.classes || {};
-        this.styles = properties.styles || {};
-        this.replaceWith = properties.replaceWith || {};
-
-        this.transition = properties.transition ?? "all 0s linear 0s";
-        if (properties.transitionProperties) this.transitionProperties = properties.transitionProperties;
-        if (properties.transitionDuration !== undefined) this.transitionDuration = properties.transitionDuration;
-        if (properties.transitionTimingFunction) this.transitionTimingFunction = properties.transitionTimingFunction;
-        if (properties.transitionDelay !== undefined) this.transitionDelay = properties.transitionDelay;
 
         //Disable transition if undefined
         if (!properties.transition && !properties.transitionProperties && !properties.transitionDuration
             && !properties.transitionTimingFunction && !properties.transitionDelay)
-            this.transitionEnabled = false;
+            this.enabled.transition = false;
 
-        if (properties.states) this.states = properties.states;
         if (properties.attachedObjects) this.attachAll(...properties.attachedObjects);
     }
 
@@ -90,9 +291,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
                                                  object: ClassType) => void, index?: number): this {
         const data = this.getData(object);
         if (data && onSwitch) data.onSwitch = onSwitch;
-        if (data) return;
-
-        this.attachObject(object, index, onSwitch);
+        if (!data) this.attachObject(object, index, onSwitch);
         return this;
     }
 
@@ -104,8 +303,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      */
     public attachAll(...objects: ClassType[]): this {
         objects.forEach(object => {
-            if (this.getData(object)) return;
-            this.attachObject(object);
+            if (!this.getData(object)) this.attachObject(object);
         });
         return this;
     }
@@ -120,8 +318,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      */
     public attachAllAt(index: number, ...objects: ClassType[]): this {
         objects.forEach((object, count) => {
-            if (this.getData(object)) return;
-            this.attachObject(object, index + count);
+            if (!this.getData(object)) this.attachObject(object, index + count);
         });
         return this;
     }
@@ -135,8 +332,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     public detach(...objects: ClassType[]): this {
         objects.forEach(object => {
             const data = this.getData(object);
-            if (!data) return;
-            this.detachObject(data);
+            if (data) this.detachObject(data);
         });
         return this;
     }
@@ -157,14 +353,15 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * - `object: ClassType`: the object itself.
      * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
      */
-    protected attachObject(object: ClassType, index?: number, onSwitch?:
-    (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType> {
+    protected attachObject(object: ClassType, index?: number, onSwitch?: (
+        state: State, index: number, total: number, object: ClassType) => void
+    ): ReifectObjectData<State, ClassType> {
         if (index == undefined || isNaN(index)) index = this.attachedObjects.length;
         if (index < 0) index = 0;
 
         const data = this.generateNewData(object, onSwitch);
         this.attachedObjects.splice(index!, 0, data);
-        $(object).reifects?.attach(this as StatefulReifect<any>);
+        turbo(object).attachReifect(this);
 
         data.lastState = this.stateOf(object);
         this.applyResolvedValues(data, false, true);
@@ -180,7 +377,10 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
      */
     protected detachObject(data: ReifectObjectData<State, ClassType>) {
+        if (!this.attachedObjects.includes(data)) return;
+        const object = data.object.deref();
         this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
+        if (object) turbo(object).detachReifect(this);
     }
 
     /**
@@ -190,12 +390,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @returns {ReifectObjectData<State, ClassType>} - The corresponding data, or `null` if was not found.
      */
     public getData(object: ClassType): ReifectObjectData<State, ClassType> {
-        if (!object) return null;
+        if (!object) return;
         for (const entry of this.attachedObjects) {
             const entryObject = this.getObject(entry);
             if (entryObject && entryObject == object) return entry;
         }
-        return null;
+        return;
     }
 
     /**
@@ -205,9 +405,8 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @returns {ClassType} The corresponding object, or `null` if was garbage collected.
      */
     public getObject(data: ReifectObjectData<State, ClassType>): ClassType {
-        if (!data) return null;
-        const object = data.object.deref();
-        return object || null;
+        if (!data) return;
+        return data.object.deref();
     }
 
     /*
@@ -221,28 +420,16 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      */
 
     /**
-     * @description All possible states.
-     */
-    public get states(): State[] {
-        return this._states;
-    }
-
-    public set states(value: State[]) {
-        if (!value) this._states = this.getAllStates();
-        else this._states = value;
-    }
-
-    /**
      * @function stateOf
      * @description Determine the current state of the reifect on the provided object.
      * @param {ClassType} object - The object to determine the state for.
      * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
      */
     public stateOf(object: ClassType): State {
-        if (!object) return undefined;
+        if (!object) return;
         const data = this.getData(object);
 
-        if (!data) return undefined;
+        if (!data) return;
         if (data.lastState) return data.lastState;
         if (!(object instanceof HTMLElement)) return this.states[0];
 
@@ -267,16 +454,13 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     public getAllStates(): State[] {
-        const states: State[] = [...this.states];
-        for (const values of [this.properties,
-            this.classes, this.styles, this.replaceWith]) {
-            if (typeof values != "object") continue;
-            for (const state of Object.keys(values)) {
-                if (!states.includes(state as State)) states.push(state as State);
-            }
+        const set = new Set<State>();
+        for (const field of StatefulReifect.fields) {
+            const value = this[field];
+            if (!value || typeof value !== "object") continue;
+            for (const state of Object.keys(value)) set.add(state as State);
         }
-        if (states.length == 0) console.warn("No states found for this particular reifect:", this);
-        return states;
+        return Array.from(set);
     }
 
     /**
@@ -306,36 +490,6 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      *
      */
 
-    @auto()
-    public set enabled(value: boolean) {
-        this.refreshResolvedValues();
-    }
-
-    @auto()
-    public set propertiesEnabled(value: boolean) {
-        this.refreshProperties();
-    }
-
-    @auto()
-    public set stylesEnabled(value: boolean) {
-        this.refreshStyles();
-    }
-
-    @auto()
-    public set classesEnabled(value: boolean) {
-        this.refreshClasses();
-    }
-
-    @auto()
-    public set replaceWithEnabled(value: boolean) {
-        this.refreshReplaceWith();
-    }
-
-    @auto()
-    public set transitionEnabled(value: boolean) {
-        this.refreshTransition();
-    }
-
     /**
      * @function enable
      * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
@@ -344,21 +498,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * accordingly update the value of `enabled.global`.
      */
     public enable(value: boolean | ReifectEnabledObject, object?: ClassType) {
-        if (typeof value === "boolean") this.enabled = value;
-        else if (!value) return;
-        else Object.entries(value).forEach(([key, value]) => {
-                if (key == "global") this.enabled = value;
-                else this[key + "Enabled"] = value
-            });
-    }
-
-    public enableObject(object: ClassType, value: boolean | ReifectEnabledObject) {
         const data = this.getData(object);
-        if (!data) return;
+        if (!data) return this.enabled = value;
 
-        if (typeof value == "boolean") data.enabled.global = value;
-        else if (!value) return;
-        else Object.entries(value).forEach(([key, value]) => data.enabled[key] = value);
+        if (typeof value === "boolean") data.enabled.global = value;
+        else if (typeof value === "object") Object.entries(value)
+            .forEach(([key, value]) => data.enabled[key] = value);
     }
 
     /**
@@ -381,167 +526,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      *
      */
 
-    /**
-     * @description The properties to be assigned to the objects. It could take:
-     * - A record of `{key: value}` pairs.
-     * - A record of `{state: {key: value} pairs or an interpolation function that would return a record of
-     * {key: value} pairs}`.
-     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set properties(value: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>) {
-    }
-
-    /**
-     * @description The styles to be assigned to the objects (only if they are eligible elements). It could take:
-     * - A record of `{CSS property: value}` pairs.
-     * - A record of `{state: {CSS property: value} pairs or an interpolation function that would return a record of
-     * {key: value} pairs}`.
-     * - An interpolation function that would return a record of `{key: value}` pairs based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set styles(value: PropertyConfig<StylesType, State, ClassType>) {
-    }
-
-    /**
-     * @description The classes to be assigned to the objects (only if they are eligible elements). It could take:
-     * - A string of space-separated classes.
-     * - An array of classes.
-     * - A record of `{state: space-separated class string, array of classes, or an interpolation function that would
-     * return any of the latter}`.
-     * - An interpolation function that would return a string of space-separated classes or an array of classes based
-     * on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set classes(value: PropertyConfig<string | string[], State, ClassType>) {
-    }
-
-    /**
-     * @description The object that should replace (in the DOM as well if eligible) the attached objects. It could take:
-     * - The object to be replaced with.
-     * - A record of `{state: object to be replaced with, or an interpolation function that would return an object
-     * to be replaced with}`.
-     * - An interpolation function that would return the object to be replaced with based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set replaceWith(value: PropertyConfig<ClassType, State, ClassType>) {
-    }
-
-    /**
-     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-     * could take:
-     * - A string of space-separated CSS properties.
-     * - An array of CSS properties.
-     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
-     * function that would return any of the latter}`.
-     * - An interpolation function that would return a string of space-separated CSS properties or an array of
-     * CSS properties based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>) {
-    }
-
-    /**
-     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
-     * (number in seconds)}`.
-     * - An interpolation function that would return a duration (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set transitionDuration(value: PropertyConfig<number, State, ClassType>) {
-    }
-
-    /**
-     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-     * It could take:
-     * - A string representing the timing function to apply.
-     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
-     * function (string)}`.
-     * - An interpolation function that would return a timing function (string) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>) {
-    }
-
-    /**
-     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
-     * (number in seconds)}`.
-     * - An interpolation function that would return a delay (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    @auto()
-    public set transitionDelay(value: PropertyConfig<number, State, ClassType>) {
-    }
-
-    @auto()
     public set transition(value: BasicPropertyConfig<string, State>) {
         if (!value) return;
         const object = typeof value === "string"
             ? this.processTransitionString(value)
             : this.processTransitionObject(value);
-
-        if (object.transitionProperties !== undefined) this.transitionProperties = object.transitionProperties;
-        if (object.transitionDuration !== undefined) this.transitionDuration = object.transitionDuration;
-        if (object.transitionDelay !== undefined) this.transitionDelay = object.transitionDelay;
-        if (object.transitionTimingFunction !== undefined) this.transitionTimingFunction = object.transitionTimingFunction;
+        Object.entries(object).forEach(([key, value]) => this[key] = value);
     }
 
     protected processTransitionObject(transitionObject: BasicPropertyConfig<string, State>): StatefulReifectCoreProperties<State, ClassType> {
@@ -549,11 +539,10 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         for (const [state, entry] of Object.entries(transitionObject)) {
             if (!this.states.includes(state as any)) continue;
             if (typeof entry !== "string") continue;
-            const object = this.processTransitionString(entry);
-            if (object.transitionProperties !== undefined) transitionValues.transitionProperties[state as any] = object.transitionProperties;
-            if (object.transitionDuration !== undefined) transitionValues.transitionDuration[state as any] = object.transitionDuration;
-            if (object.transitionDelay !== undefined) transitionValues.transitionDelay[state as any] = object.transitionDelay;
-            if (object.transitionTimingFunction !== undefined) transitionValues.transitionTimingFunction[state as any] = object.transitionTimingFunction;
+            Object.entries(this.processTransitionString(entry)).forEach(([key, value]) => {
+                if (!transitionValues[key]) transitionValues[key] = {};
+                transitionValues[key][state] = value;
+            });
         }
         return transitionValues;
     }
@@ -564,23 +553,19 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         const object: StatefulReifectCoreProperties<State, ClassType> = {transitionProperties: []};
         let i = 0;
 
-        //Properties
         while (i < tokens.length && !this.timeRegex.test(tokens[i])) {
             (object.transitionProperties as Array<string>).push(tokens[i]);
             i++;
         }
-        //Duration
         if (i < tokens.length) {
             const duration = this.parseTime(tokens[i]);
             if (!isNaN(duration)) object.transitionDuration = duration;
             i++;
         }
-        //Timing function
         if (i < tokens.length) {
             object.transitionTimingFunction = tokens[i];
             i++;
         }
-        //Delay
         if (i < tokens.length) {
             const delay = this.parseTime(tokens[i]);
             if (!isNaN(delay)) object.transitionDelay = delay;
@@ -598,13 +583,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @returns {string} The CSS transition string.
      */
     private getTransitionString(data: ReifectObjectData<State, ClassType>, state: State = data.lastState): string {
-        let transitionString = "";
-        data.resolvedValues.transitionProperties[state].forEach(property => transitionString
-            += ", " + property + " " + (data.resolvedValues.transitionDuration[state] || 0) + "s "
-            + (data.resolvedValues.transitionTimingFunction[state] || "linear") + " "
-            + (data.resolvedValues.transitionDelay[state] || 0) + "s");
-
-        return transitionString.substring(2);
+        if (!data.resolvedValues) return "";
+        const properties = this.cleanTransitionProperties(data.resolvedValues.transitionProperties[state]);
+        const duration = data.resolvedValues.transitionDuration[state] ?? 0;
+        const timing = data.resolvedValues.transitionTimingFunction[state] ?? "linear";
+        const delay = data.resolvedValues.transitionDelay[state] ?? 0;
+        return properties.map(property => `${property} ${duration}s ${timing} ${delay}s`).join(", ");
     }
 
     /*
@@ -667,7 +651,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
      * @returns {this} Itself for method chaining.
      */
     public reloadFor(object: ClassType): this {
-        if (!this.enabled) return this;
+        if (!this.enabled.global) return this;
 
         const data = this.getData(object);
         if (!data || !data.enabled || !data.enabled.global) return this;
@@ -677,7 +661,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     public reloadTransitionFor(object: ClassType): this {
-        if (!this.enabled || !this.transitionEnabled) return this;
+        if (!this.enabled.global || !this.enabled.transition) return this;
         const data = this.getData(object);
         if (!data || !data.enabled || !data.enabled.global || !data.enabled.transition) return this;
         this.applyTransition(data, data.lastState);
@@ -740,8 +724,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         this.applyStyles(data, data.lastState, applyStylesInstantly);
 
         if (!skipTransition) {
-            const handler = $(data.object.deref()).reifects;
-            if (this.attachedObjects.includes(data) && handler) handler.reloadTransitions();
+            if (this.attachedObjects.includes(data)) turbo(data.object.deref()).reloadTransitions();
             else this.applyTransition(data, data.lastState);
         }
 
@@ -759,7 +742,7 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     public applyProperties(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
-        if (!this.enabled || !this.propertiesEnabled) return;
+        if (!this.enabled || !this.enabled.properties) return;
         if (!data.enabled.global || !data.enabled.properties) return;
 
         const properties = data.resolvedValues?.properties?.[state];
@@ -779,12 +762,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     public refreshProperties() {
-        if (!this.enabled || !this.propertiesEnabled) return;
+        if (!this.enabled || !this.enabled.properties) return;
         this.attachedObjects.forEach(data => this.applyProperties(data));
     }
 
     public applyReplaceWith(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
-        if (!this.enabled || !this.replaceWithEnabled) return;
+        if (!this.enabled || !this.enabled.replaceWith) return;
         if (!data.enabled.global || !data.enabled.replaceWith) return;
 
         const newObject = data.resolvedValues?.replaceWith?.[state];
@@ -801,12 +784,12 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 
     public refreshReplaceWith() {
-        if (!this.enabled || !this.replaceWithEnabled) return;
+        if (!this.enabled || !this.enabled.replaceWith) return;
         this.attachedObjects.forEach(data => this.applyReplaceWith(data));
     }
 
     public applyClasses(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
-        if (!this.enabled || !this.classesEnabled) return;
+        if (!this.enabled || !this.enabled.classes) return;
         if (!data.enabled.global || !data.enabled.classes) return;
 
         const classes = data.resolvedValues?.classes;
@@ -816,44 +799,43 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         if (!object || !(object instanceof Element)) return;
 
         for (const [key, value] of Object.entries(classes)) {
-            $(object).toggleClass(value as (string | string[]), state == key);
+            turbo(object).toggleClass(value as (string | string[]), state == key);
         }
     }
 
     public refreshClasses() {
-        if (!this.enabled || !this.classesEnabled) return;
+        if (!this.enabled || !this.enabled.classes) return;
         this.attachedObjects.forEach(data => this.applyClasses(data));
     }
 
     public applyStyles(data: ReifectObjectData<State, ClassType>, state: State = data.lastState,
                        applyStylesInstantly: boolean = false) {
-        if (!this.enabled || !this.stylesEnabled) return;
+        if (!this.enabled || !this.enabled.styles) return;
         if (!data.enabled.global || !data.enabled.styles) return;
         if (!data.resolvedValues?.styles) return;
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element)) return;
-        $(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
+        turbo(object).setStyles(data.resolvedValues.styles[state], applyStylesInstantly);
     }
 
     public refreshStyles() {
-        if (!this.enabled || !this.stylesEnabled) return;
+        if (!this.enabled || !this.enabled.styles) return;
         this.attachedObjects.forEach(data => this.applyStyles(data));
     }
 
     public applyTransition(data: ReifectObjectData<State, ClassType>, state: State = data.lastState) {
-        if (!this.enabled || !this.transitionEnabled) return;
+        if (!this.enabled || !this.enabled.transition) return;
         if (!data.enabled.global || !data.enabled.transition) return;
 
         const object = data.object.deref();
         if (!object || !(object instanceof Element) || !data.resolvedValues) return;
-        $(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
+        turbo(object).appendStyle("transition", this.getTransitionString(data, state), ", ", true);
     }
 
     public refreshTransition() {
         for (const data of this.attachedObjects) {
-            const handler = $(data.object?.deref()).reifects;
-            if (handler) handler.reloadTransitions();
+            turbo(data.object?.deref()).reloadTransitions();
         }
     }
 
@@ -872,51 +854,19 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
 
     protected processRawProperties(data: ReifectObjectData<State, ClassType>,
                                    override?: StatefulReifectCoreProperties<State, ClassType>) {
-        if (!data.resolvedValues) data.resolvedValues = {
-            properties: undefined,
-            styles: undefined,
-            classes: undefined,
-            replaceWith: undefined,
-
-            transitionProperties: undefined,
-            transitionDuration: undefined,
-            transitionTimingFunction: undefined,
-            transitionDelay: undefined
-        };
-
+        if (!data.resolvedValues) data.resolvedValues = {} as any;
         if (isNull(override)) return;
 
-        const rawProperties = {
-            properties: this.properties,
-            styles: this.styles,
-            classes: this.classes,
-            replaceWith: this.replaceWith,
+        const object = data.object.deref();
+        if (!object) return;
 
-            transitionProperties: this.transitionProperties,
-            transitionDuration: this.transitionDuration,
-            transitionTimingFunction: this.transitionTimingFunction,
-            transitionDelay: this.transitionDelay,
+        const index = data.objectIndex ?? 0;
+        const total = data.totalObjectCount ?? 1;
 
-            ...(override || {})
-        };
-
-        data.resolvedValues.properties = {};
-        this.states.forEach(state => this.processRawPropertyForState(data, "properties",
-            rawProperties.properties, state));
-
-        if ("transitionProperties" in rawProperties) {
-            data.resolvedValues.transitionProperties = {};
-            this.states.forEach(state =>
-                this.processRawPropertyForState(data, "transitionProperties",
-                    rawProperties.transitionProperties, state));
-        }
-
-        for (const [field, values] of Object.entries(rawProperties)) {
-            if (field == "transitionProperties" || field == "properties") continue;
-            data.resolvedValues[field] = {};
-            this.states.forEach(state =>
-                this.processRawPropertyForState(data,
-                    field as keyof StatefulReifectCoreProperties<State, ClassType>, values, state));
+        for (const field of StatefulReifect.fields) {
+            const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
+            if (!data.resolvedValues[field]) data.resolvedValues[field] = {};
+            for (const state of this.states) data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
         }
     }
 
@@ -964,48 +914,41 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
         });
     }
 
-    protected processRawPropertyForState<Type>(data: ReifectObjectData<State, ClassType>,
-                                               field: keyof StatefulReifectCoreProperties<State, ClassType>,
-                                               value: PropertyConfig<Type, State, ClassType>,
-                                               state: State) {
-        let resolvedValue: Type;
-        const object = data.object.deref();
-        if (!object) return;
+    protected normalizePropertyConfig<Type>(
+        currentConfig: PartialRecord<State, ReifectInterpolator<Type, ClassType>>,
+        newConfig: PropertyConfig<Type, State, ClassType>,
+    ): PartialRecord<State, ReifectInterpolator<Type, ClassType>> {
+        const out: PartialRecord<State, ReifectInterpolator<Type, ClassType>> = currentConfig ? {...currentConfig} : {};
+        if (isUndefined(newConfig)) return out;
 
-        if (typeof value == "function") {
-            resolvedValue = (value as Function)(state, data.objectIndex, data.totalObjectCount, object);
-        } else if (typeof value == "object" && eachEqualToAny(this.states as string[], ...Object.keys(value))) {
-            const currentValue = (value as
-                PartialRecord<State, StateSpecificProperty<Type, ClassType>>)[state];
+        const isObject = typeof newConfig === "object" && newConfig !== null && !Array.isArray(newConfig);
+        const keys = isObject ? Reflect.ownKeys(newConfig as object) : [];
+        const isStateRecord = isObject && keys.length > 0 &&
+            keys.every(key => this.states.includes(key as State));
+        if (isObject && keys.length === 0) return out;
 
-            if (typeof currentValue == "function")
-                resolvedValue = currentValue(data.objectIndex, data.totalObjectCount, object);
-            else resolvedValue = currentValue as Type;
-        } else resolvedValue = value as Type;
-
-        if ((field == "properties" || field == "transitionProperties") && typeof resolvedValue == "string") {
-            resolvedValue = resolvedValue.split(" ") as Type;
-        } else if (field == "styles") {
-            if (data.resolvedValues.styles[state] == undefined) data.resolvedValues.styles[state] = {};
-
-            if (typeof resolvedValue == "number") {
-                data.resolvedValues.transitionProperties[state].forEach(property =>
-                    data.resolvedValues.styles[state][property] = resolvedValue);
-                return;
-            } else if (typeof resolvedValue == "string") {
-                const splitStyles = resolvedValue.split(";")
-                    .map(entry => entry.split(":")
-                        .map(part => part.trim()));
-
-                if (splitStyles.length == 1 && splitStyles[0].length == 1) {
-                    data.resolvedValues.transitionProperties[state].forEach(property =>
-                        data.resolvedValues.styles[state][property] = splitStyles[0][0]);
-                    return;
-                }
-            }
+        if (typeof newConfig === "function") this.states.forEach(state => {
+            out[state] = (index, total, object) =>
+                (newConfig as StateInterpolator<Type, State, ClassType>)(state, index, total, object);
+        });
+        else if (isStateRecord) this.states.forEach(state => {
+            const entry: Type | ReifectInterpolator<Type, ClassType> = (newConfig as PartialRecord<State, Type | ReifectInterpolator<Type, ClassType>>)[state];
+            if (!isUndefined(entry)) out[state] = typeof entry === "function"
+                ? entry as ReifectInterpolator<Type, ClassType>
+                : () => entry;
+        });
+        else {
+            const value = () => newConfig as Type;
+            this.states.forEach(state => out[state] = value);
         }
+        return out;
+    }
 
-        (data.resolvedValues[field][state] as Type) = resolvedValue;
+    private cleanTransitionProperties(value: string | string[]): string[] {
+        if (!value) return ["all"];
+        if (Array.isArray(value)) return value.length ? value : ["all"];
+        const split = value.split(/\s+/).map(s => s.trim()).filter(Boolean);
+        return split.length ? split : ["all"];
     }
 
     /**
@@ -1023,6 +966,10 @@ class StatefulReifect<State extends string | number | symbol, ClassType extends 
     }
 }
 
+/**
+ * @group Components
+ * @category StatefulReifect
+ */
 function statefulReifier<State extends string | number | symbol, ClassType extends object = Element>(
     properties: StatefulReifectProperties<State, ClassType>): StatefulReifect<State, ClassType> {
     return new StatefulReifect<State, ClassType>(properties);

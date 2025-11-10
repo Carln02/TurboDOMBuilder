@@ -1,5 +1,8 @@
 /**
  * @type {AutoOptions}
+ * @group Decorators
+ * @category Augmentation
+ *
  * @template Type
  * @description Options for configuring the `@auto` decorator.
  * @property {boolean} [override] - If true, will try to override the defined property in `super`.

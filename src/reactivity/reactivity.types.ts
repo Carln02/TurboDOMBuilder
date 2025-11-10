@@ -4,6 +4,9 @@ export type Write<Type> = (value: Type) => void;
 
 /**
  * @type {SignalEntry}
+ * @group Decorators
+ * @category Signal
+ *
  * @template Type
  * @description Type that represents a base signal object.
  * @property {function(): Type} get - Retrieve the signal value.
@@ -55,6 +58,9 @@ export type Effect = {
 
 /**
  * @type {SignalBox}
+ * @group Decorators
+ * @category Signal
+ *
  * @template Type
  * @description A signal entry that is also usable like its underlying primitive/object.
  *

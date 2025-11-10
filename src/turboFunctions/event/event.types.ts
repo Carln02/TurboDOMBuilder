@@ -1,6 +1,10 @@
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 
+/**
+ * @group Types
+ * @category Event
+ */
 type ListenerEntry = {
     target: Node,
     type: string,
@@ -11,8 +15,16 @@ type ListenerEntry = {
     manager: TurboEventManager,
 }
 
+/**
+ * @group Types
+ * @category Event
+ */
 type ListenerOptions = AddEventListenerOptions;
 
+/**
+ * @group Types
+ * @category Event
+ */
 type PreventDefaultOptions = {
     types?: string[],
     phase?: "capture" | "bubble",
@@ -22,6 +34,10 @@ type PreventDefaultOptions = {
     manager?: TurboEventManager
 };
 
+/**
+ * @group Types
+ * @category Event
+ */
 const BasicInputEvents = [
     "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
     "dragstart", "selectstart",
@@ -30,6 +46,10 @@ const BasicInputEvents = [
     "wheel"
 ] as const;
 
+/**
+ * @group Types
+ * @category Event
+ */
 const NonPassiveEvents = [
     "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
 ] as const;

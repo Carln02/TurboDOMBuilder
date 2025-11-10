@@ -1,9 +1,12 @@
 import {TurboWheelEventProperties} from "./turboEvent.types";
-import {Point} from "../../utils/datatypes/point/point";
 import {TurboEvent} from "./turboEvent";
+import {Point} from "../../turboComponents/datatypes/point/point";
 
 /**
  * @class TurboWheelEvent
+ * @group Event Handling
+ * @category TurboEvents
+ *
  * @extends TurboEvent
  * @description Custom wheel event
  */

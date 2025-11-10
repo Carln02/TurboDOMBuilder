@@ -1,7 +1,6 @@
 import {button, TurboButton} from "../../basics/button/button";
 import {TurboDropdownConfig, TurboDropdownProperties} from "./dropdown.types";
 import "./dropdown.css";
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelect} from "../../basics/select/select";
 import {popup, TurboPopup} from "../../containers/popup/popup";
 import {define} from "../../../decorators/define/define";
@@ -10,15 +9,19 @@ import {TurboModel} from "../../../mvc/core/model";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {auto} from "../../../decorators/auto/auto";
-import {HTMLTag} from "../../../core.types";
-import {stringify} from "../../../utils/dataManipulation/stringManipulation";
 import {expose} from "../../../decorators/expose";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
+import {HTMLTag} from "../../../types/htmlElement.types";
+import {DefaultEventName} from "../../../types/eventNaming.types";
+import {stringify} from "../../../utils/dataManipulation/string";
 
 /**
- * Dropdown class for creating Turbo button elements.
  * @class TurboDropdown
+ * @group Components
+ * @category TurboDropdown
+ *
+ * @description Dropdown class for creating Turbo button elements.
  * @extends TurboElement
  */
 @define("turbo-dropdown")
@@ -146,6 +149,11 @@ class TurboDropdown<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboDropdown
+ * @param properties
+ */
 function dropdown<
     ValueType = string,
     SecondaryValueType = string,

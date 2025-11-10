@@ -1,5 +1,5 @@
-import {camelToKebabCase, stringify} from "../../utils/dataManipulation/stringManipulation";
-import {getFirstDescriptorInChain, getFirstPrototypeInChainWith} from "../../utils/dataManipulation/prototypeManipulation";
+import {camelToKebabCase, stringify} from "../../utils/dataManipulation/string";
+import {getFirstDescriptorInChain, getFirstPrototypeInChainWith} from "../../utils/dataManipulation/prototype";
 import {ObserveUtils} from "./observe.utils";
 
 // https://github.com/microsoft/TypeScript/issues/53461
@@ -20,6 +20,9 @@ const utils = new ObserveUtils();
 /**
  * @decorator
  * @function observe
+ * @group Decorators
+ * @category Attributes & DOM
+ *
  * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
  * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
  * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.

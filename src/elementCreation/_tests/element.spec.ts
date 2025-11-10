@@ -1,7 +1,8 @@
 import {describe, it, expect, vi} from "vitest";
 import {TurboSelector} from "../../turboFunctions/turboSelector";
 import {element} from "../element";
-import {MathMLNamespace, SvgNamespace} from "../namespaceIdentification";
+import {SvgNamespace} from "../../types/svgElement.types";
+import {MathMLNamespace} from "../../types/mathMlElement.types";
 
 describe("element(properties)", () => {
     it("defaults to <div> in HTML namespace when no props", () => {

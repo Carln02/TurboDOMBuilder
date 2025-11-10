@@ -11,10 +11,14 @@ import {TurboRichElementConfig} from "../richElement/richElement.types";
 import {TurboInputProperties} from "./input.types";
 import {randomId} from "../../../utils/computations/random";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
-import {ValidElement} from "../../../core.types";
-import {Delegate} from "../../../eventHandling/delegate/delegate";
 import {TurboInputInputInteractor} from "./input.inputInteractor";
+import {Delegate} from "../../datatypes/delegate/delegate";
+import {ValidElement} from "../../../types/element.types";
 
+/**
+ * @group Components
+ * @category TurboInput
+ */
 @define("turbo-input")
 class TurboInput<
     InputTag extends "input" | "textarea" = "input",
@@ -161,6 +165,10 @@ class TurboInput<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboInput
+ */
 function turboInput<
     InputTag extends "input" | "textarea" = "input",
     ValueType extends string | number = string,

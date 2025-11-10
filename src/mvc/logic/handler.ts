@@ -2,6 +2,9 @@ import {TurboModel} from "../core/model";
 
 /**
  * @class TurboHandler
+ * @group MVC
+ * @category Handler
+ *
  * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
  * functions to manipulate some of (or all of) the model's data.
  * @template {TurboModel} ModelType - The element's MVC model type.

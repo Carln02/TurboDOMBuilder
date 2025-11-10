@@ -1,6 +1,6 @@
 import {TurboSelector} from "../turboSelector";
-import {Delegate} from "../../eventHandling/delegate/delegate";
 import {SubstrateSolver} from "./substrate.types";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 type PersistentObjectMetadata = {
     ignored?: boolean

@@ -1,6 +1,6 @@
 import {CacheOptions} from "./cache.types";
 import {$} from "../../turboFunctions/turboFunctions";
-import {getFirstDescriptorInChain} from "../../utils/dataManipulation/prototypeManipulation";
+import {getFirstDescriptorInChain} from "../../utils/dataManipulation/prototype";
 
 /**
  * @internal

@@ -3,6 +3,9 @@ import {TurboEvent} from "./turboEvent";
 
 /**
  * @class TurboKeyEvent
+ * @group Event Handling
+ * @category TurboEvents
+ *
  * @extends TurboEvent
  * @description Custom key event
  */

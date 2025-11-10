@@ -1,3 +1,6 @@
+/**
+ * @internal
+ */
 interface TurboElementDefaultInterface {
     /**
      * @description Whether the element is selected or not.

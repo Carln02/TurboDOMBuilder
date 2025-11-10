@@ -1,4 +1,7 @@
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Computes the luminance of a color
  * @param {string} color - The color in Hex format
  * @return The luminance value, or NaN if the color is not valid.

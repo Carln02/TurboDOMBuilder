@@ -7,6 +7,10 @@ import {TurboView} from "../../../../mvc/core/view";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {TurboIconSwitch} from "./iconSwitch";
 
+/**
+ * @group Components
+ * @category TurboIconSwitch
+ */
 type TurboIconSwitchProperties<
     State extends string | number | symbol,
     ViewType extends TurboView = TurboView,
@@ -19,7 +23,7 @@ type TurboIconSwitchProperties<
     appendStateToIconName?: boolean
 };
 
-declare module "../../../../core.types" {
+declare module "../../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-icon-switch": TurboIconSwitch
     }

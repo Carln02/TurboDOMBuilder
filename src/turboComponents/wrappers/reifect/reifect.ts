@@ -1,28 +1,27 @@
 //@ts-nocheck
 import {StatefulReifect} from "../statefulReifect/statefulReifect";
 import {StatelessPropertyConfig, StatelessReifectProperties} from "./reifect.types";
-import {
-    BasicPropertyConfig,
-    ReifectAppliedOptions,
-    StatefulReifectProperties
-} from "../statefulReifect/statefulReifect.types";
-import {PartialRecord} from "../../../core.types";
+import {ReifectAppliedOptions} from "../statefulReifect/statefulReifect.types";
 import {StylesType} from "../../../turboFunctions/style/style.types";
+import {PartialRecord} from "../../../types/basic.types";
 
 /**
  * @class Reifect
+ * @group Components
+ * @category Reifect
+ *
  * @description A class to manage and apply dynamic properties, styles, classes, and transitions to a
  * set of objects.
  *
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
-class Reifect<ClassType extends object = Node> extends StatefulReifect<"", ClassType> {
+class Reifect<ClassType extends object = Node> extends StatefulReifect<"default", ClassType> {
     /**
      * @description Creates an instance of StatefulReifier.
      * @param {StatelessReifectProperties<ClassType>} properties - The configuration properties.
      */
     public constructor(properties: StatelessReifectProperties<ClassType>) {
-        properties.states = [""];
+        properties.states = ["default"];
         super(properties);
     }
 
@@ -37,9 +36,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get properties(): StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType> {
-        const properties = super.properties;
-        if (typeof properties == "object" && "" in properties) return properties[""];
-        else return properties;
+        return super.properties?.["default"];
     }
 
     public set properties(value: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>) {
@@ -57,9 +54,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get styles(): StatelessPropertyConfig<StylesType, ClassType> {
-        const styles = super.styles;
-        if (typeof styles == "object" && "" in styles) return styles[""];
-        else return styles;
+        return super.styles?.["default"];
     }
 
     public set styles(value: StatelessPropertyConfig<StylesType, ClassType>) {
@@ -78,9 +73,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get classes(): StatelessPropertyConfig<string | string[], ClassType> {
-        const classes = super.classes;
-        if (typeof classes == "object" && "" in classes) return classes[""];
-        else return classes;
+        return super.classes?.["default"];
     }
 
     public set classes(value: StatelessPropertyConfig<string | string[], ClassType>) {
@@ -98,17 +91,11 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get replaceWith(): StatelessPropertyConfig<ClassType, ClassType> {
-        const replaceWith = super.replaceWith;
-        if (typeof replaceWith == "object" && "" in replaceWith) return replaceWith[""];
-        else return replaceWith;
+        return super.replaceWith?.["default"];
     }
 
     public set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>) {
         super.replaceWith = value;
-    }
-
-    public set transition(value: string) {
-        super.transition = value;
     }
 
     /**
@@ -125,9 +112,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get transitionProperties(): StatelessPropertyConfig<string | string[], ClassType> {
-        const transitionProperties = super.transitionProperties;
-        if (typeof transitionProperties == "object" && "" in transitionProperties) return transitionProperties[""];
-        else return transitionProperties;
+        return super.transitionProperties?.["default"];
     }
 
     public set transitionProperties(value: StatelessPropertyConfig<string | string[], ClassType>) {
@@ -145,9 +130,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get transitionDuration(): StatelessPropertyConfig<number, ClassType> {
-        const transitionDuration = super.transitionDuration;
-        if (typeof transitionDuration == "object" && "" in transitionDuration) return transitionDuration[""];
-        else return transitionDuration;
+        return super.transitionDuration?.["default"];
     }
 
     public set transitionDuration(value: StatelessPropertyConfig<number, ClassType>) {
@@ -166,9 +149,7 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get transitionTimingFunction(): StatelessPropertyConfig<string, ClassType> {
-        const transitionTimingFunction = super.transitionTimingFunction;
-        if (typeof transitionTimingFunction == "object" && "" in transitionTimingFunction) return transitionTimingFunction[""];
-        else return transitionTimingFunction;
+        return super.transitionTimingFunction?.["default"];
     }
 
     public set transitionTimingFunction(value: StatelessPropertyConfig<string, ClassType>) {
@@ -186,24 +167,26 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"", Class
      * - `object: ClassType`: the object itself.
      */
     public get transitionDelay(): StatelessPropertyConfig<number, ClassType> {
-        const transitionDelay = super.transitionDelay;
-        if (typeof transitionDelay == "object" && "" in transitionDelay) return transitionDelay[""];
-        else return transitionDelay;
+        return super.transitionDelay?.["default"];
     }
 
     public set transitionDelay(value: StatelessPropertyConfig<number, ClassType>) {
         super.transitionDelay = value;
     }
 
-    public initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"", ClassType>) {
-        super.initialize("", objects, options);
+    public initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"default", ClassType>) {
+        super.initialize("default", objects, options);
     }
 
-    public apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"", ClassType>) {
-        super.apply("", objects, options);
+    public apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"default", ClassType>) {
+        super.apply("default", objects, options);
     }
 }
 
+/**
+ * @group Components
+ * @category Reifect
+ */
 function reifect<ClassType extends object = Node>(properties: StatelessReifectProperties<ClassType>): Reifect<ClassType> {
     return new Reifect<ClassType>(properties);
 }

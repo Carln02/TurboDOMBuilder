@@ -1,9 +1,13 @@
-import {Coordinate} from "../../../utils/datatypes/point/point.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {Coordinate} from "../../../types/basic.types";
 
+/**
+ * @group Components
+ * @category TurboPopup
+ */
 type TurboPopupProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
@@ -18,6 +22,10 @@ type TurboPopupProperties<
     offsetFromAnchor?: number | Coordinate,
 };
 
+/**
+ * @group Components
+ * @category TurboPopup
+ */
 type TurboPopupConfig = {
     defaultClasses?: string | string[],
 
@@ -28,6 +36,10 @@ type TurboPopupConfig = {
     defaultOffsetFromAnchor?: number | Coordinate,
 }
 
+/**
+ * @group Components
+ * @category TurboPopup
+ */
 enum PopupFallbackMode {
     invert = "invert",
     offset = "offset",

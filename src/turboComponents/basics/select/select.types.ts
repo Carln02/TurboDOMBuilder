@@ -5,6 +5,10 @@ export type EntryData = {
     selected?: boolean,
 };
 
+/**
+ * @group Components
+ * @category TurboSelect
+ */
 type TurboSelectProperties<
     ValueType = string,
     SecondaryValueType = string,
@@ -29,10 +33,18 @@ type TurboSelectProperties<
     onEnabled?: (b: boolean, entry: EntryType, index: number) => void,
 };
 
+/**
+ * @group Components
+ * @category TurboSelect
+ */
 type TurboSelectConfig = {
     defaultSelectedEntryClasses?: string | string[]
 };
 
+/**
+ * @group Components
+ * @category TurboSelect
+ */
 type TurboSelectInputEventProperties<
     ValueType = string,
     SecondaryValueType = string,

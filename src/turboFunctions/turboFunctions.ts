@@ -10,14 +10,16 @@ import {setupSubstrateFunctions} from "./substrate/substrate";
 import {TurboSelector} from "./turboSelector";
 import {callOnce} from "../decorators/callOnce";
 import {setupReifectFunctions} from "./reifect/reifect";
-import {ValidElement, ValidTag} from "../core.types";
 import {element} from "../elementCreation/element";
+import {ValidElement, ValidTag} from "../types/element.types";
 
 const cache: WeakMap<object, TurboSelector<object>> = new WeakMap();
 
 /**
  * @overload
  * @function turbo
+ * @group TurboSelector
+ *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
  * in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use `tu()`,
@@ -30,6 +32,8 @@ function turbo<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>
 /**
  * @overload
  * @function turbo
+ * @group TurboSelector
+ *
  * @template {object} Type
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `tu()`, `t()`, or `$()` for the same behavior.
@@ -41,6 +45,8 @@ function turbo<Type extends object = Node>(object: Type): Turbo<Type>;
 /**
  * @overload
  * @function turbo
+ * @group TurboSelector
+ *
  * @description All-in-one selector function that instantiates an element with the given tag (if valid) and returns it
  * wrapped in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use
  * `tu()`, `t()`, or `$()` for the same behavior.
@@ -72,6 +78,8 @@ function turbo(tagOrElement?: object | string): Turbo {
 /**
  * @overload
  * @function tu
+ * @group TurboSelector
+ *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
  * in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use `turbo()`,
@@ -84,6 +92,8 @@ function tu<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
 /**
  * @overload
  * @function tu
+ * @group TurboSelector
+ *
  * @template {object} Type
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `t()`, or `$()` for the same behavior.
@@ -95,6 +105,8 @@ function tu<Type extends object = Node>(object: Type): Turbo<Type>;
 /**
  * @overload
  * @function tu
+ * @group TurboSelector
+ *
  * @description All-in-one selector function that instantiates an element with the given tag (if valid) and returns it
  * wrapped in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use
  * `turbo()`, `t()`, or `$()` for the same behavior.
@@ -109,6 +121,8 @@ function tu(tagOrElement?: object | string): Turbo {
 /**
  * @overload
  * @function t
+ * @group TurboSelector
+ *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
  * in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use `turbo()`,
@@ -121,6 +135,8 @@ function t<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
 /**
  * @overload
  * @function t
+ * @group TurboSelector
+ *
  * @template {object} Type
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `$()` for the same behavior.
@@ -132,6 +148,8 @@ function t<Type extends object = Node>(object: Type): Turbo<Type>;
 /**
  * @overload
  * @function t
+ * @group TurboSelector
+ *
  * @description All-in-one selector function that instantiates an element with the given tag (if valid) and returns it
  * wrapped in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use
  * `turbo()`, `tu()`, or `$()` for the same behavior.
@@ -146,6 +164,8 @@ function t(tagOrElement?: object | string): Turbo {
 /**
  * @overload
  * @function $
+ * @group TurboSelector
+ *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
  * in a proxied selector that augments it with useful functions for manipulating it.You can alternatively use `turbo()`,
@@ -158,6 +178,8 @@ function $<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
 /**
  * @overload
  * @function $
+ * @group TurboSelector
+ *
  * @template {object} Type
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `t()` for the same behavior.
@@ -169,6 +191,8 @@ function $<Type extends object = Node>(object: Type): Turbo<Type>;
 /**
  * @overload
  * @function $
+ * @group TurboSelector
+ *
  * @description All-in-one selector function that instantiates an element with the given tag (if valid) and returns it
  * wrapped in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use
  * `turbo()`, `tu()`, or `t()` for the same behavior.
@@ -180,6 +204,9 @@ function $(tagOrElement?: object | string): Turbo {
     return turbo(tagOrElement as any);
 }
 
+/**
+ * @group TurboSelector
+ */
 const turbofy = callOnce(function (options: TurbofyOptions = {}) {
     if (!options.excludeHierarchyFunctions) setupHierarchyFunctions();
     if (!options.excludeMiscFunctions) setupMiscFunctions();

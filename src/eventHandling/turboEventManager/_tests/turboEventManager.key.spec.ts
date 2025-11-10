@@ -1,8 +1,8 @@
 import {describe, expect, it, vi} from "vitest";
 import {TurboEventManager} from "../turboEventManager";
-import {TurboKeyEventName} from "../../eventNaming";
 import {ClickMode} from "../turboEventManager.types";
 import {$} from "../../../turboFunctions/turboFunctions";
+import {TurboKeyEventName} from "../../../types/eventNaming.types";
 
 describe("Key controller → TurboKeyEvent dispatch + mapping", () => {
     it("keydown → keyPressed; keyup → keyReleased; key mapping toggles ClickMode.key tool", () => {

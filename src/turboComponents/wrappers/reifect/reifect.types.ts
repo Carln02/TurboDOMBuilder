@@ -1,8 +1,11 @@
 import {ReifectInterpolator} from "../statefulReifect/statefulReifect.types";
-import {PartialRecord} from "../../../core.types";
 import {StylesType} from "../../../turboFunctions/style/style.types";
+import {PartialRecord} from "../../../types/basic.types";
 
 /**
+ * @group Components
+ * @category Reifect
+ *
  * @description A configuration type for properties based on states or interpolated values.
  *
  * @template Type
@@ -11,6 +14,10 @@ import {StylesType} from "../../../turboFunctions/style/style.types";
  */
 type StatelessPropertyConfig<Type, ClassType extends object = Element> = Type | ReifectInterpolator<Type, ClassType>;
 
+/**
+ * @group Components
+ * @category Reifect
+ */
 type StatelessReifectCoreProperties<ClassType extends object = Element> = {
     properties?: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>,
     styles?: StatelessPropertyConfig<StylesType, ClassType>,
@@ -23,6 +30,10 @@ type StatelessReifectCoreProperties<ClassType extends object = Element> = {
     transitionDelay?: StatelessPropertyConfig<number, ClassType>,
 };
 
+/**
+ * @group Components
+ * @category Reifect
+ */
 type StatelessReifectProperties<ClassType extends object = Element> =
     StatelessReifectCoreProperties<ClassType> & {
     attachedObjects?: ClassType[],

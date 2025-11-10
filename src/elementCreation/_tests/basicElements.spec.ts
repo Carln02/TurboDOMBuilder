@@ -1,8 +1,9 @@
 import {describe, it, expect, vi} from "vitest";
 import {
-    generateTagFunction, a, canvas, div, form, h1, h2, h3, h4, h5, h6, img, input, link, p, span, style, textarea, video
+    a, canvas, div, form, h1, h2, h3, h4, h5, h6, img, input, link, p, span, style, textarea, video
 } from "../basicElements";
 import {TurboSelector} from "../../turboFunctions/turboSelector";
+import {generateTagFunction} from "../element";
 
 function isHtmlNS(ns?: string | null) {
     return !!ns && /1999\/xhtml$/.test(ns);

@@ -1,6 +1,10 @@
 import {TurboEvent} from "../../../eventHandling/events/turboEvent";
 import {TurboSelectInputEventProperties} from "./select.types";
 
+/**
+ * @group Event Handling
+ * @category TurboEvents
+ */
 class TurboSelectInputEvent<
     ValueType = string,
     SecondaryValueType = string,

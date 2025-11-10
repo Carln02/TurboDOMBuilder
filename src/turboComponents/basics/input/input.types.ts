@@ -2,9 +2,13 @@ import {TurboRichElementProperties} from "../richElement/richElement.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
-import {ValidElement} from "../../../core.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {ValidElement} from "../../../types/element.types";
 
+/**
+ * @group Components
+ * @category TurboInput
+ */
 type TurboInputProperties<
     InputTag extends "input" | "textarea" = "input",
     ViewType extends TurboView = TurboView,

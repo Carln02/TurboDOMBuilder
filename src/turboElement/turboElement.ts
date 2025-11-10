@@ -5,11 +5,14 @@ import {TurboView} from "../mvc/core/view";
 import {defineDefaultProperties} from "./setup/default/default";
 import {defineMvcAccessors} from "./setup/mvc/mvc";
 import {defineUIPrototype} from "./setup/ui/ui";
-import { Delegate } from "../eventHandling/delegate/delegate";
 import {TurboElementConfig} from "./turboElement.types";
+import {Delegate} from "../turboComponents/datatypes/delegate/delegate";
 
 /**
  * @class TurboElement
+ * @group TurboElement
+ * @category TurboElement
+ *
  * @extends HTMLElement
  * @description Base TurboElement class, extending the base HTML element with a few useful tools and functions.
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.

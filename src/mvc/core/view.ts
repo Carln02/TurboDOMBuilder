@@ -5,6 +5,9 @@ import {initializeEffects} from "../../reactivity/reactivity";
 
 /**
  * @class TurboView
+ * @group MVC
+ * @category View
+ *
  * @template {object} ElementType - The type of the element attached to the view.
  * @template {TurboModel} ModelType - The model type used in this view.
  * @template {TurboEmitter} EmitterType - The emitter type used in this view.

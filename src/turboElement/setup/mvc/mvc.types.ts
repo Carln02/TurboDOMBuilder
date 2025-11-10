@@ -1,6 +1,9 @@
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 
+/**
+ * @internal
+ */
 interface TurboElementMvcInterface<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

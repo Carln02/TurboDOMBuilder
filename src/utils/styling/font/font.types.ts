@@ -1,5 +1,8 @@
 /**
  * @type {FontProperties}
+ * @group Utilities
+ * @category Font
+ *
  * @description An object representing a local font, or a family of fonts.
  *
  * @property {string} name - The name of the font. The font's filename should also match.

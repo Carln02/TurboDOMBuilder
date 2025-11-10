@@ -1,12 +1,15 @@
-import {TurboSelectProperties} from "../../basics/select/select.types";
-import {Direction, Range} from "../../../utils/datatypes/basicDatatypes.types";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {PartialRecord} from "../../../core.types";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {Direction, Range} from "../../../types/enums.types";
+import {PartialRecord} from "../../../types/basic.types";
 
+/**
+ * @group Components
+ * @category TurboSelectWheel
+ */
 type TurboSelectWheelProperties<
     ValueType = string,
     SecondaryValueType = string,
@@ -28,6 +31,10 @@ type TurboSelectWheelProperties<
     alwaysOpen?: boolean,
 }
 
+/**
+ * @group Components
+ * @category TurboSelectWheel
+ */
 type TurboSelectWheelStylingProperties = {
     element: HTMLElement,
     translationValue: number,

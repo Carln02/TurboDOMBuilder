@@ -1,3 +1,7 @@
+/**
+ * @group Utilities
+ * @category Hash
+ */
 async function hashString(input: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(input);
@@ -7,6 +11,10 @@ async function hashString(input: string): Promise<string> {
         .join("");
 }
 
+/**
+ * @group Utilities
+ * @category Hash
+ */
 async function hashBySize(input: string, chars = 12): Promise<string> {
     const bytes = Math.ceil((chars * 6) / 8);
 

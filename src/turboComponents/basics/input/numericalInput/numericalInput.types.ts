@@ -3,6 +3,10 @@ import {TurboView} from "../../../../mvc/core/view";
 import {TurboModel} from "../../../../mvc/core/model";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 
+/**
+ * @group Components
+ * @category TurboNumericalInput
+ */
 type TurboNumericalInputProperties<
     ViewType extends TurboView = TurboView,
     DataType extends object = object,

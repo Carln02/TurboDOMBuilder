@@ -1,19 +1,23 @@
 import {EntryData, TurboSelectConfig, TurboSelectProperties} from "./select.types";
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
 import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboBaseElement} from "../../../turboElement/turboBaseElement/turboBaseElement";
 import {auto} from "../../../decorators/auto/auto";
 import {richElement, TurboRichElement} from "../richElement/richElement";
-import {stringify} from "../../../utils/dataManipulation/stringManipulation";
-import {Delegate} from "../../../eventHandling/delegate/delegate";
 import {isNull, isUndefined} from "../../../utils/dataManipulation/misc";
 import {input} from "../../../elementCreation/basicElements";
+import {Delegate} from "../../datatypes/delegate/delegate";
+import {DefaultEventName} from "../../../types/eventNaming.types";
+import {stringify} from "../../../utils/dataManipulation/string";
 
 /**
- * Base class for creating a selection menu
  * @class TurboSelect
+ * @group Components
+ * @category TurboSelect
+ *
+ * @description Base class for creating a selection menu
+
  * @extends TurboElement
  */
 class TurboSelect<

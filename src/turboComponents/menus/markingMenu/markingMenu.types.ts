@@ -1,11 +1,15 @@
 import {TurboSelectProperties} from "../../basics/select/select.types";
 import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
-import {InOut} from "../../../utils/datatypes/basicDatatypes.types";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {InOut} from "../../../types/enums.types";
 
+/**
+ * @group Components
+ * @category TurboMarkingMenu
+ */
 type TurboMarkingMenuProperties<
     ValueType = string,
     SecondaryValueType = string,

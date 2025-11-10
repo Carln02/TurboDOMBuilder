@@ -8,6 +8,9 @@ import {SubstrateSolver, SubstrateSolverProperties} from "../../turboFunctions/s
 
 /**
  * @class TurboSubstrate
+ * @group MVC
+ * @category Substrate
+ *
  * @extends TurboController
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.

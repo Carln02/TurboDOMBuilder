@@ -1,12 +1,15 @@
-import {TurboSelectConfig, TurboSelectProperties} from "../../basics/select/select.types";
+import {TurboSelectProperties} from "../../basics/select/select.types";
 import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
-import {HTMLTag} from "../../../core.types";
 import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
+import {HTMLTag} from "../../../types/htmlElement.types";
 
 /**
  * @type {TurboDropdownProperties}
+ * @group Components
+ * @category TurboDropdown
+ *
  * @description Properties for configuring a Dropdown.
  * @extends TurboProperties
  *
@@ -52,6 +55,9 @@ type TurboDropdownProperties<
 
 /**
  * @type {TurboDropdownConfig}
+ * @group Components
+ * @category TurboDropdown
+ *
  * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
  *
  * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text

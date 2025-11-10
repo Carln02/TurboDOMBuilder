@@ -1,35 +1,11 @@
-import {ValidElement, ValidTag} from "../../core.types";
 import {MvcGenerationProperties} from "../../mvc/mvc.types";
 import {Mvc} from "../../mvc/mvc";
+import {ElementTagDefinition, HTMLElementMutableFields, ValidElement, ValidTag} from "../../types/element.types";
 
 /**
- * @description Type of non-function properties of an element.
- */
-type HTMLElementNonFunctions<Tag extends ValidTag = ValidTag> = {
-    [ElementField in keyof ValidElement<Tag>]: ValidElement<Tag>[ElementField] extends Function ? never : ElementField;
-}[keyof ValidElement<Tag>];
-
-/**
- * @description Represents mutable fields of an HTML element, excluding specific fields.
- */
-type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> =
-    Omit<Partial<Pick<ValidElement<Tag>, HTMLElementNonFunctions<Tag>>>, "children" | "className" | "style">
-
-/**
- * @type {ElementTagDefinition}
- * @description Represents an element's definition of its tag and its namespace (both optional).
+ * @group Types
+ * @category Element
  *
- * @property {string} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
- * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML"
- * is provided, the corresponding namespace will be used to create the element. Otherwise, the custom namespace
- * provided will be used.
- */
-type ElementTagDefinition = {
-    tag?: string;
-    namespace?: string;
-};
-
-/**
  * @type {TurboProperties}
  * @template {ValidTag} Tag - The HTML (or other) tag of the element, if passing it as a property. Defaults to "div".
  * @template {TurboView} ViewType - The element's view type, if any.

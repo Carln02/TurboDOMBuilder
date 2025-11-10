@@ -1,5 +1,4 @@
 import {icon, TurboIcon} from "../icon";
-import {DefaultEventName} from "../../../../eventHandling/eventNaming";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/core/view";
 import {TurboModel} from "../../../../mvc/core/model";
@@ -8,7 +7,12 @@ import {$} from "../../../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../../../../mvc/core/emitter";
 import {TurboIconToggleProperties} from "./iconToggle.types";
 import {TurboIconConfig} from "../icon.types";
+import {DefaultEventName} from "../../../../types/eventNaming.types";
 
+/**
+ * @group Components
+ * @category TurboIconToggle
+ */
 @define("turbo-icon-toggle")
 class TurboIconToggle<
     ViewType extends TurboView = TurboView<any, any>,
@@ -42,6 +46,10 @@ class TurboIconToggle<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboIconToggle
+ */
 function iconToggle<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

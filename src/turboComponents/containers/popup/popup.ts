@@ -1,8 +1,4 @@
 import {PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
-import {Coordinate} from "../../../utils/datatypes/point/point.types";
-import {Point} from "../../../utils/datatypes/point/point";
-import {DefaultEventName} from "../../../eventHandling/eventNaming";
-import {Direction} from "../../../utils/datatypes/basicDatatypes.types";
 import "./popup.css";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/core/view";
@@ -14,7 +10,15 @@ import {TurboEmitter} from "../../../mvc/core/emitter";
 import {element} from "../../../elementCreation/element";
 import {div} from "../../../elementCreation/basicElements";
 import {turbo} from "../../../turboFunctions/turboFunctions";
+import {Point} from "../../datatypes/point/point";
+import {DefaultEventName} from "../../../types/eventNaming.types";
+import {Direction} from "../../../types/enums.types";
+import {Coordinate} from "../../../types/basic.types";
 
+/**
+ * @group Components
+ * @category TurboPopup
+ */
 @define("turbo-popup")
 class TurboPopup<
     ViewType extends TurboView = TurboView<any, any>,
@@ -194,6 +198,10 @@ class TurboPopup<
     }
 }
 
+/**
+ * @group Components
+ * @category TurboPopup
+ */
 function popup<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,

@@ -9,6 +9,9 @@ import {callOnce} from "../../decorators/callOnce";
 
 /**
  * @class TurboHeadlessElement
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
  * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.
  * @template {object} DataType - The element's data type, if initializing MVC.

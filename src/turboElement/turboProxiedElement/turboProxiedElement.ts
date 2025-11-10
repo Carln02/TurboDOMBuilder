@@ -1,19 +1,19 @@
-import {ValidElement, ValidTag} from "../../core.types";
 import {Mvc} from "../../mvc/mvc";
 import {TurboProxiedProperties} from "./turboProxiedElement.types";
 import {blindElement} from "../../elementCreation/element";
-import {auto} from "../../decorators/auto/auto";
-import {$} from "../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../../mvc/core/emitter";
 import {TurboModel} from "../../mvc/core/model";
 import {TurboView} from "../../mvc/core/view";
 import {defineDefaultProperties} from "../setup/default/default";
 import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineUIPrototype} from "../setup/ui/ui";
-import {callOnce} from "../../decorators/callOnce";
+import {ValidElement, ValidTag} from "../../types/element.types";
 
 /**
  * @class TurboProxiedElement
+ * @group TurboElement
+ * @category TurboProxiedElement
+ *
  * @description TurboProxiedElement class, similar to TurboElement but containing an HTML element instead of being one.
  * @template {TurboView} ViewType - The element's view type, if initializing MVC.
  * @template {object} DataType - The element's data type, if initializing MVC.

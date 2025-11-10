@@ -1,14 +1,14 @@
 import {TurboSelector} from "../turboSelector";
-import {Delegate} from "../../eventHandling/delegate/delegate";
-import {DefaultEventName} from "../../eventHandling/eventNaming";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {MakeToolOptions, ToolBehaviorCallback, ToolBehaviorOptions} from "./tool.types";
 import {ToolFunctionsUtils} from "./tool.utils";
+import {DefaultEventName} from "../../types/eventNaming.types";
 
 const utils = new ToolFunctionsUtils();
 
-function setupToolFunctions() {
+export function setupToolFunctions() {
     /*
      *
      * Basic tool manipulation
@@ -223,5 +223,3 @@ function setupToolFunctions() {
         return utils.isToolIgnored(this.element, toolName, type, manager);
     }
 }
-
-export {setupToolFunctions};

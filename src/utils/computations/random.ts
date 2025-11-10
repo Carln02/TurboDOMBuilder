@@ -1,3 +1,7 @@
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomId(length: number = 8): string {
     const array = new Uint8Array(length);
     crypto.getRandomValues(array);
@@ -7,6 +11,10 @@ function randomId(length: number = 8): string {
         .slice(0, length);
 }
 
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomFromRange(n1: number, n2: number) {
     if (typeof n1 != "number" || typeof n2 != "number") return 0;
     const min = Math.min(n1, n2);
@@ -14,12 +22,20 @@ function randomFromRange(n1: number, n2: number) {
     return (Math.random() * (max - min)) + min;
 }
 
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomColor(saturation: number | [number, number] = [50, 70], lightness: number | [number, number] = [70, 85]): string {
     if (typeof saturation != "number" && saturation.length >= 2) saturation = randomFromRange(saturation[0], saturation[1]);
     if (typeof lightness != "number" && lightness.length >= 2) lightness = randomFromRange(lightness[0], lightness[1]);
     return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
 }
 
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomString(length: number = 12): string {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";

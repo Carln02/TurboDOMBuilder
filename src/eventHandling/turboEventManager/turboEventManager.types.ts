@@ -1,5 +1,9 @@
-import {Point} from "../../utils/datatypes/point/point";
+import {Point} from "../../turboComponents/datatypes/point/point";
 
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
 type TurboEventManagerStateProperties = {
     enabled?: boolean,
     preventDefaultWheel?: boolean,
@@ -7,6 +11,10 @@ type TurboEventManagerStateProperties = {
     preventDefaultTouch?: boolean,
 }
 
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
 type DisabledTurboEventTypes = {
     disableKeyEvents?: boolean,
     disableWheelEvents?: boolean,
@@ -18,6 +26,10 @@ type DisabledTurboEventTypes = {
     disableMoveEvent?: boolean,
 }
 
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
 type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
     moveThreshold?: number,
     longPressDuration?: number,
@@ -26,11 +38,18 @@ type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTu
     scaleEventPosition?: (position: Point) => Point,
 }
 
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
 type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
     lockOrigin?: Node,
 }
 
 /**
+ * @group Event Handling
+ * @category TurboEventManager
+ *
  * @description Object representing options passed to the ToolManager's setTool() function.
  * @property select - Indicate whether to visually select the tool on all toolbars, defaults to true
  * @property activate - Indicate whether to fire activation on the tool when setting it, defaults to true
@@ -43,6 +62,10 @@ type SetToolOptions = {
     setAsNoAction?: boolean,
 };
 
+/**
+ * @group Event Handling
+ * @category Enums
+ */
 enum ActionMode {
     none,
     click,
@@ -50,6 +73,10 @@ enum ActionMode {
     drag
 }
 
+/**
+ * @group Event Handling
+ * @category Enums
+ */
 enum ClickMode {
     none,
     left,
@@ -59,6 +86,10 @@ enum ClickMode {
     key
 }
 
+/**
+ * @group Event Handling
+ * @category Enums
+ */
 enum InputDevice {
     unknown,
     mouse,
