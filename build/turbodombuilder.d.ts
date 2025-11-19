@@ -463,149 +463,6 @@ declare function observe<Type extends object, Value>(value: ((initial: Value) =>
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
 
-/**
- * @decorator
- * @function solver
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 decorator that turns methods into substrate solvers.
- * @example
- * ```ts
- * @solver private constrainPosition(properties: SubstrateSolverProperties) {...}
- * ```
- * Is equivalent to:
- * ```ts
- * private constrainPosition(properties: SubstrateSolverProperties) {...}
- *
- * public initialize() {
- *   ...
- *   $(this).addSolver(this.constrainPosition);
- * }
- * ```
- */
-declare function solver<Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>): any;
-
-/**
- * @class TurboHandler
- * @group MVC
- * @category Handler
- *
- * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
- * functions to manipulate some of (or all of) the model's data.
- * @template {TurboModel} ModelType - The element's MVC model type.
- */
-declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
-    /**
-     * @description The key of the handler. Used to retrieve it in the main component. If not set, if the element's
-     * class name is MyElement and the handler's class name is MyElementSomethingHandler, the key would
-     * default to "something".
-     */
-    keyName: string;
-    /**
-     * @description The MVC model.
-     * @protected
-     */
-    model: ModelType;
-    constructor(model?: ModelType);
-}
-
-/**
- * @internal
- * @class SimpleDelegate
- * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
- * @description Class representing a set of callbacks that can be maintained and executed together.
- */
-declare class SimpleDelegate<CallbackType extends (...args: any[]) => any> {
-    private callbacks;
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback: CallbackType): void;
-    /**
-     * @description Removes a callback from the list.
-     * @param callback - The callback function to remove.
-     * @returns A boolean indicating whether the callback was found and removed.
-     */
-    remove(callback: CallbackType): boolean;
-    /**
-     * @description Checks whether a callback is in the list.
-     * @param callback - The callback function to check for.
-     * @returns A boolean indicating whether the callback was found.
-     */
-    has(callback: CallbackType): boolean;
-    /**
-     * @description Invokes all callbacks with the provided arguments.
-     * @param args - The arguments to pass to the callbacks.
-     */
-    fire(...args: Parameters<CallbackType>): ReturnType<CallbackType>;
-    /**
-     * @description Clears added callbacks
-     */
-    clear(): void;
-}
-/**
- * @class Delegate
- * @group Components
- * @category Delegate
- * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
- * @description Class representing a set of callbacks that can be maintained and executed together.
- */
-declare class Delegate<CallbackType extends (...args: any[]) => any> extends SimpleDelegate<CallbackType> {
-    /**
-     * @description Delegate fired when a callback is added.
-     */
-    onAdded: SimpleDelegate<(callback: CallbackType) => void>;
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback: CallbackType): void;
-}
-
-/**
- * @group Components
- * @category TurboDataBlock
- */
-type DataBlockProperties<DataType = any, IdType extends string | number | symbol = any> = {
-    id?: IdType;
-    data?: DataType;
-};
-/**
- * @group Components
- * @category TurboDataBlock
- */
-type DataBlockHost<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> = {
-    onDirty?: (key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
-    onChange?: (key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
-};
-/**
- * @group Components
- * @category TurboDataBlock
- */
-type BlockChangeObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> = {
-    onAdded: Delegate<(data: DataType, id: KeyType) => ComponentType | void>;
-    onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType) => void>;
-    onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType) => void>;
-    instances: Map<KeyType, ComponentType>;
-    getInstance(key: KeyType): ComponentType;
-    getAllInstances(): ComponentType[];
-    initialize(): void;
-    clear(): void;
-    destroy(): void;
-};
-/**
- * @group Components
- * @category TurboDataBlock
- */
-type BlockChangeObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> = {
-    initialize?: boolean;
-    onAdded?: (data: DataType, id: KeyType) => ComponentType | void;
-    onUpdated?: (data: DataType, instance: ComponentType, id: KeyType) => void;
-    onDeleted?: (data: DataType, instance: ComponentType, id: KeyType) => void;
-};
-
 type SignalSubscriber = () => void;
 /**
  * @type {SignalEntry}
@@ -687,6 +544,347 @@ type SignalBox<Type> = Type & SignalEntry<Type> & {
 };
 
 /**
+ * @overload
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Create a standalone reactive signal box.
+ * Returns a {@link SignalBox} wrapping the initial value.
+ *
+ * @template Value
+ * @param {Value} [initial] - Initial value stored by the signal.
+ * @param {object} [target] - The target to which the signal is bound.
+ * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
+ *
+ * @example
+ * ```ts
+ * // Standalone signal
+ * const count = signal(0);
+ * // e.g., count.get(), count.set(1)
+ * ```
+ */
+declare function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
+/**
+ * @overload
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Create a standalone reactive signal box that mirrors a getter and a setter.
+ * Returns a {@link SignalBox} wrapping the initial value.
+ *
+ * @template Value
+ * @param {() => Value} [get] - Getter that returns the value.
+ * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
+ * @param {object} [target] - The target to which the signal is bound.
+ * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
+ *
+ * @example
+ * ```ts
+ * // Standalone signal
+ * const count = signal(0);
+ * // e.g., count.get(), count.set(1)
+ * ```
+ */
+declare function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
+/**
+ * @overload
+ * @decorator
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Stage-3 decorator that turns a field, getter, setter, or accessor into a reactive signal.
+ *
+ * @example
+ * ```ts
+ * class Counter {
+ *   @signal count = 0;
+ *
+ *   @effect
+ *   log() { console.log(this.count); }
+ * }
+ *
+ * const c = new Counter();
+ * c.count++; // triggers effect, logs updated value
+ * ```
+ */
+declare function signal<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
+/**
+ * @decorator
+ * @function modelSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Decorator that binds a reactive signal to a **model field**
+ * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
+ * Useful to create signals in TurboModel classes.
+ *
+ * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
+ * @param {string | number} [blockKey] - Optional blockKey identifier.
+ *
+ * @example
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @modelSignal() title = "";
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @signal public get title() {
+ *      return this.getData("title");
+ *   }
+ *
+ *   public set title(value) {
+ *      this.setData("title", value);
+ *   }
+ * }
+ *
+ * ```
+ */
+declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockDataSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockIdSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Same idea but binds the block **id**.
+ */
+declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @overload
+ * @function effect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Bind a standalone effect callback to any signal it includes. The callback will be fired everytime
+ * the signal's value changes.
+ *
+ * @param {() => void} callback - The callback to process.
+ * @returns {() => void} A callback that, once called, disposes of the created effect.
+ *
+ * @example
+ * ```ts
+ * const count = signal(0);
+ * effect(() => console.log(count.value));
+ * ```
+ */
+declare function effect(callback: () => void): () => void;
+/**
+ * @overload
+ * @decorator
+ * @function effect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Stage-3 decorator that turns a function or getter into an effect callback bound to any signal it includes.
+ * The callback will be fired everytime the signal's value changes.
+ *
+ * @example
+ * ```ts
+ * class Counter {
+ *   @signal count = 0;
+ *
+ *   @effect log = () => console.log(this.count);
+ * }
+ *
+ * const c = new Counter();
+ * c.count++; // triggers effect, logs updated value
+ * ```
+ */
+declare function effect<Type extends object>(value: ((this: Type) => void) | (() => void), context?: ClassMethodDecoratorContext<Type, any> | ClassGetterDecoratorContext<Type, any> | ClassFieldDecoratorContext<Type, any>): any;
+/**
+ * @function getSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description Retrieve the signal at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ * @return {SignalEntry<Type>} - The signal entry.
+ */
+declare function getSignal<Type = any>(target: object, key: PropertyKey): SignalEntry<Type>;
+/**
+ * @function setSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description Set the value of the signal at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ * @param {Type} value - The new value of the signal.
+ */
+declare function setSignal<Type = any>(target: object, key: PropertyKey, value: Type): void;
+/**
+ * @overload
+ * @function markDirty
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Marks the signal at the given `key` inside `target` as dirty and fires all of its attached effects.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ */
+declare function markDirty(target: object, key: PropertyKey): void;
+/**
+ * @overload
+ * @function markDirty
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
+ * fires all of its attached effects.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {string | number | symbol} dataKey - The key of the data.
+ * @param {string | number} blockKey - The key of the block.
+ */
+declare function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
+/**
+ * @function initializeEffects
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Initializes and runs all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+declare function initializeEffects(target: object): void;
+/**
+ * @function disposeEffect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Disposes of the effect at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ */
+declare function disposeEffect(target: object, key: PropertyKey): void;
+/**
+ * @function disposeEffects
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Disposes of all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+declare function disposeEffects(target: object): void;
+
+/**
+ * @decorator
+ * @function solver
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate solvers.
+ * @example
+ * ```ts
+ * @solver private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addSolver(this.constrainPosition);
+ * }
+ * ```
+ */
+declare function solver<Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>): any;
+
+/**
+ * @class TurboHandler
+ * @group MVC
+ * @category Handler
+ *
+ * @description The MVC base handler class. It's an extension of the model, and its main job is to provide some utility
+ * functions to manipulate some of (or all of) the model's data.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ */
+declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
+    /**
+     * @description The key of the handler. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the handler's class name is MyElementSomethingHandler, the key would
+     * default to "something".
+     */
+    keyName: string;
+    /**
+     * @description The MVC model.
+     * @protected
+     */
+    model: ModelType;
+    constructor(model?: ModelType);
+    protected setup(): void;
+}
+
+/**
+ * @group Components
+ * @category TurboDataBlock
+ */
+type DataBlockProperties<DataType = any, IdType extends string | number | symbol = any> = {
+    id?: IdType;
+    data?: DataType;
+    initialize?: boolean;
+};
+/**
+ * @group Components
+ * @category TurboDataBlock
+ */
+type DataBlockHost<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> = {
+    onDirty?: (key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
+    onChange?: (key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
+};
+
+/**
  * @group Components
  * @category TurboWeakSet
  */
@@ -703,25 +901,139 @@ declare class TurboWeakSet<Type extends object = object> {
 }
 
 /**
+ * @internal
+ * @class SimpleDelegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
+declare class SimpleDelegate<CallbackType extends (...args: any[]) => any> {
+    private callbacks;
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback: CallbackType): void;
+    /**
+     * @description Removes a callback from the list.
+     * @param callback - The callback function to remove.
+     * @returns A boolean indicating whether the callback was found and removed.
+     */
+    remove(callback: CallbackType): boolean;
+    /**
+     * @description Checks whether a callback is in the list.
+     * @param callback - The callback function to check for.
+     * @returns A boolean indicating whether the callback was found.
+     */
+    has(callback: CallbackType): boolean;
+    /**
+     * @description Invokes all callbacks with the provided arguments.
+     * @param args - The arguments to pass to the callbacks.
+     */
+    fire(...args: Parameters<CallbackType>): ReturnType<CallbackType>;
+    /**
+     * @description Clears added callbacks
+     */
+    clear(): void;
+}
+/**
+ * @class Delegate
+ * @group Components
+ * @category Delegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
+declare class Delegate<CallbackType extends (...args: any[]) => any> extends SimpleDelegate<CallbackType> {
+    /**
+     * @description Delegate fired when a callback is added.
+     */
+    onAdded: SimpleDelegate<(callback: CallbackType) => void>;
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback: CallbackType): void;
+}
+
+/**
+ * @group Components
+ * @category TurboDataBlock
+ */
+type TurboObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> = {
+    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>;
+    initialize?: boolean;
+    onAdded?: (data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void;
+    onUpdated?: (data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void;
+    onDeleted?: (data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void;
+    onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
+    onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
+};
+type ScopedKey<KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> = {
+    blockKey?: BlockKeyType;
+    key?: KeyType;
+};
+
+declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> {
+    protected _isInitialized: boolean;
+    readonly onAdded: Delegate<(data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void>;
+    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
+    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
+    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
+    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
+    protected readonly instances: Map<BlockKeyType, Map<KeyType, ComponentType>>;
+    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>);
+    getInstance(key: KeyType, blockKey?: BlockKeyType): ComponentType;
+    getBlockInstancesAndKeys(blockKey?: BlockKeyType): [KeyType, ComponentType][];
+    getBlockInstances(blockKey?: BlockKeyType): ComponentType[];
+    getAllInstances(): ComponentType[];
+    getInstanceKey(instance: ComponentType): {
+        blockKey?: BlockKeyType;
+        key: KeyType;
+    };
+    getInstanceAt(flatKey: number | string): ComponentType;
+    getInstanceFlatKey(instance: ComponentType): string | number;
+    setInstance(instance: ComponentType, key: KeyType, blockKey?: BlockKeyType): void;
+    removeInstanceByKey(key: KeyType, removeFromDOM?: boolean, blockKey?: BlockKeyType): void;
+    removeInstance(instance: ComponentType, removeFromDOM?: boolean): void;
+    get isInitialized(): boolean;
+    initialize(): void;
+    clear(): void;
+    destroy(): void;
+    keyChanged(key: KeyType, value: DataType, deleted?: boolean, blockKey?: BlockKeyType): void;
+    flattenKey(key: KeyType, blockKey?: BlockKeyType): number | string;
+    scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType>;
+    protected get defaultBlockKey(): BlockKeyType;
+}
+
+declare class DataBlockObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> extends TurboObserver<DataType, ComponentType, KeyType> {
+    keyChanged(key: KeyType, value: DataType, deleted?: boolean): void;
+    getInstanceKey(instance: ComponentType): KeyType;
+    setInstance(instance: ComponentType, key: KeyType): void;
+}
+
+/**
  * @group Components
  * @category TurboDataBlock
  */
 declare class TurboDataBlock<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> {
+    private _data;
     id: IdType;
-    data: DataType;
+    get data(): DataType;
+    set data(data: DataType);
     accessor enabledCallbacks: boolean;
     protected isInitialized: boolean;
     private host;
     private signals;
-    protected readonly changeObservers: TurboWeakSet<BlockChangeObserver<DataEntryType, ComponentType, KeyType>>;
+    protected readonly changeObservers: TurboWeakSet<DataBlockObserver<DataEntryType, ComponentType, KeyType>>;
     readonly onKeyChanged: Delegate<(key: KeyType, value: any) => void>;
+    observerConstructor: new (...args: any[]) => TurboObserver;
     constructor(properties?: DataBlockProperties);
-    get(key: KeyType): unknown;
+    get(key: KeyType): any;
     set(key: KeyType, value: unknown): void;
+    add(value: unknown, key?: KeyType): KeyType | void;
     has(key: KeyType): boolean;
     delete(key: KeyType): void;
     get keys(): KeyType[];
-    get values(): unknown[];
+    get values(): any[];
     get size(): number;
     initialize(): void;
     /**
@@ -733,13 +1045,10 @@ declare class TurboDataBlock<DataType = any, KeyType extends string | number | s
     link(host: DataBlockHost<DataType, KeyType, IdType>): void;
     unlink(): void;
     makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
-    getSignal(key: KeyType): SignalBox<unknown>;
+    getSignal(key: KeyType): SignalBox<any>;
     makeAllSignals(): void;
-    generateObserver(properties?: BlockChangeObserverProperties<DataEntryType, ComponentType, KeyType>): BlockChangeObserver<DataEntryType, ComponentType, KeyType>;
-    private observerKeyChanged;
+    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>): DataBlockObserver<DataEntryType, ComponentType, KeyType>;
     protected keyChanged(key: KeyType, value?: unknown, deleted?: boolean): void;
-    private sortingFunction;
-    private removeInstance;
 }
 
 /**
@@ -758,6 +1067,10 @@ declare class TurboDataBlock<DataType = any, KeyType extends string | number | s
 declare class TurboModel<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, BlocksType extends "array" | "map" = "array" | "map", BlockType extends TurboDataBlock<DataType, KeyType, IdType> = TurboDataBlock<DataType, KeyType, IdType>> implements DataBlockHost<DataType, KeyType, IdType> {
     protected readonly isDataBlocksArray: boolean;
     protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
+    protected readonly changeObservers: TurboWeakSet<TurboObserver<any, any, KeyType>>;
+    static dataBlockConstructor: new () => TurboDataBlock;
+    observerConstructor: new () => TurboObserver;
+    onSetBlock: Delegate<(blockKey: MvcBlockKeyType<BlocksType>) => void>;
     /**
      * @description Map of MVC handlers bound to this model.
      */
@@ -774,6 +1087,7 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
     constructor(data?: DataType, dataBlocksType?: BlocksType);
+    protected setup(): void;
     /**
      * @description The default block.
      */
@@ -805,10 +1119,11 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @description Creates a data block entry.
      * @param {DataType} value - The data of the block.
      * @param {IdType} [id] - The optional ID of the data.
+     * @param initialize
      * @protected
      * @return {BlockType} - The created block.
      */
-    protected createBlock(value: DataType | BlockType, id?: IdType): BlockType;
+    protected createBlock(value: DataType | BlockType, id?: IdType, initialize?: boolean): BlockType;
     /**
      * @function setBlock
      * @description Creates and sets a data block at the specified key.
@@ -834,7 +1149,7 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
      * @param {boolean} [initialize=true] - Whether to initialize after adding.
      */
-    addBlock(value: DataType | BlockType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
+    addBlock(value: DataType | BlockType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): number | void;
     /**
      * @function getData
      * @description Retrieves the value associated with a given key in the specified block.
@@ -843,7 +1158,14 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * data.
      * @returns {unknown} The value associated with the key, or null if not found.
      */
-    getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): unknown;
+    getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): any;
+    /**
+     * @function getDataAt
+     * @description Retrieves the value associated with a given flat key.
+     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to retrieve.
+     * @returns {unknown} The value associated with the key, or null if not found.
+     */
+    getDataAt(flatKey: MvcFlatKeyType<BlocksType>): any;
     /**
      * @function setData
      * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
@@ -853,13 +1175,29 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      */
     setData(key: KeyType, value: unknown, blockKey?: MvcBlockKeyType<BlocksType>): void;
     /**
+     * @function setDataAt
+     * @description Sets the value for a given flat key and triggers callbacks (if enabled).
+     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to update.
+     * @param {unknown} value - The value to assign.
+     */
+    setDataAt(flatKey: MvcFlatKeyType<BlocksType>, value: unknown): void;
+    addData(value: unknown, key?: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): KeyType | void;
+    addDataAt(value: unknown, flatKey?: MvcFlatKeyType<BlocksType>): KeyType | void;
+    /**
      * @function hasData
-     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @description Checks the value for a given key in the specified block and triggers callbacks (if enabled).
      * @param {KeyType} key - The key to update.
      * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
      */
     hasData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): boolean;
+    /**
+     * @function hasDataAt
+     * @description Sets the value for a given flat key in the specified block and triggers callbacks (if enabled).
+     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to check.
+     */
+    hasDataAt(flatKey: MvcFlatKeyType<BlocksType>): boolean;
     deleteData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    deleteDataAt(flatKey: MvcFlatKeyType<BlocksType>): false | void;
     /**
      * @function getSize
      * @description Returns the size of the specified block.
@@ -965,7 +1303,7 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
      * @returns {unknown[]} Array of values.
      */
-    getAllValues(blockKey?: MvcBlockKeyType<BlocksType>): unknown[];
+    getAllValues(blockKey?: MvcBlockKeyType<BlocksType>): any[];
     /**
      * @function getHandler
      * @description Retrieves the attached MVC handler with the given key.
@@ -981,6 +1319,9 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {TurboHandler} handler - The handler instance to register.
      */
     addHandler(handler: TurboHandler): void;
+    generateObserver<DataEntryType = any, ComponentType extends object = object>(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType, MvcBlockKeyType<BlocksType>>): TurboObserver<DataEntryType, ComponentType, KeyType, MvcBlockKeyType<BlocksType>>;
+    flattenKey(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): MvcFlatKeyType<BlocksType>;
+    scopeKey(flatKey: MvcFlatKeyType<BlocksType>): ScopedKey<KeyType, MvcBlockKeyType<BlocksType>>;
 }
 
 /**
@@ -1090,12 +1431,13 @@ declare class TurboEmitter<ModelType extends TurboModel = TurboModel> {
  * @group MVC
  * @category Model
  */
-type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends TurboDataBlock = TurboDataBlock> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends object = object> = Type extends "map" ? Map<string, BlockType> : BlockType[];
 /**
  * @group MVC
  * @category Model
  */
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
 /**
  * @group MVC
  * @category View
@@ -1135,6 +1477,7 @@ declare class TurboView<ElementType extends object = object, ModelType extends T
      * @param {TurboViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
      */
     constructor(properties: TurboViewProperties<ElementType, ModelType, EmitterType>);
+    protected setup(): void;
     /**
      * @function initialize
      * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
@@ -1605,6 +1948,7 @@ declare class TurboController<ElementType extends object = object, ViewType exte
      */
     emitter: EmitterType;
     constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    protected setup(): void;
     /**
      * @function initialize
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
@@ -3815,264 +4159,6 @@ declare class TurboWheelEvent extends TurboEvent {
 }
 
 /**
- * @overload
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Create a standalone reactive signal box.
- * Returns a {@link SignalBox} wrapping the initial value.
- *
- * @template Value
- * @param {Value} [initial] - Initial value stored by the signal.
- * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
- * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
- *
- * @example
- * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
- * ```
- */
-declare function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
-/**
- * @overload
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Create a standalone reactive signal box that mirrors a getter and a setter.
- * Returns a {@link SignalBox} wrapping the initial value.
- *
- * @template Value
- * @param {() => Value} [get] - Getter that returns the value.
- * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
- * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
- * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
- *
- * @example
- * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
- * ```
- */
-declare function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
-/**
- * @overload
- * @decorator
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Stage-3 decorator that turns a field, getter, setter, or accessor into a reactive signal.
- *
- * @example
- * ```ts
- * class Counter {
- *   @signal count = 0;
- *
- *   @effect
- *   log() { console.log(this.count); }
- * }
- *
- * const c = new Counter();
- * c.count++; // triggers effect, logs updated value
- * ```
- */
-declare function signal<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
-/**
- * @decorator
- * @function modelSignal
- * @group Decorators
- * @category Signal
- *
- * @description Decorator that binds a reactive signal to a **model field**
- * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
- * Useful to create signals in TurboModel classes.
- *
- * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
- * @param {string | number} [blockKey] - Optional blockKey identifier.
- *
- * @example
- * ```ts
- * class TodoModel extends TurboModel {
- *   @modelSignal() title = "";
- * }
- * ```
- * Is equivalent to:
- * ```ts
- * class TodoModel extends TurboModel {
- *   @signal public get title() {
- *      return this.getData("title");
- *   }
- *
- *   public set title(value) {
- *      this.setData("title", value);
- *   }
- * }
- *
- * ```
- */
-declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends TurboModel<any, any, any, any, TurboDataBlock<any, any, any, any, any>>, Value>(value: {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockIdSignal
- * @group Decorators
- * @category Signal
- *
- * @description Same idea but binds the block **id**.
- */
-declare function blockIdSignal(blockKey?: string | number): <Type extends TurboModel<any, any, any, any, TurboDataBlock<any, any, any, any, any>>, Value>(value: {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @overload
- * @function effect
- * @group Decorators
- * @category Effect
- *
- * @description Bind a standalone effect callback to any signal it includes. The callback will be fired everytime
- * the signal's value changes.
- *
- * @param {() => void} callback - The callback to process.
- * @returns {() => void} A callback that, once called, disposes of the created effect.
- *
- * @example
- * ```ts
- * const count = signal(0);
- * effect(() => console.log(count.value));
- * ```
- */
-declare function effect(callback: () => void): () => void;
-/**
- * @overload
- * @decorator
- * @function effect
- * @group Decorators
- * @category Effect
- *
- * @description Stage-3 decorator that turns a function or getter into an effect callback bound to any signal it includes.
- * The callback will be fired everytime the signal's value changes.
- *
- * @example
- * ```ts
- * class Counter {
- *   @signal count = 0;
- *
- *   @effect log = () => console.log(this.count);
- * }
- *
- * const c = new Counter();
- * c.count++; // triggers effect, logs updated value
- * ```
- */
-declare function effect<Type extends object>(value: ((this: Type) => void) | (() => void), context?: ClassMethodDecoratorContext<Type, any> | ClassGetterDecoratorContext<Type, any> | ClassFieldDecoratorContext<Type, any>): any;
-/**
- * @function getSignal
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Retrieve the signal at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- * @return {SignalEntry<Type>} - The signal entry.
- */
-declare function getSignal<Type = any>(target: object, key: PropertyKey): SignalEntry<Type>;
-/**
- * @function setSignal
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Set the value of the signal at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- * @param {Type} value - The new value of the signal.
- */
-declare function setSignal<Type = any>(target: object, key: PropertyKey, value: Type): void;
-/**
- * @overload
- * @function markDirty
- * @group Decorators
- * @category Signal
- *
- * @description Marks the signal at the given `key` inside `target` as dirty and fires all of its attached effects.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- */
-declare function markDirty(target: object, key: PropertyKey): void;
-/**
- * @overload
- * @function markDirty
- * @group Decorators
- * @category Signal
- *
- * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
- * fires all of its attached effects.
- * @param {object} target - The target to which the signal is bound.
- * @param {string | number | symbol} dataKey - The key of the data.
- * @param {string | number} blockKey - The key of the block.
- */
-declare function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
-/**
- * @function initializeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Initializes and runs all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-declare function initializeEffects(target: object): void;
-/**
- * @function disposeEffect
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of the effect at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- */
-declare function disposeEffect(target: object, key: PropertyKey): void;
-/**
- * @function disposeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-declare function disposeEffects(target: object): void;
-
-/**
  * @internal
  */
 interface TurboElementUiInterface {
@@ -5162,6 +5248,8 @@ type TurboSelectProperties<ValueType = string, SecondaryValueType = string, Entr
     getSecondaryValue?: (entry: EntryType) => SecondaryValueType;
     createEntry?: (value: ValueType) => EntryType;
     onEntryAdded?: (entry: EntryType, index: number) => void;
+    onEntryRemoved?: (entry: EntryType) => void;
+    onEntryClicked?: (entry: EntryType, e: Event) => void;
     multiSelection?: boolean;
     forceSelection?: boolean;
     inputName?: string;
@@ -5225,6 +5313,9 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     private parentObserver;
     readonly onSelectDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void>;
     readonly onEnabledDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void>;
+    readonly onEntryAdded: Delegate<(entry: EntryType, index: number) => void>;
+    readonly onEntryRemoved: Delegate<(entry: EntryType) => void>;
+    readonly onEntryClicked: Delegate<(entry: EntryType, e: Event) => void>;
     /**
      * The dropdown's entries.
      */
@@ -5241,8 +5332,6 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     getValue: (entry: EntryType) => ValueType;
     getSecondaryValue: (entry: EntryType) => SecondaryValueType;
     createEntry: (value: ValueType) => EntryType;
-    onEntryAdded: (entry: EntryType, index: number) => void;
-    onEntryRemoved: (entry: EntryType) => void;
     /**
      * The dropdown's underlying hidden input. Might be undefined.
      */
@@ -5303,7 +5392,7 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     get selectedSecondaryValues(): SecondaryValueType[];
     get selectedSecondaryValue(): SecondaryValueType;
     get stringSelectedValue(): string;
-    clear(): void;
+    clear(disableObserver?: boolean): void;
     refreshInputField(): void;
     destroy(): this;
     protected enableObserver(value: boolean): void;
@@ -5319,73 +5408,6 @@ declare class TurboSelectInputEvent<ValueType = string, SecondaryValueType = str
     readonly toggledEntry: EntryType;
     readonly values: ValueType[];
     constructor(properties: TurboSelectInputEventProperties<ValueType, SecondaryValueType, EntryType>);
-}
-
-declare module "yjs" {
-    interface Map<MapType = any> {
-    }
-    interface Array<T = any> {
-    }
-    interface AbstractType<EventType = any> {
-    }
-    interface YEvent<T = any, EventType = any> {
-    }
-    interface YMapEvent<T = any, EventType = any> {
-    }
-    interface YArrayEvent<T = any, EventType = any> {
-    }
-}
-/**
- * @group Types
- * @category Yjs
- */
-type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    document: Doc;
-};
-
-/**
- * @group Components
- * @category TurboYBlock
- */
-declare class TurboYBlock<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> extends TurboDataBlock<YType, KeyType, IdType> {
-    private observer;
-    set enabledCallbacks(value: boolean);
-    /**
-     * @function get
-     * @description Retrieves the value associated with a given key in the specified block.
-     * @param {KeyType} key - The key to retrieve.
-     * @returns {unknown} The value associated with the key, or null if not found.
-     */
-    get(key: KeyType): unknown;
-    /**
-     * @function set
-     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-     * @param {KeyType} key - The key to update.
-     * @param {unknown} value - The value to assign.
-     */
-    set(key: KeyType, value: unknown): void;
-    has(key: KeyType): boolean;
-    delete(key: KeyType): void;
-    /**
-     * @function keys
-     * @description Retrieves all keys within the given block(s).
-     * @returns {KeyType[]} Array of keys.
-     */
-    get keys(): KeyType[];
-    /**
-     * @function size
-     * @description Returns the size of the specified block.
-     * @returns {number} The size.
-     */
-    get size(): number;
-    /**
-     * @function initialize
-     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-     */
-    initialize(): void;
-    clear(clearData?: boolean): void;
-    protected observeChanges(event: YEvent, transaction: any): void;
-    private shiftIndices;
 }
 
 /**
@@ -5674,6 +5696,74 @@ declare class TurboPopup<ViewType extends TurboView = TurboView<any, any>, DataT
  */
 declare function popup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType>): TurboPopup<ViewType, DataType, ModelType, EmitterType>;
 
+declare module "yjs" {
+    interface Map<MapType = any> {
+    }
+    interface Array<T = any> {
+    }
+    interface AbstractType<EventType = any> {
+    }
+    interface YEvent<T = any, EventType = any> {
+    }
+    interface YMapEvent<T = any, EventType = any> {
+    }
+    interface YArrayEvent<T = any, EventType = any> {
+    }
+}
+/**
+ * @group Types
+ * @category Yjs
+ */
+type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    document: Doc;
+};
+
+/**
+ * @group Components
+ * @category TurboYBlock
+ */
+declare class TurboYBlock<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> extends TurboDataBlock<YType, KeyType, IdType> {
+    private observer;
+    set enabledCallbacks(value: boolean);
+    /**
+     * @function get
+     * @description Retrieves the value associated with a given key in the specified block.
+     * @param {KeyType} key - The key to retrieve.
+     * @returns {unknown} The value associated with the key, or null if not found.
+     */
+    get(key: KeyType): unknown;
+    /**
+     * @function set
+     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+     * @param {KeyType} key - The key to update.
+     * @param {unknown} value - The value to assign.
+     */
+    set(key: KeyType, value: unknown): void;
+    add(value: unknown, key?: KeyType): void | KeyType;
+    has(key: KeyType): boolean;
+    delete(key: KeyType): void;
+    /**
+     * @function keys
+     * @description Retrieves all keys within the given block(s).
+     * @returns {KeyType[]} Array of keys.
+     */
+    get keys(): KeyType[];
+    /**
+     * @function size
+     * @description Returns the size of the specified block.
+     * @returns {number} The size.
+     */
+    get size(): number;
+    /**
+     * @function initialize
+     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+     */
+    initialize(): void;
+    clear(clearData?: boolean): void;
+    protected observeChanges(event: YEvent, transaction: any): void;
+    private shiftIndices;
+}
+
 /**
  * @type {TurboDropdownProperties}
  * @group Components
@@ -5750,7 +5840,12 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
     popupClasses: string | string[];
     entries: HTMLCollection | NodeList | EntryType[];
     values: ValueType[];
-    protected onEntryAdded(entry: EntryType): void;
+    accessor selectedEntry: EntryType;
+    accessor selectedValue: ValueType;
+    accessor selectedValues: ValueType[];
+    accessor selectedSecondaryValues: SecondaryValueType[];
+    accessor selectedSecondaryValue: SecondaryValueType;
+    accessor stringSelectedValue: string;
     /**
      * The dropdown's selector element.
      */
@@ -5762,11 +5857,6 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
     set popup(value: HTMLElement);
     initialize(): void;
     private openPopup;
-    get selectedValues(): ValueType[];
-    get selectedValue(): ValueType;
-    get selectedSecondaryValues(): SecondaryValueType[];
-    get selectedSecondaryValue(): SecondaryValueType;
-    get stringSelectedValue(): string;
 }
 /**
  * @group Components
@@ -5806,9 +5896,9 @@ type TurboMarkingMenuProperties<ValueType = string, SecondaryValueType = string,
  * @group Components
  * @category TurboSelectWheel
  */
-type TurboSelectWheelProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel> = TurboElementProperties<ViewType, DataType, ModelType> & {
+type TurboSelectWheelProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     direction?: Direction;
-    styleReifect?: Reifect | StatelessReifectProperties;
+    reifect?: Reifect | StatelessReifectProperties;
     generateCustomStyling?: (properties: TurboSelectWheelStylingProperties) => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
     size?: number | Record<Range, number>;
     opacity?: Record<Range, number>;
@@ -5838,10 +5928,13 @@ type TurboSelectWheelStylingProperties = {
  * @template {string} ValueType
  * @template {TurboSelectEntry<ValueType, any>} EntryType
  */
-declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<any>> extends TurboElement<ViewType, DataType, ModelType> {
+declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    selector: TurboSelect<ValueType, SecondaryValueType, EntryType>;
+    accessor entries: EntryType[];
+    accessor values: ValueType[];
+    accessor selectedEntry: EntryType;
+    accessor selectedValue: ValueType;
     private _currentPosition;
-    private _reifect;
-    private _size;
     protected readonly sizePerEntry: number[];
     protected readonly positionPerEntry: number[];
     protected totalSize: number;
@@ -5855,18 +5948,37 @@ declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, 
     generateCustomStyling: (properties: TurboSelectWheelStylingProperties) => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
     protected dragging: boolean;
     protected openTimer: NodeJS.Timeout;
-    set alwaysOpen(value: boolean);
+    initialize(): void;
+    opacity: Record<Range, number>;
+    set size(value: Record<Range, number> | number);
+    get size(): Record<Range, number>;
+    get reifect(): Reifect;
+    set reifect(value: Reifect | StatelessReifectProperties);
     private readonly closeOnClick;
+    set alwaysOpen(value: boolean);
     get isVertical(): boolean;
+    set index(value: number);
+    protected get trimmedIndex(): number;
+    protected get flooredTrimmedIndex(): number;
     set open(value: boolean);
     get currentPosition(): number;
+    protected set currentPosition(value: number);
+    protected setupUIListeners(): void;
     protected computeDragValue(delta: Point): number;
     /**
      * Recalculates the dimensions and positions of all entries
      */
+    protected reloadEntrySizes(): void;
+    protected recomputeIndex(): void;
+    protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size?: Record<Range, number>): void;
+    select(entry: ValueType | EntryType, selected?: boolean): this;
+    clear(): void;
+    refresh(): void;
+    reset(): void;
     protected clearOpenTimer(): void;
     protected setOpenTimer(): void;
 }
+declare function selectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>): TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @class TurboProxiedElement
@@ -6237,6 +6349,7 @@ declare function isNull(value: any): boolean;
  * @category Null Check
  */
 declare function isUndefined(value: any): boolean;
+declare function alphabeticalSorting(a: string | number | symbol, b: string | number | symbol): number;
 
 /**
  * @group Utilities
@@ -7460,4 +7573,4 @@ interface TurboSelector {
         isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
 
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, type ApplyDefaultsOptions, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type BlockChangeObserver, type BlockChangeObserverProperties, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, type DataBlockHost, type DataBlockProperties, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagDefinition, type ElementTagMap, type FlexRect, type FontProperties, type HTMLElementMutableFields, type HTMLElementNonFunctions, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type SignalEntry, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDataBlock, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, TurboYBlock, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDocumentProperties, a, addInYArray, addInYMap, areEqual, auto, bestOverlayColor, blindElement, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, type ApplyDefaultsOptions, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, type DataBlockHost, DataBlockObserver, type DataBlockProperties, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagDefinition, type ElementTagMap, type FlexRect, type FontProperties, type HTMLElementMutableFields, type HTMLElementNonFunctions, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcFlatKeyType, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type ScopedKey, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type SignalEntry, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDataBlock, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboObserver, type TurboObserverProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, TurboYBlock, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDocumentProperties, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

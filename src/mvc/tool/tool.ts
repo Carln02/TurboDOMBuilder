@@ -80,6 +80,7 @@ class TurboTool<
         if (properties.customActivation) this.customActivation = properties.customActivation;
         if (properties.key) this.key = properties.key;
         this.manager = properties.manager ?? this.manager ?? TurboEventManager.instance;
+        this.setup();
     }
 
     /**

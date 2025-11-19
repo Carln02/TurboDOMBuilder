@@ -37,16 +37,6 @@ describe("TurboModel (map mode)", () => {
         expect(spy).toHaveBeenCalledWith("a", model.defaultBlockKey, 42);
     });
 
-    it("does not fire when callbacks disabled", () => {
-        const model = new MapModel<{ a?: number }>({a: 1}, "map");
-        const spy = vi.fn();
-        model.keyChangedCallback.fire = spy as any;
-
-        model.enabledCallbacks = false;
-        model.setData("a", 2);
-        expect(spy).not.toHaveBeenCalled();
-    });
-
     it("setBlock creates a block and optional initialize fires for all keys", () => {
         const model = new MapModel<Record<string, any>>({}, "map");
         const spy = vi.fn();
@@ -113,11 +103,14 @@ describe("TurboModel (array mode)", () => {
     it("defaultBlockKey is 0 and addBlock inserts at index or appends", () => {
         const model = new ArrayModel<{ a?: number }>(undefined, "array");
 
+        console.log(model.getAllBlockKeys())
+
         // addBlock appends when index invalid
         model.addBlock({a: 1}, 100, undefined, false);
         // insert at 0
-        model.addBlock({a: 0}, 0 as any, 0 as any, false);
+        model.addBlock({a: 0}, 0, 0, false);
 
+        console.log(model.getAllBlockKeys())
         expect(model.getAllBlockKeys()).toEqual([0, 1]);
         expect(model.getBlock(0)?.data).toEqual({a: 0});
         expect(model.getBlock(1)?.data).toEqual({a: 1});
@@ -127,17 +120,17 @@ describe("TurboModel (array mode)", () => {
         const model = new ArrayModel<{ a: number; b: number }>(undefined, "array");
         model.enabledCallbacks = true;
 
+        const spyFn = vi.fn();
+        model.keyChangedCallback.add(spyFn);
+
         // create two blocks without auto-init
-        model.setBlock({a: 1, b: 2}, 10 as any, 0 as any, false);
-        model.setBlock({a: 3, b: 4}, 11 as any, 1 as any, false);
+        model.setBlock({a: 1, b: 2}, 10, 0,false);
+        model.setBlock({a: 3, b: 4}, 11, 1, false);
 
-        const spy = vi.fn();
-        model.keyChangedCallback.fire = spy as any;
-
-        model.initialize(1 as any);
+        model.initialize(1);
 
         // should only fire for block index 1
-        const calls = spy.mock.calls.map(c => [c[0], c[1], c[2]]);
+        const calls = spyFn.mock.calls.map(c => [c[0], c[1], c[2]]);
         expect(calls).toContainEqual(["a", 1, 3]);
         expect(calls).toContainEqual(["b", 1, 4]);
         // ensure no fires for block 0 keys

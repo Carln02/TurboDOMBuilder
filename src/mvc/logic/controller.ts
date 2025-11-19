@@ -2,7 +2,7 @@ import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 import {TurboControllerProperties} from "./logic.types";
-import {initializeEffects} from "../../reactivity/reactivity";
+import {initializeEffects} from "../../decorators/reactivity/reactivity";
 
 /**
  * @class TurboController
@@ -56,7 +56,10 @@ class TurboController<
         if (properties.model) this.model = properties.model;
         if (properties.emitter) this.emitter = properties.emitter;
         if (properties.view) this.view = properties.view;
+        this.setup();
     }
+
+    protected setup(): void {}
 
     /**
      * @function initialize

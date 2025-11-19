@@ -6,6 +6,7 @@ import {setupSelectTests} from "./cases/select/select";
 import {setupDrawerTests} from "./cases/drawer/drawer";
 import {setupPopupTests} from "./cases/popup/popup";
 import {setupDropdownTests} from "./cases/dropdown/dropdown";
+import {setupSelectWheelTests} from "./cases/selectWheel/selectWheel";
 
 TurboIcon.config.defaultDirectory = "assets";
 TurboIcon.config.defaultClasses = "icon";
@@ -25,3 +26,5 @@ h1({text: "TurboPopup", parent: document.body});
 setupPopupTests();
 h1({text: "TurboDropdown", parent: document.body});
 setupDropdownTests();
+h1({text: "TurboSelectWheel", parent: document.body});
+setupSelectWheelTests();

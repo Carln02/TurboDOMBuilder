@@ -23,6 +23,8 @@ type TurboSelectProperties<
     getSecondaryValue?: (entry: EntryType) => SecondaryValueType,
     createEntry?: (value: ValueType) => EntryType,
     onEntryAdded?: (entry: EntryType, index: number) => void,
+    onEntryRemoved?: (entry: EntryType) => void,
+    onEntryClicked?: (entry: EntryType, e: Event) => void,
 
     multiSelection?: boolean,
     forceSelection?: boolean,

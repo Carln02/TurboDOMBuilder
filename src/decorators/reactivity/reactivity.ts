@@ -2,8 +2,8 @@ import {ReactivityUtils} from "./reactivity.utils";
 import {SignalBox, SignalEntry} from "./reactivity.types";
 import {SignalUtils} from "./reactivity.signal";
 import {EffectUtils} from "./reactivity.effect";
-import {TurboModel} from "../mvc/core/model";
-import {isUndefined} from "../utils/dataManipulation/misc";
+import {TurboModel} from "../../mvc/core/model";
+import {isUndefined} from "../../utils/dataManipulation/misc";
 
 const utils = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils);
@@ -158,7 +158,10 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
             | ClassAccessorDecoratorContext<Type, Value>
     ): any {
         const key = dataKey ?? String(context.name);
-        context.addInitializer(function (this: any) {utils.bindBlockKey(this, context.name, key, blockKey)});
+        context.addInitializer(function (this: any) {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
+            utils.bindBlockKey(this, context.name, key, blockKey);
+        });
         return signalUtils.signalDecorator(value, context, function () {return this.getData?.(key, blockKey)},
             function (value) {this.setData?.(key, value, blockKey);});
     }
@@ -178,7 +181,7 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
  * @param id
  */
 function blockSignal(blockKey?: string | number, id?: string | number) {
-    return function <Type extends TurboModel<any, any, any, any>, Value>(
+    return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
             | ((this: Type) => Value)
@@ -191,8 +194,46 @@ function blockSignal(blockKey?: string | number, id?: string | number) {
             | ClassAccessorDecoratorContext<Type, Value>
     ): any {
         const key = blockKey ?? String(context.name);
+        context.addInitializer(function (this: any) {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () {return this.getBlock?.(key)},
+            function (value) {this.setBlock?.(value, id, key)}, true);
+    }
+}
+
+/**
+ * @decorator
+ * @function blockDataSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockDataSignal(blockKey?: string | number, id?: string | number) {
+    return function <Type extends object, Value>(
+        value:
+            | ((initial: Value) => Value)
+            | ((this: Type) => Value)
+            | ((this: Type, v: Value) => void)
+            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
+        context:
+            | ClassFieldDecoratorContext<Type, Value>
+            | ClassGetterDecoratorContext<Type, Value>
+            | ClassSetterDecoratorContext<Type, Value>
+            | ClassAccessorDecoratorContext<Type, Value>
+    ): any {
+        const key = blockKey ?? String(context.name);
+        context.addInitializer(function (this: any) {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
+        });
         return signalUtils.signalDecorator(value, context, function () {return this.getBlockData?.(key)},
-            function (value) {this.setBlock?.(value, id, key)});
+            function (value) {this.setBlock?.(value, id, key)}, true);
     }
 }
 
@@ -205,7 +246,7 @@ function blockSignal(blockKey?: string | number, id?: string | number) {
  * @description Same idea but binds the block **id**.
  */
 function blockIdSignal(blockKey?: string | number) {
-    return function <Type extends TurboModel<any, any, any, any>, Value>(
+    return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
             | ((this: Type) => Value)
@@ -218,8 +259,11 @@ function blockIdSignal(blockKey?: string | number) {
             | ClassAccessorDecoratorContext<Type, Value>
     ): any {
         const key = blockKey ?? String(context.name);
+        context.addInitializer(function (this: any) {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
+        });
         return signalUtils.signalDecorator(value, context, function () {return this.getBlockId?.(key)},
-            function (value) {this.setBlockId?.(value, key)});
+            function (value) {this.setBlockId?.(value, key)}, true);
     };
 }
 
@@ -407,6 +451,7 @@ export {
     signal,
     modelSignal,
     blockSignal,
+    blockDataSignal,
     blockIdSignal,
     getSignal,
     markDirty,

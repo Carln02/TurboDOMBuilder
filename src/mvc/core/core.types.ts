@@ -1,6 +1,6 @@
 import {TurboModel} from "./model";
 import {TurboEmitter} from "./emitter";
-import {TurboDataBlock} from "../../turboComponents/blocks/dataBlock/dataBlock";
+import {TurboDataBlock} from "../../turboComponents/data/dataBlock/dataBlock";
 
 /**
  * @group MVC
@@ -8,7 +8,7 @@ import {TurboDataBlock} from "../../turboComponents/blocks/dataBlock/dataBlock";
  */
 type MvcBlocksType<
     Type extends "array" | "map" = "map",
-    BlockType extends TurboDataBlock = TurboDataBlock
+    BlockType extends object = object
 > = Type extends "map" ? Map<string, BlockType> : BlockType[];
 
 /**
@@ -16,6 +16,8 @@ type MvcBlocksType<
  * @category Model
  */
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+
+type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
 
 /**
  * @group MVC
@@ -31,4 +33,4 @@ type TurboViewProperties<
     emitter?: EmitterType,
 };
 
-export {TurboViewProperties, MvcBlockKeyType, MvcBlocksType};
+export {TurboViewProperties, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType};

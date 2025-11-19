@@ -5,6 +5,7 @@ import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {Direction, Range} from "../../../types/enums.types";
 import {PartialRecord} from "../../../types/basic.types";
+import {TurboEmitter} from "../../../mvc/core/emitter";
 
 /**
  * @group Components
@@ -16,10 +17,11 @@ type TurboSelectWheelProperties<
     EntryType extends HTMLElement = HTMLElement,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
-    ModelType extends TurboModel = TurboModel
-> = TurboElementProperties<ViewType, DataType, ModelType> & {
+    ModelType extends TurboModel = TurboModel,
+    EmitterType extends TurboEmitter = TurboEmitter
+> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
     direction?: Direction,
-    styleReifect?: Reifect | StatelessReifectProperties,
+    reifect?: Reifect | StatelessReifectProperties,
 
     generateCustomStyling?: (properties: TurboSelectWheelStylingProperties)
         => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;

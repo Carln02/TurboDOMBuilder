@@ -1,6 +1,6 @@
 import {$} from "../../../turboFunctions/turboFunctions";
 import {Mvc} from "../../../mvc/mvc";
-import {initializeEffects} from "../../../reactivity/reactivity";
+import {initializeEffects} from "../../../decorators/reactivity/reactivity";
 
 export function defineDefaultProperties<Type extends new (...args: any[]) => any>(constructor: Type) {
     const prototype = constructor.prototype;

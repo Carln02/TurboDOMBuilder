@@ -590,6 +590,13 @@ function isNull(value) {
 function isUndefined(value) {
     return typeof value == "undefined";
 }
+function alphabeticalSorting(a, b) {
+    if (typeof a == "string" && typeof b == "string")
+        return a.localeCompare(b);
+    else if (typeof a == "number" && typeof b == "number")
+        return a - b;
+    return 0;
+}
 
 /**
  * @group Utilities
@@ -712,47 +719,58 @@ function auto(options) {
         const backing = Symbol(`__auto_${key}`);
         context.addInitializer(function () {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-            // const superDescriptor = getSuperDescriptor(this, key);
+            const superDescriptor = getSuperDescriptor(this, key);
             let customGetter;
             let customSetter;
             const baseRead = function () {
                 if (customGetter && options?.returnDefinedGetterValue)
                     return customGetter.call(this);
-                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                if (options.override && superDescriptor?.get)
+                    return superDescriptor.get.call(this);
                 return this[backing];
             };
             const baseWrite = function (value) {
-                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                if (options.override && superDescriptor?.set)
+                    superDescriptor.set.call(this, value);
                 this[backing] = value;
             };
-            let undefinedFlag = false;
+            let readFlag = false;
             const read = function () {
                 let value = baseRead.call(this);
-                if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
-                    undefinedFlag = true;
+                if (readFlag)
+                    return value;
+                readFlag = true;
+                if (!options.returnDefinedGetterValue && isUndefined(value)) {
                     if (options.defaultValue)
                         value = options.defaultValue;
                     else if (options.defaultValueCallback)
                         value = options.defaultValueCallback.call(this);
-                    else if (!options.setIfUndefined)
-                        return value;
-                    write.call(this, value);
-                    value = baseRead.call(this);
-                    undefinedFlag = false;
+                    if (options.setIfUndefined || options.defaultValue || options.defaultValueCallback) {
+                        write.call(this, value);
+                        value = baseRead.call(this);
+                    }
                 }
+                readFlag = false;
                 return value;
             };
+            let writeFlag = false;
             const write = function (value) {
+                if (writeFlag)
+                    return baseWrite.call(this, value);
+                writeFlag = true;
                 options.callBefore?.call(this, value);
                 let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next)
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                    writeFlag = false;
                     return;
+                }
                 if (options.executeSetterBeforeStoring && customSetter)
                     customSetter.call(this, next);
                 baseWrite.call(this, next);
                 if (!options.executeSetterBeforeStoring && customSetter)
                     customSetter.call(this, next);
                 options.callAfter?.call(this, next);
+                writeFlag = false;
             };
             if (isUndefined(baseRead.call(this))) {
                 let initialValue = kind === "field" ? value : undefined;
@@ -2395,7 +2413,7 @@ class SignalUtils {
             }
         });
     }
-    signalDecorator(value, context, baseGetter, baseSetter) {
+    signalDecorator(value, context, baseGetter, baseSetter, callSetterOnInitialize = false) {
         const { kind, name, static: isStatic, private: isPrivate } = context;
         if (isPrivate)
             throw new Error("@signal does not support private class elements.");
@@ -2482,6 +2500,11 @@ class SignalUtils {
                         e.set(v);
                     },
                 });
+            }
+            if (callSetterOnInitialize) {
+                const current = baseGetter?.call(this) ?? customGetter?.call(this);
+                if (isUndefined(current))
+                    ensureEntry(this, !customGetter && !baseGetter).set(undefined);
             }
         });
     }
@@ -2578,7 +2601,11 @@ function signal(...args) {
 function modelSignal(dataKey, blockKey) {
     return function (value, context) {
         const key = dataKey ?? String(context.name);
-        context.addInitializer(function () { utils$7.bindBlockKey(this, context.name, key, blockKey); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+            utils$7.bindBlockKey(this, context.name, key, blockKey);
+        });
         return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
     };
 }
@@ -2598,7 +2625,34 @@ function modelSignal(dataKey, blockKey) {
 function blockSignal(blockKey, id) {
     return function (value, context) {
         const key = blockKey ?? String(context.name);
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlock?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
+    };
+}
+/**
+ * @decorator
+ * @function blockDataSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockDataSignal(blockKey, id) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
     };
 }
 /**
@@ -2612,7 +2666,11 @@ function blockSignal(blockKey, id) {
 function blockIdSignal(blockKey) {
     return function (value, context) {
         const key = blockKey ?? String(context.name);
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); }, true);
     };
 }
 function effect(...args) {
@@ -2857,6 +2915,203 @@ class Delegate extends SimpleDelegate {
     }
 }
 
+class TurboObserver {
+    _isInitialized = false;
+    onAdded = new Delegate();
+    onUpdated = new Delegate();
+    onDeleted = new Delegate();
+    onInitialize = new Delegate();
+    onDestroy = new Delegate();
+    instances = new Map();
+    constructor(properties = {}) {
+        const self = this;
+        if (properties.onAdded)
+            this.onAdded.add((data, id, self, blockKey) => properties.onAdded(data, id, self, blockKey));
+        this.onUpdated.add((data, instance, id, self, blockKey) => {
+            if (properties.onUpdated)
+                properties.onUpdated(data, instance, id, self, blockKey);
+            else {
+                if (typeof instance !== "object")
+                    return;
+                if ("model" in instance && instance.model instanceof TurboModel)
+                    instance.model.setBlock(data, id);
+                else {
+                    if ("data" in instance)
+                        instance.data = data;
+                    if ("dataId" in instance)
+                        instance.dataId = id.toString();
+                }
+            }
+        });
+        this.onDeleted.add((data, instance, id, self, blockKey) => {
+            if (properties.onDeleted)
+                properties.onDeleted(data, instance, id, self, blockKey);
+            else
+                this.removeInstance(instance);
+        });
+        if (properties.onInitialize)
+            this.onInitialize.add(() => properties.onInitialize(self));
+        if (properties.onDestroy)
+            this.onDestroy.add(() => properties.onDestroy(self));
+        if (properties.initialize)
+            this.initialize();
+    }
+    getInstance(key, blockKey = this.defaultBlockKey) {
+        return this.instances.get(blockKey)?.get(key);
+    }
+    getBlockInstancesAndKeys(blockKey = this.defaultBlockKey) {
+        const block = this.instances.get(blockKey);
+        if (!block)
+            return [];
+        return Array.from(block.entries());
+    }
+    getBlockInstances(blockKey = this.defaultBlockKey) {
+        return this.getBlockInstancesAndKeys(blockKey)
+            .sort((a, b) => alphabeticalSorting(a[0], b[0]))
+            .map(entry => entry[1]);
+    }
+    getAllInstances() {
+        return Array.from(this.instances.keys())
+            .sort(alphabeticalSorting)
+            .flatMap(blockKey => this.getBlockInstances(blockKey));
+    }
+    getInstanceKey(instance) {
+        for (const [blockKey, map] of this.instances.entries()) {
+            for (const [key, entry] of map.entries()) {
+                if (entry === instance)
+                    return { blockKey, key };
+            }
+        }
+    }
+    getInstanceAt(flatKey) {
+        const scoped = this.scopeKey(flatKey);
+        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
+            return;
+        return this.getInstance(scoped.key, scoped.blockKey);
+    }
+    getInstanceFlatKey(instance) {
+        const scoped = this.getInstanceKey(instance);
+        if (!scoped)
+            return;
+        return this.flattenKey(scoped.key, scoped.blockKey);
+    }
+    setInstance(instance, key, blockKey = this.defaultBlockKey) {
+        let instancesBlock = this.instances.get(blockKey);
+        if (!instancesBlock) {
+            this.instances.set(blockKey, new Map());
+            instancesBlock = this.instances.get(blockKey);
+        }
+        instancesBlock?.set(key, instance);
+    }
+    removeInstanceByKey(key, removeFromDOM = true, blockKey = this.defaultBlockKey) {
+        const block = this.instances.get(blockKey);
+        if (!block)
+            return;
+        const instance = block.get(key);
+        block.delete(key);
+        if (!instance)
+            return;
+        if (removeFromDOM && instance && typeof instance === "object"
+            && "remove" in instance && typeof instance.remove == "function")
+            instance?.remove();
+    }
+    removeInstance(instance, removeFromDOM = true) {
+        const pos = this.getInstanceKey(instance);
+        if (pos)
+            this.removeInstanceByKey(pos.key, removeFromDOM, pos.blockKey ?? this.defaultBlockKey);
+    }
+    get isInitialized() {
+        return this._isInitialized;
+    }
+    initialize() {
+        if (this.isInitialized)
+            return;
+        this.onInitialize.fire(this);
+        this._isInitialized = true;
+    }
+    clear() {
+        this.getAllInstances().forEach(instance => this.removeInstance(instance));
+        this.instances.clear();
+        this._isInitialized = false;
+    }
+    destroy() {
+        this.clear();
+        this.onDestroy.fire(this);
+    }
+    keyChanged(key, value, deleted = false, blockKey = this.defaultBlockKey) {
+        const existingInstance = this.getInstance(key, blockKey);
+        if (existingInstance) {
+            if (deleted)
+                this.onDeleted.fire(value, existingInstance, key, this, blockKey);
+            else
+                this.onUpdated.fire(value, existingInstance, key, this, blockKey);
+            return;
+        }
+        if (deleted)
+            return;
+        const instance = this.onAdded.fire(value, key, this, blockKey);
+        if (!instance)
+            return;
+        this.setInstance(instance, key, blockKey);
+        this.onUpdated.fire(value, instance, key, this, blockKey);
+    }
+    flattenKey(key, blockKey = this.defaultBlockKey) {
+        if (typeof blockKey === "number") {
+            let globalIndex = 0;
+            for (const bk of Array.from(this.instances.keys()).sort(alphabeticalSorting)) {
+                if (bk === blockKey)
+                    break;
+                globalIndex += this.getBlockInstancesAndKeys(bk).length;
+            }
+            return globalIndex + Number(key);
+        }
+        else {
+            return blockKey.toString() + "|" + key.toString();
+        }
+    }
+    scopeKey(flatKey) {
+        if (typeof flatKey === "string") {
+            const split = flatKey.toString().split("|");
+            if (split.length < 2)
+                return {};
+            return { blockKey: split[0], key: split[1] };
+        }
+        const blockKeys = Array.from(this.instances.keys()).sort(alphabeticalSorting);
+        if (typeof flatKey === "number") {
+            if (flatKey < 0)
+                return { blockKey: blockKeys[0] ?? 0, key: 0 };
+            let index = flatKey;
+            for (const blockKey of blockKeys) {
+                const size = this.getBlockInstancesAndKeys(blockKey).length;
+                if (index < size)
+                    return { blockKey, key: index };
+                index -= size;
+            }
+        }
+        const lastBlockKey = blockKeys[blockKeys.length - 1];
+        return { blockKey: lastBlockKey, key: this.getBlockInstancesAndKeys(lastBlockKey).length };
+    }
+    get defaultBlockKey() {
+        const key = Array.from(this.instances.keys())?.[0];
+        if (!isUndefined(key))
+            return key;
+        return "__default__";
+    }
+}
+
+class DataBlockObserver extends TurboObserver {
+    keyChanged(key, value, deleted = false) {
+        super.keyChanged(key, value, deleted, this.defaultBlockKey);
+    }
+    // @ts-ignore
+    getInstanceKey(instance) {
+        return super.getInstanceKey(instance)?.key;
+    }
+    setInstance(instance, key) {
+        super.setInstance(instance, key);
+    }
+}
+
 /**
  * @group Components
  * @category TurboDataBlock
@@ -2872,8 +3127,17 @@ let TurboDataBlock = (() => {
             tslib.__esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
+        _data;
         id;
-        data;
+        get data() {
+            return this._data;
+        }
+        set data(data) {
+            this.clear(false);
+            this._data = data;
+            if (data)
+                this.initialize();
+        }
         #enabledCallbacks_accessor_storage = tslib.__runInitializers(this, _enabledCallbacks_initializers, void 0);
         get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
         set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
@@ -2882,9 +3146,12 @@ let TurboDataBlock = (() => {
         signals = new Map();
         changeObservers = new TurboWeakSet();
         onKeyChanged = new Delegate();
+        observerConstructor = DataBlockObserver;
         constructor(properties = {}) {
             this.id = properties.id;
-            this.data = properties.data;
+            this._data = properties.data;
+            if (properties.initialize)
+                this.initialize();
         }
         /*
          *
@@ -2907,6 +3174,21 @@ let TurboDataBlock = (() => {
             else
                 this.data[key] = value;
             this.keyChanged(key, value);
+        }
+        add(value, key) {
+            if (!this.data || !Array.isArray(this.data))
+                return this.set(key, value);
+            let index = key;
+            if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
+                index = this.data.length;
+                this.data.push(value);
+            }
+            else {
+                if (index < 0)
+                    index = 0;
+                this.data.splice(index, 0, value);
+            }
+            return index;
         }
         has(key) {
             if (this.data instanceof Map)
@@ -2944,12 +3226,11 @@ let TurboDataBlock = (() => {
          *
          */
         initialize() {
-            if (!this.data)
+            if (!this.data || this.isInitialized)
                 return;
+            this.isInitialized = true;
             for (const key of this.keys)
                 this.keyChanged(key);
-            this.isInitialized = true;
-            this.changeObservers.toArray().forEach(observer => observer.initialize());
         }
         /**
          * @function clear
@@ -2957,8 +3238,9 @@ let TurboDataBlock = (() => {
          */
         clear(clearData = true) {
             if (clearData)
-                this.data = undefined;
+                this._data = undefined;
             this.changeObservers?.toArray().forEach(observer => observer.clear());
+            this.isInitialized = false;
         }
         toJSON() {
             if (this.data instanceof Map)
@@ -3006,74 +3288,20 @@ let TurboDataBlock = (() => {
          *
          */
         generateObserver(properties = {}) {
-            const observer = {
-                onAdded: new Delegate(),
-                onUpdated: new Delegate(),
-                onDeleted: new Delegate(),
-                instances: new Map(),
-                getInstance: (key) => observer.instances.get(key),
-                getAllInstances: () => {
-                    const temp = Array.from(observer.instances.entries());
-                    temp.sort((a, b) => this.sortingFunction(a[0], b[0]));
-                    return temp.map(entry => entry[1]);
-                },
-                initialize: () => {
+            const observer = new (properties.customConstructor
+                ?? this.observerConstructor
+                ?? (DataBlockObserver))({
+                ...properties,
+                onDestroy: (self) => this.changeObservers?.delete(self),
+                onInitialize: (self) => {
                     if (!this.isInitialized)
                         return;
                     for (const key of this.keys)
-                        this.observerKeyChanged(observer, key);
-                },
-                clear: () => {
-                    observer.instances.forEach(instance => this.removeInstance(instance));
-                    observer.instances.clear();
-                },
-                destroy: () => {
-                    observer.clear();
-                    this.changeObservers?.delete(observer);
-                }
-            };
-            observer.onUpdated.add((data, instance, id) => {
-                if (typeof instance === "object") {
-                    if ("data" in instance)
-                        instance.data = data;
-                    if ("dataId" in instance)
-                        instance.dataId = id.toString();
+                        self.keyChanged(key, this.get(key));
                 }
             });
-            observer.onDeleted.add((_data, instance, id) => {
-                this.removeInstance(instance);
-                observer.instances.delete(id);
-            });
-            if (properties.onAdded)
-                observer.onAdded.add((data, id) => properties.onAdded(data, id));
-            if (properties.onUpdated)
-                observer.onUpdated.add((data, instance, id) => properties.onUpdated(data, instance, id));
-            if (properties.onDeleted)
-                observer.onDeleted.add((data, instance, id) => properties.onDeleted(data, instance, id));
-            if (properties.initialize)
-                observer.initialize();
             this.changeObservers?.add(observer);
             return observer;
-        }
-        observerKeyChanged(observer, key, value = this.get(key), deleted = false) {
-            const existingInstance = observer.instances.get(key);
-            if (existingInstance) {
-                if (deleted) {
-                    observer.onDeleted.fire(value, existingInstance, key);
-                    observer.instances.delete(key);
-                    this.removeInstance(existingInstance);
-                }
-                else
-                    observer.onUpdated.fire(value, existingInstance, key);
-                return;
-            }
-            if (deleted)
-                return;
-            const instance = observer.onAdded.fire(value, key);
-            if (!instance)
-                return;
-            observer.instances.set(key, instance);
-            observer.onUpdated.fire(value, instance, key);
         }
         /*
          *
@@ -3089,18 +3317,7 @@ let TurboDataBlock = (() => {
                 return;
             this.onKeyChanged.fire(key, value);
             this.host?.onChange?.(key, value, this);
-            this.changeObservers?.toArray().forEach(observer => this.observerKeyChanged(observer, key, value, deleted));
-        }
-        sortingFunction(a, b) {
-            if (typeof a == "string" && typeof b == "string")
-                return a.localeCompare(b);
-            else if (typeof a == "number" && typeof b == "number")
-                return a - b;
-            return 0;
-        }
-        removeInstance(instance) {
-            if (instance && typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
-                instance?.remove();
+            this.changeObservers?.toArray().forEach(observer => observer.keyChanged(key, value, deleted));
         }
     };
 })();
@@ -3130,6 +3347,10 @@ let TurboModel = (() => {
         }
         isDataBlocksArray = (tslib.__runInitializers(this, _instanceExtraInitializers), false);
         dataBlocks;
+        changeObservers = new TurboWeakSet();
+        static dataBlockConstructor = TurboDataBlock;
+        observerConstructor = TurboObserver;
+        onSetBlock = new Delegate();
         /**
          * @description Map of MVC handlers bound to this model.
          */
@@ -3142,7 +3363,7 @@ let TurboModel = (() => {
             markDirty(this, key, this.getBlockKey(block));
         }
         onChange(key, value, block) {
-            this.keyChangedCallback.fire(key, this.getBlockKey(block), value);
+            this.fireBlockCallback(key, this.getBlockKey(block), value);
         }
         /**
          * @constructor
@@ -3160,8 +3381,11 @@ let TurboModel = (() => {
                 this.dataBlocks = new Map();
             }
             this.enabledCallbacks = true;
-            this.setBlock(data, undefined, this.defaultBlockKey, false);
+            if (data)
+                this.setBlock(data, undefined, this.defaultBlockKey, false);
+            this.setup();
         }
+        setup() { }
         /**
          * @description The default block.
          */
@@ -3219,12 +3443,17 @@ let TurboModel = (() => {
          * @description Creates a data block entry.
          * @param {DataType} value - The data of the block.
          * @param {IdType} [id] - The optional ID of the data.
+         * @param initialize
          * @protected
          * @return {BlockType} - The created block.
          */
-        createBlock(value, id) {
-            const block = value instanceof TurboDataBlock ? value : new TurboDataBlock({ id: id, data: value });
+        createBlock(value, id, initialize = true) {
+            const block = value instanceof TurboDataBlock
+                ? value
+                : new (this.constructor.dataBlockConstructor ?? TurboDataBlock)({ id: id, data: value });
             block.link(this);
+            if (initialize)
+                block.initialize();
             return block;
         }
         /**
@@ -3236,12 +3465,20 @@ let TurboModel = (() => {
          * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
          */
         setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
-            if (!this.isValidBlockKey(blockKey) || value === null || value === undefined)
+            if (!this.isValidBlockKey(blockKey))
                 return;
             const prev = this.getBlock(blockKey);
+            if (prev && !(value instanceof TurboDataBlock)) {
+                prev.clear();
+                prev.data = value;
+                if (!isUndefined(id))
+                    prev.id = id;
+                this.onSetBlock.fire(blockKey);
+                return;
+            }
             prev?.clear();
             prev?.unlink();
-            const block = this.createBlock(value, id);
+            const block = this.createBlock(value, id, false);
             if (this.isDataBlocksArray) {
                 const index = Number(blockKey);
                 if (Number.isInteger(index) && index >= 0) {
@@ -3253,6 +3490,7 @@ let TurboModel = (() => {
             }
             if (initialize)
                 this.initialize(blockKey);
+            this.onSetBlock.fire(blockKey);
         }
         /**
          * @function hasBlock
@@ -3292,17 +3530,16 @@ let TurboModel = (() => {
          * @param {boolean} [initialize=true] - Whether to initialize after adding.
          */
         addBlock(value, id, blockKey, initialize = true) {
-            if (!value)
-                return;
             if (!this.isDataBlocksArray)
                 return this.setBlock(value, id, blockKey, initialize);
-            const block = this.createBlock(value, id);
+            const block = this.createBlock(value, id, false);
             let index = Number(blockKey);
             if (!Number.isInteger(index) || index < 0)
                 index = this.dataBlocks.length;
             this.dataBlocks.splice(index, 0, block);
             if (initialize)
                 this.initialize(index);
+            return index;
         }
         /**
          * @function getData
@@ -3316,6 +3553,18 @@ let TurboModel = (() => {
             return this.getBlock(blockKey)?.get(key);
         }
         /**
+         * @function getDataAt
+         * @description Retrieves the value associated with a given flat key.
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to retrieve.
+         * @returns {unknown} The value associated with the key, or null if not found.
+         */
+        getDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.getData(scopedKey.key, scopedKey.blockKey);
+        }
+        /**
          * @function setData
          * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
          * @param {KeyType} key - The key to update.
@@ -3326,16 +3575,54 @@ let TurboModel = (() => {
             return this.getBlock(blockKey)?.set(key, value);
         }
         /**
+         * @function setDataAt
+         * @description Sets the value for a given flat key and triggers callbacks (if enabled).
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to update.
+         * @param {unknown} value - The value to assign.
+         */
+        setDataAt(flatKey, value) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.setData(scopedKey.key, value, scopedKey.blockKey);
+        }
+        addData(value, key, blockKey = this.defaultBlockKey) {
+            return this.getBlock(blockKey)?.add(value, key);
+        }
+        addDataAt(value, flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.addData(value, scopedKey.key, scopedKey.blockKey);
+        }
+        /**
          * @function hasData
-         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+         * @description Checks the value for a given key in the specified block and triggers callbacks (if enabled).
          * @param {KeyType} key - The key to update.
          * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
          */
         hasData(key, blockKey = this.defaultBlockKey) {
             return this.getBlock(blockKey)?.has(key);
         }
+        /**
+         * @function hasDataAt
+         * @description Sets the value for a given flat key in the specified block and triggers callbacks (if enabled).
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to check.
+         */
+        hasDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return false;
+            return this.hasData(scopedKey.key, scopedKey.blockKey);
+        }
         deleteData(key, blockKey = this.defaultBlockKey) {
             return this.getBlock(blockKey)?.delete(key);
+        }
+        deleteDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return false;
+            return this.deleteData(scopedKey.key, scopedKey.blockKey);
         }
         /**
          * @function getSize
@@ -3380,18 +3667,6 @@ let TurboModel = (() => {
             if (block)
                 block.id = value;
         }
-        // /**
-        //  * @function fireKeyChangedCallback
-        //  * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
-        //  * @param {KeyType} key - The key that changed.
-        //  * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
-        //  * @param {boolean} [deleted=false] - Whether the key was deleted.
-        //  */
-        // protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
-        //     if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
-        //     markDirty(this, key, blockKey);
-        //     this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
-        // }
         /**
          * @function fireCallback
          * @description Fires the emitter's change callback for the given key in the default blocks.
@@ -3412,6 +3687,8 @@ let TurboModel = (() => {
             if (!this.isValidBlockKey(blockKey))
                 blockKey = this.getAllBlockKeys()[0];
             this.keyChangedCallback.fire(key, blockKey, ...args);
+            const value = this.getBlock(blockKey)?.get(key);
+            this.changeObservers.toArray().forEach(observer => observer.keyChanged(key, value, false, blockKey));
         }
         /**
          * @function initialize
@@ -3541,6 +3818,59 @@ let TurboModel = (() => {
             if (!handler.keyName)
                 return;
             this.handlers?.set(handler.keyName, handler);
+        }
+        generateObserver(properties = {}) {
+            const observer = new (properties.customConstructor
+                ?? this.observerConstructor
+                ?? (TurboObserver))({
+                ...properties,
+                onDestroy: () => this.changeObservers.delete(observer),
+                onInitialize: () => {
+                    for (const blockKey of this.getAllBlockKeys()) {
+                        for (const key of this.getAllKeys(blockKey)) {
+                            observer.keyChanged(key, this.getData(key, blockKey), false, blockKey);
+                        }
+                    }
+                }
+            });
+            this.changeObservers.add(observer);
+            return observer;
+        }
+        flattenKey(key, blockKey = this.defaultBlockKey) {
+            if (Array.isArray(this.dataBlocks)) {
+                let globalIndex = 0;
+                for (const bk of this.getAllBlockKeys().sort(alphabeticalSorting)) {
+                    if (bk === blockKey)
+                        break;
+                    globalIndex += this.getSize(bk);
+                }
+                return (globalIndex + Number(key));
+            }
+            else {
+                return (blockKey.toString() + "|" + key.toString());
+            }
+        }
+        scopeKey(flatKey) {
+            if (typeof flatKey === "string") {
+                const split = flatKey.toString().split("|");
+                if (split.length < 2)
+                    return {};
+                return { blockKey: split[0], key: split[1] };
+            }
+            const blockKeys = this.getAllBlockKeys().sort(alphabeticalSorting);
+            if (typeof flatKey === "number") {
+                if (flatKey < 0)
+                    return { blockKey: 0, key: 0 };
+                let index = flatKey;
+                for (const blockKey of blockKeys) {
+                    const size = this.getSize(blockKey);
+                    if (index < size)
+                        return { blockKey, key: index };
+                    index -= size;
+                }
+            }
+            const lastBlockKey = blockKeys[blockKeys.length - 1];
+            return { blockKey: lastBlockKey, key: this.getSize(lastBlockKey) };
         }
     };
 })();
@@ -3691,9 +4021,11 @@ function stringify(value) {
             return value.toString();
         case "object":
             if (Array.isArray(value))
-                return JSON.stringify(value);
+                return JSON.stringify(value.map(entry => stringify(entry)));
             else if (value instanceof Date)
                 return value.toISOString();
+            else if (value instanceof Element)
+                return "[DOM ELEMENT]";
             else {
                 try {
                     return JSON.stringify(value);
@@ -3859,6 +4191,7 @@ function setupElementFunctions() {
                     $(value).addChild(this.element);
                     break;
                 case "data":
+                case "dataId":
                 case "initialize":
                     if (mvc)
                         break;
@@ -3876,7 +4209,7 @@ function setupElementFunctions() {
                         try {
                             mvc[property] = value;
                             if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                                mvc["model"].setBlock(properties.data, undefined, undefined, false);
+                                mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
                             }
                         }
                         catch { }
@@ -4566,7 +4899,9 @@ class TurboController {
             this.emitter = properties.emitter;
         if (properties.view)
             this.view = properties.view;
+        this.setup();
     }
+    setup() { }
     /**
      * @function initialize
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
@@ -5207,7 +5542,9 @@ class TurboHandler {
     constructor(model) {
         if (this.model)
             this.model = model;
+        this.setup();
     }
+    setup() { }
 }
 
 class TurboEventManagerUtilsHandler extends TurboHandler {
@@ -9226,7 +9563,9 @@ class TurboView {
             this.model = properties.model;
         if (properties.emitter)
             this.emitter = properties.emitter;
+        this.setup();
     }
+    setup() { }
     /**
      * @function initialize
      * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
@@ -9313,6 +9652,7 @@ class TurboInteractor extends TurboController {
         this.target = properties.target ?? this.target ?? host instanceof Node ? host
             : host?.element instanceof Node ? host.element
                 : undefined;
+        this.setup();
     }
     /**
      * @function initialize
@@ -9372,6 +9712,7 @@ class TurboSubstrate extends TurboController {
             this.onActivate = properties.onActivate;
         if (properties.onDeactivate)
             this.onDeactivate = properties.onDeactivate;
+        this.setup();
     }
     /**
      * @function initialize
@@ -9518,6 +9859,7 @@ class TurboTool extends TurboController {
         if (properties.key)
             this.key = properties.key;
         this.manager = properties.manager ?? this.manager ?? TurboEventManager.instance;
+        this.setup();
     }
     /**
      * @function initialize
@@ -10852,12 +11194,6 @@ let TurboSelect = (() => {
     let _createEntry_decorators;
     let _createEntry_initializers = [];
     let _createEntry_extraInitializers = [];
-    let _onEntryAdded_decorators;
-    let _onEntryAdded_initializers = [];
-    let _onEntryAdded_extraInitializers = [];
-    let _onEntryRemoved_decorators;
-    let _onEntryRemoved_initializers = [];
-    let _onEntryRemoved_extraInitializers = [];
     let _set_multiSelection_decorators;
     let _forceSelection_decorators;
     let _forceSelection_initializers = [];
@@ -10879,18 +11215,6 @@ let TurboSelect = (() => {
             _createEntry_decorators = [auto({
                     defaultValue: (value) => richElement({ text: stringify(value) })
                 })];
-            _onEntryAdded_decorators = [auto({
-                    defaultValue: function (entry) {
-                        this.initializeSelection();
-                        $(entry).on(DefaultEventName.click, () => {
-                            this.select(entry, !this.isSelected(entry));
-                            return true;
-                        });
-                    },
-                })];
-            _onEntryRemoved_decorators = [auto({
-                    defaultValue: function (entry) { },
-                })];
             _set_multiSelection_decorators = [auto({ defaultValue: false })];
             _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
             _selectedEntryClasses_decorators = [auto({
@@ -10903,8 +11227,6 @@ let TurboSelect = (() => {
             tslib.__esDecorate(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
             tslib.__esDecorate(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
             tslib.__esDecorate(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
-            tslib.__esDecorate(null, null, _onEntryAdded_decorators, { kind: "field", name: "onEntryAdded", static: false, private: false, access: { has: obj => "onEntryAdded" in obj, get: obj => obj.onEntryAdded, set: (obj, value) => { obj.onEntryAdded = value; } }, metadata: _metadata }, _onEntryAdded_initializers, _onEntryAdded_extraInitializers);
-            tslib.__esDecorate(null, null, _onEntryRemoved_decorators, { kind: "field", name: "onEntryRemoved", static: false, private: false, access: { has: obj => "onEntryRemoved" in obj, get: obj => obj.onEntryRemoved, set: (obj, value) => { obj.onEntryRemoved = value; } }, metadata: _metadata }, _onEntryRemoved_initializers, _onEntryRemoved_extraInitializers);
             tslib.__esDecorate(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
             tslib.__esDecorate(null, null, _selectedEntryClasses_decorators, { kind: "field", name: "selectedEntryClasses", static: false, private: false, access: { has: obj => "selectedEntryClasses" in obj, get: obj => obj.selectedEntryClasses, set: (obj, value) => { obj.selectedEntryClasses = value; } }, metadata: _metadata }, _selectedEntryClasses_initializers, _selectedEntryClasses_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -10916,6 +11238,9 @@ let TurboSelect = (() => {
         parentObserver;
         onSelectDelegate = new Delegate();
         onEnabledDelegate = new Delegate();
+        onEntryAdded = new Delegate();
+        onEntryRemoved = new Delegate();
+        onEntryClicked = new Delegate();
         /**
          * The dropdown's entries.
          */
@@ -10924,15 +11249,16 @@ let TurboSelect = (() => {
         }
         set entries(value) {
             this.enableObserver(false);
+            console.log(value);
             const previouslySelectedValues = this.selectedValues;
-            this.clear();
+            this.clear(false);
             this._entries = (Array.isArray(value) ? value : Array.from(value))
                 .filter(entry => entry !== this.inputField);
             if (value instanceof HTMLCollection && value.item(0))
                 this.parent = value.item(0).parentElement;
             const array = this.entries;
             for (let i = 0; i < array.length; i++)
-                this.onEntryAdded?.call(this, array[i], i);
+                this.onEntryAdded.fire(array[i], i);
             this.deselectAll();
             for (let i = 0; i < array.length; i++) {
                 if (previouslySelectedValues.includes(this.getValue(array[i])))
@@ -10979,8 +11305,6 @@ let TurboSelect = (() => {
         getValue = tslib.__runInitializers(this, _getValue_initializers, void 0);
         getSecondaryValue = (tslib.__runInitializers(this, _getValue_extraInitializers), tslib.__runInitializers(this, _getSecondaryValue_initializers, void 0));
         createEntry = (tslib.__runInitializers(this, _getSecondaryValue_extraInitializers), tslib.__runInitializers(this, _createEntry_initializers, void 0));
-        onEntryAdded = (tslib.__runInitializers(this, _createEntry_extraInitializers), tslib.__runInitializers(this, _onEntryAdded_initializers, void 0));
-        onEntryRemoved = (tslib.__runInitializers(this, _onEntryAdded_extraInitializers), tslib.__runInitializers(this, _onEntryRemoved_initializers, void 0));
         /**
          * The dropdown's underlying hidden input. Might be undefined.
          */
@@ -11002,7 +11326,7 @@ let TurboSelect = (() => {
         set multiSelection(value) {
             this.forceSelection = !value;
         }
-        forceSelection = (tslib.__runInitializers(this, _onEntryRemoved_extraInitializers), tslib.__runInitializers(this, _forceSelection_initializers, void 0));
+        forceSelection = (tslib.__runInitializers(this, _createEntry_extraInitializers), tslib.__runInitializers(this, _forceSelection_initializers, void 0));
         set onSelect(value) {
             if (value)
                 this.onSelectDelegate.add(value);
@@ -11021,15 +11345,26 @@ let TurboSelect = (() => {
             tslib.__runInitializers(this, _selectedEntryClasses_extraInitializers);
             const selectedValues = properties.selectedValues || [];
             properties.selectedValues = undefined;
+            this.onEntryClicked.add((entry) => this.select(entry, !this.isSelected(entry)));
+            this.onEntryAdded.add((entry) => {
+                this.initializeSelection();
+                turbo(entry).on(DefaultEventName.click, (e) => {
+                    this.onEntryClicked.fire(entry, e);
+                    return true;
+                });
+            });
             if (!properties.onEnabled)
                 properties.onEnabled = (b, entry) => {
                     if (!(entry instanceof HTMLElement))
                         return;
-                    $(entry).setStyle("visibility", b ? "" : "hidden");
+                    turbo(entry).setStyle("visibility", b ? "" : "hidden");
                 };
             for (const property of Object.keys(properties)) {
                 try {
-                    this[property] = properties[property];
+                    if (this[property] instanceof Delegate)
+                        this[property].add(properties[property]);
+                    else
+                        this[property] = properties[property];
                 }
                 catch { }
             }
@@ -11063,7 +11398,7 @@ let TurboSelect = (() => {
             if (index < 0)
                 index = 0;
             this.enableObserver(false);
-            this.onEntryAdded?.call(this, entry, index);
+            this.onEntryAdded.fire(entry, index);
             if (Array.isArray(this.entries) && !this.entries.includes(entry))
                 this.entries.splice(index, 0, entry);
             if (entry instanceof Node && !entry.parentElement && this.parent)
@@ -11222,17 +11557,19 @@ let TurboSelect = (() => {
         get stringSelectedValue() {
             return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
         }
-        clear() {
-            this.enableObserver(false);
-            for (const entry of this.entries) {
-                this.clearEntryData(entry);
-                this.onEntryRemoved(entry);
+        clear(disableObserver = true) {
+            if (disableObserver)
+                this.enableObserver(false);
+            for (let index = this.entries.length - 1; index >= 0; index--) {
+                const entry = this.entries[index];
+                this.onEntryRemoved.fire(entry);
                 if (this.parent && entry instanceof HTMLElement)
                     entry.remove();
             }
             this._entries = [];
             this.refreshInputField();
-            this.enableObserver(true);
+            if (disableObserver)
+                this.enableObserver(true);
         }
         refreshInputField() {
             if (this.inputField)
@@ -11279,7 +11616,7 @@ let TurboSelect = (() => {
                             this.entries.splice(previousIndex + 1, 0, entry);
                         }
                         this.getEntryData(entry);
-                        this.onEntryAdded?.call(this, entry, this.getIndex(entry));
+                        this.onEntryAdded.fire(entry, this.getIndex(entry));
                     }
                     for (const node of record.removedNodes) {
                         if (!(node instanceof Element))
@@ -11296,207 +11633,13 @@ let TurboSelect = (() => {
                                     this.select(fallback);
                             }
                             data.selected = false;
-                            this.onEntryRemoved?.call(this, node);
+                            this.onEntryRemoved.fire(node);
                             this.clearEntryData(node);
                         });
                     }
                 }
             });
             this.enableObserver(true);
-        }
-    };
-})();
-
-/**
- * @group Components
- * @category TurboYBlock
- */
-let TurboYBlock = (() => {
-    let _classSuper = TurboDataBlock;
-    let _instanceExtraInitializers = [];
-    let _set_enabledCallbacks_decorators;
-    return class TurboYBlock extends _classSuper {
-        static {
-            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_enabledCallbacks_decorators = [auto({ })];
-            tslib.__esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        }
-        observer = (tslib.__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
-        set enabledCallbacks(value) {
-            if (!this.data)
-                return;
-            if (value)
-                this.data.observe(this.observer);
-            else
-                this.data.unobserve(this.observer);
-        }
-        /*
-         *
-         * Basics
-         *
-         */
-        /**
-         * @function get
-         * @description Retrieves the value associated with a given key in the specified block.
-         * @param {KeyType} key - The key to retrieve.
-         * @returns {unknown} The value associated with the key, or null if not found.
-         */
-        get(key) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs.Map)
-                return this.data.get(key.toString());
-            if (this.data instanceof yjs.Array)
-                return this.data.get(trim(Number(key), this.data.length));
-            return super.get(key);
-        }
-        /**
-         * @function set
-         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-         * @param {KeyType} key - The key to update.
-         * @param {unknown} value - The value to assign.
-         */
-        set(key, value) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs.Map)
-                this.data.set(key.toString(), value);
-            else if (this.data instanceof yjs.Array) {
-                const index = trim(Number(key), this.data.length + 1);
-                if (index < this.data.length)
-                    this.data.delete(index, 1);
-                this.data.insert(index, [value]);
-            }
-            else
-                super.set(key, value);
-        }
-        has(key) {
-            if (!this.data || typeof this.data !== "object")
-                return false;
-            if (this.data instanceof yjs.Map)
-                return this.data.has(key.toString());
-            if (this.data instanceof yjs.Array)
-                return typeof key === "number" && key >= 0 && key < this.size;
-            return super.has(key);
-        }
-        delete(key) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs.Map)
-                this.data.delete(key.toString());
-            else if (this.data instanceof yjs.Array && typeof key === "number" && key >= 0 && key < this.size)
-                this.data.delete(key, 1);
-            else
-                super.delete(key);
-        }
-        /**
-         * @function keys
-         * @description Retrieves all keys within the given block(s).
-         * @returns {KeyType[]} Array of keys.
-         */
-        get keys() {
-            if (this.data instanceof yjs.Map)
-                return Array.from(this.data.keys());
-            if (this.data instanceof yjs.Array) {
-                const output = [];
-                for (let i = 0; i < this.data.length; i++)
-                    output.push(i);
-                return output;
-            }
-            return super.keys;
-        }
-        /**
-         * @function size
-         * @description Returns the size of the specified block.
-         * @returns {number} The size.
-         */
-        get size() {
-            if (this.data instanceof yjs.Map)
-                return this.data.size;
-            if (this.data instanceof yjs.Array)
-                return this.data.length;
-            return 0;
-        }
-        /*
-         *
-         * Utilities
-         *
-         */
-        /**
-         * @function initialize
-         * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-         */
-        initialize() {
-            super.initialize();
-            if (this.enabledCallbacks && this.data instanceof yjs.AbstractType)
-                this.data?.observe(this.observer);
-        }
-        clear(clearData = true) {
-            if (clearData)
-                this.data?.unobserve(this.observer);
-            super.clear(clearData);
-        }
-        /*
-         *
-         * Utilities
-         *
-         */
-        observeChanges(event, transaction) {
-            //TODO
-            !!transaction?.local;
-            transaction?.origin;
-            if (event instanceof yjs.YMapEvent) {
-                event.keysChanged.forEach(key => {
-                    const change = event.changes.keys.get(key);
-                    if (!change)
-                        return;
-                    if (change.action === "delete")
-                        this.keyChanged(key, undefined, true);
-                    else
-                        this.keyChanged(key);
-                });
-            }
-            else if (event instanceof yjs.YArrayEvent) {
-                let currentIndex = 0;
-                for (const delta of event.delta) {
-                    if (delta.retain !== undefined)
-                        currentIndex += delta.retain;
-                    else if (delta.insert) {
-                        const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
-                        const count = insertedItems.length;
-                        this.shiftIndices(currentIndex, count);
-                        for (let i = 0; i < count; i++)
-                            this.keyChanged((currentIndex + i));
-                        currentIndex += count;
-                    }
-                    else if (delta.delete) {
-                        const count = delta.delete;
-                        for (let i = 0; i < count; i++)
-                            this.keyChanged((currentIndex + i), undefined, true);
-                        this.shiftIndices(currentIndex + count, -count);
-                    }
-                }
-            }
-        }
-        shiftIndices(fromIndex, offset) {
-            this.changeObservers?.toArray().forEach(observer => {
-                const itemsToShift = [];
-                for (const [oldIndexStr, instance] of observer.instances.entries()) {
-                    const oldIndex = Number(oldIndexStr);
-                    if (oldIndex >= fromIndex)
-                        itemsToShift.push([oldIndex, instance]);
-                }
-                itemsToShift.sort((a, b) => a[0] - b[0]);
-                for (const [oldIndex] of itemsToShift)
-                    observer.instances.delete(oldIndex);
-                for (const [oldIndex, instance] of itemsToShift) {
-                    const newIndex = oldIndex + offset;
-                    if (typeof instance === "object" && "dataId" in instance)
-                        instance.dataId = newIndex;
-                    observer.instances.set((oldIndex + offset), instance);
-                }
-            });
         }
     };
 })();
@@ -12066,6 +12209,218 @@ function popup(properties = {}) {
     return element({ ...properties, text: undefined, tag: "turbo-popup" });
 }
 
+/**
+ * @group Components
+ * @category TurboYBlock
+ */
+let TurboYBlock = (() => {
+    let _classSuper = TurboDataBlock;
+    let _instanceExtraInitializers = [];
+    let _set_enabledCallbacks_decorators;
+    return class TurboYBlock extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_enabledCallbacks_decorators = [auto({ override: true })];
+            tslib.__esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        observer = (tslib.__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+        set enabledCallbacks(value) {
+            if (!this.data || !(this.data instanceof yjs.AbstractType))
+                return;
+            if (value)
+                this.data.observe(this.observer);
+            else
+                this.data.unobserve(this.observer);
+        }
+        /*
+         *
+         * Basics
+         *
+         */
+        /**
+         * @function get
+         * @description Retrieves the value associated with a given key in the specified block.
+         * @param {KeyType} key - The key to retrieve.
+         * @returns {unknown} The value associated with the key, or null if not found.
+         */
+        get(key) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs.Map)
+                return this.data.get(key.toString());
+            if (this.data instanceof yjs.Array)
+                return this.data.get(trim(Number(key), this.data.length));
+            return super.get(key);
+        }
+        /**
+         * @function set
+         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+         * @param {KeyType} key - The key to update.
+         * @param {unknown} value - The value to assign.
+         */
+        set(key, value) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs.Map)
+                this.data.set(key.toString(), value);
+            else if (this.data instanceof yjs.Array) {
+                const index = trim(Number(key), this.data.length + 1);
+                if (index < this.data.length)
+                    this.data.delete(index, 1);
+                this.data.insert(index, [value]);
+            }
+            else
+                super.set(key, value);
+        }
+        add(value, key) {
+            if (this.data instanceof yjs.Array) {
+                let index = key;
+                if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
+                    index = this.data.length;
+                    this.data.push([value]);
+                }
+                else {
+                    if (index < 0)
+                        index = 0;
+                    this.data.insert(index, [value]);
+                }
+                return index;
+            }
+            else if (this.data instanceof yjs.AbstractType)
+                return this.set(key, value);
+            return super.add(value, key);
+        }
+        has(key) {
+            if (!this.data || typeof this.data !== "object")
+                return false;
+            if (this.data instanceof yjs.Map)
+                return this.data.has(key.toString());
+            if (this.data instanceof yjs.Array)
+                return typeof key === "number" && key >= 0 && key < this.size;
+            return super.has(key);
+        }
+        delete(key) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs.Map)
+                this.data.delete(key.toString());
+            else if (this.data instanceof yjs.Array && typeof key === "number" && key >= 0 && key < this.size)
+                this.data.delete(key, 1);
+            else
+                super.delete(key);
+        }
+        /**
+         * @function keys
+         * @description Retrieves all keys within the given block(s).
+         * @returns {KeyType[]} Array of keys.
+         */
+        get keys() {
+            if (this.data instanceof yjs.Map)
+                return Array.from(this.data.keys());
+            if (this.data instanceof yjs.Array) {
+                const output = [];
+                for (let i = 0; i < this.data.length; i++)
+                    output.push(i);
+                return output;
+            }
+            return super.keys;
+        }
+        /**
+         * @function size
+         * @description Returns the size of the specified block.
+         * @returns {number} The size.
+         */
+        get size() {
+            if (this.data instanceof yjs.Map)
+                return this.data.size;
+            if (this.data instanceof yjs.Array)
+                return this.data.length;
+            return 0;
+        }
+        /*
+         *
+         * Utilities
+         *
+         */
+        /**
+         * @function initialize
+         * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+         */
+        initialize() {
+            super.initialize();
+            if (this.enabledCallbacks && this.data instanceof yjs.AbstractType)
+                this.data?.observe(this.observer);
+        }
+        clear(clearData = true) {
+            if (clearData && this.data instanceof yjs.AbstractType)
+                this.data?.unobserve(this.observer);
+            super.clear(clearData);
+        }
+        /*
+         *
+         * Utilities
+         *
+         */
+        observeChanges(event, transaction) {
+            //TODO
+            !!transaction?.local;
+            transaction?.origin;
+            if (event instanceof yjs.YMapEvent) {
+                event.keysChanged.forEach(key => {
+                    const change = event.changes.keys.get(key);
+                    if (!change)
+                        return;
+                    if (change.action === "delete")
+                        this.keyChanged(key, undefined, true);
+                    else
+                        this.keyChanged(key);
+                });
+            }
+            else if (event instanceof yjs.YArrayEvent) {
+                let currentIndex = 0;
+                for (const delta of event.delta) {
+                    if (delta.retain !== undefined)
+                        currentIndex += delta.retain;
+                    else if (delta.insert) {
+                        const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
+                        const count = insertedItems.length;
+                        this.shiftIndices(currentIndex, count);
+                        for (let i = 0; i < count; i++)
+                            this.keyChanged((currentIndex + i));
+                        currentIndex += count;
+                    }
+                    else if (delta.delete) {
+                        const count = delta.delete;
+                        for (let i = 0; i < count; i++)
+                            this.keyChanged((currentIndex + i), undefined, true);
+                        this.shiftIndices(currentIndex + count, -count);
+                    }
+                }
+            }
+        }
+        shiftIndices(fromIndex, offset) {
+            this.changeObservers?.toArray().forEach(observer => {
+                const itemsToShift = [];
+                for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
+                    const oldIndex = Number(oldIndexStr);
+                    if (oldIndex >= fromIndex)
+                        itemsToShift.push([oldIndex, instance]);
+                }
+                itemsToShift.sort((a, b) => a[0] - b[0]);
+                for (const [oldIndex] of itemsToShift)
+                    observer.removeInstanceByKey(oldIndex, false);
+                for (const [oldIndex, instance] of itemsToShift) {
+                    const newIndex = oldIndex + offset;
+                    if (typeof instance === "object" && "dataId" in instance)
+                        instance.dataId = newIndex;
+                    observer.setInstance(instance, (oldIndex + offset));
+                }
+            });
+        }
+    };
+})();
+
 var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
 styleInject(css_248z);
 
@@ -12099,6 +12454,24 @@ let TurboDropdown = (() => {
     let _values_decorators;
     let _values_initializers = [];
     let _values_extraInitializers = [];
+    let _selectedEntry_decorators;
+    let _selectedEntry_initializers = [];
+    let _selectedEntry_extraInitializers = [];
+    let _selectedValue_decorators;
+    let _selectedValue_initializers = [];
+    let _selectedValue_extraInitializers = [];
+    let _selectedValues_decorators;
+    let _selectedValues_initializers = [];
+    let _selectedValues_extraInitializers = [];
+    let _selectedSecondaryValues_decorators;
+    let _selectedSecondaryValues_initializers = [];
+    let _selectedSecondaryValues_extraInitializers = [];
+    let _selectedSecondaryValue_decorators;
+    let _selectedSecondaryValue_initializers = [];
+    let _selectedSecondaryValue_extraInitializers = [];
+    let _stringSelectedValue_decorators;
+    let _stringSelectedValue_initializers = [];
+    let _stringSelectedValue_extraInitializers = [];
     let _set_selector_decorators;
     let _set_popup_decorators;
     (class extends _classSuper {
@@ -12118,6 +12491,12 @@ let TurboDropdown = (() => {
                 })];
             _entries_decorators = [expose("select")];
             _values_decorators = [expose("select")];
+            _selectedEntry_decorators = [expose("select", false)];
+            _selectedValue_decorators = [expose("select", false)];
+            _selectedValues_decorators = [expose("select", false)];
+            _selectedSecondaryValues_decorators = [expose("select", false)];
+            _selectedSecondaryValue_decorators = [expose("select", false)];
+            _stringSelectedValue_decorators = [expose("select", false)];
             _set_selector_decorators = [auto({
                     setIfUndefined: true,
                     preprocessValue: function (value) {
@@ -12131,6 +12510,12 @@ let TurboDropdown = (() => {
                     }
                 })];
             _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
+            tslib.__esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedValues_decorators, { kind: "accessor", name: "selectedValues", static: false, private: false, access: { has: obj => "selectedValues" in obj, get: obj => obj.selectedValues, set: (obj, value) => { obj.selectedValues = value; } }, metadata: _metadata }, _selectedValues_initializers, _selectedValues_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedSecondaryValues_decorators, { kind: "accessor", name: "selectedSecondaryValues", static: false, private: false, access: { has: obj => "selectedSecondaryValues" in obj, get: obj => obj.selectedSecondaryValues, set: (obj, value) => { obj.selectedSecondaryValues = value; } }, metadata: _metadata }, _selectedSecondaryValues_initializers, _selectedSecondaryValues_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedSecondaryValue_decorators, { kind: "accessor", name: "selectedSecondaryValue", static: false, private: false, access: { has: obj => "selectedSecondaryValue" in obj, get: obj => obj.selectedSecondaryValue, set: (obj, value) => { obj.selectedSecondaryValue = value; } }, metadata: _metadata }, _selectedSecondaryValue_initializers, _selectedSecondaryValue_extraInitializers);
+            tslib.__esDecorate(this, null, _stringSelectedValue_decorators, { kind: "accessor", name: "stringSelectedValue", static: false, private: false, access: { has: obj => "stringSelectedValue" in obj, get: obj => obj.stringSelectedValue, set: (obj, value) => { obj.stringSelectedValue = value; } }, metadata: _metadata }, _stringSelectedValue_initializers, _stringSelectedValue_extraInitializers);
             tslib.__esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             tslib.__esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             tslib.__esDecorate(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
@@ -12145,29 +12530,32 @@ let TurboDropdown = (() => {
         //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
         static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
         select = (tslib.__runInitializers(this, _instanceExtraInitializers), new TurboSelect({
-            onEntryAdded: (entry) => this.onEntryAdded(entry),
+            onEntryClicked: () => this.openPopup(false)
         }));
         popupOpen = false;
         selectorTag = tslib.__runInitializers(this, _selectorTag_initializers, void 0);
         selectorClasses = (tslib.__runInitializers(this, _selectorTag_extraInitializers), tslib.__runInitializers(this, _selectorClasses_initializers, void 0));
         popupClasses = (tslib.__runInitializers(this, _selectorClasses_extraInitializers), tslib.__runInitializers(this, _popupClasses_initializers, void 0));
         entries = (tslib.__runInitializers(this, _popupClasses_extraInitializers), tslib.__runInitializers(this, _entries_initializers, void 0));
-        // public set values(values: ValueType[]) {
-        //     this.select.values = values;
-        // }
-        //
-        // public get values(): ValueType[] {
-        //     return this.select.values;
-        // }
         values = (tslib.__runInitializers(this, _entries_extraInitializers), tslib.__runInitializers(this, _values_initializers, void 0));
-        onEntryAdded(entry) {
-            this.select.initializeSelection();
-            turbo(entry).on(DefaultEventName.click, () => {
-                this.select.select(entry, !this.select.isSelected(entry));
-                this.openPopup(false);
-                return true;
-            });
-        }
+        #selectedEntry_accessor_storage = (tslib.__runInitializers(this, _values_extraInitializers), tslib.__runInitializers(this, _selectedEntry_initializers, void 0));
+        get selectedEntry() { return this.#selectedEntry_accessor_storage; }
+        set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
+        #selectedValue_accessor_storage = (tslib.__runInitializers(this, _selectedEntry_extraInitializers), tslib.__runInitializers(this, _selectedValue_initializers, void 0));
+        get selectedValue() { return this.#selectedValue_accessor_storage; }
+        set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
+        #selectedValues_accessor_storage = (tslib.__runInitializers(this, _selectedValue_extraInitializers), tslib.__runInitializers(this, _selectedValues_initializers, void 0));
+        get selectedValues() { return this.#selectedValues_accessor_storage; }
+        set selectedValues(value) { this.#selectedValues_accessor_storage = value; }
+        #selectedSecondaryValues_accessor_storage = (tslib.__runInitializers(this, _selectedValues_extraInitializers), tslib.__runInitializers(this, _selectedSecondaryValues_initializers, void 0));
+        get selectedSecondaryValues() { return this.#selectedSecondaryValues_accessor_storage; }
+        set selectedSecondaryValues(value) { this.#selectedSecondaryValues_accessor_storage = value; }
+        #selectedSecondaryValue_accessor_storage = (tslib.__runInitializers(this, _selectedSecondaryValues_extraInitializers), tslib.__runInitializers(this, _selectedSecondaryValue_initializers, void 0));
+        get selectedSecondaryValue() { return this.#selectedSecondaryValue_accessor_storage; }
+        set selectedSecondaryValue(value) { this.#selectedSecondaryValue_accessor_storage = value; }
+        #stringSelectedValue_accessor_storage = (tslib.__runInitializers(this, _selectedSecondaryValue_extraInitializers), tslib.__runInitializers(this, _stringSelectedValue_initializers, void 0));
+        get stringSelectedValue() { return this.#stringSelectedValue_accessor_storage; }
+        set stringSelectedValue(value) { this.#stringSelectedValue_accessor_storage = value; }
         /**
          * The dropdown's selector element.
          */
@@ -12213,24 +12601,9 @@ let TurboDropdown = (() => {
             else
                 turbo(this.popup).show(b);
         }
-        get selectedValues() {
-            return this.select.selectedValues;
-        }
-        get selectedValue() {
-            return this.select.selectedValue;
-        }
-        get selectedSecondaryValues() {
-            return this.select.selectedSecondaryValues;
-        }
-        get selectedSecondaryValue() {
-            return this.select.selectedSecondaryValue;
-        }
-        get stringSelectedValue() {
-            return this.select.stringSelectedValue;
-        }
         constructor() {
             super(...arguments);
-            tslib.__runInitializers(this, _values_extraInitializers);
+            tslib.__runInitializers(this, _stringSelectedValue_extraInitializers);
         }
         static {
             tslib.__runInitializers(_classThis, _classExtraInitializers);
@@ -12300,6 +12673,31 @@ let TurboMarkingMenu = (() => {
 })();
 
 /**
+ * @group Utilities
+ * @category Interpolation
+ *
+ * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
+ * to go beyond [x1, x2].
+ * @param x
+ * @param x1
+ * @param x2
+ * @param y1
+ * @param y2
+ * @param strict
+ */
+function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
+    if (strict) {
+        const xMax = Math.max(x1, x2);
+        const xMin = Math.min(x1, x2);
+        if (x > xMax)
+            x = xMax;
+        if (x < xMin)
+            x = xMin;
+    }
+    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
+}
+
+/**
  * @class TurboSelectWheel
  * @group Components
  * @category TurboSelectWheel
@@ -12316,24 +12714,93 @@ let TurboSelectWheel = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
+    let _entries_decorators;
+    let _entries_initializers = [];
+    let _entries_extraInitializers = [];
+    let _values_decorators;
+    let _values_initializers = [];
+    let _values_extraInitializers = [];
+    let _selectedEntry_decorators;
+    let _selectedEntry_initializers = [];
+    let _selectedEntry_extraInitializers = [];
+    let _selectedValue_decorators;
+    let _selectedValue_initializers = [];
+    let _selectedValue_extraInitializers = [];
+    let _opacity_decorators;
+    let _opacity_initializers = [];
+    let _opacity_extraInitializers = [];
+    let _set_size_decorators;
+    let _get_reifect_decorators;
     let _set_alwaysOpen_decorators;
+    let _set_index_decorators;
     let _set_open_decorators;
     (class extends _classSuper {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_alwaysOpen_decorators = [auto()];
+            _entries_decorators = [expose("selector")];
+            _values_decorators = [expose("selector")];
+            _selectedEntry_decorators = [expose("selector", false)];
+            _selectedValue_decorators = [expose("selector", false)];
+            _opacity_decorators = [auto({
+                    defaultValue: { max: 1, min: 0 },
+                    preprocessValue: (value) => {
+                        return {
+                            max: trim(value?.max, 1),
+                            min: trim(value?.min, 1)
+                        };
+                    }
+                })];
+            _set_size_decorators = [auto({
+                    preprocessValue: (value) => typeof value == "object" ? value : { max: value ?? 100, min: -(value ?? 100) }
+                })];
+            _get_reifect_decorators = [auto({
+                    preprocessValue: function (value) {
+                        if (value instanceof Reifect)
+                            return value;
+                        if (!value)
+                            value = {};
+                        if (!value.transitionProperties)
+                            value.transitionProperties = "opacity transform";
+                        if (value.transitionDuration == undefined)
+                            value.transitionDuration = 0.2;
+                        if (!value.transitionTimingFunction)
+                            value.transitionTimingFunction = "ease-in-out";
+                        return new Reifect(value);
+                    }
+                })];
+            _set_alwaysOpen_decorators = [auto({ defaultValue: false })];
+            _set_index_decorators = [auto({ cancelIfUnchanged: false })];
             _set_open_decorators = [auto()];
+            tslib.__esDecorate(this, null, _entries_decorators, { kind: "accessor", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
+            tslib.__esDecorate(this, null, _values_decorators, { kind: "accessor", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+            tslib.__esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+            tslib.__esDecorate(this, null, _set_size_decorators, { kind: "setter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            tslib.__esDecorate(this, null, _get_reifect_decorators, { kind: "getter", name: "reifect", static: false, private: false, access: { has: obj => "reifect" in obj, get: obj => obj.reifect }, metadata: _metadata }, null, _instanceExtraInitializers);
             tslib.__esDecorate(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            tslib.__esDecorate(this, null, _set_index_decorators, { kind: "setter", name: "index", static: false, private: false, access: { has: obj => "index" in obj, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             tslib.__esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            tslib.__esDecorate(null, null, _opacity_decorators, { kind: "field", name: "opacity", static: false, private: false, access: { has: obj => "opacity" in obj, get: obj => obj.opacity, set: (obj, value) => { obj.opacity = value; } }, metadata: _metadata }, _opacity_initializers, _opacity_extraInitializers);
             tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             tslib.__runInitializers(_classThis, _classExtraInitializers);
         }
-        _currentPosition = (tslib.__runInitializers(this, _instanceExtraInitializers), 0);
-        _reifect;
-        _size = { max: 100, min: -100 };
+        selector = tslib.__runInitializers(this, _instanceExtraInitializers);
+        #entries_accessor_storage = tslib.__runInitializers(this, _entries_initializers, void 0);
+        get entries() { return this.#entries_accessor_storage; }
+        set entries(value) { this.#entries_accessor_storage = value; }
+        #values_accessor_storage = (tslib.__runInitializers(this, _entries_extraInitializers), tslib.__runInitializers(this, _values_initializers, void 0));
+        get values() { return this.#values_accessor_storage; }
+        set values(value) { this.#values_accessor_storage = value; }
+        #selectedEntry_accessor_storage = (tslib.__runInitializers(this, _values_extraInitializers), tslib.__runInitializers(this, _selectedEntry_initializers, void 0));
+        get selectedEntry() { return this.#selectedEntry_accessor_storage; }
+        set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
+        #selectedValue_accessor_storage = (tslib.__runInitializers(this, _selectedEntry_extraInitializers), tslib.__runInitializers(this, _selectedValue_initializers, void 0));
+        get selectedValue() { return this.#selectedValue_accessor_storage; }
+        set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
+        _currentPosition = (tslib.__runInitializers(this, _selectedValue_extraInitializers), 0);
         sizePerEntry = [];
         positionPerEntry = [];
         totalSize = 0;
@@ -12347,253 +12814,203 @@ let TurboSelectWheel = (() => {
         generateCustomStyling;
         dragging;
         openTimer;
-        // public constructor(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType,
-        //     DataType, ModelType>) {
-        //     properties.multiSelection = false;
-        //     properties.forceSelection = true;
-        //     super();
-        //
-        //     if (properties.scale) this.scale = properties.scale;
-        //     if (properties.direction) this.direction = properties.direction;
-        //
-        //     this.opacity = properties.opacity ?? {max: 1, min: 0};
-        //     this.size = properties.size;
-        //     this.generateCustomStyling = properties.generateCustomStyling;
-        //     this.reifect = properties.styleReifect;
-        //
-        //     $(this).setStyles({display: "block", position: "relative"});
-        //     this.alwaysOpen = properties.alwaysOpen ?? false;
-        //
-        //     // this.initializeUI();
-        //
-        //     if (properties.selectedValues?.length > 0) this.select(properties.selectedValues[0]);
-        //     requestAnimationFrame(() => this.refresh());
-        // }
-        //
-        // public connectedCallback() {
-        //     //TODO super.connectedCallback();
-        //     requestAnimationFrame(() => this.refresh());
-        // }
-        //
-        // @auto({preprocessValue: (value) => trim(value, 1)})
-        // public set opacity(value: Record<Range, number>) {}
-        //
-        // public get size(): Record<Range, number> {
-        //     return this._size;
-        // }
-        //
-        // public set size(value: Record<Range, number> | number) {
-        //     this._size = typeof value == "object" ? value : {max: value ?? 100, min: -(value ?? 100)};
-        // }
-        //
-        // public get reifect(): Reifect {
-        //     return this._reifect;
-        // }
-        //
-        // public set reifect(value: Reifect | StatelessReifectProperties) {
-        //     if (value instanceof Reifect) this._reifect = value;
-        //     else {
-        //         if (!value) value = {};
-        //         if (!value.transitionProperties) value.transitionProperties = "opacity transform";
-        //         if (value.transitionDuration == undefined) value.transitionDuration = 0.2;
-        //         if (!value.transitionTimingFunction) value.transitionTimingFunction = "ease-in-out";
-        //         this._reifect = new Reifect(value);
-        //     }
-        //     this._reifect.attachAll(...this.entries);
-        // }
+        initialize() {
+            this.selector = new TurboSelect();
+            this.selector.multiSelection = false;
+            this.selector.forceSelection = true;
+            this.selector.onSelectDelegate.add((b) => {
+                if (!b)
+                    return;
+                this.open = true;
+                if (!this.alwaysOpen)
+                    this.setOpenTimer();
+            });
+            this.selector.onEntryRemoved.add((entry) => this.reifect?.detach(entry));
+            this.selector.onEntryAdded.add((entry) => {
+                if (entry instanceof Element && entry.parentElement) {
+                    this.reifect?.attach(entry);
+                    this.reloadEntrySizes();
+                }
+                let showTimer;
+                turbo(entry)
+                    .setStyles({ position: "absolute" })
+                    .on(DefaultEventName.dragStart, (e) => {
+                    e.stopImmediatePropagation();
+                    this.clearOpenTimer();
+                    this.open = true;
+                    this.dragging = true;
+                    this.reifect.enabled.transition = false;
+                    this.reloadEntrySizes();
+                })
+                    .on("pointerover", () => {
+                    clearTimeout(showTimer);
+                    showTimer = setTimeout(() => this.open = true, 1000);
+                })
+                    .on("pointerout", () => {
+                    if (showTimer)
+                        clearTimeout(showTimer);
+                    showTimer = null;
+                });
+                this.refresh();
+            });
+            super.initialize();
+            this.refresh();
+            turbo(this).setStyles({ display: "block", position: "relative" });
+        }
+        opacity = tslib.__runInitializers(this, _opacity_initializers, void 0);
+        set size(value) { }
+        get size() { return; }
+        get reifect() { return; }
+        set reifect(value) {
+            this.reifect.attachAll(...this.entries);
+        }
+        closeOnClick = (tslib.__runInitializers(this, _opacity_extraInitializers), () => this.open = false);
         set alwaysOpen(value) {
             if (value)
-                $(document).removeListener(DefaultEventName.click, this.closeOnClick);
+                turbo(document.body).removeListener(DefaultEventName.click, this.closeOnClick);
             else
-                $(document).on(DefaultEventName.click, this.closeOnClick);
+                turbo(document.body).on(DefaultEventName.click, this.closeOnClick);
             this.open = value;
         }
-        closeOnClick = () => this.open = false;
         get isVertical() {
             return this.direction == exports.Direction.vertical;
         }
-        // @auto({cancelIfUnchanged: false})
-        // public set index(value: number) {
-        //     this.selectByIndex(this.trimmedIndex);
-        // }
-        //
-        // protected get trimmedIndex() {
-        //     return trim(Math.round(this.index), this.entries.length - 1);
-        // }
-        //
-        // protected get flooredTrimmedIndex() {
-        //     return trim(Math.floor(this.index), this.entries.length - 1);
-        // }
+        set index(value) {
+            this.selector.selectByIndex(this.trimmedIndex);
+        }
+        get trimmedIndex() {
+            return trim(Math.round(this.index), this.entries.length - 1);
+        }
+        get flooredTrimmedIndex() {
+            return trim(Math.floor(this.index), this.entries.length - 1);
+        }
         set open(value) {
-            $(this).setStyle("overflow", value ? "visible" : "hidden");
+            turbo(this).setStyle("overflow", value ? "visible" : "hidden");
         }
         get currentPosition() {
             return this._currentPosition;
         }
-        // protected set currentPosition(value: number) {
-        //     const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
-        //     const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
-        //
-        //     if (value < min) value = min;
-        //     if (value > max) value = max;
-        //
-        //     this._currentPosition = value;
-        //     const elements = this.reifect.getEnabledObjectsData();
-        //     if (elements.length === 0) return;
-        //
-        //     elements.forEach((el, index) =>
-        //         this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
-        // }
-        // protected setupUIListeners() {
-        //     super.setupUIListeners();
-        //
-        //     $(document.body).on(DefaultEventName.drag, (e: TurboDragEvent) => {
-        //         if (!this.dragging) return;
-        //         e.stopImmediatePropagation();
-        //         this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
-        //     });
-        //
-        //     $(document.body).on(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
-        //         if (!this.dragging) return;
-        //         e.stopImmediatePropagation();
-        //         this.dragging = false;
-        //         this.recomputeIndex();
-        //         // this.snapTo(this.trimmedIndex);
-        //         if (!this.alwaysOpen) this.setOpenTimer();
-        //     });
-        // }
+        set currentPosition(value) {
+            const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
+            const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
+            if (value < min)
+                value = min;
+            if (value > max)
+                value = max;
+            this._currentPosition = value;
+            const elements = this.reifect.getEnabledObjectsData();
+            if (elements.length === 0)
+                return;
+            elements.forEach((el, index) => this.computeAndApplyStyling(el.object.deref(), this.positionPerEntry[index] - value));
+        }
+        setupUIListeners() {
+            super.setupUIListeners();
+            turbo(document.body)
+                .on(DefaultEventName.drag, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
+            })
+                .on(DefaultEventName.dragEnd, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                this.dragging = false;
+                this.recomputeIndex();
+                // this.snapTo(this.trimmedIndex);
+                if (!this.alwaysOpen)
+                    this.setOpenTimer();
+            });
+        }
         computeDragValue(delta) {
             return -delta[this.isVertical ? "y" : "x"];
         }
         /**
          * Recalculates the dimensions and positions of all entries
          */
-        // protected reloadEntrySizes() {
-        //     if (!this.reifect) return;
-        //
-        //     this.sizePerEntry.length = 0;
-        //     this.positionPerEntry.length = 0;
-        //     this.totalSize = 0;
-        //
-        //     this.reifect.getEnabledObjectsData().forEach(entry => {
-        //         const object = entry.object.deref();
-        //         const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-        //         this.sizePerEntry.push(size);
-        //         this.positionPerEntry.push(this.totalSize);
-        //         this.totalSize += size;
-        //     });
-        //     const flooredIndex = Math.floor(this.index);
-        //     const indexOffset = this.index - Math.floor(this.index);
-        //
-        //     this.currentPosition = 0;
-        //     if (this.index < 0) this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
-        //     else if (this.index >= this.sizePerEntry.length) this.currentPosition =
-        //         (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
-        //     else this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
-        // }
-        //
-        // protected recomputeIndex() {
-        //     let index = 0;
-        //     while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition) index++;
-        //     if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2) index++;
-        //     this.index = index;
-        // }
-        // protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size: Record<Range, number> = this.size) {
-        //     let opacityValue: number, scaleValue: number;
-        //     const bound = translationValue > 0 ? size.max : size.min;
-        //     opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
-        //     scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
-        //
-        //     let styles: string | PartialRecord<keyof CSSStyleDeclaration, string | number> = {
-        //         left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
-        //         calc(${!this.isVertical ? translationValue : 0}px - 50%),
-        //         calc(${this.isVertical ? translationValue : 0}px - 50%),
-        //         0) scale3d(${scaleValue}, ${scaleValue}, 1)`
-        //     };
-        //
-        //     if (this.generateCustomStyling) styles = this.generateCustomStyling({
-        //         element: element,
-        //         translationValue: translationValue,
-        //         opacityValue: opacityValue,
-        //         scaleValue: scaleValue,
-        //         size: size,
-        //         defaultComputedStyles: styles
-        //     });
-        //
-        //     $(element).setStyles(styles);
-        // }
-        // public select(entry: ValueType | EntryType, selected: boolean = true): this {
-        //     // super.select(entry, selected);
-        //     if (entry === undefined || entry === null) return this;
-        //
-        //     const index = this.getIndex(this.selectedEntry);
-        //     if (index != this.index) this.index = index;
-        //
-        //     if (this.reifect) {
-        //         this.reifect.transitionEnabled = true;
-        //         this.reloadEntrySizes();
-        //     }
-        //
-        //     const computedStyle = getComputedStyle(this.selectedEntry);
-        //     $(this).setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
-        //     return this;
-        // }
-        //
-        // protected onEntryClick(entry: EntryType, e?: Event) {
-        //     super.onEntryClick(entry, e);
-        //     e.stopImmediatePropagation();
-        //     this.open = true;
-        //     if (!this.alwaysOpen) this.setOpenTimer();
-        // }
-        //
-        // public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType,
-        //                 index: number = this.entries.length): EntryType {
-        //     entry = this.createEntry(entry);
-        //     entry.onDetach.add(() => this.reifect?.detach(entry as TurboSelectEntry));
-        //     entry.onAttach.add(() => {
-        //         this.reifect?.attach(entry as TurboSelectEntry);
-        //         this.reloadEntrySizes();
-        //     });
-        //
-        //     entry = super.addEntry(entry, index);
-        //     $(entry).setStyles({position: "absolute"});
-        //
-        //     $(entry).on(DefaultEventName.dragStart, (e: Event) => {
-        //         e.stopImmediatePropagation();
-        //         this.clearOpenTimer();
-        //         this.open = true;
-        //         this.dragging = true;
-        //         this.reifect.transitionEnabled = false;
-        //         this.reloadEntrySizes();
-        //     });
-        //
-        //     let showTimer: NodeJS.Timeout;
-        //     $(entry).on("mouseover", () => {
-        //         clearTimeout(showTimer);
-        //         showTimer = setTimeout(() => this.open = true, 1000);
-        //     });
-        //     $(entry).on("mouseout", () => {
-        //         if (showTimer) clearTimeout(showTimer);
-        //         showTimer = null;
-        //     });
-        //
-        //     this.refresh();
-        //     return entry;
-        // }
-        //
-        // public clear(): void {
-        //     this.reifect.detach(...this.entries);
-        //     super.clear();
-        // }
-        //
-        // public refresh() {
-        //     if (this.selectedEntry) this.select(this.selectedEntry);
-        //     else this.reset();
-        // }
-        //
-        // public reset() {
-        //     this.select(this.entries[0]);
-        // }
+        reloadEntrySizes() {
+            if (!this.reifect)
+                return;
+            this.sizePerEntry.length = 0;
+            this.positionPerEntry.length = 0;
+            this.totalSize = 0;
+            this.reifect.getEnabledObjectsData().forEach(entry => {
+                const object = entry.object.deref();
+                const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+                this.sizePerEntry.push(size);
+                this.positionPerEntry.push(this.totalSize);
+                this.totalSize += size;
+            });
+            const flooredIndex = Math.floor(this.index);
+            const indexOffset = this.index - Math.floor(this.index);
+            this.currentPosition = 0;
+            if (this.index < 0)
+                this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
+            else if (this.index >= this.sizePerEntry.length)
+                this.currentPosition =
+                    (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
+            else
+                this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+        }
+        recomputeIndex() {
+            let index = 0;
+            while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition)
+                index++;
+            if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2)
+                index++;
+            this.index = index;
+        }
+        computeAndApplyStyling(element, translationValue, size = this.size) {
+            let opacityValue, scaleValue;
+            const bound = translationValue > 0 ? size.max : size.min;
+            opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+            scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+            let styles = {
+                left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
+            calc(${!this.isVertical ? translationValue : 0}px - 50%),
+            calc(${this.isVertical ? translationValue : 0}px - 50%),
+            0) scale3d(${scaleValue}, ${scaleValue}, 1)`
+            };
+            if (this.generateCustomStyling)
+                styles = this.generateCustomStyling({
+                    element: element,
+                    translationValue: translationValue,
+                    opacityValue: opacityValue,
+                    scaleValue: scaleValue,
+                    size: size,
+                    defaultComputedStyles: styles
+                });
+            $(element).setStyles(styles);
+        }
+        select(entry, selected = true) {
+            // super.select(entry, selected);
+            if (entry === undefined || entry === null)
+                return this;
+            const index = this.selector.getIndex(this.selectedEntry);
+            if (index != this.index)
+                this.index = index;
+            if (this.reifect) {
+                this.reifect.enabled.transition = true;
+                this.reloadEntrySizes();
+            }
+            const computedStyle = getComputedStyle(this.selectedEntry);
+            $(this).setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
+            return this;
+        }
+        clear() {
+            this.reifect.detach(...this.entries);
+            this.selector.clear();
+        }
+        refresh() {
+            if (this.selectedEntry)
+                this.select(this.selectedEntry);
+            else
+                this.reset();
+        }
+        reset() {
+            this.select(this.entries[0]);
+        }
         clearOpenTimer() {
             if (this.openTimer)
                 clearTimeout(this.openTimer);
@@ -12607,6 +13024,10 @@ let TurboSelectWheel = (() => {
     });
     return _classThis;
 })();
+function selectWheel(properties) {
+    turbo(properties).applyDefaults({ tag: "turbo-select-wheel" });
+    return element({ ...properties });
+}
 
 /**
  * @class TurboProxiedElement
@@ -12689,31 +13110,6 @@ async function hashBySize(input, chars = 12) {
         .replace(/\//g, "_")
         .replace(/=+$/g, "")
         .slice(0, chars);
-}
-
-/**
- * @group Utilities
- * @category Interpolation
- *
- * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
- * to go beyond [x1, x2].
- * @param x
- * @param x1
- * @param x2
- * @param y1
- * @param y2
- * @param strict
- */
-function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
-    if (strict) {
-        const xMax = Math.max(x1, x2);
-        const xMin = Math.min(x1, x2);
-        if (x > xMax)
-            x = xMax;
-        if (x < xMin)
-            x = xMin;
-    }
-    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
 }
 
 /**
@@ -13057,6 +13453,7 @@ Object.defineProperty(exports, "YText", {
 exports.$ = $;
 exports.ApplyDefaultsMergeProperties = ApplyDefaultsMergeProperties;
 exports.BasicInputEvents = BasicInputEvents;
+exports.DataBlockObserver = DataBlockObserver;
 exports.DefaultClickEventName = DefaultClickEventName;
 exports.DefaultDragEventName = DefaultDragEventName;
 exports.DefaultEventName = DefaultEventName;
@@ -13101,6 +13498,7 @@ exports.TurboMarkingMenu = TurboMarkingMenu;
 exports.TurboModel = TurboModel;
 exports.TurboMoveEventName = TurboMoveEventName;
 exports.TurboNumericalInput = TurboNumericalInput;
+exports.TurboObserver = TurboObserver;
 exports.TurboPopup = TurboPopup;
 exports.TurboProxiedElement = TurboProxiedElement;
 exports.TurboRichElement = TurboRichElement;
@@ -13118,10 +13516,12 @@ exports.TurboYBlock = TurboYBlock;
 exports.a = a;
 exports.addInYArray = addInYArray;
 exports.addInYMap = addInYMap;
+exports.alphabeticalSorting = alphabeticalSorting;
 exports.areEqual = areEqual;
 exports.auto = auto;
 exports.bestOverlayColor = bestOverlayColor;
 exports.blindElement = blindElement;
+exports.blockDataSignal = blockDataSignal;
 exports.blockIdSignal = blockIdSignal;
 exports.blockSignal = blockSignal;
 exports.button = button;
@@ -13204,6 +13604,7 @@ exports.randomString = randomString;
 exports.reifect = reifect;
 exports.removeFromYArray = removeFromYArray;
 exports.richElement = richElement;
+exports.selectWheel = selectWheel;
 exports.setSignal = setSignal;
 exports.signal = signal;
 exports.solver = solver;

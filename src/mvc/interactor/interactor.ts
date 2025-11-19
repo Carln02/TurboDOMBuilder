@@ -69,6 +69,7 @@ class TurboInteractor<
         this.target = properties.target ?? this.target ?? host instanceof Node ? host
             : host?.element instanceof Node ? host.element
                 : undefined;
+        this.setup();
     }
 
     /**

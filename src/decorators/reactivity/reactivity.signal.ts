@@ -1,6 +1,7 @@
 import {ReactivityUtils} from "./reactivity.utils";
 import {SignalBox, SignalEntry} from "./reactivity.types";
-import {getFirstDescriptorInChain} from "../utils/dataManipulation/prototype";
+import {getFirstDescriptorInChain} from "../../utils/dataManipulation/prototype";
+import {isUndefined} from "../../utils/dataManipulation/misc";
 
 export class SignalUtils {
     public constructor(private readonly utils: ReactivityUtils) {}
@@ -50,6 +51,7 @@ export class SignalUtils {
             | ClassAccessorDecoratorContext<Type, Value>,
         baseGetter?: (this: any) => Value,
         baseSetter?: (this: any, value: Value) => void,
+        callSetterOnInitialize: boolean = false
     ): any {
         const {kind, name, static: isStatic, private: isPrivate} = context as any;
         if (isPrivate) throw new Error("@signal does not support private class elements.");
@@ -135,6 +137,11 @@ export class SignalUtils {
                         e.set(v);
                     },
                 });
+            }
+
+            if (callSetterOnInitialize) {
+                const current = baseGetter?.call(this) ?? customGetter?.call(this);
+                if (isUndefined(current)) ensureEntry(this, !customGetter && !baseGetter).set(undefined);
             }
         });
     }

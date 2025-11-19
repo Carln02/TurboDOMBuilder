@@ -38,7 +38,7 @@ class TurboDropdown<
     public static readonly config: TurboDropdownConfig = {...TurboElement.config, defaultSelectorTag: "h4"};
 
     public readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType> = new TurboSelect({
-        onEntryAdded: (entry: EntryType) => this.onEntryAdded(entry),
+        onEntryClicked: () => this.openPopup(false)
     });
 
     private popupOpen: boolean = false;
@@ -59,24 +59,13 @@ class TurboDropdown<
     }) public popupClasses: string | string[];
 
     @expose("select") public entries: HTMLCollection | NodeList | EntryType[];
-
-    // public set values(values: ValueType[]) {
-    //     this.select.values = values;
-    // }
-    //
-    // public get values(): ValueType[] {
-    //     return this.select.values;
-    // }
     @expose("select") public values: ValueType[];
-
-    protected onEntryAdded(entry: EntryType) {
-        (this.select as any).initializeSelection();
-        turbo(entry).on(DefaultEventName.click, () => {
-            this.select.select(entry, !this.select.isSelected(entry));
-            this.openPopup(false);
-            return true;
-        });
-    }
+    @expose("select", false) public accessor selectedEntry: EntryType;
+    @expose("select", false) public accessor selectedValue: ValueType;
+    @expose("select", false) public accessor selectedValues: ValueType[];
+    @expose("select", false) public accessor selectedSecondaryValues: SecondaryValueType[];
+    @expose("select", false) public accessor selectedSecondaryValue: SecondaryValueType;
+    @expose("select", false) public accessor stringSelectedValue: string;
 
     /**
      * The dropdown's selector element.
@@ -126,26 +115,6 @@ class TurboDropdown<
         this.popupOpen = b;
         if ("show" in this.popup && typeof this.popup.show === "function") this.popup.show(b);
         else turbo(this.popup).show(b);
-    }
-
-    public get selectedValues(): ValueType[] {
-        return this.select.selectedValues;
-    }
-
-    public get selectedValue(): ValueType {
-        return this.select.selectedValue;
-    }
-
-    public get selectedSecondaryValues(): SecondaryValueType[] {
-        return this.select.selectedSecondaryValues;
-    }
-
-    public get selectedSecondaryValue(): SecondaryValueType {
-        return this.select.selectedSecondaryValue;
-    }
-
-    public get stringSelectedValue(): string {
-        return this.select.stringSelectedValue;
     }
 }
 

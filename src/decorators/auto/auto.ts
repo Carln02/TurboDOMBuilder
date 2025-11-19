@@ -1,7 +1,11 @@
 import {AutoOptions} from "./auto.types";
 import {AutoUtils} from "./auto.utils";
 import {isNull, isUndefined} from "../../utils/dataManipulation/misc";
-import {getFirstDescriptorInChain, getFirstPrototypeInChainWith} from "../../utils/dataManipulation/prototype";
+import {
+    getFirstDescriptorInChain,
+    getFirstPrototypeInChainWith,
+    getSuperDescriptor
+} from "../../utils/dataManipulation/prototype";
 
 const utils = new AutoUtils();
 
@@ -64,45 +68,57 @@ function auto(options?: AutoOptions) {
 
         context.addInitializer(function (this: any) {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-            // const superDescriptor = getSuperDescriptor(this, key);
+            const superDescriptor = getSuperDescriptor(this, key);
 
             let customGetter: (this: any) => Value;
             let customSetter: (this: any, value: Value) => void;
 
             const baseRead = function (this: any) {
                 if (customGetter && options?.returnDefinedGetterValue) return customGetter.call(this);
-                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
                 return this[backing];
             }
 
             const baseWrite = function (this: any, value: any) {
-                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
                 this[backing] = value;
             }
 
-            let undefinedFlag = false;
+            let readFlag = false;
             const read = function (this: any) {
                 let value = baseRead.call(this);
-                if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
-                    undefinedFlag = true;
+                if (readFlag) return value;
+                readFlag = true;
+                if (!options.returnDefinedGetterValue && isUndefined(value)) {
                     if (options.defaultValue) value = options.defaultValue;
                     else if (options.defaultValueCallback) value = options.defaultValueCallback.call(this);
-                    else if (!options.setIfUndefined) return value;
-                    write.call(this, value);
-                    value = baseRead.call(this);
-                    undefinedFlag = false;
+                    if (options.setIfUndefined || options.defaultValue || options.defaultValueCallback) {
+                        write.call(this, value);
+                        value = baseRead.call(this);
+                    }
                 }
+                readFlag = false;
                 return value;
             };
 
+            let writeFlag = false;
             const write = function (this: any, value: Value): void {
+                if (writeFlag) return baseWrite.call(this, value);
+                writeFlag = true;
+
                 options.callBefore?.call(this, value);
                 let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) return;
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                    writeFlag = false;
+                    return;
+                }
+
                 if (options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
                 baseWrite.call(this, next);
                 if (!options.executeSetterBeforeStoring && customSetter) customSetter.call(this, next);
                 options.callAfter?.call(this, next);
+
+                writeFlag = false;
             };
 
             if (isUndefined(baseRead.call(this))) {

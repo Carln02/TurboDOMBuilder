@@ -2,6 +2,7 @@ import {TurboDataBlock} from "../dataBlock/dataBlock";
 import {auto} from "../../../decorators/auto/auto";
 import {trim} from "../../../utils/computations/misc";
 import {YAbstractType, YArray, YMap, YArrayEvent, YEvent, YMapEvent} from "../../../types/yjs.types";
+import {isUndefined} from "../../../utils/dataManipulation/misc";
 
 /**
  * @group Components
@@ -15,7 +16,7 @@ class TurboYBlock<
     private observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
 
     @auto({override: true}) public set enabledCallbacks(value: boolean) {
-        if (!this.data) return;
+        if (!this.data || !(this.data instanceof YAbstractType)) return;
         if (value) this.data.observe(this.observer);
         else this.data.unobserve(this.observer);
     }
@@ -53,6 +54,21 @@ class TurboYBlock<
             if (index < this.data.length) this.data.delete(index, 1);
             this.data.insert(index, [value]);
         } else super.set(key, value);
+    }
+
+    public add(value: unknown, key?: KeyType) {
+        if (this.data instanceof YArray) {
+            let index = key as number;
+            if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
+                index = this.data.length;
+                this.data.push([value]);
+            } else {
+                if (index < 0) index = 0;
+                this.data.insert(index, [value]);
+            }
+            return index as KeyType;
+        } else if (this.data instanceof YAbstractType) return this.set(key, value);
+        return super.add(value, key);
     }
 
     public has(key: KeyType): boolean {
@@ -111,7 +127,7 @@ class TurboYBlock<
     }
 
     public clear(clearData: boolean = true) {
-        if (clearData) this.data?.unobserve(this.observer);
+        if (clearData && this.data instanceof YAbstractType) this.data?.unobserve(this.observer);
         super.clear(clearData);
     }
 
@@ -156,17 +172,17 @@ class TurboYBlock<
     private shiftIndices(fromIndex: number, offset: number) {
         this.changeObservers?.toArray().forEach(observer => {
             const itemsToShift: [number, any][] = [];
-            for (const [oldIndexStr, instance] of observer.instances.entries()) {
+            for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
                 const oldIndex = Number(oldIndexStr);
                 if (oldIndex >= fromIndex) itemsToShift.push([oldIndex, instance]);
             }
 
             itemsToShift.sort((a, b) => a[0] - b[0]);
-            for (const [oldIndex] of itemsToShift) observer.instances.delete(oldIndex as KeyType);
+            for (const [oldIndex] of itemsToShift) observer.removeInstanceByKey(oldIndex as KeyType, false);
             for (const [oldIndex, instance] of itemsToShift) {
                 const newIndex = oldIndex + offset;
                 if (typeof instance === "object" && "dataId" in instance) instance.dataId = newIndex;
-                observer.instances.set((oldIndex + offset) as KeyType, instance);
+                observer.setInstance(instance, (oldIndex + offset) as KeyType);
             }
         });
     }

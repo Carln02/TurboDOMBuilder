@@ -58,6 +58,7 @@ class TurboSubstrate<
         this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
         if (properties.onActivate) this.onActivate = properties.onActivate;
         if (properties.onDeactivate) this.onDeactivate = properties.onDeactivate;
+        this.setup();
     }
 
     /**

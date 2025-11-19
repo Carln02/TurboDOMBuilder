@@ -25,7 +25,10 @@ class TurboHandler<ModelType extends TurboModel = TurboModel> {
 
     public constructor(model?: ModelType) {
         if (this.model) this.model = model;
+        this.setup();
     }
+
+    protected setup(): void {}
 }
 
 export {TurboHandler};

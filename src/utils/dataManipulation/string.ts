@@ -21,8 +21,9 @@ function stringify(value: any): string {
         case "function":
             return value.toString();
         case "object":
-            if (Array.isArray(value)) return JSON.stringify(value);
+            if (Array.isArray(value)) return JSON.stringify(value.map(entry => stringify(entry)));
             else if (value instanceof Date) return value.toISOString();
+            else if (value instanceof Element) return "[DOM ELEMENT]";
             else {
                 try {
                     return JSON.stringify(value);

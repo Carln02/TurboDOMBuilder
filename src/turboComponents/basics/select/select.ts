@@ -35,6 +35,10 @@ class TurboSelect<
     public readonly onSelectDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
     public readonly onEnabledDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
 
+    public readonly onEntryAdded: Delegate<(entry: EntryType, index: number) => void> = new Delegate();
+    public readonly onEntryRemoved: Delegate<(entry: EntryType) => void> = new Delegate();
+    public readonly onEntryClicked: Delegate<(entry: EntryType, e: Event) => void> = new Delegate();
+
     /**
      * The dropdown's entries.
      */
@@ -45,15 +49,17 @@ class TurboSelect<
     public set entries(value: HTMLCollection | NodeList | EntryType[]) {
         this.enableObserver(false);
 
+        console.log(value);
+
         const previouslySelectedValues = this.selectedValues;
-        this.clear();
+        this.clear(false);
         this._entries = (Array.isArray(value) ? value : Array.from(value) as EntryType[])
             .filter(entry => entry !== this.inputField);
 
         if (value instanceof HTMLCollection && value.item(0)) this.parent = value.item(0).parentElement;
 
         const array = this.entries;
-        for (let i = 0; i < array.length; i++) this.onEntryAdded?.call(this, array[i], i);
+        for (let i = 0; i < array.length; i++) this.onEntryAdded.fire(array[i], i);
 
         this.deselectAll();
         for (let i = 0; i < array.length; i++) {
@@ -112,20 +118,6 @@ class TurboSelect<
         defaultValue: (value: ValueType) => richElement({text: stringify(value)})
     }) public createEntry: (value: ValueType) => EntryType;
 
-    @auto({
-        defaultValue: function (entry: EntryType) {
-            this.initializeSelection();
-            $(entry).on(DefaultEventName.click, () => {
-                this.select(entry, !this.isSelected(entry));
-                return true;
-            });
-        },
-    }) public onEntryAdded: (entry: EntryType, index: number) => void;
-
-    @auto({
-        defaultValue: function (entry: EntryType) {},
-    }) public onEntryRemoved: (entry: EntryType) => void;
-
     /**
      * The dropdown's underlying hidden input. Might be undefined.
      */
@@ -175,13 +167,26 @@ class TurboSelect<
         const selectedValues = properties.selectedValues || [];
         properties.selectedValues = undefined;
 
+        this.onEntryClicked.add((entry) => this.select(entry, !this.isSelected(entry)));
+        this.onEntryAdded.add((entry) => {
+            this.initializeSelection();
+            turbo(entry).on(DefaultEventName.click, (e: Event) => {
+                this.onEntryClicked.fire(entry, e);
+                return true;
+            });
+        });
+
         if (!properties.onEnabled) properties.onEnabled = (b, entry) => {
             if (!(entry instanceof HTMLElement)) return;
-            $(entry).setStyle("visibility", b ? "" : "hidden");
+            turbo(entry).setStyle("visibility", b ? "" : "hidden");
         };
 
         for (const property of Object.keys(properties)) {
-            try {this[property] = properties[property]} catch {}
+
+            try {
+                if (this[property] instanceof Delegate) this[property].add(properties[property]);
+                else this[property] = properties[property]
+            } catch {}
         }
 
         if (!this.forceSelection) this.deselectAll();
@@ -213,7 +218,7 @@ class TurboSelect<
         if (index < 0) index = 0;
 
         this.enableObserver(false);
-        this.onEntryAdded?.call(this, entry, index);
+        this.onEntryAdded.fire(entry, index);
 
         if (Array.isArray(this.entries) && !this.entries.includes(entry)) this.entries.splice(index, 0, entry);
         if (entry instanceof Node && !entry.parentElement && this.parent) $(this.parent).addChild(entry, index);
@@ -386,17 +391,16 @@ class TurboSelect<
         return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
     }
 
-    public clear(): void {
-        this.enableObserver(false);
-
-        for (const entry of this.entries) {
-            this.clearEntryData(entry);
-            this.onEntryRemoved(entry);
+    public clear(disableObserver: boolean = true): void {
+        if (disableObserver) this.enableObserver(false);
+        for (let index = this.entries.length - 1; index >= 0; index--) {
+            const entry = this.entries[index];
+            this.onEntryRemoved.fire(entry);
             if (this.parent && entry instanceof HTMLElement) entry.remove();
         }
         this._entries = [];
         this.refreshInputField();
-        this.enableObserver(true);
+        if (disableObserver) this.enableObserver(true);
     }
 
     public refreshInputField() {
@@ -443,7 +447,7 @@ class TurboSelect<
                     }
 
                     this.getEntryData(entry);
-                    this.onEntryAdded?.call(this, entry, this.getIndex(entry));
+                    this.onEntryAdded.fire(entry, this.getIndex(entry));
                 }
 
                 for (const node of record.removedNodes) {
@@ -459,7 +463,7 @@ class TurboSelect<
                         }
 
                         data.selected = false;
-                        this.onEntryRemoved?.call(this, node);
+                        this.onEntryRemoved.fire(node as any);
                         this.clearEntryData(node as any);
                     });
                 }

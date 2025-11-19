@@ -1,5 +1,5 @@
 import {Effect, Read, SignalEntry, SignalSubscriber, Write} from "./reactivity.types";
-import {isUndefined} from "../utils/dataManipulation/misc";
+import {isUndefined} from "../../utils/dataManipulation/misc";
 
 /**
  * @internal

@@ -83,6 +83,7 @@ export function setupElementFunctions() {
                     break;
 
                 case "data":
+                case "dataId":
                 case "initialize":
                     if (mvc) break;
 
@@ -99,7 +100,7 @@ export function setupElementFunctions() {
                         try {
                             mvc[property] = value;
                             if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                                mvc["model"].setBlock(properties.data, undefined, undefined, false);
+                                mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
                             }
                         } catch {}
                         break;
