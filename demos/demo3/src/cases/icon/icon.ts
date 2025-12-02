@@ -1,4 +1,4 @@
-import {$, TurboIcon, icon, iconToggle, flexRow, button, randomColor} from "../../../../../build/turbodombuilder.esm";
+import {TurboIcon, icon, iconToggle, button, randomColor} from "../../../../../build/turbodombuilder.esm";
 import {box} from "../../demoBox/demoBox";
 import "./icon.css";
 

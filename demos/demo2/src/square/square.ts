@@ -24,7 +24,11 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
 //Factory function to create squares
 export function square(properties: SquareProperties = {}): Square {
     if (!properties.tag) properties.tag = "demo-square";
-    const el = element({...properties, position: undefined, view: SquareView, model: SquareModel}) as Square;
+    const el = element({...properties,
+        position: undefined,
+        view: SquareView,
+        model: SquareModel
+    }) as Square;
     if (properties.position) el.model.position = properties.position;
     return el;
 }

@@ -52,9 +52,9 @@ type TurboProperties<
     children?: Element | Element[];
     text?: string;
 
-    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean)>,
-    onClick?: (e: Event, el: ValidElement<Tag>) => boolean,
-    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean,
+    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean | any)>,
+    onClick?: (e: Event, el: ValidElement<Tag>) => boolean | any,
+    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean | any,
 
     out?: string | Node;
     [key: string]: any;

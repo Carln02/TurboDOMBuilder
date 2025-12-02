@@ -101,7 +101,8 @@ export function setupEventFunctions() {
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
-        if (!type) return false;
+        if (!type) return false
+            ;
         if (!options) options = {};
         const activeTool = toolName ?? manager.getCurrentToolName();
 

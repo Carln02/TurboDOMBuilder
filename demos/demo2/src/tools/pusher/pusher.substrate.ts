@@ -11,6 +11,7 @@ import {
 //Pusher substrate
 export class PusherSubstrate extends TurboSubstrate {
     public substrateName = "pusher"; //Define the substrate's name
+    //equivalent to turbo(pusherTool).makeSubstrate("pusher")
 
     //@solver is called on turbo(el).resolveSubstrate()
     //It will be called once for each object in the substrate's list of objects (marking each as processed afterward)

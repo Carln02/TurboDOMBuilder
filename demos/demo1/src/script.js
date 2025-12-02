@@ -88,7 +88,12 @@ turbo(moveTool).addToolBehavior("turbo-drag", (e, el) => {
 
 //Create a new square that will contain an embedded tool
 const newSquare = element({tag: "test-square", parent: document.body}).init("square");
+
+turbo(newSquare).onTool("click", "move", () => console.log("Clicked"));
+
 //Create a handle or controller. It can be anything
 const embeddedTool = div({classes: "controller", parent: newSquare});
 //Turn the handle into a tool and embed it in the square
-turbo(embeddedTool).makeTool("move", {customActivation: () => {}}).embedTool(newSquare);
+turbo(embeddedTool)
+    .makeTool("move")
+    .embedTool(newSquare);

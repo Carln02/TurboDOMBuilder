@@ -4,7 +4,6 @@ import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {element} from "../../../elementCreation/element";
 import {$} from "../../../turboFunctions/turboFunctions";
-import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {div} from "../../../elementCreation/basicElements";
 import {TurboRichElementConfig} from "../richElement/richElement.types";
@@ -14,6 +13,7 @@ import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboInputInputInteractor} from "./input.inputInteractor";
 import {Delegate} from "../../datatypes/delegate/delegate";
 import {ValidElement} from "../../../types/element.types";
+import {expose} from "../../../decorators/expose";
 
 /**
  * @group Components
@@ -34,9 +34,7 @@ class TurboInput<
     };
 
     protected labelElement: HTMLLabelElement;
-    private _content: HTMLElement;
-    public get content(): HTMLElement {return this._content}
-    public set content(value: HTMLElement) {this._content = value}
+    public content: HTMLElement;
 
     public defaultId: string = "turbo-input-" + randomId();
     public locked: boolean = false;
@@ -53,7 +51,7 @@ class TurboInput<
     public readonly onBlur: Delegate<() => void> = new Delegate();
     public readonly onInput: Delegate<() => void> = new Delegate();
 
-    @auto() public set label(value: string) {
+    public set label(value: string) {
         if (!value || value.length === 0) {
             if (this.labelElement) this.labelElement.remove();
             return;
@@ -67,6 +65,18 @@ class TurboInput<
         }
 
         this.labelElement.textContent = value;
+    }
+
+    public get label(): string {
+        return this.labelElement?.textContent;
+    }
+
+    public get input(): ValidElement<InputTag> {
+        return this.element;
+    }
+
+    public set input(value: TurboProperties<InputTag> | ValidElement<InputTag>) {
+        this.element = value;
     }
 
     public set element(value: TurboProperties<InputTag> | ValidElement<InputTag>) {
@@ -84,6 +94,11 @@ class TurboInput<
     public get element(): ValidElement<InputTag> {
         return super.element;
     }
+
+    @expose("element") public accessor type: string;
+    @expose("element") public accessor placeholder: string;
+    @expose("element") public accessor pattern: string;
+    @expose("element") public accessor size: string;
 
     public initialize() {
         super.initialize();
@@ -179,12 +194,12 @@ function turboInput<
 >(
     properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>
 ): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType> {
-    properties.element = properties.input;
-    properties.elementTag = properties.inputTag;
-    if (!properties.elementTag) properties.elementTag = "input";
-    if (!properties.element) properties.element = {};
+    let el: object = properties.input;
+    let elementTag: any = properties.inputTag;
+    if (!elementTag) elementTag = "input";
+    if (!el) el = {};
     if (!properties.tag) properties.tag = "turbo-input";
-    return richElement({...properties, input: undefined, inputTag: undefined}) as any;
+    return richElement({elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined}) as any;
 }
 
 export {TurboInput, turboInput};
