@@ -4,10 +4,10 @@ import {TurboModel} from "../../../mvc/core/model";
 import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {HTMLTag} from "../../../types/htmlElement.types";
-import {TurboSelectElementConfig} from "../../basics/selectElement/selectElement.types";
+import {ValidTag} from "../../../types/element.types";
 
 /**
- * @type {TurboDropdownProperties}
+ * @type {TurboSelectElementProperties}
  * @group Components
  * @category TurboDropdown
  *
@@ -32,7 +32,7 @@ import {TurboSelectElementConfig} from "../../basics/selectElement/selectElement
  * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
  * the default classes set in TurboConfig.Dropdown.
  */
-type TurboDropdownProperties<
+type TurboSelectElementProperties<
     ValueType = string,
     SecondaryValueType = string,
     EntryType extends HTMLElement = HTMLElement,
@@ -42,14 +42,6 @@ type TurboDropdownProperties<
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboElementProperties<ViewType, DataType, ModelType, EmitterType>
     & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
-    selector?: string | HTMLElement;
-    popup?: HTMLElement;
-
-    selectorTag?: HTMLTag;
-
-    selectorClasses?: string | string[];
-    popupClasses?: string | string[];
-
     customEntriesClasses?: string | string[];
     customSelectedEntriesClasses?: string | string[];
 };
@@ -70,13 +62,8 @@ type TurboDropdownProperties<
  * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
  * dropdown entries.
  */
-type TurboDropdownConfig = TurboSelectElementConfig & {
-    defaultSelectorTag?: HTMLTag;
-
-    defaultSelectorClasses?: string | string[];
-    defaultPopupClasses?: string | string[];
-    defaultEntriesClasses?: string | string[];
-    defaultSelectedEntriesClasses?: string | string[];
+type TurboSelectElementConfig = TurboElementConfig & {
+    defaultEntriesTag?: ValidTag;
 }
 
-export {TurboDropdownProperties, TurboDropdownConfig};
+export {TurboSelectElementProperties, TurboSelectElementConfig};

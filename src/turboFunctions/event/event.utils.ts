@@ -1,6 +1,6 @@
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
-import {ListenerEntry, ListenerOptions} from "./event.types";
+import {Propagation, ListenerEntry, ListenerOptions} from "./event.types";
 import {TurboSelector} from "../turboSelector";
 
 export class EventFunctionsUtils {
@@ -58,11 +58,27 @@ export class EventFunctionsUtils {
         return [...this.getBoundListenersSet(element)]
             .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)
             .filter(entry => {
-                if (!options) return true;
                 for (const [option, value] of Object.entries(options)) {
+                    if (option === "checkSubstrates" || option === "solveSubstrates") continue;
                     if (entry.options?.[option] !== value) return false;
                 }
                 return true;
             });
+    }
+
+    public processPropagation(
+        currentPropagation: Propagation | any,
+        storedPropagation: Propagation = Propagation.propagate,
+        defaultPropagation: Propagation = Propagation.stopPropagation
+    ): Propagation {
+        const orderedValues = [
+            Propagation.propagate,
+            Propagation.stopPropagation,
+            Propagation.stopImmediatePropagation
+        ];
+
+        if (!orderedValues.includes(currentPropagation)) currentPropagation = defaultPropagation;
+        return orderedValues.indexOf(currentPropagation) <= orderedValues.indexOf(storedPropagation)
+            ? storedPropagation : currentPropagation;
     }
 }

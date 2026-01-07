@@ -105,6 +105,7 @@ class TurboElement<
      * @description function called when the element is attached to the DOM.
      */
     public connectedCallback() {
+        if (!this.initialized) this.initialize();
         this.onAttach.fire();
     }
 

@@ -99,7 +99,10 @@ class TurboDataBlock<
 
     public get keys(): KeyType[] {
         if (!this.data || typeof this.data !== "object") return [];
+
+        if (Array.isArray(this.data)) return Array.from({length: this.data.length}, (_, i) => i) as KeyType[];
         if (this.data instanceof Map) return Array.from(this.data.keys());
+
         return [
             ...Object.keys(this.data),
             ...Object.getOwnPropertySymbols(this.data)

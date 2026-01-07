@@ -1,6 +1,7 @@
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ListenerOptions} from "../event/event.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
+import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 
 /**
  * @type {MakeSubstrateOptions}
@@ -14,10 +15,11 @@ import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 type MakeSubstrateOptions = {
     onActivate?: () => void,
     onDeactivate?: () => void,
+    priority?: number,
 };
 
 /**
- * @type {SubstrateSolverProperties}
+ * @type {SubstrateCallbackProperties}
  * @group Types
  * @category Substrate
  *
@@ -34,7 +36,7 @@ type MakeSubstrateOptions = {
  * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
  * instantiated event manager.
  */
-type SubstrateSolverProperties = {
+type SubstrateCallbackProperties = {
     substrate?: string,
     target?: object,
     event?: Event,
@@ -45,6 +47,29 @@ type SubstrateSolverProperties = {
     manager?: TurboEventManager,
 };
 
+type SubstrateMutatorProperties<Type = any> = SubstrateCallbackProperties & {
+    mutation?: string,
+    value?: Type
+};
+
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateChecker = (properties: SubstrateCallbackProperties, ...args: any[]) => boolean;
+
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateMutator<Type = any> = (properties: SubstrateMutatorProperties<Type>, ...args: any[]) => Type;
+
 /**
  * @type {SubstrateSolver}
  * @group Types
@@ -52,20 +77,15 @@ type SubstrateSolverProperties = {
  *
  * @description Type representing the signature of solver functions that substrates expect.
  */
-type SubstrateSolver = (properties: SubstrateSolverProperties, ...args: any[]) => any;
+type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => any;type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
+    name: string,
+    callback: Type,
+    substrate?: string,
+    priority?: number,
+};
 
 declare module "../turboSelector" {
     interface TurboSelector {
-        /**
-         * @function makeSubstrate
-         * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
-         * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
-         * @param {string} name - The name of the new substrate.
-         * @param {MakeSubstrateOptions} [options] - Options parameter to configure the newly-created substrate.
-         * @return {this} - Itself for chaining.
-         */
-        makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
-
         /**
          * @description Array of all the substrates attached to this element.
          */
@@ -77,9 +97,21 @@ declare module "../turboSelector" {
         currentSubstrate: string;
 
         /**
+         * @function makeSubstrate
+         * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
+         * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
+         * @param {string} name - The name of the new substrate.
+         * @param {MakeSubstrateOptions} [options] - Options parameter to configure the newly-created substrate.
+         * @return {this} - Itself for chaining.
+         */
+        makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
+
+        /**
          * @description A delegate fired every time the current substrate changes.
          */
         readonly onSubstrateChange: Delegate<(prev: string, next: string) => void>;
+
+        //ACTIVATION
 
         /**
          * @function onSubstrateActivate
@@ -97,6 +129,13 @@ declare module "../turboSelector" {
          * @return {Delegate<() => void>} - The delegate.
          */
         onSubstrateDeactivate(substrate?: string): Delegate<() => void>;
+
+        //PRIORITY
+
+        getSubstratePriority(substrate?: string): number;
+        setSubstratePriority(priority: number, substrate?: string): this;
+
+        //OBJECT LIST
 
         /**
          * @function getSubstrateObjectList
@@ -143,33 +182,66 @@ declare module "../turboSelector" {
          */
         hasObjectInSubstrate(object: object, substrate?: string): boolean;
 
-        /**
-         * @function wasObjectProcessedBySubstrate
-         * @description Check whether the given object was already processed by the substrate in the current resolving
-         * loop ({@link resolveSubstrate}). Can be useful in solvers.
-         * @param {object} object - The object to check.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {boolean} - Whether the object was processed or not.
-         */
-        wasObjectProcessedBySubstrate(object: object, substrate?: string): boolean;
+        //QUEUE
+
+        getNextInSubstrateQueue(substrate?: string): object;
+
+        addObjectToSubstrateQueue(object: object, substrate?: string): this;
+
+        clearSubstrateQueue(substrate?: string): this;
+
+        getDefaultSubstrateQueue(substrate?: string): TurboQueue<object>;
+
+        setDefaultSubstrateQueue(queue: object[] | TurboQueue<object>, substrate?: string): this;
+
+        //PASSES
+
+        getObjectPassesForSubstrate(object: object, substrate?: string): number;
+
+        getMaxPassesForSubstrate(substrate?: string): number;
+
+        setMaxPassesForSubstrate(passes: number, substrate?: string): this;
+
+        //CHECKER
+
+        addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
+
+        removeChecker(name: string, substrate?: string): this;
+
+        clearCheckers(substrate?: string): this;
+
+        checkSubstrate(properties?: SubstrateCallbackProperties): boolean;
+
+        checkSubstratesForEvent(properties?: SubstrateCallbackProperties): boolean;
+
+        //MUTATOR
+
+        addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
+
+        removeMutator(name: string, substrate?: string): this;
+
+        clearMutators(substrate?: string): this;
+
+        mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
+
+        //SOLVER
 
         /**
          * @function addSolver
          * @description Add the given function as a solver in the substrate.
-         * @param {SubstrateSolver} fn - The solver function to execute when calling {@link resolveSubstrate}.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          * @return {this} - Itself for chaining.
+         * @param properties
          */
-        addSolver(fn: SubstrateSolver, substrate?: string): this;
+        addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
 
         /**
          * @function removeSolver
          * @description Remove the given function from the substrate's list of solvers.
-         * @param {SubstrateSolver} fn - The solver function to remove.
+         * @param name
          * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          * @return {this} - Itself for chaining.
          */
-        removeSolver(fn: SubstrateSolver, substrate?: string): this;
+        removeSolver(name: string, substrate?: string): this;
 
         /**
          * @function clearSolvers
@@ -180,16 +252,17 @@ declare module "../turboSelector" {
         clearSolvers(substrate?: string): this;
 
         /**
-         * @function resolveSubstrate
+         * @function solveSubstrate
          * @description Resolve the substrate by executing all of its attached solvers. Each solver will be executed
          * on every object in the substrate's list of constrained objects, marking each as `processed` as it goes
          * through them.
-         * @param {SubstrateSolverProperties} [properties] - Options object to configure the context of the resolving
+         * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context of the resolving
          * call.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          */
-        resolveSubstrate(properties?: SubstrateSolverProperties,  substrate?: string): this;
+        solveSubstrate(properties?: SubstrateCallbackProperties): this;
+
+        solveSubstratesForEvent(properties?: SubstrateCallbackProperties): this;
     }
 }
 
-export {MakeSubstrateOptions, SubstrateSolver, SubstrateSolverProperties};
+export {MakeSubstrateOptions, SubstrateSolver, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateCallbackProperties, SubstrateAddCallbackProperties};

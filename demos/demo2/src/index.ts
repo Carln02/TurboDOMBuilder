@@ -8,7 +8,7 @@ import {AddSquareTool} from "./tools/addSquare.tool";
 import {AddCircleTool} from "./tools/addCircle.tool";
 
 //Create a default substrate for all elements in the body
-turbo(document)
+turbo(document.body)
     .makeSubstrate("main")
     .setSubstrateObjectList(document.body.children);
 

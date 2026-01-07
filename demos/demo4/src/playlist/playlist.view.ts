@@ -7,7 +7,8 @@ import {
     turbo,
     TurboDrawer,
     TurboRichElement,
-    TurboView
+    TurboView,
+    EventPropagation
 } from "../../../../build/turbodombuilder.esm";
 import {Playlist} from "./playlist";
 import {PlaylistModel} from "./playlist.model";
@@ -42,7 +43,7 @@ export class PlaylistView extends TurboView<Playlist, PlaylistModel> {
         super.setupUIListeners();
         turbo(this).on(DefaultEventName.click, () => {
             this.drawer.open = !this.drawer.open;
-            return true;
+            return EventPropagation.stopPropagation;
         });
     }
 
@@ -54,7 +55,7 @@ export class PlaylistView extends TurboView<Playlist, PlaylistModel> {
             turbo(this.toggle.element).bypassManagerOn = () => true;
             turbo(this.toggle.element).on(DefaultEventName.click, () => {
                 this.toggle.element.focus();
-                return true;
+                return EventPropagation.stopPropagation;
             });
         }
     }

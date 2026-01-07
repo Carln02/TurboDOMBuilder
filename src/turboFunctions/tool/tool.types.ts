@@ -3,6 +3,7 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Turbo} from "../turboFunctions.types";
 import {DefaultEventNameEntry} from "../../types/eventNaming.types";
+import {Propagation} from "../event/event.types";
 
 /**
  * @type {MakeToolOptions}
@@ -44,7 +45,7 @@ type MakeToolOptions = {
  * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
  * @return {boolean} - Whether to stop the propagation.
  */
-type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => boolean | any;
+type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => Propagation | any;
 
 /**
  * @type {ToolBehaviorOptions}
@@ -184,7 +185,7 @@ declare module "../turboSelector" {
          * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
          * @return {boolean} True if at least one behavior returned `true` (to stop propagation of the event).
          */
-        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): boolean;
+        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): Propagation;
 
         /**
          * @function clearToolBehaviors

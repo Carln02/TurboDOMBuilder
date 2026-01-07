@@ -18,6 +18,7 @@ import {element} from "../../../elementCreation/element";
 import {expose} from "../../../decorators/expose";
 import {TurboSelect} from "../../basics/select/select";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
+import {Propagation} from "../../../turboFunctions/event/event.types";
 
 /**
  * @class TurboSelectWheel
@@ -90,12 +91,12 @@ class TurboSelectWheel<
             turbo(entry)
                 .setStyles({position: "absolute"})
                 .on(DefaultEventName.dragStart, (e: Event) => {
-                    e.stopImmediatePropagation();
                     this.clearOpenTimer();
                     this.open = true;
                     this.dragging = true;
                     this.reifect.enabled.transition = false;
                     this.reloadEntrySizes();
+                    return Propagation.stopImmediatePropagation;
                 })
                 .on("pointerover", () => {
                     clearTimeout(showTimer);

@@ -2,6 +2,7 @@ import {TurboSelector} from "../turboSelector";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {ToolBehaviorCallback} from "./tool.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
+import {Propagation} from "../event/event.types";
 
 type ElementData = {
     tools: Set<string>,
@@ -131,5 +132,22 @@ export class ToolFunctionsUtils {
         if (!ignoredTool) return false;
         if (ignoredTool === "all" || !type) return true;
         return ignoredTool.has(type);
+    }
+
+    public processPropagation(
+        currentPropagation: Propagation | any,
+        storedPropagation: Propagation = Propagation.propagate,
+        defaultPropagation: Propagation = Propagation.stopPropagation
+    ): Propagation {
+        const orderedValues = [
+            Propagation.propagate,
+            Propagation.stopPropagation,
+            Propagation.stopImmediatePropagation
+        ];
+
+        if (!orderedValues.includes(currentPropagation)) currentPropagation = defaultPropagation;
+        const currentIndex = orderedValues.indexOf(currentPropagation);
+        const storedIndex = orderedValues.indexOf(storedPropagation);
+        return currentIndex <= storedIndex ? currentPropagation : storedPropagation;
     }
 }

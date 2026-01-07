@@ -35,6 +35,22 @@ function createYArray<DataType = object>(data: DataType[]): YArray {
     return array;
 }
 
+function jsonToYjs(data: object): YAbstractType {
+    if (Array.isArray(data)) {
+        const arr = new YArray();
+        arr.push(data.map(jsonToYjs));
+        return arr;
+    }
+
+    if (data && typeof data === "object") {
+        const map = new YMap();
+        for (const [key, value] of Object.entries(data)) map.set(key, jsonToYjs(value));
+        return map;
+    }
+
+    return data as any;
+}
+
 /**
  * @function addInYMap
  * @group Utilities
@@ -187,4 +203,4 @@ function deepObserveAll(
     });
 }
 
-export {deepObserveAll, deepObserveAny, createYMap, createYArray, addInYArray, addInYMap, removeFromYArray};
+export {deepObserveAll, deepObserveAny, createYMap, jsonToYjs, createYArray, addInYArray, addInYMap, removeFromYArray};

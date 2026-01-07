@@ -61,13 +61,13 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
     Object.defineProperty(prototype, "initialize", {
         value: function (): void {
             if (this[initializedKey]) return;
+            this[initializedKey] = true;
             this.setupUIElements?.();
             this.setupUILayout?.();
             this.setupUIListeners?.();
             this.setupChangedCallbacks?.();
             if (this.mvc && this.mvc instanceof Mvc) this.mvc.initialize();
             initializeEffects(this);
-            this[initializedKey] = true;
         },
         configurable: true,
         enumerable: false,

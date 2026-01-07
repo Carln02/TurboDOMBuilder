@@ -1,4 +1,4 @@
-import {button, turbo, randomFromRange, TurboElement, trim, element, TurboIcon, div, TurboEventManager} from "../../../build/turbodombuilder.esm.js";
+import {button, turbo, randomFromRange, TurboElement, trim, element, TurboIcon, div, TurboEventManager, EventPropagation} from "../../../build/turbodombuilder.esm.js";
 
 TurboIcon.config.defaultDirectory = "assets/";
 TurboEventManager.instance.preventDefaultMouse = false;
@@ -82,7 +82,7 @@ turbo(moveTool).addToolBehavior("turbo-drag", (e, el) => {
         //Call it and pass it the delta position of the drag (the difference between the current position and
         // the position captured at the previous "turbo-drag" event).
         el.translate(e.deltaPosition);
-        return true; //Stop the event from propagating
+        return EventPropagation.stopPropagation; //Stop the event from propagating
     }
 });
 

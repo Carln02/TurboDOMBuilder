@@ -1,7 +1,7 @@
 import {auto} from "../../decorators/auto/auto";
 import {MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType} from "./core.types";
 import {TurboHandler} from "../logic/handler";
-import {markDirty} from "../../decorators/reactivity/reactivity";
+import {initializeEffects, markDirty} from "../../decorators/reactivity/reactivity";
 import {TurboDataBlock} from "../../turboComponents/data/dataBlock/dataBlock";
 import {DataBlockHost} from "../../turboComponents/data/dataBlock/dataBlock.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
@@ -78,7 +78,9 @@ class TurboModel<
         this.setup();
     }
 
-    protected setup() {}
+    protected setup() {
+        initializeEffects(this);
+    }
 
     /**
      * @description The default block.

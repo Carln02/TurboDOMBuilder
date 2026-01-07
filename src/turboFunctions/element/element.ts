@@ -2,7 +2,6 @@ import "./element.types";
 import {TurboSelector} from "../turboSelector";
 import {TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
-import {$} from "../turboFunctions";
 import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/core/model";
 import {MvcGenerationProperties} from "../../mvc/mvc.types";
@@ -79,7 +78,6 @@ export function setupElementFunctions() {
                     this.addChild(value);
                     break;
                 case "parent":
-                    $(value).addChild(this.element);
                     break;
 
                 case "data":
@@ -117,9 +115,12 @@ export function setupElementFunctions() {
             }
         }
 
+        if (properties.parent) this.addToParent(properties.parent);
+
         if (properties.initialize === undefined || properties.initialize) {
-            if (this.element && "initialize" in this.element && typeof this.element.initialize === "function") this.element.initialize();
-            else if (mvc && "initialize" in mvc && typeof mvc.initialize === "function") mvc.initialize();
+            if (this.element && "initialize" in this.element && typeof this.element.initialize === "function") {
+                if (!this.element["initialized"]) this.element.initialize();
+            } else if (mvc && "initialize" in mvc && typeof mvc.initialize === "function") mvc.initialize();
         }
 
         return this;

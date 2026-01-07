@@ -14,7 +14,9 @@ type TurboSelectProperties<
     SecondaryValueType = string,
     EntryType extends object = HTMLElement,
 > = {
-    selectedEntryClasses?: string | string[],
+    entriesClasses?: string | string[];
+    selectedEntriesClasses?: string | string[],
+
     entries?: HTMLCollection | NodeList | EntryType[],
     values?: (ValueType | EntryType)[],
     selectedValues?: ValueType[],
@@ -40,7 +42,8 @@ type TurboSelectProperties<
  * @category TurboSelect
  */
 type TurboSelectConfig = {
-    defaultSelectedEntryClasses?: string | string[]
+    defaultEntriesClasses?: string | string[],
+    defaultSelectedEntriesClasses?: string | string[]
 };
 
 /**

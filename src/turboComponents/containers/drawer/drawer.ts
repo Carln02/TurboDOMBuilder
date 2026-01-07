@@ -17,6 +17,7 @@ import {element} from "../../../elementCreation/element";
 import {Open, Side} from "../../../types/enums.types";
 import {DefaultEventName, TurboEventName} from "../../../types/eventNaming.types";
 import {PartialRecord} from "../../../types/basic.types";
+import {Propagation} from "../../../turboFunctions/event/event.types";
 
 //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
 /**
@@ -182,8 +183,9 @@ class TurboDrawer<
         super.setupUILayout();
 
         turbo(this).childHandler = this;
-        turbo(this.panel).addChild(turbo(this).childrenArray.filter(el => el !== this.panelContainer));
+        const panelChildren = turbo(this).childrenArray.filter(el => el !== this.panelContainer && el !== this.thumb);
         turbo(this).addChild([this.thumb, this.panelContainer]);
+        turbo(this.panel).addChild(panelChildren);
         turbo(this.panelContainer).addChild(this.panel);
         turbo(this.thumb).addChild(this.icon);
         turbo(this).childHandler = this.panel;
@@ -192,15 +194,15 @@ class TurboDrawer<
     protected setupUIListeners() {
         turbo(this.thumb).on(DefaultEventName.click, (e) => {
             this.open = !this.open;
-            return true;
+            return Propagation.stopPropagation;
         }).on(TurboEventName.dragStart, (e: TurboDragEvent) => {
             this.dragging = true;
             this.enableTransition(false);
-            return true;
+            return Propagation.stopPropagation;
         }).on(TurboEventName.drag, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             this.translation += this.isVertical ? e.scaledDeltaPosition.y : e.scaledDeltaPosition.x;
-            return true;
+            return Propagation.stopPropagation;
         }).on(TurboEventName.dragEnd, (e: TurboDragEvent) => {
             if (!this.dragging) return;
             this.dragging = false;

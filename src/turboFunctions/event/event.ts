@@ -1,11 +1,18 @@
-import {BasicInputEvents, ListenerEntry, ListenerOptions, NonPassiveEvents, PreventDefaultOptions} from "./event.types";
-import {$} from "../turboFunctions";
+import {
+    BasicInputEvents,
+    ListenerCallback,
+    ListenerEntry,
+    ListenerOptions,
+    NonPassiveEvents,
+    PreventDefaultOptions,
+    Propagation
+} from "./event.types";
+import {$, turbo} from "../turboFunctions";
 import {Turbo} from "../turboFunctions.types";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {EventFunctionsUtils} from "./event.utils";
 import {TurboSelector} from "../turboSelector";
-import {TurboButton} from "../../turboComponents/basics/button/button";
 
 const utils = new EventFunctionsUtils();
 
@@ -42,7 +49,7 @@ export function setupEventFunctions() {
      * @description Adds an event listener to the element.
      * @param {string} type - The type of the event.
      * @param toolName - The name of the tool. Set to null or undefined to check for listeners not bound to a tool.
-     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerCallback} listener - The function that receives a notification.
      * @param {ListenerOptions} [options] - An options object that specifies characteristics
      * about the event listener.
      * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
@@ -53,7 +60,7 @@ export function setupEventFunctions() {
         this: Turbo<Type>,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
+        listener: ListenerCallback<Turbo<Type>>,
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
@@ -61,14 +68,22 @@ export function setupEventFunctions() {
         const bundledListener = (e: Event) => listener(e, this);
 
         manager.setupCustomDispatcher?.(type);
-        utils.getBoundListenersSet(this).add({target: this, type, toolName, listener, bundledListener, options, manager});
+        utils.getBoundListenersSet(this).add({
+            target: this,
+            type,
+            toolName,
+            listener,
+            bundledListener,
+            options,
+            manager
+        });
         return this;
     };
 
     /**
      * @description Adds an event listener to the element.
      * @param {string} type - The type of the event.
-     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerCallback} listener - The function that receives a notification.
      * @param {ListenerOptions} [options] - An options object that specifies characteristics
      * about the event listener.
      * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
@@ -78,7 +93,7 @@ export function setupEventFunctions() {
     TurboSelector.prototype.on = function _on<Type extends Node>(
         this: Turbo<Type>,
         type: string,
-        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
+        listener: ListenerCallback<Turbo<Type>>,
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
@@ -100,58 +115,106 @@ export function setupEventFunctions() {
         event: Event,
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
-    ): boolean {
-        if (!type) return false
-            ;
+    ): Propagation {
+        if (!type) return Propagation.propagate;
+
         if (!options) options = {};
+        turbo(options).applyDefaults({checkSubstrates: true, solveSubstrates: true});
+
         const activeTool = toolName ?? manager.getCurrentToolName();
+        const checkedSubstratesFor: Set<Node> = new Set();
+        const checkedObjectsToolMap: Map<Node, string> = new Map();
+        const firedListeners: Set<ListenerEntry> = new Set();
+        let propagation: Propagation = Propagation.propagate;
 
         if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
 
-        const firedListeners: Set<ListenerEntry> = new Set();
+        const checkSubstrates = (target: Node, tool?: string) => {
+            if (checkedSubstratesFor.has(target)) return;
+            checkedSubstratesFor.add(target);
+            if (tool) checkedObjectsToolMap.set(target, tool);
+            if (!options.checkSubstrates) return;
+            if (!this.checkSubstratesForEvent({
+                event,
+                toolName: tool,
+                eventType: type,
+                eventTarget: target,
+                eventOptions: options,
+                manager: manager
+            })) propagation = Propagation.stopImmediatePropagation;
+        };
 
-        const run = (target: Node, tool?: string): boolean => {
-            const ts = target instanceof TurboSelector ? target : $(target);
+        const runListeners = (target: Node, tool?: string) => {
+            const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils.getBoundListenersSet(target);
             const entries = [...utils.getBoundListeners(target, type, tool, options, manager)];
-            if (entries.length === 0) return false;
+            if (entries.length === 0) return;
 
-            let stopPropagation = false;
+            checkSubstrates(target, tool);
+            if (propagation === Propagation.stopImmediatePropagation) return;
+
             for (const entry of entries) {
                 if (firedListeners.has(entry)) continue;
-                try {if (entry.listener(event, ts)) stopPropagation = true}
-                finally {
+                try {
+                    propagation = utils.processPropagation(entry.listener(event, ts), propagation);
+                } finally {
                     firedListeners.add(entry);
                     if (entry.options?.once) boundSet.delete(entry);
                 }
+                if (propagation === Propagation.stopImmediatePropagation) return;
             }
-
-            return stopPropagation;
         };
 
-        if (activeTool && run(this, activeTool)) return true;
-        if (!options.capture && activeTool && !this.isToolIgnored(activeTool, type, manager)
-            && this.applyTool(activeTool, type, event, manager)) return true;
+        const applyTool = (target: Node, tool?: string) => {
+            if (options.capture || !tool) return;
+            if (turbo(target).isToolIgnored(tool, type, manager)) return;
+            if (!this.hasToolBehavior(tool, type, manager)) return;
 
-        const embeddedTarget = this.getEmbeddedToolTarget(manager);
-        const objectTools = this.getToolNames(manager);
+            checkSubstrates(target, tool);
+            if (propagation === Propagation.stopImmediatePropagation) return;
+            propagation = turbo(target).applyTool(tool, type, event, manager);
+        };
 
-        if (embeddedTarget && objectTools.length > 0) {
-            let ret = false;
-            for (const toolName of objectTools) {
-                if (run(embeddedTarget, toolName)) ret = true;
+        const main = () => {
+            if (activeTool) {
+                runListeners(this, activeTool);
+                if (propagation !== Propagation.propagate) return;
             }
-            if (ret) return true;
 
-            const embeddedTargetSel = $(embeddedTarget);
-            if (!options.capture) for (const toolName of objectTools) {
-                if (!embeddedTargetSel.isToolIgnored(toolName, type, manager)
-                    && $(embeddedTarget).applyTool(toolName, type, event, manager)) ret = true;
+            applyTool(this.element, activeTool);
+            if (propagation !== Propagation.propagate) return;
+
+            const embeddedTarget = this.getEmbeddedToolTarget(manager);
+            const objectTools = this.getToolNames(manager);
+
+            if (embeddedTarget && objectTools.length > 0) {
+                for (const toolName of objectTools) {
+                    runListeners(embeddedTarget, toolName);
+                    if (propagation as any === Propagation.stopImmediatePropagation) return;
+                }
+                if (propagation !== Propagation.propagate) return;
+
+                if (!options.capture) for (const toolName of objectTools) {
+                    applyTool(embeddedTarget, toolName);
+                    if (propagation as any === Propagation.stopImmediatePropagation) return;
+                }
+                if (propagation !== Propagation.propagate) return;
             }
-            if (ret) return true;
-        }
 
-        return run(this, undefined);
+            runListeners(this, undefined);
+        };
+
+        main();
+        if (options.solveSubstrates) checkedSubstratesFor.forEach(entry =>
+            turbo(this).solveSubstratesForEvent({
+                event,
+                toolName: checkedObjectsToolMap.get(entry),
+                eventType: type,
+                eventTarget: entry,
+                eventOptions: options,
+                manager: manager
+            }));
+        return propagation;
     };
 
     /**
@@ -290,10 +353,10 @@ export function setupEventFunctions() {
     ): TurboSelector {
         const set = this.boundListeners;
         [...set].filter(entry => entry.manager === manager)
-                .forEach(entry => {
-                    entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-                    set.delete(entry);
-                });
+            .forEach(entry => {
+                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
+                set.delete(entry);
+            });
         return this;
     };
 
@@ -327,7 +390,7 @@ export function setupEventFunctions() {
                 event.preventDefault?.();
                 if (stop === "immediate") event.stopImmediatePropagation?.();
                 else if (stop === "stop") event.stopPropagation?.();
-                return  true;
+                return true;
             }
             preventDefaultListeners[type] = handler;
             const options: Record<string, boolean> = {};

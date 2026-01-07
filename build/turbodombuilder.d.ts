@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Doc, Map as Map$1, Array, YEvent, AbstractType } from 'yjs';
 export { AbstractType as YAbstractType, Array as YArray, YArrayEvent, Doc as YDoc, YEvent, Map as YMap, YMapEvent, Text as YText } from 'yjs';
 
@@ -86,10 +85,10 @@ type AutoOptions<Type = any> = {
  * }
  * ```
  */
-declare function auto(options?: AutoOptions): <Type extends object, Value>(value: {
+declare function auto(options?: AutoOptions): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 
 /**
  * @type {CacheOptions}
@@ -171,10 +170,10 @@ type CacheOptions = {
  * }
  * ```
  */
-declare function cache(options?: CacheOptions): <Type extends object, Value>(value: {
+declare function cache(options?: CacheOptions): <Type extends object, Value>(value: ((this: Type, ...args: any[]) => any) | ((this: Type) => Value) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((this: Type, ...args: any[]) => any) | ((this: Type) => Value), context: ClassMethodDecoratorContext<Type> | ClassGetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassMethodDecoratorContext<Type> | ClassGetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @function clearCache
  * @group Decorators
@@ -269,7 +268,9 @@ type DefineOptions = {
  * class MyEl extends HTMLElement { ... }
  * ````
  */
-declare function define(elementName?: string, options?: DefineOptions): <T extends new (...args: any[]) => HTMLElement>(Base: T, context: ClassDecoratorContext<T>) => T;
+declare function define(elementName?: string, options?: DefineOptions): <T extends {
+    new (...args: any[]): HTMLElement;
+}>(Base: T, context: ClassDecoratorContext<T>) => T;
 
 /**
  * @decorator
@@ -300,10 +301,10 @@ declare function define(elementName?: string, options?: DefineOptions): <T exten
  * }
  * ```
  */
-declare function expose(rootKey: string, exposeSetter?: boolean): <Type extends object, Value>(value: {
+declare function expose(rootKey: string, exposeSetter?: boolean): <Type extends object, Value>(value: ((initial: Value) => Value) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type, ...args: any[]) => any), context: ClassFieldDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value> | ClassMethodDecoratorContext<Type>) => any;
+} | ((this: Type, ...args: any[]) => any), context: ClassFieldDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value> | ClassMethodDecoratorContext<Type>) => any;
 
 /**
  * @decorator
@@ -649,10 +650,10 @@ declare function signal<Type extends object, Value>(value: ((initial: Value) => 
  *
  * ```
  */
-declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: {
+declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @decorator
  * @function blockSignal
@@ -666,10 +667,10 @@ declare function modelSignal(dataKey?: string, blockKey?: string | number): <Typ
  * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
  * @param id
  */
-declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: {
+declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @decorator
  * @function blockDataSignal
@@ -683,10 +684,10 @@ declare function blockSignal(blockKey?: string | number, id?: string | number): 
  * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
  * @param id
  */
-declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: {
+declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @decorator
  * @function blockIdSignal
@@ -695,10 +696,10 @@ declare function blockDataSignal(blockKey?: string | number, id?: string | numbe
  *
  * @description Same idea but binds the block **id**.
  */
-declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: {
+declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
-} | ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void), context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @overload
  * @function effect
@@ -2308,16 +2309,22 @@ declare class TurboEventManagerDispatchController extends TurboController<TurboE
     removeCustomDispatcher(type: string): void;
 }
 
+declare enum Propagation {
+    propagate = "propagate",
+    stopPropagation = "stopPropagation",
+    stopImmediatePropagation = "stopImmediatePropagation"
+}
+type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propagation | any);
 /**
  * @group Types
  * @category Event
  */
-type ListenerEntry = {
-    target: Node;
+type ListenerEntry<Type extends Node = Node> = {
+    target: Type;
     type: string;
     toolName?: string;
-    listener: ((e: Event, el: Node) => boolean | any);
-    bundledListener: ((e: Event) => boolean | any);
+    listener: ListenerCallback<Type>;
+    bundledListener: ((e: Event) => Propagation | any);
     options?: ListenerOptions;
     manager: TurboEventManager;
 };
@@ -2325,7 +2332,10 @@ type ListenerEntry = {
  * @group Types
  * @category Event
  */
-type ListenerOptions = AddEventListenerOptions;
+type ListenerOptions = AddEventListenerOptions & {
+    checkSubstrates?: boolean;
+    solveSubstrates?: boolean;
+};
 /**
  * @group Types
  * @category Event
@@ -2548,6 +2558,22 @@ type TurboSubstrateProperties<ElementType extends object = object, ViewType exte
     onActivate?: () => void;
     onDeactivate?: () => void;
 };
+
+declare class TurboQueue<Type = any> {
+    private items;
+    private head;
+    push(...values: Type[]): this;
+    pop(): Type | undefined;
+    peek(): Type;
+    has(value: Type): boolean;
+    get size(): number;
+    get isEmpty(): boolean;
+    clear(): this;
+    toArray(): Type[];
+    clone(): TurboQueue<Type>;
+    remove(value: Type): boolean;
+}
+
 /**
  * @type {MakeSubstrateOptions}
  * @group Types
@@ -2560,9 +2586,10 @@ type TurboSubstrateProperties<ElementType extends object = object, ViewType exte
 type MakeSubstrateOptions = {
     onActivate?: () => void;
     onDeactivate?: () => void;
+    priority?: number;
 };
 /**
- * @type {SubstrateSolverProperties}
+ * @type {SubstrateCallbackProperties}
  * @group Types
  * @category Substrate
  *
@@ -2579,7 +2606,7 @@ type MakeSubstrateOptions = {
  * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
  * instantiated event manager.
  */
-type SubstrateSolverProperties = {
+type SubstrateCallbackProperties = {
     substrate?: string;
     target?: object;
     event?: Event;
@@ -2589,6 +2616,26 @@ type SubstrateSolverProperties = {
     eventOptions?: ListenerOptions;
     manager?: TurboEventManager;
 };
+type SubstrateMutatorProperties<Type = any> = SubstrateCallbackProperties & {
+    mutation?: string;
+    value?: Type;
+};
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateChecker = (properties: SubstrateCallbackProperties, ...args: any[]) => boolean;
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateMutator<Type = any> = (properties: SubstrateMutatorProperties<Type>, ...args: any[]) => Type;
 /**
  * @type {SubstrateSolver}
  * @group Types
@@ -2596,7 +2643,13 @@ type SubstrateSolverProperties = {
  *
  * @description Type representing the signature of solver functions that substrates expect.
  */
-type SubstrateSolver = (properties: SubstrateSolverProperties, ...args: any[]) => any;
+type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => any;
+type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
+    name: string;
+    callback: Type;
+    substrate?: string;
+    priority?: number;
+};
 
 /**
  * @class TurboSubstrate
@@ -2625,12 +2678,19 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * @description The property keys of the substrate solvers defined in the instance.
      */
     readonly solverKeys: string[];
+    get priority(): number;
+    set priority(value: number);
     /**
      * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
      * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
      */
     get objectList(): Set<object>;
     set objectList(value: HTMLCollection | NodeList | Set<object>);
+    get nextInQueue(): object;
+    get defaultQueue(): TurboQueue<object>;
+    set defaultQueue(value: object[] | TurboQueue<object>);
+    get maxPasses(): number;
+    set maxPasses(value: number);
     constructor(properties: TurboSubstrateProperties<ElementType, ViewType, ModelType, EmitterType>);
     /**
      * @function initialize
@@ -2644,13 +2704,13 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * @description Adds the provided object to the substrate's list.
      * @param {object} object - The object to add.
      */
-    addObject(object: object): void;
+    addObject(object: object): this;
     /**
      * @function removeObject
      * @description Removes the provided object from the substrate's list.
      * @param {object} object - The object to remove.
      */
-    removeObject(object: object): void;
+    removeObject(object: object): this;
     /**
      * @function hasObject
      * @description Whether the provided object is included in the substrate's list.
@@ -2658,36 +2718,42 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * @return {boolean} - Whether the object is present.
      */
     hasObject(object: object): boolean;
-    /**
-     * @function isProcessed
-     * @description Whether the provided object is processed within the current resolving loop.
-     * @param {object} object - The object to check.
-     * @return {boolean} - Whether the object was processed.
-     */
-    isProcessed(object: object): boolean;
+    addToQueue(object: object): this;
+    clearQueue(): this;
+    getObjectPasses(object: object): number;
+    addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
+    removeChecker(name: string): this;
+    clearCheckers(): this;
+    check(properties?: SubstrateCallbackProperties): boolean;
+    addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
+    removeMutator(name: string): this;
+    clearMutators(): this;
+    mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
     /**
      * @function addSolver
      * @description Add the given function as a solver in the substrate.
-     * @param {SubstrateSolver} fn - The solver function to execute when calling {@link resolve}.
+     * @param properties
      */
-    addSolver(fn: SubstrateSolver): void;
+    addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
     /**
      * @function removeSolver
      * @description Remove the given function from the substrate's list of solvers.
-     * @param {SubstrateSolver} fn - The solver function to remove.
+     * @param name
+     * @return {this} - Itself for chaining.
      */
-    removeSolver(fn: SubstrateSolver): void;
+    removeSolver(name: string): this;
     /**
      * @function clearSolvers
      * @description Remove all solvers attached to the substrate.
+     * @return {this} - Itself for chaining.
      */
-    clearSolvers(): void;
+    clearSolvers(): this;
     /**
      * @function resolve
      * @description Resolve the substrate by calling all the solvers on each of the objects in the substrate's list.
-     * @param {SubstrateSolverProperties} [properties={}] - Optional properties to provide context to the resolving loop.
+     * @param {SubstrateCallbackProperties} [properties={}] - Optional properties to provide context to the resolving loop.
      */
-    resolve(properties?: SubstrateSolverProperties): void;
+    solve(properties?: SubstrateCallbackProperties): this;
 }
 
 /**
@@ -3804,9 +3870,9 @@ type TurboProperties<Tag extends ValidTag = "div"> = HTMLElementMutableFields<Ta
     parent?: Element;
     children?: Element | Element[];
     text?: string;
-    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean)>;
-    onClick?: (e: Event, el: ValidElement<Tag>) => boolean;
-    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean;
+    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean | any)>;
+    onClick?: (e: Event, el: ValidElement<Tag>) => boolean | any;
+    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean | any;
     out?: string | Node;
     [key: string]: any;
 };
@@ -5170,9 +5236,7 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
 declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
     static config: TurboRichElementConfig;
     protected labelElement: HTMLLabelElement;
-    private _content;
-    get content(): HTMLElement;
-    set content(value: HTMLElement);
+    content: HTMLElement;
     defaultId: string;
     locked: boolean;
     selectTextOnFocus: boolean;
@@ -5185,8 +5249,15 @@ declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueT
     readonly onBlur: Delegate<() => void>;
     readonly onInput: Delegate<() => void>;
     set label(value: string);
+    get label(): string;
+    get input(): ValidElement<InputTag>;
+    set input(value: TurboProperties<InputTag> | ValidElement<InputTag>);
     set element(value: TurboProperties<InputTag> | ValidElement<InputTag>);
     get element(): ValidElement<InputTag>;
+    accessor type: string;
+    accessor placeholder: string;
+    accessor pattern: string;
+    accessor size: string;
     initialize(): void;
     protected setupUIElements(): void;
     protected setupUILayout(): void;
@@ -5240,7 +5311,8 @@ type EntryData = {
  * @category TurboSelect
  */
 type TurboSelectProperties<ValueType = string, SecondaryValueType = string, EntryType extends object = HTMLElement> = {
-    selectedEntryClasses?: string | string[];
+    entriesClasses?: string | string[];
+    selectedEntriesClasses?: string | string[];
     entries?: HTMLCollection | NodeList | EntryType[];
     values?: (ValueType | EntryType)[];
     selectedValues?: ValueType[];
@@ -5262,7 +5334,8 @@ type TurboSelectProperties<ValueType = string, SecondaryValueType = string, Entr
  * @category TurboSelect
  */
 type TurboSelectConfig = {
-    defaultSelectedEntryClasses?: string | string[];
+    defaultEntriesClasses?: string | string[];
+    defaultSelectedEntriesClasses?: string | string[];
 };
 /**
  * @group Components
@@ -5342,7 +5415,8 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     forceSelection: boolean;
     set onSelect(value: (b: boolean, entry: EntryType, index: number) => void);
     set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void);
-    selectedEntryClasses: string | string[];
+    selectedEntriesClasses: string | string[];
+    entriesClasses: string | string[];
     /**
      * @description Dropdown constructor
      * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
@@ -5409,6 +5483,96 @@ declare class TurboSelectInputEvent<ValueType = string, SecondaryValueType = str
     readonly values: ValueType[];
     constructor(properties: TurboSelectInputEventProperties<ValueType, SecondaryValueType, EntryType>);
 }
+
+/**
+ * @type {TurboSelectElementProperties}
+ * @group Components
+ * @category TurboDropdown
+ *
+ * @description Properties for configuring a Dropdown.
+ * @extends TurboProperties
+ *
+ * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
+ * string is passed, a Button with the given string as text will be assigned as the selector.
+ * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
+ *
+ * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
+ *
+ * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
+ * default tag set in TurboConfig.Dropdown.
+ *
+ * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
+ * classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
+ * default classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
+ * default classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
+ * the default classes set in TurboConfig.Dropdown.
+ */
+type TurboSelectElementProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
+    customEntriesClasses?: string | string[];
+    customSelectedEntriesClasses?: string | string[];
+};
+/**
+ * @type {TurboDropdownConfig}
+ * @group Components
+ * @category TurboDropdown
+ *
+ * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
+ *
+ * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
+ * element in generic selectors (which are Buttons).
+ *
+ * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
+ * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
+ * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
+ * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
+ * dropdown entries.
+ */
+type TurboSelectElementConfig = TurboElementConfig & {
+    defaultEntriesTag?: ValidTag;
+};
+
+/**
+ * @class TurboSelectElement
+ * @group Components
+ * @category TurboSelectElement
+ *
+ * @description Select element class for creating Turbo button elements.
+ * @extends TurboElement
+ */
+declare class TurboSelectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    static readonly config: TurboSelectElementConfig;
+    readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
+    entriesTag: ValidTag;
+    get entries(): EntryType[];
+    set entries(value: HTMLCollection | NodeList | EntryType[]);
+    values: ValueType[];
+    accessor selectedEntries: EntryType[];
+    accessor selectedEntry: EntryType;
+    entriesClasses: string | string[];
+    selectedEntriesClasses: string | string[];
+    accessor inputName: string;
+    accessor inputField: HTMLInputElement;
+    accessor multiSelection: boolean;
+    accessor forceSelection: boolean;
+    accessor enabledEntries: EntryType[];
+    accessor enabledValues: ValueType[];
+    accessor enabledSecondaryValues: SecondaryValueType[];
+    accessor selectedValue: ValueType;
+    accessor selectedValues: ValueType[];
+    accessor selectedSecondaryValues: SecondaryValueType[];
+    accessor selectedSecondaryValue: SecondaryValueType;
+    accessor stringSelectedValue: string;
+    initialize(): void;
+}
+/**
+ * @group Components
+ * @category TurboDropdown
+ * @param properties
+ */
+declare function selectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboSelectElementProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>): TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -5815,7 +5979,7 @@ type TurboDropdownProperties<ValueType = string, SecondaryValueType = string, En
  * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
  * dropdown entries.
  */
-type TurboDropdownConfig = TurboElementConfig & {
+type TurboDropdownConfig = TurboSelectElementConfig & {
     defaultSelectorTag?: HTMLTag;
     defaultSelectorClasses?: string | string[];
     defaultPopupClasses?: string | string[];
@@ -5831,21 +5995,13 @@ type TurboDropdownConfig = TurboElementConfig & {
  * @description Dropdown class for creating Turbo button elements.
  * @extends TurboElement
  */
-declare class TurboDropdown<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+declare class TurboDropdown<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
     static readonly config: TurboDropdownConfig;
     readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
     private popupOpen;
     selectorTag: HTMLTag;
     selectorClasses: string | string[];
     popupClasses: string | string[];
-    entries: HTMLCollection | NodeList | EntryType[];
-    values: ValueType[];
-    accessor selectedEntry: EntryType;
-    accessor selectedValue: ValueType;
-    accessor selectedValues: ValueType[];
-    accessor selectedSecondaryValues: SecondaryValueType[];
-    accessor selectedSecondaryValue: SecondaryValueType;
-    accessor stringSelectedValue: string;
     /**
      * The dropdown's selector element.
      */
@@ -6083,7 +6239,7 @@ type MakeToolOptions = {
  * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
  * @return {boolean} - Whether to stop the propagation.
  */
-type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => boolean | any;
+type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => Propagation | any;
 /**
  * @type {ToolBehaviorOptions}
  * @group Types
@@ -6455,6 +6611,7 @@ declare function createYMap<DataType = object>(data: DataType): Map$1 & DataType
  * @returns {YArray} A new YArray instance.
  */
 declare function createYArray<DataType = object>(data: DataType[]): Array;
+declare function jsonToYjs(data: object): AbstractType;
 /**
  * @function addInYMap
  * @group Utilities
@@ -6601,6 +6758,9 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
+export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DataBlockObserver, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, CacheOptions, ChildHandler, Coordinate, DataBlockHost, DataBlockProperties, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerEntry, ListenerOptions, MakeSubstrateOptions, MakeToolOptions, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+
 // Flattened from relative module augmentations
 interface TurboSelector {
         /**
@@ -6618,14 +6778,14 @@ interface TurboSelector {
          * @description Adds an event listener to the element.
          * @template {Node} Type - The type of the element.
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback<Type>} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        on<Type extends Node>(type: string, listener: ((e: Event, el: Type) => boolean | any), options?: ListenerOptions, manager?: TurboEventManager): this;
+        on<Type extends Node>(type: string, listener: ListenerCallback<Type>, options?: ListenerOptions, manager?: TurboEventManager): this;
         /**
          * @function onTool
          * @template {Node} Type - The type of the element.
@@ -6633,14 +6793,14 @@ interface TurboSelector {
          * @param {string} type - The type of the event.
          * @param {string} toolName - The name of the tool. Set to null or undefined to check for listeners not bound
          * to a tool.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback<Type>} listener - The function that receives a notification.
          * @param {ListenerOptions} [options] - An options object that specifies characteristics
          * about the event listener.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        onTool<Type extends Node>(type: string, toolName: string, listener: ((e: Event, el: Type) => boolean | any), options?: ListenerOptions, manager?: TurboEventManager): this;
+        onTool<Type extends Node>(type: string, toolName: string, listener: ListenerCallback<Type>, options?: ListenerOptions, manager?: TurboEventManager): this;
         /**
          * @function executeAction
          * @description Execute the listeners bound on this element for the given `type` and `toolName`. Simulates
@@ -6654,29 +6814,29 @@ interface TurboSelector {
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          */
-        executeAction(type: string, toolName: string, event: Event, options?: ListenerOptions, manager?: TurboEventManager): boolean;
+        executeAction(type: string, toolName: string, event: Event, options?: ListenerOptions, manager?: TurboEventManager): Propagation;
         /**
          * @function hasListener
          * @description Checks if the given event listener is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasListener(type: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): boolean;
+        hasListener(type: string, listener: ListenerCallback, manager?: TurboEventManager): boolean;
         /**
          * @function hasToolListener
          * @description Checks if the given event listener is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event. Set to null or undefined to get all event types.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {boolean} - Whether the element has the given listener.
          */
-        hasToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): boolean;
+        hasToolListener(type: string, toolName: string, listener: ListenerCallback, manager?: TurboEventManager): boolean;
         /**
          * @function hasListenersByType
          * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
@@ -6692,24 +6852,24 @@ interface TurboSelector {
          * @function removeListener
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeListener(type: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): this;
+        removeListener(type: string, listener: ListenerCallback, manager?: TurboEventManager): this;
         /**
          * @function removeToolListener
          * @description Removes an event listener that is bound to the element (in its boundListeners list).
          * @param {string} type - The type of the event.
          * @param {string} toolName - The name of the tool the listener is attached to. Set to null or undefined
          * to check for listeners not bound to a tool.
-         * @param {(e: Event, el: this) => boolean | any} listener - The function that receives a notification.
+         * @param {ListenerCallback} listener - The function that receives a notification.
          * @param {TurboEventManager} [manager] - The associated event manager. Defaults to the first created manager,
          * or a new instantiated one if none already exist.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeToolListener(type: string, toolName: string, listener: ((e: Event, el: this) => boolean | any), manager?: TurboEventManager): this;
+        removeToolListener(type: string, toolName: string, listener: ListenerCallback, manager?: TurboEventManager): this;
         /**
          * @function removeListenersByType
          * @description Removes all event listeners bound to the element (in its boundListeners list) assigned to the
@@ -6818,6 +6978,14 @@ interface TurboSubstrate {
     }
 interface TurboSelector {
         /**
+         * @description Array of all the substrates attached to this element.
+         */
+        readonly substrates: string[];
+        /**
+         * @description The current active substrate in the element.
+         */
+        currentSubstrate: string;
+        /**
          * @function makeSubstrate
          * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
          * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
@@ -6826,14 +6994,6 @@ interface TurboSelector {
          * @return {this} - Itself for chaining.
          */
         makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
-        /**
-         * @description Array of all the substrates attached to this element.
-         */
-        readonly substrates: string[];
-        /**
-         * @description The current active substrate in the element.
-         */
-        currentSubstrate: string;
         /**
          * @description A delegate fired every time the current substrate changes.
          */
@@ -6853,6 +7013,8 @@ interface TurboSelector {
          * @return {Delegate<() => void>} - The delegate.
          */
         onSubstrateDeactivate(substrate?: string): Delegate<() => void>;
+        getSubstratePriority(substrate?: string): number;
+        setSubstratePriority(priority: number, substrate?: string): this;
         /**
          * @function getSubstrateObjectList
          * @description Retrieve the list of objects that are constrained by the given substrate.
@@ -6893,31 +7055,38 @@ interface TurboSelector {
          * @return {boolean} - Whether the object is in the list or not.
          */
         hasObjectInSubstrate(object: object, substrate?: string): boolean;
-        /**
-         * @function wasObjectProcessedBySubstrate
-         * @description Check whether the given object was already processed by the substrate in the current resolving
-         * loop ({@link resolveSubstrate}). Can be useful in solvers.
-         * @param {object} object - The object to check.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {boolean} - Whether the object was processed or not.
-         */
-        wasObjectProcessedBySubstrate(object: object, substrate?: string): boolean;
+        getNextInSubstrateQueue(substrate?: string): object;
+        addObjectToSubstrateQueue(object: object, substrate?: string): this;
+        clearSubstrateQueue(substrate?: string): this;
+        getDefaultSubstrateQueue(substrate?: string): TurboQueue<object>;
+        setDefaultSubstrateQueue(queue: object[] | TurboQueue<object>, substrate?: string): this;
+        getObjectPassesForSubstrate(object: object, substrate?: string): number;
+        getMaxPassesForSubstrate(substrate?: string): number;
+        setMaxPassesForSubstrate(passes: number, substrate?: string): this;
+        addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
+        removeChecker(name: string, substrate?: string): this;
+        clearCheckers(substrate?: string): this;
+        checkSubstrate(properties?: SubstrateCallbackProperties): boolean;
+        checkSubstratesForEvent(properties?: SubstrateCallbackProperties): boolean;
+        addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
+        removeMutator(name: string, substrate?: string): this;
+        clearMutators(substrate?: string): this;
+        mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
         /**
          * @function addSolver
          * @description Add the given function as a solver in the substrate.
-         * @param {SubstrateSolver} fn - The solver function to execute when calling {@link resolveSubstrate}.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          * @return {this} - Itself for chaining.
+         * @param properties
          */
-        addSolver(fn: SubstrateSolver, substrate?: string): this;
+        addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
         /**
          * @function removeSolver
          * @description Remove the given function from the substrate's list of solvers.
-         * @param {SubstrateSolver} fn - The solver function to remove.
+         * @param name
          * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          * @return {this} - Itself for chaining.
          */
-        removeSolver(fn: SubstrateSolver, substrate?: string): this;
+        removeSolver(name: string, substrate?: string): this;
         /**
          * @function clearSolvers
          * @description Remove all solvers attached to the substrate.
@@ -6926,15 +7095,15 @@ interface TurboSelector {
          */
         clearSolvers(substrate?: string): this;
         /**
-         * @function resolveSubstrate
+         * @function solveSubstrate
          * @description Resolve the substrate by executing all of its attached solvers. Each solver will be executed
          * on every object in the substrate's list of constrained objects, marking each as `processed` as it goes
          * through them.
-         * @param {SubstrateSolverProperties} [properties] - Options object to configure the context of the resolving
+         * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context of the resolving
          * call.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
          */
-        resolveSubstrate(properties?: SubstrateSolverProperties, substrate?: string): this;
+        solveSubstrate(properties?: SubstrateCallbackProperties): this;
+        solveSubstratesForEvent(properties?: SubstrateCallbackProperties): this;
     }
 interface TurboHeadlessElement extends TurboElementDefaultInterface {
     }
@@ -7511,7 +7680,7 @@ interface TurboSelector {
          * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
          * @return {boolean} True if at least one behavior returned `true` (to stop propagation of the event).
          */
-        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): boolean;
+        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): Propagation;
         /**
          * @function clearToolBehaviors
          * @description Clears all registered behaviors for the tools attached to this element.
@@ -7572,5 +7741,3 @@ interface TurboSelector {
          */
         isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }
-
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, type ApplyDefaultsOptions, type AutoOptions, BasicInputEvents, type BasicPropertyConfig, type CacheOptions, type ChildHandler, ClickMode, ClosestOrigin, type Coordinate, type DataBlockHost, DataBlockObserver, type DataBlockProperties, DefaultClickEventName, DefaultDragEventName, DefaultEventName, type DefaultEventNameEntry, type DefaultEventNameKey, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, type DefineOptions, Delegate, Direction, type DisabledTurboEventTypes, type ElementTagDefinition, type ElementTagMap, type FlexRect, type FontProperties, type HTMLElementMutableFields, type HTMLElementNonFunctions, type HTMLTag, InOut, InputDevice, type ListenerEntry, type ListenerOptions, type MakeSubstrateOptions, type MakeToolOptions, MathMLNamespace, type MathMLTag, MathMLTags, Mvc, type MvcBlockKeyType, type MvcBlocksType, type MvcFlatKeyType, type MvcGenerationProperties, type MvcProperties, NonPassiveEvents, OnOff, Open, type PartialRecord, Point, PopupFallbackMode, type PreventDefaultOptions, type PropertyConfig, Range, Reifect, type ReifectAppliedOptions, type ReifectEnabledObject, type ReifectInterpolator, type ReifectObjectData, type SVGTag, type SVGTagMap, type ScopedKey, type SetToolOptions, Shown, Side, SideH, SideV, type SignalBox, type SignalEntry, type StateInterpolator, type StateSpecificProperty, StatefulReifect, type StatefulReifectCoreProperties, type StatefulReifectProperties, type StatelessPropertyConfig, type StatelessReifectCoreProperties, type StatelessReifectProperties, type StylesRoot, type StylesType, type SubstrateSolver, type SubstrateSolverProperties, SvgNamespace, SvgTags, type ToolBehaviorCallback, type ToolBehaviorOptions, type Turbo, TurboBaseElement, TurboButton, type TurboButtonConfig, TurboClickEventName, TurboController, type TurboControllerProperties, TurboDataBlock, TurboDragEvent, TurboDragEventName, type TurboDragEventProperties, TurboDrawer, type TurboDrawerProperties, TurboDropdown, type TurboDropdownConfig, type TurboDropdownProperties, TurboElement, type TurboElementConfig, type TurboElementDefaultInterface, type TurboElementMvcInterface, type TurboElementProperties, type TurboElementUiInterface, TurboEmitter, TurboEvent, TurboEventManager, type TurboEventManagerLockStateProperties, type TurboEventManagerProperties, type TurboEventManagerStateProperties, TurboEventName, type TurboEventNameEntry, type TurboEventNameKey, type TurboEventProperties, TurboHandler, TurboHeadlessElement, type TurboHeadlessProperties, TurboIcon, type TurboIconConfig, type TurboIconProperties, TurboIconSwitch, type TurboIconSwitchProperties, TurboIconToggle, type TurboIconToggleProperties, TurboInput, type TurboInputProperties, TurboInteractor, type TurboInteractorProperties, TurboKeyEvent, TurboKeyEventName, type TurboKeyEventProperties, TurboMap, TurboMarkingMenu, type TurboMarkingMenuProperties, TurboModel, TurboMoveEventName, TurboNumericalInput, type TurboNumericalInputProperties, TurboObserver, type TurboObserverProperties, TurboPopup, type TurboPopupConfig, type TurboPopupProperties, type TurboProperties, TurboProxiedElement, type TurboProxiedProperties, type TurboRawEventProperties, TurboRichElement, type TurboRichElementConfig, type TurboRichElementProperties, TurboSelect, type TurboSelectConfig, TurboSelectInputEvent, type TurboSelectInputEventProperties, type TurboSelectProperties, TurboSelectWheel, type TurboSelectWheelProperties, type TurboSelectWheelStylingProperties, TurboSelector, TurboSubstrate, type TurboSubstrateProperties, TurboTool, type TurboToolProperties, TurboView, type TurboViewProperties, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, type TurboWheelEventProperties, TurboYBlock, type TurbofyOptions, type ValidElement, type ValidHTMLElement, type ValidMathMLElement, type ValidNode, type ValidSVGElement, type ValidTag, type YDocumentProperties, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

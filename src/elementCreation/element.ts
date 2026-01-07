@@ -1,4 +1,4 @@
-import {$} from "../turboFunctions/turboFunctions";
+import {turbo} from "../turboFunctions/turboFunctions";
 import {TurboProperties} from "../turboFunctions/element/element.types";
 import {ValidElement, ValidTag} from "../types/element.types";
 import {SvgNamespace, SvgTags} from "../types/svgElement.types";
@@ -41,7 +41,7 @@ function element<Tag extends ValidTag>(properties: TurboProperties<Tag> = {} as 
     }
 
     if (properties.shadowDOM) element.attachShadow({mode: "open"});
-    $(element).setProperties(properties);
+    turbo(element).setProperties(properties);
     return element as ValidElement<Tag>;
 }
 
@@ -62,7 +62,7 @@ function blindElement<Tag extends ValidTag>(properties: TurboProperties<Tag> = {
     else element = document.createElement(properties.tag || "div");
 
     if (properties.shadowDOM) element.attachShadow({mode: "open"});
-    $(element).setProperties(properties);
+    turbo(element).setProperties(properties);
     return element as ValidElement<Tag>;
 }
 

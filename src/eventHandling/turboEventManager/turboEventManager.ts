@@ -109,9 +109,9 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.model.scaleEventPosition = properties.scaleEventPosition;
 
          this.model.state.enabled = properties.enabled ?? true;
-         this.model.state.preventDefaultMouse = properties.preventDefaultMouse ?? true;
-         this.model.state.preventDefaultTouch = properties.preventDefaultTouch ?? true;
-         this.model.state.preventDefaultWheel = properties.preventDefaultWheel ?? true;
+         this.model.state.preventDefaultMouse = properties.preventDefaultMouse ?? false;
+         this.model.state.preventDefaultTouch = properties.preventDefaultTouch ?? false;
+         this.model.state.preventDefaultWheel = properties.preventDefaultWheel ?? false;
          this.unlock();
 
         this.model.moveThreshold = properties.moveThreshold || 10;

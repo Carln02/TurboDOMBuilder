@@ -17,6 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   BasicInputEvents: () => (/* binding */ BasicInputEvents),
 /* harmony export */   ClickMode: () => (/* binding */ ClickMode),
 /* harmony export */   ClosestOrigin: () => (/* binding */ ClosestOrigin),
+/* harmony export */   DataBlockObserver: () => (/* binding */ DataBlockObserver),
 /* harmony export */   DefaultClickEventName: () => (/* binding */ DefaultClickEventName),
 /* harmony export */   DefaultDragEventName: () => (/* binding */ DefaultDragEventName),
 /* harmony export */   DefaultEventName: () => (/* binding */ DefaultEventName),
@@ -25,6 +26,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   DefaultWheelEventName: () => (/* binding */ DefaultWheelEventName),
 /* harmony export */   Delegate: () => (/* binding */ Delegate),
 /* harmony export */   Direction: () => (/* binding */ Direction),
+/* harmony export */   EventPropagation: () => (/* binding */ EventPropagation),
 /* harmony export */   InOut: () => (/* binding */ InOut),
 /* harmony export */   InputDevice: () => (/* binding */ InputDevice),
 /* harmony export */   MathMLNamespace: () => (/* binding */ MathMLNamespace),
@@ -72,6 +74,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   TurboModel: () => (/* binding */ TurboModel),
 /* harmony export */   TurboMoveEventName: () => (/* binding */ TurboMoveEventName),
 /* harmony export */   TurboNumericalInput: () => (/* binding */ TurboNumericalInput),
+/* harmony export */   TurboObserver: () => (/* binding */ TurboObserver),
 /* harmony export */   TurboPopup: () => (/* binding */ TurboPopup),
 /* harmony export */   TurboProxiedElement: () => (/* binding */ TurboProxiedElement),
 /* harmony export */   TurboRichElement: () => (/* binding */ TurboRichElement),
@@ -97,10 +100,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   a: () => (/* binding */ a),
 /* harmony export */   addInYArray: () => (/* binding */ addInYArray),
 /* harmony export */   addInYMap: () => (/* binding */ addInYMap),
+/* harmony export */   alphabeticalSorting: () => (/* binding */ alphabeticalSorting),
 /* harmony export */   areEqual: () => (/* binding */ areEqual),
 /* harmony export */   auto: () => (/* binding */ auto),
 /* harmony export */   bestOverlayColor: () => (/* binding */ bestOverlayColor),
 /* harmony export */   blindElement: () => (/* binding */ blindElement),
+/* harmony export */   blockDataSignal: () => (/* binding */ blockDataSignal),
 /* harmony export */   blockIdSignal: () => (/* binding */ blockIdSignal),
 /* harmony export */   blockSignal: () => (/* binding */ blockSignal),
 /* harmony export */   button: () => (/* binding */ button),
@@ -183,6 +188,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   reifect: () => (/* binding */ reifect),
 /* harmony export */   removeFromYArray: () => (/* binding */ removeFromYArray),
 /* harmony export */   richElement: () => (/* binding */ richElement),
+/* harmony export */   selectWheel: () => (/* binding */ selectWheel),
 /* harmony export */   setSignal: () => (/* binding */ setSignal),
 /* harmony export */   signal: () => (/* binding */ signal),
 /* harmony export */   solver: () => (/* binding */ solver),
@@ -277,7 +283,7 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} SignalEntry
- * @group Reactivity
+ * @group Decorators
  * @category Signal
  *
  * @template Type
@@ -303,7 +309,7 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} SignalBox
- * @group Reactivity
+ * @group Decorators
  * @category Signal
  *
  * @template Type
@@ -402,6 +408,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} MakeSubstrateOptions
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
  * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
  * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
@@ -409,6 +418,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} SubstrateSolverProperties
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
  * solvers when executing them via {@link resolveSubstrate}.
  * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
@@ -425,6 +437,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} SubstrateSolver
+ * @group Types
+ * @category Substrate
+ *
  * @description Type representing the signature of solver functions that substrates expect.
  */
 
@@ -509,7 +524,7 @@ __webpack_require__.r(__webpack_exports__);
 /**
  * @typedef {Object} ElementTagDefinition
  * @group Types
- * @category Element Types
+ * @category Element
  * @description Represents an element's definition of its tag and its namespace (both optional).
  *
  * @property {string} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
@@ -519,46 +534,18 @@ __webpack_require__.r(__webpack_exports__);
  */
 
 /**
- * @typedef {Object} TurboProperties
- * @template {ValidTag} Tag - The HTML (or other) tag of the element, if passing it as a property. Defaults to "div".
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Object containing properties for configuring an Element. A tag (and
- * possibly a namespace) can be provided for element creation. Already-created elements will ignore these
- * properties if set.
- * Any HTML attribute can be passed as key to be processed by the class/function. The type has the following
- * described custom properties:
- *
- * @property {string} [id] - The ID of the element.
- * @property {string | string[]} [classes] - The CSS class(es) to apply to the element (either a string of
- * space-separated classes or an array of class names).
- * @property {string} [style] - The inline style of the element. Use the css literal function for autocompletion.
- * @property {string} [stylesheet] - The associated stylesheet (if any) with the element. Declaring this property will
- * generate automatically a new style element in the element's corresponding root. Use the css literal function
- * for autocompletion.
- * @property {Record<string, EventListenerOrEventListenerObject | ((e: Event, el: Element) => boolean)>} [listeners]
- * - An object containing event listeners to be applied to this element.
- * @property {(e: Event, el: Element) => boolean} [onClick] - Click event listener.
- * @property {(e: Event, el: Element) => boolean} [onDrag] - Drag event listener.
- * @property {Element | Element[]} [children] - An array of child wrappers or elements to append to
- * the created element.
- * @property {Element} [parent] - The parent element to which the created element will be appended.
- * @property {string | Element} [out] - If defined, declares (or sets) the element in the parent as a field with the
- * given value as key.
- * @property {string} [text] - The text content of the element (if any).
- * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
- */
-
-/**
  * @typedef {Object} StylesRoot
+ * @group Types
+ * @category Style
+ *
  * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
  */
 
 /**
  * @typedef {Object} StylesType
+ * @group Types
+ * @category Style
+ *
  * @description A type that represents the types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
  * method). It includes strings, numbers, and records of CSS attributes to strings or numbers.
  */
@@ -709,11 +696,17 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} ChildHandler
+ * @group Types
+ * @category Hierarchy
+ *
  * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
  */
 
 /**
  * @typedef {Object} ApplyDefaultsOptions
+ * @group Types
+ * @category Misc
+ *
  * @description Options for {@link TurboSelector.applyDefaults}.
  * @property {string[]} [mergeProperties] - Array-like keys to merge. Defaults to {@link ApplyDefaultsMergeProperties}.
  * @property {boolean} [removeDuplicates] - Whether to remove duplicates when merging arrays. Defaults to `true`.
@@ -721,6 +714,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} MakeToolOptions
+ * @group Types
+ * @category Tool
+ *
  * @description Options used to create a new tool attached to an element via {@link makeTool}.
  * @property {() => void} [onActivate] - Function to execute when the tool is activated.
  * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
@@ -736,6 +732,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} ToolBehaviorCallback
+ * @group Types
+ * @category Tool
+ *
  * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
  * leading to stopping the propagation of the event.
  * @param {Event} event - The original DOM/Turbo event.
@@ -746,6 +745,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} ToolBehaviorOptions
+ * @group Types
+ * @category Tool
+ *
  * @description Options object passed to tool behaviors at execution time.
  * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
  * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
@@ -753,6 +755,9 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @typedef {Object} FontProperties
+ * @group Utilities
+ * @category Font
+ *
  * @description An object representing a local font, or a family of fonts.
  *
  * @property {string} name - The name of the font. The font's filename should also match.
@@ -784,13 +789,32 @@ class AutoUtils {
     }
 }
 
+/**
+ * @group Utilities
+ * @category Null Check
+ */
 function isNull(value) {
     return value == null && value != undefined;
 }
+/**
+ * @group Utilities
+ * @category Null Check
+ */
 function isUndefined(value) {
     return typeof value == "undefined";
 }
+function alphabeticalSorting(a, b) {
+    if (typeof a == "string" && typeof b == "string")
+        return a.localeCompare(b);
+    else if (typeof a == "number" && typeof b == "number")
+        return a - b;
+    return 0;
+}
 
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function getFirstDescriptorInChain(object, key) {
     let currentObject = object;
     while (currentObject && currentObject !== Object.prototype) {
@@ -801,6 +825,10 @@ function getFirstDescriptorInChain(object, key) {
     }
     return undefined;
 }
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function hasPropertyInChain(object, key) {
     let currentObject = object;
     while (currentObject && currentObject !== Object.prototype) {
@@ -810,6 +838,10 @@ function hasPropertyInChain(object, key) {
     }
     return false;
 }
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function getFirstPrototypeInChainWith(object, key) {
     let currentObject = Object.getPrototypeOf(object);
     while (currentObject && currentObject !== Object.prototype) {
@@ -820,6 +852,10 @@ function getFirstPrototypeInChainWith(object, key) {
     }
     return undefined;
 }
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function getSuperMethod(object, key, wrapperFn) {
     let currentObject = Object.getPrototypeOf(object);
     while (currentObject && currentObject !== Object.prototype) {
@@ -831,7 +867,11 @@ function getSuperMethod(object, key, wrapperFn) {
     }
     return undefined;
 }
-const getSuperDescriptor = (object, key) => {
+/**
+ * @group Utilities
+ * @category Prototype
+ */
+function getSuperDescriptor(object, key) {
     let currentObject = Object.getPrototypeOf(object);
     if (currentObject)
         currentObject = Object.getPrototypeOf(currentObject);
@@ -842,7 +882,7 @@ const getSuperDescriptor = (object, key) => {
         currentObject = Object.getPrototypeOf(currentObject);
     }
     return undefined;
-};
+}
 
 const utils$a = new AutoUtils();
 /**
@@ -892,47 +932,58 @@ function auto(options) {
         const backing = Symbol(`__auto_${key}`);
         context.addInitializer(function () {
             const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
-            // const superDescriptor = getSuperDescriptor(this, key);
+            const superDescriptor = getSuperDescriptor(this, key);
             let customGetter;
             let customSetter;
             const baseRead = function () {
                 if (customGetter && options?.returnDefinedGetterValue)
                     return customGetter.call(this);
-                // if (options.override && superDescriptor?.get) return superDescriptor.get.call(this);
+                if (options.override && superDescriptor?.get)
+                    return superDescriptor.get.call(this);
                 return this[backing];
             };
             const baseWrite = function (value) {
-                // if (options.override && superDescriptor?.set) superDescriptor.set.call(this, value);
+                if (options.override && superDescriptor?.set)
+                    superDescriptor.set.call(this, value);
                 this[backing] = value;
             };
-            let undefinedFlag = false;
+            let readFlag = false;
             const read = function () {
                 let value = baseRead.call(this);
-                if (!undefinedFlag && !options.returnDefinedGetterValue && isUndefined(value)) {
-                    undefinedFlag = true;
+                if (readFlag)
+                    return value;
+                readFlag = true;
+                if (!options.returnDefinedGetterValue && isUndefined(value)) {
                     if (options.defaultValue)
                         value = options.defaultValue;
                     else if (options.defaultValueCallback)
                         value = options.defaultValueCallback.call(this);
-                    else if (!options.setIfUndefined)
-                        return value;
-                    write.call(this, value);
-                    value = baseRead.call(this);
-                    undefinedFlag = false;
+                    if (options.setIfUndefined || options.defaultValue || options.defaultValueCallback) {
+                        write.call(this, value);
+                        value = baseRead.call(this);
+                    }
                 }
+                readFlag = false;
                 return value;
             };
+            let writeFlag = false;
             const write = function (value) {
+                if (writeFlag)
+                    return baseWrite.call(this, value);
+                writeFlag = true;
                 options.callBefore?.call(this, value);
                 let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next)
+                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                    writeFlag = false;
                     return;
+                }
                 if (options.executeSetterBeforeStoring && customSetter)
                     customSetter.call(this, next);
                 baseWrite.call(this, next);
                 if (!options.executeSetterBeforeStoring && customSetter)
                     customSetter.call(this, next);
                 options.callAfter?.call(this, next);
+                writeFlag = false;
             };
             if (isUndefined(baseRead.call(this))) {
                 let initialValue = kind === "field" ? value : undefined;
@@ -1412,6 +1463,8 @@ function setupHierarchyFunctions() {
 
 /**
  * @constant
+ * @group Types
+ * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
 const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"];
@@ -1528,13 +1581,13 @@ function setupClassFunctions() {
 
 /**
  * @group Types
- * @category SVG Element Types
+ * @category SVG Element
  * @description URL to the SVG namespace.
  */
 const SvgNamespace = "http://www.w3.org/2000/svg";
 /**
  * @group Types
- * @category SVG Element Types
+ * @category SVG Element
  * @description Set of Valid SVG tags.
  */
 const SvgTags = new Set([
@@ -1550,13 +1603,13 @@ const SvgTags = new Set([
 
 /**
  * @group Types
- * @category MathML Element Types
+ * @category MathML Element
  * @description URL to the MathML namespace.
  */
 const MathMLNamespace = "http://www.w3.org/1998/Math/MathML";
 /**
  * @group Types
- * @category MathML Element Types
+ * @category MathML Element
  * @description Set of Valid MathML tags.
  */
 const MathMLTags = new Set([
@@ -2573,7 +2626,7 @@ class SignalUtils {
             }
         });
     }
-    signalDecorator(value, context, baseGetter, baseSetter) {
+    signalDecorator(value, context, baseGetter, baseSetter, callSetterOnInitialize = false) {
         const { kind, name, static: isStatic, private: isPrivate } = context;
         if (isPrivate)
             throw new Error("@signal does not support private class elements.");
@@ -2661,6 +2714,11 @@ class SignalUtils {
                     },
                 });
             }
+            if (callSetterOnInitialize) {
+                const current = baseGetter?.call(this) ?? customGetter?.call(this);
+                if (isUndefined(current))
+                    ensureEntry(this, !customGetter && !baseGetter).set(undefined);
+            }
         });
     }
 }
@@ -2723,7 +2781,7 @@ function signal(...args) {
 /**
  * @decorator
  * @function modelSignal
- * @group Reactivity
+ * @group Decorators
  * @category Signal
  *
  * @description Decorator that binds a reactive signal to a **model field**
@@ -2756,17 +2814,21 @@ function signal(...args) {
 function modelSignal(dataKey, blockKey) {
     return function (value, context) {
         const key = dataKey ?? String(context.name);
-        context.addInitializer(function () { utils$7.bindBlockKey(this, context.name, key, blockKey); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+            utils$7.bindBlockKey(this, context.name, key, blockKey);
+        });
         return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
     };
 }
 /**
  * @decorator
  * @function blockSignal
- * @group Reactivity
+ * @group Decorators
  * @category Signal
  *
- * Binds a signal to an entire data-block of a TurboModel/YModel.
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
  * - Getter returns `this.getBlockData(blockKey)`
  * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
  *
@@ -2776,21 +2838,52 @@ function modelSignal(dataKey, blockKey) {
 function blockSignal(blockKey, id) {
     return function (value, context) {
         const key = blockKey ?? String(context.name);
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlock?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
+    };
+}
+/**
+ * @decorator
+ * @function blockDataSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+function blockDataSignal(blockKey, id) {
+    return function (value, context) {
+        const key = blockKey ?? String(context.name);
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
     };
 }
 /**
  * @decorator
  * @function blockIdSignal
- * @group Reactivity
+ * @group Decorators
  * @category Signal
  *
- * Same idea but binds the block **id**.
+ * @description Same idea but binds the block **id**.
  */
 function blockIdSignal(blockKey) {
     return function (value, context) {
         const key = blockKey ?? String(context.name);
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); });
+        context.addInitializer(function () {
+            if (isUndefined(blockKey) && "defaultBlockKey" in this)
+                blockKey = this.defaultBlockKey;
+        });
+        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); }, true);
     };
 }
 function effect(...args) {
@@ -2819,8 +2912,8 @@ function effect(...args) {
 }
 /**
  * @function getSignal
- * @group Reactivity
- * @category Utilities
+ * @group Decorators
+ * @category Signal
  *
  * @template Type
  * @description Retrieve the signal at the given `key` inside `target`.
@@ -2833,8 +2926,8 @@ function getSignal(target, key) {
 }
 /**
  * @function setSignal
- * @group Reactivity
- * @category Utilities
+ * @group Decorators
+ * @category Signal
  *
  * @template Type
  * @description Set the value of the signal at the given `key` inside `target`.
@@ -2855,8 +2948,8 @@ function markDirty(target, key, blockKey) {
 }
 /**
  * @function initializeEffects
- * @group Reactivity
- * @category Utilities
+ * @group Decorators
+ * @category Effect
  *
  * @description Initializes and runs all the effects attached to the given `target`.
  * @param {object} target - The target to which the effects are bound.
@@ -2867,8 +2960,8 @@ function initializeEffects(target) {
 }
 /**
  * @function disposeEffect
- * @group Reactivity
- * @category Utilities
+ * @group Decorators
+ * @category Effect
  *
  * @description Disposes of the effect at the given `key` inside `target`.
  * @param {object} target - The target to which the signal is bound.
@@ -2881,8 +2974,8 @@ function disposeEffect(target, key) {
 }
 /**
  * @function disposeEffects
- * @group Reactivity
- * @category Utilities
+ * @group Decorators
+ * @category Effect
  *
  * @description Disposes of all the effects attached to the given `target`.
  * @param {object} target - The target to which the effects are bound.
@@ -2894,6 +2987,10 @@ function disposeEffects(target) {
     }
 }
 
+/**
+ * @group Components
+ * @category TurboWeakSet
+ */
 class TurboWeakSet {
     _weakRefs;
     constructor() {
@@ -2954,9 +3051,8 @@ class TurboWeakSet {
 }
 
 /**
- * @class Delegate
- * @group Components
- * @category Delegate
+ * @internal
+ * @class SimpleDelegate
  * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
  * @description Class representing a set of callbacks that can be maintained and executed together.
  */
@@ -3012,6 +3108,8 @@ class SimpleDelegate {
 }
 /**
  * @class Delegate
+ * @group Components
+ * @category Delegate
  * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
  * @description Class representing a set of callbacks that can be maintained and executed together.
  */
@@ -3030,6 +3128,207 @@ class Delegate extends SimpleDelegate {
     }
 }
 
+class TurboObserver {
+    _isInitialized = false;
+    onAdded = new Delegate();
+    onUpdated = new Delegate();
+    onDeleted = new Delegate();
+    onInitialize = new Delegate();
+    onDestroy = new Delegate();
+    instances = new Map();
+    constructor(properties = {}) {
+        const self = this;
+        if (properties.onAdded)
+            this.onAdded.add((data, id, self, blockKey) => properties.onAdded(data, id, self, blockKey));
+        this.onUpdated.add((data, instance, id, self, blockKey) => {
+            if (properties.onUpdated)
+                properties.onUpdated(data, instance, id, self, blockKey);
+            else {
+                if (typeof instance !== "object")
+                    return;
+                if ("model" in instance && instance.model instanceof TurboModel)
+                    instance.model.setBlock(data, id);
+                else {
+                    if ("data" in instance)
+                        instance.data = data;
+                    if ("dataId" in instance)
+                        instance.dataId = id.toString();
+                }
+            }
+        });
+        this.onDeleted.add((data, instance, id, self, blockKey) => {
+            if (properties.onDeleted)
+                properties.onDeleted(data, instance, id, self, blockKey);
+            else
+                this.removeInstance(instance);
+        });
+        if (properties.onInitialize)
+            this.onInitialize.add(() => properties.onInitialize(self));
+        if (properties.onDestroy)
+            this.onDestroy.add(() => properties.onDestroy(self));
+        if (properties.initialize)
+            this.initialize();
+    }
+    getInstance(key, blockKey = this.defaultBlockKey) {
+        return this.instances.get(blockKey)?.get(key);
+    }
+    getBlockInstancesAndKeys(blockKey = this.defaultBlockKey) {
+        const block = this.instances.get(blockKey);
+        if (!block)
+            return [];
+        return Array.from(block.entries());
+    }
+    getBlockInstances(blockKey = this.defaultBlockKey) {
+        return this.getBlockInstancesAndKeys(blockKey)
+            .sort((a, b) => alphabeticalSorting(a[0], b[0]))
+            .map(entry => entry[1]);
+    }
+    getAllInstances() {
+        return Array.from(this.instances.keys())
+            .sort(alphabeticalSorting)
+            .flatMap(blockKey => this.getBlockInstances(blockKey));
+    }
+    getInstanceKey(instance) {
+        for (const [blockKey, map] of this.instances.entries()) {
+            for (const [key, entry] of map.entries()) {
+                if (entry === instance)
+                    return { blockKey, key };
+            }
+        }
+    }
+    getInstanceAt(flatKey) {
+        const scoped = this.scopeKey(flatKey);
+        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
+            return;
+        return this.getInstance(scoped.key, scoped.blockKey);
+    }
+    getInstanceFlatKey(instance) {
+        const scoped = this.getInstanceKey(instance);
+        if (!scoped)
+            return;
+        return this.flattenKey(scoped.key, scoped.blockKey);
+    }
+    setInstance(instance, key, blockKey = this.defaultBlockKey) {
+        let instancesBlock = this.instances.get(blockKey);
+        if (!instancesBlock) {
+            this.instances.set(blockKey, new Map());
+            instancesBlock = this.instances.get(blockKey);
+        }
+        instancesBlock?.set(key, instance);
+    }
+    removeInstanceByKey(key, removeFromDOM = true, blockKey = this.defaultBlockKey) {
+        const block = this.instances.get(blockKey);
+        if (!block)
+            return;
+        const instance = block.get(key);
+        block.delete(key);
+        if (!instance)
+            return;
+        if (removeFromDOM && instance && typeof instance === "object"
+            && "remove" in instance && typeof instance.remove == "function")
+            instance?.remove();
+    }
+    removeInstance(instance, removeFromDOM = true) {
+        const pos = this.getInstanceKey(instance);
+        if (pos)
+            this.removeInstanceByKey(pos.key, removeFromDOM, pos.blockKey ?? this.defaultBlockKey);
+    }
+    get isInitialized() {
+        return this._isInitialized;
+    }
+    initialize() {
+        if (this.isInitialized)
+            return;
+        this.onInitialize.fire(this);
+        this._isInitialized = true;
+    }
+    clear() {
+        this.getAllInstances().forEach(instance => this.removeInstance(instance));
+        this.instances.clear();
+        this._isInitialized = false;
+    }
+    destroy() {
+        this.clear();
+        this.onDestroy.fire(this);
+    }
+    keyChanged(key, value, deleted = false, blockKey = this.defaultBlockKey) {
+        const existingInstance = this.getInstance(key, blockKey);
+        if (existingInstance) {
+            if (deleted)
+                this.onDeleted.fire(value, existingInstance, key, this, blockKey);
+            else
+                this.onUpdated.fire(value, existingInstance, key, this, blockKey);
+            return;
+        }
+        if (deleted)
+            return;
+        const instance = this.onAdded.fire(value, key, this, blockKey);
+        if (!instance)
+            return;
+        this.setInstance(instance, key, blockKey);
+        this.onUpdated.fire(value, instance, key, this, blockKey);
+    }
+    flattenKey(key, blockKey = this.defaultBlockKey) {
+        if (typeof blockKey === "number") {
+            let globalIndex = 0;
+            for (const bk of Array.from(this.instances.keys()).sort(alphabeticalSorting)) {
+                if (bk === blockKey)
+                    break;
+                globalIndex += this.getBlockInstancesAndKeys(bk).length;
+            }
+            return globalIndex + Number(key);
+        }
+        else {
+            return blockKey.toString() + "|" + key.toString();
+        }
+    }
+    scopeKey(flatKey) {
+        if (typeof flatKey === "string") {
+            const split = flatKey.toString().split("|");
+            if (split.length < 2)
+                return {};
+            return { blockKey: split[0], key: split[1] };
+        }
+        const blockKeys = Array.from(this.instances.keys()).sort(alphabeticalSorting);
+        if (typeof flatKey === "number") {
+            if (flatKey < 0)
+                return { blockKey: blockKeys[0] ?? 0, key: 0 };
+            let index = flatKey;
+            for (const blockKey of blockKeys) {
+                const size = this.getBlockInstancesAndKeys(blockKey).length;
+                if (index < size)
+                    return { blockKey, key: index };
+                index -= size;
+            }
+        }
+        const lastBlockKey = blockKeys[blockKeys.length - 1];
+        return { blockKey: lastBlockKey, key: this.getBlockInstancesAndKeys(lastBlockKey).length };
+    }
+    get defaultBlockKey() {
+        const key = Array.from(this.instances.keys())?.[0];
+        if (!isUndefined(key))
+            return key;
+        return "__default__";
+    }
+}
+
+class DataBlockObserver extends TurboObserver {
+    keyChanged(key, value, deleted = false) {
+        super.keyChanged(key, value, deleted, this.defaultBlockKey);
+    }
+    // @ts-ignore
+    getInstanceKey(instance) {
+        return super.getInstanceKey(instance)?.key;
+    }
+    setInstance(instance, key) {
+        super.setInstance(instance, key);
+    }
+}
+
+/**
+ * @group Components
+ * @category TurboDataBlock
+ */
 let TurboDataBlock = (() => {
     let _enabledCallbacks_decorators;
     let _enabledCallbacks_initializers = [];
@@ -3041,8 +3340,17 @@ let TurboDataBlock = (() => {
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
+        _data;
         id;
-        data;
+        get data() {
+            return this._data;
+        }
+        set data(data) {
+            this.clear(false);
+            this._data = data;
+            if (data)
+                this.initialize();
+        }
         #enabledCallbacks_accessor_storage = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _enabledCallbacks_initializers, void 0);
         get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
         set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
@@ -3051,9 +3359,12 @@ let TurboDataBlock = (() => {
         signals = new Map();
         changeObservers = new TurboWeakSet();
         onKeyChanged = new Delegate();
+        observerConstructor = DataBlockObserver;
         constructor(properties = {}) {
             this.id = properties.id;
-            this.data = properties.data;
+            this._data = properties.data;
+            if (properties.initialize)
+                this.initialize();
         }
         /*
          *
@@ -3076,6 +3387,21 @@ let TurboDataBlock = (() => {
             else
                 this.data[key] = value;
             this.keyChanged(key, value);
+        }
+        add(value, key) {
+            if (!this.data || !Array.isArray(this.data))
+                return this.set(key, value);
+            let index = key;
+            if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
+                index = this.data.length;
+                this.data.push(value);
+            }
+            else {
+                if (index < 0)
+                    index = 0;
+                this.data.splice(index, 0, value);
+            }
+            return index;
         }
         has(key) {
             if (this.data instanceof Map)
@@ -3113,12 +3439,11 @@ let TurboDataBlock = (() => {
          *
          */
         initialize() {
-            if (!this.data)
+            if (!this.data || this.isInitialized)
                 return;
+            this.isInitialized = true;
             for (const key of this.keys)
                 this.keyChanged(key);
-            this.isInitialized = true;
-            this.changeObservers.toArray().forEach(observer => observer.initialize());
         }
         /**
          * @function clear
@@ -3126,8 +3451,9 @@ let TurboDataBlock = (() => {
          */
         clear(clearData = true) {
             if (clearData)
-                this.data = undefined;
+                this._data = undefined;
             this.changeObservers?.toArray().forEach(observer => observer.clear());
+            this.isInitialized = false;
         }
         toJSON() {
             if (this.data instanceof Map)
@@ -3175,74 +3501,20 @@ let TurboDataBlock = (() => {
          *
          */
         generateObserver(properties = {}) {
-            const observer = {
-                onAdded: new Delegate(),
-                onUpdated: new Delegate(),
-                onDeleted: new Delegate(),
-                instances: new Map(),
-                getInstance: (key) => observer.instances.get(key),
-                getAllInstances: () => {
-                    const temp = Array.from(observer.instances.entries());
-                    temp.sort((a, b) => this.sortingFunction(a[0], b[0]));
-                    return temp.map(entry => entry[1]);
-                },
-                initialize: () => {
+            const observer = new (properties.customConstructor
+                ?? this.observerConstructor
+                ?? (DataBlockObserver))({
+                ...properties,
+                onDestroy: (self) => this.changeObservers?.delete(self),
+                onInitialize: (self) => {
                     if (!this.isInitialized)
                         return;
                     for (const key of this.keys)
-                        this.observerKeyChanged(observer, key);
-                },
-                clear: () => {
-                    observer.instances.forEach(instance => this.removeInstance(instance));
-                    observer.instances.clear();
-                },
-                destroy: () => {
-                    observer.clear();
-                    this.changeObservers?.delete(observer);
-                }
-            };
-            observer.onUpdated.add((data, instance, id) => {
-                if (typeof instance === "object") {
-                    if ("data" in instance)
-                        instance.data = data;
-                    if ("dataId" in instance)
-                        instance.dataId = id.toString();
+                        self.keyChanged(key, this.get(key));
                 }
             });
-            observer.onDeleted.add((_data, instance, id) => {
-                this.removeInstance(instance);
-                observer.instances.delete(id);
-            });
-            if (properties.onAdded)
-                observer.onAdded.add((data, id) => properties.onAdded(data, id));
-            if (properties.onUpdated)
-                observer.onUpdated.add((data, instance, id) => properties.onUpdated(data, instance, id));
-            if (properties.onDeleted)
-                observer.onDeleted.add((data, instance, id) => properties.onDeleted(data, instance, id));
-            if (properties.initialize)
-                observer.initialize();
             this.changeObservers?.add(observer);
             return observer;
-        }
-        observerKeyChanged(observer, key, value = this.get(key), deleted = false) {
-            const existingInstance = observer.instances.get(key);
-            if (existingInstance) {
-                if (deleted) {
-                    observer.onDeleted.fire(value, existingInstance, key);
-                    observer.instances.delete(key);
-                    this.removeInstance(existingInstance);
-                }
-                else
-                    observer.onUpdated.fire(value, existingInstance, key);
-                return;
-            }
-            if (deleted)
-                return;
-            const instance = observer.onAdded.fire(value, key);
-            if (!instance)
-                return;
-            observer.instances.set(key, instance);
-            observer.onUpdated.fire(value, instance, key);
         }
         /*
          *
@@ -3258,18 +3530,7 @@ let TurboDataBlock = (() => {
                 return;
             this.onKeyChanged.fire(key, value);
             this.host?.onChange?.(key, value, this);
-            this.changeObservers?.toArray().forEach(observer => this.observerKeyChanged(observer, key, value, deleted));
-        }
-        sortingFunction(a, b) {
-            if (typeof a == "string" && typeof b == "string")
-                return a.localeCompare(b);
-            else if (typeof a == "number" && typeof b == "number")
-                return a - b;
-            return 0;
-        }
-        removeInstance(instance) {
-            if (instance && typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
-                instance?.remove();
+            this.changeObservers?.toArray().forEach(observer => observer.keyChanged(key, value, deleted));
         }
     };
 })();
@@ -3299,6 +3560,10 @@ let TurboModel = (() => {
         }
         isDataBlocksArray = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), false);
         dataBlocks;
+        changeObservers = new TurboWeakSet();
+        static dataBlockConstructor = TurboDataBlock;
+        observerConstructor = TurboObserver;
+        onSetBlock = new Delegate();
         /**
          * @description Map of MVC handlers bound to this model.
          */
@@ -3311,7 +3576,7 @@ let TurboModel = (() => {
             markDirty(this, key, this.getBlockKey(block));
         }
         onChange(key, value, block) {
-            this.keyChangedCallback.fire(key, this.getBlockKey(block), value);
+            this.fireBlockCallback(key, this.getBlockKey(block), value);
         }
         /**
          * @constructor
@@ -3329,8 +3594,11 @@ let TurboModel = (() => {
                 this.dataBlocks = new Map();
             }
             this.enabledCallbacks = true;
-            this.setBlock(data, undefined, this.defaultBlockKey, false);
+            if (data)
+                this.setBlock(data, undefined, this.defaultBlockKey, false);
+            this.setup();
         }
+        setup() { }
         /**
          * @description The default block.
          */
@@ -3388,12 +3656,17 @@ let TurboModel = (() => {
          * @description Creates a data block entry.
          * @param {DataType} value - The data of the block.
          * @param {IdType} [id] - The optional ID of the data.
+         * @param initialize
          * @protected
          * @return {BlockType} - The created block.
          */
-        createBlock(value, id) {
-            const block = value instanceof TurboDataBlock ? value : new TurboDataBlock({ id: id, data: value });
+        createBlock(value, id, initialize = true) {
+            const block = value instanceof TurboDataBlock
+                ? value
+                : new (this.constructor.dataBlockConstructor ?? TurboDataBlock)({ id: id, data: value });
             block.link(this);
+            if (initialize)
+                block.initialize();
             return block;
         }
         /**
@@ -3405,12 +3678,20 @@ let TurboModel = (() => {
          * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
          */
         setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
-            if (!this.isValidBlockKey(blockKey) || value === null || value === undefined)
+            if (!this.isValidBlockKey(blockKey))
                 return;
             const prev = this.getBlock(blockKey);
+            if (prev && !(value instanceof TurboDataBlock)) {
+                prev.clear();
+                prev.data = value;
+                if (!isUndefined(id))
+                    prev.id = id;
+                this.onSetBlock.fire(blockKey);
+                return;
+            }
             prev?.clear();
             prev?.unlink();
-            const block = this.createBlock(value, id);
+            const block = this.createBlock(value, id, false);
             if (this.isDataBlocksArray) {
                 const index = Number(blockKey);
                 if (Number.isInteger(index) && index >= 0) {
@@ -3422,6 +3703,7 @@ let TurboModel = (() => {
             }
             if (initialize)
                 this.initialize(blockKey);
+            this.onSetBlock.fire(blockKey);
         }
         /**
          * @function hasBlock
@@ -3461,17 +3743,16 @@ let TurboModel = (() => {
          * @param {boolean} [initialize=true] - Whether to initialize after adding.
          */
         addBlock(value, id, blockKey, initialize = true) {
-            if (!value)
-                return;
             if (!this.isDataBlocksArray)
                 return this.setBlock(value, id, blockKey, initialize);
-            const block = this.createBlock(value, id);
+            const block = this.createBlock(value, id, false);
             let index = Number(blockKey);
             if (!Number.isInteger(index) || index < 0)
                 index = this.dataBlocks.length;
             this.dataBlocks.splice(index, 0, block);
             if (initialize)
                 this.initialize(index);
+            return index;
         }
         /**
          * @function getData
@@ -3485,6 +3766,18 @@ let TurboModel = (() => {
             return this.getBlock(blockKey)?.get(key);
         }
         /**
+         * @function getDataAt
+         * @description Retrieves the value associated with a given flat key.
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to retrieve.
+         * @returns {unknown} The value associated with the key, or null if not found.
+         */
+        getDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.getData(scopedKey.key, scopedKey.blockKey);
+        }
+        /**
          * @function setData
          * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
          * @param {KeyType} key - The key to update.
@@ -3495,16 +3788,54 @@ let TurboModel = (() => {
             return this.getBlock(blockKey)?.set(key, value);
         }
         /**
+         * @function setDataAt
+         * @description Sets the value for a given flat key and triggers callbacks (if enabled).
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to update.
+         * @param {unknown} value - The value to assign.
+         */
+        setDataAt(flatKey, value) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.setData(scopedKey.key, value, scopedKey.blockKey);
+        }
+        addData(value, key, blockKey = this.defaultBlockKey) {
+            return this.getBlock(blockKey)?.add(value, key);
+        }
+        addDataAt(value, flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return;
+            return this.addData(value, scopedKey.key, scopedKey.blockKey);
+        }
+        /**
          * @function hasData
-         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+         * @description Checks the value for a given key in the specified block and triggers callbacks (if enabled).
          * @param {KeyType} key - The key to update.
          * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
          */
         hasData(key, blockKey = this.defaultBlockKey) {
             return this.getBlock(blockKey)?.has(key);
         }
+        /**
+         * @function hasDataAt
+         * @description Sets the value for a given flat key in the specified block and triggers callbacks (if enabled).
+         * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to check.
+         */
+        hasDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return false;
+            return this.hasData(scopedKey.key, scopedKey.blockKey);
+        }
         deleteData(key, blockKey = this.defaultBlockKey) {
             return this.getBlock(blockKey)?.delete(key);
+        }
+        deleteDataAt(flatKey) {
+            const scopedKey = this.scopeKey(flatKey);
+            if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
+                return false;
+            return this.deleteData(scopedKey.key, scopedKey.blockKey);
         }
         /**
          * @function getSize
@@ -3549,18 +3880,6 @@ let TurboModel = (() => {
             if (block)
                 block.id = value;
         }
-        // /**
-        //  * @function fireKeyChangedCallback
-        //  * @description Fires the emitter's change callback for the given key in a block, passing it the data at the key's value.
-        //  * @param {KeyType} key - The key that changed.
-        //  * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block where the change occurred.
-        //  * @param {boolean} [deleted=false] - Whether the key was deleted.
-        //  */
-        // protected fireKeyChangedCallback(key: KeyType, blockKey: MvcBlockKeyType<BlocksType> = this.defaultBlockKey, deleted: boolean = false) {
-        //     if (!this.isValidBlockKey(blockKey)) blockKey = this.getAllBlockKeys()[0];
-        //     markDirty(this, key, blockKey);
-        //     this.keyChangedCallback.fire(key, blockKey, deleted ? undefined : this.getData(key, blockKey));
-        // }
         /**
          * @function fireCallback
          * @description Fires the emitter's change callback for the given key in the default blocks.
@@ -3581,6 +3900,8 @@ let TurboModel = (() => {
             if (!this.isValidBlockKey(blockKey))
                 blockKey = this.getAllBlockKeys()[0];
             this.keyChangedCallback.fire(key, blockKey, ...args);
+            const value = this.getBlock(blockKey)?.get(key);
+            this.changeObservers.toArray().forEach(observer => observer.keyChanged(key, value, false, blockKey));
         }
         /**
          * @function initialize
@@ -3711,6 +4032,59 @@ let TurboModel = (() => {
                 return;
             this.handlers?.set(handler.keyName, handler);
         }
+        generateObserver(properties = {}) {
+            const observer = new (properties.customConstructor
+                ?? this.observerConstructor
+                ?? (TurboObserver))({
+                ...properties,
+                onDestroy: () => this.changeObservers.delete(observer),
+                onInitialize: () => {
+                    for (const blockKey of this.getAllBlockKeys()) {
+                        for (const key of this.getAllKeys(blockKey)) {
+                            observer.keyChanged(key, this.getData(key, blockKey), false, blockKey);
+                        }
+                    }
+                }
+            });
+            this.changeObservers.add(observer);
+            return observer;
+        }
+        flattenKey(key, blockKey = this.defaultBlockKey) {
+            if (Array.isArray(this.dataBlocks)) {
+                let globalIndex = 0;
+                for (const bk of this.getAllBlockKeys().sort(alphabeticalSorting)) {
+                    if (bk === blockKey)
+                        break;
+                    globalIndex += this.getSize(bk);
+                }
+                return (globalIndex + Number(key));
+            }
+            else {
+                return (blockKey.toString() + "|" + key.toString());
+            }
+        }
+        scopeKey(flatKey) {
+            if (typeof flatKey === "string") {
+                const split = flatKey.toString().split("|");
+                if (split.length < 2)
+                    return {};
+                return { blockKey: split[0], key: split[1] };
+            }
+            const blockKeys = this.getAllBlockKeys().sort(alphabeticalSorting);
+            if (typeof flatKey === "number") {
+                if (flatKey < 0)
+                    return { blockKey: 0, key: 0 };
+                let index = flatKey;
+                for (const blockKey of blockKeys) {
+                    const size = this.getSize(blockKey);
+                    if (index < size)
+                        return { blockKey, key: index };
+                    index -= size;
+                }
+            }
+            const lastBlockKey = blockKeys[blockKeys.length - 1];
+            return { blockKey: lastBlockKey, key: this.getSize(lastBlockKey) };
+        }
     };
 })();
 
@@ -3839,6 +4213,9 @@ const DefaultEventName = {
 };
 
 /**
+ * @group Utilities
+ * @category String
+ *
  * @description Converts the passed variable into a string.
  * @param value - The variable to convert to string
  * @returns {string} - The string representation of the value
@@ -3857,9 +4234,11 @@ function stringify(value) {
             return value.toString();
         case "object":
             if (Array.isArray(value))
-                return JSON.stringify(value);
+                return JSON.stringify(value.map(entry => stringify(entry)));
             else if (value instanceof Date)
                 return value.toISOString();
+            else if (value instanceof Element)
+                return "[DOM ELEMENT]";
             else {
                 try {
                     return JSON.stringify(value);
@@ -3873,6 +4252,9 @@ function stringify(value) {
     }
 }
 /**
+ * @group Utilities
+ * @category String
+ *
  * @description Attempts to convert the passed string back to its original type.
  * @param str - The string to convert back to its original type
  * @returns {any} - The original value
@@ -3911,6 +4293,9 @@ function parse(str) {
     return str;
 }
 /**
+ * @group Utilities
+ * @category String
+ *
  * @description Extracts the extension from the given filename or path (e.g.: ".png").
  * @param {string} str - The filename or path
  * @return The extension, or an empty string if not found.
@@ -3922,6 +4307,9 @@ function getFileExtension(str) {
     return match ? match[0] : "";
 }
 /**
+ * @group Utilities
+ * @category String
+ *
  * @description converts the provided string from camelCase to kebab-case.
  * @param {string} str - The string to convert
  */
@@ -3931,6 +4319,9 @@ function camelToKebabCase(str) {
     return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 }
 /**
+ * @group Utilities
+ * @category String
+ *
  * @description converts the provided string from kebab-case to camelCase.
  * @param {string} str - The string to convert
  */
@@ -4013,6 +4404,7 @@ function setupElementFunctions() {
                     $(value).addChild(this.element);
                     break;
                 case "data":
+                case "dataId":
                 case "initialize":
                     if (mvc)
                         break;
@@ -4030,7 +4422,7 @@ function setupElementFunctions() {
                         try {
                             mvc[property] = value;
                             if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                                mvc["model"].setBlock(properties.data, undefined, undefined, false);
+                                mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
                             }
                         }
                         catch { }
@@ -4123,6 +4515,16 @@ function setupElementFunctions() {
     };
 }
 
+var EventPropagation;
+(function (EventPropagation) {
+    EventPropagation["propagate"] = "propagate";
+    EventPropagation["stopPropagation"] = "stopPropagation";
+    EventPropagation["stopImmediatePropagation"] = "stopImmediatePropagation";
+})(EventPropagation || (EventPropagation = {}));
+/**
+ * @group Types
+ * @category Event
+ */
 const BasicInputEvents = [
     "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
     "dragstart", "selectstart",
@@ -4130,6 +4532,10 @@ const BasicInputEvents = [
     "pointerdown", "pointermove", "pointerup",
     "wheel"
 ];
+/**
+ * @group Types
+ * @category Event
+ */
 const NonPassiveEvents = [
     "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
 ];
@@ -4712,7 +5118,9 @@ class TurboController {
             this.emitter = properties.emitter;
         if (properties.view)
             this.view = properties.view;
+        this.setup();
     }
+    setup() { }
     /**
      * @function initialize
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
@@ -5299,7 +5707,8 @@ class TurboEventManagerDispatchController extends TurboController {
         for (let i = path.length - 1; i >= 0; i--) {
             if (!(path[i] instanceof Node))
                 continue;
-            if ($(path[i]).executeAction(type, toolName, e, { capture: true }, this.element)) {
+            const propagate = $(path[i]).executeAction(type, toolName, e, { capture: true }, this.element);
+            if (propagate !== EventPropagation.propagate) {
                 e.stopPropagation();
                 break;
             }
@@ -5307,7 +5716,8 @@ class TurboEventManagerDispatchController extends TurboController {
         for (let i = 0; i < path.length; i++) {
             if (!(path[i] instanceof Node))
                 continue;
-            if ($(path[i]).executeAction(type, toolName, e, undefined, this.element)) {
+            const propagate = $(path[i]).executeAction(type, toolName, e, undefined, this.element);
+            if (propagate !== EventPropagation.propagate) {
                 e.stopPropagation();
                 break;
             }
@@ -5353,7 +5763,9 @@ class TurboHandler {
     constructor(model) {
         if (this.model)
             this.model = model;
+        this.setup();
     }
+    setup() { }
 }
 
 class TurboEventManagerUtilsHandler extends TurboHandler {
@@ -6147,6 +6559,17 @@ class EventFunctionsUtils {
             return true;
         });
     }
+    processPropagation(currentPropagation, storedPropagation = EventPropagation.propagate, defaultPropagation = EventPropagation.stopPropagation) {
+        const orderedValues = [
+            EventPropagation.propagate,
+            EventPropagation.stopPropagation,
+            EventPropagation.stopImmediatePropagation
+        ];
+        if (!orderedValues.includes(currentPropagation))
+            currentPropagation = defaultPropagation;
+        return orderedValues.indexOf(currentPropagation) <= orderedValues.indexOf(storedPropagation)
+            ? storedPropagation : currentPropagation;
+    }
 }
 
 const utils$6 = new EventFunctionsUtils();
@@ -6181,7 +6604,7 @@ function setupEventFunctions() {
      * @description Adds an event listener to the element.
      * @param {string} type - The type of the event.
      * @param toolName - The name of the tool. Set to null or undefined to check for listeners not bound to a tool.
-     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerCallback} listener - The function that receives a notification.
      * @param {ListenerOptions} [options] - An options object that specifies characteristics
      * about the event listener.
      * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
@@ -6199,7 +6622,7 @@ function setupEventFunctions() {
     /**
      * @description Adds an event listener to the element.
      * @param {string} type - The type of the event.
-     * @param {(e: Event, el: this) => void} listener - The function that receives a notification.
+     * @param {ListenerCallback} listener - The function that receives a notification.
      * @param {ListenerOptions} [options] - An options object that specifies characteristics
      * about the event listener.
      * @param {TurboEventManager} manager - The associated event manager. Defaults to the first created manager,
@@ -6219,61 +6642,67 @@ function setupEventFunctions() {
      */
     TurboSelector.prototype.executeAction = function _executeAction(type, toolName, event, options, manager = TurboEventManager.instance) {
         if (!type)
-            return false;
+            return EventPropagation.propagate;
         if (!options)
             options = {};
         const activeTool = toolName ?? manager.getCurrentToolName();
         if (this.bypassManagerOn)
             utils$6.bypassManager(this, manager, this.bypassManagerOn(event));
         const firedListeners = new Set();
+        let propagation = EventPropagation.propagate;
         const run = (target, tool) => {
             const ts = target instanceof TurboSelector ? target : $(target);
             const boundSet = utils$6.getBoundListenersSet(target);
             const entries = [...utils$6.getBoundListeners(target, type, tool, options, manager)];
             if (entries.length === 0)
-                return false;
-            let stopPropagation = false;
+                return;
             for (const entry of entries) {
                 if (firedListeners.has(entry))
                     continue;
                 try {
-                    if (entry.listener(event, ts))
-                        stopPropagation = true;
+                    propagation = utils$6.processPropagation(entry.listener(event, ts), propagation);
                 }
                 finally {
+                    console.log(propagation);
                     firedListeners.add(entry);
                     if (entry.options?.once)
                         boundSet.delete(entry);
                 }
+                if (propagation === EventPropagation.stopImmediatePropagation)
+                    return propagation;
             }
-            return stopPropagation;
         };
-        if (activeTool && run(this, activeTool))
-            return true;
-        if (!options.capture && activeTool && !this.isToolIgnored(activeTool, type, manager)
-            && this.applyTool(activeTool, type, event, manager))
-            return true;
+        if (activeTool) {
+            run(this, activeTool);
+            if (propagation !== EventPropagation.propagate)
+                return propagation;
+        }
+        if (!options.capture && activeTool && !this.isToolIgnored(activeTool, type, manager)) {
+            propagation = this.applyTool(activeTool, type, event, manager);
+            if (propagation !== EventPropagation.propagate)
+                return propagation;
+        }
         const embeddedTarget = this.getEmbeddedToolTarget(manager);
         const objectTools = this.getToolNames(manager);
         if (embeddedTarget && objectTools.length > 0) {
-            let ret = false;
-            for (const toolName of objectTools) {
-                if (run(embeddedTarget, toolName))
-                    ret = true;
-            }
-            if (ret)
-                return true;
-            const embeddedTargetSel = $(embeddedTarget);
+            for (const toolName of objectTools)
+                run(embeddedTarget, toolName);
+            if (propagation !== EventPropagation.propagate)
+                return propagation;
+            const embeddedTargetSel = turbo(embeddedTarget);
             if (!options.capture)
                 for (const toolName of objectTools) {
-                    if (!embeddedTargetSel.isToolIgnored(toolName, type, manager)
-                        && $(embeddedTarget).applyTool(toolName, type, event, manager))
-                        ret = true;
+                    if (!embeddedTargetSel.isToolIgnored(toolName, type, manager)) {
+                        propagation = turbo(embeddedTarget).applyTool(toolName, type, event, manager);
+                        if (propagation !== EventPropagation.propagate)
+                            return propagation;
+                    }
                 }
-            if (ret)
-                return true;
+            if (propagation !== EventPropagation.propagate)
+                return propagation;
         }
-        return run(this, undefined);
+        run(this, undefined);
+        return propagation;
     };
     /**
      * @description Checks if the given event listener is bound to the element (in its boundListeners list).
@@ -6667,6 +7096,18 @@ class ToolFunctionsUtils {
             return true;
         return ignoredTool.has(type);
     }
+    processPropagation(currentPropagation, storedPropagation = EventPropagation.propagate, defaultPropagation = EventPropagation.stopPropagation) {
+        const orderedValues = [
+            EventPropagation.propagate,
+            EventPropagation.stopPropagation,
+            EventPropagation.stopImmediatePropagation
+        ];
+        if (!orderedValues.includes(currentPropagation))
+            currentPropagation = defaultPropagation;
+        const currentIndex = orderedValues.indexOf(currentPropagation);
+        const storedIndex = orderedValues.indexOf(storedPropagation);
+        return currentIndex <= storedIndex ? currentPropagation : storedPropagation;
+    }
 }
 
 const utils$4 = new ToolFunctionsUtils();
@@ -6692,7 +7133,7 @@ function setupToolFunctions() {
             options.clickMode ??= ClickMode.left;
             this.on(options.activationEvent, () => {
                 options.manager.setTool(this.element, options.clickMode);
-                return true;
+                return EventPropagation.stopPropagation;
             }, undefined, options.manager);
         }
         utils$4.saveTool(this, toolName, options.manager);
@@ -6776,16 +7217,17 @@ function setupToolFunctions() {
      *
      */
     TurboSelector.prototype.applyTool = function _applyTool(toolName, type, event, manager = TurboEventManager.instance) {
-        let pass = false;
+        let propagation = EventPropagation.propagate;
         const behaviors = utils$4.getToolBehaviors(toolName, type, manager);
         const options = {};
         options.embeddedTarget = utils$4.getEmbeddedToolTarget(this.element, manager);
         options.isEmbedded = !!options.embeddedTarget;
         behaviors.forEach(behavior => {
-            if (behavior(event, this.element, options))
-                pass = true;
+            propagation = utils$4.processPropagation(behavior(event, this.element, options), propagation);
+            if (propagation === EventPropagation.stopImmediatePropagation)
+                return;
         });
-        return pass;
+        return propagation;
     };
     TurboSelector.prototype.ignoreTool = function _ignoreTool(toolName, type, ignore = true, manager = TurboEventManager.instance) {
         utils$4.ignoreTool(this.element, toolName, type, ignore, manager);
@@ -7102,6 +7544,10 @@ function callOncePerInstance(value, context) {
     };
 }
 
+/**
+ * @group Utilities
+ * @category Numbers
+ */
 function trim(value, max, min = 0) {
     if (value < min)
         value = min;
@@ -7109,6 +7555,10 @@ function trim(value, max, min = 0) {
         value = max;
     return value;
 }
+/**
+ * @group Utilities
+ * @category Numbers
+ */
 function mod(value, modValue = 0) {
     while (value < 0)
         value += modValue;
@@ -8572,6 +9022,9 @@ function t(tagOrElement) {
 function $(tagOrElement) {
     return turbo(tagOrElement);
 }
+/**
+ * @group TurboSelector
+ */
 const turbofy = callOnce(function (options = {}) {
     if (!options.excludeHierarchyFunctions)
         setupHierarchyFunctions();
@@ -9361,7 +9814,9 @@ class TurboView {
             this.model = properties.model;
         if (properties.emitter)
             this.emitter = properties.emitter;
+        this.setup();
     }
+    setup() { }
     /**
      * @function initialize
      * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
@@ -9448,6 +9903,7 @@ class TurboInteractor extends TurboController {
         this.target = properties.target ?? this.target ?? host instanceof Node ? host
             : host?.element instanceof Node ? host.element
                 : undefined;
+        this.setup();
     }
     /**
      * @function initialize
@@ -9507,6 +9963,7 @@ class TurboSubstrate extends TurboController {
             this.onActivate = properties.onActivate;
         if (properties.onDeactivate)
             this.onDeactivate = properties.onDeactivate;
+        this.setup();
     }
     /**
      * @function initialize
@@ -9653,6 +10110,7 @@ class TurboTool extends TurboController {
         if (properties.key)
             this.key = properties.key;
         this.manager = properties.manager ?? this.manager ?? TurboEventManager.instance;
+        this.setup();
     }
     /**
      * @function initialize
@@ -9837,6 +10295,10 @@ class TurboElement extends HTMLElement {
     defineUIPrototype(TurboElement);
 })();
 
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function areEqual(...entries) {
     if (entries.length < 2)
         return true;
@@ -9846,6 +10308,10 @@ function areEqual(...entries) {
     }
     return true;
 }
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function equalToAny(entry, ...values) {
     if (values.length < 1)
         return true;
@@ -9855,6 +10321,10 @@ function equalToAny(entry, ...values) {
     }
     return false;
 }
+/**
+ * @group Utilities
+ * @category Equity
+ */
 function eachEqualToAny(values, ...entries) {
     if (entries.length < 1)
         return true;
@@ -9871,6 +10341,9 @@ function eachEqualToAny(values, ...entries) {
 }
 
 /**
+ * @group Utilities
+ * @category Element
+ *
  * @description Converts a string of tags into an Element.
  * @param {string} text - The string to convert
  * @return The Element
@@ -9880,6 +10353,10 @@ function textToElement(text) {
     wrapper.innerHTML = text;
     return wrapper.children[0];
 }
+/**
+ * @group Utilities
+ * @category Element
+ */
 function createProxy(self, proxied) {
     return new Proxy(self, {
         get(target, prop, receiver) {
@@ -9898,6 +10375,9 @@ function createProxy(self, proxied) {
 }
 
 /**
+ * @group Utilities
+ * @category SVG
+ *
  * @description Fetches an SVG from the given path
  * @param {string} path - The path to the SVG
  * @param logError
@@ -10535,6 +11015,10 @@ function iconToggle(properties) {
     return icon({ ...properties });
 }
 
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomId(length = 8) {
     const array = new Uint8Array(length);
     crypto.getRandomValues(array);
@@ -10543,6 +11027,10 @@ function randomId(length = 8) {
         .join("")
         .slice(0, length);
 }
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomFromRange(n1, n2) {
     if (typeof n1 != "number" || typeof n2 != "number")
         return 0;
@@ -10550,6 +11038,10 @@ function randomFromRange(n1, n2) {
     const max = Math.max(n1, n2);
     return (Math.random() * (max - min)) + min;
 }
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomColor(saturation = [50, 70], lightness = [70, 85]) {
     if (typeof saturation != "number" && saturation.length >= 2)
         saturation = randomFromRange(saturation[0], saturation[1]);
@@ -10557,6 +11049,10 @@ function randomColor(saturation = [50, 70], lightness = [70, 85]) {
         lightness = randomFromRange(lightness[0], lightness[1]);
     return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
 }
+/**
+ * @group Utilities
+ * @category Random
+ */
 function randomString(length = 12) {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -10661,14 +11157,30 @@ let TurboInput = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = TurboRichElement;
-    let _instanceExtraInitializers = [];
-    let _set_label_decorators;
+    let _type_decorators;
+    let _type_initializers = [];
+    let _type_extraInitializers = [];
+    let _placeholder_decorators;
+    let _placeholder_initializers = [];
+    let _placeholder_extraInitializers = [];
+    let _pattern_decorators;
+    let _pattern_initializers = [];
+    let _pattern_extraInitializers = [];
+    let _size_decorators;
+    let _size_initializers = [];
+    let _size_extraInitializers = [];
     (class extends _classSuper {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_label_decorators = [auto()];
-            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_label_decorators, { kind: "setter", name: "label", static: false, private: false, access: { has: obj => "label" in obj, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            _type_decorators = [expose("element")];
+            _placeholder_decorators = [expose("element")];
+            _pattern_decorators = [expose("element")];
+            _size_decorators = [expose("element")];
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _pattern_decorators, { kind: "accessor", name: "pattern", static: false, private: false, access: { has: obj => "pattern" in obj, get: obj => obj.pattern, set: (obj, value) => { obj.pattern = value; } }, metadata: _metadata }, _pattern_initializers, _pattern_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -10677,10 +11189,8 @@ let TurboInput = (() => {
             ...TurboRichElement.config,
             defaultElementTag: "input"
         };
-        labelElement = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
-        _content;
-        get content() { return this._content; }
-        set content(value) { this._content = value; }
+        labelElement;
+        content;
         defaultId = "turbo-input-" + randomId();
         locked = false;
         selectTextOnFocus = false;
@@ -10707,6 +11217,15 @@ let TurboInput = (() => {
             }
             this.labelElement.textContent = value;
         }
+        get label() {
+            return this.labelElement?.textContent;
+        }
+        get input() {
+            return this.element;
+        }
+        set input(value) {
+            this.element = value;
+        }
         set element(value) {
             if (!(value instanceof Node) && typeof value === "object") {
                 if (!value.name)
@@ -10725,6 +11244,18 @@ let TurboInput = (() => {
         get element() {
             return super.element;
         }
+        #type_accessor_storage = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _type_initializers, void 0);
+        get type() { return this.#type_accessor_storage; }
+        set type(value) { this.#type_accessor_storage = value; }
+        #placeholder_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _type_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _placeholder_initializers, void 0));
+        get placeholder() { return this.#placeholder_accessor_storage; }
+        set placeholder(value) { this.#placeholder_accessor_storage = value; }
+        #pattern_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _placeholder_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _pattern_initializers, void 0));
+        get pattern() { return this.#pattern_accessor_storage; }
+        set pattern(value) { this.#pattern_accessor_storage = value; }
+        #size_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _pattern_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _size_initializers, void 0));
+        get size() { return this.#size_accessor_storage; }
+        set size(value) { this.#size_accessor_storage = value; }
         initialize() {
             super.initialize();
             this.mvc.generate({ interactors: [TurboInputInputInteractor] });
@@ -10802,6 +11333,10 @@ let TurboInput = (() => {
             }
             return out;
         }
+        constructor() {
+            super(...arguments);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _size_extraInitializers);
+        }
         static {
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
@@ -10813,15 +11348,15 @@ let TurboInput = (() => {
  * @category TurboInput
  */
 function turboInput(properties) {
-    properties.element = properties.input;
-    properties.elementTag = properties.inputTag;
-    if (!properties.elementTag)
-        properties.elementTag = "input";
-    if (!properties.element)
-        properties.element = {};
+    let el = properties.input;
+    let elementTag = properties.inputTag;
+    if (!elementTag)
+        elementTag = "input";
+    if (!el)
+        el = {};
     if (!properties.tag)
         properties.tag = "turbo-input";
-    return richElement({ ...properties, input: undefined, inputTag: undefined });
+    return richElement({ elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined });
 }
 
 /**
@@ -10949,12 +11484,6 @@ let TurboSelect = (() => {
     let _createEntry_decorators;
     let _createEntry_initializers = [];
     let _createEntry_extraInitializers = [];
-    let _onEntryAdded_decorators;
-    let _onEntryAdded_initializers = [];
-    let _onEntryAdded_extraInitializers = [];
-    let _onEntryRemoved_decorators;
-    let _onEntryRemoved_initializers = [];
-    let _onEntryRemoved_extraInitializers = [];
     let _set_multiSelection_decorators;
     let _forceSelection_decorators;
     let _forceSelection_initializers = [];
@@ -10976,18 +11505,6 @@ let TurboSelect = (() => {
             _createEntry_decorators = [auto({
                     defaultValue: (value) => richElement({ text: stringify(value) })
                 })];
-            _onEntryAdded_decorators = [auto({
-                    defaultValue: function (entry) {
-                        this.initializeSelection();
-                        $(entry).on(DefaultEventName.click, () => {
-                            this.select(entry, !this.isSelected(entry));
-                            return true;
-                        });
-                    },
-                })];
-            _onEntryRemoved_decorators = [auto({
-                    defaultValue: function (entry) { },
-                })];
             _set_multiSelection_decorators = [auto({ defaultValue: false })];
             _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
             _selectedEntryClasses_decorators = [auto({
@@ -11000,8 +11517,6 @@ let TurboSelect = (() => {
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
-            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _onEntryAdded_decorators, { kind: "field", name: "onEntryAdded", static: false, private: false, access: { has: obj => "onEntryAdded" in obj, get: obj => obj.onEntryAdded, set: (obj, value) => { obj.onEntryAdded = value; } }, metadata: _metadata }, _onEntryAdded_initializers, _onEntryAdded_extraInitializers);
-            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _onEntryRemoved_decorators, { kind: "field", name: "onEntryRemoved", static: false, private: false, access: { has: obj => "onEntryRemoved" in obj, get: obj => obj.onEntryRemoved, set: (obj, value) => { obj.onEntryRemoved = value; } }, metadata: _metadata }, _onEntryRemoved_initializers, _onEntryRemoved_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _selectedEntryClasses_decorators, { kind: "field", name: "selectedEntryClasses", static: false, private: false, access: { has: obj => "selectedEntryClasses" in obj, get: obj => obj.selectedEntryClasses, set: (obj, value) => { obj.selectedEntryClasses = value; } }, metadata: _metadata }, _selectedEntryClasses_initializers, _selectedEntryClasses_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -11013,6 +11528,9 @@ let TurboSelect = (() => {
         parentObserver;
         onSelectDelegate = new Delegate();
         onEnabledDelegate = new Delegate();
+        onEntryAdded = new Delegate();
+        onEntryRemoved = new Delegate();
+        onEntryClicked = new Delegate();
         /**
          * The dropdown's entries.
          */
@@ -11021,15 +11539,16 @@ let TurboSelect = (() => {
         }
         set entries(value) {
             this.enableObserver(false);
+            console.log(value);
             const previouslySelectedValues = this.selectedValues;
-            this.clear();
+            this.clear(false);
             this._entries = (Array.isArray(value) ? value : Array.from(value))
                 .filter(entry => entry !== this.inputField);
             if (value instanceof HTMLCollection && value.item(0))
                 this.parent = value.item(0).parentElement;
             const array = this.entries;
             for (let i = 0; i < array.length; i++)
-                this.onEntryAdded?.call(this, array[i], i);
+                this.onEntryAdded.fire(array[i], i);
             this.deselectAll();
             for (let i = 0; i < array.length; i++) {
                 if (previouslySelectedValues.includes(this.getValue(array[i])))
@@ -11076,8 +11595,6 @@ let TurboSelect = (() => {
         getValue = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getValue_initializers, void 0);
         getSecondaryValue = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getSecondaryValue_initializers, void 0));
         createEntry = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _getSecondaryValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _createEntry_initializers, void 0));
-        onEntryAdded = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _createEntry_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryAdded_initializers, void 0));
-        onEntryRemoved = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryAdded_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryRemoved_initializers, void 0));
         /**
          * The dropdown's underlying hidden input. Might be undefined.
          */
@@ -11099,7 +11616,7 @@ let TurboSelect = (() => {
         set multiSelection(value) {
             this.forceSelection = !value;
         }
-        forceSelection = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _onEntryRemoved_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _forceSelection_initializers, void 0));
+        forceSelection = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _createEntry_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _forceSelection_initializers, void 0));
         set onSelect(value) {
             if (value)
                 this.onSelectDelegate.add(value);
@@ -11118,15 +11635,26 @@ let TurboSelect = (() => {
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntryClasses_extraInitializers);
             const selectedValues = properties.selectedValues || [];
             properties.selectedValues = undefined;
+            this.onEntryClicked.add((entry) => this.select(entry, !this.isSelected(entry)));
+            this.onEntryAdded.add((entry) => {
+                this.initializeSelection();
+                turbo(entry).on(DefaultEventName.click, (e) => {
+                    this.onEntryClicked.fire(entry, e);
+                    return true;
+                });
+            });
             if (!properties.onEnabled)
                 properties.onEnabled = (b, entry) => {
                     if (!(entry instanceof HTMLElement))
                         return;
-                    $(entry).setStyle("visibility", b ? "" : "hidden");
+                    turbo(entry).setStyle("visibility", b ? "" : "hidden");
                 };
             for (const property of Object.keys(properties)) {
                 try {
-                    this[property] = properties[property];
+                    if (this[property] instanceof Delegate)
+                        this[property].add(properties[property]);
+                    else
+                        this[property] = properties[property];
                 }
                 catch { }
             }
@@ -11160,7 +11688,7 @@ let TurboSelect = (() => {
             if (index < 0)
                 index = 0;
             this.enableObserver(false);
-            this.onEntryAdded?.call(this, entry, index);
+            this.onEntryAdded.fire(entry, index);
             if (Array.isArray(this.entries) && !this.entries.includes(entry))
                 this.entries.splice(index, 0, entry);
             if (entry instanceof Node && !entry.parentElement && this.parent)
@@ -11319,17 +11847,19 @@ let TurboSelect = (() => {
         get stringSelectedValue() {
             return this.selectedEntries.map(entry => stringify(this.getValue(entry))).join(", ");
         }
-        clear() {
-            this.enableObserver(false);
-            for (const entry of this.entries) {
-                this.clearEntryData(entry);
-                this.onEntryRemoved(entry);
+        clear(disableObserver = true) {
+            if (disableObserver)
+                this.enableObserver(false);
+            for (let index = this.entries.length - 1; index >= 0; index--) {
+                const entry = this.entries[index];
+                this.onEntryRemoved.fire(entry);
                 if (this.parent && entry instanceof HTMLElement)
                     entry.remove();
             }
             this._entries = [];
             this.refreshInputField();
-            this.enableObserver(true);
+            if (disableObserver)
+                this.enableObserver(true);
         }
         refreshInputField() {
             if (this.inputField)
@@ -11376,7 +11906,7 @@ let TurboSelect = (() => {
                             this.entries.splice(previousIndex + 1, 0, entry);
                         }
                         this.getEntryData(entry);
-                        this.onEntryAdded?.call(this, entry, this.getIndex(entry));
+                        this.onEntryAdded.fire(entry, this.getIndex(entry));
                     }
                     for (const node of record.removedNodes) {
                         if (!(node instanceof Element))
@@ -11393,203 +11923,13 @@ let TurboSelect = (() => {
                                     this.select(fallback);
                             }
                             data.selected = false;
-                            this.onEntryRemoved?.call(this, node);
+                            this.onEntryRemoved.fire(node);
                             this.clearEntryData(node);
                         });
                     }
                 }
             });
             this.enableObserver(true);
-        }
-    };
-})();
-
-let TurboYBlock = (() => {
-    let _classSuper = TurboDataBlock;
-    let _instanceExtraInitializers = [];
-    let _set_enabledCallbacks_decorators;
-    return class TurboYBlock extends _classSuper {
-        static {
-            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_enabledCallbacks_decorators = [auto({ })];
-            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        }
-        observer = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
-        set enabledCallbacks(value) {
-            if (!this.data)
-                return;
-            if (value)
-                this.data.observe(this.observer);
-            else
-                this.data.unobserve(this.observer);
-        }
-        /*
-         *
-         * Basics
-         *
-         */
-        /**
-         * @function get
-         * @description Retrieves the value associated with a given key in the specified block.
-         * @param {KeyType} key - The key to retrieve.
-         * @returns {unknown} The value associated with the key, or null if not found.
-         */
-        get(key) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                return this.data.get(key.toString());
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
-                return this.data.get(trim(Number(key), this.data.length));
-            return super.get(key);
-        }
-        /**
-         * @function set
-         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-         * @param {KeyType} key - The key to update.
-         * @param {unknown} value - The value to assign.
-         */
-        set(key, value) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                this.data.set(key.toString(), value);
-            else if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
-                const index = trim(Number(key), this.data.length + 1);
-                if (index < this.data.length)
-                    this.data.delete(index, 1);
-                this.data.insert(index, [value]);
-            }
-            else
-                super.set(key, value);
-        }
-        has(key) {
-            if (!this.data || typeof this.data !== "object")
-                return false;
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                return this.data.has(key.toString());
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
-                return typeof key === "number" && key >= 0 && key < this.size;
-            return super.has(key);
-        }
-        delete(key) {
-            if (!this.data || typeof this.data !== "object")
-                return;
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                this.data.delete(key.toString());
-            else if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array && typeof key === "number" && key >= 0 && key < this.size)
-                this.data.delete(key, 1);
-            else
-                super.delete(key);
-        }
-        /**
-         * @function keys
-         * @description Retrieves all keys within the given block(s).
-         * @returns {KeyType[]} Array of keys.
-         */
-        get keys() {
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                return Array.from(this.data.keys());
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
-                const output = [];
-                for (let i = 0; i < this.data.length; i++)
-                    output.push(i);
-                return output;
-            }
-            return super.keys;
-        }
-        /**
-         * @function size
-         * @description Returns the size of the specified block.
-         * @returns {number} The size.
-         */
-        get size() {
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
-                return this.data.size;
-            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
-                return this.data.length;
-            return 0;
-        }
-        /*
-         *
-         * Utilities
-         *
-         */
-        /**
-         * @function initialize
-         * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-         */
-        initialize() {
-            super.initialize();
-            if (this.enabledCallbacks && this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType)
-                this.data?.observe(this.observer);
-        }
-        clear(clearData = true) {
-            if (clearData)
-                this.data?.unobserve(this.observer);
-            super.clear(clearData);
-        }
-        /*
-         *
-         * Utilities
-         *
-         */
-        observeChanges(event, transaction) {
-            //TODO
-            !!transaction?.local;
-            transaction?.origin;
-            if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent) {
-                event.keysChanged.forEach(key => {
-                    const change = event.changes.keys.get(key);
-                    if (!change)
-                        return;
-                    if (change.action === "delete")
-                        this.keyChanged(key, undefined, true);
-                    else
-                        this.keyChanged(key);
-                });
-            }
-            else if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent) {
-                let currentIndex = 0;
-                for (const delta of event.delta) {
-                    if (delta.retain !== undefined)
-                        currentIndex += delta.retain;
-                    else if (delta.insert) {
-                        const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
-                        const count = insertedItems.length;
-                        this.shiftIndices(currentIndex, count);
-                        for (let i = 0; i < count; i++)
-                            this.keyChanged((currentIndex + i));
-                        currentIndex += count;
-                    }
-                    else if (delta.delete) {
-                        const count = delta.delete;
-                        for (let i = 0; i < count; i++)
-                            this.keyChanged((currentIndex + i), undefined, true);
-                        this.shiftIndices(currentIndex + count, -count);
-                    }
-                }
-            }
-        }
-        shiftIndices(fromIndex, offset) {
-            this.changeObservers?.toArray().forEach(observer => {
-                const itemsToShift = [];
-                for (const [oldIndexStr, instance] of observer.instances.entries()) {
-                    const oldIndex = Number(oldIndexStr);
-                    if (oldIndex >= fromIndex)
-                        itemsToShift.push([oldIndex, instance]);
-                }
-                itemsToShift.sort((a, b) => a[0] - b[0]);
-                for (const [oldIndex] of itemsToShift)
-                    observer.instances.delete(oldIndex);
-                for (const [oldIndex, instance] of itemsToShift) {
-                    const newIndex = oldIndex + offset;
-                    if (typeof instance === "object" && "dataId" in instance)
-                        instance.dataId = newIndex;
-                    observer.instances.set((oldIndex + offset), instance);
-                }
-            });
         }
     };
 })();
@@ -12159,6 +12499,218 @@ function popup(properties = {}) {
     return element({ ...properties, text: undefined, tag: "turbo-popup" });
 }
 
+/**
+ * @group Components
+ * @category TurboYBlock
+ */
+let TurboYBlock = (() => {
+    let _classSuper = TurboDataBlock;
+    let _instanceExtraInitializers = [];
+    let _set_enabledCallbacks_decorators;
+    return class TurboYBlock extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_enabledCallbacks_decorators = [auto({ override: true })];
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        observer = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+        set enabledCallbacks(value) {
+            if (!this.data || !(this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType))
+                return;
+            if (value)
+                this.data.observe(this.observer);
+            else
+                this.data.unobserve(this.observer);
+        }
+        /*
+         *
+         * Basics
+         *
+         */
+        /**
+         * @function get
+         * @description Retrieves the value associated with a given key in the specified block.
+         * @param {KeyType} key - The key to retrieve.
+         * @returns {unknown} The value associated with the key, or null if not found.
+         */
+        get(key) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                return this.data.get(key.toString());
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
+                return this.data.get(trim(Number(key), this.data.length));
+            return super.get(key);
+        }
+        /**
+         * @function set
+         * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
+         * @param {KeyType} key - The key to update.
+         * @param {unknown} value - The value to assign.
+         */
+        set(key, value) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                this.data.set(key.toString(), value);
+            else if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                const index = trim(Number(key), this.data.length + 1);
+                if (index < this.data.length)
+                    this.data.delete(index, 1);
+                this.data.insert(index, [value]);
+            }
+            else
+                super.set(key, value);
+        }
+        add(value, key) {
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                let index = key;
+                if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
+                    index = this.data.length;
+                    this.data.push([value]);
+                }
+                else {
+                    if (index < 0)
+                        index = 0;
+                    this.data.insert(index, [value]);
+                }
+                return index;
+            }
+            else if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType)
+                return this.set(key, value);
+            return super.add(value, key);
+        }
+        has(key) {
+            if (!this.data || typeof this.data !== "object")
+                return false;
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                return this.data.has(key.toString());
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
+                return typeof key === "number" && key >= 0 && key < this.size;
+            return super.has(key);
+        }
+        delete(key) {
+            if (!this.data || typeof this.data !== "object")
+                return;
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                this.data.delete(key.toString());
+            else if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array && typeof key === "number" && key >= 0 && key < this.size)
+                this.data.delete(key, 1);
+            else
+                super.delete(key);
+        }
+        /**
+         * @function keys
+         * @description Retrieves all keys within the given block(s).
+         * @returns {KeyType[]} Array of keys.
+         */
+        get keys() {
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                return Array.from(this.data.keys());
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array) {
+                const output = [];
+                for (let i = 0; i < this.data.length; i++)
+                    output.push(i);
+                return output;
+            }
+            return super.keys;
+        }
+        /**
+         * @function size
+         * @description Returns the size of the specified block.
+         * @returns {number} The size.
+         */
+        get size() {
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Map)
+                return this.data.size;
+            if (this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.Array)
+                return this.data.length;
+            return 0;
+        }
+        /*
+         *
+         * Utilities
+         *
+         */
+        /**
+         * @function initialize
+         * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
+         */
+        initialize() {
+            super.initialize();
+            if (this.enabledCallbacks && this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType)
+                this.data?.observe(this.observer);
+        }
+        clear(clearData = true) {
+            if (clearData && this.data instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.AbstractType)
+                this.data?.unobserve(this.observer);
+            super.clear(clearData);
+        }
+        /*
+         *
+         * Utilities
+         *
+         */
+        observeChanges(event, transaction) {
+            //TODO
+            !!transaction?.local;
+            transaction?.origin;
+            if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YMapEvent) {
+                event.keysChanged.forEach(key => {
+                    const change = event.changes.keys.get(key);
+                    if (!change)
+                        return;
+                    if (change.action === "delete")
+                        this.keyChanged(key, undefined, true);
+                    else
+                        this.keyChanged(key);
+                });
+            }
+            else if (event instanceof yjs__WEBPACK_IMPORTED_MODULE_1__.YArrayEvent) {
+                let currentIndex = 0;
+                for (const delta of event.delta) {
+                    if (delta.retain !== undefined)
+                        currentIndex += delta.retain;
+                    else if (delta.insert) {
+                        const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
+                        const count = insertedItems.length;
+                        this.shiftIndices(currentIndex, count);
+                        for (let i = 0; i < count; i++)
+                            this.keyChanged((currentIndex + i));
+                        currentIndex += count;
+                    }
+                    else if (delta.delete) {
+                        const count = delta.delete;
+                        for (let i = 0; i < count; i++)
+                            this.keyChanged((currentIndex + i), undefined, true);
+                        this.shiftIndices(currentIndex + count, -count);
+                    }
+                }
+            }
+        }
+        shiftIndices(fromIndex, offset) {
+            this.changeObservers?.toArray().forEach(observer => {
+                const itemsToShift = [];
+                for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
+                    const oldIndex = Number(oldIndexStr);
+                    if (oldIndex >= fromIndex)
+                        itemsToShift.push([oldIndex, instance]);
+                }
+                itemsToShift.sort((a, b) => a[0] - b[0]);
+                for (const [oldIndex] of itemsToShift)
+                    observer.removeInstanceByKey(oldIndex, false);
+                for (const [oldIndex, instance] of itemsToShift) {
+                    const newIndex = oldIndex + offset;
+                    if (typeof instance === "object" && "dataId" in instance)
+                        instance.dataId = newIndex;
+                    observer.setInstance(instance, (oldIndex + offset));
+                }
+            });
+        }
+    };
+})();
+
 var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
 styleInject(css_248z);
 
@@ -12192,6 +12744,24 @@ let TurboDropdown = (() => {
     let _values_decorators;
     let _values_initializers = [];
     let _values_extraInitializers = [];
+    let _selectedEntry_decorators;
+    let _selectedEntry_initializers = [];
+    let _selectedEntry_extraInitializers = [];
+    let _selectedValue_decorators;
+    let _selectedValue_initializers = [];
+    let _selectedValue_extraInitializers = [];
+    let _selectedValues_decorators;
+    let _selectedValues_initializers = [];
+    let _selectedValues_extraInitializers = [];
+    let _selectedSecondaryValues_decorators;
+    let _selectedSecondaryValues_initializers = [];
+    let _selectedSecondaryValues_extraInitializers = [];
+    let _selectedSecondaryValue_decorators;
+    let _selectedSecondaryValue_initializers = [];
+    let _selectedSecondaryValue_extraInitializers = [];
+    let _stringSelectedValue_decorators;
+    let _stringSelectedValue_initializers = [];
+    let _stringSelectedValue_extraInitializers = [];
     let _set_selector_decorators;
     let _set_popup_decorators;
     (class extends _classSuper {
@@ -12211,6 +12781,12 @@ let TurboDropdown = (() => {
                 })];
             _entries_decorators = [expose("select")];
             _values_decorators = [expose("select")];
+            _selectedEntry_decorators = [expose("select", false)];
+            _selectedValue_decorators = [expose("select", false)];
+            _selectedValues_decorators = [expose("select", false)];
+            _selectedSecondaryValues_decorators = [expose("select", false)];
+            _selectedSecondaryValue_decorators = [expose("select", false)];
+            _stringSelectedValue_decorators = [expose("select", false)];
             _set_selector_decorators = [auto({
                     setIfUndefined: true,
                     preprocessValue: function (value) {
@@ -12224,6 +12800,12 @@ let TurboDropdown = (() => {
                     }
                 })];
             _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedValues_decorators, { kind: "accessor", name: "selectedValues", static: false, private: false, access: { has: obj => "selectedValues" in obj, get: obj => obj.selectedValues, set: (obj, value) => { obj.selectedValues = value; } }, metadata: _metadata }, _selectedValues_initializers, _selectedValues_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedSecondaryValues_decorators, { kind: "accessor", name: "selectedSecondaryValues", static: false, private: false, access: { has: obj => "selectedSecondaryValues" in obj, get: obj => obj.selectedSecondaryValues, set: (obj, value) => { obj.selectedSecondaryValues = value; } }, metadata: _metadata }, _selectedSecondaryValues_initializers, _selectedSecondaryValues_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedSecondaryValue_decorators, { kind: "accessor", name: "selectedSecondaryValue", static: false, private: false, access: { has: obj => "selectedSecondaryValue" in obj, get: obj => obj.selectedSecondaryValue, set: (obj, value) => { obj.selectedSecondaryValue = value; } }, metadata: _metadata }, _selectedSecondaryValue_initializers, _selectedSecondaryValue_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _stringSelectedValue_decorators, { kind: "accessor", name: "stringSelectedValue", static: false, private: false, access: { has: obj => "stringSelectedValue" in obj, get: obj => obj.stringSelectedValue, set: (obj, value) => { obj.stringSelectedValue = value; } }, metadata: _metadata }, _stringSelectedValue_initializers, _stringSelectedValue_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
@@ -12238,29 +12820,32 @@ let TurboDropdown = (() => {
         //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
         static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
         select = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), new TurboSelect({
-            onEntryAdded: (entry) => this.onEntryAdded(entry),
+            onEntryClicked: () => this.openPopup(false)
         }));
         popupOpen = false;
         selectorTag = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorTag_initializers, void 0);
         selectorClasses = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorTag_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorClasses_initializers, void 0));
         popupClasses = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectorClasses_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _popupClasses_initializers, void 0));
         entries = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _popupClasses_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_initializers, void 0));
-        // public set values(values: ValueType[]) {
-        //     this.select.values = values;
-        // }
-        //
-        // public get values(): ValueType[] {
-        //     return this.select.values;
-        // }
         values = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_initializers, void 0));
-        onEntryAdded(entry) {
-            this.select.initializeSelection();
-            turbo(entry).on(DefaultEventName.click, () => {
-                this.select.select(entry, !this.select.isSelected(entry));
-                this.openPopup(false);
-                return true;
-            });
-        }
+        #selectedEntry_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntry_initializers, void 0));
+        get selectedEntry() { return this.#selectedEntry_accessor_storage; }
+        set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
+        #selectedValue_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntry_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValue_initializers, void 0));
+        get selectedValue() { return this.#selectedValue_accessor_storage; }
+        set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
+        #selectedValues_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValues_initializers, void 0));
+        get selectedValues() { return this.#selectedValues_accessor_storage; }
+        set selectedValues(value) { this.#selectedValues_accessor_storage = value; }
+        #selectedSecondaryValues_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValues_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedSecondaryValues_initializers, void 0));
+        get selectedSecondaryValues() { return this.#selectedSecondaryValues_accessor_storage; }
+        set selectedSecondaryValues(value) { this.#selectedSecondaryValues_accessor_storage = value; }
+        #selectedSecondaryValue_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedSecondaryValues_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedSecondaryValue_initializers, void 0));
+        get selectedSecondaryValue() { return this.#selectedSecondaryValue_accessor_storage; }
+        set selectedSecondaryValue(value) { this.#selectedSecondaryValue_accessor_storage = value; }
+        #stringSelectedValue_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedSecondaryValue_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _stringSelectedValue_initializers, void 0));
+        get stringSelectedValue() { return this.#stringSelectedValue_accessor_storage; }
+        set stringSelectedValue(value) { this.#stringSelectedValue_accessor_storage = value; }
         /**
          * The dropdown's selector element.
          */
@@ -12306,24 +12891,9 @@ let TurboDropdown = (() => {
             else
                 turbo(this.popup).show(b);
         }
-        get selectedValues() {
-            return this.select.selectedValues;
-        }
-        get selectedValue() {
-            return this.select.selectedValue;
-        }
-        get selectedSecondaryValues() {
-            return this.select.selectedSecondaryValues;
-        }
-        get selectedSecondaryValue() {
-            return this.select.selectedSecondaryValue;
-        }
-        get stringSelectedValue() {
-            return this.select.stringSelectedValue;
-        }
         constructor() {
             super(...arguments);
-            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _stringSelectedValue_extraInitializers);
         }
         static {
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
@@ -12393,6 +12963,31 @@ let TurboMarkingMenu = (() => {
 })();
 
 /**
+ * @group Utilities
+ * @category Interpolation
+ *
+ * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
+ * to go beyond [x1, x2].
+ * @param x
+ * @param x1
+ * @param x2
+ * @param y1
+ * @param y2
+ * @param strict
+ */
+function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
+    if (strict) {
+        const xMax = Math.max(x1, x2);
+        const xMin = Math.min(x1, x2);
+        if (x > xMax)
+            x = xMax;
+        if (x < xMin)
+            x = xMin;
+    }
+    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
+}
+
+/**
  * @class TurboSelectWheel
  * @group Components
  * @category TurboSelectWheel
@@ -12409,24 +13004,93 @@ let TurboSelectWheel = (() => {
     let _classThis;
     let _classSuper = TurboElement;
     let _instanceExtraInitializers = [];
+    let _entries_decorators;
+    let _entries_initializers = [];
+    let _entries_extraInitializers = [];
+    let _values_decorators;
+    let _values_initializers = [];
+    let _values_extraInitializers = [];
+    let _selectedEntry_decorators;
+    let _selectedEntry_initializers = [];
+    let _selectedEntry_extraInitializers = [];
+    let _selectedValue_decorators;
+    let _selectedValue_initializers = [];
+    let _selectedValue_extraInitializers = [];
+    let _opacity_decorators;
+    let _opacity_initializers = [];
+    let _opacity_extraInitializers = [];
+    let _set_size_decorators;
+    let _get_reifect_decorators;
     let _set_alwaysOpen_decorators;
+    let _set_index_decorators;
     let _set_open_decorators;
     (class extends _classSuper {
         static { _classThis = this; }
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _set_alwaysOpen_decorators = [auto()];
+            _entries_decorators = [expose("selector")];
+            _values_decorators = [expose("selector")];
+            _selectedEntry_decorators = [expose("selector", false)];
+            _selectedValue_decorators = [expose("selector", false)];
+            _opacity_decorators = [auto({
+                    defaultValue: { max: 1, min: 0 },
+                    preprocessValue: (value) => {
+                        return {
+                            max: trim(value?.max, 1),
+                            min: trim(value?.min, 1)
+                        };
+                    }
+                })];
+            _set_size_decorators = [auto({
+                    preprocessValue: (value) => typeof value == "object" ? value : { max: value ?? 100, min: -(value ?? 100) }
+                })];
+            _get_reifect_decorators = [auto({
+                    preprocessValue: function (value) {
+                        if (value instanceof Reifect)
+                            return value;
+                        if (!value)
+                            value = {};
+                        if (!value.transitionProperties)
+                            value.transitionProperties = "opacity transform";
+                        if (value.transitionDuration == undefined)
+                            value.transitionDuration = 0.2;
+                        if (!value.transitionTimingFunction)
+                            value.transitionTimingFunction = "ease-in-out";
+                        return new Reifect(value);
+                    }
+                })];
+            _set_alwaysOpen_decorators = [auto({ defaultValue: false })];
+            _set_index_decorators = [auto({ cancelIfUnchanged: false })];
             _set_open_decorators = [auto()];
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _entries_decorators, { kind: "accessor", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _values_decorators, { kind: "accessor", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_size_decorators, { kind: "setter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _get_reifect_decorators, { kind: "getter", name: "reifect", static: false, private: false, access: { has: obj => "reifect" in obj, get: obj => obj.reifect }, metadata: _metadata }, null, _instanceExtraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_index_decorators, { kind: "setter", name: "index", static: false, private: false, access: { has: obj => "index" in obj, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, null, _opacity_decorators, { kind: "field", name: "opacity", static: false, private: false, access: { has: obj => "opacity" in obj, get: obj => obj.opacity, set: (obj, value) => { obj.opacity = value; } }, metadata: _metadata }, _opacity_initializers, _opacity_extraInitializers);
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__esDecorate)(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
             _classThis = _classDescriptor.value;
             if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(_classThis, _classExtraInitializers);
         }
-        _currentPosition = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers), 0);
-        _reifect;
-        _size = { max: 100, min: -100 };
+        selector = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _instanceExtraInitializers);
+        #entries_accessor_storage = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_initializers, void 0);
+        get entries() { return this.#entries_accessor_storage; }
+        set entries(value) { this.#entries_accessor_storage = value; }
+        #values_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _entries_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_initializers, void 0));
+        get values() { return this.#values_accessor_storage; }
+        set values(value) { this.#values_accessor_storage = value; }
+        #selectedEntry_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _values_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntry_initializers, void 0));
+        get selectedEntry() { return this.#selectedEntry_accessor_storage; }
+        set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
+        #selectedValue_accessor_storage = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedEntry_extraInitializers), (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValue_initializers, void 0));
+        get selectedValue() { return this.#selectedValue_accessor_storage; }
+        set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
+        _currentPosition = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _selectedValue_extraInitializers), 0);
         sizePerEntry = [];
         positionPerEntry = [];
         totalSize = 0;
@@ -12440,253 +13104,203 @@ let TurboSelectWheel = (() => {
         generateCustomStyling;
         dragging;
         openTimer;
-        // public constructor(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType,
-        //     DataType, ModelType>) {
-        //     properties.multiSelection = false;
-        //     properties.forceSelection = true;
-        //     super();
-        //
-        //     if (properties.scale) this.scale = properties.scale;
-        //     if (properties.direction) this.direction = properties.direction;
-        //
-        //     this.opacity = properties.opacity ?? {max: 1, min: 0};
-        //     this.size = properties.size;
-        //     this.generateCustomStyling = properties.generateCustomStyling;
-        //     this.reifect = properties.styleReifect;
-        //
-        //     $(this).setStyles({display: "block", position: "relative"});
-        //     this.alwaysOpen = properties.alwaysOpen ?? false;
-        //
-        //     // this.initializeUI();
-        //
-        //     if (properties.selectedValues?.length > 0) this.select(properties.selectedValues[0]);
-        //     requestAnimationFrame(() => this.refresh());
-        // }
-        //
-        // public connectedCallback() {
-        //     //TODO super.connectedCallback();
-        //     requestAnimationFrame(() => this.refresh());
-        // }
-        //
-        // @auto({preprocessValue: (value) => trim(value, 1)})
-        // public set opacity(value: Record<Range, number>) {}
-        //
-        // public get size(): Record<Range, number> {
-        //     return this._size;
-        // }
-        //
-        // public set size(value: Record<Range, number> | number) {
-        //     this._size = typeof value == "object" ? value : {max: value ?? 100, min: -(value ?? 100)};
-        // }
-        //
-        // public get reifect(): Reifect {
-        //     return this._reifect;
-        // }
-        //
-        // public set reifect(value: Reifect | StatelessReifectProperties) {
-        //     if (value instanceof Reifect) this._reifect = value;
-        //     else {
-        //         if (!value) value = {};
-        //         if (!value.transitionProperties) value.transitionProperties = "opacity transform";
-        //         if (value.transitionDuration == undefined) value.transitionDuration = 0.2;
-        //         if (!value.transitionTimingFunction) value.transitionTimingFunction = "ease-in-out";
-        //         this._reifect = new Reifect(value);
-        //     }
-        //     this._reifect.attachAll(...this.entries);
-        // }
+        initialize() {
+            this.selector = new TurboSelect();
+            this.selector.multiSelection = false;
+            this.selector.forceSelection = true;
+            this.selector.onSelectDelegate.add((b) => {
+                if (!b)
+                    return;
+                this.open = true;
+                if (!this.alwaysOpen)
+                    this.setOpenTimer();
+            });
+            this.selector.onEntryRemoved.add((entry) => this.reifect?.detach(entry));
+            this.selector.onEntryAdded.add((entry) => {
+                if (entry instanceof Element && entry.parentElement) {
+                    this.reifect?.attach(entry);
+                    this.reloadEntrySizes();
+                }
+                let showTimer;
+                turbo(entry)
+                    .setStyles({ position: "absolute" })
+                    .on(DefaultEventName.dragStart, (e) => {
+                    e.stopImmediatePropagation();
+                    this.clearOpenTimer();
+                    this.open = true;
+                    this.dragging = true;
+                    this.reifect.enabled.transition = false;
+                    this.reloadEntrySizes();
+                })
+                    .on("pointerover", () => {
+                    clearTimeout(showTimer);
+                    showTimer = setTimeout(() => this.open = true, 1000);
+                })
+                    .on("pointerout", () => {
+                    if (showTimer)
+                        clearTimeout(showTimer);
+                    showTimer = null;
+                });
+                this.refresh();
+            });
+            super.initialize();
+            this.refresh();
+            turbo(this).setStyles({ display: "block", position: "relative" });
+        }
+        opacity = (0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _opacity_initializers, void 0);
+        set size(value) { }
+        get size() { return; }
+        get reifect() { return; }
+        set reifect(value) {
+            this.reifect.attachAll(...this.entries);
+        }
+        closeOnClick = ((0,tslib__WEBPACK_IMPORTED_MODULE_0__.__runInitializers)(this, _opacity_extraInitializers), () => this.open = false);
         set alwaysOpen(value) {
             if (value)
-                $(document).removeListener(DefaultEventName.click, this.closeOnClick);
+                turbo(document.body).removeListener(DefaultEventName.click, this.closeOnClick);
             else
-                $(document).on(DefaultEventName.click, this.closeOnClick);
+                turbo(document.body).on(DefaultEventName.click, this.closeOnClick);
             this.open = value;
         }
-        closeOnClick = () => this.open = false;
         get isVertical() {
             return this.direction == Direction.vertical;
         }
-        // @auto({cancelIfUnchanged: false})
-        // public set index(value: number) {
-        //     this.selectByIndex(this.trimmedIndex);
-        // }
-        //
-        // protected get trimmedIndex() {
-        //     return trim(Math.round(this.index), this.entries.length - 1);
-        // }
-        //
-        // protected get flooredTrimmedIndex() {
-        //     return trim(Math.floor(this.index), this.entries.length - 1);
-        // }
+        set index(value) {
+            this.selector.selectByIndex(this.trimmedIndex);
+        }
+        get trimmedIndex() {
+            return trim(Math.round(this.index), this.entries.length - 1);
+        }
+        get flooredTrimmedIndex() {
+            return trim(Math.floor(this.index), this.entries.length - 1);
+        }
         set open(value) {
-            $(this).setStyle("overflow", value ? "visible" : "hidden");
+            turbo(this).setStyle("overflow", value ? "visible" : "hidden");
         }
         get currentPosition() {
             return this._currentPosition;
         }
-        // protected set currentPosition(value: number) {
-        //     const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
-        //     const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
-        //
-        //     if (value < min) value = min;
-        //     if (value > max) value = max;
-        //
-        //     this._currentPosition = value;
-        //     const elements = this.reifect.getEnabledObjectsData();
-        //     if (elements.length === 0) return;
-        //
-        //     elements.forEach((el, index) =>
-        //         this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
-        // }
-        // protected setupUIListeners() {
-        //     super.setupUIListeners();
-        //
-        //     $(document.body).on(DefaultEventName.drag, (e: TurboDragEvent) => {
-        //         if (!this.dragging) return;
-        //         e.stopImmediatePropagation();
-        //         this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
-        //     });
-        //
-        //     $(document.body).on(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
-        //         if (!this.dragging) return;
-        //         e.stopImmediatePropagation();
-        //         this.dragging = false;
-        //         this.recomputeIndex();
-        //         // this.snapTo(this.trimmedIndex);
-        //         if (!this.alwaysOpen) this.setOpenTimer();
-        //     });
-        // }
+        set currentPosition(value) {
+            const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
+            const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
+            if (value < min)
+                value = min;
+            if (value > max)
+                value = max;
+            this._currentPosition = value;
+            const elements = this.reifect.getEnabledObjectsData();
+            if (elements.length === 0)
+                return;
+            elements.forEach((el, index) => this.computeAndApplyStyling(el.object.deref(), this.positionPerEntry[index] - value));
+        }
+        setupUIListeners() {
+            super.setupUIListeners();
+            turbo(document.body)
+                .on(DefaultEventName.drag, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
+            })
+                .on(DefaultEventName.dragEnd, (e) => {
+                if (!this.dragging)
+                    return;
+                e.stopImmediatePropagation();
+                this.dragging = false;
+                this.recomputeIndex();
+                // this.snapTo(this.trimmedIndex);
+                if (!this.alwaysOpen)
+                    this.setOpenTimer();
+            });
+        }
         computeDragValue(delta) {
             return -delta[this.isVertical ? "y" : "x"];
         }
         /**
          * Recalculates the dimensions and positions of all entries
          */
-        // protected reloadEntrySizes() {
-        //     if (!this.reifect) return;
-        //
-        //     this.sizePerEntry.length = 0;
-        //     this.positionPerEntry.length = 0;
-        //     this.totalSize = 0;
-        //
-        //     this.reifect.getEnabledObjectsData().forEach(entry => {
-        //         const object = entry.object.deref();
-        //         const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-        //         this.sizePerEntry.push(size);
-        //         this.positionPerEntry.push(this.totalSize);
-        //         this.totalSize += size;
-        //     });
-        //     const flooredIndex = Math.floor(this.index);
-        //     const indexOffset = this.index - Math.floor(this.index);
-        //
-        //     this.currentPosition = 0;
-        //     if (this.index < 0) this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
-        //     else if (this.index >= this.sizePerEntry.length) this.currentPosition =
-        //         (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
-        //     else this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
-        // }
-        //
-        // protected recomputeIndex() {
-        //     let index = 0;
-        //     while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition) index++;
-        //     if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2) index++;
-        //     this.index = index;
-        // }
-        // protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size: Record<Range, number> = this.size) {
-        //     let opacityValue: number, scaleValue: number;
-        //     const bound = translationValue > 0 ? size.max : size.min;
-        //     opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
-        //     scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
-        //
-        //     let styles: string | PartialRecord<keyof CSSStyleDeclaration, string | number> = {
-        //         left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
-        //         calc(${!this.isVertical ? translationValue : 0}px - 50%),
-        //         calc(${this.isVertical ? translationValue : 0}px - 50%),
-        //         0) scale3d(${scaleValue}, ${scaleValue}, 1)`
-        //     };
-        //
-        //     if (this.generateCustomStyling) styles = this.generateCustomStyling({
-        //         element: element,
-        //         translationValue: translationValue,
-        //         opacityValue: opacityValue,
-        //         scaleValue: scaleValue,
-        //         size: size,
-        //         defaultComputedStyles: styles
-        //     });
-        //
-        //     $(element).setStyles(styles);
-        // }
-        // public select(entry: ValueType | EntryType, selected: boolean = true): this {
-        //     // super.select(entry, selected);
-        //     if (entry === undefined || entry === null) return this;
-        //
-        //     const index = this.getIndex(this.selectedEntry);
-        //     if (index != this.index) this.index = index;
-        //
-        //     if (this.reifect) {
-        //         this.reifect.transitionEnabled = true;
-        //         this.reloadEntrySizes();
-        //     }
-        //
-        //     const computedStyle = getComputedStyle(this.selectedEntry);
-        //     $(this).setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
-        //     return this;
-        // }
-        //
-        // protected onEntryClick(entry: EntryType, e?: Event) {
-        //     super.onEntryClick(entry, e);
-        //     e.stopImmediatePropagation();
-        //     this.open = true;
-        //     if (!this.alwaysOpen) this.setOpenTimer();
-        // }
-        //
-        // public addEntry(entry: ValueType | TurboSelectEntryProperties<ValueType, SecondaryValueType> | EntryType,
-        //                 index: number = this.entries.length): EntryType {
-        //     entry = this.createEntry(entry);
-        //     entry.onDetach.add(() => this.reifect?.detach(entry as TurboSelectEntry));
-        //     entry.onAttach.add(() => {
-        //         this.reifect?.attach(entry as TurboSelectEntry);
-        //         this.reloadEntrySizes();
-        //     });
-        //
-        //     entry = super.addEntry(entry, index);
-        //     $(entry).setStyles({position: "absolute"});
-        //
-        //     $(entry).on(DefaultEventName.dragStart, (e: Event) => {
-        //         e.stopImmediatePropagation();
-        //         this.clearOpenTimer();
-        //         this.open = true;
-        //         this.dragging = true;
-        //         this.reifect.transitionEnabled = false;
-        //         this.reloadEntrySizes();
-        //     });
-        //
-        //     let showTimer: NodeJS.Timeout;
-        //     $(entry).on("mouseover", () => {
-        //         clearTimeout(showTimer);
-        //         showTimer = setTimeout(() => this.open = true, 1000);
-        //     });
-        //     $(entry).on("mouseout", () => {
-        //         if (showTimer) clearTimeout(showTimer);
-        //         showTimer = null;
-        //     });
-        //
-        //     this.refresh();
-        //     return entry;
-        // }
-        //
-        // public clear(): void {
-        //     this.reifect.detach(...this.entries);
-        //     super.clear();
-        // }
-        //
-        // public refresh() {
-        //     if (this.selectedEntry) this.select(this.selectedEntry);
-        //     else this.reset();
-        // }
-        //
-        // public reset() {
-        //     this.select(this.entries[0]);
-        // }
+        reloadEntrySizes() {
+            if (!this.reifect)
+                return;
+            this.sizePerEntry.length = 0;
+            this.positionPerEntry.length = 0;
+            this.totalSize = 0;
+            this.reifect.getEnabledObjectsData().forEach(entry => {
+                const object = entry.object.deref();
+                const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+                this.sizePerEntry.push(size);
+                this.positionPerEntry.push(this.totalSize);
+                this.totalSize += size;
+            });
+            const flooredIndex = Math.floor(this.index);
+            const indexOffset = this.index - Math.floor(this.index);
+            this.currentPosition = 0;
+            if (this.index < 0)
+                this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
+            else if (this.index >= this.sizePerEntry.length)
+                this.currentPosition =
+                    (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
+            else
+                this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+        }
+        recomputeIndex() {
+            let index = 0;
+            while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition)
+                index++;
+            if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2)
+                index++;
+            this.index = index;
+        }
+        computeAndApplyStyling(element, translationValue, size = this.size) {
+            let opacityValue, scaleValue;
+            const bound = translationValue > 0 ? size.max : size.min;
+            opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+            scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+            let styles = {
+                left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
+            calc(${!this.isVertical ? translationValue : 0}px - 50%),
+            calc(${this.isVertical ? translationValue : 0}px - 50%),
+            0) scale3d(${scaleValue}, ${scaleValue}, 1)`
+            };
+            if (this.generateCustomStyling)
+                styles = this.generateCustomStyling({
+                    element: element,
+                    translationValue: translationValue,
+                    opacityValue: opacityValue,
+                    scaleValue: scaleValue,
+                    size: size,
+                    defaultComputedStyles: styles
+                });
+            $(element).setStyles(styles);
+        }
+        select(entry, selected = true) {
+            // super.select(entry, selected);
+            if (entry === undefined || entry === null)
+                return this;
+            const index = this.selector.getIndex(this.selectedEntry);
+            if (index != this.index)
+                this.index = index;
+            if (this.reifect) {
+                this.reifect.enabled.transition = true;
+                this.reloadEntrySizes();
+            }
+            const computedStyle = getComputedStyle(this.selectedEntry);
+            $(this).setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
+            return this;
+        }
+        clear() {
+            this.reifect.detach(...this.entries);
+            this.selector.clear();
+        }
+        refresh() {
+            if (this.selectedEntry)
+                this.select(this.selectedEntry);
+            else
+                this.reset();
+        }
+        reset() {
+            this.select(this.entries[0]);
+        }
         clearOpenTimer() {
             if (this.openTimer)
                 clearTimeout(this.openTimer);
@@ -12700,6 +13314,10 @@ let TurboSelectWheel = (() => {
     });
     return _classThis;
 })();
+function selectWheel(properties) {
+    turbo(properties).applyDefaults({ tag: "turbo-select-wheel" });
+    return element({ ...properties });
+}
 
 /**
  * @class TurboProxiedElement
@@ -12754,6 +13372,10 @@ class TurboProxiedElement {
     defineUIPrototype(TurboProxiedElement);
 })();
 
+/**
+ * @group Utilities
+ * @category Hash
+ */
 async function hashString(input) {
     const encoder = new TextEncoder();
     const data = encoder.encode(input);
@@ -12762,6 +13384,10 @@ async function hashString(input) {
         .map(byte => byte.toString(16).padStart(2, "0"))
         .join("");
 }
+/**
+ * @group Utilities
+ * @category Hash
+ */
 async function hashBySize(input, chars = 12) {
     const bytes = Math.ceil((chars * 6) / 8);
     const enc = new TextEncoder();
@@ -12777,29 +13403,10 @@ async function hashBySize(input, chars = 12) {
 }
 
 /**
- * @description Interpolates x linearly between (x1, y1) and (x2, y2). If strict is true, then x will not be allowed
- * to go beyond [x1, x2].
- * @param x
- * @param x1
- * @param x2
- * @param y1
- * @param y2
- * @param strict
- */
-function linearInterpolation(x, x1, x2, y1, y2, strict = true) {
-    if (strict) {
-        const xMax = Math.max(x1, x2);
-        const xMin = Math.min(x1, x2);
-        if (x > xMax)
-            x = xMax;
-        if (x < xMin)
-            x = xMin;
-    }
-    return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
-}
-
-/**
  * @function createYMap
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @description Creates a YMap and populates it with key-value pairs from a plain object.
  * @param {object} data - The initial data to populate the YMap with.
@@ -12813,6 +13420,9 @@ function createYMap(data) {
 }
 /**
  * @function createYArray
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @template DataType - The type of the array's content.
  * @description Creates a YArray and populates it with elements from a plain array.
@@ -12826,6 +13436,9 @@ function createYArray(data) {
 }
 /**
  * @function addInYMap
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @async
  * @description Adds the provided data in the provided parent in the Yjs document, with a unique ID as its field name.
@@ -12846,6 +13459,9 @@ async function addInYMap(data, parentYMap, id) {
 }
 /**
  * @function addInYArray
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @description Adds the provided data in the provided parent array in the Yjs document.
  * @param {object} data - The data to append to the Yjs document.
@@ -12867,6 +13483,9 @@ function addInYArray(data, parentYArray, index) {
 }
 /**
  * @function removeFromYArray
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @description Removes the first occurrence of the given entry from the YArray.
  * @param {unknown} entry - The entry to remove.
@@ -12884,6 +13503,9 @@ function removeFromYArray(entry, parentYArray) {
 }
 /**
  * @function deepObserveAny
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
  * changes.
@@ -12914,6 +13536,9 @@ function deepObserveAny(data, callback, ...fieldNames) {
 }
 /**
  * @function deepObserveAll
+ * @group Utilities
+ * @category Yjs
+ *
  * @static
  * @description Observes deeply for changes to all specified fields and invokes callback only when all fields
  * have changed.
@@ -12945,6 +13570,11 @@ function deepObserveAll(data, callback, ...fieldNames) {
     });
 }
 
+/**
+ * @group Utilities
+ * @category Event
+ * @param e
+ */
 function getEventPosition(e) {
     if (e instanceof TurboEvent)
         return e.scaledPosition;
@@ -12954,6 +13584,9 @@ function getEventPosition(e) {
 }
 
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Computes the luminance of a color
  * @param {string} color - The color in Hex format
  * @return The luminance value, or NaN if the color is not valid.
@@ -12969,6 +13602,9 @@ function luminance(color) {
 }
 
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Computes the contrast between two colors.
  * @param {string} color1 - The first color in Hex format
  * @param {string} color2 - The second color in Hex format
@@ -12983,6 +13619,9 @@ function contrast(color1, color2) {
 }
 
 /**
+ * @group Utilities
+ * @category Color
+ *
  * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
  * (for readability).
  * @param {string} baseColor - The base color in Hex format.
@@ -12996,6 +13635,8 @@ function bestOverlayColor(baseColor, overlayColor1 = "#000000", overlayColor2 = 
 }
 
 /**
+ * @group Utilities
+ * @category CSS
  * @description Constructs a single CSS string from a template literal containing CSS rules.
  */
 function css(strings, ...values) {
@@ -13007,6 +13648,7 @@ function css(strings, ...values) {
 }
 
 /**
+ * @internal
  * @description Default font weights, sub-names, and styles when loading a font family.
  */
 const defaultFamilyWeights = {
@@ -13020,6 +13662,14 @@ const defaultFamilyWeights = {
     200: { "ExtraLight": "normal", "ExtraLightItalic": "italic" },
     100: { "Thin": "normal", "ThinItalic": "italic" },
 };
+/**
+ * @internal
+ * @param name
+ * @param path
+ * @param format
+ * @param weight
+ * @param style
+ */
 function createFontFace(name, path, format, weight, style) {
     return css `
         @font-face {
@@ -13032,6 +13682,8 @@ function createFontFace(name, path, format, weight, style) {
         }`;
 }
 /**
+ * @group Utilities
+ * @category Font
  * @description Loads a local font file, or a family of fonts from a directory.
  * @param {FontProperties} font - The font properties
  */
@@ -13157,7 +13809,7 @@ body {
     -webkit-backface-visibility: hidden;
     -moz-backface-visibility: hidden;
     backface-visibility: hidden;
-}`, "",{"version":3,"sources":["webpack://./src/main.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,4EAA4E;IAC5E,oCAAoC;IACpC,sCAAsC;IACtC,mCAAmC;;IAEnC,uBAAuB;IACvB,gCAAgC;IAChC,kCAAkC;IAClC,sCAAsC;;IAEtC,iBAAiB;IACjB,mBAAmB;IACnB,0BAA0B;;IAE1B,2CAA2C;IAC3C,gDAAgD;IAChD,YAAY;;IAEZ,eAAe;IACf,kBAAkB;IAClB,iBAAiB;IACjB,eAAe;;IAEf,kBAAkB;IAClB,oBAAoB;IACpB,kBAAkB;AACtB;;;AAGA;IACI,uCAAuC;IACvC,wCAAwC;IACxC,gBAAgB;;IAEhB,SAAS;IACT,uBAAuB;;IAEvB,qBAAqB;IACrB,8BAA8B;AAClC;;AAEA;IACI,SAAS;IACT,UAAU;IACV,kBAAkB;IAClB,2CAA2C;AAC/C;;AAEA;IACI,cAAc;IACd,aAAa;IACb,cAAc;AAClB;;AAEA;IACI,iBAAiB;IACjB,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,kBAAkB;IAClB,cAAc;IACd,iBAAiB;IACjB,MAAM;IACN,OAAO;IACP,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B;;AAEA;IACI,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B","sourcesContent":[":root {\r\n    --bg: #01163b;\r\n    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);\r\n    --surface: rgba(255, 255, 255, 0.07);\r\n    --surface-2: rgba(255, 255, 255, 0.03);\r\n    --border: rgba(255, 255, 255, 0.14);\r\n\r\n    --font-family: \"Roboto\";\r\n    --text: rgba(220, 232, 255, 0.9);\r\n    --text-2: rgba(234, 242, 255, 0.8);\r\n    --text-muted: rgba(212, 224, 244, 0.6);\r\n\r\n    --accent: #ff6bd6;\r\n    --accent-2: #5ee7ff;\r\n    --accent-contrast: #0b0f1e;\r\n\r\n    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);\r\n    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);\r\n    --blur: 10px;\r\n\r\n    --gap-big: 28px;\r\n    --gap-medium: 18px;\r\n    --gap-small: 12px;\r\n    --gap-tiny: 4px;\r\n\r\n    --radius-big: 16px;\r\n    --radius-small: 12px;\r\n    --radius-tiny: 8px;\r\n}\r\n\r\n\r\nbody {\r\n    width: calc(100vw - var(--gap-big) * 2);\r\n    height: calc(100vh - var(--gap-big) * 2);\r\n    overflow: hidden;\r\n\r\n    margin: 0;\r\n    padding: var(--gap-big);\r\n\r\n    background: var(--bg);\r\n    background: var(--bg-gradient);\r\n}\r\n\r\n* {\r\n    margin: 0;\r\n    padding: 0;\r\n    color: var(--text);\r\n    font-family: var(--font-family), sans-serif;\r\n}\r\n\r\n.turbo-icon {\r\n    display: block;\r\n    width: 1.5rem;\r\n    height: 1.5rem;\r\n}\r\n\r\n.turbo-icon > svg {\r\n    fill: var(--text);\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n#canvas {\r\n    position: absolute;\r\n    display: block;\r\n    overflow: visible;\r\n    top: 0;\r\n    left: 0;\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}\r\n\r\n#canvas * {\r\n    -webkit-backface-visibility: hidden;\r\n    -moz-backface-visibility: hidden;\r\n    backface-visibility: hidden;\r\n}"],"sourceRoot":""}]);
+}`, "",{"version":3,"sources":["webpack://./src/main.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,4EAA4E;IAC5E,oCAAoC;IACpC,sCAAsC;IACtC,mCAAmC;;IAEnC,uBAAuB;IACvB,gCAAgC;IAChC,kCAAkC;IAClC,sCAAsC;;IAEtC,iBAAiB;IACjB,mBAAmB;IACnB,0BAA0B;;IAE1B,2CAA2C;IAC3C,gDAAgD;IAChD,YAAY;;IAEZ,eAAe;IACf,kBAAkB;IAClB,iBAAiB;IACjB,eAAe;;IAEf,kBAAkB;IAClB,oBAAoB;IACpB,kBAAkB;AACtB;;;AAGA;IACI,uCAAuC;IACvC,wCAAwC;IACxC,gBAAgB;;IAEhB,SAAS;IACT,uBAAuB;;IAEvB,qBAAqB;IACrB,8BAA8B;AAClC;;AAEA;IACI,SAAS;IACT,UAAU;IACV,kBAAkB;IAClB,2CAA2C;AAC/C;;AAEA;IACI,cAAc;IACd,aAAa;IACb,cAAc;AAClB;;AAEA;IACI,iBAAiB;IACjB,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,kBAAkB;IAClB,cAAc;IACd,iBAAiB;IACjB,MAAM;IACN,OAAO;IACP,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B;;AAEA;IACI,mCAAmC;IACnC,gCAAgC;IAChC,2BAA2B;AAC/B","sourcesContent":[":root {\n    --bg: #01163b;\n    --bg-gradient: linear-gradient(51deg, #01163b 0%, #440a61 50%, #4d0527 100%);\n    --surface: rgba(255, 255, 255, 0.07);\n    --surface-2: rgba(255, 255, 255, 0.03);\n    --border: rgba(255, 255, 255, 0.14);\n\n    --font-family: \"Roboto\";\n    --text: rgba(220, 232, 255, 0.9);\n    --text-2: rgba(234, 242, 255, 0.8);\n    --text-muted: rgba(212, 224, 244, 0.6);\n\n    --accent: #ff6bd6;\n    --accent-2: #5ee7ff;\n    --accent-contrast: #0b0f1e;\n\n    --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.45);\n    --focus-ring: 0 0 0 2px rgba(94, 231, 255, 0.55);\n    --blur: 10px;\n\n    --gap-big: 28px;\n    --gap-medium: 18px;\n    --gap-small: 12px;\n    --gap-tiny: 4px;\n\n    --radius-big: 16px;\n    --radius-small: 12px;\n    --radius-tiny: 8px;\n}\n\n\nbody {\n    width: calc(100vw - var(--gap-big) * 2);\n    height: calc(100vh - var(--gap-big) * 2);\n    overflow: hidden;\n\n    margin: 0;\n    padding: var(--gap-big);\n\n    background: var(--bg);\n    background: var(--bg-gradient);\n}\n\n* {\n    margin: 0;\n    padding: 0;\n    color: var(--text);\n    font-family: var(--font-family), sans-serif;\n}\n\n.turbo-icon {\n    display: block;\n    width: 1.5rem;\n    height: 1.5rem;\n}\n\n.turbo-icon > svg {\n    fill: var(--text);\n    width: 100%;\n    height: 100%;\n}\n\n#canvas {\n    position: absolute;\n    display: block;\n    overflow: visible;\n    top: 0;\n    left: 0;\n    -webkit-backface-visibility: hidden;\n    -moz-backface-visibility: hidden;\n    backface-visibility: hidden;\n}\n\n#canvas * {\n    -webkit-backface-visibility: hidden;\n    -moz-backface-visibility: hidden;\n    backface-visibility: hidden;\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13245,7 +13897,7 @@ turbo-playlist .empty-playlist-placeholder .turbo-icon {
     height: 32px;
 }
 
-`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;IAChB,2BAA2B;AAC/B;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\r\n    position: absolute;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n    align-items: center;\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element .turbo-icon {\r\n    width: 56px;\r\n    height: 56px;\r\n    border-radius: var(--radius-small);\r\n    overflow: hidden;\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist > .turbo-rich-element > * {\r\n    text-wrap: nowrap;\r\n}\r\n\r\nturbo-playlist > .turbo-drawer {\r\n    position: absolute;\r\n    min-width: 300px;\r\n    left: 50%;\r\n    transform: translateX(-50%);\r\n}\r\n\r\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\r\n    padding: var(--gap-medium);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    height: 300px;\r\n\r\n    overflow: auto;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-small);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder {\r\n    flex-grow: 1;\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-medium);\r\n\r\n    align-items: center;\r\n    justify-content: center;\r\n    text-align: center;\r\n    padding: var(--gap-medium);\r\n}\r\n\r\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\r\n    width: 32px;\r\n    height: 32px;\r\n}\r\n\r\n"],"sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/playlist/playlist.css"],"names":[],"mappings":"AAAA;IACI,kBAAkB;AACtB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;IACpB,mBAAmB;AACvB;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,kCAAkC;IAClC,gBAAgB;IAChB,2BAA2B;AAC/B;;AAEA;IACI,iBAAiB;AACrB;;AAEA;IACI,kBAAkB;IAClB,gBAAgB;IAChB,SAAS;IACT,2BAA2B;AAC/B;;AAEA;IACI,0BAA0B;IAC1B,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;IAC/B,aAAa;;IAEb,cAAc;IACd,aAAa;IACb,sBAAsB;IACtB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,YAAY;IACZ,aAAa;IACb,sBAAsB;IACtB,sBAAsB;;IAEtB,mBAAmB;IACnB,uBAAuB;IACvB,kBAAkB;IAClB,0BAA0B;AAC9B;;AAEA;IACI,WAAW;IACX,YAAY;AAChB","sourcesContent":["turbo-playlist {\n    position: absolute;\n}\n\nturbo-playlist > .turbo-rich-element {\n    display: flex;\n    flex-direction: column;\n    gap: var(--gap-tiny);\n    align-items: center;\n}\n\nturbo-playlist > .turbo-rich-element .turbo-icon {\n    width: 56px;\n    height: 56px;\n    border-radius: var(--radius-small);\n    overflow: hidden;\n    backdrop-filter: blur(10px);\n}\n\nturbo-playlist > .turbo-rich-element > * {\n    text-wrap: nowrap;\n}\n\nturbo-playlist > .turbo-drawer {\n    position: absolute;\n    min-width: 300px;\n    left: 50%;\n    transform: translateX(-50%);\n}\n\nturbo-playlist > .turbo-drawer .turbo-drawer-panel {\n    padding: var(--gap-medium);\n    border-radius: var(--radius-small);\n\n    background-color: var(--surface-2);\n    border: 1px solid var(--border);\n    height: 300px;\n\n    overflow: auto;\n    display: flex;\n    flex-direction: column;\n    gap: var(--gap-small);\n    backdrop-filter: blur(10px);\n}\n\nturbo-playlist .empty-playlist-placeholder {\n    flex-grow: 1;\n    display: flex;\n    flex-direction: column;\n    gap: var(--gap-medium);\n\n    align-items: center;\n    justify-content: center;\n    text-align: center;\n    padding: var(--gap-medium);\n}\n\nturbo-playlist .empty-playlist-placeholder .turbo-icon {\n    width: 32px;\n    height: 32px;\n}\n\n"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13297,7 +13949,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `::-webkit-scrollbar {
 
 ::-webkit-scrollbar-corner {
     background: var(--surface);
-}`, "",{"version":3,"sources":["webpack://./src/scrollbar.css"],"names":[],"mappings":"AAAA;IACI,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,0BAA0B;IAC1B,qBAAqB;AACzB;;AAEA;IACI,aAAa;AACjB;;AAEA;IACI,2BAA2B;IAC3B,qBAAqB;IACrB,gCAAgC;AACpC;;AAEA;IACI,yBAAyB;AAC7B;;AAEA;IACI,0BAA0B;AAC9B","sourcesContent":["::-webkit-scrollbar {\r\n    width: 10px;\r\n    height: 10px;\r\n}\r\n\r\n::-webkit-scrollbar-track {\r\n    background: var(--surface);\r\n    border-radius: 1000px;\r\n}\r\n\r\n::-webkit-scrollbar-button {\r\n    display: none;\r\n}\r\n\r\n::-webkit-scrollbar-thumb {\r\n    background: var(--accent-2);\r\n    border-radius: 1000px;\r\n    border: 2px solid var(--surface);\r\n}\r\n\r\n::-webkit-scrollbar-thumb:hover {\r\n    background: var(--accent);\r\n}\r\n\r\n::-webkit-scrollbar-corner {\r\n    background: var(--surface);\r\n}"],"sourceRoot":""}]);
+}`, "",{"version":3,"sources":["webpack://./src/scrollbar.css"],"names":[],"mappings":"AAAA;IACI,WAAW;IACX,YAAY;AAChB;;AAEA;IACI,0BAA0B;IAC1B,qBAAqB;AACzB;;AAEA;IACI,aAAa;AACjB;;AAEA;IACI,2BAA2B;IAC3B,qBAAqB;IACrB,gCAAgC;AACpC;;AAEA;IACI,yBAAyB;AAC7B;;AAEA;IACI,0BAA0B;AAC9B","sourcesContent":["::-webkit-scrollbar {\n    width: 10px;\n    height: 10px;\n}\n\n::-webkit-scrollbar-track {\n    background: var(--surface);\n    border-radius: 1000px;\n}\n\n::-webkit-scrollbar-button {\n    display: none;\n}\n\n::-webkit-scrollbar-thumb {\n    background: var(--accent-2);\n    border-radius: 1000px;\n    border: 2px solid var(--surface);\n}\n\n::-webkit-scrollbar-thumb:hover {\n    background: var(--accent);\n}\n\n::-webkit-scrollbar-corner {\n    background: var(--surface);\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13355,7 +14007,7 @@ turbo-song .song-artist {
 turbo-song .song-duration {
     color: var(--text-muted);
     font-weight: normal;
-}`, "",{"version":3,"sources":["webpack://./src/song/song.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;;IAEzB,gCAAgC;IAChC,kCAAkC;IAClC,+BAA+B;AACnC;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,iCAAiC;AACrC;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;AACxB;;AAEA;IACI,mBAAmB;IACnB,oBAAoB;AACxB;;AAEA;IACI,wBAAwB;IACxB,mBAAmB;AACvB","sourcesContent":["turbo-song {\r\n    display: flex;\r\n    flex-direction: row;\r\n    align-items: center;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n\r\n    background-color: var(--surface);\r\n    border-radius: var(--radius-small);\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-song .song-cover {\r\n    width: 54px;\r\n    height: 54px;\r\n    border-radius: var(--radius-tiny);\r\n}\r\n\r\nturbo-song > :nth-child(2) {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-tiny);\r\n}\r\n\r\nturbo-song .song-artist {\r\n    font-weight: normal;\r\n    color: var(--text-2);\r\n}\r\n\r\nturbo-song .song-duration {\r\n    color: var(--text-muted);\r\n    font-weight: normal;\r\n}"],"sourceRoot":""}]);
+}`, "",{"version":3,"sources":["webpack://./src/song/song.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;;IAEzB,gCAAgC;IAChC,kCAAkC;IAClC,+BAA+B;AACnC;;AAEA;IACI,WAAW;IACX,YAAY;IACZ,iCAAiC;AACrC;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,oBAAoB;AACxB;;AAEA;IACI,mBAAmB;IACnB,oBAAoB;AACxB;;AAEA;IACI,wBAAwB;IACxB,mBAAmB;AACvB","sourcesContent":["turbo-song {\n    display: flex;\n    flex-direction: row;\n    align-items: center;\n    gap: var(--gap-small);\n    padding: var(--gap-small);\n\n    background-color: var(--surface);\n    border-radius: var(--radius-small);\n    border: 1px solid var(--border);\n}\n\nturbo-song .song-cover {\n    width: 54px;\n    height: 54px;\n    border-radius: var(--radius-tiny);\n}\n\nturbo-song > :nth-child(2) {\n    display: flex;\n    flex-direction: column;\n    gap: var(--gap-tiny);\n}\n\nturbo-song .song-artist {\n    font-weight: normal;\n    color: var(--text-2);\n}\n\nturbo-song .song-duration {\n    color: var(--text-muted);\n    font-weight: normal;\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13425,7 +14077,7 @@ turbo-songs-panel > .songs-panel-container {
     padding-inline-end: var(--gap-small);
 }
 
-`, "",{"version":3,"sources":["webpack://./src/songsPanel/songsPanel.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,sBAAsB;IACtB,mBAAmB;IACnB,uBAAuB;IACvB,gCAAgC;;IAEhC,WAAW;IACX,gBAAgB;IAChB,gBAAgB;IAChB,uCAAuC;;IAEvC,kCAAkC;IAClC,+BAA+B;IAC/B,2BAA2B;AAC/B;;AAEA;IACI,gCAAgC;IAChC,qBAAqB;IACrB,+BAA+B;AACnC;;AAEA;IACI,aAAa;IACb,mBAAmB;IACnB,sBAAsB;IACtB,sDAAsD;AAC1D;;AAEA;IACI,YAAY;IACZ,6BAA6B;IAC7B,YAAY;AAChB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,cAAc;IACd,sBAAsB;IACtB,oCAAoC;AACxC","sourcesContent":["turbo-songs-panel {\r\n    display: flex;\r\n    flex-direction: column;\r\n    gap: var(--gap-big);\r\n    padding: var(--gap-big);\r\n    border-radius: var(--radius-big);\r\n\r\n    width: 40vw;\r\n    min-width: 300px;\r\n    max-width: 550px;\r\n    height: calc(100% - 2 * var(--gap-big));\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element {\r\n    background-color: var(--surface);\r\n    border-radius: 1000px;\r\n    border: 1px solid var(--border);\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element > div {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-medium);\r\n    padding: var(--gap-small) calc(1.5 * var(--gap-small));\r\n}\r\n\r\nturbo-songs-panel > .turbo-rich-element input {\r\n    flex-grow: 1;\r\n    background-color: transparent;\r\n    border: none;\r\n}\r\n\r\nturbo-songs-panel > .songs-panel-container {\r\n    display: flex;\r\n    flex-direction: column;\r\n    overflow: auto;\r\n    gap: var(--gap-medium);\r\n    padding-inline-end: var(--gap-small);\r\n}\r\n\r\n"],"sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/songsPanel/songsPanel.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,sBAAsB;IACtB,mBAAmB;IACnB,uBAAuB;IACvB,gCAAgC;;IAEhC,WAAW;IACX,gBAAgB;IAChB,gBAAgB;IAChB,uCAAuC;;IAEvC,kCAAkC;IAClC,+BAA+B;IAC/B,2BAA2B;AAC/B;;AAEA;IACI,gCAAgC;IAChC,qBAAqB;IACrB,+BAA+B;AACnC;;AAEA;IACI,aAAa;IACb,mBAAmB;IACnB,sBAAsB;IACtB,sDAAsD;AAC1D;;AAEA;IACI,YAAY;IACZ,6BAA6B;IAC7B,YAAY;AAChB;;AAEA;IACI,aAAa;IACb,sBAAsB;IACtB,cAAc;IACd,sBAAsB;IACtB,oCAAoC;AACxC","sourcesContent":["turbo-songs-panel {\n    display: flex;\n    flex-direction: column;\n    gap: var(--gap-big);\n    padding: var(--gap-big);\n    border-radius: var(--radius-big);\n\n    width: 40vw;\n    min-width: 300px;\n    max-width: 550px;\n    height: calc(100% - 2 * var(--gap-big));\n\n    background-color: var(--surface-2);\n    border: 1px solid var(--border);\n    backdrop-filter: blur(10px);\n}\n\nturbo-songs-panel > .turbo-rich-element {\n    background-color: var(--surface);\n    border-radius: 1000px;\n    border: 1px solid var(--border);\n}\n\nturbo-songs-panel > .turbo-rich-element > div {\n    display: flex;\n    flex-direction: row;\n    gap: var(--gap-medium);\n    padding: var(--gap-small) calc(1.5 * var(--gap-small));\n}\n\nturbo-songs-panel > .turbo-rich-element input {\n    flex-grow: 1;\n    background-color: transparent;\n    border: none;\n}\n\nturbo-songs-panel > .songs-panel-container {\n    display: flex;\n    flex-direction: column;\n    overflow: auto;\n    gap: var(--gap-medium);\n    padding-inline-end: var(--gap-small);\n}\n\n"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13484,7 +14136,7 @@ turbo-toolbar > .selected {
 
 turbo-toolbar svg {
     fill: white;
-}`, "",{"version":3,"sources":["webpack://./src/toolbar/toolbar.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;IACzB,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;;IAE/B,kBAAkB;IAClB,mBAAmB;IACnB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,wBAAwB;IACxB,iCAAiC;IACjC,gCAAgC;AACpC;;AAEA;IACI,UAAU;AACd;;AAEA;IACI,gCAAgC;IAChC,UAAU;AACd;;AAEA;IACI,WAAW;AACf","sourcesContent":["turbo-toolbar {\r\n    display: flex;\r\n    flex-direction: row;\r\n    gap: var(--gap-small);\r\n    padding: var(--gap-small);\r\n    border-radius: var(--radius-small);\r\n\r\n    background-color: var(--surface-2);\r\n    border: 1px solid var(--border);\r\n\r\n    position: absolute;\r\n    top: var(--gap-big);\r\n    right: var(--gap-big);\r\n    backdrop-filter: blur(10px);\r\n}\r\n\r\nturbo-toolbar > * {\r\n    padding: var(--gap-tiny);\r\n    border-radius: var(--radius-tiny);\r\n    transition: all 0.1s ease-in-out;\r\n}\r\n\r\nturbo-toolbar > *:hover, turbo-toolbar > .selected:hover {\r\n    scale: 1.2;\r\n}\r\n\r\nturbo-toolbar > .selected {\r\n    background-color: var(--surface);\r\n    scale: 1.1;\r\n}\r\n\r\nturbo-toolbar svg {\r\n    fill: white;\r\n}"],"sourceRoot":""}]);
+}`, "",{"version":3,"sources":["webpack://./src/toolbar/toolbar.css"],"names":[],"mappings":"AAAA;IACI,aAAa;IACb,mBAAmB;IACnB,qBAAqB;IACrB,yBAAyB;IACzB,kCAAkC;;IAElC,kCAAkC;IAClC,+BAA+B;;IAE/B,kBAAkB;IAClB,mBAAmB;IACnB,qBAAqB;IACrB,2BAA2B;AAC/B;;AAEA;IACI,wBAAwB;IACxB,iCAAiC;IACjC,gCAAgC;AACpC;;AAEA;IACI,UAAU;AACd;;AAEA;IACI,gCAAgC;IAChC,UAAU;AACd;;AAEA;IACI,WAAW;AACf","sourcesContent":["turbo-toolbar {\n    display: flex;\n    flex-direction: row;\n    gap: var(--gap-small);\n    padding: var(--gap-small);\n    border-radius: var(--radius-small);\n\n    background-color: var(--surface-2);\n    border: 1px solid var(--border);\n\n    position: absolute;\n    top: var(--gap-big);\n    right: var(--gap-big);\n    backdrop-filter: blur(10px);\n}\n\nturbo-toolbar > * {\n    padding: var(--gap-tiny);\n    border-radius: var(--radius-tiny);\n    transition: all 0.1s ease-in-out;\n}\n\nturbo-toolbar > *:hover, turbo-toolbar > .selected:hover {\n    scale: 1.2;\n}\n\nturbo-toolbar > .selected {\n    background-color: var(--surface);\n    scale: 1.1;\n}\n\nturbo-toolbar svg {\n    fill: white;\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -19354,6 +20006,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   __propKey: () => (/* binding */ __propKey),
 /* harmony export */   __read: () => (/* binding */ __read),
 /* harmony export */   __rest: () => (/* binding */ __rest),
+/* harmony export */   __rewriteRelativeImportExtension: () => (/* binding */ __rewriteRelativeImportExtension),
 /* harmony export */   __runInitializers: () => (/* binding */ __runInitializers),
 /* harmony export */   __setFunctionName: () => (/* binding */ __setFunctionName),
 /* harmony export */   __spread: () => (/* binding */ __spread),
@@ -19376,7 +20029,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
 
 var extendStatics = function(d, b) {
   extendStatics = Object.setPrototypeOf ||
@@ -19487,8 +20140,8 @@ function __awaiter(thisArg, _arguments, P, generator) {
 }
 
 function __generator(thisArg, body) {
-  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-  return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+  return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
   function verb(n) { return function (v) { return step([n, v]); }; }
   function step(op) {
       if (f) throw new TypeError("Generator is already executing.");
@@ -19592,8 +20245,9 @@ function __await(v) {
 function __asyncGenerator(thisArg, _arguments, generator) {
   if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
   var g = generator.apply(thisArg, _arguments || []), i, q = [];
-  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
-  function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+  return i = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i[Symbol.asyncIterator] = function () { return this; }, i;
+  function awaitReturn(f) { return function (v) { return Promise.resolve(v).then(f, reject); }; }
+  function verb(n, f) { if (g[n]) { i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; if (f) i[n] = f(i[n]); } }
   function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
   function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
   function fulfill(value) { resume("next", value); }
@@ -19626,10 +20280,19 @@ var __setModuleDefault = Object.create ? (function(o, v) {
   o["default"] = v;
 };
 
+var ownKeys = function(o) {
+  ownKeys = Object.getOwnPropertyNames || function (o) {
+    var ar = [];
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+    return ar;
+  };
+  return ownKeys(o);
+};
+
 function __importStar(mod) {
   if (mod && mod.__esModule) return mod;
   var result = {};
-  if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+  if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
   __setModuleDefault(result, mod);
   return result;
 }
@@ -19659,16 +20322,18 @@ function __classPrivateFieldIn(state, receiver) {
 function __addDisposableResource(env, value, async) {
   if (value !== null && value !== void 0) {
     if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
-    var dispose;
+    var dispose, inner;
     if (async) {
-        if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
-        dispose = value[Symbol.asyncDispose];
+      if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+      dispose = value[Symbol.asyncDispose];
     }
     if (dispose === void 0) {
-        if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
-        dispose = value[Symbol.dispose];
+      if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+      dispose = value[Symbol.dispose];
+      if (async) inner = dispose;
     }
     if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
     env.stack.push({ value: value, dispose: dispose, async: async });
   }
   else if (async) {
@@ -19687,20 +20352,34 @@ function __disposeResources(env) {
     env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
     env.hasError = true;
   }
+  var r, s = 0;
   function next() {
-    while (env.stack.length) {
-      var rec = env.stack.pop();
+    while (r = env.stack.pop()) {
       try {
-        var result = rec.dispose && rec.dispose.call(rec.value);
-        if (rec.async) return Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+        if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+        if (r.dispose) {
+          var result = r.dispose.call(r.value);
+          if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+        }
+        else s |= 1;
       }
       catch (e) {
-          fail(e);
+        fail(e);
       }
     }
+    if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
     if (env.hasError) throw env.error;
   }
   return next();
+}
+
+function __rewriteRelativeImportExtension(path, preserveJsx) {
+  if (typeof path === "string" && /^\.\.?\//.test(path)) {
+      return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function (m, tsx, d, ext, cm) {
+          return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : (d + ext + "." + cm.toLowerCase() + "js");
+      });
+  }
+  return path;
 }
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -19709,6 +20388,10 @@ function __disposeResources(env) {
   __rest,
   __decorate,
   __param,
+  __esDecorate,
+  __runInitializers,
+  __propKey,
+  __setFunctionName,
   __metadata,
   __awaiter,
   __generator,
@@ -19731,6 +20414,7 @@ function __disposeResources(env) {
   __classPrivateFieldIn,
   __addDisposableResource,
   __disposeResources,
+  __rewriteRelativeImportExtension,
 });
 
 
@@ -30136,7 +30820,7 @@ const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
   : typeof window !== 'undefined'
     ? window
     // @ts-ignore
-    : typeof global !== 'undefined' ? global : {});
+    : typeof __webpack_require__.g !== 'undefined' ? __webpack_require__.g : {});
 
 const importIdentifier = '__ $YJS$ __';
 
@@ -30649,7 +31333,7 @@ let PlaylistView = (() => {
                 super.setupUIListeners();
                 (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this).on(_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.DefaultEventName.click, () => {
                     this.drawer.open = !this.drawer.open;
-                    return true;
+                    return _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.EventPropagation.stopPropagation;
                 });
             }
             updateName() {
@@ -30660,7 +31344,7 @@ let PlaylistView = (() => {
                     (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this.toggle.element).bypassManagerOn = () => true;
                     (0,_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.turbo)(this.toggle.element).on(_build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.DefaultEventName.click, () => {
                         this.toggle.element.focus();
-                        return true;
+                        return _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__.EventPropagation.stopPropagation;
                     });
                 }
             }
@@ -31769,6 +32453,18 @@ class SelectTool extends _build_turbodombuilder_esm__WEBPACK_IMPORTED_MODULE_0__
 /******/ 				}
 /******/ 			}
 /******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */

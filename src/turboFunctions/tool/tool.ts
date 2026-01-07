@@ -5,6 +5,7 @@ import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager
 import {MakeToolOptions, ToolBehaviorCallback, ToolBehaviorOptions} from "./tool.types";
 import {ToolFunctionsUtils} from "./tool.utils";
 import {DefaultEventName} from "../../types/eventNaming.types";
+import {Propagation} from "../event/event.types";
 
 const utils = new ToolFunctionsUtils();
 
@@ -32,7 +33,7 @@ export function setupToolFunctions() {
             options.clickMode ??= ClickMode.left;
             this.on(options.activationEvent, () => {
                 options.manager.setTool(this.element, options.clickMode);
-                return true;
+                return Propagation.stopPropagation;
             }, undefined, options.manager);
         }
         utils.saveTool(this, toolName, options.manager);
@@ -177,9 +178,9 @@ export function setupToolFunctions() {
         toolName: string,
         type: string,
         event: Event,
-        manager: TurboEventManager = TurboEventManager.instance
-    ): boolean {
-        let pass: boolean = false;
+        manager: TurboEventManager = TurboEventManager.instance,
+    ): Propagation {
+        let propagation = Propagation.propagate;
         const behaviors = utils.getToolBehaviors(toolName, type, manager);
 
         const options: ToolBehaviorOptions = {};
@@ -187,10 +188,11 @@ export function setupToolFunctions() {
         options.isEmbedded = !!options.embeddedTarget;
 
         behaviors.forEach(behavior => {
-            if (behavior(event, this.element, options)) pass = true;
+            propagation = utils.processPropagation(behavior(event, this.element, options), propagation);
+            if (propagation === Propagation.stopImmediatePropagation) return;
         });
 
-        return pass;
+        return propagation;
     }
 
     TurboSelector.prototype.ignoreTool = function _ignoreTool(

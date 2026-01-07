@@ -1,12 +1,12 @@
 import {
     TurboSubstrate,
     turbo,
-    SubstrateSolverProperties,
     Point,
     TurboDragEvent,
     solver,
     Coordinate
 } from "../../../../../build/turbodombuilder.esm";
+import {SubstrateCallbackProperties} from "../../../../../src";
 
 //Pusher substrate
 export class PusherSubstrate extends TurboSubstrate {
@@ -15,13 +15,13 @@ export class PusherSubstrate extends TurboSubstrate {
 
     //@solver is called on turbo(el).resolveSubstrate()
     //It will be called once for each object in the substrate's list of objects (marking each as processed afterward)
-    @solver private resolvePush(properties: SubstrateSolverProperties) {
+    @solver private resolvePush(properties: SubstrateCallbackProperties) {
         const delta: Point = (properties.event as TurboDragEvent)?.deltaPosition;
         const el = properties.target;
         if (!delta || !el || !(el instanceof Element)) return;
 
         //Get all elements in the substrate's list that overlap with the target
-        const list = Array.from(turbo(document).getSubstrateObjectList()) as Element[];
+        const list = Array.from(turbo(document.body).getSubstrateObjectList()) as Element[];
         const overlaps = this.findOverlaps(el, list);
 
         //No overlap --> remove it from list
@@ -33,7 +33,7 @@ export class PusherSubstrate extends TurboSubstrate {
         //Loop on each overlapping element
         for (const overlap of overlaps) {
             //If the overlapping element is unprocessed, add it so resolveSubstrate() will pick it up later
-            if (!this.isProcessed(overlap)) {
+            if (!this.getObjectPasses(overlap)) {
                 turbo(this).addObjectToSubstrate(overlap);
                 continue;
             }

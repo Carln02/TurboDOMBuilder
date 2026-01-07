@@ -15,6 +15,8 @@ import {element} from "../../../elementCreation/element";
 import {HTMLTag} from "../../../types/htmlElement.types";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {stringify} from "../../../utils/dataManipulation/string";
+import {Propagation} from "../../../turboFunctions/event/event.types";
+import {TurboSelectElement} from "../../basics/selectElement/selectElement";
 
 /**
  * @class TurboDropdown
@@ -33,7 +35,7 @@ class TurboDropdown<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
     //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
     public static readonly config: TurboDropdownConfig = {...TurboElement.config, defaultSelectorTag: "h4"};
 
@@ -58,15 +60,6 @@ class TurboDropdown<
         callAfter: function () {turbo(this.popup).addClass(this.popupClasses)}
     }) public popupClasses: string | string[];
 
-    @expose("select") public entries: HTMLCollection | NodeList | EntryType[];
-    @expose("select") public values: ValueType[];
-    @expose("select", false) public accessor selectedEntry: EntryType;
-    @expose("select", false) public accessor selectedValue: ValueType;
-    @expose("select", false) public accessor selectedValues: ValueType[];
-    @expose("select", false) public accessor selectedSecondaryValues: SecondaryValueType[];
-    @expose("select", false) public accessor selectedSecondaryValue: SecondaryValueType;
-    @expose("select", false) public accessor stringSelectedValue: string;
-
     /**
      * The dropdown's selector element.
      */
@@ -84,7 +77,7 @@ class TurboDropdown<
             .addClass(this.selectorClasses)
             .on(DefaultEventName.click, (e) => {
                 this.openPopup(!this.popupOpen);
-                return true;
+                return Propagation.stopPropagation;
             });
         if (this.popup instanceof TurboPopup) this.popup.anchor = value;
         turbo(this).addChild(value);

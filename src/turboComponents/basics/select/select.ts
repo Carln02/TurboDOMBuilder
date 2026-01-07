@@ -1,7 +1,7 @@
 import {EntryData, TurboSelectConfig, TurboSelectProperties} from "./select.types";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
-import {$, turbo} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboBaseElement} from "../../../turboElement/turboBaseElement/turboBaseElement";
 import {auto} from "../../../decorators/auto/auto";
 import {richElement, TurboRichElement} from "../richElement/richElement";
@@ -10,6 +10,7 @@ import {input} from "../../../elementCreation/basicElements";
 import {Delegate} from "../../datatypes/delegate/delegate";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {stringify} from "../../../utils/dataManipulation/string";
+import {Propagation} from "../../../turboFunctions/event/event.types";
 
 /**
  * @class TurboSelect
@@ -25,7 +26,7 @@ class TurboSelect<
     SecondaryValueType = string,
     EntryType extends object = HTMLElement,
 > extends TurboBaseElement {
-    public static readonly config: TurboSelectConfig = {defaultSelectedEntryClasses: "selected"};
+    public static readonly config: TurboSelectConfig = {defaultSelectedEntriesClasses: "selected"};
 
     private _inputField: HTMLInputElement;
     private _entries: EntryType[] = [];
@@ -49,8 +50,6 @@ class TurboSelect<
     public set entries(value: HTMLCollection | NodeList | EntryType[]) {
         this.enableObserver(false);
 
-        console.log(value);
-
         const previouslySelectedValues = this.selectedValues;
         this.clear(false);
         this._entries = (Array.isArray(value) ? value : Array.from(value) as EntryType[])
@@ -59,7 +58,10 @@ class TurboSelect<
         if (value instanceof HTMLCollection && value.item(0)) this.parent = value.item(0).parentElement;
 
         const array = this.entries;
-        for (let i = 0; i < array.length; i++) this.onEntryAdded.fire(array[i], i);
+        for (let i = 0; i < array.length; i++) {
+            this.onEntryAdded.fire(array[i], i);
+            turbo(array[i]).addClass(this.entriesClasses);
+        }
 
         this.deselectAll();
         for (let i = 0; i < array.length; i++) {
@@ -82,7 +84,7 @@ class TurboSelect<
         const entries = [];
         values.forEach(value => {
             const entry = this.createEntry(value);
-            if (entry instanceof Node && this.parent) $(this.parent).addChild(entry);
+            if (entry instanceof Node && this.parent) turbo(this.parent).addChild(entry);
             entries.push(entry);
         });
         this.entries = entries;
@@ -100,7 +102,7 @@ class TurboSelect<
 
     @auto() public set parent(value: Element) {
         if (!(value instanceof Element)) return;
-        $(value).addChild(this.entries.filter(entry => entry instanceof Node) as Node[]);
+        turbo(value).addChild(this.entries.filter(entry => entry instanceof Node) as Node[]);
         if (this.inputField) value.appendChild(this.inputField);
         this.setupParentObserver();
     }
@@ -156,7 +158,13 @@ class TurboSelect<
         callBefore: function () {this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses))},
         callAfter: function () {this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses))},
         initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")},
-    }) public selectedEntryClasses: string | string[];
+    }) public selectedEntriesClasses: string | string[];
+
+    @auto({
+        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultEntriesClasses")},
+        callBefore: function (value: string) {this.entries.forEach(entry => turbo(entry).removeClass(value))},
+        callAfter: function (value: string) {this.entries.forEach(entry => turbo(entry).addClass(value))}
+    }) public entriesClasses: string | string[];
 
     /**
      * @description Dropdown constructor
@@ -172,7 +180,7 @@ class TurboSelect<
             this.initializeSelection();
             turbo(entry).on(DefaultEventName.click, (e: Event) => {
                 this.onEntryClicked.fire(entry, e);
-                return true;
+                return Propagation.stopPropagation;
             });
         });
 
@@ -219,9 +227,10 @@ class TurboSelect<
 
         this.enableObserver(false);
         this.onEntryAdded.fire(entry, index);
+        turbo(entry).addClass(this.entriesClasses);
 
         if (Array.isArray(this.entries) && !this.entries.includes(entry)) this.entries.splice(index, 0, entry);
-        if (entry instanceof Node && !entry.parentElement && this.parent) $(this.parent).addChild(entry, index);
+        if (entry instanceof Node && !entry.parentElement && this.parent) turbo(this.parent).addChild(entry, index);
 
         this.enableObserver(true);
         requestAnimationFrame(() => this.select(this.selectedEntry));
@@ -274,7 +283,7 @@ class TurboSelect<
         if (!this.multiSelection) this.deselectAll();
 
         this.getEntryData(entry).selected = selected;
-        if (entry instanceof HTMLElement) $(entry).toggleClass(this.selectedEntryClasses, selected);
+        if (entry instanceof HTMLElement) turbo(entry).toggleClass(this.selectedEntriesClasses, selected);
 
         this.initializeSelection();
         this.refreshInputField();
@@ -307,7 +316,7 @@ class TurboSelect<
 
     public deselectAll() {
         this.selectedEntries.forEach(entry => {
-            if (entry instanceof HTMLElement) $(entry).toggleClass(this.selectedEntryClasses, false);
+            if (entry instanceof HTMLElement) turbo(entry).toggleClass(this.selectedEntriesClasses, false);
             this.getEntryData(entry).selected = false;
         });
         this.refreshInputField();
@@ -448,6 +457,7 @@ class TurboSelect<
 
                     this.getEntryData(entry);
                     this.onEntryAdded.fire(entry, this.getIndex(entry));
+                    turbo(entry).addClass(this.entriesClasses);
                 }
 
                 for (const node of record.removedNodes) {

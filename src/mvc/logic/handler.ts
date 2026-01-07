@@ -1,4 +1,5 @@
 import {TurboModel} from "../core/model";
+import {initializeEffects} from "../../decorators/reactivity/reactivity";
 
 /**
  * @class TurboHandler
@@ -28,7 +29,9 @@ class TurboHandler<ModelType extends TurboModel = TurboModel> {
         this.setup();
     }
 
-    protected setup(): void {}
+    protected setup(): void {
+        initializeEffects(this);
+    }
 }
 
 export {TurboHandler};

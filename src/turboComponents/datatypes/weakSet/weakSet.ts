@@ -54,7 +54,6 @@ class TurboWeakSet<Type extends object = object> {
 
     // Get the size of the TurboWeakSet (only live objects)
     public get size(): number {
-        this.cleanup();
         return this.toArray().length;
     }
 
