@@ -10,12 +10,14 @@ import {Propagation} from "../event/event.types";
 import {element} from "../../elementCreation/element";
 
 type ObjectMetadata = {
-    ignored?: boolean
+    ignored?: boolean,
 };
 
 type SubstrateData = {
+    active: boolean,
     objects: HTMLCollection | NodeList | Set<object>,
     metadata: WeakMap<object, ObjectMetadata>,
+    customData: WeakMap<object, Record<string, any>>;
 
     priority: number,
     maxPasses: number,
@@ -36,8 +38,6 @@ type SubstrateData = {
 
 type ElementData = {
     substrates: Map<string, SubstrateData>,
-    current?: string,
-    onChange: Delegate<(prev: string, next: string) => void>
 };
 
 type SubstrateCallbackObject<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
@@ -59,19 +59,18 @@ export class SubstrateFunctionsUtils {
     public data(element: object): ElementData {
         if (element instanceof TurboSelector) element = element.element;
         if (!element) return {} as any;
-        if (!this.dataMap.has(element)) this.dataMap.set(element, {
-            substrates: new Map(),
-            onChange: new Delegate()
-        });
+        if (!this.dataMap.has(element)) this.dataMap.set(element, {substrates: new Map()});
         return this.dataMap.get(element);
     }
 
     public createSubstrate(element: object, substrate: string): SubstrateData {
         const data: SubstrateData = {
+            active: false,
             objects: element instanceof Element ? element.children
                 : element instanceof Node ? element.childNodes
                     : new Set(),
             metadata: new WeakMap(),
+            customData: new WeakMap(),
             priority: 10,
             maxPasses: 5,
 
@@ -92,10 +91,11 @@ export class SubstrateFunctionsUtils {
         return data;
     }
 
-    public setCurrent(element: object, substrate: string): boolean {
-        if (!this.getSubstrates(element).includes(substrate)) return false;
-        this.data(element).current = substrate;
-        return true;
+    public activate(element: object, substrate: string, activate?: boolean) {
+        const data = this.getSubstrateData(element, substrate);
+        if (!data) return;
+        if (typeof activate === "boolean") data.active = activate;
+        else data.active = !data.active;
     }
 
     public getSubstrateData(element: object, substrate: string): SubstrateData {
@@ -104,6 +104,27 @@ export class SubstrateFunctionsUtils {
 
     public getSubstrates(element: object): string[] {
         return [...this.data(element).substrates.keys()];
+    }
+
+    public getActiveSubstrates(element: object): string[] {
+        const data = this.data(element).substrates;
+        if (!data) return [];
+
+        const entries = [];
+        for (const [key, value] of data.entries()) {
+            if (value.active) entries.push(key);
+        }
+        return entries;
+    }
+
+    public getDefaultSubstrate(element: object, allowInactive: boolean = true): string {
+        const data = this.data(element).substrates;
+        if (!data) return;
+
+        for (const [key, value] of data.entries()) {
+            if (value.active) return key;
+        }
+        if (allowInactive) return data.keys()[0];
     }
 
     public getMetadata(element: object, substrate: string, object: object): ObjectMetadata {
@@ -115,6 +136,17 @@ export class SubstrateFunctionsUtils {
             substrateData.metadata.set(object, metadata);
         }
         return metadata;
+    }
+
+    public getCustomData(element: object, substrate: string, object: object): ObjectMetadata {
+        const substrateData = this.getSubstrateData(element, substrate);
+        if (!substrateData || !substrateData.customData) return {};
+        let customData = substrateData.customData.get(object);
+        if (!customData) {
+            customData = {};
+            substrateData.customData.set(object, customData);
+        }
+        return customData;
     }
 
     public getSubstratesObjectAttachedTo(...elements: object[]): SubstrateDataWithId[] {
@@ -148,6 +180,7 @@ export class SubstrateFunctionsUtils {
 
         this.objectsSet.toArray().forEach(object =>
             this.data(object).substrates.forEach((substrateData, name) => {
+                if (!substrateData.active) return;
                 const hits = checkTargets(substrateData);
                 if (hits.length > 0) data.push({name, data: substrateData, host: object, targets: hits});
             })
@@ -159,7 +192,7 @@ export class SubstrateFunctionsUtils {
 
     public setupSubstrateCallbackProperties(element: object, properties: SubstrateCallbackProperties) {
         turbo(properties).applyDefaults({
-            substrate: element ? turbo(element).currentSubstrate : undefined,
+            substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: (properties.event as TurboEvent)?.toolName,
@@ -171,6 +204,7 @@ export class SubstrateFunctionsUtils {
     public solveSubstrateInternal(data: SubstrateDataWithId, properties: SubstrateCallbackProperties) {
         const substrateData = data.data;
         substrateData.passes = new WeakMap();
+        substrateData.customData = new WeakMap();
         substrateData.queue = turbo(data.host).getDefaultSubstrateQueue(data.name);
         if (!substrateData.queue) substrateData.queue = new TurboQueue();
 

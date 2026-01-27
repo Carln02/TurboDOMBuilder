@@ -1,11 +1,11 @@
 import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {ListenerOptions} from "../../turboFunctions/event/event.types";
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 import {DefaultEventNameKey} from "../../types/eventNaming.types";
 import {PartialRecord} from "../../types/basic.types";
+import {ListenerOptions} from "../../turboFunctions/listener/listener.types";
 
 /**
  * @type {TurboInteractorProperties}

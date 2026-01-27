@@ -7,6 +7,11 @@ class TurboQueue<Type = any> {
         return this;
     }
 
+    public addOnTop(...values: Type[]): this {
+        this.items = [...values, ...this.items];
+        return this;
+    }
+
     public pop(): Type | undefined {
         if (this.head >= this.items.length) return undefined;
 
@@ -36,6 +41,19 @@ class TurboQueue<Type = any> {
 
     public get isEmpty(): boolean {
         return this.size === 0;
+    }
+
+    public removeDuplicates(entry?: Type): this {
+        const uniques = new Set();
+        const toDelete = [];
+        for (let i = 0; i < this.items.length; i++) {
+            if (entry && this.items[i] !== entry) continue;
+            if (!uniques.has(this.items[i])) uniques.add(this.items[i]);
+            else toDelete.push(i);
+        }
+
+        for (let i = toDelete.length - 1; i >= 0; i--) this.items.splice(i, 1);
+        return this;
     }
 
     public clear(): this {

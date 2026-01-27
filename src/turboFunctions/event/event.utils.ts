@@ -1,19 +1,32 @@
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
-import {Propagation, ListenerEntry, ListenerOptions} from "./event.types";
+import {Propagation} from "./event.types";
 import {TurboSelector} from "../turboSelector";
+import {Listener} from "../listener/listener";
+import {ListenerOptions} from "../listener/listener.types";
+
+type ObjectListeners = {
+    boundListeners: Set<Listener>,
+    preventDefaultListeners: Record<string, (e: Event) => boolean>,
+    preventDefaultOn?: (type: string, e: Event) => boolean
+};
 
 export class EventFunctionsUtils {
-    private dataMap = new WeakMap<Node, Record<string, any>>;
+    private dataMap = new WeakMap<Node, ObjectListeners>;
 
-    public data(element: Node) {
+    public data(element: Node): ObjectListeners {
         if (element instanceof TurboSelector) element = element.element;
-        if (!element) return {};
-        if (!this.dataMap.has(element)) this.dataMap.set(element, {});
+        if (!element || !this.dataMap.has(element)) {
+            const entry = {
+                boundListeners: new Set<Listener>(),
+                preventDefaultListeners: {},
+            };
+            if (element) this.dataMap.set(element, entry);
+        }
         return this.dataMap.get(element);
     }
 
-    public getBoundListenersSet(element: Node): Set<ListenerEntry> {
+    public getBoundListenersSet(element: Node): Set<Listener> {
         let set = this.data(element).boundListeners;
         if (!set) {
             set = new Set();
@@ -51,7 +64,7 @@ export class EventFunctionsUtils {
     }
 
     public getBoundListeners(element: Node, type: string, toolName: string, options?: ListenerOptions,
-                             manager: TurboEventManager = TurboEventManager.instance): ListenerEntry[] {
+                             manager: TurboEventManager = TurboEventManager.instance): Listener[] {
         if (element instanceof TurboSelector) element = element.element;
         if (!element) return [];
         if (!options) options = {};

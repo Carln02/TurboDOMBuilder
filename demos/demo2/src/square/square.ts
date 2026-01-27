@@ -1,4 +1,4 @@
-import {define, TurboElement, Point, element, expose} from "../../../../build/turbodombuilder.esm";
+import {define, TurboElement, Point, element, expose, auto, p, turbo} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {SquareView} from "./square.view";
 import {SquareProperties} from "./square.types";
@@ -11,6 +11,18 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
     @expose("model") color: string;
     @expose("model") size: number;
     @expose("model") position: Point;
+
+    @auto({defaultValue: false}) public set isPusher(value: boolean) {
+        if (value) this.isSpacer = false;
+        turbo(this).removeAllChildren();
+        if (value) turbo(this).addChild(p({text: "Pusher"}));
+    }
+
+    @auto({defaultValue: false}) public set isSpacer(value: boolean) {
+        if (value) this.isPusher = false;
+        turbo(this).removeAllChildren();
+        if (value) turbo(this).addChild(p({text: "Spacer"}));
+    }
 
     public move(delta: Point) {
         this.model.position = delta.add(this.model.position);
@@ -27,7 +39,9 @@ export function square(properties: SquareProperties = {}): Square {
     const el = element({...properties,
         position: undefined,
         view: SquareView,
-        model: SquareModel
+        model: SquareModel,
+        isPusher: false,
+        isSpacer: false,
     }) as Square;
     if (properties.position) el.model.position = properties.position;
     return el;

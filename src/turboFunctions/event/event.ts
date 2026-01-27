@@ -1,18 +1,17 @@
 import {
     BasicInputEvents,
-    ListenerCallback,
-    ListenerEntry,
-    ListenerOptions,
     NonPassiveEvents,
     PreventDefaultOptions,
     Propagation
 } from "./event.types";
-import {$, turbo} from "../turboFunctions";
+import {turbo} from "../turboFunctions";
 import {Turbo} from "../turboFunctions.types";
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {EventFunctionsUtils} from "./event.utils";
 import {TurboSelector} from "../turboSelector";
+import {Listener} from "../listener/listener";
+import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
 
 const utils = new EventFunctionsUtils();
 
@@ -22,7 +21,7 @@ export function setupEventFunctions() {
      * listeners.
      */
     Object.defineProperty(TurboSelector.prototype, "boundListeners", {
-        get: function (): Set<ListenerEntry> {
+        get: function (): Set<Listener> {
             return utils.getBoundListenersSet(this);
         },
         configurable: true,
@@ -60,23 +59,20 @@ export function setupEventFunctions() {
         this: Turbo<Type>,
         type: string,
         toolName: string,
-        listener: ListenerCallback<Turbo<Type>>,
+        listener: ListenerCallback<Type>,
         options?: ListenerOptions,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         if (this.hasToolListener(type, toolName, listener, manager)) return this;
-        const bundledListener = (e: Event) => listener(e, this);
-
         manager.setupCustomDispatcher?.(type);
-        utils.getBoundListenersSet(this).add({
+        utils.getBoundListenersSet(this).add(new Listener({
             target: this,
             type,
             toolName,
-            listener,
-            bundledListener,
+            callback: listener,
             options,
             manager
-        });
+        }));
         return this;
     };
 
@@ -124,7 +120,7 @@ export function setupEventFunctions() {
         const activeTool = toolName ?? manager.getCurrentToolName();
         const checkedSubstratesFor: Set<Node> = new Set();
         const checkedObjectsToolMap: Map<Node, string> = new Map();
-        const firedListeners: Set<ListenerEntry> = new Set();
+        const firedListeners: Set<Listener> = new Set();
         let propagation: Propagation = Propagation.propagate;
 
         if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
@@ -156,7 +152,7 @@ export function setupEventFunctions() {
             for (const entry of entries) {
                 if (firedListeners.has(entry)) continue;
                 try {
-                    propagation = utils.processPropagation(entry.listener(event, ts), propagation);
+                    propagation = utils.processPropagation(entry.executeOn(event, ts), propagation);
                 } finally {
                     firedListeners.add(entry);
                     if (entry.options?.once) boundSet.delete(entry);
@@ -168,7 +164,7 @@ export function setupEventFunctions() {
         const applyTool = (target: Node, tool?: string) => {
             if (options.capture || !tool) return;
             if (turbo(target).isToolIgnored(tool, type, manager)) return;
-            if (!this.hasToolBehavior(tool, type, manager)) return;
+            if (!this.hasToolBehavior(type, toolName, manager)) return;
 
             checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation) return;
@@ -252,7 +248,7 @@ export function setupEventFunctions() {
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
         return utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.listener === listener).length > 0;
+            .filter(entry => entry.callback === listener).length > 0;
     }
 
     /**
@@ -308,7 +304,7 @@ export function setupEventFunctions() {
     ): Turbo<Type> {
         const boundListeners = utils.getBoundListenersSet(this);
         utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.listener === listener)
+            .filter(entry => entry.callback === listener)
             .forEach(entry => {
                 entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
                 boundListeners.delete(entry);

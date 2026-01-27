@@ -1,36 +1,13 @@
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
+import {Listener} from "../listener/listener";
+import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
 
 enum Propagation {
     propagate = "propagate",
     stopPropagation = "stopPropagation",
     stopImmediatePropagation = "stopImmediatePropagation",
 }
-
-type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propagation | any);
-
-/**
- * @group Types
- * @category Event
- */
-type ListenerEntry<Type extends Node = Node> = {
-    target: Type,
-    type: string,
-    toolName?: string,
-    listener: ListenerCallback<Type>,
-    bundledListener: ((e: Event) => Propagation | any),
-    options?: ListenerOptions,
-    manager: TurboEventManager,
-}
-
-/**
- * @group Types
- * @category Event
- */
-type ListenerOptions = AddEventListenerOptions & {
-    checkSubstrates?: boolean,
-    solveSubstrates?: boolean,
-};
 
 /**
  * @group Types
@@ -70,7 +47,7 @@ declare module "../turboSelector" {
         /**
          * @description Readonly set of listeners bound to this node.
          */
-        readonly boundListeners: Set<ListenerEntry>;
+        readonly boundListeners: Set<Listener>;
 
         /**
          * @description If you want the element to bypass the event manager and allow native events to seep through
@@ -219,4 +196,4 @@ declare module "../turboSelector" {
     }
 }
 
-export {ListenerEntry, ListenerCallback, Propagation, ListenerOptions, PreventDefaultOptions, BasicInputEvents, NonPassiveEvents};
+export {Propagation, PreventDefaultOptions, BasicInputEvents, NonPassiveEvents};

@@ -3,11 +3,11 @@ import {TurboInteractorProperties} from "./interactor.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboView} from "../core/view";
 import {$} from "../../turboFunctions/turboFunctions";
-import {ListenerOptions} from "../../turboFunctions/event/event.types";
 import {TurboEmitter} from "../core/emitter";
 import {TurboController} from "../logic/controller";
 import {DefaultEventName, DefaultEventNameKey} from "../../types/eventNaming.types";
 import {PartialRecord} from "../../types/basic.types";
+import {ListenerOptions} from "../../turboFunctions/listener/listener.types";
 
 /**
  * @class TurboInteractor

@@ -150,6 +150,26 @@
  */
 
 /**
+ * @typedef {Object} TurboInteractorProperties
+ * @group MVC
+ * @category Interactor
+ *
+ * @extends {TurboControllerProperties}
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description  Options used to create a new {@link TurboInteractor} attached to an element.
+ * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
+ * @property {Node} [target] - The target that will listen for the events.
+ * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom options to define per
+ * event type.
+ * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
+ * to `TurboEventManager.instance`.
+ */
+
+/**
  * @typedef {Object} TurboToolProperties
  * @group MVC
  * @category Tool
@@ -190,91 +210,6 @@
  * @property {string} [substrateName] - The name of the substrate.
  * @property {() => void} [onActivate] - Function to execute when the tool is activated.
  * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
- */
-
-/**
- * @typedef {Object} MakeSubstrateOptions
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
- * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
- */
-
-/**
- * @typedef {Object} SubstrateCallbackProperties
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
- * solvers when executing them via {@link resolveSubstrate}.
- * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
- * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link resolveSubstrate} when processing every object in the substrate's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
- * @property {string} [eventType] - The type of the event.
- * @property {Node} [eventTarget] - The target of the event.
- * @property {string} [toolName] - The name of the active tool when the event was fired.
- * @property {ListenerOptions} [eventOptions] - The options of the event.
- * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
- * instantiated event manager.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateSolver
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of solver functions that substrates expect.
- */
-
-/**
- * @typedef {Object} TurboHeadlessProperties
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
- */
-
-/**
- * @typedef {Object} TurboInteractorProperties
- * @group MVC
- * @category Interactor
- *
- * @extends {TurboControllerProperties}
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description  Options used to create a new {@link TurboInteractor} attached to an element.
- * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
- * @property {Node} [target] - The target that will listen for the events.
- * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom options to define per
- * event type.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
- * to `TurboEventManager.instance`.
  */
 
 /**
@@ -321,6 +256,71 @@
  * @description Type of the properties object used for instantiating an {@link Mvc} object.
  * @extends MvcGenerationProperties
  * @property {ElementType} [element] - The element to attach to the Mvc instance.
+ */
+
+/**
+ * @typedef {Object} TurboHeadlessProperties
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+
+/**
+ * @typedef {Object} MakeSubstrateOptions
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
+ * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
+ * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
+ */
+
+/**
+ * @typedef {Object} SubstrateCallbackProperties
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
+ * solvers when executing them via {@link solveSubstrate}.
+ * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
+ * @property {object} [target] - The current object being processed by the solver. Property set by
+ * {@link solveSubstrate} when processing every object in the substrate's list.
+ * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
+ * @property {string} [eventType] - The type of the event.
+ * @property {Node} [eventTarget] - The target of the event.
+ * @property {string} [toolName] - The name of the active tool when the event was fired.
+ * @property {ListenerOptions} [eventOptions] - The options of the event.
+ * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
+ * instantiated event manager.
+ */
+
+/**
+ * @typedef {Object} SubstrateChecker
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+
+/**
+ * @typedef {Object} SubstrateChecker
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+
+/**
+ * @typedef {Object} SubstrateSolver
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of solver functions that substrates expect.
  */
 
 /**
@@ -6352,10 +6352,14 @@ class EventFunctionsUtils {
     data(element) {
         if (element instanceof TurboSelector)
             element = element.element;
-        if (!element)
-            return {};
-        if (!this.dataMap.has(element))
-            this.dataMap.set(element, {});
+        if (!element || !this.dataMap.has(element)) {
+            const entry = {
+                boundListeners: new Set(),
+                preventDefaultListeners: {},
+            };
+            if (element)
+                this.dataMap.set(element, entry);
+        }
         return this.dataMap.get(element);
     }
     getBoundListenersSet(element) {
@@ -6426,6 +6430,52 @@ class EventFunctionsUtils {
     }
 }
 
+class Listener {
+    type;
+    target;
+    toolName;
+    callback;
+    bundledListener;
+    options;
+    manager;
+    lastExecutionFrame;
+    lastExecutionTime;
+    constructor(properties) {
+        this.type = properties.type;
+        this.target = properties.target;
+        this.toolName = properties.toolName;
+        this.callback = properties.callback;
+        this.bundledListener = (e) => this.callback(e, this.target);
+        this.options = properties.options ?? {};
+        this.manager = properties.manager ?? TurboEventManager.instance;
+    }
+    execute(e) {
+        return this.bundledListener(e);
+    }
+    executeOn(e, target) {
+        return this.callback(e, target);
+    }
+    match(properties = {}) {
+        for (const [key, value] of Object.entries(properties)) {
+            if (value === undefined)
+                continue;
+            if (typeof value === "object") {
+                if (typeof this[key] !== "object")
+                    return false;
+                for (const [subKey, subValue] of Object.entries(value)) {
+                    if (subValue === undefined)
+                        continue;
+                    if (this[key][subKey] !== subValue)
+                        return false;
+                }
+            }
+            if (this[key] !== value)
+                return false;
+        }
+        return true;
+    }
+}
+
 const utils$6 = new EventFunctionsUtils();
 function setupEventFunctions() {
     /**
@@ -6468,17 +6518,15 @@ function setupEventFunctions() {
     TurboSelector.prototype.onTool = function _onTool(type, toolName, listener, options, manager = TurboEventManager.instance) {
         if (this.hasToolListener(type, toolName, listener, manager))
             return this;
-        const bundledListener = (e) => listener(e, this);
         manager.setupCustomDispatcher?.(type);
-        utils$6.getBoundListenersSet(this).add({
+        utils$6.getBoundListenersSet(this).add(new Listener({
             target: this,
             type,
             toolName,
-            listener,
-            bundledListener,
+            callback: listener,
             options,
             manager
-        });
+        }));
         return this;
     };
     /**
@@ -6546,7 +6594,7 @@ function setupEventFunctions() {
                 if (firedListeners.has(entry))
                     continue;
                 try {
-                    propagation = utils$6.processPropagation(entry.listener(event, ts), propagation);
+                    propagation = utils$6.processPropagation(entry.executeOn(event, ts), propagation);
                 }
                 finally {
                     firedListeners.add(entry);
@@ -6562,7 +6610,7 @@ function setupEventFunctions() {
                 return;
             if (turbo(target).isToolIgnored(tool, type, manager))
                 return;
-            if (!this.hasToolBehavior(tool, type, manager))
+            if (!this.hasToolBehavior(type, toolName, manager))
                 return;
             checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation)
@@ -6634,7 +6682,7 @@ function setupEventFunctions() {
      */
     TurboSelector.prototype.hasToolListener = function _hasToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
         return utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.listener === listener).length > 0;
+            .filter(entry => entry.callback === listener).length > 0;
     };
     /**
      * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
@@ -6672,7 +6720,7 @@ function setupEventFunctions() {
     TurboSelector.prototype.removeToolListener = function _removeToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
         const boundListeners = utils$6.getBoundListenersSet(this);
         utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.listener === listener)
+            .filter(entry => entry.callback === listener)
             .forEach(entry => {
             entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
             boundListeners.delete(entry);
@@ -7158,6 +7206,10 @@ class TurboQueue {
         values.forEach(value => this.items.push(value));
         return this;
     }
+    addOnTop(...values) {
+        this.items = [...values, ...this.items];
+        return this;
+    }
     pop() {
         if (this.head >= this.items.length)
             return undefined;
@@ -7181,6 +7233,21 @@ class TurboQueue {
     }
     get isEmpty() {
         return this.size === 0;
+    }
+    removeDuplicates(entry) {
+        const uniques = new Set();
+        const toDelete = [];
+        for (let i = 0; i < this.items.length; i++) {
+            if (entry && this.items[i] !== entry)
+                continue;
+            if (!uniques.has(this.items[i]))
+                uniques.add(this.items[i]);
+            else
+                toDelete.push(i);
+        }
+        for (let i = toDelete.length - 1; i >= 0; i--)
+            this.items.splice(i, 1);
+        return this;
     }
     clear() {
         this.items = [];
@@ -7219,18 +7286,17 @@ class SubstrateFunctionsUtils {
         if (!element)
             return {};
         if (!this.dataMap.has(element))
-            this.dataMap.set(element, {
-                substrates: new Map(),
-                onChange: new Delegate()
-            });
+            this.dataMap.set(element, { substrates: new Map() });
         return this.dataMap.get(element);
     }
     createSubstrate(element, substrate) {
         const data = {
+            active: false,
             objects: element instanceof Element ? element.children
                 : element instanceof Node ? element.childNodes
                     : new Set(),
             metadata: new WeakMap(),
+            customData: new WeakMap(),
             priority: 10,
             maxPasses: 5,
             queue: new TurboQueue(),
@@ -7246,17 +7312,42 @@ class SubstrateFunctionsUtils {
         this.data(element).substrates.set(substrate, data);
         return data;
     }
-    setCurrent(element, substrate) {
-        if (!this.getSubstrates(element).includes(substrate))
-            return false;
-        this.data(element).current = substrate;
-        return true;
+    activate(element, substrate, activate) {
+        const data = this.getSubstrateData(element, substrate);
+        if (!data)
+            return;
+        if (typeof activate === "boolean")
+            data.active = activate;
+        else
+            data.active = !data.active;
     }
     getSubstrateData(element, substrate) {
         return this.data(element).substrates.get(substrate);
     }
     getSubstrates(element) {
         return [...this.data(element).substrates.keys()];
+    }
+    getActiveSubstrates(element) {
+        const data = this.data(element).substrates;
+        if (!data)
+            return [];
+        const entries = [];
+        for (const [key, value] of data.entries()) {
+            if (value.active)
+                entries.push(key);
+        }
+        return entries;
+    }
+    getDefaultSubstrate(element, allowInactive = true) {
+        const data = this.data(element).substrates;
+        if (!data)
+            return;
+        for (const [key, value] of data.entries()) {
+            if (value.active)
+                return key;
+        }
+        if (allowInactive)
+            return data.keys()[0];
     }
     getMetadata(element, substrate, object) {
         const substrateData = this.getSubstrateData(element, substrate);
@@ -7268,6 +7359,17 @@ class SubstrateFunctionsUtils {
             substrateData.metadata.set(object, metadata);
         }
         return metadata;
+    }
+    getCustomData(element, substrate, object) {
+        const substrateData = this.getSubstrateData(element, substrate);
+        if (!substrateData || !substrateData.customData)
+            return {};
+        let customData = substrateData.customData.get(object);
+        if (!customData) {
+            customData = {};
+            substrateData.customData.set(object, customData);
+        }
+        return customData;
     }
     getSubstratesObjectAttachedTo(...elements) {
         if (!elements || elements.length === 0)
@@ -7297,6 +7399,8 @@ class SubstrateFunctionsUtils {
             return Array.from(hits.values());
         };
         this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
+            if (!substrateData.active)
+                return;
             const hits = checkTargets(substrateData);
             if (hits.length > 0)
                 data.push({ name, data: substrateData, host: object, targets: hits });
@@ -7306,7 +7410,7 @@ class SubstrateFunctionsUtils {
     }
     setupSubstrateCallbackProperties(element, properties) {
         turbo(properties).applyDefaults({
-            substrate: element ? turbo(element).currentSubstrate : undefined,
+            substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: properties.event?.toolName,
@@ -7317,6 +7421,7 @@ class SubstrateFunctionsUtils {
     solveSubstrateInternal(data, properties) {
         const substrateData = data.data;
         substrateData.passes = new WeakMap();
+        substrateData.customData = new WeakMap();
         substrateData.queue = turbo(data.host).getDefaultSubstrateQueue(data.name);
         if (!substrateData.queue)
             substrateData.queue = new TurboQueue();
@@ -7373,8 +7478,8 @@ function setupSubstrateFunctions() {
             this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
         if (options?.priority)
             utils$3.getSubstrateData(this, substrate).priority = options.priority;
-        if (!this.currentSubstrate)
-            this.currentSubstrate = substrate;
+        if (options?.active)
+            utils$3.activate(this, substrate, true);
         return this;
     };
     Object.defineProperty(TurboSelector.prototype, "substrates", {
@@ -7384,45 +7489,36 @@ function setupSubstrateFunctions() {
         configurable: false,
         enumerable: true
     });
-    Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
-        get: function () {
-            return utils$3.data(this).current;
-        },
-        set: function (value) {
-            if (!value)
-                return;
-            const prev = this.currentSubstrate;
-            if (utils$3.setCurrent(this, value))
-                this.onSubstrateChange.fire(prev, value);
-        },
-        configurable: false,
-        enumerable: true
-    });
-    Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
-        get: function () {
-            return utils$3.data(this).onChange;
-        },
-        configurable: false,
-        enumerable: true
-    });
     //ACTIVATION
-    TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = this.currentSubstrate) {
+    Object.defineProperty(TurboSelector.prototype, "activeSubstrates", {
+        get: function () {
+            return utils$3.getActiveSubstrates(this.element);
+        },
+        configurable: false,
+        enumerable: true
+    });
+    TurboSelector.prototype.activateSubstrate = function _activateSubstrates(substrate = utils$3.getDefaultSubstrate(this), activate) {
+        if (substrate)
+            utils$3.activate(this, substrate, activate);
+        return this;
+    };
+    TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = utils$3.getDefaultSubstrate(this)) {
         return utils$3.getSubstrateData(this, substrate)?.onActivate ?? new Delegate();
     };
-    TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(substrate = utils$3.getDefaultSubstrate(this)) {
         return utils$3.getSubstrateData(this, substrate)?.onDeactivate ?? new Delegate();
     };
     //PRIORITY
-    TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = utils$3.getDefaultSubstrate(this)) {
         return utils$3.getSubstrateData(this, substrate)?.priority ?? 0;
     };
-    TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = utils$3.getDefaultSubstrate(this)) {
         if (typeof priority === "number")
             utils$3.getSubstrateData(this, substrate).priority = priority;
         return this;
     };
     //OBJECT LIST
-    TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$3.getDefaultSubstrate(this)) {
         const set = new Set();
         if (!substrate)
             return set;
@@ -7432,13 +7528,13 @@ function setupSubstrateFunctions() {
         });
         return set;
     };
-    TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!list || !substrate)
             return this;
         utils$3.getSubstrateData(this, substrate).objects = list;
         return this;
     };
-    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!object || !substrate)
             return this;
         utils$3.getMetadata(this, substrate, object).ignored = false;
@@ -7453,7 +7549,7 @@ function setupSubstrateFunctions() {
         }
         return this;
     };
-    TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!object || !substrate)
             return this;
         utils$3.getMetadata(this, substrate, object).ignored = true;
@@ -7462,31 +7558,40 @@ function setupSubstrateFunctions() {
             list.delete(object);
         return this;
     };
-    TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!object || !substrate)
             return false;
         return this.getSubstrateObjectList(substrate).has(object);
     };
     //QUEUE
-    TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(object, substrate = this.currentSubstrate) {
-        const queue = utils$3.getSubstrateData(this, substrate).queue;
-        if (queue && queue instanceof TurboQueue && !queue.has(object))
-            queue.push(object);
-        return this;
+    TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
+        return utils$3.getSubstrateData(this, substrate).queue;
     };
-    TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(substrate = this.currentSubstrate) {
-        const queue = utils$3.getSubstrateData(this, substrate).queue;
-        if (queue && queue instanceof TurboQueue)
-            queue.clear();
-        return this;
-    };
-    TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = this.currentSubstrate) {
+    // TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(
+    //     this: TurboSelector,
+    //     object: object,
+    //     substrate: string = utils.getDefaultSubstrate(this)
+    // ): TurboSelector {
+    //     const queue = utils.getSubstrateData(this, substrate).queue;
+    //     if (queue && queue instanceof TurboQueue && !queue.has(object)) queue.push(object);
+    //     return this;
+    // }
+    //
+    // TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(
+    //     this: TurboSelector,
+    //     substrate: string = utils.getDefaultSubstrate(this)
+    // ): TurboSelector {
+    //     const queue = utils.getSubstrateData(this, substrate).queue;
+    //     if (queue && queue instanceof TurboQueue) queue.clear();
+    //     return this;
+    // }
+    TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
         const queue = utils$3.getSubstrateData(this, substrate).defaultQueue;
         if (queue)
             return queue.clone();
         return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
     };
-    TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!queue || typeof queue !== "object")
             return this;
         if (Array.isArray(queue))
@@ -7496,7 +7601,7 @@ function setupSubstrateFunctions() {
         return this;
     };
     //PASSES
-    TurboSelector.prototype.getObjectPassesForSubstrate = function _getObjectPassesForSubstrate(object, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.getObjectPassesForSubstrate = function _getObjectPassesForSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!object)
             return 0;
         const map = utils$3.getSubstrateData(this, substrate).passes;
@@ -7504,26 +7609,36 @@ function setupSubstrateFunctions() {
             return 0;
         return map.get(object);
     };
-    TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = utils$3.getDefaultSubstrate(this)) {
         return utils$3.getSubstrateData(this, substrate).maxPasses;
     };
-    TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = utils$3.getDefaultSubstrate(this)) {
         utils$3.getSubstrateData(this, substrate).maxPasses = passes;
+        return this;
+    };
+    //CUSTOM DATA
+    TurboSelector.prototype.getObjectDataForSubstrate = function _getObjectDataForSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
+        return utils$3.getCustomData(this.element, substrate, object);
+    };
+    TurboSelector.prototype.setObjectDataForSubstrate = function _setObjectDataForSubstrate(object, data, substrate = utils$3.getDefaultSubstrate(this)) {
+        if (!data || typeof data !== "object")
+            data = {};
+        utils$3.getSubstrateData(this.element, substrate).customData.set(object, data);
         return this;
     };
     //CHECKER
     TurboSelector.prototype.addChecker = function _addChecker(properties) {
         if (!properties || !properties.name || !properties.callback)
             return this;
-        const substrate = properties.substrate || this.currentSubstrate;
+        const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
         utils$3.getSubstrateData(this, substrate).checkers?.set(properties.name, properties.callback);
         return this;
     };
-    TurboSelector.prototype.removeChecker = function _removeChecker(name, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.removeChecker = function _removeChecker(name, substrate = utils$3.getDefaultSubstrate(this)) {
         utils$3.getSubstrateData(this, substrate).checkers?.delete(name);
         return this;
     };
-    TurboSelector.prototype.clearCheckers = function _clearCheckers(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.clearCheckers = function _clearCheckers(substrate = utils$3.getDefaultSubstrate(this)) {
         utils$3.getSubstrateData(this, substrate).checkers?.clear();
         return this;
     };
@@ -7533,7 +7648,7 @@ function setupSubstrateFunctions() {
         utils$3.setupSubstrateCallbackProperties(this, properties);
         if (!properties.substrate)
             return true;
-        const substrate = properties.substrate || this.currentSubstrate;
+        const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
         for (const checker of utils$3.getSubstrateData(this, substrate).checkers.values()) {
             if (!checker(properties))
                 return false;
@@ -7562,15 +7677,15 @@ function setupSubstrateFunctions() {
     TurboSelector.prototype.addMutator = function _addMutator(properties) {
         if (!properties || !properties.name || !properties.callback)
             return this;
-        const substrate = properties.substrate || this.currentSubstrate;
+        const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
         utils$3.getSubstrateData(this, substrate).mutators?.set(properties.name, properties.callback);
         return this;
     };
-    TurboSelector.prototype.removeMutator = function _removeMutator(name, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.removeMutator = function _removeMutator(name, substrate = utils$3.getDefaultSubstrate(this)) {
         utils$3.getSubstrateData(this, substrate).mutators?.delete(name);
         return this;
     };
-    TurboSelector.prototype.clearMutators = function _clearMutators(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.clearMutators = function _clearMutators(substrate = utils$3.getDefaultSubstrate(this)) {
         utils$3.getSubstrateData(this, substrate).mutators?.clear();
         return this;
     };
@@ -7588,7 +7703,7 @@ function setupSubstrateFunctions() {
     TurboSelector.prototype.addSolver = function _addSolver(properties) {
         if (!properties || !properties.name || !properties.callback)
             return this;
-        const substrate = properties.substrate || this.currentSubstrate;
+        const substrate = properties.substrate ?? utils$3.getDefaultSubstrate(this);
         const data = utils$3.getSubstrateData(this, substrate);
         if (!data)
             return this;
@@ -7601,7 +7716,7 @@ function setupSubstrateFunctions() {
         binaryInsert(data.sortedSolvers, name, (name1, name2) => data.solvers.get(name1).priority - data.solvers.get(name2).priority);
         return this;
     };
-    TurboSelector.prototype.removeSolver = function _removeSolver(name, substrate = this.currentSubstrate) {
+    TurboSelector.prototype.removeSolver = function _removeSolver(name, substrate = utils$3.getDefaultSubstrate(this)) {
         const data = utils$3.getSubstrateData(this, substrate);
         if (!data)
             return this;
@@ -7611,7 +7726,7 @@ function setupSubstrateFunctions() {
             data.sortedSolvers.splice(index, 1);
         return this;
     };
-    TurboSelector.prototype.clearSolvers = function _clearSolvers(substrate = this.currentSubstrate) {
+    TurboSelector.prototype.clearSolvers = function _clearSolvers(substrate = utils$3.getDefaultSubstrate(this)) {
         const data = utils$3.getSubstrateData(this, substrate);
         if (!data)
             return this;
@@ -7641,9 +7756,8 @@ function setupSubstrateFunctions() {
                 return this;
         }
         const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
-        for (const substrateData of substratesData) {
+        for (const substrateData of substratesData)
             utils$3.solveSubstrateInternal(substrateData, properties);
-        }
         return this;
     };
 }
@@ -9893,10 +10007,83 @@ function observe(value, context) {
  * }
  * ```
  */
-function solver(value, context) {
-    const { name } = context;
-    context.addInitializer(function () { this["solverKeys"]?.push(name); });
-    return value;
+function solver(properties) {
+    return function (value, context) {
+        if (!properties || typeof properties !== "object")
+            properties = {};
+        if (!properties.name)
+            properties.name = context?.name;
+        context.addInitializer(function () {
+            this["solversMetadata"]?.push(properties);
+        });
+        return value;
+    };
+}
+/**
+ * @decorator
+ * @function checker
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate checkers.
+ * @example
+ * ```ts
+ * @checker private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addChecker(this.constrainPosition);
+ * }
+ * ```
+ */
+function checker(properties) {
+    return function (value, context) {
+        if (!properties || typeof properties !== "object")
+            properties = {};
+        if (!properties.name)
+            properties.name = context?.name;
+        context.addInitializer(function () {
+            this["checkersMetadata"]?.push(properties);
+        });
+        return value;
+    };
+}
+/**
+ * @decorator
+ * @function mutator
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate mutators.
+ * @example
+ * ```ts
+ * @mutator private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addMutator(this.constrainPosition);
+ * }
+ * ```
+ */
+function mutator(properties) {
+    return function (value, context) {
+        if (!properties || typeof properties !== "object")
+            properties = {};
+        if (!properties.name)
+            properties.name = context?.name;
+        context.addInitializer(function () {
+            this["mutatorsMetadata"]?.push(properties);
+        });
+        return value;
+    };
 }
 
 /**
@@ -10135,12 +10322,26 @@ class TurboSubstrate extends TurboController {
     /**
      * @description The property keys of the substrate solvers defined in the instance.
      */
-    solverKeys = [];
+    solversMetadata = [];
+    /**
+     * @description The property keys of the substrate checkers defined in the instance.
+     */
+    checkersMetadata = [];
+    /**
+     * @description The property keys of the substrate mutators defined in the instance.
+     */
+    mutatorsMetadata = [];
     get priority() {
         return turbo(this).getSubstratePriority(this.substrateName);
     }
     set priority(value) {
         turbo(this).setSubstratePriority(value, this.substrateName);
+    }
+    get active() {
+        return turbo(this).activeSubstrates.includes(this.substrateName);
+    }
+    set active(value) {
+        turbo(this).activateSubstrate(this.substrateName, value);
     }
     /**
      * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
@@ -10152,8 +10353,8 @@ class TurboSubstrate extends TurboController {
     set objectList(value) {
         turbo(this).setSubstrateObjectList(value, this.substrateName);
     }
-    get nextInQueue() {
-        return turbo(this).getNextInSubstrateQueue(this.substrateName);
+    get queue() {
+        return turbo(this).getSubstrateQueue(this.substrateName);
     }
     get defaultQueue() {
         return turbo(this).getDefaultSubstrateQueue(this.substrateName);
@@ -10190,8 +10391,35 @@ class TurboSubstrate extends TurboController {
             onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
             onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
         });
-        this.solverKeys.forEach((key) => {
-            turbo(this).addSolver({ name: key, callback: props => this[key]?.(props) });
+        this.solversMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addSolver({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+        this.checkersMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addChecker({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+        this.mutatorsMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addMutator({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
         });
     }
     /**
@@ -10221,16 +10449,23 @@ class TurboSubstrate extends TurboController {
     hasObject(object) {
         return turbo(this).hasObjectInSubstrate(object, this.substrateName);
     }
-    addToQueue(object) {
-        turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
-        return this;
-    }
-    clearQueue() {
-        turbo(this).clearSubstrateQueue(this.substrateName);
-        return this;
-    }
+    // public addToQueue(object: object): this {
+    //     turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
+    //     return this;
+    // }
+    //
+    // public clearQueue(): this {
+    //     turbo(this).clearSubstrateQueue(this.substrateName);
+    //     return this;
+    // }
     getObjectPasses(object) {
         return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+    }
+    getObjectData(object) {
+        return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+    }
+    setObjectData(object, data) {
+        return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
     }
     addChecker(properties) {
         turbo(this).addChecker({ ...properties, substrate: this.substrateName });
@@ -14129,4 +14364,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DataBlockObserver, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DataBlockObserver, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

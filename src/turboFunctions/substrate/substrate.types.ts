@@ -1,7 +1,8 @@
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {ListenerOptions} from "../event/event.types";
+import {Propagation} from "../event/event.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
+import {ListenerOptions} from "../listener/listener.types";
 
 /**
  * @type {MakeSubstrateOptions}
@@ -16,6 +17,7 @@ type MakeSubstrateOptions = {
     onActivate?: () => void,
     onDeactivate?: () => void,
     priority?: number,
+    active?: boolean,
 };
 
 /**
@@ -24,10 +26,10 @@ type MakeSubstrateOptions = {
  * @category Substrate
  *
  * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
- * solvers when executing them via {@link resolveSubstrate}.
+ * solvers when executing them via {@link solveSubstrate}.
  * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
  * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link resolveSubstrate} when processing every object in the substrate's list.
+ * {@link solveSubstrate} when processing every object in the substrate's list.
  * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
  * @property {string} [eventType] - The type of the event.
  * @property {Node} [eventTarget] - The target of the event.
@@ -77,9 +79,11 @@ type SubstrateMutator<Type = any> = (properties: SubstrateMutatorProperties<Type
  *
  * @description Type representing the signature of solver functions that substrates expect.
  */
-type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => any;type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
-    name: string,
-    callback: Type,
+type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => Propagation;
+
+type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
+    name?: string,
+    callback?: Type,
     substrate?: string,
     priority?: number,
 };
@@ -92,11 +96,6 @@ declare module "../turboSelector" {
         readonly substrates: string[];
 
         /**
-         * @description The current active substrate in the element.
-         */
-        currentSubstrate: string;
-
-        /**
          * @function makeSubstrate
          * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
          * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
@@ -106,12 +105,11 @@ declare module "../turboSelector" {
          */
         makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
 
-        /**
-         * @description A delegate fired every time the current substrate changes.
-         */
-        readonly onSubstrateChange: Delegate<(prev: string, next: string) => void>;
-
         //ACTIVATION
+
+        readonly activeSubstrates: string[];
+
+        activateSubstrate(substrate: string, activate?: boolean): this;
 
         /**
          * @function onSubstrateActivate
@@ -184,11 +182,13 @@ declare module "../turboSelector" {
 
         //QUEUE
 
-        getNextInSubstrateQueue(substrate?: string): object;
+        getSubstrateQueue(substrate?: string): TurboQueue<object>;
 
-        addObjectToSubstrateQueue(object: object, substrate?: string): this;
-
-        clearSubstrateQueue(substrate?: string): this;
+        // getNextInSubstrateQueue(substrate?: string): object;
+        //
+        // addObjectToSubstrateQueue(object: object, substrate?: string): this;
+        //
+        // clearSubstrateQueue(substrate?: string): this;
 
         getDefaultSubstrateQueue(substrate?: string): TurboQueue<object>;
 
@@ -197,10 +197,13 @@ declare module "../turboSelector" {
         //PASSES
 
         getObjectPassesForSubstrate(object: object, substrate?: string): number;
-
         getMaxPassesForSubstrate(substrate?: string): number;
-
         setMaxPassesForSubstrate(passes: number, substrate?: string): this;
+
+        //CUSTOM DATA
+
+        getObjectDataForSubstrate(object: object, substrate?: string): Record<string, any>;
+        setObjectDataForSubstrate(object: object, data?: Record<string, any>, substrate?: string): this;
 
         //CHECKER
 

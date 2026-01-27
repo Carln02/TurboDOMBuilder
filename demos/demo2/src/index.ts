@@ -1,21 +1,29 @@
 import {toolbar} from "./toolbar/toolbar";
-import {turbo, button} from "../../../build/turbodombuilder.esm";
+import {button, turbo} from "../../../build/turbodombuilder.esm";
 import {SelectTool} from "./tools/select.tool";
 import {bucket} from "./tools/bucket/bucket";
-import {PusherTool} from "./tools/pusher/pusher.tool";
-import {PusherSubstrate} from "./tools/pusher/pusher.substrate";
+import {PusherSubstrateTool} from "./tools/pusherSubstrate.tool";
 import {AddSquareTool} from "./tools/addSquare.tool";
 import {AddCircleTool} from "./tools/addCircle.tool";
+import {myCanvas} from "./canvas/canvas";
+import {MakePusherTool} from "./tools/makePusher.tool";
+import {MakeSpacerTool} from "./tools/makeSpacer.tool";
+import {CanvasPusherSubstrate} from "./canvas/canvas.pusherSubstrate";
+import {CanvasSubstrate} from "./canvas/canvas.mainSubstrate";
 
-//Create a default substrate for all elements in the body
-turbo(document.body)
-    .makeSubstrate("main")
-    .setSubstrateObjectList(document.body.children);
+const canvas = myCanvas({parent: document.body, substrates: [CanvasPusherSubstrate, CanvasSubstrate]});
+turbo(canvas).activateSubstrate("main");
 
 //Create a toolbar and populate it
-const tb = toolbar({parent: document.body});
-tb.addTool(button({text: "Select", tools: SelectTool, classes: "demo-button"}));
-tb.addTool(button({text: "Add Square", tools: AddSquareTool, classes: "demo-button"}));
-tb.addTool(button({text: "Add Circle", tools: AddCircleTool, classes: "demo-button"}));
-tb.addTool(bucket({text: "Bucket", classes: "demo-button"}));
-tb.addTool(button({text: "Pusher", tools: PusherTool, substrates: PusherSubstrate, classes: "demo-button"}));
+toolbar({
+    parent: document.body,
+    entries: [
+        button({text: "Select", tools: SelectTool, classes: "demo-button"}),
+        button({text: "Add Square", tools: AddSquareTool, classes: "demo-button"}),
+        button({text: "Add Circle", tools: AddCircleTool, classes: "demo-button"}),
+        bucket({text: "Bucket", classes: "demo-button"}),
+        button({text: "Pusher Substrate", tools: PusherSubstrateTool, classes: "demo-button"}),
+        button({text: "Make Pusher", tools: MakePusherTool, classes: "demo-button"}),
+        button({text: "Make Spacer", tools: MakeSpacerTool, classes: "demo-button"}),
+    ]
+});

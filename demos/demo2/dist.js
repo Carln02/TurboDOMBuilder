@@ -9401,6 +9401,17 @@
      * @group Element Creation
      * @category Base Elements
      *
+     * @description Creates a "p" element with the specified properties.
+     * @param {TurboProperties<"p">} [properties] - Object containing properties of the element.
+     * @returns {ValidElement<"p">} The created element.
+     */
+    function p(properties = {}) {
+        return element({ ...properties, tag: "p" });
+    }
+    /**
+     * @group Element Creation
+     * @category Base Elements
+     *
      * @description Creates a "style" element with the specified properties.
      * @param {TurboProperties<"style">} [properties] - Object containing properties of the element.
      * @returns {ValidElement<"style">} The created element.
@@ -13761,10 +13772,14 @@
         data(element) {
             if (element instanceof TurboSelector)
                 element = element.element;
-            if (!element)
-                return {};
-            if (!this.dataMap.has(element))
-                this.dataMap.set(element, {});
+            if (!element || !this.dataMap.has(element)) {
+                const entry = {
+                    boundListeners: new Set(),
+                    preventDefaultListeners: {},
+                };
+                if (element)
+                    this.dataMap.set(element, entry);
+            }
             return this.dataMap.get(element);
         }
         getBoundListenersSet(element) {
@@ -13835,6 +13850,52 @@
         }
     }
 
+    class Listener {
+        type;
+        target;
+        toolName;
+        callback;
+        bundledListener;
+        options;
+        manager;
+        lastExecutionFrame;
+        lastExecutionTime;
+        constructor(properties) {
+            this.type = properties.type;
+            this.target = properties.target;
+            this.toolName = properties.toolName;
+            this.callback = properties.callback;
+            this.bundledListener = (e) => this.callback(e, this.target);
+            this.options = properties.options ?? {};
+            this.manager = properties.manager ?? TurboEventManager.instance;
+        }
+        execute(e) {
+            return this.bundledListener(e);
+        }
+        executeOn(e, target) {
+            return this.callback(e, target);
+        }
+        match(properties = {}) {
+            for (const [key, value] of Object.entries(properties)) {
+                if (value === undefined)
+                    continue;
+                if (typeof value === "object") {
+                    if (typeof this[key] !== "object")
+                        return false;
+                    for (const [subKey, subValue] of Object.entries(value)) {
+                        if (subValue === undefined)
+                            continue;
+                        if (this[key][subKey] !== subValue)
+                            return false;
+                    }
+                }
+                if (this[key] !== value)
+                    return false;
+            }
+            return true;
+        }
+    }
+
     const utils$6 = new EventFunctionsUtils();
     function setupEventFunctions() {
         /**
@@ -13877,17 +13938,15 @@
         TurboSelector.prototype.onTool = function _onTool(type, toolName, listener, options, manager = TurboEventManager.instance) {
             if (this.hasToolListener(type, toolName, listener, manager))
                 return this;
-            const bundledListener = (e) => listener(e, this);
             manager.setupCustomDispatcher?.(type);
-            utils$6.getBoundListenersSet(this).add({
+            utils$6.getBoundListenersSet(this).add(new Listener({
                 target: this,
                 type,
                 toolName,
-                listener,
-                bundledListener,
+                callback: listener,
                 options,
                 manager
-            });
+            }));
             return this;
         };
         /**
@@ -13919,14 +13978,17 @@
             turbo(options).applyDefaults({ checkSubstrates: true, solveSubstrates: true });
             const activeTool = toolName ?? manager.getCurrentToolName();
             const checkedSubstratesFor = new Set();
+            const checkedObjectsToolMap = new Map();
             const firedListeners = new Set();
             let propagation = Propagation.propagate;
             if (this.bypassManagerOn)
                 utils$6.bypassManager(this, manager, this.bypassManagerOn(event));
-            const checkSubstrate = (target, tool) => {
+            const checkSubstrates = (target, tool) => {
                 if (checkedSubstratesFor.has(target))
                     return;
                 checkedSubstratesFor.add(target);
+                if (tool)
+                    checkedObjectsToolMap.set(target, tool);
                 if (!options.checkSubstrates)
                     return;
                 if (!this.checkSubstratesForEvent({
@@ -13939,20 +14001,20 @@
                 }))
                     propagation = Propagation.stopImmediatePropagation;
             };
-            const run = (target, tool) => {
-                const ts = target instanceof TurboSelector ? target : $(target);
+            const runListeners = (target, tool) => {
+                const ts = target instanceof TurboSelector ? target : turbo(target);
                 const boundSet = utils$6.getBoundListenersSet(target);
                 const entries = [...utils$6.getBoundListeners(target, type, tool, options, manager)];
                 if (entries.length === 0)
                     return;
-                checkSubstrate(target, tool);
+                checkSubstrates(target, tool);
                 if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 for (const entry of entries) {
                     if (firedListeners.has(entry))
                         continue;
                     try {
-                        propagation = utils$6.processPropagation(entry.listener(event, ts), propagation);
+                        propagation = utils$6.processPropagation(entry.executeOn(event, ts), propagation);
                     }
                     finally {
                         firedListeners.add(entry);
@@ -13963,46 +14025,58 @@
                         return;
                 }
             };
-            if (activeTool) {
-                run(this, activeTool);
-                if (propagation !== Propagation.propagate)
-                    return propagation;
-            }
-            if (!options.capture && activeTool && !this.isToolIgnored(activeTool, type, manager)) {
-                if (this.hasToolBehavior(activeTool, type, manager)) {
-                    checkSubstrate(this.element, activeTool);
-                    if (propagation === Propagation.stopImmediatePropagation)
+            const applyTool = (target, tool) => {
+                if (options.capture || !tool)
+                    return;
+                if (turbo(target).isToolIgnored(tool, type, manager))
+                    return;
+                if (!this.hasToolBehavior(type, toolName, manager))
+                    return;
+                checkSubstrates(target, tool);
+                if (propagation === Propagation.stopImmediatePropagation)
+                    return;
+                propagation = turbo(target).applyTool(tool, type, event, manager);
+            };
+            const main = () => {
+                if (activeTool) {
+                    runListeners(this, activeTool);
+                    if (propagation !== Propagation.propagate)
                         return;
                 }
-                propagation = this.applyTool(activeTool, type, event, manager);
+                applyTool(this.element, activeTool);
                 if (propagation !== Propagation.propagate)
-                    return propagation;
-            }
-            const embeddedTarget = this.getEmbeddedToolTarget(manager);
-            const objectTools = this.getToolNames(manager);
-            if (embeddedTarget && objectTools.length > 0) {
-                for (const toolName of objectTools)
-                    run(embeddedTarget, toolName);
-                if (propagation !== Propagation.propagate)
-                    return propagation;
-                const embeddedTargetSel = turbo(embeddedTarget);
-                if (!options.capture)
+                    return;
+                const embeddedTarget = this.getEmbeddedToolTarget(manager);
+                const objectTools = this.getToolNames(manager);
+                if (embeddedTarget && objectTools.length > 0) {
                     for (const toolName of objectTools) {
-                        if (!embeddedTargetSel.isToolIgnored(toolName, type, manager)) {
-                            if (this.hasToolBehavior(toolName, type, manager)) {
-                                checkSubstrate(embeddedTarget, toolName);
-                                if (propagation === Propagation.stopImmediatePropagation)
-                                    return;
-                            }
-                            propagation = turbo(embeddedTarget).applyTool(toolName, type, event, manager);
-                            if (propagation !== Propagation.propagate)
-                                return propagation;
-                        }
+                        runListeners(embeddedTarget, toolName);
+                        if (propagation === Propagation.stopImmediatePropagation)
+                            return;
                     }
-                if (propagation !== Propagation.propagate)
-                    return propagation;
-            }
-            run(this, undefined);
+                    if (propagation !== Propagation.propagate)
+                        return;
+                    if (!options.capture)
+                        for (const toolName of objectTools) {
+                            applyTool(embeddedTarget, toolName);
+                            if (propagation === Propagation.stopImmediatePropagation)
+                                return;
+                        }
+                    if (propagation !== Propagation.propagate)
+                        return;
+                }
+                runListeners(this, undefined);
+            };
+            main();
+            if (options.solveSubstrates)
+                checkedSubstratesFor.forEach(entry => turbo(this).solveSubstratesForEvent({
+                    event,
+                    toolName: checkedObjectsToolMap.get(entry),
+                    eventType: type,
+                    eventTarget: entry,
+                    eventOptions: options,
+                    manager: manager
+                }));
             return propagation;
         };
         /**
@@ -14028,7 +14102,7 @@
          */
         TurboSelector.prototype.hasToolListener = function _hasToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
             return utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-                .filter(entry => entry.listener === listener).length > 0;
+                .filter(entry => entry.callback === listener).length > 0;
         };
         /**
          * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
@@ -14066,7 +14140,7 @@
         TurboSelector.prototype.removeToolListener = function _removeToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
             const boundListeners = utils$6.getBoundListenersSet(this);
             utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-                .filter(entry => entry.listener === listener)
+                .filter(entry => entry.callback === listener)
                 .forEach(entry => {
                 entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
                 boundListeners.delete(entry);
@@ -14552,6 +14626,10 @@
             values.forEach(value => this.items.push(value));
             return this;
         }
+        addOnTop(...values) {
+            this.items = [...values, ...this.items];
+            return this;
+        }
         pop() {
             if (this.head >= this.items.length)
                 return undefined;
@@ -14575,6 +14653,21 @@
         }
         get isEmpty() {
             return this.size === 0;
+        }
+        removeDuplicates(entry) {
+            const uniques = new Set();
+            const toDelete = [];
+            for (let i = 0; i < this.items.length; i++) {
+                if (entry && this.items[i] !== entry)
+                    continue;
+                if (!uniques.has(this.items[i]))
+                    uniques.add(this.items[i]);
+                else
+                    toDelete.push(i);
+            }
+            for (let i = toDelete.length - 1; i >= 0; i--)
+                this.items.splice(i, 1);
+            return this;
         }
         clear() {
             this.items = [];
@@ -14613,18 +14706,17 @@
             if (!element)
                 return {};
             if (!this.dataMap.has(element))
-                this.dataMap.set(element, {
-                    substrates: new Map(),
-                    onChange: new Delegate()
-                });
+                this.dataMap.set(element, { substrates: new Map() });
             return this.dataMap.get(element);
         }
         createSubstrate(element, substrate) {
             const data = {
+                active: false,
                 objects: element instanceof Element ? element.children
                     : element instanceof Node ? element.childNodes
                         : new Set(),
                 metadata: new WeakMap(),
+                customData: new WeakMap(),
                 priority: 10,
                 maxPasses: 5,
                 queue: new TurboQueue(),
@@ -14640,17 +14732,42 @@
             this.data(element).substrates.set(substrate, data);
             return data;
         }
-        setCurrent(element, substrate) {
-            if (!this.getSubstrates(element).includes(substrate))
-                return false;
-            this.data(element).current = substrate;
-            return true;
+        activate(element, substrate, activate) {
+            const data = this.getSubstrateData(element, substrate);
+            if (!data)
+                return;
+            if (typeof activate === "boolean")
+                data.active = activate;
+            else
+                data.active = !data.active;
         }
         getSubstrateData(element, substrate) {
             return this.data(element).substrates.get(substrate);
         }
         getSubstrates(element) {
             return [...this.data(element).substrates.keys()];
+        }
+        getActiveSubstrates(element) {
+            const data = this.data(element).substrates;
+            if (!data)
+                return [];
+            const entries = [];
+            for (const [key, value] of data.entries()) {
+                if (value.active)
+                    entries.push(key);
+            }
+            return entries;
+        }
+        getDefaultSubstrate(element, allowInactive = true) {
+            const data = this.data(element).substrates;
+            if (!data)
+                return;
+            for (const [key, value] of data.entries()) {
+                if (value.active)
+                    return key;
+            }
+            if (allowInactive)
+                return data.keys()[0];
         }
         getMetadata(element, substrate, object) {
             const substrateData = this.getSubstrateData(element, substrate);
@@ -14662,6 +14779,17 @@
                 substrateData.metadata.set(object, metadata);
             }
             return metadata;
+        }
+        getCustomData(element, substrate, object) {
+            const substrateData = this.getSubstrateData(element, substrate);
+            if (!substrateData || !substrateData.customData)
+                return {};
+            let customData = substrateData.customData.get(object);
+            if (!customData) {
+                customData = {};
+                substrateData.customData.set(object, customData);
+            }
+            return customData;
         }
         getSubstratesObjectAttachedTo(...elements) {
             if (!elements || elements.length === 0)
@@ -14691,6 +14819,8 @@
                 return Array.from(hits.values());
             };
             this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
+                if (!substrateData.active)
+                    return;
                 const hits = checkTargets(substrateData);
                 if (hits.length > 0)
                     data.push({ name, data: substrateData, host: object, targets: hits });
@@ -14700,7 +14830,7 @@
         }
         setupSubstrateCallbackProperties(element, properties) {
             turbo(properties).applyDefaults({
-                substrate: element ? turbo(element).currentSubstrate : undefined,
+                substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
                 manager: TurboEventManager.instance,
                 eventOptions: {},
                 toolName: properties.event?.toolName,
@@ -14711,6 +14841,7 @@
         solveSubstrateInternal(data, properties) {
             const substrateData = data.data;
             substrateData.passes = new WeakMap();
+            substrateData.customData = new WeakMap();
             substrateData.queue = turbo(data.host).getDefaultSubstrateQueue(data.name);
             if (!substrateData.queue)
                 substrateData.queue = new TurboQueue();
@@ -14767,8 +14898,8 @@
                 this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
             if (options?.priority)
                 utils$3.getSubstrateData(this, substrate).priority = options.priority;
-            if (!this.currentSubstrate)
-                this.currentSubstrate = substrate;
+            if (options?.active)
+                utils$3.activate(this, substrate, true);
             return this;
         };
         Object.defineProperty(TurboSelector.prototype, "substrates", {
@@ -14778,45 +14909,36 @@
             configurable: false,
             enumerable: true
         });
-        Object.defineProperty(TurboSelector.prototype, "currentSubstrate", {
-            get: function () {
-                return utils$3.data(this).current;
-            },
-            set: function (value) {
-                if (!value)
-                    return;
-                const prev = this.currentSubstrate;
-                if (utils$3.setCurrent(this, value))
-                    this.onSubstrateChange.fire(prev, value);
-            },
-            configurable: false,
-            enumerable: true
-        });
-        Object.defineProperty(TurboSelector.prototype, "onSubstrateChange", {
-            get: function () {
-                return utils$3.data(this).onChange;
-            },
-            configurable: false,
-            enumerable: true
-        });
         //ACTIVATION
-        TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = this.currentSubstrate) {
+        Object.defineProperty(TurboSelector.prototype, "activeSubstrates", {
+            get: function () {
+                return utils$3.getActiveSubstrates(this.element);
+            },
+            configurable: false,
+            enumerable: true
+        });
+        TurboSelector.prototype.activateSubstrate = function _activateSubstrates(substrate = utils$3.getDefaultSubstrate(this), activate) {
+            if (substrate)
+                utils$3.activate(this, substrate, activate);
+            return this;
+        };
+        TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = utils$3.getDefaultSubstrate(this)) {
             return utils$3.getSubstrateData(this, substrate)?.onActivate ?? new Delegate();
         };
-        TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(substrate = utils$3.getDefaultSubstrate(this)) {
             return utils$3.getSubstrateData(this, substrate)?.onDeactivate ?? new Delegate();
         };
         //PRIORITY
-        TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = utils$3.getDefaultSubstrate(this)) {
             return utils$3.getSubstrateData(this, substrate)?.priority ?? 0;
         };
-        TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = utils$3.getDefaultSubstrate(this)) {
             if (typeof priority === "number")
                 utils$3.getSubstrateData(this, substrate).priority = priority;
             return this;
         };
         //OBJECT LIST
-        TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$3.getDefaultSubstrate(this)) {
             const set = new Set();
             if (!substrate)
                 return set;
@@ -14826,13 +14948,13 @@
             });
             return set;
         };
-        TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!list || !substrate)
                 return this;
             utils$3.getSubstrateData(this, substrate).objects = list;
             return this;
         };
-        TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!object || !substrate)
                 return this;
             utils$3.getMetadata(this, substrate, object).ignored = false;
@@ -14847,7 +14969,7 @@
             }
             return this;
         };
-        TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!object || !substrate)
                 return this;
             utils$3.getMetadata(this, substrate, object).ignored = true;
@@ -14856,31 +14978,40 @@
                 list.delete(object);
             return this;
         };
-        TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!object || !substrate)
                 return false;
             return this.getSubstrateObjectList(substrate).has(object);
         };
         //QUEUE
-        TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(object, substrate = this.currentSubstrate) {
-            const queue = utils$3.getSubstrateData(this, substrate).queue;
-            if (queue && queue instanceof TurboQueue && !queue.has(object))
-                queue.push(object);
-            return this;
+        TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
+            return utils$3.getSubstrateData(this, substrate).queue;
         };
-        TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(substrate = this.currentSubstrate) {
-            const queue = utils$3.getSubstrateData(this, substrate).queue;
-            if (queue && queue instanceof TurboQueue)
-                queue.clear();
-            return this;
-        };
-        TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = this.currentSubstrate) {
+        // TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(
+        //     this: TurboSelector,
+        //     object: object,
+        //     substrate: string = utils.getDefaultSubstrate(this)
+        // ): TurboSelector {
+        //     const queue = utils.getSubstrateData(this, substrate).queue;
+        //     if (queue && queue instanceof TurboQueue && !queue.has(object)) queue.push(object);
+        //     return this;
+        // }
+        //
+        // TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(
+        //     this: TurboSelector,
+        //     substrate: string = utils.getDefaultSubstrate(this)
+        // ): TurboSelector {
+        //     const queue = utils.getSubstrateData(this, substrate).queue;
+        //     if (queue && queue instanceof TurboQueue) queue.clear();
+        //     return this;
+        // }
+        TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
             const queue = utils$3.getSubstrateData(this, substrate).defaultQueue;
             if (queue)
                 return queue.clone();
             return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
         };
-        TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!queue || typeof queue !== "object")
                 return this;
             if (Array.isArray(queue))
@@ -14890,7 +15021,7 @@
             return this;
         };
         //PASSES
-        TurboSelector.prototype.getObjectPassesForSubstrate = function _getObjectPassesForSubstrate(object, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.getObjectPassesForSubstrate = function _getObjectPassesForSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
             if (!object)
                 return 0;
             const map = utils$3.getSubstrateData(this, substrate).passes;
@@ -14898,26 +15029,36 @@
                 return 0;
             return map.get(object);
         };
-        TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = utils$3.getDefaultSubstrate(this)) {
             return utils$3.getSubstrateData(this, substrate).maxPasses;
         };
-        TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = utils$3.getDefaultSubstrate(this)) {
             utils$3.getSubstrateData(this, substrate).maxPasses = passes;
+            return this;
+        };
+        //CUSTOM DATA
+        TurboSelector.prototype.getObjectDataForSubstrate = function _getObjectDataForSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
+            return utils$3.getCustomData(this.element, substrate, object);
+        };
+        TurboSelector.prototype.setObjectDataForSubstrate = function _setObjectDataForSubstrate(object, data, substrate = utils$3.getDefaultSubstrate(this)) {
+            if (!data || typeof data !== "object")
+                data = {};
+            utils$3.getSubstrateData(this.element, substrate).customData.set(object, data);
             return this;
         };
         //CHECKER
         TurboSelector.prototype.addChecker = function _addChecker(properties) {
             if (!properties || !properties.name || !properties.callback)
                 return this;
-            const substrate = properties.substrate || this.currentSubstrate;
+            const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
             utils$3.getSubstrateData(this, substrate).checkers?.set(properties.name, properties.callback);
             return this;
         };
-        TurboSelector.prototype.removeChecker = function _removeChecker(name, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.removeChecker = function _removeChecker(name, substrate = utils$3.getDefaultSubstrate(this)) {
             utils$3.getSubstrateData(this, substrate).checkers?.delete(name);
             return this;
         };
-        TurboSelector.prototype.clearCheckers = function _clearCheckers(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.clearCheckers = function _clearCheckers(substrate = utils$3.getDefaultSubstrate(this)) {
             utils$3.getSubstrateData(this, substrate).checkers?.clear();
             return this;
         };
@@ -14927,7 +15068,7 @@
             utils$3.setupSubstrateCallbackProperties(this, properties);
             if (!properties.substrate)
                 return true;
-            const substrate = properties.substrate || this.currentSubstrate;
+            const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
             for (const checker of utils$3.getSubstrateData(this, substrate).checkers.values()) {
                 if (!checker(properties))
                     return false;
@@ -14956,15 +15097,15 @@
         TurboSelector.prototype.addMutator = function _addMutator(properties) {
             if (!properties || !properties.name || !properties.callback)
                 return this;
-            const substrate = properties.substrate || this.currentSubstrate;
+            const substrate = properties.substrate || utils$3.getDefaultSubstrate(this);
             utils$3.getSubstrateData(this, substrate).mutators?.set(properties.name, properties.callback);
             return this;
         };
-        TurboSelector.prototype.removeMutator = function _removeMutator(name, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.removeMutator = function _removeMutator(name, substrate = utils$3.getDefaultSubstrate(this)) {
             utils$3.getSubstrateData(this, substrate).mutators?.delete(name);
             return this;
         };
-        TurboSelector.prototype.clearMutators = function _clearMutators(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.clearMutators = function _clearMutators(substrate = utils$3.getDefaultSubstrate(this)) {
             utils$3.getSubstrateData(this, substrate).mutators?.clear();
             return this;
         };
@@ -14982,7 +15123,7 @@
         TurboSelector.prototype.addSolver = function _addSolver(properties) {
             if (!properties || !properties.name || !properties.callback)
                 return this;
-            const substrate = properties.substrate || this.currentSubstrate;
+            const substrate = properties.substrate ?? utils$3.getDefaultSubstrate(this);
             const data = utils$3.getSubstrateData(this, substrate);
             if (!data)
                 return this;
@@ -14995,7 +15136,7 @@
             binaryInsert(data.sortedSolvers, name, (name1, name2) => data.solvers.get(name1).priority - data.solvers.get(name2).priority);
             return this;
         };
-        TurboSelector.prototype.removeSolver = function _removeSolver(name, substrate = this.currentSubstrate) {
+        TurboSelector.prototype.removeSolver = function _removeSolver(name, substrate = utils$3.getDefaultSubstrate(this)) {
             const data = utils$3.getSubstrateData(this, substrate);
             if (!data)
                 return this;
@@ -15005,7 +15146,7 @@
                 data.sortedSolvers.splice(index, 1);
             return this;
         };
-        TurboSelector.prototype.clearSolvers = function _clearSolvers(substrate = this.currentSubstrate) {
+        TurboSelector.prototype.clearSolvers = function _clearSolvers(substrate = utils$3.getDefaultSubstrate(this)) {
             const data = utils$3.getSubstrateData(this, substrate);
             if (!data)
                 return this;
@@ -15013,7 +15154,7 @@
             data.sortedSolvers = [];
             return this;
         };
-        TurboSelector.prototype.solveSubstrate = function _resolveSubstrate(properties = {}) {
+        TurboSelector.prototype.solveSubstrate = function _solveSubstrate(properties = {}) {
             if (!properties)
                 properties = {};
             utils$3.setupSubstrateCallbackProperties(this, properties);
@@ -15035,9 +15176,8 @@
                     return this;
             }
             const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
-            for (const substrateData of substratesData) {
+            for (const substrateData of substratesData)
                 utils$3.solveSubstrateInternal(substrateData, properties);
-            }
             return this;
         };
     }
@@ -17222,10 +17362,17 @@
      * }
      * ```
      */
-    function solver(value, context) {
-        const { name } = context;
-        context.addInitializer(function () { this["solverKeys"]?.push(name); });
-        return value;
+    function solver(properties) {
+        return function (value, context) {
+            if (!properties || typeof properties !== "object")
+                properties = {};
+            if (!properties.name)
+                properties.name = context?.name;
+            context.addInitializer(function () {
+                this["solversMetadata"]?.push(properties);
+            });
+            return value;
+        };
     }
 
     /**
@@ -17393,12 +17540,26 @@
         /**
          * @description The property keys of the substrate solvers defined in the instance.
          */
-        solverKeys = [];
+        solversMetadata = [];
+        /**
+         * @description The property keys of the substrate checkers defined in the instance.
+         */
+        checkersMetadata = [];
+        /**
+         * @description The property keys of the substrate mutators defined in the instance.
+         */
+        mutatorsMetadata = [];
         get priority() {
             return turbo(this).getSubstratePriority(this.substrateName);
         }
         set priority(value) {
             turbo(this).setSubstratePriority(value, this.substrateName);
+        }
+        get active() {
+            return turbo(this).activeSubstrates.includes(this.substrateName);
+        }
+        set active(value) {
+            turbo(this).activateSubstrate(this.substrateName, value);
         }
         /**
          * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
@@ -17410,8 +17571,8 @@
         set objectList(value) {
             turbo(this).setSubstrateObjectList(value, this.substrateName);
         }
-        get nextInQueue() {
-            return turbo(this).getNextInSubstrateQueue(this.substrateName);
+        get queue() {
+            return turbo(this).getSubstrateQueue(this.substrateName);
         }
         get defaultQueue() {
             return turbo(this).getDefaultSubstrateQueue(this.substrateName);
@@ -17448,8 +17609,35 @@
                 onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
                 onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
             });
-            this.solverKeys.forEach((key) => {
-                turbo(this).addSolver({ name: key, callback: props => this[key]?.(props) });
+            this.solversMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addSolver({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
+            });
+            this.checkersMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addChecker({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
+            });
+            this.mutatorsMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addMutator({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
             });
         }
         /**
@@ -17479,16 +17667,23 @@
         hasObject(object) {
             return turbo(this).hasObjectInSubstrate(object, this.substrateName);
         }
-        addToQueue(object) {
-            turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
-            return this;
-        }
-        clearQueue() {
-            turbo(this).clearSubstrateQueue(this.substrateName);
-            return this;
-        }
+        // public addToQueue(object: object): this {
+        //     turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
+        //     return this;
+        // }
+        //
+        // public clearQueue(): this {
+        //     turbo(this).clearSubstrateQueue(this.substrateName);
+        //     return this;
+        // }
         getObjectPasses(object) {
             return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+        }
+        getObjectData(object) {
+            return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+        }
+        setObjectData(object, data) {
+            return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
         }
         addChecker(properties) {
             turbo(this).addChecker({ ...properties, substrate: this.substrateName });
@@ -17679,8 +17874,8 @@
       }
     }
 
-    var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-    styleInject$1(css_248z$3);
+    var css_248z$3$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+    styleInject$1(css_248z$3$1);
 
     function defineUIPrototype(constructor) {
         const prototype = constructor.prototype;
@@ -19755,8 +19950,9 @@
             setupUILayout() {
                 super.setupUILayout();
                 turbo(this).childHandler = this;
-                turbo(this.panel).addChild(turbo(this).childrenArray.filter(el => el !== this.panelContainer));
+                const panelChildren = turbo(this).childrenArray.filter(el => el !== this.panelContainer && el !== this.thumb);
                 turbo(this).addChild([this.thumb, this.panelContainer]);
+                turbo(this.panel).addChild(panelChildren);
                 turbo(this.panelContainer).addChild(this.panel);
                 turbo(this.thumb).addChild(this.icon);
                 turbo(this).childHandler = this.panel;
@@ -20930,30 +21126,37 @@
       }
     }
 
-    var css_248z$2 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
-    styleInject(css_248z$2);
+    var css_248z$3 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
+    styleInject(css_248z$3);
 
-    (() => {
+    let Toolbar = (() => {
         let _classDecorators = [define("demo-toolbar")];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
         let _classSuper = TurboElement;
+        let _instanceExtraInitializers = [];
         let _color_decorators;
         let _color_initializers = [];
         let _color_extraInitializers = [];
+        let _set_entries_decorators;
         (class extends _classSuper {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _color_decorators = [signal];
+                _set_entries_decorators = [auto()];
+                __esDecorate(this, null, _set_entries_decorators, { kind: "setter", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
                 __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
                 __runInitializers(_classThis, _classExtraInitializers);
             }
-            color = __runInitializers(this, _color_initializers, "white");
+            color = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _color_initializers, "white"));
+            set entries(value) {
+                value.forEach(entry => this.addTool(entry));
+            }
             initialize() {
                 super.initialize();
                 effect(() => turbo(this).setStyle("backgroundColor", this.color));
@@ -20968,7 +21171,7 @@
         });
         return _classThis;
     })();
-    function toolbar(properties) {
+    function toolbar(properties = {}) {
         return element({ ...properties, tag: "demo-toolbar" });
     }
 
@@ -21070,6 +21273,259 @@
         return element({ ...properties, tools: BucketTool, tag: "demo-bucket" });
     }
 
+    //Pusher substrate
+    let CanvasSubstrate = (() => {
+        let _classSuper = TurboSubstrate;
+        let _instanceExtraInitializers = [];
+        let _spacerSolver_decorators;
+        let _pusherSolver_decorators;
+        return class CanvasSubstrate extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _spacerSolver_decorators = [solver({ priority: 5 })];
+                _pusherSolver_decorators = [solver({ priority: 10 })];
+                __esDecorate(this, null, _spacerSolver_decorators, { kind: "method", name: "spacerSolver", static: false, private: false, access: { has: obj => "spacerSolver" in obj, get: obj => obj.spacerSolver }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _pusherSolver_decorators, { kind: "method", name: "pusherSolver", static: false, private: false, access: { has: obj => "pusherSolver" in obj, get: obj => obj.pusherSolver }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            substrateName = (__runInitializers(this, _instanceExtraInitializers), "main"); //Define the substrate's name
+            //equivalent to turbo(canvas).makeSubstrate("main")
+            initialize() {
+                super.initialize();
+                this.maxPasses = 50;
+                this.objectList = this.element.children;
+                this.defaultQueue = [];
+            }
+            isSpacer(el) {
+                return el instanceof Element && "isSpacer" in el && el.isSpacer === true;
+            }
+            isPusher(el) {
+                return el instanceof Element && "isPusher" in el && el.isPusher === true;
+            }
+            spacerSolver(properties) {
+                // const el = properties.target as Element;
+                // if (!el || !(el instanceof Element)) return;
+                //
+                // //Get all elements in the substrate's list that overlap with the target
+                // const objectData = this.getObjectData(el);
+                // const delta: Point = objectData.movedDelta ??
+                //     (el === properties.eventTarget
+                //         ? (properties.event as TurboDragEvent)?.deltaPosition
+                //         : undefined);
+                // if (!delta) return;
+                this.processTargetWithContext(properties, (el, delta, overlap) => {
+                    if (this.isSpacer(el) || this.isSpacer(overlap)) {
+                        const movedValue = this.bounceBackElement(el, overlap, delta);
+                        if (movedValue) {
+                            this.getObjectData(el).movedDelta = movedValue;
+                            this.queue.clear();
+                            return;
+                        }
+                    }
+                });
+            }
+            pusherSolver(properties) {
+                // if (!this.isPusher(properties.eventTarget)) return;
+                // const el = properties.target as Element;
+                // if (!el || !(el instanceof Element)) return;
+                //
+                // //Get all elements in the substrate's list that overlap with the target
+                // const delta: Point = this.getObjectData(el).movedDelta ??
+                //     (el === properties.eventTarget
+                //     ? (properties.event as TurboDragEvent)?.deltaPosition
+                //     : undefined);
+                // if (!delta) return;
+                this.processTargetWithContext(properties, (el, delta, overlap) => {
+                    const movedValue = this.pushElement(el, overlap, delta);
+                    if (movedValue) {
+                        this.getObjectData(overlap).movedDelta = movedValue;
+                        if (!this.queue.has(overlap))
+                            this.queue.push(overlap);
+                    }
+                });
+            }
+            processTargetWithContext(properties, callback) {
+                if (!this.isPusher(properties.eventTarget))
+                    return;
+                const el = properties.target;
+                if (!el || !(el instanceof Element))
+                    return;
+                //Get all elements in the substrate's list that overlap with the target
+                const delta = this.getObjectData(el).movedDelta ??
+                    (el === properties.eventTarget
+                        ? properties.event?.deltaPosition
+                        : undefined);
+                if (!delta)
+                    return;
+                for (const overlap of this.findOverlaps(el))
+                    callback(el, delta, overlap);
+            }
+            pushElement(pusher, pushed, deltaPosition) {
+                const mtv = this.mtvAxis(pushed, pusher);
+                if (!mtv)
+                    return;
+                let normal = mtv.normal;
+                const alongN = deltaPosition.dot(normal);
+                if (alongN <= 0)
+                    return;
+                const move = normal.mul(alongN);
+                //Update position directly --> not go through the move()
+                return this.applyMove(pushed, move) ? move : undefined;
+            }
+            bounceBackElement(pusher, pushed, deltaPosition) {
+                const mtv = this.mtvAxis(pusher, pushed);
+                if (!mtv)
+                    return;
+                let normal = mtv.normal;
+                const alongN = deltaPosition.dot(normal);
+                // We want the correction to be "backwards" relative to the movement.
+                // If n points in the same general direction as deltaPosition, flip it.
+                if (alongN > 0)
+                    normal = normal.mul(-1);
+                const correction = normal.mul(mtv.depth);
+                return this.applyMove(pusher, correction) ? correction : undefined;
+            }
+            applyMove(element, delta) {
+                if (!("position" in element))
+                    return false;
+                const position = element.position;
+                if (typeof position !== "object")
+                    return false;
+                if (position instanceof Point)
+                    element.position = position.add(delta);
+                else
+                    element.position = new Point(position).add(delta);
+                return true;
+            }
+            //Finds and returns the elements with which an element overlaps out of the objectList
+            findOverlaps(element) {
+                const pool = Array.from(this.objectList).filter(entry => entry instanceof TurboElement && !(entry instanceof Toolbar));
+                const out = [];
+                for (const el of pool) {
+                    if (el === element)
+                        continue;
+                    if (this.overlaps(el, element))
+                        out.push(el);
+                }
+                return out;
+            }
+            //Finds if element a overlaps with b
+            overlaps(a, b) {
+                if (!(a instanceof Element) || !(b instanceof Element))
+                    return false;
+                const r1 = a.getBoundingClientRect();
+                const r2 = b.getBoundingClientRect();
+                if (!r1.width || !r1.height || !r2.width || !r2.height)
+                    return false;
+                return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
+            }
+            //Physics computation stuff
+            mtvAxis(aEl, bEl) {
+                if (!this.overlaps(aEl, bEl))
+                    return null;
+                const a = aEl.getBoundingClientRect();
+                const b = bEl.getBoundingClientRect();
+                const ax = a.x + a.width / 2, ay = a.y + a.height / 2;
+                const bx = b.x + b.width / 2, by = b.y + b.height / 2;
+                const dx = bx - ax, dy = by - ay;
+                const px = (a.width + b.width) / 2 - Math.abs(dx);
+                const py = (a.height + b.height) / 2 - Math.abs(dy);
+                if (px < py)
+                    return { normal: new Point(dx < 0 ? 1 : -1, 0), depth: px };
+                return { normal: new Point(0, dy < 0 ? 1 : -1), depth: py };
+            }
+        };
+    })();
+
+    //Pusher substrate
+    let CanvasPusherSubstrate = (() => {
+        let _classSuper = CanvasSubstrate;
+        let _instanceExtraInitializers = [];
+        let _resolvePush_decorators;
+        return class CanvasPusherSubstrate extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _resolvePush_decorators = [solver()];
+                __esDecorate(this, null, _resolvePush_decorators, { kind: "method", name: "resolvePush", static: false, private: false, access: { has: obj => "resolvePush" in obj, get: obj => obj.resolvePush }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            substrateName = (__runInitializers(this, _instanceExtraInitializers), "pusher"); //Define the substrate's name
+            //equivalent to turbo(canvas).makeSubstrate("pusher")
+            //@solver is called on turbo(el).resolveSubstrate()
+            //It will be called once for each object in the substrate's list of objects (marking each as processed afterward)
+            resolvePush(properties) {
+                const delta = properties.event?.deltaPosition;
+                const el = properties.target;
+                if (!delta || !el || !(el instanceof Element))
+                    return;
+                //Get all elements in the substrate's list that overlap with the target
+                Array.from(this.objectList).filter(entry => entry instanceof TurboElement && !(entry instanceof Toolbar));
+                const overlaps = this.findOverlaps(el);
+                //No overlap --> remove it from list
+                if (overlaps.length === 0)
+                    return;
+                //Loop on each overlapping element
+                for (const overlap of overlaps) {
+                    //If the overlapping element is unprocessed, add it so resolveSubstrate() will pick it up later
+                    if (!this.getObjectPasses(overlap)) {
+                        this.queue.addOnTop(overlap);
+                        continue;
+                    }
+                    //If the overlapping element was already processed, push the target by the normal component of delta (physics stuff0
+                    this.pushElement(overlap, el, delta);
+                }
+            }
+            ;
+        };
+    })();
+
+    var css_248z$2 = "my-canvas{display:block;height:100vh;width:100vw}";
+    styleInject(css_248z$2);
+
+    let Canvas = (() => {
+        let _classDecorators = [define("my-canvas")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboElement;
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers(_classThis, _classExtraInitializers);
+            }
+        });
+        return _classThis;
+    })();
+    function myCanvas(properties = {}) {
+        turbo(properties).applyDefaults({
+            tag: "my-canvas",
+            substrates: [CanvasPusherSubstrate]
+        });
+        return element({ ...properties });
+    }
+
+    //Pusher tool
+    class PusherSubstrateTool extends SelectTool {
+        toolName = "pusherSubstrate"; //Define tool name
+        get canvas() {
+            return Array.from(document.body.children).find(el => el instanceof Canvas);
+        }
+        onActivate() {
+            const canvas = this.canvas;
+            turbo(canvas).activateSubstrate("pusher", true);
+            turbo(canvas).activateSubstrate("main", false);
+        }
+        onDeactivate() {
+            const canvas = this.canvas;
+            turbo(canvas).activateSubstrate("pusher", false);
+            turbo(canvas).activateSubstrate("main", true);
+        }
+    }
+
     //Model of the square element
     let SquareModel = (() => {
         let _classSuper = TurboModel;
@@ -21139,7 +21595,7 @@
         };
     })();
 
-    var css_248z$1 = "demo-square{background-color:#00aff4;height:100px;position:absolute;width:100px}";
+    var css_248z$1 = ".demo-square{align-items:center;display:flex;height:100px;justify-content:center;position:absolute;width:100px}";
     styleInject(css_248z$1);
 
     //Custom square element, defined as a custom element
@@ -21149,6 +21605,7 @@
         let _classExtraInitializers = [];
         let _classThis;
         let _classSuper = TurboElement;
+        let _instanceExtraInitializers = [];
         let _color_decorators;
         let _color_initializers = [];
         let _color_extraInitializers = [];
@@ -21158,6 +21615,8 @@
         let _position_decorators;
         let _position_initializers = [];
         let _position_extraInitializers = [];
+        let _set_isPusher_decorators;
+        let _set_isSpacer_decorators;
         (class extends _classSuper {
             static { _classThis = this; }
             static {
@@ -21165,6 +21624,10 @@
                 _color_decorators = [expose("model")];
                 _size_decorators = [expose("model")];
                 _position_decorators = [expose("model")];
+                _set_isPusher_decorators = [auto({ defaultValue: false })];
+                _set_isSpacer_decorators = [auto({ defaultValue: false })];
+                __esDecorate(this, null, _set_isPusher_decorators, { kind: "setter", name: "isPusher", static: false, private: false, access: { has: obj => "isPusher" in obj, set: (obj, value) => { obj.isPusher = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_isSpacer_decorators, { kind: "setter", name: "isSpacer", static: false, private: false, access: { has: obj => "isSpacer" in obj, set: (obj, value) => { obj.isSpacer = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
                 __esDecorate(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
                 __esDecorate(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
@@ -21174,9 +21637,23 @@
                 __runInitializers(_classThis, _classExtraInitializers);
             }
             //Expose fields from the model
-            color = __runInitializers(this, _color_initializers, void 0);
+            color = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _color_initializers, void 0));
             size = (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _size_initializers, void 0));
             position = (__runInitializers(this, _size_extraInitializers), __runInitializers(this, _position_initializers, void 0));
+            set isPusher(value) {
+                if (value)
+                    this.isSpacer = false;
+                turbo(this).removeAllChildren();
+                if (value)
+                    turbo(this).addChild(p({ text: "Pusher" }));
+            }
+            set isSpacer(value) {
+                if (value)
+                    this.isPusher = false;
+                turbo(this).removeAllChildren();
+                if (value)
+                    turbo(this).addChild(p({ text: "Spacer" }));
+            }
             move(delta) {
                 this.model.position = delta.add(this.model.position);
             }
@@ -21197,157 +21674,26 @@
         const el = element({ ...properties,
             position: undefined,
             view: SquareView,
-            model: SquareModel
+            model: SquareModel,
+            isPusher: false,
+            isSpacer: false,
         });
         if (properties.position)
             el.model.position = properties.position;
         return el;
     }
 
-    //Pusher tool
-    class PusherTool extends SelectTool {
-        toolName = "pusher"; //Define tool name
-        interacting = false;
-        //Equivalent to turbo(tool).addToolBehavior("turbo-click-start", "pusher", (e, target) => {...});
-        //If interacting with a square --> clear the pusher substrate's object list and add the target to it.
-        clickStart(e, target) {
-            if (!(target instanceof Square))
-                return false;
-            this.interacting = true;
-            turbo(this).setSubstrateObjectList(new Set([target]));
-            return true;
-        }
-        //On drag (and if interacting with a square) --> resolve the pusher substrate
-        //Ideally, in the future, the resolving would be done behind the scenes by the toolkit.
-        drag(e, el) {
-            if (!this.interacting)
-                return false;
-            if (!super.drag(e, el))
-                return false;
-            turbo(this).solveSubstrate({
-                toolName: this.toolName,
-                event: e,
-                eventTarget: el
-            });
-            return true;
-        }
-        //On click end --> clear the substrate's object list
-        clickEnd() {
-            if (!this.interacting)
-                return false;
-            this.interacting = false;
-            turbo(this).setSubstrateObjectList(new Set());
-            return true;
-        }
-    }
-
-    //Pusher substrate
-    let PusherSubstrate = (() => {
-        let _classSuper = TurboSubstrate;
-        let _instanceExtraInitializers = [];
-        let _resolvePush_decorators;
-        return class PusherSubstrate extends _classSuper {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _resolvePush_decorators = [solver];
-                __esDecorate(this, null, _resolvePush_decorators, { kind: "method", name: "resolvePush", static: false, private: false, access: { has: obj => "resolvePush" in obj, get: obj => obj.resolvePush }, metadata: _metadata }, null, _instanceExtraInitializers);
-                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            }
-            substrateName = (__runInitializers(this, _instanceExtraInitializers), "pusher"); //Define the substrate's name
-            //equivalent to turbo(pusherTool).makeSubstrate("pusher")
-            //@solver is called on turbo(el).resolveSubstrate()
-            //It will be called once for each object in the substrate's list of objects (marking each as processed afterward)
-            resolvePush(properties) {
-                const delta = properties.event?.deltaPosition;
-                const el = properties.target;
-                if (!delta || !el || !(el instanceof Element))
-                    return;
-                //Get all elements in the substrate's list that overlap with the target
-                const list = Array.from(turbo(document.body).getSubstrateObjectList());
-                const overlaps = this.findOverlaps(el, list);
-                //No overlap --> remove it from list
-                if (overlaps.length === 0) {
-                    turbo(this).removeObjectFromSubstrate(el);
-                    return;
-                }
-                //Loop on each overlapping element
-                for (const overlap of overlaps) {
-                    //If the overlapping element is unprocessed, add it so resolveSubstrate() will pick it up later
-                    if (!this.getObjectPasses(overlap)) {
-                        turbo(this).addObjectToSubstrate(overlap);
-                        continue;
-                    }
-                    //If the overlapping element was already processed, push the target by the normal component of delta (physics stuff0
-                    const mtv = this.mtvAxis(el, overlap);
-                    if (!mtv)
-                        continue;
-                    const alongN = delta.dot(mtv.normal);
-                    if (alongN > 0) {
-                        //Apply select tool + drag to move the square --> doesn't work for the circle
-                        // turbo(el).applyTool("select", "turbo-drag", {deltaPosition: mtv.normal.mul(alongN)} as any);
-                        //Update position directly --> not go through the move()
-                        if ("position" in el) {
-                            if (el.position instanceof Point)
-                                el.position = el.position.add(mtv.normal.mul(alongN));
-                            else if (typeof el.position === "object")
-                                el.position = new Point(el.position).add(mtv.normal.mul(alongN));
-                        }
-                    }
-                }
-            }
-            ;
-            //Finds and returns the elements with which an element overlaps out of a list of elements
-            findOverlaps(element, pool) {
-                const out = [];
-                for (const el of pool) {
-                    if (el === element)
-                        continue;
-                    if (this.overlaps(el, element))
-                        out.push(el);
-                }
-                return out;
-            }
-            //Finds if element a overlaps with b
-            overlaps(a, b) {
-                if (!(a instanceof Element) || !(b instanceof Element))
-                    return false;
-                const r1 = a.getBoundingClientRect();
-                const r2 = b.getBoundingClientRect();
-                if (!r1.width || !r1.height || !r2.width || !r2.height)
-                    return false;
-                return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
-            }
-            //Physics computation stuff
-            mtvAxis(aEl, bEl) {
-                if (!this.overlaps(aEl, bEl))
-                    return null;
-                const a = aEl.getBoundingClientRect();
-                const b = bEl.getBoundingClientRect();
-                const ax = a.x + a.width / 2, ay = a.y + a.height / 2;
-                const bx = b.x + b.width / 2, by = b.y + b.height / 2;
-                const dx = bx - ax, dy = by - ay;
-                const px = (a.width + b.width) / 2 - Math.abs(dx);
-                const py = (a.height + b.height) / 2 - Math.abs(dy);
-                if (px < py)
-                    return { normal: new Point(dx < 0 ? 1 : -1, 0), depth: px };
-                return { normal: new Point(0, dy < 0 ? 1 : -1), depth: py };
-            }
-        };
-    })();
-
     //Add square tool
     class AddSquareTool extends TurboTool {
         toolName = "addSquare"; //Define the tool name
         //Equivalent to turbo(tool).addToolBehavior("click", "addSquare", (e, target) => {...});
         click(e, target) {
-            if (target === document.body) {
-                square({ parent: document.body, position: e.position?.sub(50) });
-                return true;
-            }
+            if (target instanceof Canvas)
+                square({ parent: target, position: e.position?.sub(50) });
         }
     }
 
-    var css_248z = "demo-circle{background-color:#00aff4;border-radius:50%;height:100px;position:absolute;width:100px}";
+    var css_248z = ".demo-circle{border-radius:50%}";
     styleInject(css_248z);
 
     //Custom circle element, defined as a custom element
@@ -21385,23 +21731,43 @@
         toolName = "addCircle"; //Define the tool name
         //Equivalent to turbo(tool).addToolBehavior("click", "addCircle", (e, target) => {...});
         click(e, target) {
-            if (target === document.body) {
-                circle({ parent: document.body, position: e.position?.sub(50) });
-                return true;
-            }
+            if (target instanceof Canvas)
+                circle({ parent: target, position: e.position?.sub(50) });
         }
     }
 
-    //Create a default substrate for all elements in the body
-    turbo(document.body)
-        .makeSubstrate("main")
-        .setSubstrateObjectList(document.body.children);
+    //Pusher tool
+    class MakePusherTool extends SelectTool {
+        toolName = "makePusher"; //Define tool name
+        click(e, target) {
+            if ("isPusher" in target && typeof target.isPusher === "boolean")
+                target.isPusher = !target.isPusher;
+        }
+    }
+
+    //Pusher tool
+    class MakeSpacerTool extends SelectTool {
+        toolName = "makeSpacer"; //Define tool name
+        click(e, target) {
+            if ("isSpacer" in target && typeof target.isSpacer === "boolean")
+                target.isSpacer = !target.isSpacer;
+        }
+    }
+
+    const canvas = myCanvas({ parent: document.body, substrates: [CanvasPusherSubstrate, CanvasSubstrate] });
+    turbo(canvas).activateSubstrate("main");
     //Create a toolbar and populate it
-    const tb = toolbar({ parent: document.body });
-    tb.addTool(button({ text: "Select", tools: SelectTool, classes: "demo-button" }));
-    tb.addTool(button({ text: "Add Square", tools: AddSquareTool, classes: "demo-button" }));
-    tb.addTool(button({ text: "Add Circle", tools: AddCircleTool, classes: "demo-button" }));
-    tb.addTool(bucket({ text: "Bucket", classes: "demo-button" }));
-    tb.addTool(button({ text: "Pusher", tools: PusherTool, substrates: PusherSubstrate, classes: "demo-button" }));
+    toolbar({
+        parent: document.body,
+        entries: [
+            button({ text: "Select", tools: SelectTool, classes: "demo-button" }),
+            button({ text: "Add Square", tools: AddSquareTool, classes: "demo-button" }),
+            button({ text: "Add Circle", tools: AddCircleTool, classes: "demo-button" }),
+            bucket({ text: "Bucket", classes: "demo-button" }),
+            button({ text: "Pusher Substrate", tools: PusherSubstrateTool, classes: "demo-button" }),
+            button({ text: "Make Pusher", tools: MakePusherTool, classes: "demo-button" }),
+            button({ text: "Make Spacer", tools: MakeSpacerTool, classes: "demo-button" }),
+        ]
+    });
 
 })();

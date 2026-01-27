@@ -44,7 +44,17 @@ class TurboSubstrate<
     /**
      * @description The property keys of the substrate solvers defined in the instance.
      */
-    public readonly solverKeys: string[] = [];
+    public readonly solversMetadata: SubstrateAddCallbackProperties<SubstrateSolver>[] = [];
+
+    /**
+     * @description The property keys of the substrate checkers defined in the instance.
+     */
+    public readonly checkersMetadata: SubstrateAddCallbackProperties<SubstrateChecker>[] = [];
+
+    /**
+     * @description The property keys of the substrate mutators defined in the instance.
+     */
+    public readonly mutatorsMetadata: SubstrateAddCallbackProperties<SubstrateMutator>[] = [];
 
     public get priority(): number {
         return turbo(this).getSubstratePriority(this.substrateName);
@@ -52,6 +62,14 @@ class TurboSubstrate<
 
     public set priority(value: number) {
         turbo(this).setSubstratePriority(value, this.substrateName);
+    }
+
+    public get active(): boolean {
+        return turbo(this).activeSubstrates.includes(this.substrateName);
+    }
+
+    public set active(value: boolean) {
+        turbo(this).activateSubstrate(this.substrateName, value);
     }
 
     /**
@@ -66,8 +84,8 @@ class TurboSubstrate<
         turbo(this).setSubstrateObjectList(value, this.substrateName);
     }
 
-    public get nextInQueue(): object {
-        return turbo(this).getNextInSubstrateQueue(this.substrateName);
+    public get queue(): TurboQueue<object> {
+        return turbo(this).getSubstrateQueue(this.substrateName);
     }
 
     public get defaultQueue(): TurboQueue<object> {
@@ -109,8 +127,34 @@ class TurboSubstrate<
             onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
         });
 
-        this.solverKeys.forEach((key: string) => {
-            turbo(this).addSolver({name: key, callback: props => this[key]?.(props)});
+        this.solversMetadata.forEach(metadata => {
+            if (!metadata.name) return;
+            turbo(this).addSolver({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+
+        this.checkersMetadata.forEach(metadata => {
+            if (!metadata.name) return;
+            turbo(this).addChecker({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+
+        this.mutatorsMetadata.forEach(metadata => {
+            if (!metadata.name) return;
+            turbo(this).addMutator({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
         });
     }
 
@@ -144,18 +188,26 @@ class TurboSubstrate<
         return turbo(this).hasObjectInSubstrate(object, this.substrateName);
     }
 
-    public addToQueue(object: object): this {
-        turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
-        return this;
-    }
-
-    public clearQueue(): this {
-        turbo(this).clearSubstrateQueue(this.substrateName);
-        return this;
-    }
+    // public addToQueue(object: object): this {
+    //     turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
+    //     return this;
+    // }
+    //
+    // public clearQueue(): this {
+    //     turbo(this).clearSubstrateQueue(this.substrateName);
+    //     return this;
+    // }
 
     public getObjectPasses(object: object): number {
         return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+    }
+
+    public getObjectData(object: object): Record<string, any> {
+        return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+    }
+
+    public setObjectData(object: object, data?: Record<string, any>): this {
+        return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
     }
 
     public addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this {
