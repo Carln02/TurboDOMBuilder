@@ -47,6 +47,11 @@ class Mvc<
     private readonly _tools: Map<string, TurboTool> = new Map();
     private readonly _substrates: Map<string, TurboSubstrate> = new Map();
 
+    /**
+     * @constructor
+     * @description Create a new MVC manager for a specific element.
+     * @param {MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>} properties - Generation options.
+     */
     public constructor(properties: MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>) {
         if (properties.element) this.element = properties.element;
         if (!properties.emitter) this.emitter = new TurboEmitter() as EmitterType;
@@ -359,34 +364,136 @@ class Mvc<
         this.model?.initialize();
     }
 
+    /**
+     * @function getDifference
+     * @description Compute the structural difference between the current MVC configuration
+     * and another configuration description.
+     * The comparison is constructor-based (not instance-based):
+     * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
+     * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+     *   the result contains constructors that exist in the current MVC but not in the provided
+     *   configuration.
+     *
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}]
+     *  The configuration to compare against (typically the same shape used by {@link generate}).
+     * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
+     *  A partial configuration of constructors describing missing pieces relative to `properties`.
+     */
+    public getDifference(
+        properties: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {}
+    ): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> {
+        const difference: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> = {};
+
+        const toConstructor = <Type>(x: any): (new (...args: any[]) => Type) => {
+            if (!x) return;
+            if (typeof x === "function") return x;
+            if (typeof x === "object") return x.constructor;
+        };
+
+        const toConstructorList = <Type>(x: any): (new (...args: any[]) => Type)[] => {
+            if (!x) return [];
+            const arr = Array.isArray(x) ? x : [x];
+            return arr.map(toConstructor).filter(Boolean) as any;
+        };
+
+        const processField = (field: string) => {
+            if (!this[field]) return;
+             const current = toConstructor(this[field]);
+             const external = toConstructor(properties[field]);
+             if (current === external) return;
+             difference[field] = current;
+        };
+
+        const processArray = (field: string) => {
+            if (!this[field] || this[field].length === 0) return;
+            const current = new Set(toConstructorList(this[field]));
+            const external = new Set(toConstructorList(properties[field] ?? []));
+            const result = [];
+            for (const entry of current) if (!external.has(entry)) result.push(entry);
+            if (result.length > 0) difference[field] = result;
+        }
+
+        processField("view");
+        processField("model");
+        processField("emitter");
+        processArray("controllers");
+        processArray("handlers");
+        processArray("interactors");
+        processArray("tools");
+        processArray("substrates");
+        return difference;
+    }
+
+    /**
+     * @protected
+     * @function updateController
+     * @description Internal helper used when a controller is added or when pieces are re-linked.
+     * It wires the controller to the current `emitter`, `model` and `view`.
+     * @param {TurboController} controller - Controller instance to update.
+     */
     protected updateController(controller: TurboController) {
         controller.emitter = this.emitter;
         controller.model = this.model;
         controller.view = this.view;
     }
 
+    /**
+     * @protected
+     * @function updateHandler
+     * @description Internal helper to wire a handler to the current model. Called when handlers
+     * are added or when the MVC pieces are re-linked.
+     * @param {TurboHandler} handler - Handler instance to update.
+     */
     protected updateHandler(handler: TurboHandler) {
         handler.model = this.model;
     }
 
+    /**
+     * @protected
+     * @function updateInteractor
+     * @description Internal helper to wire an interactor to the current `model`, `view`, and `emitter`.
+     * Called when interactors are added or when the MVC pieces are re-linked.
+     * @param {TurboInteractor} interactor - Interactor instance to update.
+     */
     protected updateInteractor(interactor: TurboInteractor) {
         interactor.model = this.model;
         interactor.view = this.view;
         interactor.emitter = this.emitter;
     }
 
+    /**
+     * @protected
+     * @function updateTool
+     * @description Internal helper to wire a tool to the current `emitter`, `model`, and `view`.
+     * Called when tools are added or when the MVC pieces are re-linked.
+     * @param {TurboTool} tool - Tool instance to update.
+     */
     protected updateTool(tool: TurboTool) {
         tool.emitter = this.emitter;
         tool.model = this.model;
         tool.view = this.view;
     }
 
+    /**
+     * @protected
+     * @function updateSubstrate
+     * @description Internal helper to wire a substrate to the current `model`, `view`, and `emitter`.
+     * Called when substrates are added or when the MVC pieces are re-linked.
+     * @param {TurboSubstrate} substrate - Substrate instance to update.
+     */
     protected updateSubstrate(substrate: TurboSubstrate) {
         substrate.model = this.model;
         substrate.view = this.view;
         substrate.emitter = this.emitter;
     }
 
+    /**
+     * @protected
+     * @function linkPieces
+     * @description Ensure all MVC pieces are mutually linked.
+     * Use this after modifying any of the MVC collections (controllers, handlers, interactors, tools, substrates,
+     * view, model, or emitter) so every piece stays in sync.
+     */
     protected linkPieces() {
         if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
             this.model.keyChangedCallback.add(this.emitterFireCallback);
@@ -405,6 +512,18 @@ class Mvc<
         this._substrates.forEach(substrate => this.updateSubstrate(substrate));
     }
 
+    /**
+     * @private
+     * @function generateInstance
+     * @description Create a single instance from either a constructor or an already-instantiated object.
+     * If a constructor is provided and `properties` are passed, the constructor is invoked with those properties.
+     * When `shallowCopyProperties` is true, a shallow cloned copy of `properties` is passed to the constructor.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor or instance to generate.
+     * @param {PropertiesType} [properties] - Optional properties passed to the constructor if `data` is a class.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` before passing them.
+     * @returns {Type|undefined} - The created instance or the object passed in.
+     */
     private generateInstance<Type, PropertiesType>(
         data: MvcManyInstancesOrConstructors<Type, PropertiesType>,
         properties?: PropertiesType,
@@ -419,6 +538,17 @@ class Mvc<
         return data as Type;
     }
 
+    /**
+     * @private
+     * @function generateInstances
+     * @description Normalize a value that can be a constructor, instance, or array of constructors/instances
+     * into an array of instantiated objects. Uses {@link generateInstance} internally for each entry.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor(s) or instance(s).
+     * @param {PropertiesType} [properties] - Optional properties forwarded to constructors.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` for each instantiation.
+     * @returns {Type[]} - Array of instantiated objects (possibly empty).
+     */
     private generateInstances<Type, PropertiesType>(
         data: MvcManyInstancesOrConstructors<Type, PropertiesType>,
         properties?: PropertiesType,
@@ -435,9 +565,33 @@ class Mvc<
         return result;
     }
 
+    /**
+     * @private
+     * @field emitterFireCallback
+     * @description Callback function wired to the model's `keyChangedCallback` that forwards
+     * key/block change notifications into the emitter. It is stored so it can be removed and reattached
+     * when the model changes.
+     * @param {string} keyName - The block key name that changed.
+     * @param {any} blockKey - The specific block key that changed.
+     * @param {...any} args - Additional arguments forwarded from the model.
+     */
     private emitterFireCallback = (keyName: string, blockKey: any, ...args: any[]) =>
         this.emitter?.fireWithBlock(keyName, blockKey, ...args);
 
+    /**
+     * @protected
+     * @function extractClassEssenceName
+     * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
+     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
+     * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+     *
+     * This is used to auto-generate `keyName` values for controllers, handlers, interactors, tools and substrates
+     * when they are not provided explicitly.
+     *
+     * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
+     * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+     * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
+     */
     protected extractClassEssenceName(constructor: new (...args: any[]) => any, type: string): string {
         let className = constructor.name;
         let prototype = Object.getPrototypeOf(this.element);

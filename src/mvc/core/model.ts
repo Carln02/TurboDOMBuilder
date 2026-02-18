@@ -7,8 +7,9 @@ import {DataBlockHost} from "../../turboComponents/data/dataBlock/dataBlock.type
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
 import {TurboObserver} from "../../turboComponents/data/observer/observer";
-import {ScopedKey, TurboObserverProperties} from "../../turboComponents/data/observer/observer.types";
+import {TurboObserverProperties} from "../../turboComponents/data/observer/observer.types";
 import {alphabeticalSorting, isUndefined} from "../../utils/dataManipulation/misc";
+import {ScopedKey} from "../../turboComponents/datatypes/nestedMap/nestedMap.types";
 
 /**
  * @class TurboModel
@@ -78,6 +79,12 @@ class TurboModel<
         this.setup();
     }
 
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup() {
         initializeEffects(this);
     }

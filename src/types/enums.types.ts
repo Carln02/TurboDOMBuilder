@@ -91,4 +91,16 @@ enum Range {
     max = "max",
 }
 
-export {Direction, Side, SideV, SideH, InOut, OnOff, Open, Shown, AccessLevel, Range};
+enum Anchor {
+    TopLeft = "topLeft",
+    TopRight = "topRight",
+    TopMiddle = "topMiddle",
+    BottomLeft = "bottomLeft",
+    BottomMiddle = "bottomMiddle",
+    BottomRight = "bottomRight",
+    Center = "center",
+    CenterLeft = "centerLeft",
+    CenterRight = "centerRight",
+}
+
+export {Direction, Side, SideV, SideH, InOut, OnOff, Open, Shown, AccessLevel, Range, Anchor};

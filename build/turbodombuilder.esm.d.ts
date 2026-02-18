@@ -307,519 +307,6 @@ declare function expose(rootKey: string, exposeSetter?: boolean): <Type extends 
 } | ((this: Type, ...args: any[]) => any), context: ClassFieldDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value> | ClassMethodDecoratorContext<Type>) => any;
 
 /**
- * @decorator
- * @function controller
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched controller.
- * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
- *
- * @example
- * ```ts
- * @controller() protected textController: TurboController;
- * ```
- * Is equivalent to:
- * ```ts
- * protected get textController(): TurboController {
- *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
- *    if (typeof this.getController === "function") return this.getController("text");
- * }
- * ```
- */
-declare function controller(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
-/**
- * @decorator
- * @function handler
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched handler.
- * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
- *
- * @example
- * ```ts
- * @handler() protected textHandler: TurboHandler;
- * ```
- * Is equivalent to:
- * ```ts
- * protected get textHandler(): TurboHandler {
- *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
- *    if (typeof this.getHandler === "function") return this.getHandler("text");
- * }
- * ```
- */
-declare function handler(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
-/**
- * @decorator
- * @function interactor
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched interactor.
- * @param {string} [name] - The key name of the interactor in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingInteractor`, the key name will be `something`.
- *
- * @example
- * ```ts
- * @interactor() protected textInteractor: TurboInteractor;
- * ```
- * Is equivalent to:
- * ```ts
- * protected get textInteractor(): TurboInteractor {
- *    if (this.mvc instanceof Mvc) return this.mvc.getInteractor("text");
- *    if (typeof this.getInteractor === "function") return this.getInteractor("text");
- * }
- * ```
- */
-declare function interactor(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
-/**
- * @decorator
- * @function tool
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched tool.
- * @param {string} [name] - The key name of the tool in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingTool`, the key name will be `something`.
- *
- * @example
- * ```ts
- * @tool() protected textTool: TurboTool;
- * ```
- * Is equivalent to:
- * ```ts
- * protected get textTool(): TurboTool {
- *    if (this.mvc instanceof Mvc) return this.mvc.getTool("text");
- *    if (typeof this.getTool === "function") return this.getTool("text");
- * }
- * ```
- */
-declare function tool(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
-/**
- * @decorator
- * @function substrate
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched substrate.
- * @param {string} [name] - The key name of the substrate in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingSubstrate`, the key name will be `something`.
- *
- * @example
- * ```ts
- * @tool() protected textSubstrate: TurboSubstrate;
- * ```
- * Is equivalent to:
- * ```ts
- * protected get textSubstrate(): TurboSubstrate {
- *    if (this.mvc instanceof Mvc) return this.mvc.getSubstrate("text");
- *    if (typeof this.getSubstrate === "function") return this.getSubstrate("text");
- * }
- * ```
- */
-declare function substrate(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
-
-/**
- * @internal
- */
-declare global {
-    interface SymbolConstructor {
-        metadata: symbol;
-    }
-}
-/**
- * @decorator
- * @function observe
- * @group Decorators
- * @category Attributes & DOM
- *
- * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
- * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
- * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.
- *
- * @example
- * ```ts
- * @define()
- * class MyClass extends HTMLElement {
- *    @observe fieldName: string = "hello";
- * }
- * ```
- *
- * Leads to:
- * ```html
- * <my-class field-name="hello"></my-class>
- * ```
- *
- */
-declare function observe<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
-
-type SignalSubscriber = () => void;
-/**
- * @type {SignalEntry}
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Type that represents a base signal object.
- * @property {function(): Type} get - Retrieve the signal value.
- * @property {function(value: Type): void} set - Set the signal value.
- * @property {function(updater: (previous: Type) => Type): void} update - Set the value using a pure updater based
- * on the previous value.
- * @property {(fn: SignalSubscriber) => () => void} sub - Subscribe to change notifications. Returns an unsubscribe
- * function.
- * @property {() => void} emit - Force a notification cycle without changing the value (useful after in-place
- * mutation of structural data).
- *
- * @example
- * ```ts
- * const count: SignalEntry<number> = makeSignal(0);
- * const unsub = count.sub(() => console.log("count:", count.get()));
- * count.set(1); // logs "count: 1"
- * count.update(c => c+1); // logs "count: 2"
- * unsub();
- * ```
- */
-type SignalEntry<Type = any> = {
-    get(): Type;
-    set(value: Type): void;
-    update(updater: (previous: Type) => Type): void;
-    sub(fn: SignalSubscriber): () => void;
-    emit(): void;
-};
-/**
- * @type {SignalBox}
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description A signal entry that is also usable like its underlying primitive/object.
- *
- * ### Interop Notes
- * - `toJSON()` returns the raw value.
- * - `valueOf()` returns the raw value.
- * - `Symbol.toPrimitive(hint)`:
- *    - `"number"` → numeric coercion from the inner value
- *    - `"string"` or `"default"` → string coercion from the inner value
- * - The `value` getter/setter mirrors `get()`/`set()` for ergonomic usage.
- *
- * @example
- * ```ts
- * const count: SignalBox<number> = signal(0);
- *
- * // Read
- * console.log(count.get()); // 0
- * console.log(count.value); // 0
- * console.log(+count); // 0
- *
- * // Write
- * count.set(5);
- * count.value = 6;
- * count.update(v => v + 1); // 7
- *
- * // JSON / string
- * console.log(`${count}`); // "7"
- * console.log(JSON.stringify(count)); // 7
- *
- * // Reactivity
- * const unsub = count.sub(() => console.log("changed to", count.get()));
- * count.set(8); // triggers subscriber
- * unsub();
- * ```
- */
-type SignalBox<Type> = Type & SignalEntry<Type> & {
-    toJSON(): Type;
-    valueOf(): Type;
-    value: Type;
-    [Symbol.toPrimitive](hint: "default" | "number" | "string"): string | number;
-};
-
-/**
- * @overload
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Create a standalone reactive signal box.
- * Returns a {@link SignalBox} wrapping the initial value.
- *
- * @template Value
- * @param {Value} [initial] - Initial value stored by the signal.
- * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
- * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
- *
- * @example
- * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
- * ```
- */
-declare function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
-/**
- * @overload
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Create a standalone reactive signal box that mirrors a getter and a setter.
- * Returns a {@link SignalBox} wrapping the initial value.
- *
- * @template Value
- * @param {() => Value} [get] - Getter that returns the value.
- * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
- * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
- * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
- *
- * @example
- * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
- * ```
- */
-declare function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
-/**
- * @overload
- * @decorator
- * @function signal
- * @group Decorators
- * @category Signal
- *
- * @description Stage-3 decorator that turns a field, getter, setter, or accessor into a reactive signal.
- *
- * @example
- * ```ts
- * class Counter {
- *   @signal count = 0;
- *
- *   @effect
- *   log() { console.log(this.count); }
- * }
- *
- * const c = new Counter();
- * c.count++; // triggers effect, logs updated value
- * ```
- */
-declare function signal<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
-/**
- * @decorator
- * @function modelSignal
- * @group Decorators
- * @category Signal
- *
- * @description Decorator that binds a reactive signal to a **model field**
- * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
- * Useful to create signals in TurboModel classes.
- *
- * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
- * @param {string | number} [blockKey] - Optional blockKey identifier.
- *
- * @example
- * ```ts
- * class TodoModel extends TurboModel {
- *   @modelSignal() title = "";
- * }
- * ```
- * Is equivalent to:
- * ```ts
- * class TodoModel extends TurboModel {
- *   @signal public get title() {
- *      return this.getData("title");
- *   }
- *
- *   public set title(value) {
- *      this.setData("title", value);
- *   }
- * }
- *
- * ```
- */
-declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockDataSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockIdSignal
- * @group Decorators
- * @category Signal
- *
- * @description Same idea but binds the block **id**.
- */
-declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @overload
- * @function effect
- * @group Decorators
- * @category Effect
- *
- * @description Bind a standalone effect callback to any signal it includes. The callback will be fired everytime
- * the signal's value changes.
- *
- * @param {() => void} callback - The callback to process.
- * @returns {() => void} A callback that, once called, disposes of the created effect.
- *
- * @example
- * ```ts
- * const count = signal(0);
- * effect(() => console.log(count.value));
- * ```
- */
-declare function effect(callback: () => void): () => void;
-/**
- * @overload
- * @decorator
- * @function effect
- * @group Decorators
- * @category Effect
- *
- * @description Stage-3 decorator that turns a function or getter into an effect callback bound to any signal it includes.
- * The callback will be fired everytime the signal's value changes.
- *
- * @example
- * ```ts
- * class Counter {
- *   @signal count = 0;
- *
- *   @effect log = () => console.log(this.count);
- * }
- *
- * const c = new Counter();
- * c.count++; // triggers effect, logs updated value
- * ```
- */
-declare function effect<Type extends object>(value: ((this: Type) => void) | (() => void), context?: ClassMethodDecoratorContext<Type, any> | ClassGetterDecoratorContext<Type, any> | ClassFieldDecoratorContext<Type, any>): any;
-/**
- * @function getSignal
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Retrieve the signal at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- * @return {SignalEntry<Type>} - The signal entry.
- */
-declare function getSignal<Type = any>(target: object, key: PropertyKey): SignalEntry<Type>;
-/**
- * @function setSignal
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Set the value of the signal at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- * @param {Type} value - The new value of the signal.
- */
-declare function setSignal<Type = any>(target: object, key: PropertyKey, value: Type): void;
-/**
- * @overload
- * @function markDirty
- * @group Decorators
- * @category Signal
- *
- * @description Marks the signal at the given `key` inside `target` as dirty and fires all of its attached effects.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- */
-declare function markDirty(target: object, key: PropertyKey): void;
-/**
- * @overload
- * @function markDirty
- * @group Decorators
- * @category Signal
- *
- * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
- * fires all of its attached effects.
- * @param {object} target - The target to which the signal is bound.
- * @param {string | number | symbol} dataKey - The key of the data.
- * @param {string | number} blockKey - The key of the block.
- */
-declare function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
-/**
- * @function initializeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Initializes and runs all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-declare function initializeEffects(target: object): void;
-/**
- * @function disposeEffect
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of the effect at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- */
-declare function disposeEffect(target: object, key: PropertyKey): void;
-/**
- * @function disposeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-declare function disposeEffects(target: object): void;
-
-/**
  * @group Types
  * @category Basics
  */
@@ -1054,6 +541,7 @@ declare class Point {
      * @returns An array with x and y coordinates
      */
     arr(): number[];
+    linearInterpolation(start: Point, end: Point): number;
 }
 
 /**
@@ -1269,8 +757,17 @@ type TurboViewProperties<ElementType extends object = object, ModelType extends 
 };
 
 /**
+ * @type DataBlockProperties
  * @group Components
  * @category TurboDataBlock
+ *
+ * @description Configuration object used when creating a {@link TurboDataBlock}.
+ * @template DataType - The type of data stored in the block.
+ * @template IdType - The type of the data's ID.
+ * @property {IdType} [id] - Optional ID attached to the block. Useful to reference the data in a nested structure.
+ * @property {DataType} [data] - Initial data.
+ * @property {boolean} [initialize] - If true, {@link TurboDataBlock.initialize} is called immediately after
+ * construction.
  */
 type DataBlockProperties<DataType = any, IdType extends string | number | symbol = any> = {
     id?: IdType;
@@ -1278,12 +775,106 @@ type DataBlockProperties<DataType = any, IdType extends string | number | symbol
     initialize?: boolean;
 };
 /**
+ * @type DataBlockHost
  * @group Components
  * @category TurboDataBlock
+ *
+ * @description Interface implemented by objects that host a {@link TurboDataBlock}.
+ * The host receives lifecycle callbacks whenever the block mutates. This allows
+ * higher-level structures (such as TurboModels) to react to low-level data changes.
+ *
+ * @template DataType - The type stored in the block.
+ * @template KeyType - The key/index type of entries.
+ * @template IdType - The identifier type of the block.
+ *
+ * @property {(key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void} [onDirty] -
+ * Called whenever a key is modified *before* external callbacks are fired. Useful to mark bound signals as dirty.
+ * @property {(key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void} [onChange]
+ * Called after a change has been committed and callbacks are enabled. Provides the key that changed and its new value.
  */
 type DataBlockHost<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> = {
     onDirty?: (key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
     onChange?: (key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
+};
+
+type SignalSubscriber = () => void;
+/**
+ * @type {SignalEntry}
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description Type that represents a base signal object.
+ * @property {function(): Type} get - Retrieve the signal value.
+ * @property {function(value: Type): void} set - Set the signal value.
+ * @property {function(updater: (previous: Type) => Type): void} update - Set the value using a pure updater based
+ * on the previous value.
+ * @property {(fn: SignalSubscriber) => () => void} sub - Subscribe to change notifications. Returns an unsubscribe
+ * function.
+ * @property {() => void} emit - Force a notification cycle without changing the value (useful after in-place
+ * mutation of structural data).
+ *
+ * @example
+ * ```ts
+ * const count: SignalEntry<number> = makeSignal(0);
+ * const unsub = count.sub(() => console.log("count:", count.get()));
+ * count.set(1); // logs "count: 1"
+ * count.update(c => c+1); // logs "count: 2"
+ * unsub();
+ * ```
+ */
+type SignalEntry<Type = any> = {
+    get(): Type;
+    set(value: Type): void;
+    update(updater: (previous: Type) => Type): void;
+    sub(fn: SignalSubscriber): () => void;
+    emit(): void;
+};
+/**
+ * @type {SignalBox}
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description A signal entry that is also usable like its underlying primitive/object.
+ *
+ * ### Interop Notes
+ * - `toJSON()` returns the raw value.
+ * - `valueOf()` returns the raw value.
+ * - `Symbol.toPrimitive(hint)`:
+ *    - `"number"` → numeric coercion from the inner value
+ *    - `"string"` or `"default"` → string coercion from the inner value
+ * - The `value` getter/setter mirrors `get()`/`set()` for ergonomic usage.
+ *
+ * @example
+ * ```ts
+ * const count: SignalBox<number> = signal(0);
+ *
+ * // Read
+ * console.log(count.get()); // 0
+ * console.log(count.value); // 0
+ * console.log(+count); // 0
+ *
+ * // Write
+ * count.set(5);
+ * count.value = 6;
+ * count.update(v => v + 1); // 7
+ *
+ * // JSON / string
+ * console.log(`${count}`); // "7"
+ * console.log(JSON.stringify(count)); // 7
+ *
+ * // Reactivity
+ * const unsub = count.sub(() => console.log("changed to", count.get()));
+ * count.set(8); // triggers subscriber
+ * unsub();
+ * ```
+ */
+type SignalBox<Type> = Type & SignalEntry<Type> & {
+    toJSON(): Type;
+    valueOf(): Type;
+    value: Type;
+    [Symbol.toPrimitive](hint: "default" | "number" | "string"): string | number;
 };
 
 /**
@@ -1357,8 +948,298 @@ declare class Delegate<CallbackType extends (...args: any[]) => any> extends Sim
 }
 
 /**
+ * @type ScopedKey
+ * @group Components
+ * @category TurboNestedMap
+ *
+ * @template KeyType - The per-item key type.
+ * @template BlockKeyType - The block-grouping key type.
+ *
+ * @description Pair containing a `blockKey` and an item `key`.
+ */
+type ScopedKey<KeyType = any, BlockKeyType = any> = {
+    blockKey?: BlockKeyType;
+    key?: KeyType;
+};
+
+/**
+ * @class TurboNestedMap
+ * @group Components
+ * @category TurboNestedMap
+ *
+ * @template ValueType - The type of the nested map's values.
+ * @template KeyType - The per-value key type.
+ * @template BlockKeyType - The block-grouping key type.
+ */
+declare class TurboNestedMap<ValueType = any, KeyType = any, BlockKeyType = any> {
+    protected readonly nestedMap: Map<BlockKeyType, Map<KeyType, ValueType>>;
+    /**
+     * @function get
+     * @description Retrieve the value at the given `key` within the optional `blockKey`.
+     * @param {KeyType} key - Item key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {ValueType} - The associated value, or `undefined`.
+     */
+    get(key: KeyType, blockKey?: BlockKeyType): ValueType;
+    /**
+     * @function set
+     * @description Set the given value at the given `key` and optional `blockKey`.
+     * @param {ValueType} value - The value to set.
+     * @param {KeyType} key - The key to set.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    set(value: ValueType, key: KeyType, blockKey?: BlockKeyType): void;
+    /**
+     * @function getKey
+     * @description Find the first (key, blockKey) pair for a given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
+     */
+    getKey(value: ValueType): ScopedKey<KeyType, BlockKeyType>;
+    /**
+     * @function getKeys
+     * @description Find all (key, blockKey) pairs for a given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
+     */
+    getKeys(value: ValueType): ScopedKey<KeyType, BlockKeyType>[];
+    /**
+     * @function getFlatKey
+     * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
+     * @param {ValueType} value - The value to query.
+     * @returns {string | number} - Flattened key, or undefined when value not found.
+     */
+    getFlatKey(value: ValueType): string | number;
+    /**
+     * @function getFromFlatKey
+     * @description Get the value at the given `flatKey`.
+     * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
+     * @returns {ValueType} - The value, or undefined if not found.
+     */
+    getFromFlatKey(flatKey: number | string): ValueType;
+    /**
+     * @function getEntriesForBlock
+     * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
+     * key values (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
+     */
+    getEntriesForBlock(blockKey?: BlockKeyType): [KeyType, ValueType][];
+    /**
+     * @function getKeysForBlock
+     * @description Return the keys for a block alphabetically sorted (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {KeyType[]} - Array of keys.
+     */
+    getKeysForBlock(blockKey?: BlockKeyType): KeyType[];
+    /**
+     * @function getValuesForBlock
+     * @description Return the values for a block alphabetically sorted by their keys (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {ValueType[]} - Array of values.
+     */
+    getValuesForBlock(blockKey?: BlockKeyType): ValueType[];
+    /**
+     * @function getAllKeys
+     * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
+     * (if compatible).
+     * @returns {KeyType[]} - Flattened list of all keys.
+     */
+    getAllKeys(): KeyType[];
+    /**
+     * @function getAllValues
+     * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
+     * (if compatible).
+     * @returns {ValueType[]} - Flattened list of all values.
+     */
+    getAllValues(): ValueType[];
+    /**
+     * @function hasKey
+     * @description Check whether a value exists at the given `key` inside `blockKey`.
+     * @param {KeyType} key - The targeted key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {boolean} Whether a value exists.
+     */
+    hasKey(key: KeyType, blockKey?: BlockKeyType): boolean;
+    /**
+     * @function hasBlock
+     * @description Check whether a block exists at `blockKey`.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {boolean} Whether a block exists.
+     */
+    hasBlock(blockKey: BlockKeyType): boolean;
+    /**
+     * @function getBlockSize
+     * @description Get the number of entries inside the target block.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {number} The size of the block.
+     */
+    getBlockSize(blockKey?: BlockKeyType): number;
+    /**
+     * @function removeKey
+     * @description Remove the entry at the given `key` inside `blockKey`.
+     * @param {KeyType} key - The key to remove.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    removeKey(key: KeyType, blockKey?: BlockKeyType): void;
+    /**
+     * @function remove
+     * @description Remove the first entry with the given value.
+     * @param {ValueType} value - The value to remove.
+     */
+    remove(value: ValueType): void;
+    /**
+     * @function clear
+     * @description Remove all entries and reset internal state.
+     */
+    clear(): void;
+    /**
+     * @function flattenKey
+     * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
+     * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
+     * @param {KeyType} key - Item key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {number | string} - The flattened key.
+     */
+    flattenKey(key: KeyType, blockKey?: BlockKeyType): string | number;
+    /**
+     * @function scopeKey
+     * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
+     * @param {number | string} flatKey - Flattened key or global index.
+     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
+     */
+    scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType>;
+    /**
+     * @property defaultBlockKey
+     * @protected
+     * @description Default block key used when none is supplied. It returns the first blockKey if present,
+     * otherwise returns the sentinel `"__default__"`.
+     * @returns {BlockKeyType}
+     */
+    protected get defaultBlockKey(): BlockKeyType;
+    protected getFlatCompatibleKey(key: BlockKeyType | KeyType): string | number;
+}
+
+/**
+ * @class TurboObserver
+ * @group Components
+ * @category TurboObserver
+ *
+ * @extends TurboNestedMap
+ * @description Generic observer that keeps a set of component instances organized by
+ * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
+ * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
+ *
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The per-item key type.
+ * @template {string | number} BlockKeyType - The block-grouping key type.
+ */
+declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> extends TurboNestedMap<ComponentType, KeyType, BlockKeyType> {
+    protected _isInitialized: boolean;
+    /**
+     * @property onAdded
+     * @description Delegate called when an item appears for which no component instance exists.
+     * Handlers may return a newly-created component instance which will be stored and then receive subsequent
+     * `onUpdated` calls.
+     */
+    readonly onAdded: Delegate<(data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void>;
+    /**
+     * @property onUpdated
+     * @description Delegate called when an item already has an associated instance and its data changes.
+     */
+    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
+    /**
+     * @property onDeleted
+     * @description Delegate called when an item is removed.
+     */
+    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
+    /**
+     * @property onInitialize
+     * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
+     */
+    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
+    /**
+     * @property onDestroy
+     * @description Delegate fired when the observer is destroyed.
+     */
+    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
+    /**
+     * @constructor
+     * @description Create a TurboObserver.
+     * By default, the observer wires `onUpdated` to update instance data if the instance
+     * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
+     * when the associated key is deleted.
+     * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
+     * options and lifecycle callbacks.
+     */
+    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>);
+    /**
+     * @function removeKey
+     * @description Remove the instance associated with `key` inside `blockKey`.
+     * @param {KeyType} key - The key to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    removeKey(key: KeyType, blockKey?: BlockKeyType, removeFromDOM?: boolean): void;
+    /**
+     * @function remove
+     * @description Remove a given instance.
+     * @param {ComponentType} instance - The instance to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     */
+    remove(instance: ComponentType, removeFromDOM?: boolean): void;
+    /**
+     * @property isInitialized
+     * @description Whether the observer has been initialized (i.e. {@link initialize} called).
+     */
+    get isInitialized(): boolean;
+    /**
+     * @function initialize
+     * @description Invoke `onInitialize` and mark the observer as initialized.
+     */
+    initialize(): void;
+    /**
+     * @function clear
+     * @description Remove and destroy all managed instances and reset internal state.
+     */
+    clear(): void;
+    /**
+     * @function destroy
+     * @description Clear then fire `onDestroy`.
+     */
+    destroy(): void;
+    /**
+     * @function keyChanged
+     * @description Function to notify the observer of a change at a certain key.
+     * @param {KeyType} key - The changed item key.
+     * @param {DataType} value - The new value for the item.
+     * @param {boolean} [deleted=false] - Whether the item was removed.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    keyChanged(key: KeyType, value: DataType, deleted?: boolean, blockKey?: BlockKeyType): void;
+}
+
+/**
+ * @type TurboObserverProperties
  * @group Components
  * @category TurboDataBlock
+ *
+ * @description Configuration object to create a new {@link TurboObserver}.
+ *
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The per-item key type.
+ * @template {string | number} BlockKeyType - The block-grouping key type.
+ *
+ * @property {new(...args:any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>} [customConstructor] -
+ * Optional custom observer constructor to instantiate instead of the default `TurboObserver`.
+ * @property {boolean} [initialize] - If true, the observer is initialized immediately.
+ * @property {(data, id, self, blockKey?) => ComponentType | void} [onAdded] - Called when a new item appears.
+ * @property {(data, instance, id, self, blockKey?) => void} [onUpdated] - Called when an existing item changes.
+ * @property {(data, instance, id, self, blockKey?) => void} [onDeleted] - Called when an item is deleted.
+ * @property {(self) => void} [onInitialize] - Called when the observer is initialized.
+ * @property {(self) => void} [onDestroy] - Called when the observer is destroyed.
  */
 type TurboObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> = {
     customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>;
@@ -1369,87 +1250,168 @@ type TurboObserverProperties<DataType = any, ComponentType extends object = any,
     onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
     onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
 };
-type ScopedKey<KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> = {
-    blockKey?: BlockKeyType;
-    key?: KeyType;
-};
-
-declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> {
-    protected _isInitialized: boolean;
-    readonly onAdded: Delegate<(data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void>;
-    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
-    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
-    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
-    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
-    protected readonly instances: Map<BlockKeyType, Map<KeyType, ComponentType>>;
-    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>);
-    getInstance(key: KeyType, blockKey?: BlockKeyType): ComponentType;
-    getBlockInstancesAndKeys(blockKey?: BlockKeyType): [KeyType, ComponentType][];
-    getBlockInstances(blockKey?: BlockKeyType): ComponentType[];
-    getAllInstances(): ComponentType[];
-    getInstanceKey(instance: ComponentType): {
-        blockKey?: BlockKeyType;
-        key: KeyType;
-    };
-    getInstanceAt(flatKey: number | string): ComponentType;
-    getInstanceFlatKey(instance: ComponentType): string | number;
-    setInstance(instance: ComponentType, key: KeyType, blockKey?: BlockKeyType): void;
-    removeInstanceByKey(key: KeyType, removeFromDOM?: boolean, blockKey?: BlockKeyType): void;
-    removeInstance(instance: ComponentType, removeFromDOM?: boolean): void;
-    get isInitialized(): boolean;
-    initialize(): void;
-    clear(): void;
-    destroy(): void;
-    keyChanged(key: KeyType, value: DataType, deleted?: boolean, blockKey?: BlockKeyType): void;
-    flattenKey(key: KeyType, blockKey?: BlockKeyType): number | string;
-    scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType>;
-    protected get defaultBlockKey(): BlockKeyType;
-}
-
-declare class DataBlockObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> extends TurboObserver<DataType, ComponentType, KeyType> {
-    keyChanged(key: KeyType, value: DataType, deleted?: boolean): void;
-    getInstanceKey(instance: ComponentType): KeyType;
-    setInstance(instance: ComponentType, key: KeyType): void;
-}
 
 /**
+ * @class TurboDataBlock
  * @group Components
  * @category TurboDataBlock
+ *
+ * @template DataType - The type of the data held in the block.
+ * @template {string | number | symbol} KeyType - The type of the data's keys.
+ * @template IdType - The type of the data's ID.
+ * @template ComponentType - For observers. The type of instances that react to changes in the block.
+ * @template DataEntryType - For observers. The type of the data associated with each observer instance.
+ *
+ * @description Lightweight wrapper around a plain JS container (object, Array or Map) that exposes a consistent
+ * API for reads/writes, signals, {@link TurboObserver}s and host callbacks.
+ * Use this when you want change notifications and host integration around a simple data block.
  */
 declare class TurboDataBlock<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> {
     private _data;
     id: IdType;
+    /**
+     * @description The data held by this block. Setting it will clear attached observers and re-initialize the block.
+     */
     get data(): DataType;
     set data(data: DataType);
+    /**
+     * @description Whether callbacks are enabled.
+     */
     accessor enabledCallbacks: boolean;
     protected isInitialized: boolean;
     private host;
     private signals;
-    protected readonly changeObservers: TurboWeakSet<DataBlockObserver<DataEntryType, ComponentType, KeyType>>;
+    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, KeyType>>;
+    /**
+     * Delegate fired when the value changes at a certain key/index.
+     */
     readonly onKeyChanged: Delegate<(key: KeyType, value: any) => void>;
+    /**
+     * The default class of observers to instantiate.
+     */
     observerConstructor: new (...args: any[]) => TurboObserver;
+    /**
+     * @constructor
+     * @description Create a new TurboDataBlock.
+     * @param {DataBlockProperties} [properties] - Optional initialization properties.
+     */
     constructor(properties?: DataBlockProperties);
+    /**
+     * @function get
+     * @description Retrieve the value stored at the given key.
+     * @param {KeyType} key - The key/index to read.
+     * @returns {any} - The stored value, or `undefined` if not present.
+     */
     get(key: KeyType): any;
+    /**
+     * @function set
+     * @description Set a value at the provided key and notify observers/signals if the value changed.
+     * @param {KeyType} key - The key/index to write.
+     * @param {unknown} value - The value to set.
+     */
     set(key: KeyType, value: unknown): void;
+    /**
+     * @function add
+     * @description Append or insert a value into an array-backed data block. If the block is not an
+     * array, the call forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @param {KeyType} [key] - Optional numeric index to insert at. If omitted, the value is pushed.
+     * @returns {KeyType | void} - The index where the value was inserted (for arrays), or void for non-arrays.
+     */
     add(value: unknown, key?: KeyType): KeyType | void;
+    /**
+     * @function has
+     * @description Check whether the given key exists in the block.
+     * @param {KeyType} key - The key/index to check.
+     * @returns {boolean} - True, if present.
+     */
     has(key: KeyType): boolean;
+    /**
+     * @function delete
+     * @description Remove the entry at the given key/index and notify observers.
+     * @param {KeyType} key - The key/index to remove.
+     */
     delete(key: KeyType): void;
+    /**
+     * @property keys
+     * @description Array of all keys currently present in the block.
+     */
     get keys(): KeyType[];
+    /**
+     * @property values
+     * @description The block's values in an array (in the order implied by {@link keys}).
+     */
     get values(): any[];
+    /**
+     * @property size
+     * @description Number of entries in the block.
+     */
     get size(): number;
+    /**
+     * @function initialize
+     * @description Fire change notifications for every existing key, initializing the block.
+     * @returns {void}
+     */
     initialize(): void;
     /**
      * @function clear
-     * @description Clears the block data.
+     * @description Clear the block and its observers.
+     * @param {boolean} [clearData=true] - If true, also clears the stored data. Otherwise, only resets observers/state.
      */
     clear(clearData?: boolean): void;
+    /**
+     * @function toJSON
+     * @description Convert the block into a plain object suitable for JSON serialization.
+     * @returns {object} - Plain JSON-serializable representation.
+     */
     toJSON(): object;
+    /**
+     * @function link
+     * @description Attach a host object that will receive `onDirty` and `onChange` callbacks when keys change.
+     * @param {DataBlockHost<DataType, KeyType, IdType>} host - The host to attach.
+     */
     link(host: DataBlockHost<DataType, KeyType, IdType>): void;
+    /**
+     * @function unlink
+     * @description Detach any previously-linked host.
+     */
     unlink(): void;
+    /**
+     * @function makeSignal
+     * @description Create (or return an existing) reactive {@link SignalBox} for the given key.
+     * The returned signal reads from {@link get} and writes via {@link set}.
+     * @template Type - The type of the signal's value.
+     * @param {KeyType} key - The key for which to create the signal.
+     * @returns {SignalBox<Type>} - The created or cached signal.
+     */
     makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
+    /**
+     * @function getSignal
+     * @description Retrieve an existing {@link SignalBox} for the given key if present.
+     * @param {KeyType} key - The key whose signal to retrieve.
+     * @returns {SignalBox<any>} - The signal or undefined if none was created.
+     */
     getSignal(key: KeyType): SignalBox<any>;
+    /**
+     * @function makeAllSignals
+     * @description Create signals for every key currently present in the block.
+     */
     makeAllSignals(): void;
-    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>): DataBlockObserver<DataEntryType, ComponentType, KeyType>;
+    /**
+     * @function generateObserver
+     * @description Create and register an observer tied to this block.
+     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Options for observer creation.
+     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>} - The newly created observer.
+     */
+    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>): TurboObserver<DataEntryType, ComponentType, KeyType>;
+    /**
+     * @protected
+     * @function keyChanged
+     * @description Internal hook called whenever a key is added/updated/deleted.
+     * @param {KeyType} key - The key that changed.
+     * @param {unknown} [value=this.get(key)] - The new value (or undefined for deletions).
+     * @param {boolean} [deleted=false] - Whether the key was removed.
+     */
     protected keyChanged(key: KeyType, value?: unknown, deleted?: boolean): void;
 }
 
@@ -1489,6 +1451,12 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
      */
     constructor(data?: DataType, dataBlocksType?: BlocksType);
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void;
     /**
      * @description The default block.
@@ -1748,6 +1716,12 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
      */
     model: ModelType;
     constructor(model?: ModelType);
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void;
 }
 
@@ -1838,6 +1812,12 @@ declare class TurboView<ElementType extends object = object, ModelType extends T
      * @param {TurboViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
      */
     constructor(properties: TurboViewProperties<ElementType, ModelType, EmitterType>);
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void;
     /**
      * @function initialize
@@ -1926,12 +1906,24 @@ declare class TurboController<ElementType extends object = object, ViewType exte
      */
     emitter: EmitterType;
     constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void;
     /**
      * @function initialize
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
      */
     initialize(): void;
+    /**
+     * @function setupUIListeners
+     * @description Setup method for defining DOM and input event listeners.
+     * @protected
+     */
+    protected setupUIListeners(): void;
     /**
      * @function setupChangedCallbacks
      * @description Setup method intended to initialize change listeners and callbacks.
@@ -2286,70 +2278,6 @@ declare class TurboEventManagerDispatchController extends TurboController<TurboE
     removeCustomDispatcher(type: string): void;
 }
 
-declare class Listener<Type extends Node = Node> {
-    readonly type: string;
-    target: Type;
-    readonly toolName: string;
-    readonly callback: ListenerCallback<Type>;
-    readonly bundledListener: ((e: Event) => Propagation | any);
-    readonly options: ListenerOptions;
-    readonly manager: TurboEventManager;
-    lastExecutionFrame: number;
-    lastExecutionTime: number;
-    constructor(properties: ListenerProperties<Type>);
-    execute(e: Event): Propagation;
-    executeOn(e: Event, target: Type): any;
-    match(properties?: MatchListenerProperties): boolean;
-}
-
-declare enum Propagation {
-    propagate = "propagate",
-    stopPropagation = "stopPropagation",
-    stopImmediatePropagation = "stopImmediatePropagation"
-}
-/**
- * @group Types
- * @category Event
- */
-type PreventDefaultOptions = {
-    types?: string[];
-    phase?: "capture" | "bubble";
-    stop?: false | "stop" | "immediate";
-    preventDefaultOn?: (type: string, e: Event) => boolean;
-    clearPreviousListeners?: boolean;
-    manager?: TurboEventManager;
-};
-/**
- * @group Types
- * @category Event
- */
-declare const BasicInputEvents: readonly ["mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu", "dragstart", "selectstart", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "wheel"];
-/**
- * @group Types
- * @category Event
- */
-declare const NonPassiveEvents: readonly ["wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"];
-type ListenerProperties<Type extends Node = Node> = {
-    type: string;
-    callback: ListenerCallback<Type>;
-    target?: Type;
-    toolName?: string;
-    options?: ListenerOptions;
-    manager?: TurboEventManager;
-};
-type MatchListenerProperties<Type extends Node = Node> = Partial<ListenerProperties<Type>>;
-type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propagation | any);
-/**
- * @group Types
- * @category Event
- */
-type ListenerOptions = AddEventListenerOptions & {
-    checkSubstrates?: boolean;
-    solveSubstrates?: boolean;
-    throttleEveryFrames?: number;
-    throttleEveryMs?: number;
-};
-
 /**
  * @type {TurboInteractorProperties}
  * @group MVC
@@ -2363,17 +2291,17 @@ type ListenerOptions = AddEventListenerOptions & {
  *
  * @description  Options used to create a new {@link TurboInteractor} attached to an element.
  * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
- * @property {Node} [target] - The target that will listen for the events.
- * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom options to define per
- * event type.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
+ * @property {Node} [target] - The target that will listen for the events. Defaults to `this.element`.
+ * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom default options to define
+ * for all listeners.
+ * @property {TurboEventManager} [manager] - The event manager instance the listeners should register against. Defaults
  * to `TurboEventManager.instance`.
  */
 type TurboInteractorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager;
     toolName?: string;
     target?: Node;
-    listenerOptions?: PartialRecord<DefaultEventNameKey, ListenerOptions>;
+    listenerOptions?: ListenerOptions;
 };
 
 /**
@@ -2415,13 +2343,8 @@ declare class TurboInteractor<ElementType extends object = object, ViewType exte
      * @readonly
      * @description Optional custom options to define per event type.
      */
-    readonly options: PartialRecord<DefaultEventNameKey, ListenerOptions>;
+    readonly options: ListenerOptions;
     constructor(properties: TurboInteractorProperties<ElementType, ViewType, ModelType, EmitterType>);
-    /**
-     * @function initialize
-     * @description Initialization function that sets up all the defined evnt listeners and attaches them to the target.
-     */
-    initialize(): void;
 }
 
 /**
@@ -2460,19 +2383,11 @@ type TurbofyOptions = {
     excludeReifectFunctions?: boolean;
 };
 /**
- * @type {TurboToolProperties}
- * @group MVC
+ * @type {MakeToolOptions}
+ * @group Types
  * @category Tool
  *
- * @extends TurboControllerProperties
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Options used to create a new {@link TurboTool} attached to an element.
- * @property {string} [toolName] - The name of the tool.
- * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
+ * @description Options used to create a new tool attached to an element via {@link makeTool}.
  * @property {() => void} [onActivate] - Function to execute when the tool is activated.
  * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
  * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to. Defaults to the
@@ -2484,9 +2399,7 @@ type TurbofyOptions = {
  * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
  * to `TurboEventManager.instance`.
  */
-type TurboToolProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
-    toolName?: string;
-    embeddedTarget?: Node;
+type MakeToolOptions = {
     onActivate?: () => void;
     onDeactivate?: () => void;
     activationEvent?: DefaultEventNameEntry;
@@ -2494,6 +2407,53 @@ type TurboToolProperties<ElementType extends object = object, ViewType extends T
     customActivation?: (element: Turbo<Element>, manager: TurboEventManager) => void;
     key?: string;
     manager?: TurboEventManager;
+};
+/**
+ * @type {ToolBehaviorCallback}
+ * @group Types
+ * @category Tool
+ *
+ * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
+ * leading to stopping the propagation of the event.
+ * @param {Event} event - The original DOM/Turbo event.
+ * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
+ * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
+ * @return {boolean} - Whether to stop the propagation.
+ */
+type ToolBehaviorCallback<TargetType extends Node = Node> = (event: Event, target: TargetType, options?: ToolBehaviorOptions) => Propagation | any;
+/**
+ * @type {ToolBehaviorOptions}
+ * @group Types
+ * @category Tool
+ *
+ * @description Options object passed to tool behaviors at execution time.
+ * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
+ * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
+ */
+type ToolBehaviorOptions = {
+    isEmbedded?: boolean;
+    embeddedTarget?: Node;
+};
+/**
+ * @type {TurboToolProperties}
+ * @group MVC
+ * @category Tool
+ *
+ * @extends TurboControllerProperties
+ * @extends MakeToolOptions
+ *
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Options used to create a new {@link TurboTool} attached to an element.
+ * @property {string} [toolName] - The name of the tool.
+ * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
+ */
+type TurboToolProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeToolOptions & {
+    toolName?: string;
+    embeddedTarget?: Node;
 };
 
 /**
@@ -2554,28 +2514,6 @@ declare class TurboTool<ElementType extends object = object, ViewType extends Tu
     initialize(): void;
 }
 
-/**
- * @type {TurboSubstrateProperties}
- * @group MVC
- * @category Substrate
- *
- * @extends TurboControllerProperties
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Options used to create a new {@link TurboSubstrate} attached to an element.
- * @property {string} [substrateName] - The name of the substrate.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
- */
-type TurboSubstrateProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
-    substrateName?: string;
-    onActivate?: () => void;
-    onDeactivate?: () => void;
-};
-
 declare class TurboQueue<Type = any> {
     private items;
     private head;
@@ -2592,6 +2530,134 @@ declare class TurboQueue<Type = any> {
     clone(): TurboQueue<Type>;
     remove(value: Type): boolean;
 }
+
+/**
+ * @type {MakeSubstrateOptions}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
+ * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
+ * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
+ * @property {number} [priority] - The priority of the substrate. Higher priority substrates (lower number) should
+ * be resolved first. Defaults to 10.
+ * @property {boolean} [active] - Whether the substrate is active. Defaults to true.
+ * @property {TurboSubstrate} [attachedInstance] - The optional TurboSubstrate instance to attach to the substrate.
+ */
+type MakeSubstrateOptions = {
+    onActivate?: () => void;
+    onDeactivate?: () => void;
+    priority?: number;
+    active?: boolean;
+    attachedInstance?: TurboSubstrate;
+};
+/**
+ * @type {SubstrateCallbackProperties}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects passed as context for resolving substrates. Given as first parameter to
+ * solvers when executing them via {@link solveSubstrate}.
+ * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
+ * @property {object} [substrateHost] - The object to which the target substrate is attached.
+ * @property {object} [target] - The current object being processed by the solver. Property set by
+ * {@link solveSubstrate} when processing every object in the substrate's list.
+ * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
+ * @property {string} [eventType] - The type of the event.
+ * @property {Node} [eventTarget] - The target of the event.
+ * @property {string} [toolName] - The name of the active tool when the event was fired.
+ * @property {ListenerOptions} [eventOptions] - The options of the event.
+ * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
+ * instantiated event manager.
+ */
+type SubstrateCallbackProperties = {
+    substrate?: string;
+    substrateHost?: object;
+    target?: object;
+    event?: Event;
+    eventType?: string;
+    eventTarget?: Node;
+    toolName?: string;
+    eventOptions?: ListenerOptions;
+    manager?: TurboEventManager;
+};
+/**
+ * @type {SubstrateMutatorProperties}
+ * @group Types
+ * @category Substrate
+ *
+ * @extends SubstrateCallbackProperties
+ * @template Type - The type of the value to mutate.
+ * @description Type representing objects passed as context to mutate a value in a substrate. Given as first parameter to
+ * mutators when executing them via {@link mutate}.
+ * @property {string} [mutation] - The name of the mutator to execute.
+ * @property {Type} [value] - The value to mutate.
+ */
+type SubstrateMutatorProperties<Type = any> = SubstrateCallbackProperties & {
+    mutation?: string;
+    value?: Type;
+};
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateChecker = (properties: SubstrateCallbackProperties, ...args: any[]) => boolean;
+/**
+ * @type {SubstrateChecker}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+type SubstrateMutator<Type = any> = (properties: SubstrateMutatorProperties<Type>, ...args: any[]) => Type;
+/**
+ * @type {SubstrateSolver}
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of solver functions that substrates expect.
+ */
+type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => Propagation | void;
+/**
+ * @type {SubstrateAddCallbackProperties}
+ * @group Types
+ * @category Substrate
+ * @template {SubstrateChecker | SubstrateMutator | SubstrateSolver} Type - The type of callback.
+ *
+ * @description Type representing a configuration object to add a new callback to the given substrate.
+ * @property {string} [name] - The name of the callback to add.
+ * @property {Type} [callback] - The callback to add.
+ * @property {string} [substrate] - The substrate to add the callback to.
+ * @property {number} [priority] - The priority of the callback.
+ */
+type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
+    name?: string;
+    callback?: Type;
+    substrate?: string;
+    priority?: number;
+};
+/**
+ * @type {TurboSubstrateProperties}
+ * @group MVC
+ * @category Substrate
+ *
+ * @extends TurboControllerProperties
+ * @extends MakeSubstrateOptions
+ *
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Options used to create a new {@link TurboSubstrate} attached to an element.
+ * @property {string} [substrateName] - The name of the substrate.
+ */
+type TurboSubstrateProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
+    substrateName?: string;
+};
 
 /**
  * @class TurboSubstrate
@@ -2628,8 +2694,24 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * @description The property keys of the substrate mutators defined in the instance.
      */
     readonly mutatorsMetadata: SubstrateAddCallbackProperties<SubstrateMutator>[];
-    get priority(): number;
-    set priority(value: number);
+    /**
+     * @description The priority of the substrate. Higher priority substrates (lower number) should
+     * be resolved first. Defaults to 10.
+     */
+    priority: number;
+    /**
+     * @description The default queue template for the substrate, used when starting a new resolving pass.
+     * It defaults to the substrate's object list.
+     */
+    defaultQueue: object[] | TurboQueue<object>;
+    /**
+     * @description The maximum number of passes allowed per object for this substrate during resolving.
+     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+     */
+    maxPasses: number;
+    /**
+     * @description Whether the substrate is active. Defaults to true.
+     */
     get active(): boolean;
     set active(value: boolean);
     /**
@@ -2638,11 +2720,14 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      */
     get objectList(): Set<object>;
     set objectList(value: HTMLCollection | NodeList | Set<object>);
+    /**
+     * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
+     */
+    get onObjectListChange(): Delegate<(object: object, status: "added" | "removed") => void>;
+    /**
+     * @description The current queue to be processed by the substrate while resolving.
+     */
     get queue(): TurboQueue<object>;
-    get defaultQueue(): TurboQueue<object>;
-    set defaultQueue(value: object[] | TurboQueue<object>);
-    get maxPasses(): number;
-    set maxPasses(value: number);
     constructor(properties: TurboSubstrateProperties<ElementType, ViewType, ModelType, EmitterType>);
     /**
      * @function initialize
@@ -2670,27 +2755,104 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * @return {boolean} - Whether the object is present.
      */
     hasObject(object: object): boolean;
+    /**
+     * @function getObjectPasses
+     * @description Retrieve how many times the given object has been processed for the current resolving session
+     * of the substrate.
+     * @param {object} object - The object to query.
+     * @return {number} - Number of passes already performed on this object.
+     */
     getObjectPasses(object: object): number;
+    /**
+     * @function getObjectData
+     * @description Retrieve custom per-object data for this substrate. It is reset on every new
+     * resolving session.
+     * @param {object} object - The object to query.
+     * @return {Record<string, any>} - The stored data object (or an empty object if none).
+     */
     getObjectData(object: object): Record<string, any>;
+    /**
+     * @function setObjectData
+     * @description Set custom per-object data for this substrate. It is reset on every new resolving session.
+     * @param {object} object - The object to update.
+     * @param {Record<string, any>} [data] - The new data object to associate with this object.
+     * @return {this} - Itself for chaining.
+     */
     setObjectData(object: object, data?: Record<string, any>): this;
+    /**
+     * @function addChecker
+     * @description Register a checker in the substrate. Checkers dictate whether the event should continue
+     * executing depending on the provided context (event, tool, target, etc.).
+     * @param {SubstrateAddCallbackProperties<SubstrateChecker>} properties - Configuration object, including the
+     * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
+     * `substrate`, and the `priority` of the checker.
+     * @return {this} - Itself for chaining.
+     */
     addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
+    /**
+     * @function removeChecker
+     * @description Remove a checker from this substrate by its name.
+     * @param {string} name - The checker name.
+     * @return {this} - Itself for chaining.
+     */
     removeChecker(name: string): this;
+    /**
+     * @function clearCheckers
+     * @description Remove all checkers attached to this substrate.
+     * @return {this} - Itself for chaining.
+     */
     clearCheckers(): this;
+    /**
+     * @function check
+     * @description Evaluate all checkers for this substrate and return whether the event should proceed or halt.
+     * @param {SubstrateCallbackProperties} [properties] - Context passed to each checker.
+     * @return {boolean} - Whether the substrate passes all checks.
+     */
     check(properties?: SubstrateCallbackProperties): boolean;
+    /**
+     * @function addMutator
+     * @description Register a mutator in the substrate. Mutators compute or transform a value based on the context.
+     * @param {SubstrateAddCallbackProperties<SubstrateMutator>} properties - Configuration object, including the
+     * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
+     * @return {this} - Itself for chaining.
+     */
     addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
+    /**
+     * @function removeMutator
+     * @description Remove a mutator from this substrate by its name.
+     * @param {string} name - The mutator name.
+     * @return {this} - Itself for chaining.
+     */
     removeMutator(name: string): this;
+    /**
+     * @function clearMutators
+     * @description Remove all mutators attached to this substrate.
+     * @return {this} - Itself for chaining.
+     */
     clearMutators(): this;
+    /**
+     * @function mutate
+     * @template Type - The type of the value to mutate
+     * @description Execute a mutator for this substrate and return the resulting value.
+     * @param {SubstrateMutatorProperties<Type>} [properties] - Context object, including the
+     * `mutation` to execute, and the input `value` to mutate.
+     * @return {Type} - The mutated result.
+     */
     mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
     /**
      * @function addSolver
-     * @description Add the given function as a solver in the substrate.
-     * @param properties
+     * @description Register a solver in the substrate. Solvers typically execute after an event is fired to
+     * ensure the substrate's constraints are maintained. They process all objects in the substrate's queue,
+     * one after the other.
+     * @param {SubstrateAddCallbackProperties<SubstrateSolver>} properties - Configuration object, including the
+     * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
+     * @return {this} - Itself for chaining.
      */
     addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
     /**
      * @function removeSolver
      * @description Remove the given function from the substrate's list of solvers.
-     * @param name
+     * @param {string} name - The solver's name.
      * @return {this} - Itself for chaining.
      */
     removeSolver(name: string): this;
@@ -2701,9 +2863,11 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      */
     clearSolvers(): this;
     /**
-     * @function resolve
-     * @description Resolve the substrate by calling all the solvers on each of the objects in the substrate's list.
-     * @param {SubstrateCallbackProperties} [properties={}] - Optional properties to provide context to the resolving loop.
+     * @function solveSubstrate
+     * @description Solve the substrate by executing all of its attached solvers. Each solver will be executed
+     * on every object in the substrate's queue, incrementing its number of passes in the process.
+     * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context.
+     * @return {this} - Itself for chaining.
      */
     solve(properties?: SubstrateCallbackProperties): this;
 }
@@ -2814,6 +2978,11 @@ declare class Mvc<ElementType extends object = object, ViewType extends TurboVie
     private readonly _interactors;
     private readonly _tools;
     private readonly _substrates;
+    /**
+     * @constructor
+     * @description Create a new MVC manager for a specific element.
+     * @param {MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>} properties - Generation options.
+     */
     constructor(properties: MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
     /**
      * @description The view (if any) of the current MVC structure. Setting it will update the view and link it
@@ -2973,15 +3142,120 @@ declare class Mvc<ElementType extends object = object, ViewType extends TurboVie
      * their change callbacks.
      */
     initialize(): void;
+    /**
+     * @function getDifference
+     * @description Compute the structural difference between the current MVC configuration
+     * and another configuration description.
+     * The comparison is constructor-based (not instance-based):
+     * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
+     * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+     *   the result contains constructors that exist in the current MVC but not in the provided
+     *   configuration.
+     *
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}]
+     *  The configuration to compare against (typically the same shape used by {@link generate}).
+     * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
+     *  A partial configuration of constructors describing missing pieces relative to `properties`.
+     */
+    getDifference(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>;
+    /**
+     * @protected
+     * @function updateController
+     * @description Internal helper used when a controller is added or when pieces are re-linked.
+     * It wires the controller to the current `emitter`, `model` and `view`.
+     * @param {TurboController} controller - Controller instance to update.
+     */
     protected updateController(controller: TurboController): void;
+    /**
+     * @protected
+     * @function updateHandler
+     * @description Internal helper to wire a handler to the current model. Called when handlers
+     * are added or when the MVC pieces are re-linked.
+     * @param {TurboHandler} handler - Handler instance to update.
+     */
     protected updateHandler(handler: TurboHandler): void;
+    /**
+     * @protected
+     * @function updateInteractor
+     * @description Internal helper to wire an interactor to the current `model`, `view`, and `emitter`.
+     * Called when interactors are added or when the MVC pieces are re-linked.
+     * @param {TurboInteractor} interactor - Interactor instance to update.
+     */
     protected updateInteractor(interactor: TurboInteractor): void;
+    /**
+     * @protected
+     * @function updateTool
+     * @description Internal helper to wire a tool to the current `emitter`, `model`, and `view`.
+     * Called when tools are added or when the MVC pieces are re-linked.
+     * @param {TurboTool} tool - Tool instance to update.
+     */
     protected updateTool(tool: TurboTool): void;
+    /**
+     * @protected
+     * @function updateSubstrate
+     * @description Internal helper to wire a substrate to the current `model`, `view`, and `emitter`.
+     * Called when substrates are added or when the MVC pieces are re-linked.
+     * @param {TurboSubstrate} substrate - Substrate instance to update.
+     */
     protected updateSubstrate(substrate: TurboSubstrate): void;
+    /**
+     * @protected
+     * @function linkPieces
+     * @description Ensure all MVC pieces are mutually linked.
+     * Use this after modifying any of the MVC collections (controllers, handlers, interactors, tools, substrates,
+     * view, model, or emitter) so every piece stays in sync.
+     */
     protected linkPieces(): void;
+    /**
+     * @private
+     * @function generateInstance
+     * @description Create a single instance from either a constructor or an already-instantiated object.
+     * If a constructor is provided and `properties` are passed, the constructor is invoked with those properties.
+     * When `shallowCopyProperties` is true, a shallow cloned copy of `properties` is passed to the constructor.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor or instance to generate.
+     * @param {PropertiesType} [properties] - Optional properties passed to the constructor if `data` is a class.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` before passing them.
+     * @returns {Type|undefined} - The created instance or the object passed in.
+     */
     private generateInstance;
+    /**
+     * @private
+     * @function generateInstances
+     * @description Normalize a value that can be a constructor, instance, or array of constructors/instances
+     * into an array of instantiated objects. Uses {@link generateInstance} internally for each entry.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor(s) or instance(s).
+     * @param {PropertiesType} [properties] - Optional properties forwarded to constructors.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` for each instantiation.
+     * @returns {Type[]} - Array of instantiated objects (possibly empty).
+     */
     private generateInstances;
+    /**
+     * @private
+     * @field emitterFireCallback
+     * @description Callback function wired to the model's `keyChangedCallback` that forwards
+     * key/block change notifications into the emitter. It is stored so it can be removed and reattached
+     * when the model changes.
+     * @param {string} keyName - The block key name that changed.
+     * @param {any} blockKey - The specific block key that changed.
+     * @param {...any} args - Additional arguments forwarded from the model.
+     */
     private emitterFireCallback;
+    /**
+     * @protected
+     * @function extractClassEssenceName
+     * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
+     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
+     * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+     *
+     * This is used to auto-generate `keyName` values for controllers, handlers, interactors, tools and substrates
+     * when they are not provided explicitly.
+     *
+     * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
+     * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+     * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
+     */
     protected extractClassEssenceName(constructor: new (...args: any[]) => any, type: string): string;
 }
 
@@ -3014,361 +3288,6 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      */
     readonly dataSize: number;
 }
-
-/**
- * @internal
- */
-interface TurboElementDefaultInterface {
-    /**
-     * @description Whether the element is selected or not.
-     */
-    selected: boolean;
-    /**
-     * @function getPropertiesValue
-     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
-     * @param {Type} propertiesValue - The actual value; could be null.
-     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
-     * if the actual value is null.
-     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
-     * config values are null.
-     * @protected
-     */
-    getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
-    /**
-     * @function destroy
-     * @description Destroys the node by removing it from the document and removing all its bound listeners.
-     * @returns {this} Itself, allowing for method chaining.
-     */
-    destroy(): this;
-    /**
-     * @function initialize
-     * @description Initializes the element. It sets up the UI by calling the methods `setupUIElements`,
-     * `setupUILayout`, `setupUIListeners`, and `setupChangedCallbacks` (in this order, if they are defined).
-     * This function is called automatically in `.setProperties()` and when instantiating an
-     * element via `element()`. It is called only once per element (as it checks with the reflected `initialized` flag).
-     */
-    initialize(): void;
-    /**
-     * @readonly
-     * @description Whether the element was initialized already or not.
-     */
-    readonly initialized: boolean;
-}
-
-/**
- * @type {TurboHeadlessProperties}
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
- */
-type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
-    out?: string | Node;
-    [key: string]: any;
-};
-
-/**
- * @class TurboHeadlessElement
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- */
-declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
-    /**
-     * @description Static configuration object.
-     */
-    static readonly config: any;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
-    constructor(properties?: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>);
-}
-
-/**
- * @class TurboEventManager
- * @group Event Handling
- * @category TurboEventManager
- *
- * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
- * easier management of input.
- */
-declare class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
-    protected static managers: TurboEventManager[];
-    static get instance(): TurboEventManager;
-    static get allManagers(): TurboEventManager[];
-    static set allManagers(managers: TurboEventManager[]);
-    protected keyController: TurboEventManagerKeyController;
-    protected wheelController: TurboEventManagerWheelController;
-    protected pointerController: TurboEventManagerPointerController;
-    protected dispatchController: TurboEventManagerDispatchController;
-    constructor(properties?: TurboEventManagerProperties);
-    /**
-     * @description The currently identified input device. It is not 100% accurate, especially when differentiating
-     * between mouse and trackpad.
-     */
-    get inputDevice(): InputDevice;
-    get onInputDeviceChange(): Delegate<(device: InputDevice) => void>;
-    get currentClick(): ClickMode;
-    get currentKeys(): string[];
-    /**
-     * @description Delegate fired when a tool is changed on a certain click button/mode
-     */
-    get onToolChange(): Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
-    get authorizeEventScaling(): boolean | (() => boolean);
-    set authorizeEventScaling(value: boolean | (() => boolean));
-    get scaleEventPosition(): (position: Point) => Point;
-    set scaleEventPosition(value: (position: Point) => Point);
-    get moveThreshold(): number;
-    set moveThreshold(value: number);
-    get longPressDuration(): number;
-    set longPressDuration(value: number);
-    set keyEventsEnabled(value: boolean);
-    set wheelEventsEnabled(value: boolean);
-    set moveEventsEnabled(value: boolean);
-    set mouseEventsEnabled(value: boolean);
-    set touchEventsEnabled(value: boolean);
-    set clickEventEnabled(value: boolean);
-    set dragEventEnabled(value: boolean);
-    /**
-     * @description Sets the lock state for the event manager.
-     * @param origin - The element that initiated the lock state.
-     * @param value - The state properties to set.
-     */
-    lock(origin: Node, value: TurboEventManagerStateProperties): void;
-    /**
-     * @description Resets the lock state to the default values.
-     */
-    unlock(): void;
-    get enabled(): boolean;
-    set enabled(value: boolean);
-    get preventDefaultWheel(): boolean;
-    set preventDefaultWheel(value: boolean);
-    get preventDefaultMouse(): boolean;
-    set preventDefaultMouse(value: boolean);
-    get preventDefaultTouch(): boolean;
-    set preventDefaultTouch(value: boolean);
-    /**
-     * @description All attached tools in an array
-     */
-    get toolsArray(): Node[];
-    getCurrentTool(mode?: ClickMode): Node;
-    /**
-     * @description Returns the instances of the tool currently held by the provided click mode
-     * @param mode
-     */
-    getCurrentTools(mode?: ClickMode): Node[];
-    /**
-     * @description Returns the name of the tool currently held by the provided click mode
-     * @param mode
-     */
-    getCurrentToolName(mode?: ClickMode): ToolType;
-    getToolName(tool: Node): ToolType;
-    getSimilarTools(tool: Node): Node[];
-    /**
-     * @description Returns the tool with the given name (or undefined)
-     * @param name
-     */
-    getToolsByName(name: ToolType): Node[];
-    /**
-     * @description Returns the first tool with the given name (or undefined)
-     * @param name
-     * @param predicate
-     */
-    getToolByName(name: ToolType, predicate?: (tool: Node) => boolean): Node;
-    /**
-     * @description Returns the tools associated with the given key
-     * @param key
-     */
-    getToolsByKey(key: string): Node[];
-    /**
-     * @description Returns the first tool associated with the given key
-     * @param key
-     * @param predicate
-     */
-    getToolByKey(key: string, predicate?: (tool: Element) => boolean): Node;
-    /**
-     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
-     * @param toolName
-     * @param tool
-     * @param key
-     */
-    addTool(toolName: ToolType, tool: Node, key?: string): void;
-    /**
-     * @description Sets the provided tool as a current tool associated with the provided type
-     * @param tool
-     * @param type
-     * @param options
-     */
-    setTool(tool: Node, type: ClickMode, options?: SetToolOptions): void;
-    /**
-     * @description Sets tool associated with the provided key as the current tool for the key mode
-     * @param key
-     */
-    setToolByKey(key: string): boolean;
-    setupCustomDispatcher(type: string): void;
-    protected applyAndHookEvents(turboEventNames: Record<string, string>, defaultEventNames: Record<string, string>, applyTurboEvents: boolean): void;
-    destroy(): this;
-}
-
-/**
- * @type {MakeSubstrateOptions}
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
- * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
- */
-type MakeSubstrateOptions = {
-    onActivate?: () => void;
-    onDeactivate?: () => void;
-    priority?: number;
-    active?: boolean;
-};
-/**
- * @type {SubstrateCallbackProperties}
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
- * solvers when executing them via {@link solveSubstrate}.
- * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
- * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link solveSubstrate} when processing every object in the substrate's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
- * @property {string} [eventType] - The type of the event.
- * @property {Node} [eventTarget] - The target of the event.
- * @property {string} [toolName] - The name of the active tool when the event was fired.
- * @property {ListenerOptions} [eventOptions] - The options of the event.
- * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
- * instantiated event manager.
- */
-type SubstrateCallbackProperties = {
-    substrate?: string;
-    target?: object;
-    event?: Event;
-    eventType?: string;
-    eventTarget?: Node;
-    toolName?: string;
-    eventOptions?: ListenerOptions;
-    manager?: TurboEventManager;
-};
-type SubstrateMutatorProperties<Type = any> = SubstrateCallbackProperties & {
-    mutation?: string;
-    value?: Type;
-};
-/**
- * @type {SubstrateChecker}
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-type SubstrateChecker = (properties: SubstrateCallbackProperties, ...args: any[]) => boolean;
-/**
- * @type {SubstrateChecker}
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-type SubstrateMutator<Type = any> = (properties: SubstrateMutatorProperties<Type>, ...args: any[]) => Type;
-/**
- * @type {SubstrateSolver}
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of solver functions that substrates expect.
- */
-type SubstrateSolver = (properties: SubstrateCallbackProperties, ...args: any[]) => Propagation;
-type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMutator | SubstrateSolver> = {
-    name?: string;
-    callback?: Type;
-    substrate?: string;
-    priority?: number;
-};
-/**
- * @decorator
- * @function solver
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 decorator that turns methods into substrate solvers.
- * @example
- * ```ts
- * @solver private constrainPosition(properties: SubstrateSolverProperties) {...}
- * ```
- * Is equivalent to:
- * ```ts
- * private constrainPosition(properties: SubstrateSolverProperties) {...}
- *
- * public initialize() {
- *   ...
- *   $(this).addSolver(this.constrainPosition);
- * }
- * ```
- */
-declare function solver(properties?: SubstrateAddCallbackProperties<SubstrateSolver>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
-/**
- * @decorator
- * @function checker
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 decorator that turns methods into substrate checkers.
- * @example
- * ```ts
- * @checker private constrainPosition(properties: SubstrateSolverProperties) {...}
- * ```
- * Is equivalent to:
- * ```ts
- * private constrainPosition(properties: SubstrateSolverProperties) {...}
- *
- * public initialize() {
- *   ...
- *   $(this).addChecker(this.constrainPosition);
- * }
- * ```
- */
-declare function checker(properties?: SubstrateAddCallbackProperties<SubstrateChecker>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
-/**
- * @decorator
- * @function mutator
- * @group Decorators
- * @category MVC
- *
- * @description Stage-3 decorator that turns methods into substrate mutators.
- * @example
- * ```ts
- * @mutator private constrainPosition(properties: SubstrateSolverProperties) {...}
- * ```
- * Is equivalent to:
- * ```ts
- * private constrainPosition(properties: SubstrateSolverProperties) {...}
- *
- * public initialize() {
- *   ...
- *   $(this).addMutator(this.constrainPosition);
- * }
- * ```
- */
-declare function mutator(properties?: SubstrateAddCallbackProperties<SubstrateMutator>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
 
 /**
  * @group Types
@@ -3896,6 +3815,20 @@ declare global {
     }
 }
 
+type CloneElementOptions = {
+    exclude?: PropertyKey[];
+    forceInclude?: PropertyKey[];
+    deepClone?: PropertyKey[];
+    copyReference?: PropertyKey[];
+    copyNodes?: boolean;
+    deepCloneObjects?: boolean;
+    deepCloneNodes?: boolean;
+};
+type FeedforwardProperties = TurboElementProperties & {
+    removeOnPointerRelease?: boolean;
+    type?: string;
+    cloneOptions?: CloneElementOptions;
+};
 /**
  * @group Types
  * @category Element
@@ -3947,6 +3880,898 @@ type TurboProperties<Tag extends ValidTag = "div"> = HTMLElementMutableFields<Ta
     out?: string | Node;
     [key: string]: any;
 };
+
+/**
+ * @internal
+ */
+interface TurboElementUiInterface {
+    /**
+     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
+     * class (or whichever default selected class was set in the config) on the element and update the UI.
+     */
+    selected: boolean;
+    /**
+     * @description Whether to set the default CSS classes defined in the static config on the element or not. Setting
+     * it will accordingly add/remove the CSS classes from the element.
+     */
+    unsetDefaultClasses: boolean;
+}
+
+/**
+ * @group TurboElement
+ * @category TurboProxiedElement
+ */
+type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
+    unsetDefaultClasses?: boolean;
+};
+/**
+ * @type {TurboElementProperties}
+ * @group TurboElement
+ * @category TurboElement
+ *
+ * @extends TurboProperties
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {object} DataType - The element's data type, if any.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
+ * without the tag.
+ */
+type TurboElementProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProxiedProperties<"div", ViewType, DataType, ModelType, EmitterType>;
+/**
+ * @group TurboElement
+ * @category TurboElement
+ */
+type TurboElementConfig = {
+    shadowDOM?: boolean;
+    defaultSelectedClass?: string | string[];
+    defaultClasses?: string | string[];
+    [key: string]: any;
+};
+
+/**
+ * @internal
+ */
+interface TurboElementDefaultInterface {
+    /**
+     * @description Whether the element is selected or not.
+     */
+    selected: boolean;
+    /**
+     * @function getPropertiesValue
+     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
+     * @param {Type} propertiesValue - The actual value; could be null.
+     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
+     * if the actual value is null.
+     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
+     * config values are null.
+     * @protected
+     */
+    getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+    /**
+     * @function destroy
+     * @description Destroys the node by removing it from the document and removing all its bound listeners.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    destroy(): this;
+    /**
+     * @function initialize
+     * @description Initializes the element. It sets up the UI by calling the methods `setupUIElements`,
+     * `setupUILayout`, `setupUIListeners`, and `setupChangedCallbacks` (in this order, if they are defined).
+     * This function is called automatically in `.setProperties()` and when instantiating an
+     * element via `element()`. It is called only once per element (as it checks with the reflected `initialized` flag).
+     */
+    initialize(): void;
+    /**
+     * @readonly
+     * @description Whether the element was initialized already or not.
+     */
+    readonly initialized: boolean;
+    defaultFeedforwardProperties: TurboElementProperties;
+    feedforward(properties?: FeedforwardProperties): this;
+    clone(options?: CloneElementOptions): this;
+}
+
+/**
+ * @type {TurboHeadlessProperties}
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+    out?: string | Node;
+    [key: string]: any;
+};
+
+/**
+ * @class TurboHeadlessElement
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
+ * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ */
+declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
+    /**
+     * @description Static configuration object.
+     */
+    static readonly config: any;
+    /**
+     * @description Update the class's static configurations. Will only overwrite the set properties.
+     * @property {typeof this.config} value - The object containing the new configurations.
+     */
+    static configure(value: typeof this.config): void;
+    /**
+     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
+     * @protected
+     */
+    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
+    constructor(properties?: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>);
+}
+
+/**
+ * @class TurboEventManager
+ * @group Event Handling
+ * @category TurboEventManager
+ *
+ * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
+ * easier management of input.
+ */
+declare class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
+    protected static managers: TurboEventManager[];
+    static get instance(): TurboEventManager;
+    static get allManagers(): TurboEventManager[];
+    static set allManagers(managers: TurboEventManager[]);
+    protected keyController: TurboEventManagerKeyController;
+    protected wheelController: TurboEventManagerWheelController;
+    protected pointerController: TurboEventManagerPointerController;
+    protected dispatchController: TurboEventManagerDispatchController;
+    constructor(properties?: TurboEventManagerProperties);
+    /**
+     * @description The currently identified input device. It is not 100% accurate, especially when differentiating
+     * between mouse and trackpad.
+     */
+    get inputDevice(): InputDevice;
+    get onInputDeviceChange(): Delegate<(device: InputDevice) => void>;
+    get currentClick(): ClickMode;
+    get currentKeys(): string[];
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    get onToolChange(): Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
+    get authorizeEventScaling(): boolean | (() => boolean);
+    set authorizeEventScaling(value: boolean | (() => boolean));
+    get scaleEventPosition(): (position: Point) => Point;
+    set scaleEventPosition(value: (position: Point) => Point);
+    get moveThreshold(): number;
+    set moveThreshold(value: number);
+    get longPressDuration(): number;
+    set longPressDuration(value: number);
+    set keyEventsEnabled(value: boolean);
+    set wheelEventsEnabled(value: boolean);
+    set moveEventsEnabled(value: boolean);
+    set mouseEventsEnabled(value: boolean);
+    set touchEventsEnabled(value: boolean);
+    set clickEventEnabled(value: boolean);
+    set dragEventEnabled(value: boolean);
+    /**
+     * @description Sets the lock state for the event manager.
+     * @param origin - The element that initiated the lock state.
+     * @param value - The state properties to set.
+     */
+    lock(origin: Node, value: TurboEventManagerStateProperties): void;
+    /**
+     * @description Resets the lock state to the default values.
+     */
+    unlock(): void;
+    get enabled(): boolean;
+    set enabled(value: boolean);
+    get preventDefaultWheel(): boolean;
+    set preventDefaultWheel(value: boolean);
+    get preventDefaultMouse(): boolean;
+    set preventDefaultMouse(value: boolean);
+    get preventDefaultTouch(): boolean;
+    set preventDefaultTouch(value: boolean);
+    /**
+     * @description All attached tools in an array
+     */
+    get toolsArray(): Node[];
+    getCurrentTool(mode?: ClickMode): Node;
+    /**
+     * @description Returns the instances of the tool currently held by the provided click mode
+     * @param mode
+     */
+    getCurrentTools(mode?: ClickMode): Node[];
+    /**
+     * @description Returns the name of the tool currently held by the provided click mode
+     * @param mode
+     */
+    getCurrentToolName(mode?: ClickMode): ToolType;
+    getToolName(tool: Node): ToolType;
+    getSimilarTools(tool: Node): Node[];
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     */
+    getToolsByName(name: ToolType): Node[];
+    /**
+     * @description Returns the first tool with the given name (or undefined)
+     * @param name
+     * @param predicate
+     */
+    getToolByName(name: ToolType, predicate?: (tool: Node) => boolean): Node;
+    /**
+     * @description Returns the tools associated with the given key
+     * @param key
+     */
+    getToolsByKey(key: string): Node[];
+    /**
+     * @description Returns the first tool associated with the given key
+     * @param key
+     * @param predicate
+     */
+    getToolByKey(key: string, predicate?: (tool: Element) => boolean): Node;
+    /**
+     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
+     * @param toolName
+     * @param tool
+     * @param key
+     */
+    addTool(toolName: ToolType, tool: Node, key?: string): void;
+    /**
+     * @description Sets the provided tool as a current tool associated with the provided type
+     * @param tool
+     * @param type
+     * @param options
+     */
+    setTool(tool: Node, type: ClickMode, options?: SetToolOptions): void;
+    /**
+     * @description Sets tool associated with the provided key as the current tool for the key mode
+     * @param key
+     */
+    setToolByKey(key: string): boolean;
+    setupCustomDispatcher(type: string): void;
+    protected applyAndHookEvents(turboEventNames: Record<string, string>, defaultEventNames: Record<string, string>, applyTurboEvents: boolean): void;
+    destroy(): this;
+}
+
+declare class Listener<TargetType extends Node = Node, CallbackType extends ListenerCallback<TargetType> = ListenerCallback<TargetType>> {
+    readonly type: string;
+    target: TargetType;
+    readonly toolName: string;
+    readonly callback: CallbackType;
+    readonly bundledListener: ((e: Event) => Propagation | any);
+    readonly options: ListenerOptions;
+    readonly manager: TurboEventManager;
+    lastExecutionFrame: number;
+    lastExecutionTime: number;
+    constructor(properties: ListenerProperties<TargetType, CallbackType>);
+    execute(e: Event): Propagation;
+    executeOn(e: Event, target: TargetType, ...args: any[]): any;
+    match(properties?: MatchListenerProperties): boolean;
+}
+
+declare class ListenerSet<TargetType extends Node = Node, CallbackType extends ListenerCallback<TargetType> = ListenerCallback<TargetType>> {
+    readonly listeners: Map<string, Set<Listener<TargetType, CallbackType>>>;
+    get listenersArray(): Listener<TargetType, CallbackType>[];
+    addListener(properties: ListenerProperties<TargetType, CallbackType>): void;
+    addListener(listener: Listener<TargetType, CallbackType>): void;
+    removeListener(callback: ListenerCallback<TargetType>): void;
+    removeListener(listener: Listener<TargetType, CallbackType>): void;
+    removeMatchingListeners(matchingProperties?: MatchListenerProperties<TargetType, CallbackType>): void;
+    getListeners(matchingProperties?: MatchListenerProperties<TargetType, CallbackType>): Listener[];
+    getListenersByType(type: string): Set<Listener<TargetType, CallbackType>>;
+}
+
+declare enum Propagation {
+    propagate = "propagate",
+    stopPropagation = "stopPropagation",
+    stopImmediatePropagation = "stopImmediatePropagation"
+}
+/**
+ * @group Types
+ * @category Event
+ */
+type PreventDefaultOptions = {
+    types?: string[];
+    phase?: "capture" | "bubble";
+    stop?: false | "stop" | "immediate";
+    preventDefaultOn?: (type: string, e: Event) => boolean;
+    clearPreviousListeners?: boolean;
+    manager?: TurboEventManager;
+};
+/**
+ * @group Types
+ * @category Event
+ */
+declare const BasicInputEvents: readonly ["mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu", "dragstart", "selectstart", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "wheel"];
+/**
+ * @group Types
+ * @category Event
+ */
+declare const NonPassiveEvents: readonly ["wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"];
+type ListenerProperties<TargetType extends Node = Node, CallbackType extends ListenerCallback<TargetType> = ListenerCallback<TargetType>> = {
+    type: string;
+    callback: CallbackType;
+    target?: TargetType;
+    toolName?: string;
+    options?: ListenerOptions;
+    manager?: TurboEventManager;
+};
+type MatchListenerProperties<TargetType extends Node = Node, CallbackType extends ListenerCallback<TargetType> = ListenerCallback<TargetType>> = Partial<ListenerProperties<TargetType, CallbackType>> & {
+    optionsToSkip?: string[];
+};
+type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propagation | any);
+/**
+ * @group Types
+ * @category Event
+ */
+type ListenerOptions = AddEventListenerOptions & {
+    checkSubstrates?: boolean;
+    solveSubstrates?: boolean;
+    throttleEveryFrames?: number;
+    throttleEveryMs?: number;
+};
+
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function listener
+ * @description Method decorator that registers the decorated method as an event listener, to be attached later
+ * via {@link attachListenersAndBehaviors}.
+ * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
+ * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
+ * to derive the event name from {@link DefaultEventName}.
+ *
+ * @example ```ts
+ * class MyElement {
+ *   @listener() click(e: Event) { ... }
+ *   //Equivalent to: turbo(this).on(DefaultEventName.click, (e: Event) => { ... });
+ * }
+ * ```
+ */
+declare function listener(properties?: Partial<Omit<ListenerProperties, "callback">>): <T extends object>(value: (this: T, e: Event, target: Node) => any, context: ClassMethodDecoratorContext<T>) => (this: T, e: Event, target: Node) => any;
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function behavior
+ * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
+ * via {@link attachListenersAndBehaviors}.
+ * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
+ * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
+ * to derive the event name from {@link DefaultEventName}.
+ *
+ * @example ```ts
+ * class MyElement {
+ *   @behavior() click(e: Event) { ... }
+ *   //Equivalent to: turbo(this).addToolBehavior(DefaultEventName.click, (e: Event) => { ... });
+ * }
+ * ```
+ */
+declare function behavior(properties?: Partial<Omit<ListenerProperties, "callback" | "options">>): <T extends object>(value: (this: T, e: Event, target: Node) => any, context: ClassMethodDecoratorContext<T>) => (this: T, e: Event, target: Node) => any;
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function attachListenersAndBehaviors
+ * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
+ * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
+ * automatically in the TurboElement lifecycle.
+ * @param {any} context - The object/instance/prototype to attach the listeners and behaviors defined for it.
+ */
+declare function attachListenersAndBehaviors(context: any): void;
+
+/**
+ * @decorator
+ * @function controller
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched controller.
+ * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @controller() protected textController: TurboController;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textController(): TurboController {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
+ *    if (typeof this.getController === "function") return this.getController("text");
+ * }
+ * ```
+ */
+declare function controller(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+/**
+ * @decorator
+ * @function handler
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched handler.
+ * @param {string} [name] - The key name of the handler in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingHandler`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @handler() protected textHandler: TurboHandler;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textHandler(): TurboHandler {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getHandler("text");
+ *    if (typeof this.getHandler === "function") return this.getHandler("text");
+ * }
+ * ```
+ */
+declare function handler(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+/**
+ * @decorator
+ * @function interactor
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched interactor.
+ * @param {string} [name] - The key name of the interactor in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingInteractor`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @interactor() protected textInteractor: TurboInteractor;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textInteractor(): TurboInteractor {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getInteractor("text");
+ *    if (typeof this.getInteractor === "function") return this.getInteractor("text");
+ * }
+ * ```
+ */
+declare function interactor(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+/**
+ * @decorator
+ * @function tool
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched tool.
+ * @param {string} [name] - The key name of the tool in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingTool`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @tool() protected textTool: TurboTool;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textTool(): TurboTool {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getTool("text");
+ *    if (typeof this.getTool === "function") return this.getTool("text");
+ * }
+ * ```
+ */
+declare function tool(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+/**
+ * @decorator
+ * @function substrate
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
+ * fetched substrate.
+ * @param {string} [name] - The key name of the substrate in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingSubstrate`, the key name will be `something`.
+ *
+ * @example
+ * ```ts
+ * @tool() protected textSubstrate: TurboSubstrate;
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * protected get textSubstrate(): TurboSubstrate {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getSubstrate("text");
+ *    if (typeof this.getSubstrate === "function") return this.getSubstrate("text");
+ * }
+ * ```
+ */
+declare function substrate(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+
+/**
+ * @internal
+ */
+declare global {
+    interface SymbolConstructor {
+        metadata: symbol;
+    }
+}
+/**
+ * @decorator
+ * @function observe
+ * @group Decorators
+ * @category Attributes & DOM
+ *
+ * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
+ * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
+ * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.
+ *
+ * @example
+ * ```ts
+ * @define()
+ * class MyClass extends HTMLElement {
+ *    @observe fieldName: string = "hello";
+ * }
+ * ```
+ *
+ * Leads to:
+ * ```html
+ * <my-class field-name="hello"></my-class>
+ * ```
+ *
+ */
+declare function observe<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
+
+/**
+ * @overload
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Create a standalone reactive signal box.
+ * Returns a {@link SignalBox} wrapping the initial value.
+ *
+ * @template Value
+ * @param {Value} [initial] - Initial value stored by the signal.
+ * @param {object} [target] - The target to which the signal is bound.
+ * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
+ *
+ * @example
+ * ```ts
+ * // Standalone signal
+ * const count = signal(0);
+ * // e.g., count.get(), count.set(1)
+ * ```
+ */
+declare function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
+/**
+ * @overload
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Create a standalone reactive signal box that mirrors a getter and a setter.
+ * Returns a {@link SignalBox} wrapping the initial value.
+ *
+ * @template Value
+ * @param {() => Value} [get] - Getter that returns the value.
+ * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
+ * @param {object} [target] - The target to which the signal is bound.
+ * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
+ *
+ * @example
+ * ```ts
+ * // Standalone signal
+ * const count = signal(0);
+ * // e.g., count.get(), count.set(1)
+ * ```
+ */
+declare function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
+/**
+ * @overload
+ * @decorator
+ * @function signal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Stage-3 decorator that turns a field, getter, setter, or accessor into a reactive signal.
+ *
+ * @example
+ * ```ts
+ * class Counter {
+ *   @signal count = 0;
+ *
+ *   @effect
+ *   log() { console.log(this.count); }
+ * }
+ *
+ * const c = new Counter();
+ * c.count++; // triggers effect, logs updated value
+ * ```
+ */
+declare function signal<Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
+/**
+ * @decorator
+ * @function modelSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Decorator that binds a reactive signal to a **model field**
+ * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
+ * Useful to create signals in TurboModel classes.
+ *
+ * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
+ * @param {string | number} [blockKey] - Optional blockKey identifier.
+ *
+ * @example
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @modelSignal() title = "";
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class TodoModel extends TurboModel {
+ *   @signal public get title() {
+ *      return this.getData("title");
+ *   }
+ *
+ *   public set title(value) {
+ *      this.setData("title", value);
+ *   }
+ * }
+ *
+ * ```
+ */
+declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockDataSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Binds a signal to an entire data-block of a TurboModel/YModel.
+ * - Getter returns `this.getBlockData(blockKey)`
+ * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ *
+ * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
+ * @param id
+ */
+declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @decorator
+ * @function blockIdSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Same idea but binds the block **id**.
+ */
+declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+    get?: (this: Type) => Value;
+    set?: (this: Type, value: Value) => void;
+}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
+/**
+ * @overload
+ * @function effect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Bind a standalone effect callback to any signal it includes. The callback will be fired everytime
+ * the signal's value changes.
+ *
+ * @param {() => void} callback - The callback to process.
+ * @returns {() => void} A callback that, once called, disposes of the created effect.
+ *
+ * @example
+ * ```ts
+ * const count = signal(0);
+ * effect(() => console.log(count.value));
+ * ```
+ */
+declare function effect(callback: () => void): () => void;
+/**
+ * @overload
+ * @decorator
+ * @function effect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Stage-3 decorator that turns a function or getter into an effect callback bound to any signal it includes.
+ * The callback will be fired everytime the signal's value changes.
+ *
+ * @example
+ * ```ts
+ * class Counter {
+ *   @signal count = 0;
+ *
+ *   @effect log = () => console.log(this.count);
+ * }
+ *
+ * const c = new Counter();
+ * c.count++; // triggers effect, logs updated value
+ * ```
+ */
+declare function effect<Type extends object>(value: ((this: Type) => void) | (() => void), context?: ClassMethodDecoratorContext<Type, any> | ClassGetterDecoratorContext<Type, any> | ClassFieldDecoratorContext<Type, any>): any;
+/**
+ * @function getSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description Retrieve the signal at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ * @return {SignalEntry<Type>} - The signal entry.
+ */
+declare function getSignal<Type = any>(target: object, key: PropertyKey): SignalEntry<Type>;
+/**
+ * @function setSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @template Type
+ * @description Set the value of the signal at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ * @param {Type} value - The new value of the signal.
+ */
+declare function setSignal<Type = any>(target: object, key: PropertyKey, value: Type): void;
+/**
+ * @overload
+ * @function markDirty
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Marks the signal at the given `key` inside `target` as dirty and fires all of its attached effects.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ */
+declare function markDirty(target: object, key: PropertyKey): void;
+/**
+ * @overload
+ * @function markDirty
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
+ * fires all of its attached effects.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {string | number | symbol} dataKey - The key of the data.
+ * @param {string | number} blockKey - The key of the block.
+ */
+declare function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
+/**
+ * @function initializeEffects
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Initializes and runs all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+declare function initializeEffects(target: object): void;
+/**
+ * @function disposeEffect
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Disposes of the effect at the given `key` inside `target`.
+ * @param {object} target - The target to which the signal is bound.
+ * @param {PropertyKey} key - The key of the signal inside `target`.
+ */
+declare function disposeEffect(target: object, key: PropertyKey): void;
+/**
+ * @function disposeEffects
+ * @group Decorators
+ * @category Effect
+ *
+ * @description Disposes of all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+declare function disposeEffects(target: object): void;
+
+/**
+ * @decorator
+ * @function solver
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate solvers.
+ * @example
+ * ```ts
+ * @solver private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addSolver(this.constrainPosition);
+ * }
+ * ```
+ */
+declare function solver(properties?: SubstrateAddCallbackProperties<SubstrateSolver>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+/**
+ * @decorator
+ * @function checker
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate checkers.
+ * @example
+ * ```ts
+ * @checker private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addChecker(this.constrainPosition);
+ * }
+ * ```
+ */
+declare function checker(properties?: SubstrateAddCallbackProperties<SubstrateChecker>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+/**
+ * @decorator
+ * @function mutator
+ * @group Decorators
+ * @category MVC
+ *
+ * @description Stage-3 decorator that turns methods into substrate mutators.
+ * @example
+ * ```ts
+ * @mutator private constrainPosition(properties: SubstrateSolverProperties) {...}
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * private constrainPosition(properties: SubstrateSolverProperties) {...}
+ *
+ * public initialize() {
+ *   ...
+ *   $(this).addMutator(this.constrainPosition);
+ * }
+ * ```
+ */
+declare function mutator(properties?: SubstrateAddCallbackProperties<SubstrateMutator>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+
 /**
  * @group Element Creation
  * @category Base Elements
@@ -4296,54 +5121,6 @@ declare class TurboWheelEvent extends TurboEvent {
 }
 
 /**
- * @internal
- */
-interface TurboElementUiInterface {
-    /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class (or whichever default selected class was set in the config) on the element and update the UI.
-     */
-    selected: boolean;
-    /**
-     * @description Whether to set the default CSS classes defined in the static config on the element or not. Setting
-     * it will accordingly add/remove the CSS classes from the element.
-     */
-    unsetDefaultClasses: boolean;
-}
-
-/**
- * @group TurboElement
- * @category TurboProxiedElement
- */
-type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
-    unsetDefaultClasses?: boolean;
-};
-/**
- * @type {TurboElementProperties}
- * @group TurboElement
- * @category TurboElement
- *
- * @extends TurboProperties
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
- * without the tag.
- */
-type TurboElementProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProxiedProperties<"div", ViewType, DataType, ModelType, EmitterType>;
-/**
- * @group TurboElement
- * @category TurboElement
- */
-type TurboElementConfig = {
-    shadowDOM?: boolean;
-    defaultSelectedClass?: string | string[];
-    defaultClasses?: string | string[];
-    [key: string]: any;
-};
-/**
  * @type {TurboIconProperties}
  * @group Components
  * @category TurboIcon
@@ -4406,6 +5183,8 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
      * @description Static configuration object.
      */
     static readonly config: TurboElementConfig;
+    static defaultProperties: TurboElementProperties;
+    static create<Type extends typeof TurboElement>(this: Type, properties?: TurboElementProperties): InstanceType<Type>;
     /**
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
@@ -4594,6 +5373,7 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
      * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
      */
     set rightCustomElements(value: Element | Element[]);
+    static create<Type extends typeof TurboElement, ElementTag extends ValidTag = any>(this: Type, properties: TurboRichElementProperties<ElementTag>): InstanceType<Type>;
 }
 /**
  * @group Components
@@ -5235,6 +6015,17 @@ declare enum AccessLevel {
 declare enum Range {
     min = "min",
     max = "max"
+}
+declare enum Anchor {
+    TopLeft = "topLeft",
+    TopRight = "topRight",
+    TopMiddle = "topMiddle",
+    BottomLeft = "bottomLeft",
+    BottomMiddle = "bottomMiddle",
+    BottomRight = "bottomRight",
+    Center = "center",
+    CenterLeft = "centerLeft",
+    CenterRight = "centerRight"
 }
 
 /**
@@ -5999,6 +6790,52 @@ declare class TurboYBlock<YType extends Map$1 | Array = Map$1 | Array, KeyType e
     private shiftIndices;
 }
 
+declare class AnchorPoint {
+    constructor(anchor?: Point | Anchor);
+    set value(value: Point | Anchor);
+    get value(): Point;
+    get enum(): Anchor;
+    static pointToEnum(value: Point): Anchor;
+    static enumToPoint(value: Anchor): Point;
+}
+
+type TurboRectProperties = {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    angleRad?: number;
+    angleDeg?: number;
+    anchor?: Point | Anchor | AnchorPoint;
+};
+
+declare class TurboRect extends DOMRect {
+    angleRad: number;
+    anchor: AnchorPoint;
+    constructor(properties?: TurboRectProperties);
+    static fromSegment(a: Point, b: Point, thickness?: number, properties?: TurboRectProperties): TurboRect;
+    static fromDOMRect(rect: DOMRect, properties?: TurboRectProperties): TurboRect;
+    render(): HTMLElement;
+    get angleDeg(): number;
+    set angleDeg(value: number);
+    get center(): Point;
+    get xAxis(): Point;
+    get yAxis(): Point;
+    get half(): Point;
+    /** Corners in world/screen coords (clockwise) */
+    get points(): [Point, Point, Point, Point];
+    /** Closest point on (or inside) this rotated rect to p */
+    closestPoint(point: Point): Point;
+    closestPoint(point1: Point, point2: Point): Point;
+    closestPoint(rect: DOMRect): Point;
+    distanceTo(point: Point): number;
+    distanceTo(point1: Point, point2: Point): number;
+    distanceTo(rect: DOMRect): number;
+    overlaps(other: DOMRect): boolean;
+    overlaps(point: Point): boolean;
+    overlaps(a: Point, b: Point): boolean;
+}
+
 /**
  * @type {TurboDropdownProperties}
  * @group Components
@@ -6271,58 +7108,6 @@ declare const ApplyDefaultsMergeProperties: readonly ["interactors", "tools", "s
 type ApplyDefaultsOptions = {
     mergeProperties?: string[];
     removeDuplicates?: boolean;
-};
-/**
- * @type {MakeToolOptions}
- * @group Types
- * @category Tool
- *
- * @description Options used to create a new tool attached to an element via {@link makeTool}.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
- * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to. Defaults to the
- * default click event name.
- * @property {ClickMode} [clickMode] -  Click mode that will hold this tool when activated. Defaults to `ClickMode.left`.
- * @property {(element: Turbo<Element>, manager: TurboEventManager) => void} [customActivation] - Custom activation
- * function. If provided, is called with `(el, manager)` to define when the tool is activated.
- * @property {string} [key] - Optional keyboard key to map to this tool. When pressed, it will be set as the current key tool.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
- * to `TurboEventManager.instance`.
- */
-type MakeToolOptions = {
-    onActivate?: () => void;
-    onDeactivate?: () => void;
-    activationEvent?: DefaultEventNameEntry;
-    clickMode?: ClickMode;
-    customActivation?: (element: Turbo<Element>, manager: TurboEventManager) => void;
-    key?: string;
-    manager?: TurboEventManager;
-};
-/**
- * @type {ToolBehaviorCallback}
- * @group Types
- * @category Tool
- *
- * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
- * leading to stopping the propagation of the event.
- * @param {Event} event - The original DOM/Turbo event.
- * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
- * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
- * @return {boolean} - Whether to stop the propagation.
- */
-type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => Propagation | any;
-/**
- * @type {ToolBehaviorOptions}
- * @group Types
- * @category Tool
- *
- * @description Options object passed to tool behaviors at execution time.
- * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
- * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
- */
-type ToolBehaviorOptions = {
-    isEmbedded?: boolean;
-    embeddedTarget?: Node;
 };
 /**
  * @overload
@@ -6603,6 +7388,7 @@ declare function getSuperMethod(object: object, key: PropertyKey, wrapperFn: Fun
  * @category Prototype
  */
 declare function getSuperDescriptor(object: object, key: PropertyKey): PropertyDescriptor;
+declare function getPrototypeChain(object: object): any[];
 
 /**
  * @group Utilities
@@ -6757,6 +7543,18 @@ declare function deepObserveAll(data: AbstractType, callback: (event: YEvent, ta
  */
 declare function getEventPosition(e: Event): Point;
 
+declare function aabbCorners(r: DOMRect): [Point, Point, Point, Point];
+declare function closestPointOnAabb(p: Point, r: DOMRect): Point;
+
+declare function isPointInConvexPolygon(p: Point, poly: Point[]): boolean;
+declare function segmentIntersectsPolygon(a: Point, b: Point, poly: Point[]): Point | null;
+declare function projectPolygonOntoAxis(points: Point[], axis: Point): [number, number];
+declare function hasSeparatingAxisForPolygons(polyA: Point[], polyB: Point[]): boolean;
+declare function polygonsIntersect(a: Point[], b: Point[]): boolean;
+
+declare function closestPointOnSegment(p: Point, a: Point, b: Point): Point;
+declare function intersectSegments(a: Point, b: Point, c: Point, d: Point): Point;
+
 /**
  * @group Utilities
  * @category Color
@@ -6829,15 +7627,599 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DataBlockObserver, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, addInYArray, addInYMap, alphabeticalSorting, areEqual, auto, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, isNull, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, popup, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, CacheOptions, ChildHandler, Coordinate, DataBlockHost, DataBlockProperties, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataBlockHost, DataBlockProperties, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
+interface TurboSelector extends Node {
+    }
+interface TurboSelector {
+        /**
+         * @function makeTool
+         * @description Turns the element into a tool identified by `toolName`, optionally wiring activation and
+         * key mapping. By default, this function also sets up an event listener on the element to activate the
+         * tool on click. This behavior can be overridden via the `options` parameter.
+         * @param {string} toolName - The unique name of the tool to register under the manager. Reusing an existing
+         * `toolName` will make this element another instance of `toolName`.
+         * @param {MakeToolOptions} [options] - Tool creation options (custom activation, click mode, key mapping, manager).
+         * @returns {this} - Itself for chaining.
+         */
+        makeTool(toolName: string, options?: MakeToolOptions): this;
+        /**
+         * @function isTool
+         * @description Whether this element is registered as a tool for the provided manager.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {boolean} True if the element is a tool, false otherwise.
+         */
+        isTool(manager?: TurboEventManager): boolean;
+        /**
+         * @function getToolNames
+         * @description Returns all tool names registered on this element for the provided manager.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {string[]} The list of tool names.
+         */
+        getToolNames(manager?: TurboEventManager): string[];
+        /**
+         * @function getToolName
+         * @description Returns the first registered tool name on this element for the provided manager.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {string} The first tool name, if any.
+         */
+        getToolName(manager?: TurboEventManager): string;
+        /**
+         * @function onToolActivate
+         * @description Retrieve the delegate fired when this tool is activated in the corresponding manager.
+         * @param {string} [toolName=this.getToolName()] - The name of the tool.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {Delegate<() => void} - The delegate.
+         */
+        onToolActivate(toolName?: string, manager?: TurboEventManager): Delegate<() => void>;
+        /**
+         * @function onToolDeactivate
+         * @description Retrieve the delegate fired when this tool is deactivated in the corresponding manager.
+         * @param {string} [toolName=this.getToolName()] - The name of the tool.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {Delegate<() => void} - The delegate.
+         */
+        onToolDeactivate(toolName?: string, manager?: TurboEventManager): Delegate<() => void>;
+        /**
+         * @function addToolBehavior
+         * @description Adds a behavior callback for a given tool and a given type. This callback will attempt to be
+         * executed on the target element when a `type` event is fired and `toolName` is active. It is applied to
+         * all instances of the tool.
+         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
+         * @param {ToolBehaviorCallback} callback - The behavior function. Return `true` to stop propagation.
+         * @param {string} [toolName=this.getToolName()] - Tool name to bind the behavior to. Defaults to this
+         * element's first tool.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @returns {this} Itself for chaining.
+         */
+        addToolBehavior(type: string, callback: ToolBehaviorCallback, toolName?: string, manager?: TurboEventManager): this;
+        /**
+         * @function hasToolBehavior
+         * @description Checks whether there is at least one tool behavior for the pair "`type`, `toolName`."
+         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
+         * @param {string} [toolName=this.getToolName()] - The tool name to check under. Defaults to this
+         * element's first tool.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {boolean} True if one or more behaviors are registered.
+         */
+        hasToolBehavior(type: string, toolName?: string, manager?: TurboEventManager): boolean;
+        /**
+         * @function removeToolBehaviors
+         * @description Removes all behaviors for the pair "`type`, `toolName`" under the given manager.
+         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
+         * @param {string} [toolName=this.getToolName()] - The tool name whose behaviors will be removed. Defaults to this
+         * element's first tool.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @returns {this} Itself for chaining.
+         */
+        removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): this;
+        /**
+         * @function applyTool
+         * @description Executes all behaviors registered for the pair "`type`, `toolName`" against this element.
+         * @param {string} toolName - The name of the tool whose behaviors should run.
+         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
+         * @param {Event} event - The triggering event instance.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {boolean} True if at least one behavior returned `true` (to stop propagation of the event).
+         */
+        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): Propagation;
+        /**
+         * @function clearToolBehaviors
+         * @description Clears all registered behaviors for the tools attached to this element.
+         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
+         * @return {this} Itself for chaining.
+         */
+        clearToolBehaviors(manager?: TurboEventManager): this;
+        /**
+         * @function embedTool
+         * @description Embeds this tool into a target node, so all interactions on the tool element apply to the
+         * defined target.
+         * @param {Node} target - The node to manipulate when interacting with the tool element itself.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @returns {this} Itself for chaining.
+         */
+        embedTool(target: Node, manager?: TurboEventManager): this;
+        /**
+         * @function isEmbeddedTool
+         * @description Whether this tool is embedded under the provided manager.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @return {boolean} True if an embedded target is present.
+         */
+        isEmbeddedTool(manager?: TurboEventManager): boolean;
+        /**
+         * @function getEmbeddedToolTarget
+         * @description Returns the target node for this embedded tool under the provided manager.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @return {Node} The embedded tool's target node, if any.
+         */
+        getEmbeddedToolTarget(manager?: TurboEventManager): Node;
+        /**
+         * @function ignoreTool
+         * @description Make the current element ignore the provided tool, so interacting with the tool on this
+         * element will have no effect and propagate.
+         * @param {string} toolName - The name of the tool to ignore.
+         * @param {string} [type] - The type of the event. If undefined, all event types will be considered.
+         * @param {boolean} [ignore] - Whether to ignore the tool. Defaults to true.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @return {this} Itself for chaining.
+         */
+        ignoreTool(toolName: string, type?: string, ignore?: boolean, manager?: TurboEventManager): this;
+        /**
+         * @function ignoreTool
+         * @description Make the current element ignore all tools, so interacting with any tool on this
+         * element will have no effect and propagate.
+         * @param {boolean} [ignore] - Whether to ignore the tools. Defaults to true.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @return {this} Itself for chaining.
+         */
+        ignoreAllTools(ignore?: boolean, manager?: TurboEventManager): this;
+        /**
+         * @function isToolIgnored
+         * @description Whether the current element is ignoring the provided tool.
+         * @param {string} toolName - The name of the tool to check for.
+         * @param {string} [type] - The type of the event. If undefined, all event types will be considered.
+         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
+         * @return {boolean} Whether the tool is ignored for the provided event type.
+         */
+        isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
+    }
+interface TurboTool {
+        /**
+         * @function customActivation
+         * @description Custom activation function.
+         * @param {Turbo<Element>} element - The tool element itself.
+         * @param {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
+         * to `TurboEventManager.instance`.
+         */
+        customActivation(element: Turbo<Element>, manager: TurboEventManager): void;
+        /**
+         * @function onActivate
+         * @description Function to execute when the tool is activated.
+         */
+        onActivate(): void;
+        /**
+         * @function onDeactivate
+         * @description Function to execute when the tool is deactivated.
+         */
+        onDeactivate(): void;
+    }
+interface TurboSelector {
+        /**
+         * @description Array of all the substrates attached to this element.
+         */
+        readonly substrates: string[];
+        /**
+         * @function makeSubstrate
+         * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
+         * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
+         * @param {string} name - The name of the new substrate.
+         * @param {MakeSubstrateOptions} [options] - Options parameter to configure the newly-created substrate.
+         * @return {this} - Itself for chaining.
+         */
+        makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
+        /**
+         * @description Array of active substrates on this element.
+         */
+        readonly activeSubstrates: string[];
+        /**
+         * @function activateSubstrate
+         * @description Activate the given substrate.
+         * @param {string[]} substrates - The name of the substrate(s) to activate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        activateSubstrate(...substrates: string[]): this;
+        /**
+         * @function deactivateSubstrate
+         * @description Deactivate the given substrate.
+         * @param {string[]} substrates - The name of the substrate(s) to deactivate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        deactivateSubstrate(...substrates: string[]): this;
+        /**
+         * @function toggleSubstrate
+         * @description Toggle the active state of the given substrate.
+         * @param {string} substrate - The name of the substrate to toggle. Defaults to the first active substrate.
+         * @param {boolean} [force] - If set, the substrate's active state will be set to this value.
+         * @return {this} - Itself for chaining.
+         */
+        toggleSubstrate(substrate?: string, force?: boolean): this;
+        /**
+         * @function activateOnlySubstrate
+         * @description Activate the provided substrate and deactivate all other substrates attached to this element.
+         * @param {string} substrate - The substrate name to activate as the single active substrate. Defaults to the
+         * first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        activateOnlySubstrate(substrate: string): this;
+        /**
+         * @function activateAllSubstrates
+         * @description Activate all the substrates attached to this element.
+         * @return {this} - Itself for chaining.
+         */
+        activateAllSubstrates(): this;
+        /**
+         * @function deactivateAllSubstrates
+         * @description Deactivate all the substrates attached to this element.
+         * @return {this} - Itself for chaining.
+         */
+        deactivateAllSubstrates(): this;
+        /**
+         * @function onSubstrateActivate
+         * @description Get the delegate fired when the substrate of the given name is activated.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {Delegate<() => void>} - The delegate.
+         */
+        onSubstrateActivate(substrate?: string): Delegate<() => void>;
+        /**
+         * @function onSubstrateDeactivate
+         * @description Get the delegate fired when the substrate of the given name is deactivated.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {Delegate<() => void>} - The delegate.
+         */
+        onSubstrateDeactivate(substrate?: string): Delegate<() => void>;
+        /**
+         * @function getSubstratePriority
+         * @description Get the priority of the targeted substrate. Higher priority substrates (lower number) should
+         * be resolved first.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {number} - The substrate priority.
+         */
+        getSubstratePriority(substrate?: string): number;
+        /**
+         * @function setSubstratePriority
+         * @description Set the priority of the targeted substrate. Higher priority substrates (lower number) should
+         * be resolved first.
+         * @param {number} priority - The priority value to set.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        setSubstratePriority(priority: number, substrate?: string): this;
+        /**
+         * @function getSubstrateObjectList
+         * @description Retrieve the list of objects that are constrained by the given substrate.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {Set<object>} - A shallow copy of the list of objects as a `Set`. To modify the list, use
+         * {@link addObjectToSubstrate} and {@link removeObjectFromSubstrate}.
+         */
+        getSubstrateObjectList(substrate?: string): Set<object>;
+        /**
+         * @function setSubstrateObjectList
+         * @description Set the list of objects that are constrained by the given substrate.
+         * @param {HTMLCollection | NodeList | Set<object>} list - The list of objects to constrain.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        setSubstrateObjectList(list: HTMLCollection | NodeList | Set<object>, substrate?: string): this;
+        /**
+         * @function addObjectToSubstrate
+         * @description Adds the given object to the substrate's list.
+         * @param {object} object - The object to add to the list.
+         * @param {boolean} [addToQueue=true] - Whether to also add the object to the current queue, if the substrate
+         * is currently resolving.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        addObjectToSubstrate(object: object, addToQueue?: boolean, substrate?: string): this;
+        /**
+         * @function removeObjectFromSubstrate
+         * @description Removes the given object from the substrate's list.
+         * @param {object} object - The object to remove from the list.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        removeObjectFromSubstrate(object: object, substrate?: string): this;
+        /**
+         * @function hasObjectInSubstrate
+         * @description Check if the given object is in the substrate's object list.
+         * @param {object} object - The object to check.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {boolean} - Whether the object is in the list or not.
+         */
+        hasObjectInSubstrate(object: object, substrate?: string): boolean;
+        /**
+         * @function onSubstrateObjectListChange
+         * @description Get the delegate fired whenever an object is added to or removed from the substrate's object list.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {Delegate<(object: object, status: "added" | "removed") => void>} - The delegate.
+         */
+        onSubstrateObjectListChange(substrate?: string): Delegate<(object: object, status: "added" | "removed") => void>;
+        /**
+         * @function getSubstrateQueue
+         * @description Retrieve the current queue to be processed by the substrate while resolving.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {TurboQueue<object>} - The current substrate queue.
+         */
+        getSubstrateQueue(substrate?: string): TurboQueue<object>;
+        /**
+         * @function getDefaultSubstrateQueue
+         * @description Retrieve the default queue template for the substrate, used when starting a new resolving pass.
+         * It defaults to the substrate's object list.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {TurboQueue<object>} - The default substrate queue.
+         */
+        getDefaultSubstrateQueue(substrate?: string): TurboQueue<object>;
+        /**
+         * @function setDefaultSubstrateQueue
+         * @description Define the default queue template for the substrate, used when starting a new resolving pass.
+         * @param {object[] | TurboQueue<object>} queue - The queue (or list to build a queue from).
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        setDefaultSubstrateQueue(queue: object[] | TurboQueue<object>, substrate?: string): this;
+        /**
+         * @function getObjectPassesForSubstrate
+         * @description Retrieve how many times the given object has been processed for the current resolving session
+         * of the substrate.
+         * @param {object} object - The object to query.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {number} - Number of passes already performed on this object.
+         */
+        getObjectPassesForSubstrate(object: object, substrate?: string): number;
+        /**
+         * @function getMaxPassesForSubstrate
+         * @description Get the maximum number of passes allowed per object for this substrate during resolving.
+         * This helps prevent infinite cycles in constraint propagation.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {number} - The maximum allowed passes.
+         */
+        getMaxPassesForSubstrate(substrate?: string): number;
+        /**
+         * @function setMaxPassesForSubstrate
+         * @description Set the maximum number of passes allowed per object for this substrate during resolving. This
+         * helps prevent infinite cycles in constraint propagation.
+         * @param {number} passes - Maximum number of passes.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        setMaxPassesForSubstrate(passes: number, substrate?: string): this;
+        /**
+         * @function getObjectDataForSubstrate
+         * @description Retrieve custom per-object data for this substrate. It is reset on every new
+         * resolving session.
+         * @param {object} object - The object to query.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {Record<string, any>} - The stored data object (or an empty object if none).
+         */
+        getObjectDataForSubstrate(object: object, substrate?: string): Record<string, any>;
+        /**
+         * @function setObjectDataForSubstrate
+         * @description Set custom per-object data for this substrate. It is reset on every new resolving session.
+         * @param {object} object - The object to update.
+         * @param {Record<string, any>} [data] - The new data object to associate with this object.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        setObjectDataForSubstrate(object: object, data?: Record<string, any>, substrate?: string): this;
+        /**
+         * @function addChecker
+         * @description Register a checker in the substrate. Checkers dictate whether the event should continue
+         * executing depending on the provided context (event, tool, target, etc.).
+         * @param {SubstrateAddCallbackProperties<SubstrateChecker>} properties - Configuration object, including the
+         * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
+         * `substrate`, and the `priority` of the checker.
+         * @return {this} - Itself for chaining.
+         */
+        addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
+        /**
+         * @function removeChecker
+         * @description Remove a checker from the given substrate by its name.
+         * @param {string} name - The checker name.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        removeChecker(name: string, substrate?: string): this;
+        /**
+         * @function clearCheckers
+         * @description Remove all checkers attached to the given substrate.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearCheckers(substrate?: string): this;
+        /**
+         * @function checkSubstrate
+         * @description Evaluate all checkers for the targeted substrate and return whether the event should proceed or halt.
+         * @param {SubstrateCallbackProperties} [properties] - Context passed to each checker.
+         * @return {boolean} - Whether the substrate passes all checks.
+         */
+        checkSubstrate(properties?: SubstrateCallbackProperties): boolean;
+        /**
+         * @function checkSubstratesForEvent
+         * @description Evaluate checkers for all relevant substrates for a given event context.
+         * @param {SubstrateCallbackProperties} [properties] - Event context.
+         * @return {boolean} - Whether all the checkers allowed the event to proceed.
+         */
+        checkSubstratesForEvent(properties?: SubstrateCallbackProperties): boolean;
+        /**
+         * @function addMutator
+         * @description Register a mutator in the substrate. Mutators compute or transform a value based on the context.
+         * @param {SubstrateAddCallbackProperties<SubstrateMutator>} properties - Configuration object, including the
+         * mutator `callback` to be executed, the `name` of the mutator to access it later, the name of the attached
+         * `substrate`, and the `priority` of the mutator.
+         * @return {this} - Itself for chaining.
+         */
+        addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
+        /**
+         * @function removeMutator
+         * @description Remove a mutator from the given substrate by its name.
+         * @param {string} name - The mutator name.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        removeMutator(name: string, substrate?: string): this;
+        /**
+         * @function clearMutators
+         * @description Remove all mutators attached to the given substrate.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearMutators(substrate?: string): this;
+        /**
+         * @function mutate
+         * @template Type - The type of the value to mutate
+         * @description Execute a mutator for the targeted substrate and return the resulting value.
+         * @param {SubstrateMutatorProperties<Type>} [properties] - Context object, including the
+         * `mutation` to execute, and the input `value` to mutate.
+         * @return {Type} - The mutated result.
+         */
+        mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
+        /**
+         * @function addSolver
+         * @description Add the given function as a solver in the substrate.
+         * @return {this} - Itself for chaining.
+         * @param properties
+         */
+        /**
+         * @function addSolver
+         * @description Register a solver in the substrate. Solvers typically execute after an event is fired to
+         * ensure the substrate's constraints are maintained. They process all objects in the substrate's queue,
+         * one after the other.
+         * @param {SubstrateAddCallbackProperties<SubstrateSolver>} properties - Configuration object, including the
+         * solver `callback` to be executed, the `name` of the solver to access it later, the name of the attached
+         * `substrate`, and the `priority` of the solver.
+         * @return {this} - Itself for chaining.
+         */
+        addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
+        /**
+         * @function removeSolver
+         * @description Remove the given function from the substrate's list of solvers.
+         * @param {string} name - The solver's name.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        removeSolver(name: string, substrate?: string): this;
+        /**
+         * @function clearSolvers
+         * @description Remove all solvers attached to the substrate.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearSolvers(substrate?: string): this;
+        /**
+         * @function solveSubstrate
+         * @description Solve the substrate by executing all of its attached solvers. Each solver will be executed
+         * on every object in the substrate's queue, incrementing its number of passes in the process.
+         * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context.
+         * @return {this} - Itself for chaining.
+         */
+        solveSubstrate(properties?: SubstrateCallbackProperties): this;
+        /**
+         * @function solveSubstratesForEvent
+         * @description Solve all relevant substrates for a given event context.
+         * @param {SubstrateCallbackProperties} [properties] - Event context to pass to solvers.
+         * @return {this} - Itself for chaining.
+         */
+        solveSubstratesForEvent(properties?: SubstrateCallbackProperties): this;
+    }
+interface TurboSubstrate {
+        /**
+         * @function onActivate
+         * @description Function to execute when the substrate is activated.
+         */
+        onActivate(): void;
+        /**
+         * @function onDeactivate
+         * @description Function to execute when the substrate is deactivated.
+         */
+        onDeactivate(): void;
+    }
+interface TurboSelector<Type extends object = Node> {
+        /**
+         * @function setProperties
+         * @template {ValidTag} Tag - The HTML tag of the element (for accurate autocompletion of available properties).
+         * @description Sets the declared properties to the element (if possible).
+         * @param {TurboProperties<Tag>} properties - The properties object.
+         * @param {boolean} [setOnlyBaseProperties=false] - If set to true, will only set the base turbo properties (classes,
+         * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
+        clone(options?: CloneElementOptions): Type;
+        /**
+         * @function setMvc
+         * @description Sets MVC properties for a certain object. If no `mvc` field exists on the object, a new
+         * {@link Mvc} object will be created with the given properties.
+         * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
+         * @return {Mvc} - The created or retrieved {@link Mvc} object.
+         */
+        setMvc(properties: MvcGenerationProperties): Mvc;
+        /**
+         * @description Destroys the element by removing it from the document and removing all its bound listeners.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        destroy(): this;
+        /**
+         * @description Sets the value of an attribute on the element.
+         * @param {string} name The name of the attribute.
+         * @param {string | number | boolean} [value] The value of the attribute. Can be left blank to represent
+         * a true boolean.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setAttribute(name: string, value?: string | number | boolean): this;
+        /**
+         * @description Removes an attribute from the element.
+         * @param {string} name The name of the attribute to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeAttribute(name: string): this;
+        /**
+         * @description Causes the element to lose focus.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        blur(): this;
+        /**
+         * @description Sets focus on the element.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        focus(): this;
+        feedforward(options?: FeedforwardProperties): Type;
+        defaultFeedforwardProperties: TurboElementProperties;
+    }
+interface TurboProxiedElement extends TurboElementDefaultInterface {
+    }
+interface TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
+    }
+interface TurboProxiedElement extends TurboElementUiInterface {
+    }
+interface TurboElement {
+        readonly tagName: string;
+    }
+interface TurboElement extends TurboElementDefaultInterface {
+    }
+interface TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
+    }
+interface TurboElement extends TurboElementUiInterface {
+    }
+interface TurboHeadlessElement extends TurboElementDefaultInterface {
+    }
+interface TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
+    }
 interface TurboSelector {
         /**
          * @description Readonly set of listeners bound to this node.
          */
-        readonly boundListeners: Set<Listener>;
+        readonly boundListeners: ListenerSet;
         /**
          * @description If you want the element to bypass the event manager and allow native events to seep through
          * (in case you are preventing default events), you can set this field to a predicate that
@@ -6968,301 +8350,6 @@ interface TurboSelector {
          */
         preventDefault(options?: PreventDefaultOptions): this;
     }
-interface TurboInteractor {
-        /**
-         * @description Fired on click start
-         * @param e
-         */
-        clickStart(e: Event): boolean | any;
-        /**
-         * @description Fired on click
-         * @param e
-         */
-        click(e: Event): boolean | any;
-        /**
-         * @description Fired on click end
-         * @param e
-         */
-        clickEnd(e: Event): boolean | any;
-        /**
-         * @description Fired on pointer move
-         * @param e
-         */
-        move(e: Event): boolean | any;
-        /**
-         * @description Fired on drag start
-         * @param e
-         */
-        dragStart(e: Event): boolean | any;
-        /**
-         * @description Fired on drag
-         * @param e
-         */
-        drag(e: Event): boolean | any;
-        /**
-         * @description Fired on drag end
-         * @param e
-         */
-        dragEnd(e: Event): boolean | any;
-        input(e: Event): boolean | any;
-        focus(e: Event): boolean | any;
-        blur(e: Event): boolean | any;
-    }
-interface TurboSelector extends Node {
-    }
-interface TurboTool {
-        /**
-         * @function customActivation
-         * @description Custom activation function.
-         * @param {Turbo<Element>} element - The tool element itself.
-         * @param {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
-         * to `TurboEventManager.instance`.
-         */
-        customActivation(element: Turbo<Element>, manager: TurboEventManager): void;
-        /**
-         * @function onActivate
-         * @description Function to execute when the tool is activated.
-         */
-        onActivate(): void;
-        /**
-         * @function onDeactivate
-         * @description Function to execute when the tool is deactivated.
-         */
-        onDeactivate(): void;
-        /**
-         * @description Fired on click start
-         * @param e
-         * @param target
-         */
-        clickStart(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on click
-         * @param e
-         * @param target
-         */
-        click(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on click end
-         * @param e
-         * @param target
-         */
-        clickEnd(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on pointer move
-         * @param e
-         * @param target
-         */
-        move(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on drag start
-         * @param e
-         * @param target
-         */
-        dragStart(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on drag
-         * @param e
-         * @param target
-         */
-        drag(e: Event, target: Node): boolean | any;
-        /**
-         * @description Fired on drag end
-         * @param e
-         * @param target
-         */
-        dragEnd(e: Event, target: Node): boolean | any;
-        input(e: Event, target: Node): boolean | any;
-        focus(e: Event, target: Node): boolean | any;
-        blur(e: Event, target: Node): boolean | any;
-    }
-interface TurboSubstrate {
-        /**
-         * @function onActivate
-         * @description Function to execute when the substrate is activated.
-         */
-        onActivate(): void;
-        /**
-         * @function onDeactivate
-         * @description Function to execute when the substrate is deactivated.
-         */
-        onDeactivate(): void;
-    }
-interface TurboHeadlessElement extends TurboElementDefaultInterface {
-    }
-interface TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
-    }
-interface TurboSelector {
-        /**
-         * @description Array of all the substrates attached to this element.
-         */
-        readonly substrates: string[];
-        /**
-         * @function makeSubstrate
-         * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
-         * ensure some behaviors persist on a list of objects (by attaching solvers to this substrate).
-         * @param {string} name - The name of the new substrate.
-         * @param {MakeSubstrateOptions} [options] - Options parameter to configure the newly-created substrate.
-         * @return {this} - Itself for chaining.
-         */
-        makeSubstrate(name: string, options?: MakeSubstrateOptions): this;
-        readonly activeSubstrates: string[];
-        activateSubstrate(substrate: string, activate?: boolean): this;
-        /**
-         * @function onSubstrateActivate
-         * @description Get the delegate fired when the substrate of the given name is activated (set as
-         * {@link currentSubstrate}).
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {Delegate<() => void>} - The delegate.
-         */
-        onSubstrateActivate(substrate?: string): Delegate<() => void>;
-        /**
-         * @function onSubstrateDeactivate
-         * @description Get the delegate fired when the substrate of the given name is deactivated.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {Delegate<() => void>} - The delegate.
-         */
-        onSubstrateDeactivate(substrate?: string): Delegate<() => void>;
-        getSubstratePriority(substrate?: string): number;
-        setSubstratePriority(priority: number, substrate?: string): this;
-        /**
-         * @function getSubstrateObjectList
-         * @description Retrieve the list of objects that are constrained by the given substrate.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {Set<object>} - A shallow copy of the list of objects as a `Set`. To modify the list, use
-         * {@link addObjectToSubstrate} and {@link removeObjectFromSubstrate}.
-         */
-        getSubstrateObjectList(substrate?: string): Set<object>;
-        /**
-         * @function setSubstrateObjectList
-         * @description Set the list of objects that are constrained by the given substrate.
-         * @param {HTMLCollection | NodeList | Set<object>} list - The list of objects to constrain.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {this} - Itself for chaining.
-         */
-        setSubstrateObjectList(list: HTMLCollection | NodeList | Set<object>, substrate?: string): this;
-        /**
-         * @function addObjectToSubstrate
-         * @description Adds the given object to the substrate's list.
-         * @param {object} object - The object to add to the list.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {this} - Itself for chaining.
-         */
-        addObjectToSubstrate(object: object, substrate?: string): this;
-        /**
-         * @function removeObjectFromSubstrate
-         * @description Removes the given object from the substrate's list.
-         * @param {object} object - The object to remove from the list.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {this} - Itself for chaining.
-         */
-        removeObjectFromSubstrate(object: object, substrate?: string): this;
-        /**
-         * @function hasObjectInSubstrate
-         * @description Check if the given object is in the substrate's object list.
-         * @param {object} object - The object to check.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {boolean} - Whether the object is in the list or not.
-         */
-        hasObjectInSubstrate(object: object, substrate?: string): boolean;
-        getSubstrateQueue(substrate?: string): TurboQueue<object>;
-        getDefaultSubstrateQueue(substrate?: string): TurboQueue<object>;
-        setDefaultSubstrateQueue(queue: object[] | TurboQueue<object>, substrate?: string): this;
-        getObjectPassesForSubstrate(object: object, substrate?: string): number;
-        getMaxPassesForSubstrate(substrate?: string): number;
-        setMaxPassesForSubstrate(passes: number, substrate?: string): this;
-        getObjectDataForSubstrate(object: object, substrate?: string): Record<string, any>;
-        setObjectDataForSubstrate(object: object, data?: Record<string, any>, substrate?: string): this;
-        addChecker(properties: SubstrateAddCallbackProperties<SubstrateChecker>): this;
-        removeChecker(name: string, substrate?: string): this;
-        clearCheckers(substrate?: string): this;
-        checkSubstrate(properties?: SubstrateCallbackProperties): boolean;
-        checkSubstratesForEvent(properties?: SubstrateCallbackProperties): boolean;
-        addMutator(properties: SubstrateAddCallbackProperties<SubstrateMutator>): this;
-        removeMutator(name: string, substrate?: string): this;
-        clearMutators(substrate?: string): this;
-        mutate<Type = any>(properties?: SubstrateMutatorProperties<Type>): Type;
-        /**
-         * @function addSolver
-         * @description Add the given function as a solver in the substrate.
-         * @return {this} - Itself for chaining.
-         * @param properties
-         */
-        addSolver(properties: SubstrateAddCallbackProperties<SubstrateSolver>): this;
-        /**
-         * @function removeSolver
-         * @description Remove the given function from the substrate's list of solvers.
-         * @param name
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {this} - Itself for chaining.
-         */
-        removeSolver(name: string, substrate?: string): this;
-        /**
-         * @function clearSolvers
-         * @description Remove all solvers attached to the substrate.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the current substrate.
-         * @return {this} - Itself for chaining.
-         */
-        clearSolvers(substrate?: string): this;
-        /**
-         * @function solveSubstrate
-         * @description Resolve the substrate by executing all of its attached solvers. Each solver will be executed
-         * on every object in the substrate's list of constrained objects, marking each as `processed` as it goes
-         * through them.
-         * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context of the resolving
-         * call.
-         */
-        solveSubstrate(properties?: SubstrateCallbackProperties): this;
-        solveSubstratesForEvent(properties?: SubstrateCallbackProperties): this;
-    }
-interface TurboSelector {
-        /**
-         * @function setProperties
-         * @template {ValidTag} Tag - The HTML tag of the element (for accurate autocompletion of available properties).
-         * @description Sets the declared properties to the element (if possible).
-         * @param {TurboProperties<Tag>} properties - The properties object.
-         * @param {boolean} [setOnlyBaseProperties=false] - If set to true, will only set the base turbo properties (classes,
-         * text, style, id, children, parent, etc.) and ignore all other properties not explicitly defined in TurboProperties.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
-        /**
-         * @function setMvc
-         * @description Sets MVC properties for a certain object. If no `mvc` field exists on the object, a new
-         * {@link Mvc} object will be created with the given properties.
-         * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
-         * @return {Mvc} - The created or retrieved {@link Mvc} object.
-         */
-        setMvc(properties: MvcGenerationProperties): Mvc;
-        /**
-         * @description Destroys the element by removing it from the document and removing all its bound listeners.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        destroy(): this;
-        /**
-         * @description Sets the value of an attribute on the element.
-         * @param {string} name The name of the attribute.
-         * @param {string | number | boolean} [value] The value of the attribute. Can be left blank to represent
-         * a true boolean.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        setAttribute(name: string, value?: string | number | boolean): this;
-        /**
-         * @description Removes an attribute from the element.
-         * @param {string} name The name of the attribute to remove.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        removeAttribute(name: string): this;
-        /**
-         * @description Causes the element to lose focus.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        blur(): this;
-        /**
-         * @description Sets focus on the element.
-         * @returns {this} Itself, allowing for method chaining.
-         */
-        focus(): this;
-    }
 interface TurboSelector {
         /**
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
@@ -7298,18 +8385,6 @@ interface TurboSelector {
          * @returns {this} Itself, allowing for method chaining.
          */
         setStyles(styles: StylesType, instant?: boolean): this;
-    }
-interface TurboProxiedElement extends TurboElementDefaultInterface {
-    }
-interface TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
-    }
-interface TurboProxiedElement extends TurboElementUiInterface {
-    }
-interface TurboElement extends TurboElementDefaultInterface {
-    }
-interface TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
-    }
-interface TurboElement extends TurboElementUiInterface {
     }
 interface TurboElementTagNameMap {
         "turbo-icon": TurboIcon;
@@ -7653,156 +8728,4 @@ interface TurboSelector {
          * @return {this} - Itself, allowing for method chaining.
          */
         enableReifect(value: boolean | ReifectEnabledObject, reifect?: StatefulReifect): this;
-    }
-interface TurboSelector {
-        /**
-         * @function makeTool
-         * @description Turns the element into a tool identified by `toolName`, optionally wiring activation and
-         * key mapping. By default, this function also sets up an event listener on the element to activate the
-         * tool on click. This behavior can be overridden via the `options` parameter.
-         * @param {string} toolName - The unique name of the tool to register under the manager. Reusing an existing
-         * `toolName` will make this element another instance of `toolName`.
-         * @param {MakeToolOptions} [options] - Tool creation options (custom activation, click mode, key mapping, manager).
-         * @returns {this} - Itself for chaining.
-         */
-        makeTool(toolName: string, options?: MakeToolOptions): this;
-        /**
-         * @function isTool
-         * @description Whether this element is registered as a tool for the provided manager.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {boolean} True if the element is a tool, false otherwise.
-         */
-        isTool(manager?: TurboEventManager): boolean;
-        /**
-         * @function getToolNames
-         * @description Returns all tool names registered on this element for the provided manager.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {string[]} The list of tool names.
-         */
-        getToolNames(manager?: TurboEventManager): string[];
-        /**
-         * @function getToolName
-         * @description Returns the first registered tool name on this element for the provided manager.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {string} The first tool name, if any.
-         */
-        getToolName(manager?: TurboEventManager): string;
-        /**
-         * @function onToolActivate
-         * @description Retrieve the delegate fired when this tool is activated in the corresponding manager.
-         * @param {string} [toolName=this.getToolName()] - The name of the tool.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {Delegate<() => void} - The delegate.
-         */
-        onToolActivate(toolName?: string, manager?: TurboEventManager): Delegate<() => void>;
-        /**
-         * @function onToolDeactivate
-         * @description Retrieve the delegate fired when this tool is deactivated in the corresponding manager.
-         * @param {string} [toolName=this.getToolName()] - The name of the tool.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {Delegate<() => void} - The delegate.
-         */
-        onToolDeactivate(toolName?: string, manager?: TurboEventManager): Delegate<() => void>;
-        /**
-         * @function addToolBehavior
-         * @description Adds a behavior callback for a given tool and a given type. This callback will attempt to be
-         * executed on the target element when a `type` event is fired and `toolName` is active. It is applied to
-         * all instances of the tool.
-         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
-         * @param {ToolBehaviorCallback} callback - The behavior function. Return `true` to stop propagation.
-         * @param {string} [toolName=this.getToolName()] - Tool name to bind the behavior to. Defaults to this
-         * element's first tool.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @returns {this} Itself for chaining.
-         */
-        addToolBehavior(type: string, callback: ToolBehaviorCallback, toolName?: string, manager?: TurboEventManager): this;
-        /**
-         * @function hasToolBehavior
-         * @description Checks whether there is at least one tool behavior for the pair "`type`, `toolName`."
-         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
-         * @param {string} [toolName=this.getToolName()] - The tool name to check under. Defaults to this
-         * element's first tool.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {boolean} True if one or more behaviors are registered.
-         */
-        hasToolBehavior(type: string, toolName?: string, manager?: TurboEventManager): boolean;
-        /**
-         * @function removeToolBehaviors
-         * @description Removes all behaviors for the pair "`type`, `toolName`" under the given manager.
-         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
-         * @param {string} [toolName=this.getToolName()] - The tool name whose behaviors will be removed. Defaults to this
-         * element's first tool.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @returns {this} Itself for chaining.
-         */
-        removeToolBehaviors(type: string, toolName?: string, manager?: TurboEventManager): this;
-        /**
-         * @function applyTool
-         * @description Executes all behaviors registered for the pair "`type`, `toolName`" against this element.
-         * @param {string} toolName - The name of the tool whose behaviors should run.
-         * @param {string} type - The type of the event (e.g., "pointerdown", "click", custom turbo event).
-         * @param {Event} event - The triggering event instance.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {boolean} True if at least one behavior returned `true` (to stop propagation of the event).
-         */
-        applyTool(toolName: string, type: string, event: Event, manager?: TurboEventManager): Propagation;
-        /**
-         * @function clearToolBehaviors
-         * @description Clears all registered behaviors for the tools attached to this element.
-         * @param {TurboEventManager} [manager] - The associated event manager (defaults to `TurboEventManager.instance`).
-         * @return {this} Itself for chaining.
-         */
-        clearToolBehaviors(manager?: TurboEventManager): this;
-        /**
-         * @function embedTool
-         * @description Embeds this tool into a target node, so all interactions on the tool element apply to the
-         * defined target.
-         * @param {Node} target - The node to manipulate when interacting with the tool element itself.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @returns {this} Itself for chaining.
-         */
-        embedTool(target: Node, manager?: TurboEventManager): this;
-        /**
-         * @function isEmbeddedTool
-         * @description Whether this tool is embedded under the provided manager.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @return {boolean} True if an embedded target is present.
-         */
-        isEmbeddedTool(manager?: TurboEventManager): boolean;
-        /**
-         * @function getEmbeddedToolTarget
-         * @description Returns the target node for this embedded tool under the provided manager.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @return {Node} The embedded tool's target node, if any.
-         */
-        getEmbeddedToolTarget(manager?: TurboEventManager): Node;
-        /**
-         * @function ignoreTool
-         * @description Make the current element ignore the provided tool, so interacting with the tool on this
-         * element will have no effect and propagate.
-         * @param {string} toolName - The name of the tool to ignore.
-         * @param {string} [type] - The type of the event. If undefined, all event types will be considered.
-         * @param {boolean} [ignore] - Whether to ignore the tool. Defaults to true.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @return {this} Itself for chaining.
-         */
-        ignoreTool(toolName: string, type?: string, ignore?: boolean, manager?: TurboEventManager): this;
-        /**
-         * @function ignoreTool
-         * @description Make the current element ignore all tools, so interacting with any tool on this
-         * element will have no effect and propagate.
-         * @param {boolean} [ignore] - Whether to ignore the tools. Defaults to true.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @return {this} Itself for chaining.
-         */
-        ignoreAllTools(ignore?: boolean, manager?: TurboEventManager): this;
-        /**
-         * @function isToolIgnored
-         * @description Whether the current element is ignoring the provided tool.
-         * @param {string} toolName - The name of the tool to check for.
-         * @param {string} [type] - The type of the event. If undefined, all event types will be considered.
-         * @param {TurboEventManager} [manager] - The associated manager (defaults to `TurboEventManager.instance`).
-         * @return {boolean} Whether the tool is ignored for the provided event type.
-         */
-        isToolIgnored(toolName: string, type?: string, manager?: TurboEventManager): boolean;
     }

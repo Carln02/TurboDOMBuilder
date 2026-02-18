@@ -1,4 +1,5 @@
 import {Coordinate} from "../../../types/basic.types";
+import {trim} from "../../../utils/computations/misc";
 
 /**
  * @group Components
@@ -320,6 +321,13 @@ class Point {
      */
     public arr(): number[] {
         return [this.x, this.y];
+    }
+
+    public linearInterpolation(start: Point, end: Point): number {
+        const shiftedEnd = end.sub(start);
+        const shiftedLength2 = shiftedEnd.length2;
+        if (shiftedLength2 < 1e-9) return 0;
+        return trim((this.sub(start).dot(shiftedEnd)) / shiftedLength2, 1);
     }
 }
 

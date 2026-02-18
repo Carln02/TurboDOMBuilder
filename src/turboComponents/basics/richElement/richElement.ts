@@ -4,12 +4,13 @@ import {TurboView} from "../../../mvc/core/view";
 import {TurboModel} from "../../../mvc/core/model";
 import {define} from "../../../decorators/define/define";
 import {TurboElement} from "../../../turboElement/turboElement";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {auto} from "../../../decorators/auto/auto";
 import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/core/emitter";
 import {ValidElement, ValidTag} from "../../../types/element.types";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 
 /**
  * @class TurboRichElement
@@ -205,6 +206,20 @@ class TurboRichElement<
     public set rightCustomElements(value: Element | Element[]) {
         $(this).remChild(this.rightCustomElements);
         this.addAtPosition(value, "rightCustomElements");
+    }
+
+    public static create<
+        Type extends typeof TurboElement,
+        ElementTag extends ValidTag = any
+    >(
+        this: Type,
+        properties: TurboRichElementProperties<ElementTag>
+    ): InstanceType<Type> {
+        if (properties.text && !properties.element) properties.element = properties.text;
+        if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+            properties.element.tag = properties.elementTag;
+        }
+        return super.create.call(this, properties);
     }
 }
 

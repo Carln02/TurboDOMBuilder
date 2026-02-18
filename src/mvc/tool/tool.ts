@@ -4,7 +4,7 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {TurboEmitter} from "../core/emitter";
 import {TurboToolProperties} from "./tool.types";
 import {TurboController} from "../logic/controller";
-import {$} from "../../turboFunctions/turboFunctions";
+import {turbo} from "../../turboFunctions/turboFunctions";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {DefaultEventName, DefaultEventNameEntry} from "../../types/eventNaming.types";
 
@@ -90,10 +90,7 @@ class TurboTool<
      * all the defined tool behaviors.
      */
     public initialize(): void {
-        super.initialize();
-        if (!this.toolName) return;
-
-        $(this).makeTool(this.toolName, {
+        if (this.toolName) turbo(this).makeTool(this.toolName, {
             onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
             onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
             activationEvent: this.activationEvent,
@@ -103,13 +100,8 @@ class TurboTool<
             manager: this.manager,
         });
 
-        if (this.embeddedTarget) $(this).embedTool(this.embeddedTarget, this.manager);
-
-        for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
-            const handler = this[methodName];
-            if (typeof handler !== "function") continue;
-            $(this).addToolBehavior(eventName, (e, target) => handler.call(this, e, target), this.toolName, this.manager);
-        }
+        if (this.embeddedTarget) turbo(this).embedTool(this.embeddedTarget, this.manager);
+        super.initialize();
     }
 }
 

@@ -1,6 +1,24 @@
 import {MvcGenerationProperties} from "../../mvc/mvc.types";
 import {Mvc} from "../../mvc/mvc";
 import {ElementTagDefinition, HTMLElementMutableFields, ValidElement, ValidTag} from "../../types/element.types";
+import {TurboElementProperties} from "../../turboElement/turboElement.types";
+
+type CloneElementOptions = {
+    exclude?: PropertyKey[],
+    forceInclude?: PropertyKey[],
+    deepClone?: PropertyKey[],
+    copyReference?: PropertyKey[],
+
+    copyNodes?: boolean,
+    deepCloneObjects?: boolean,
+    deepCloneNodes?: boolean,
+};
+
+type FeedforwardProperties = TurboElementProperties & {
+    removeOnPointerRelease?: boolean,
+    type?: string,
+    cloneOptions?: CloneElementOptions
+};
 
 /**
  * @group Types
@@ -61,7 +79,7 @@ type TurboProperties<
 };
 
 declare module "../turboSelector" {
-    interface TurboSelector {
+    interface TurboSelector<Type extends object = Node> {
         /**
          * @function setProperties
          * @template {ValidTag} Tag - The HTML tag of the element (for accurate autocompletion of available properties).
@@ -72,6 +90,8 @@ declare module "../turboSelector" {
          * @returns {this} Itself, allowing for method chaining.
          */
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
+
+        clone(options?: CloneElementOptions): Type;
 
         /**
          * @function setMvc
@@ -115,7 +135,11 @@ declare module "../turboSelector" {
          * @returns {this} Itself, allowing for method chaining.
          */
         focus(): this;
+
+        feedforward(options?: FeedforwardProperties): Type;
+
+        defaultFeedforwardProperties: TurboElementProperties;
     }
 }
 
-export {TurboProperties};
+export {TurboProperties, CloneElementOptions, FeedforwardProperties};

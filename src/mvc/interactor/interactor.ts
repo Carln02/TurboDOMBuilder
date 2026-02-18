@@ -2,11 +2,8 @@ import {TurboModel} from "../core/model";
 import {TurboInteractorProperties} from "./interactor.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboView} from "../core/view";
-import {$} from "../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../core/emitter";
 import {TurboController} from "../logic/controller";
-import {DefaultEventName, DefaultEventNameKey} from "../../types/eventNaming.types";
-import {PartialRecord} from "../../types/basic.types";
 import {ListenerOptions} from "../../turboFunctions/listener/listener.types";
 
 /**
@@ -57,7 +54,7 @@ class TurboInteractor<
      * @readonly
      * @description Optional custom options to define per event type.
      */
-    public readonly options: PartialRecord<DefaultEventNameKey, ListenerOptions>;
+    public readonly options: ListenerOptions;
 
     public constructor(properties: TurboInteractorProperties<ElementType, ViewType, ModelType, EmitterType>) {
        super(properties);
@@ -70,23 +67,6 @@ class TurboInteractor<
             : host?.element instanceof Node ? host.element
                 : undefined;
         this.setup();
-    }
-
-    /**
-     * @function initialize
-     * @description Initialization function that sets up all the defined evnt listeners and attaches them to the target.
-     */
-    public initialize(): void {
-        super.initialize();
-        const target = this.target ?? this;
-        for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
-            const handler = this[methodName];
-            if (typeof handler !== "function") continue;
-
-            const options = this.options?.[methodName];
-            if (this.toolName) $(target).onTool(eventName, this.toolName, e => handler.call(this, e), options, this.manager);
-            else $(target).on(eventName, e => handler.call(this, e), options, this.manager);
-        }
     }
 }
 

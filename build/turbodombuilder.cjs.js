@@ -162,27 +162,19 @@
  *
  * @description  Options used to create a new {@link TurboInteractor} attached to an element.
  * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
- * @property {Node} [target] - The target that will listen for the events.
- * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom options to define per
- * event type.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
+ * @property {Node} [target] - The target that will listen for the events. Defaults to `this.element`.
+ * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom default options to define
+ * for all listeners.
+ * @property {TurboEventManager} [manager] - The event manager instance the listeners should register against. Defaults
  * to `TurboEventManager.instance`.
  */
 
 /**
- * @typedef {Object} TurboToolProperties
- * @group MVC
+ * @typedef {Object} MakeToolOptions
+ * @group Types
  * @category Tool
  *
- * @extends TurboControllerProperties
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Options used to create a new {@link TurboTool} attached to an element.
- * @property {string} [toolName] - The name of the tool.
- * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
+ * @description Options used to create a new tool attached to an element via {@link makeTool}.
  * @property {() => void} [onActivate] - Function to execute when the tool is activated.
  * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
  * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to. Defaults to the
@@ -196,11 +188,138 @@
  */
 
 /**
+ * @typedef {Object} ToolBehaviorCallback
+ * @group Types
+ * @category Tool
+ *
+ * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
+ * leading to stopping the propagation of the event.
+ * @param {Event} event - The original DOM/Turbo event.
+ * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
+ * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
+ * @return {boolean} - Whether to stop the propagation.
+ */
+
+/**
+ * @typedef {Object} ToolBehaviorOptions
+ * @group Types
+ * @category Tool
+ *
+ * @description Options object passed to tool behaviors at execution time.
+ * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
+ * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
+ */
+
+/**
+ * @typedef {Object} TurboToolProperties
+ * @group MVC
+ * @category Tool
+ *
+ * @extends TurboControllerProperties
+ * @extends MakeToolOptions
+ *
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Options used to create a new {@link TurboTool} attached to an element.
+ * @property {string} [toolName] - The name of the tool.
+ * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
+ */
+
+/**
+ * @typedef {Object} MakeSubstrateOptions
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
+ * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
+ * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
+ * @property {number} [priority] - The priority of the substrate. Higher priority substrates (lower number) should
+ * be resolved first. Defaults to 10.
+ * @property {boolean} [active] - Whether the substrate is active. Defaults to true.
+ * @property {TurboSubstrate} [attachedInstance] - The optional TurboSubstrate instance to attach to the substrate.
+ */
+
+/**
+ * @typedef {Object} SubstrateCallbackProperties
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing objects passed as context for resolving substrates. Given as first parameter to
+ * solvers when executing them via {@link solveSubstrate}.
+ * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
+ * @property {object} [substrateHost] - The object to which the target substrate is attached.
+ * @property {object} [target] - The current object being processed by the solver. Property set by
+ * {@link solveSubstrate} when processing every object in the substrate's list.
+ * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
+ * @property {string} [eventType] - The type of the event.
+ * @property {Node} [eventTarget] - The target of the event.
+ * @property {string} [toolName] - The name of the active tool when the event was fired.
+ * @property {ListenerOptions} [eventOptions] - The options of the event.
+ * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
+ * instantiated event manager.
+ */
+
+/**
+ * @typedef {Object} SubstrateMutatorProperties
+ * @group Types
+ * @category Substrate
+ *
+ * @extends SubstrateCallbackProperties
+ * @template Type - The type of the value to mutate.
+ * @description Type representing objects passed as context to mutate a value in a substrate. Given as first parameter to
+ * mutators when executing them via {@link mutate}.
+ * @property {string} [mutation] - The name of the mutator to execute.
+ * @property {Type} [value] - The value to mutate.
+ */
+
+/**
+ * @typedef {Object} SubstrateChecker
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+
+/**
+ * @typedef {Object} SubstrateChecker
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of checker functions that substrates expect.
+ */
+
+/**
+ * @typedef {Object} SubstrateSolver
+ * @group Types
+ * @category Substrate
+ *
+ * @description Type representing the signature of solver functions that substrates expect.
+ */
+
+/**
+ * @typedef {Object} SubstrateAddCallbackProperties
+ * @group Types
+ * @category Substrate
+ * @template {SubstrateChecker | SubstrateMutator | SubstrateSolver} Type - The type of callback.
+ *
+ * @description Type representing a configuration object to add a new callback to the given substrate.
+ * @property {string} [name] - The name of the callback to add.
+ * @property {Type} [callback] - The callback to add.
+ * @property {string} [substrate] - The substrate to add the callback to.
+ * @property {number} [priority] - The priority of the callback.
+ */
+
+/**
  * @typedef {Object} TurboSubstrateProperties
  * @group MVC
  * @category Substrate
  *
  * @extends TurboControllerProperties
+ * @extends MakeSubstrateOptions
+ *
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -208,8 +327,6 @@
  *
  * @description Options used to create a new {@link TurboSubstrate} attached to an element.
  * @property {string} [substrateName] - The name of the substrate.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
  */
 
 /**
@@ -259,71 +376,6 @@
  */
 
 /**
- * @typedef {Object} TurboHeadlessProperties
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
- */
-
-/**
- * @typedef {Object} MakeSubstrateOptions
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
- * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
- */
-
-/**
- * @typedef {Object} SubstrateCallbackProperties
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects passed as context for resolving substrates. GIven as first parameters to
- * solvers when executing them via {@link solveSubstrate}.
- * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
- * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link solveSubstrate} when processing every object in the substrate's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
- * @property {string} [eventType] - The type of the event.
- * @property {Node} [eventTarget] - The target of the event.
- * @property {string} [toolName] - The name of the active tool when the event was fired.
- * @property {ListenerOptions} [eventOptions] - The options of the event.
- * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
- * instantiated event manager.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateSolver
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of solver functions that substrates expect.
- */
-
-/**
  * @typedef {Object} ElementTagDefinition
  * @group Types
  * @category Element
@@ -333,6 +385,33 @@
  * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML"
  * is provided, the corresponding namespace will be used to create the element. Otherwise, the custom namespace
  * provided will be used.
+ */
+
+/**
+ * @typedef {Object} TurboElementProperties
+ * @group TurboElement
+ * @category TurboElement
+ *
+ * @extends TurboProperties
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {object} DataType - The element's data type, if any.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
+ * without the tag.
+ */
+
+/**
+ * @typedef {Object} TurboHeadlessProperties
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
  */
 
 /**
@@ -350,21 +429,6 @@
  *
  * @description A type that represents the types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
  * method). It includes strings, numbers, and records of CSS attributes to strings or numbers.
- */
-
-/**
- * @typedef {Object} TurboElementProperties
- * @group TurboElement
- * @category TurboElement
- *
- * @extends TurboProperties
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
- * without the tag.
  */
 
 /**
@@ -559,47 +623,6 @@
  */
 
 /**
- * @typedef {Object} MakeToolOptions
- * @group Types
- * @category Tool
- *
- * @description Options used to create a new tool attached to an element via {@link makeTool}.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
- * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to. Defaults to the
- * default click event name.
- * @property {ClickMode} [clickMode] -  Click mode that will hold this tool when activated. Defaults to `ClickMode.left`.
- * @property {(element: Turbo<Element>, manager: TurboEventManager) => void} [customActivation] - Custom activation
- * function. If provided, is called with `(el, manager)` to define when the tool is activated.
- * @property {string} [key] - Optional keyboard key to map to this tool. When pressed, it will be set as the current key tool.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
- * to `TurboEventManager.instance`.
- */
-
-/**
- * @typedef {Object} ToolBehaviorCallback
- * @group Types
- * @category Tool
- *
- * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
- * leading to stopping the propagation of the event.
- * @param {Event} event - The original DOM/Turbo event.
- * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
- * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
- * @return {boolean} - Whether to stop the propagation.
- */
-
-/**
- * @typedef {Object} ToolBehaviorOptions
- * @group Types
- * @category Tool
- *
- * @description Options object passed to tool behaviors at execution time.
- * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
- * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
- */
-
-/**
  * @typedef {Object} FontProperties
  * @group Utilities
  * @category Font
@@ -651,6 +674,10 @@ function isUndefined(value) {
     return typeof value == "undefined";
 }
 function alphabeticalSorting(a, b) {
+    if (typeof a === "symbol")
+        a = String(a);
+    if (typeof b === "symbol")
+        b = String(b);
     if (typeof a == "string" && typeof b == "string")
         return a.localeCompare(b);
     else if (typeof a == "number" && typeof b == "number")
@@ -730,8 +757,17 @@ function getSuperDescriptor(object, key) {
     }
     return undefined;
 }
+function getPrototypeChain(object) {
+    const chain = [];
+    let constructor = Object.getPrototypeOf(object);
+    while (constructor && constructor !== Function.prototype) {
+        chain.push(constructor);
+        constructor = Object.getPrototypeOf(constructor);
+    }
+    return chain;
+}
 
-const utils$a = new AutoUtils();
+const utils$c = new AutoUtils();
 /**
  * @decorator
  * @function auto
@@ -859,7 +895,7 @@ function auto(options) {
                 });
             }
             else if (kind === "getter" || kind === "setter") {
-                const installed = utils$a.constructorData(prototype).installed;
+                const installed = utils$c.constructorData(prototype).installed;
                 if (installed.get(key))
                     return;
                 installed.set(key, true);
@@ -937,7 +973,7 @@ class HierarchyFunctionsUtils {
     }
 }
 
-const utils$9 = new HierarchyFunctionsUtils();
+const utils$b = new HierarchyFunctionsUtils();
 function setupHierarchyFunctions() {
     //Readonly fields
     /**
@@ -949,10 +985,10 @@ function setupHierarchyFunctions() {
         set: function (value) {
             if (value instanceof TurboSelector)
                 value = value.element;
-            utils$9.data(this).childHandler = value;
+            utils$b.data(this).childHandler = value;
         },
         get: function () {
-            const childHandler = utils$9.data(this).childHandler;
+            const childHandler = utils$b.data(this).childHandler;
             if (childHandler)
                 return childHandler;
             if (this.element instanceof Element && this.element.shadowRoot)
@@ -1329,6 +1365,8 @@ function setupMiscFunctions() {
     TurboSelector.prototype.applyDefaults = function applyDefaults(defaults, options = {}) {
         if (!this.element || typeof this.element !== "object")
             return this;
+        if (!defaults || typeof defaults !== "object")
+            return this;
         const { mergeProperties = ApplyDefaultsMergeProperties, removeDuplicates = true } = options;
         for (const [key, value] of Object.entries(defaults)) {
             const isMergeKey = mergeProperties?.includes(key);
@@ -1374,7 +1412,7 @@ class ClassFunctionsUtils {
     }
 }
 
-const utils$8 = new ClassFunctionsUtils();
+const utils$a = new ClassFunctionsUtils();
 function setupClassFunctions() {
     /**
      * @description Add one or more CSS classes to the element.
@@ -1384,7 +1422,7 @@ function setupClassFunctions() {
     TurboSelector.prototype.addClass = function _addClass(classes) {
         if (!(this.element instanceof Element))
             return this;
-        return utils$8.operateOnClasses(this, classes, entry => this.element.classList.add(entry));
+        return utils$a.operateOnClasses(this, classes, entry => this.element.classList.add(entry));
     };
     /**
      * @description Remove one or more CSS classes from the element.
@@ -1394,7 +1432,7 @@ function setupClassFunctions() {
     TurboSelector.prototype.removeClass = function _removeClass(classes) {
         if (!(this.element instanceof Element))
             return this;
-        return utils$8.operateOnClasses(this, classes, entry => this.element.classList.remove(entry));
+        return utils$a.operateOnClasses(this, classes, entry => this.element.classList.remove(entry));
     };
     /**
      * @description Toggle one or more CSS classes in the element.
@@ -1406,7 +1444,7 @@ function setupClassFunctions() {
     TurboSelector.prototype.toggleClass = function _toggleClass(classes, force) {
         if (!(this.element instanceof Element))
             return this;
-        return utils$8.operateOnClasses(this, classes, entry => this.element.classList.toggle(entry, force));
+        return utils$a.operateOnClasses(this, classes, entry => this.element.classList.toggle(entry, force));
     };
     /**
      * @description Check if the element's class list contains the provided class(es).
@@ -1937,6 +1975,11 @@ class Mvc {
     _interactors = new Map();
     _tools = new Map();
     _substrates = new Map();
+    /**
+     * @constructor
+     * @description Create a new MVC manager for a specific element.
+     * @param {MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>} properties - Generation options.
+     */
     constructor(properties) {
         if (properties.element)
             this.element = properties.element;
@@ -2226,29 +2269,133 @@ class Mvc {
         this._substrates.forEach(substrate => substrate.initialize());
         this.model?.initialize();
     }
+    /**
+     * @function getDifference
+     * @description Compute the structural difference between the current MVC configuration
+     * and another configuration description.
+     * The comparison is constructor-based (not instance-based):
+     * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
+     * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+     *   the result contains constructors that exist in the current MVC but not in the provided
+     *   configuration.
+     *
+     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}]
+     *  The configuration to compare against (typically the same shape used by {@link generate}).
+     * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
+     *  A partial configuration of constructors describing missing pieces relative to `properties`.
+     */
+    getDifference(properties = {}) {
+        const difference = {};
+        const toConstructor = (x) => {
+            if (!x)
+                return;
+            if (typeof x === "function")
+                return x;
+            if (typeof x === "object")
+                return x.constructor;
+        };
+        const toConstructorList = (x) => {
+            if (!x)
+                return [];
+            const arr = Array.isArray(x) ? x : [x];
+            return arr.map(toConstructor).filter(Boolean);
+        };
+        const processField = (field) => {
+            if (!this[field])
+                return;
+            const current = toConstructor(this[field]);
+            const external = toConstructor(properties[field]);
+            if (current === external)
+                return;
+            difference[field] = current;
+        };
+        const processArray = (field) => {
+            if (!this[field] || this[field].length === 0)
+                return;
+            const current = new Set(toConstructorList(this[field]));
+            const external = new Set(toConstructorList(properties[field] ?? []));
+            const result = [];
+            for (const entry of current)
+                if (!external.has(entry))
+                    result.push(entry);
+            if (result.length > 0)
+                difference[field] = result;
+        };
+        processField("view");
+        processField("model");
+        processField("emitter");
+        processArray("controllers");
+        processArray("handlers");
+        processArray("interactors");
+        processArray("tools");
+        processArray("substrates");
+        return difference;
+    }
+    /**
+     * @protected
+     * @function updateController
+     * @description Internal helper used when a controller is added or when pieces are re-linked.
+     * It wires the controller to the current `emitter`, `model` and `view`.
+     * @param {TurboController} controller - Controller instance to update.
+     */
     updateController(controller) {
         controller.emitter = this.emitter;
         controller.model = this.model;
         controller.view = this.view;
     }
+    /**
+     * @protected
+     * @function updateHandler
+     * @description Internal helper to wire a handler to the current model. Called when handlers
+     * are added or when the MVC pieces are re-linked.
+     * @param {TurboHandler} handler - Handler instance to update.
+     */
     updateHandler(handler) {
         handler.model = this.model;
     }
+    /**
+     * @protected
+     * @function updateInteractor
+     * @description Internal helper to wire an interactor to the current `model`, `view`, and `emitter`.
+     * Called when interactors are added or when the MVC pieces are re-linked.
+     * @param {TurboInteractor} interactor - Interactor instance to update.
+     */
     updateInteractor(interactor) {
         interactor.model = this.model;
         interactor.view = this.view;
         interactor.emitter = this.emitter;
     }
+    /**
+     * @protected
+     * @function updateTool
+     * @description Internal helper to wire a tool to the current `emitter`, `model`, and `view`.
+     * Called when tools are added or when the MVC pieces are re-linked.
+     * @param {TurboTool} tool - Tool instance to update.
+     */
     updateTool(tool) {
         tool.emitter = this.emitter;
         tool.model = this.model;
         tool.view = this.view;
     }
+    /**
+     * @protected
+     * @function updateSubstrate
+     * @description Internal helper to wire a substrate to the current `model`, `view`, and `emitter`.
+     * Called when substrates are added or when the MVC pieces are re-linked.
+     * @param {TurboSubstrate} substrate - Substrate instance to update.
+     */
     updateSubstrate(substrate) {
         substrate.model = this.model;
         substrate.view = this.view;
         substrate.emitter = this.emitter;
     }
+    /**
+     * @protected
+     * @function linkPieces
+     * @description Ensure all MVC pieces are mutually linked.
+     * Use this after modifying any of the MVC collections (controllers, handlers, interactors, tools, substrates,
+     * view, model, or emitter) so every piece stays in sync.
+     */
     linkPieces() {
         if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
             this.model.keyChangedCallback.add(this.emitterFireCallback);
@@ -2265,6 +2412,18 @@ class Mvc {
         this._tools.forEach(tool => this.updateTool(tool));
         this._substrates.forEach(substrate => this.updateSubstrate(substrate));
     }
+    /**
+     * @private
+     * @function generateInstance
+     * @description Create a single instance from either a constructor or an already-instantiated object.
+     * If a constructor is provided and `properties` are passed, the constructor is invoked with those properties.
+     * When `shallowCopyProperties` is true, a shallow cloned copy of `properties` is passed to the constructor.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor or instance to generate.
+     * @param {PropertiesType} [properties] - Optional properties passed to the constructor if `data` is a class.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` before passing them.
+     * @returns {Type|undefined} - The created instance or the object passed in.
+     */
     generateInstance(data, properties, shallowCopyProperties = true) {
         if (!data)
             return undefined;
@@ -2275,6 +2434,17 @@ class Mvc {
         }
         return data;
     }
+    /**
+     * @private
+     * @function generateInstances
+     * @description Normalize a value that can be a constructor, instance, or array of constructors/instances
+     * into an array of instantiated objects. Uses {@link generateInstance} internally for each entry.
+     * @template Type, PropertiesType
+     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor(s) or instance(s).
+     * @param {PropertiesType} [properties] - Optional properties forwarded to constructors.
+     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` for each instantiation.
+     * @returns {Type[]} - Array of instantiated objects (possibly empty).
+     */
     generateInstances(data, properties, shallowCopyProperties = true) {
         if (!data)
             return [];
@@ -2288,7 +2458,31 @@ class Mvc {
         });
         return result;
     }
+    /**
+     * @private
+     * @field emitterFireCallback
+     * @description Callback function wired to the model's `keyChangedCallback` that forwards
+     * key/block change notifications into the emitter. It is stored so it can be removed and reattached
+     * when the model changes.
+     * @param {string} keyName - The block key name that changed.
+     * @param {any} blockKey - The specific block key that changed.
+     * @param {...any} args - Additional arguments forwarded from the model.
+     */
     emitterFireCallback = (keyName, blockKey, ...args) => this.emitter?.fireWithBlock(keyName, blockKey, ...args);
+    /**
+     * @protected
+     * @function extractClassEssenceName
+     * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
+     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
+     * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+     *
+     * This is used to auto-generate `keyName` values for controllers, handlers, interactors, tools and substrates
+     * when they are not provided explicitly.
+     *
+     * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
+     * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+     * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
+     */
     extractClassEssenceName(constructor, type) {
         let className = constructor.name;
         let prototype = Object.getPrototypeOf(this.element);
@@ -2609,9 +2803,9 @@ class EffectUtils {
     }
 }
 
-const utils$7 = new ReactivityUtils();
-const signalUtils = new SignalUtils(utils$7);
-const effectUtils = new EffectUtils(utils$7);
+const utils$9 = new ReactivityUtils();
+const signalUtils = new SignalUtils(utils$9);
+const effectUtils = new EffectUtils(utils$9);
 function signal(...args) {
     //Decorator
     if (args.length === 2 && args[1] && typeof args[1] === "object"
@@ -2620,10 +2814,10 @@ function signal(...args) {
     }
     //Getter setter
     if (typeof args[0] === "function" && typeof args[1] === "function") {
-        return signalUtils.createBoxFromEntry(utils$7.createSignalEntry(undefined, args[2], args[3], args[0], args[1]));
+        return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(undefined, args[2], args[3], args[0], args[1]));
     }
     //From value
-    return signalUtils.createBoxFromEntry(utils$7.createSignalEntry(args[0], args[1], args[2]));
+    return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(args[0], args[1], args[2]));
 }
 /**
  * @decorator
@@ -2664,7 +2858,7 @@ function modelSignal(dataKey, blockKey) {
         context.addInitializer(function () {
             if (isUndefined(blockKey) && "defaultBlockKey" in this)
                 blockKey = this.defaultBlockKey;
-            utils$7.bindBlockKey(this, context.name, key, blockKey);
+            utils$9.bindBlockKey(this, context.name, key, blockKey);
         });
         return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
     };
@@ -2748,7 +2942,7 @@ function effect(...args) {
             const self = this;
             const fn = function () { value?.call(this); };
             const eff = effectUtils.makeEffect(() => fn.call(self));
-            utils$7.setEffect(self, key, eff);
+            utils$9.setEffect(self, key, eff);
         });
     }
     else if (typeof value === "function") {
@@ -2769,7 +2963,7 @@ function effect(...args) {
  * @return {SignalEntry<Type>} - The signal entry.
  */
 function getSignal(target, key) {
-    return utils$7.getSignal(target, key);
+    return utils$9.getSignal(target, key);
 }
 /**
  * @function setSignal
@@ -2783,15 +2977,15 @@ function getSignal(target, key) {
  * @param {Type} value - The new value of the signal.
  */
 function setSignal(target, key, value) {
-    return utils$7.setSignal(target, key, value);
+    return utils$9.setSignal(target, key, value);
 }
 function markDirty(target, key, blockKey) {
     let computedKey;
     if (!isUndefined(blockKey))
-        computedKey = utils$7.getKeyFromBlockKey(target, key, blockKey);
+        computedKey = utils$9.getKeyFromBlockKey(target, key, blockKey);
     if (isUndefined(computedKey))
         computedKey = key;
-    return utils$7.markDirty(target, computedKey);
+    return utils$9.markDirty(target, computedKey);
 }
 /**
  * @function initializeEffects
@@ -2802,7 +2996,7 @@ function markDirty(target, key, blockKey) {
  * @param {object} target - The target to which the effects are bound.
  */
 function initializeEffects(target) {
-    for (const [, entry] of utils$7.data(target).propertyKeyMap)
+    for (const [, entry] of utils$9.data(target).propertyKeyMap)
         entry.effect?.run();
 }
 /**
@@ -2815,7 +3009,7 @@ function initializeEffects(target) {
  * @param {PropertyKey} key - The key of the signal inside `target`.
  */
 function disposeEffect(target, key) {
-    const data = utils$7.getReactivityData(target, key);
+    const data = utils$9.getReactivityData(target, key);
     data.effect?.dispose();
     data.effect = undefined;
 }
@@ -2828,7 +3022,7 @@ function disposeEffect(target, key) {
  * @param {object} target - The target to which the effects are bound.
  */
 function disposeEffects(target) {
-    for (const [, entry] of utils$7.data(target).propertyKeyMap) {
+    for (const [, entry] of utils$9.data(target).propertyKeyMap) {
         entry.effect?.dispose();
         entry.effect = undefined;
     }
@@ -2974,15 +3168,452 @@ class Delegate extends SimpleDelegate {
     }
 }
 
-class TurboObserver {
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description Converts the passed variable into a string.
+ * @param value - The variable to convert to string
+ * @returns {string} - The string representation of the value
+ */
+function stringify(value) {
+    if (value === null || value === undefined)
+        return undefined;
+    switch (typeof value) {
+        case "string":
+            return value;
+        case "number":
+        case "boolean":
+        case "bigint":
+        case "symbol":
+        case "function":
+            return value.toString();
+        case "object":
+            if (Array.isArray(value))
+                return JSON.stringify(value.map(entry => stringify(entry)));
+            else if (value instanceof Date)
+                return value.toISOString();
+            else if (value instanceof Element)
+                return "[DOM ELEMENT]";
+            else {
+                try {
+                    return JSON.stringify(value);
+                }
+                catch {
+                    return "[object Object]";
+                }
+            }
+        default:
+            return String(value);
+    }
+}
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description Attempts to convert the passed string back to its original type.
+ * @param str - The string to convert back to its original type
+ * @returns {any} - The original value
+ */
+function parse(str) {
+    if (isUndefined(str))
+        return undefined;
+    switch (str) {
+        case "null":
+            return null;
+        case "true":
+            return true;
+        case "false":
+            return false;
+    }
+    if (!isNaN(Number(str)))
+        return Number(str);
+    if (/^\d+n$/.test(str))
+        return BigInt(str.slice(0, -1));
+    if (str.startsWith("function") || str.startsWith("(")) {
+        try {
+            const parsedFunction = new Function(`return (${str})`)();
+            if (typeof parsedFunction === "function")
+                return parsedFunction;
+        }
+        catch {
+        }
+    }
+    try {
+        const parsed = JSON.parse(str);
+        if (typeof parsed === "object" && parsed != null)
+            return parsed;
+    }
+    catch {
+    }
+    return str;
+}
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description Extracts the extension from the given filename or path (e.g.: ".png").
+ * @param {string} str - The filename or path
+ * @return The extension, or an empty string if not found.
+ */
+function getFileExtension(str) {
+    if (!str || str.length == 0)
+        return "";
+    const match = str.match(/\.\S{1,4}$/);
+    return match ? match[0] : "";
+}
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from camelCase to kebab-case.
+ * @param {string} str - The string to convert
+ */
+function camelToKebabCase(str) {
+    if (!str || str.length == 0)
+        return;
+    return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from kebab-case to camelCase.
+ * @param {string} str - The string to convert
+ */
+function kebabToCamelCase(str) {
+    if (!str || str.length == 0)
+        return;
+    return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
+}
+
+/**
+ * @class TurboNestedMap
+ * @group Components
+ * @category TurboNestedMap
+ *
+ * @template ValueType - The type of the nested map's values.
+ * @template KeyType - The per-value key type.
+ * @template BlockKeyType - The block-grouping key type.
+ */
+class TurboNestedMap {
+    nestedMap = new Map();
+    /**
+     * @function get
+     * @description Retrieve the value at the given `key` within the optional `blockKey`.
+     * @param {KeyType} key - Item key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {ValueType} - The associated value, or `undefined`.
+     */
+    get(key, blockKey = this.defaultBlockKey) {
+        return this.nestedMap.get(blockKey)?.get(key);
+    }
+    /**
+     * @function set
+     * @description Set the given value at the given `key` and optional `blockKey`.
+     * @param {ValueType} value - The value to set.
+     * @param {KeyType} key - The key to set.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    set(value, key, blockKey = this.defaultBlockKey) {
+        let block = this.nestedMap.get(blockKey);
+        if (!block) {
+            this.nestedMap.set(blockKey, new Map());
+            block = this.nestedMap.get(blockKey);
+        }
+        block?.set(key, value);
+    }
+    /**
+     * @function getKey
+     * @description Find the first (key, blockKey) pair for a given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
+     */
+    getKey(value) {
+        for (const [blockKey, map] of this.nestedMap.entries()) {
+            for (const [key, entry] of map.entries()) {
+                if (entry === value)
+                    return { blockKey, key };
+            }
+        }
+    }
+    /**
+     * @function getKeys
+     * @description Find all (key, blockKey) pairs for a given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
+     */
+    getKeys(value) {
+        const result = [];
+        for (const [blockKey, map] of this.nestedMap.entries()) {
+            for (const [key, entry] of map.entries()) {
+                if (entry === value)
+                    result.push({ blockKey, key });
+            }
+        }
+        return result;
+    }
+    /**
+     * @function getFlatKey
+     * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
+     * @param {ValueType} value - The value to query.
+     * @returns {string | number} - Flattened key, or undefined when value not found.
+     */
+    getFlatKey(value) {
+        const scoped = this.getKey(value);
+        if (!scoped)
+            return;
+        return this.flattenKey(scoped.key, scoped.blockKey);
+    }
+    /**
+     * @function getFromFlatKey
+     * @description Get the value at the given `flatKey`.
+     * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
+     * @returns {ValueType} - The value, or undefined if not found.
+     */
+    getFromFlatKey(flatKey) {
+        const scoped = this.scopeKey(flatKey);
+        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
+            return;
+        return this.get(scoped.key, scoped.blockKey);
+    }
+    /**
+     * @function getEntriesForBlock
+     * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
+     * key values (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
+     */
+    getEntriesForBlock(blockKey = this.defaultBlockKey) {
+        const block = this.nestedMap.get(blockKey);
+        if (!block)
+            return [];
+        return Array.from(block.entries()).sort((a, b) => alphabeticalSorting(a[0], b[0]));
+    }
+    /**
+     * @function getKeysForBlock
+     * @description Return the keys for a block alphabetically sorted (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {KeyType[]} - Array of keys.
+     */
+    getKeysForBlock(blockKey = this.defaultBlockKey) {
+        return this.getEntriesForBlock(blockKey).map(entry => entry[0]);
+    }
+    /**
+     * @function getValuesForBlock
+     * @description Return the values for a block alphabetically sorted by their keys (if compatible).
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {ValueType[]} - Array of values.
+     */
+    getValuesForBlock(blockKey = this.defaultBlockKey) {
+        return this.getEntriesForBlock(blockKey).map(entry => entry[1]);
+    }
+    /**
+     * @function getAllKeys
+     * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
+     * (if compatible).
+     * @returns {KeyType[]} - Flattened list of all keys.
+     */
+    getAllKeys() {
+        return Array.from(this.nestedMap.keys())
+            .sort(alphabeticalSorting)
+            .flatMap(blockKey => this.getKeysForBlock(blockKey));
+    }
+    /**
+     * @function getAllValues
+     * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
+     * (if compatible).
+     * @returns {ValueType[]} - Flattened list of all values.
+     */
+    getAllValues() {
+        return Array.from(this.nestedMap.keys())
+            .sort(alphabeticalSorting)
+            .flatMap(blockKey => this.getValuesForBlock(blockKey));
+    }
+    /**
+     * @function hasKey
+     * @description Check whether a value exists at the given `key` inside `blockKey`.
+     * @param {KeyType} key - The targeted key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {boolean} Whether a value exists.
+     */
+    hasKey(key, blockKey = this.defaultBlockKey) {
+        return this.nestedMap.get(blockKey)?.has(key) ?? false;
+    }
+    /**
+     * @function hasBlock
+     * @description Check whether a block exists at `blockKey`.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {boolean} Whether a block exists.
+     */
+    hasBlock(blockKey) {
+        return this.nestedMap.has(blockKey);
+    }
+    /**
+     * @function getBlockSize
+     * @description Get the number of entries inside the target block.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {number} The size of the block.
+     */
+    getBlockSize(blockKey = this.defaultBlockKey) {
+        return this.nestedMap.get(blockKey)?.size ?? 0;
+    }
+    /**
+     * @function removeKey
+     * @description Remove the entry at the given `key` inside `blockKey`.
+     * @param {KeyType} key - The key to remove.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    removeKey(key, blockKey = this.defaultBlockKey) {
+        this.nestedMap.get(blockKey)?.delete(key);
+    }
+    /**
+     * @function remove
+     * @description Remove the first entry with the given value.
+     * @param {ValueType} value - The value to remove.
+     */
+    remove(value) {
+        const pos = this.getKey(value);
+        if (pos)
+            this.removeKey(pos.key, pos.blockKey);
+    }
+    /**
+     * @function clear
+     * @description Remove all entries and reset internal state.
+     */
+    clear() {
+        for (const [blockKey, map] of this.nestedMap.entries()) {
+            for (const key of map.keys())
+                this.removeKey(key, blockKey);
+        }
+        this.nestedMap.clear();
+    }
+    /**
+     * @function flattenKey
+     * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
+     * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
+     * @param {KeyType} key - Item key.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @returns {number | string} - The flattened key.
+     */
+    flattenKey(key, blockKey = this.defaultBlockKey) {
+        const compatibleBlockKey = this.getFlatCompatibleKey(blockKey);
+        const compatibleKey = this.getFlatCompatibleKey(key);
+        if (compatibleBlockKey === undefined)
+            return;
+        if (typeof compatibleBlockKey === "string")
+            return compatibleBlockKey + "|" + compatibleKey.toString();
+        let globalIndex = 0;
+        for (const bk of Array.from(this.nestedMap.keys()).sort(alphabeticalSorting)) {
+            if (bk === blockKey)
+                break;
+            globalIndex += this.getEntriesForBlock(bk).length;
+        }
+        return globalIndex + Number(compatibleKey);
+    }
+    /**
+     * @function scopeKey
+     * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
+     * @param {number | string} flatKey - Flattened key or global index.
+     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
+     */
+    scopeKey(flatKey) {
+        if (typeof flatKey === "string") {
+            const split = flatKey.toString().split("|");
+            if (split.length < 2)
+                return {};
+            return { blockKey: split[0], key: split[1] };
+        }
+        const blockKeys = Array.from(this.nestedMap.keys()).sort(alphabeticalSorting);
+        if (typeof flatKey === "number") {
+            if (flatKey < 0)
+                return { blockKey: blockKeys[0] ?? 0, key: 0 };
+            let index = flatKey;
+            for (const blockKey of blockKeys) {
+                const size = this.getEntriesForBlock(blockKey).length;
+                if (index < size)
+                    return { blockKey, key: index };
+                index -= size;
+            }
+        }
+        const lastBlockKey = blockKeys[blockKeys.length - 1];
+        return { blockKey: lastBlockKey, key: this.getEntriesForBlock(lastBlockKey).length };
+    }
+    /**
+     * @property defaultBlockKey
+     * @protected
+     * @description Default block key used when none is supplied. It returns the first blockKey if present,
+     * otherwise returns the sentinel `"__default__"`.
+     * @returns {BlockKeyType}
+     */
+    get defaultBlockKey() {
+        const key = Array.from(this.nestedMap.keys())?.[0];
+        if (!isUndefined(key))
+            return key;
+        return "__default__";
+    }
+    getFlatCompatibleKey(key) {
+        if (typeof key === "number" || typeof key === "string")
+            return key;
+        return stringify(key);
+    }
+}
+
+/**
+ * @class TurboObserver
+ * @group Components
+ * @category TurboObserver
+ *
+ * @extends TurboNestedMap
+ * @description Generic observer that keeps a set of component instances organized by
+ * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
+ * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
+ *
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The per-item key type.
+ * @template {string | number} BlockKeyType - The block-grouping key type.
+ */
+class TurboObserver extends TurboNestedMap {
     _isInitialized = false;
+    /**
+     * @property onAdded
+     * @description Delegate called when an item appears for which no component instance exists.
+     * Handlers may return a newly-created component instance which will be stored and then receive subsequent
+     * `onUpdated` calls.
+     */
     onAdded = new Delegate();
+    /**
+     * @property onUpdated
+     * @description Delegate called when an item already has an associated instance and its data changes.
+     */
     onUpdated = new Delegate();
+    /**
+     * @property onDeleted
+     * @description Delegate called when an item is removed.
+     */
     onDeleted = new Delegate();
+    /**
+     * @property onInitialize
+     * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
+     */
     onInitialize = new Delegate();
+    /**
+     * @property onDestroy
+     * @description Delegate fired when the observer is destroyed.
+     */
     onDestroy = new Delegate();
-    instances = new Map();
+    /**
+     * @constructor
+     * @description Create a TurboObserver.
+     * By default, the observer wires `onUpdated` to update instance data if the instance
+     * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
+     * when the associated key is deleted.
+     * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
+     * options and lifecycle callbacks.
+     */
     constructor(properties = {}) {
+        super();
         const self = this;
         if (properties.onAdded)
             this.onAdded.add((data, id, self, blockKey) => properties.onAdded(data, id, self, blockKey));
@@ -3006,7 +3637,7 @@ class TurboObserver {
             if (properties.onDeleted)
                 properties.onDeleted(data, instance, id, self, blockKey);
             else
-                this.removeInstance(instance);
+                this.remove(instance);
         });
         if (properties.onInitialize)
             this.onInitialize.add(() => properties.onInitialize(self));
@@ -3015,90 +3646,76 @@ class TurboObserver {
         if (properties.initialize)
             this.initialize();
     }
-    getInstance(key, blockKey = this.defaultBlockKey) {
-        return this.instances.get(blockKey)?.get(key);
-    }
-    getBlockInstancesAndKeys(blockKey = this.defaultBlockKey) {
-        const block = this.instances.get(blockKey);
-        if (!block)
-            return [];
-        return Array.from(block.entries());
-    }
-    getBlockInstances(blockKey = this.defaultBlockKey) {
-        return this.getBlockInstancesAndKeys(blockKey)
-            .sort((a, b) => alphabeticalSorting(a[0], b[0]))
-            .map(entry => entry[1]);
-    }
-    getAllInstances() {
-        return Array.from(this.instances.keys())
-            .sort(alphabeticalSorting)
-            .flatMap(blockKey => this.getBlockInstances(blockKey));
-    }
-    getInstanceKey(instance) {
-        for (const [blockKey, map] of this.instances.entries()) {
-            for (const [key, entry] of map.entries()) {
-                if (entry === instance)
-                    return { blockKey, key };
-            }
-        }
-    }
-    getInstanceAt(flatKey) {
-        const scoped = this.scopeKey(flatKey);
-        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
-            return;
-        return this.getInstance(scoped.key, scoped.blockKey);
-    }
-    getInstanceFlatKey(instance) {
-        const scoped = this.getInstanceKey(instance);
-        if (!scoped)
-            return;
-        return this.flattenKey(scoped.key, scoped.blockKey);
-    }
-    setInstance(instance, key, blockKey = this.defaultBlockKey) {
-        let instancesBlock = this.instances.get(blockKey);
-        if (!instancesBlock) {
-            this.instances.set(blockKey, new Map());
-            instancesBlock = this.instances.get(blockKey);
-        }
-        instancesBlock?.set(key, instance);
-    }
-    removeInstanceByKey(key, removeFromDOM = true, blockKey = this.defaultBlockKey) {
-        const block = this.instances.get(blockKey);
-        if (!block)
-            return;
-        const instance = block.get(key);
-        block.delete(key);
+    /**
+     * @function removeKey
+     * @description Remove the instance associated with `key` inside `blockKey`.
+     * @param {KeyType} key - The key to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    removeKey(key, blockKey = this.defaultBlockKey, removeFromDOM = true) {
+        const instance = this.get(key, blockKey);
+        super.removeKey(key, blockKey);
         if (!instance)
             return;
         if (removeFromDOM && instance && typeof instance === "object"
             && "remove" in instance && typeof instance.remove == "function")
             instance?.remove();
     }
-    removeInstance(instance, removeFromDOM = true) {
-        const pos = this.getInstanceKey(instance);
+    /**
+     * @function remove
+     * @description Remove a given instance.
+     * @param {ComponentType} instance - The instance to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     */
+    remove(instance, removeFromDOM = true) {
+        const pos = this.getKey(instance);
         if (pos)
-            this.removeInstanceByKey(pos.key, removeFromDOM, pos.blockKey ?? this.defaultBlockKey);
+            this.removeKey(pos.key, pos.blockKey ?? this.defaultBlockKey, removeFromDOM);
     }
+    /**
+     * @property isInitialized
+     * @description Whether the observer has been initialized (i.e. {@link initialize} called).
+     */
     get isInitialized() {
         return this._isInitialized;
     }
+    /**
+     * @function initialize
+     * @description Invoke `onInitialize` and mark the observer as initialized.
+     */
     initialize() {
         if (this.isInitialized)
             return;
         this.onInitialize.fire(this);
         this._isInitialized = true;
     }
+    /**
+     * @function clear
+     * @description Remove and destroy all managed instances and reset internal state.
+     */
     clear() {
-        this.getAllInstances().forEach(instance => this.removeInstance(instance));
-        this.instances.clear();
+        super.clear();
         this._isInitialized = false;
     }
+    /**
+     * @function destroy
+     * @description Clear then fire `onDestroy`.
+     */
     destroy() {
         this.clear();
         this.onDestroy.fire(this);
     }
+    /**
+     * @function keyChanged
+     * @description Function to notify the observer of a change at a certain key.
+     * @param {KeyType} key - The changed item key.
+     * @param {DataType} value - The new value for the item.
+     * @param {boolean} [deleted=false] - Whether the item was removed.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
     keyChanged(key, value, deleted = false, blockKey = this.defaultBlockKey) {
-        const existingInstance = this.getInstance(key, blockKey);
+        const existingInstance = this.get(key, blockKey);
         if (existingInstance) {
             if (deleted)
                 this.onDeleted.fire(value, existingInstance, key, this, blockKey);
@@ -3111,69 +3728,25 @@ class TurboObserver {
         const instance = this.onAdded.fire(value, key, this, blockKey);
         if (!instance)
             return;
-        this.setInstance(instance, key, blockKey);
+        this.set(instance, key, blockKey);
         this.onUpdated.fire(value, instance, key, this, blockKey);
-    }
-    flattenKey(key, blockKey = this.defaultBlockKey) {
-        if (typeof blockKey === "number") {
-            let globalIndex = 0;
-            for (const bk of Array.from(this.instances.keys()).sort(alphabeticalSorting)) {
-                if (bk === blockKey)
-                    break;
-                globalIndex += this.getBlockInstancesAndKeys(bk).length;
-            }
-            return globalIndex + Number(key);
-        }
-        else {
-            return blockKey.toString() + "|" + key.toString();
-        }
-    }
-    scopeKey(flatKey) {
-        if (typeof flatKey === "string") {
-            const split = flatKey.toString().split("|");
-            if (split.length < 2)
-                return {};
-            return { blockKey: split[0], key: split[1] };
-        }
-        const blockKeys = Array.from(this.instances.keys()).sort(alphabeticalSorting);
-        if (typeof flatKey === "number") {
-            if (flatKey < 0)
-                return { blockKey: blockKeys[0] ?? 0, key: 0 };
-            let index = flatKey;
-            for (const blockKey of blockKeys) {
-                const size = this.getBlockInstancesAndKeys(blockKey).length;
-                if (index < size)
-                    return { blockKey, key: index };
-                index -= size;
-            }
-        }
-        const lastBlockKey = blockKeys[blockKeys.length - 1];
-        return { blockKey: lastBlockKey, key: this.getBlockInstancesAndKeys(lastBlockKey).length };
-    }
-    get defaultBlockKey() {
-        const key = Array.from(this.instances.keys())?.[0];
-        if (!isUndefined(key))
-            return key;
-        return "__default__";
-    }
-}
-
-class DataBlockObserver extends TurboObserver {
-    keyChanged(key, value, deleted = false) {
-        super.keyChanged(key, value, deleted, this.defaultBlockKey);
-    }
-    // @ts-ignore
-    getInstanceKey(instance) {
-        return super.getInstanceKey(instance)?.key;
-    }
-    setInstance(instance, key) {
-        super.setInstance(instance, key);
     }
 }
 
 /**
+ * @class TurboDataBlock
  * @group Components
  * @category TurboDataBlock
+ *
+ * @template DataType - The type of the data held in the block.
+ * @template {string | number | symbol} KeyType - The type of the data's keys.
+ * @template IdType - The type of the data's ID.
+ * @template ComponentType - For observers. The type of instances that react to changes in the block.
+ * @template DataEntryType - For observers. The type of the data associated with each observer instance.
+ *
+ * @description Lightweight wrapper around a plain JS container (object, Array or Map) that exposes a consistent
+ * API for reads/writes, signals, {@link TurboObserver}s and host callbacks.
+ * Use this when you want change notifications and host integration around a simple data block.
  */
 let TurboDataBlock = (() => {
     let _enabledCallbacks_decorators;
@@ -3188,6 +3761,9 @@ let TurboDataBlock = (() => {
         }
         _data;
         id;
+        /**
+         * @description The data held by this block. Setting it will clear attached observers and re-initialize the block.
+         */
         get data() {
             return this._data;
         }
@@ -3198,14 +3774,28 @@ let TurboDataBlock = (() => {
                 this.initialize();
         }
         #enabledCallbacks_accessor_storage = tslib.__runInitializers(this, _enabledCallbacks_initializers, void 0);
+        /**
+         * @description Whether callbacks are enabled.
+         */
         get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
         set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
         isInitialized = (tslib.__runInitializers(this, _enabledCallbacks_extraInitializers), false);
         host;
         signals = new Map();
         changeObservers = new TurboWeakSet();
+        /**
+         * Delegate fired when the value changes at a certain key/index.
+         */
         onKeyChanged = new Delegate();
-        observerConstructor = DataBlockObserver;
+        /**
+         * The default class of observers to instantiate.
+         */
+        observerConstructor = TurboObserver;
+        /**
+         * @constructor
+         * @description Create a new TurboDataBlock.
+         * @param {DataBlockProperties} [properties] - Optional initialization properties.
+         */
         constructor(properties = {}) {
             this.id = properties.id;
             this._data = properties.data;
@@ -3217,11 +3807,23 @@ let TurboDataBlock = (() => {
          * Basics
          *
          */
+        /**
+         * @function get
+         * @description Retrieve the value stored at the given key.
+         * @param {KeyType} key - The key/index to read.
+         * @returns {any} - The stored value, or `undefined` if not present.
+         */
         get(key) {
             if (this.data instanceof Map)
                 return this.data.get(key);
             return this.data?.[key];
         }
+        /**
+         * @function set
+         * @description Set a value at the provided key and notify observers/signals if the value changed.
+         * @param {KeyType} key - The key/index to write.
+         * @param {unknown} value - The value to set.
+         */
         set(key, value) {
             if (!this.data)
                 return;
@@ -3234,6 +3836,14 @@ let TurboDataBlock = (() => {
                 this.data[key] = value;
             this.keyChanged(key, value);
         }
+        /**
+         * @function add
+         * @description Append or insert a value into an array-backed data block. If the block is not an
+         * array, the call forwards to {@link set}.
+         * @param {unknown} value - The value to insert.
+         * @param {KeyType} [key] - Optional numeric index to insert at. If omitted, the value is pushed.
+         * @returns {KeyType | void} - The index where the value was inserted (for arrays), or void for non-arrays.
+         */
         add(value, key) {
             if (!this.data || !Array.isArray(this.data))
                 return this.set(key, value);
@@ -3249,11 +3859,22 @@ let TurboDataBlock = (() => {
             }
             return index;
         }
+        /**
+         * @function has
+         * @description Check whether the given key exists in the block.
+         * @param {KeyType} key - The key/index to check.
+         * @returns {boolean} - True, if present.
+         */
         has(key) {
             if (this.data instanceof Map)
                 return this.data.has(key);
             return this.data?.[key] !== undefined;
         }
+        /**
+         * @function delete
+         * @description Remove the entry at the given key/index and notify observers.
+         * @param {KeyType} key - The key/index to remove.
+         */
         delete(key) {
             if (!this.data || !this.has(key))
                 return;
@@ -3263,6 +3884,10 @@ let TurboDataBlock = (() => {
                 delete this.data[key];
             this.keyChanged(key, undefined, true);
         }
+        /**
+         * @property keys
+         * @description Array of all keys currently present in the block.
+         */
         get keys() {
             if (!this.data || typeof this.data !== "object")
                 return [];
@@ -3275,9 +3900,17 @@ let TurboDataBlock = (() => {
                 ...Object.getOwnPropertySymbols(this.data)
             ];
         }
+        /**
+         * @property values
+         * @description The block's values in an array (in the order implied by {@link keys}).
+         */
         get values() {
             return this.keys.map(key => this.get(key));
         }
+        /**
+         * @property size
+         * @description Number of entries in the block.
+         */
         get size() {
             return this.keys.length;
         }
@@ -3285,6 +3918,11 @@ let TurboDataBlock = (() => {
          *
          * Utilities
          *
+         */
+        /**
+         * @function initialize
+         * @description Fire change notifications for every existing key, initializing the block.
+         * @returns {void}
          */
         initialize() {
             if (!this.data || this.isInitialized)
@@ -3295,7 +3933,8 @@ let TurboDataBlock = (() => {
         }
         /**
          * @function clear
-         * @description Clears the block data.
+         * @description Clear the block and its observers.
+         * @param {boolean} [clearData=true] - If true, also clears the stored data. Otherwise, only resets observers/state.
          */
         clear(clearData = true) {
             if (clearData)
@@ -3303,6 +3942,11 @@ let TurboDataBlock = (() => {
             this.changeObservers?.toArray().forEach(observer => observer.clear());
             this.isInitialized = false;
         }
+        /**
+         * @function toJSON
+         * @description Convert the block into a plain object suitable for JSON serialization.
+         * @returns {object} - Plain JSON-serializable representation.
+         */
         toJSON() {
             if (this.data instanceof Map)
                 return Object.fromEntries(this.data);
@@ -3319,9 +3963,18 @@ let TurboDataBlock = (() => {
          * Host
          *
          */
+        /**
+         * @function link
+         * @description Attach a host object that will receive `onDirty` and `onChange` callbacks when keys change.
+         * @param {DataBlockHost<DataType, KeyType, IdType>} host - The host to attach.
+         */
         link(host) {
             this.host = host;
         }
+        /**
+         * @function unlink
+         * @description Detach any previously-linked host.
+         */
         unlink() {
             this.host = undefined;
         }
@@ -3330,6 +3983,14 @@ let TurboDataBlock = (() => {
          * Signals
          *
          */
+        /**
+         * @function makeSignal
+         * @description Create (or return an existing) reactive {@link SignalBox} for the given key.
+         * The returned signal reads from {@link get} and writes via {@link set}.
+         * @template Type - The type of the signal's value.
+         * @param {KeyType} key - The key for which to create the signal.
+         * @returns {SignalBox<Type>} - The created or cached signal.
+         */
         makeSignal(key) {
             if (this.signals.has(key))
                 return this.signals.get(key);
@@ -3337,9 +3998,19 @@ let TurboDataBlock = (() => {
             this.signals.set(key, sig);
             return sig;
         }
+        /**
+         * @function getSignal
+         * @description Retrieve an existing {@link SignalBox} for the given key if present.
+         * @param {KeyType} key - The key whose signal to retrieve.
+         * @returns {SignalBox<any>} - The signal or undefined if none was created.
+         */
         getSignal(key) {
             return this.signals.get(key);
         }
+        /**
+         * @function makeAllSignals
+         * @description Create signals for every key currently present in the block.
+         */
         makeAllSignals() {
             this.keys.forEach(key => this.makeSignal(key));
         }
@@ -3348,10 +4019,16 @@ let TurboDataBlock = (() => {
          * Change observers
          *
          */
+        /**
+         * @function generateObserver
+         * @description Create and register an observer tied to this block.
+         * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Options for observer creation.
+         * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>} - The newly created observer.
+         */
         generateObserver(properties = {}) {
             const observer = new (properties.customConstructor
                 ?? this.observerConstructor
-                ?? (DataBlockObserver))({
+                ?? (TurboObserver))({
                 ...properties,
                 onDestroy: (self) => this.changeObservers?.delete(self),
                 onInitialize: (self) => {
@@ -3368,6 +4045,14 @@ let TurboDataBlock = (() => {
          *
          * Internal utilities
          *
+         */
+        /**
+         * @protected
+         * @function keyChanged
+         * @description Internal hook called whenever a key is added/updated/deleted.
+         * @param {KeyType} key - The key that changed.
+         * @param {unknown} [value=this.get(key)] - The new value (or undefined for deletions).
+         * @param {boolean} [deleted=false] - Whether the key was removed.
          */
         keyChanged(key, value = this.get(key), deleted = false) {
             this.signals.get(key)?.emit();
@@ -3446,6 +4131,12 @@ let TurboModel = (() => {
                 this.setBlock(data, undefined, this.defaultBlockKey, false);
             this.setup();
         }
+        /**
+         * @function setup
+         * @description Called in the constructor. Use for setup that should happen at instantiation,
+         * before `this.initialize()` is called.
+         * @protected
+         */
         setup() {
             initializeEffects(this);
         }
@@ -4064,123 +4755,67 @@ const DefaultEventName = {
 
 /**
  * @group Utilities
- * @category String
- *
- * @description Converts the passed variable into a string.
- * @param value - The variable to convert to string
- * @returns {string} - The string representation of the value
+ * @category Equity
  */
-function stringify(value) {
-    if (value === null || value === undefined)
-        return undefined;
-    switch (typeof value) {
-        case "string":
-            return value;
-        case "number":
-        case "boolean":
-        case "bigint":
-        case "symbol":
-        case "function":
-            return value.toString();
-        case "object":
-            if (Array.isArray(value))
-                return JSON.stringify(value.map(entry => stringify(entry)));
-            else if (value instanceof Date)
-                return value.toISOString();
-            else if (value instanceof Element)
-                return "[DOM ELEMENT]";
-            else {
-                try {
-                    return JSON.stringify(value);
-                }
-                catch {
-                    return "[object Object]";
-                }
-            }
-        default:
-            return String(value);
-    }
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description Attempts to convert the passed string back to its original type.
- * @param str - The string to convert back to its original type
- * @returns {any} - The original value
- */
-function parse(str) {
-    if (isUndefined(str))
-        return undefined;
-    switch (str) {
-        case "null":
-            return null;
-        case "true":
-            return true;
-        case "false":
+function areEqual(...entries) {
+    if (entries.length < 2)
+        return true;
+    for (let i = 0; i < entries.length - 1; i++) {
+        if (entries[i] != entries[i + 1])
             return false;
     }
-    if (!isNaN(Number(str)))
-        return Number(str);
-    if (/^\d+n$/.test(str))
-        return BigInt(str.slice(0, -1));
-    if (str.startsWith("function") || str.startsWith("(")) {
-        try {
-            const parsedFunction = new Function(`return (${str})`)();
-            if (typeof parsedFunction === "function")
-                return parsedFunction;
+    return true;
+}
+/**
+ * @group Utilities
+ * @category Equity
+ */
+function equalToAny(entry, ...values) {
+    if (values.length < 1)
+        return true;
+    for (const value of values) {
+        if (entry == value)
+            return true;
+    }
+    return false;
+}
+/**
+ * @group Utilities
+ * @category Equity
+ */
+function eachEqualToAny(values, ...entries) {
+    if (entries.length < 1)
+        return true;
+    for (const entry of entries) {
+        let equals = false;
+        for (const value of values) {
+            if (entry == value)
+                equals = true;
         }
-        catch {
-        }
+        if (!equals)
+            return false;
     }
-    try {
-        const parsed = JSON.parse(str);
-        if (typeof parsed === "object" && parsed != null)
-            return parsed;
-    }
-    catch {
-    }
-    return str;
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description Extracts the extension from the given filename or path (e.g.: ".png").
- * @param {string} str - The filename or path
- * @return The extension, or an empty string if not found.
- */
-function getFileExtension(str) {
-    if (!str || str.length == 0)
-        return "";
-    const match = str.match(/\.\S{1,4}$/);
-    return match ? match[0] : "";
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from camelCase to kebab-case.
- * @param {string} str - The string to convert
- */
-function camelToKebabCase(str) {
-    if (!str || str.length == 0)
-        return;
-    return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from kebab-case to camelCase.
- * @param {string} str - The string to convert
- */
-function kebabToCamelCase(str) {
-    if (!str || str.length == 0)
-        return;
-    return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
+    return true;
 }
 
+class ElementFunctionsUtils {
+    dataMap = new WeakMap;
+    data(element) {
+        if (element instanceof TurboSelector)
+            element = element.element;
+        if (!element || !this.dataMap.has(element)) {
+            const entry = {
+                feedforwardElements: new Map(),
+                defaultFeedforwardProperties: {}
+            };
+            if (element)
+                this.dataMap.set(element, entry);
+        }
+        return this.dataMap.get(element);
+    }
+}
+
+const utils$8 = new ElementFunctionsUtils();
 function setupElementFunctions() {
     /**
      * Sets the declared properties to the element.
@@ -4207,10 +4842,26 @@ function setupElementFunctions() {
                 try {
                     this.element.attachShadow({ mode: "open" });
                 }
-                catch { }
+                catch {
+                }
         }
         const mvc = this.element?.["mvc"] instanceof Mvc ? this.element["mvc"]
             : "model" in this.element && "view" in this.element ? this.element : undefined;
+        if (!setOnlyBaseProperties && mvc) {
+            for (const property of ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"]) {
+                const value = properties[property];
+                if (value === undefined)
+                    continue;
+                try {
+                    mvc[property] = value;
+                    if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
+                        mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
+                    }
+                }
+                catch {
+                }
+            }
+        }
         for (const property of Object.keys(properties)) {
             const value = properties[property];
             if (value === undefined)
@@ -4265,18 +4916,7 @@ function setupElementFunctions() {
                 case "interactors":
                 case "tools":
                 case "substrates":
-                    if (setOnlyBaseProperties)
-                        break;
-                    if (mvc) {
-                        try {
-                            mvc[property] = value;
-                            if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                                mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
-                            }
-                        }
-                        catch { }
-                        break;
-                    }
+                    break;
                 default:
                     if (setOnlyBaseProperties)
                         break;
@@ -4305,6 +4945,104 @@ function setupElementFunctions() {
                 mvc.initialize();
         }
         return this;
+    };
+    //TODO maybe use .cloneNode() for vanilla nodes
+    TurboSelector.prototype.clone = function _clone(options = {}) {
+        const originElement = this.element instanceof Node ? this.element : undefined;
+        if (!originElement)
+            return;
+        const exclude = new Set(options.exclude ?? []);
+        const force = new Set(options.forceInclude ?? []);
+        const deepClone = new Set(options.deepClone ?? []);
+        const copyReference = new Set(options.copyReference ?? []);
+        const shouldCopy = (key, value, prototype) => {
+            if (force.has(key))
+                return true;
+            if (exclude.has(key) || key === "mvc" || key === "__proto__" || key === "prototype")
+                return false;
+            if (typeof value === "function")
+                return false;
+            if (key === "model" || key === "view" || key === "emitter" || key === "controllers"
+                || key === "handlers" || key === "interactors" || key === "tools" || key === "substrates")
+                return false;
+            const desc = Object.getOwnPropertyDescriptor(prototype, key);
+            if (!desc)
+                return false;
+            if (desc.get && !desc.set && !force.has(key))
+                return false;
+            if ("writable" in desc && desc.writable === false && !force.has(key))
+                return false;
+            return true;
+        };
+        const copyField = (key, value) => {
+            if (!value || typeof value !== "object")
+                return value;
+            if (copyReference.has(key))
+                return value;
+            try {
+                if (value instanceof Node) {
+                    if (deepClone.has(key) || options.deepCloneNodes)
+                        return turbo(value).clone(options);
+                    if (options.copyNodes)
+                        return value;
+                }
+                else {
+                    if (options.deepCloneObjects || deepClone.has(key)) {
+                        if (typeof structuredClone === "function")
+                            return structuredClone(value);
+                    }
+                    return value;
+                }
+            }
+            catch { }
+        };
+        const constructor = originElement.constructor;
+        const prototypeChain = getPrototypeChain(originElement);
+        const mvc = originElement["mvc"];
+        let properties = {};
+        if (mvc && mvc instanceof Mvc) {
+            const defaultProperties = {};
+            for (let i = 0; i < prototypeChain.length; i++) {
+                turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
+            }
+            properties = mvc.getDifference(defaultProperties);
+        }
+        //TODO maybe clone the data
+        if (originElement["model"] && originElement["data"])
+            properties["data"] = originElement["data"];
+        const clone = typeof constructor.create === "function" ? constructor.create(properties)
+            : turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
+        for (const attr of Array.from(originElement.attributes)) {
+            if (!exclude.has(attr.name))
+                clone.setAttribute(attr.name, attr.value);
+        }
+        const keys = new Map();
+        const addKeys = (prototype) => {
+            for (const property of Object.getOwnPropertyNames(prototype))
+                if (!keys.has(property))
+                    keys.set(property, prototype);
+            for (const property of Object.getOwnPropertySymbols(prototype))
+                if (!keys.has(property))
+                    keys.set(property, prototype);
+        };
+        addKeys(originElement);
+        for (const prototype of prototypeChain) {
+            if (equalToAny(prototype, Element.prototype, Node.prototype, HTMLElement.prototype, SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype))
+                break;
+            addKeys(prototype);
+        }
+        for (const [key, prototype] of keys.entries()) {
+            const value = originElement[key];
+            if (!shouldCopy(key, value, prototype))
+                continue;
+            let newValue = copyField(key, value);
+            if (newValue !== undefined)
+                try {
+                    clone[key] = newValue;
+                }
+                catch { }
+        }
+        return clone;
     };
     TurboSelector.prototype.setMvc = function _setMvc(properties) {
         if (!this.element)
@@ -4366,6 +5104,45 @@ function setupElementFunctions() {
             this.element.focus();
         return this;
     };
+    TurboSelector.prototype.feedforward = function _feedforward(properties = {}) {
+        if (!this.element)
+            return;
+        const type = properties?.type ?? "___DEFAULT___";
+        const feedforwardElements = utils$8.data(this.element).feedforwardElements;
+        if (!feedforwardElements)
+            return;
+        let saved = feedforwardElements.get(type);
+        if (!saved) {
+            if (typeof this.element["clone"] === "function")
+                saved = this.element["clone"](properties?.cloneOptions);
+            else
+                saved = this.clone(properties?.cloneOptions);
+        }
+        turbo(saved).setProperties(this.defaultFeedforwardProperties ?? {})
+            .setProperties({ ...properties, cloneOptions: undefined, type: undefined, removeOnPointerRelease: undefined });
+        feedforwardElements.set(type, saved);
+        if (properties.removeOnPointerRelease)
+            turbo(document.body).on(DefaultEventName.clickEnd, () => {
+                if (typeof saved["remove"] === "function")
+                    saved["remove"]();
+                feedforwardElements.delete(type);
+            }, { capture: true });
+        return saved;
+    };
+    Object.defineProperty(TurboSelector.prototype, "defaultFeedforwardProperties", {
+        get: function () {
+            if ("defaultFeedforwardProperties" in this.element)
+                return this.element.defaultFeedforwardProperties;
+            return utils$8.data(this.element).defaultFeedforwardProperties;
+        },
+        set: function (value) {
+            if ("defaultFeedforwardProperties" in this.element)
+                this.element.defaultFeedforwardProperties = value;
+            utils$8.data(this.element).defaultFeedforwardProperties = value;
+        },
+        configurable: true,
+        enumerable: true
+    });
 }
 
 exports.Propagation = void 0;
@@ -4926,6 +5703,150 @@ class TurboKeyEvent extends TurboEvent {
     }
 }
 
+class ListenerUtils {
+    constructorMap = new WeakMap();
+    constructorData(prototype) {
+        let obj = this.constructorMap.get(prototype);
+        if (!obj) {
+            obj = { listeners: new Map() };
+            this.constructorMap.set(prototype, obj);
+        }
+        return obj;
+    }
+    addListener(prototype, listener) {
+        if (!listener.methodName)
+            return;
+        const data = this.constructorData(prototype)?.listeners;
+        if (!data || data.has(listener.methodName))
+            return;
+        data.set(listener.methodName, listener);
+    }
+    getAllListeners(instance) {
+        let prototype = Object.getPrototypeOf(instance);
+        const results = new Map();
+        while (prototype && prototype !== Object.prototype) {
+            const map = this.constructorData(prototype).listeners;
+            if (map?.size)
+                for (const [key, value] of map.entries()) {
+                    if (!results.has(key))
+                        results.set(key, value);
+                }
+            prototype = Object.getPrototypeOf(prototype);
+        }
+        return results;
+    }
+}
+
+const utils$7 = new ListenerUtils();
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function listener
+ * @description Method decorator that registers the decorated method as an event listener, to be attached later
+ * via {@link attachListenersAndBehaviors}.
+ * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
+ * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
+ * to derive the event name from {@link DefaultEventName}.
+ *
+ * @example ```ts
+ * class MyElement {
+ *   @listener() click(e: Event) { ... }
+ *   //Equivalent to: turbo(this).on(DefaultEventName.click, (e: Event) => { ... });
+ * }
+ * ```
+ */
+function listener(properties = {}) {
+    return function (value, context) {
+        //TODO FIX
+        TurboEventManager.instance;
+        let type = properties.type;
+        if (!type) {
+            const kebab = camelToKebabCase(String(context.name));
+            type = Object.values(DefaultEventName).includes("turbo-" + kebab) ? "turbo-" + kebab : kebab;
+        }
+        context.addInitializer(function () {
+            utils$7.addListener(Object.getPrototypeOf(this), { ...properties, type, methodName: context.name, kind: "listener" });
+        });
+        return value;
+    };
+}
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function behavior
+ * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
+ * via {@link attachListenersAndBehaviors}.
+ * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
+ * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
+ * to derive the event name from {@link DefaultEventName}.
+ *
+ * @example ```ts
+ * class MyElement {
+ *   @behavior() click(e: Event) { ... }
+ *   //Equivalent to: turbo(this).addToolBehavior(DefaultEventName.click, (e: Event) => { ... });
+ * }
+ * ```
+ */
+function behavior(properties = {}) {
+    return function (value, context) {
+        //TODO FIX
+        TurboEventManager.instance;
+        let type = properties.type;
+        if (!type) {
+            const kebab = camelToKebabCase(String(context.name));
+            type = Object.values(DefaultEventName).includes("turbo-" + kebab) ? "turbo-" + kebab : kebab;
+        }
+        context.addInitializer(function () {
+            utils$7.addListener(Object.getPrototypeOf(this), { ...properties, type, methodName: context.name, kind: "behavior" });
+        });
+        return value;
+    };
+}
+/**
+ * @decorator
+ * @group Decorators
+ * @category Listeners
+ * @function attachListenersAndBehaviors
+ * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
+ * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
+ * automatically in the TurboElement lifecycle.
+ * @param {any} context - The object/instance/prototype to attach the listeners and behaviors defined for it.
+ */
+function attachListenersAndBehaviors(context) {
+    if (!context || typeof context !== "object")
+        return;
+    const listeners = utils$7.getAllListeners(context);
+    if (!listeners || listeners.size === 0)
+        return;
+    const defaultTarget = context.target instanceof Node
+        ? context.target : context instanceof Node
+        ? context : context.element instanceof Node
+        ? context.element : undefined;
+    const defaultTool = typeof context.toolName === "string" ? context.toolName : undefined;
+    const defaultOptions = typeof context.options === "object" ? context.options : undefined;
+    const defaultManager = context.manager instanceof TurboEventManager ? context.manager : undefined;
+    for (const [, listener] of listeners) {
+        const method = context[listener.methodName];
+        if (typeof method !== "function")
+            continue;
+        const target = listener.target ?? defaultTarget;
+        const tool = listener.toolName ?? defaultTool;
+        const manager = listener.manager ?? defaultManager;
+        if (listener.kind === "behavior") {
+            if (!tool)
+                continue;
+            turbo(context).addToolBehavior(listener.type, (e, el) => method.call(context, e, el), tool, manager);
+        }
+        else if (listener.kind === "listener") {
+            if (!(target instanceof Node))
+                continue;
+            turbo(target).onTool(listener.type, tool, (e, el) => method.call(context, e, el), listener.options ?? defaultOptions, manager);
+        }
+    }
+}
+
 /**
  * @class TurboController
  * @group MVC
@@ -4973,13 +5894,28 @@ class TurboController {
             this.view = properties.view;
         this.setup();
     }
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     setup() { }
     /**
      * @function initialize
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
      */
     initialize() {
+        this.setupUIListeners();
         this.setupChangedCallbacks();
+    }
+    /**
+     * @function setupUIListeners
+     * @description Setup method for defining DOM and input event listeners.
+     * @protected
+     */
+    setupUIListeners() {
+        attachListenersAndBehaviors(this);
     }
     /**
      * @function setupChangedCallbacks
@@ -5036,6 +5972,29 @@ class TurboWheelEvent extends TurboEvent {
         super({ ...properties, position: null });
         this.delta = properties.delta;
     }
+}
+
+/**
+ * @group Utilities
+ * @category Numbers
+ */
+function trim(value, max, min = 0) {
+    if (value < min)
+        value = min;
+    if (value > max)
+        value = max;
+    return value;
+}
+/**
+ * @group Utilities
+ * @category Numbers
+ */
+function mod(value, modValue = 0) {
+    while (value < 0)
+        value += modValue;
+    while (value >= modValue)
+        value -= modValue;
+    return value;
 }
 
 /**
@@ -5204,6 +6163,13 @@ class Point {
      */
     arr() {
         return [this.x, this.y];
+    }
+    linearInterpolation(start, end) {
+        const shiftedEnd = end.sub(start);
+        const shiftedLength2 = shiftedEnd.length2;
+        if (shiftedLength2 < 1e-9)
+            return 0;
+        return trim((this.sub(start).dot(shiftedEnd)) / shiftedLength2, 1);
     }
 }
 
@@ -5560,7 +6526,7 @@ class TurboEventManagerDispatchController extends TurboController {
         for (let i = path.length - 1; i >= 0; i--) {
             if (!(path[i] instanceof Node))
                 continue;
-            const propagate = $(path[i]).executeAction(type, toolName, e, { capture: true }, this.element);
+            const propagate = turbo(path[i]).executeAction(type, toolName, e, { capture: true }, this.element);
             if (propagate !== exports.Propagation.propagate) {
                 e.stopPropagation();
                 break;
@@ -5569,7 +6535,7 @@ class TurboEventManagerDispatchController extends TurboController {
         for (let i = 0; i < path.length; i++) {
             if (!(path[i] instanceof Node))
                 continue;
-            const propagate = $(path[i]).executeAction(type, toolName, e, undefined, this.element);
+            const propagate = turbo(path[i]).executeAction(type, toolName, e, undefined, this.element);
             if (propagate !== exports.Propagation.propagate) {
                 e.stopPropagation();
                 break;
@@ -5618,6 +6584,12 @@ class TurboHandler {
             this.model = model;
         this.setup();
     }
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     setup() {
         initializeEffects(this);
     }
@@ -5806,6 +6778,27 @@ function defineDefaultProperties(constructor) {
                 this.mvc.initialize();
             initializeEffects(this);
         },
+        configurable: true,
+        enumerable: false,
+    });
+    Object.defineProperty(prototype, "clone", {
+        value: function (properties) { return turbo(this).clone(properties); },
+        configurable: true,
+        enumerable: false,
+    });
+    const ffKey = Symbol("__defaultFeedforwardProperties__");
+    Object.defineProperty(prototype, "defaultFeedforwardProperties", {
+        get() {
+            if (!this[ffKey])
+                this[ffKey] = {};
+            return this[ffKey];
+        },
+        set(value) { this[ffKey] = value; },
+        configurable: true,
+        enumerable: true
+    });
+    Object.defineProperty(prototype, "feedforward", {
+        value: function (properties) { return turbo(this).feedforward(properties); },
         configurable: true,
         enumerable: false,
     });
@@ -6348,6 +7341,107 @@ let TurboEventManager = (() => {
     };
 })();
 
+class Listener {
+    type;
+    target;
+    toolName;
+    callback;
+    bundledListener;
+    options;
+    manager;
+    lastExecutionFrame;
+    lastExecutionTime;
+    constructor(properties) {
+        if (properties.target instanceof TurboSelector)
+            properties.target = properties.target.element;
+        this.type = properties.type;
+        this.target = properties.target;
+        this.toolName = properties.toolName;
+        this.callback = properties.callback;
+        this.bundledListener = (e) => this.callback(e, this.target);
+        this.options = properties.options ?? {};
+        this.manager = properties.manager ?? TurboEventManager.instance;
+    }
+    execute(e) {
+        return this.bundledListener(e);
+    }
+    executeOn(e, target, ...args) {
+        return this.callback(e, target, ...args);
+    }
+    match(properties = {}) {
+        for (let [key, value] of Object.entries(properties)) {
+            if (key === "target" && value instanceof TurboSelector)
+                value = value.element;
+            if (value === undefined || key === "optionsToSkip")
+                continue;
+            if (typeof value === "object") {
+                if (typeof this[key] !== "object")
+                    return false;
+                for (const [subKey, subValue] of Object.entries(value)) {
+                    if (key === "options" && properties.optionsToSkip?.includes(subKey))
+                        continue;
+                    if (subValue === undefined)
+                        continue;
+                    if (this[key][subKey] !== subValue)
+                        return false;
+                }
+                continue;
+            }
+            if (this[key] !== value)
+                return false;
+        }
+        return true;
+    }
+}
+
+class ListenerSet {
+    listeners = new Map();
+    get listenersArray() {
+        const listeners = [];
+        for (const set of this.listeners.values()) {
+            for (const entry of set.values()) {
+                listeners.push(entry);
+            }
+        }
+        return listeners;
+    }
+    addListener(value) {
+        if (typeof value === "object" && !(value instanceof Listener))
+            value = new Listener(value);
+        if (!value.type)
+            return;
+        if (!this.listeners.has(value.type))
+            this.listeners.set(value.type, new Set());
+        this.listeners.get(value.type).add(value);
+    }
+    removeListener(value) {
+        if (!value)
+            return;
+        if (value instanceof Listener)
+            this.listeners.get(value.type)?.delete(value);
+        else {
+            const listener = this.listenersArray.find(listener => listener.callback === value);
+            if (!listener)
+                return;
+            this.listeners.get(listener.type)?.delete(listener);
+        }
+    }
+    removeMatchingListeners(matchingProperties = {}) {
+        this.getListeners(matchingProperties).forEach((listener) => {
+            // listener.target?.removeEventListener(listener.type, listener.bundledListener, listener.options);
+            this.removeListener(listener);
+        });
+    }
+    getListeners(matchingProperties = {}) {
+        return this.listenersArray.filter(listener => listener.match(matchingProperties));
+    }
+    getListenersByType(type) {
+        if (!type || !this.listeners.has(type))
+            return new Set();
+        return this.listeners.get(type);
+    }
+}
+
 class EventFunctionsUtils {
     dataMap = new WeakMap;
     data(element) {
@@ -6355,7 +7449,7 @@ class EventFunctionsUtils {
             element = element.element;
         if (!element || !this.dataMap.has(element)) {
             const entry = {
-                boundListeners: new Set(),
+                boundListeners: new ListenerSet(),
                 preventDefaultListeners: {},
             };
             if (element)
@@ -6366,10 +7460,20 @@ class EventFunctionsUtils {
     getBoundListenersSet(element) {
         let set = this.data(element).boundListeners;
         if (!set) {
-            set = new Set();
+            set = new ListenerSet();
             this.data(element).boundListeners = set;
         }
         return set;
+    }
+    getBoundListeners(properties) {
+        if (!properties.target)
+            return [];
+        if (!properties.manager)
+            properties.manager = TurboEventManager.instance;
+        return this.getBoundListenersSet(properties.target).getListeners({
+            ...properties,
+            optionsToSkip: ["checkSubstrates", "solveSubstrates"]
+        });
     }
     getPreventDefaultListeners(element) {
         let map = this.data(element).preventDefaultListeners;
@@ -6399,25 +7503,7 @@ class EventFunctionsUtils {
                 preventDefaultTouch: bypassResults.preventDefaultTouch ?? false,
             });
     }
-    getBoundListeners(element, type, toolName, options, manager = TurboEventManager.instance) {
-        if (element instanceof TurboSelector)
-            element = element.element;
-        if (!element)
-            return [];
-        if (!options)
-            options = {};
-        return [...this.getBoundListenersSet(element)]
-            .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)
-            .filter(entry => {
-            for (const [option, value] of Object.entries(options)) {
-                if (option === "checkSubstrates" || option === "solveSubstrates")
-                    continue;
-                if (entry.options?.[option] !== value)
-                    return false;
-            }
-            return true;
-        });
-    }
+    //TODO FIX IDK
     processPropagation(currentPropagation, storedPropagation = exports.Propagation.propagate, defaultPropagation = exports.Propagation.stopPropagation) {
         const orderedValues = [
             exports.Propagation.propagate,
@@ -6428,52 +7514,6 @@ class EventFunctionsUtils {
             currentPropagation = defaultPropagation;
         return orderedValues.indexOf(currentPropagation) <= orderedValues.indexOf(storedPropagation)
             ? storedPropagation : currentPropagation;
-    }
-}
-
-class Listener {
-    type;
-    target;
-    toolName;
-    callback;
-    bundledListener;
-    options;
-    manager;
-    lastExecutionFrame;
-    lastExecutionTime;
-    constructor(properties) {
-        this.type = properties.type;
-        this.target = properties.target;
-        this.toolName = properties.toolName;
-        this.callback = properties.callback;
-        this.bundledListener = (e) => this.callback(e, this.target);
-        this.options = properties.options ?? {};
-        this.manager = properties.manager ?? TurboEventManager.instance;
-    }
-    execute(e) {
-        return this.bundledListener(e);
-    }
-    executeOn(e, target) {
-        return this.callback(e, target);
-    }
-    match(properties = {}) {
-        for (const [key, value] of Object.entries(properties)) {
-            if (value === undefined)
-                continue;
-            if (typeof value === "object") {
-                if (typeof this[key] !== "object")
-                    return false;
-                for (const [subKey, subValue] of Object.entries(value)) {
-                    if (subValue === undefined)
-                        continue;
-                    if (this[key][subKey] !== subValue)
-                        return false;
-                }
-            }
-            if (this[key] !== value)
-                return false;
-        }
-        return true;
     }
 }
 
@@ -6520,14 +7560,14 @@ function setupEventFunctions() {
         if (this.hasToolListener(type, toolName, listener, manager))
             return this;
         manager.setupCustomDispatcher?.(type);
-        utils$6.getBoundListenersSet(this).add(new Listener({
+        utils$6.getBoundListenersSet(this).addListener({
             target: this,
             type,
             toolName,
             callback: listener,
             options,
             manager
-        }));
+        });
         return this;
     };
     /**
@@ -6565,27 +7605,32 @@ function setupEventFunctions() {
         if (this.bypassManagerOn)
             utils$6.bypassManager(this, manager, this.bypassManagerOn(event));
         const checkSubstrates = (target, tool) => {
-            if (checkedSubstratesFor.has(target))
+            if (!target)
                 return;
-            checkedSubstratesFor.add(target);
-            if (tool)
-                checkedObjectsToolMap.set(target, tool);
-            if (!options.checkSubstrates)
+            if (propagation === exports.Propagation.stopImmediatePropagation)
                 return;
-            if (!this.checkSubstratesForEvent({
-                event,
-                toolName: tool,
-                eventType: type,
-                eventTarget: target,
-                eventOptions: options,
-                manager: manager
-            }))
-                propagation = exports.Propagation.stopImmediatePropagation;
+            if (!checkedSubstratesFor.has(target)) {
+                checkedSubstratesFor.add(target);
+                if (tool)
+                    checkedObjectsToolMap.set(target, tool);
+                if (options.checkSubstrates) {
+                    const check = this.checkSubstratesForEvent({
+                        event, manager,
+                        toolName: tool,
+                        eventType: type,
+                        eventTarget: target,
+                        eventOptions: options,
+                    });
+                    if (!check)
+                        propagation = exports.Propagation.stopImmediatePropagation;
+                }
+            }
+            checkSubstrates(target.parentNode, tool);
         };
         const runListeners = (target, tool) => {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils$6.getBoundListenersSet(target);
-            const entries = [...utils$6.getBoundListeners(target, type, tool, options, manager)];
+            const entries = utils$6.getBoundListeners({ target, type, toolName: tool, options, manager });
             if (entries.length === 0)
                 return;
             checkSubstrates(target, tool);
@@ -6600,7 +7645,7 @@ function setupEventFunctions() {
                 finally {
                     firedListeners.add(entry);
                     if (entry.options?.once)
-                        boundSet.delete(entry);
+                        boundSet.removeListener(entry);
                 }
                 if (propagation === exports.Propagation.stopImmediatePropagation)
                     return;
@@ -6611,7 +7656,7 @@ function setupEventFunctions() {
                 return;
             if (turbo(target).isToolIgnored(tool, type, manager))
                 return;
-            if (!this.hasToolBehavior(type, toolName, manager))
+            if (!this.hasToolBehavior(type, tool, manager))
                 return;
             checkSubstrates(target, tool);
             if (propagation === exports.Propagation.stopImmediatePropagation)
@@ -6682,8 +7727,7 @@ function setupEventFunctions() {
      * @returns {boolean} - Whether the element has the given listener.
      */
     TurboSelector.prototype.hasToolListener = function _hasToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
-        return utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.callback === listener).length > 0;
+        return utils$6.getBoundListeners({ target: this, callback: listener, type, toolName, manager }).length > 0;
     };
     /**
      * @description Checks if the element has bound listeners of the given type (in its boundListeners list).
@@ -6695,7 +7739,7 @@ function setupEventFunctions() {
      * @returns {boolean} - Whether the element has the given listener.
      */
     TurboSelector.prototype.hasListenersByType = function _hasListenersByType(type, toolName, manager = TurboEventManager.instance) {
-        return utils$6.getBoundListeners(this, type, toolName, undefined, manager).length > 0;
+        return utils$6.getBoundListeners({ target: this, type, toolName, manager }).length > 0;
     };
     /**
      * @description Removes an event listener that is bound to the element (in its boundListeners list).
@@ -6719,13 +7763,7 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeToolListener = function _removeToolListener(type, toolName, listener, manager = TurboEventManager.instance) {
-        const boundListeners = utils$6.getBoundListenersSet(this);
-        utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.callback === listener)
-            .forEach(entry => {
-            entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-            boundListeners.delete(entry);
-        });
+        utils$6.getBoundListenersSet(this).removeMatchingListeners({ target: this, type, toolName, callback: listener, manager });
         return this;
     };
     /**
@@ -6739,12 +7777,7 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeListenersByType = function _removeListenersByType(type, toolName, manager = TurboEventManager.instance) {
-        const boundListeners = utils$6.getBoundListenersSet(this);
-        utils$6.getBoundListeners(this, type, toolName, undefined, manager)
-            .forEach(entry => {
-            entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-            boundListeners.delete(entry);
-        });
+        utils$6.getBoundListenersSet(this).removeMatchingListeners({ target: this, type, toolName, manager });
         return this;
     };
     /**
@@ -6754,12 +7787,7 @@ function setupEventFunctions() {
      * @returns {this} Itself, allowing for method chaining.
      */
     TurboSelector.prototype.removeAllListeners = function _removeListeners(manager = TurboEventManager.instance) {
-        const set = this.boundListeners;
-        [...set].filter(entry => entry.manager === manager)
-            .forEach(entry => {
-            entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-            set.delete(entry);
-        });
+        utils$6.getBoundListenersSet(this).removeMatchingListeners({ manager });
         return this;
     };
     /**
@@ -6961,7 +7989,7 @@ class ToolFunctionsUtils {
     getToolsData(manager, toolName) {
         const byTool = this.getOrCreate(this.tools, manager, () => new Map());
         return this.getOrCreate(byTool, toolName, () => ({
-            behaviors: new Map()
+            behaviors: new ListenerSet()
         }));
     }
     getActivationDelegate(element, toolName, manager) {
@@ -7009,17 +8037,13 @@ class ToolFunctionsUtils {
         return this.getElementData(element, manager).embeddedTarget;
     }
     addToolBehavior(toolName, type, callback, manager) {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        const set = this.getOrCreate(behaviors, type, () => new Set());
-        set.add(callback);
+        this.getToolsData(manager, toolName).behaviors?.addListener({ callback, type, toolName, manager });
     }
     getToolBehaviors(toolName, type, manager) {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        return [...this.getOrCreate(behaviors, type, () => new Set())];
+        return this.getToolsData(manager, toolName).behaviors?.getListeners({ toolName, manager, type });
     }
     removeToolBehaviors(toolName, type, manager) {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        this.getOrCreate(behaviors, type, () => new Set()).clear();
+        this.getToolsData(manager, toolName).behaviors?.removeMatchingListeners({ toolName, manager, type });
     }
     clearToolBehaviors(manager) {
         this.getOrCreate(this.tools, manager, () => new Map()).clear();
@@ -7060,9 +8084,8 @@ class ToolFunctionsUtils {
         ];
         if (!orderedValues.includes(currentPropagation))
             currentPropagation = defaultPropagation;
-        const currentIndex = orderedValues.indexOf(currentPropagation);
-        const storedIndex = orderedValues.indexOf(storedPropagation);
-        return currentIndex <= storedIndex ? currentPropagation : storedPropagation;
+        return orderedValues.indexOf(currentPropagation) <= orderedValues.indexOf(storedPropagation)
+            ? storedPropagation : currentPropagation;
     }
 }
 
@@ -7178,11 +8201,11 @@ function setupToolFunctions() {
         const options = {};
         options.embeddedTarget = utils$4.getEmbeddedToolTarget(this.element, manager);
         options.isEmbedded = !!options.embeddedTarget;
-        behaviors.forEach(behavior => {
-            propagation = utils$4.processPropagation(behavior(event, this.element, options), propagation);
+        for (const behavior of behaviors) {
+            propagation = utils$4.processPropagation(behavior.executeOn(event, this.element, options), propagation, exports.Propagation.propagate);
             if (propagation === exports.Propagation.stopImmediatePropagation)
-                return;
-        });
+                break;
+        }
         return propagation;
     };
     TurboSelector.prototype.ignoreTool = function _ignoreTool(toolName, type, ignore = true, manager = TurboEventManager.instance) {
@@ -7278,6 +8301,325 @@ class TurboQueue {
     }
 }
 
+/**
+ * @class TurboSubstrate
+ * @group MVC
+ * @category Substrate
+ *
+ * @extends TurboController
+ * @template {object} ElementType - The type of the element.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {TurboModel} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ * @description Class representing a substrate in MVC, bound to the provided element.
+ */
+class TurboSubstrate extends TurboController {
+    /**
+     * @description The name of the substrate.
+     */
+    substrateName;
+    /**
+     * @description The property keys of the substrate solvers defined in the instance.
+     */
+    solversMetadata = [];
+    /**
+     * @description The property keys of the substrate checkers defined in the instance.
+     */
+    checkersMetadata = [];
+    /**
+     * @description The property keys of the substrate mutators defined in the instance.
+     */
+    mutatorsMetadata = [];
+    /**
+     * @description The priority of the substrate. Higher priority substrates (lower number) should
+     * be resolved first. Defaults to 10.
+     */
+    priority;
+    /**
+     * @description The default queue template for the substrate, used when starting a new resolving pass.
+     * It defaults to the substrate's object list.
+     */
+    defaultQueue;
+    /**
+     * @description The maximum number of passes allowed per object for this substrate during resolving.
+     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+     */
+    maxPasses;
+    /**
+     * @description Whether the substrate is active. Defaults to true.
+     */
+    get active() {
+        return turbo(this).activeSubstrates.includes(this.substrateName);
+    }
+    set active(value) {
+        turbo(this).toggleSubstrate(this.substrateName, value);
+    }
+    /**
+     * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
+     * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
+     */
+    get objectList() {
+        return turbo(this).getSubstrateObjectList(this.substrateName);
+    }
+    set objectList(value) {
+        turbo(this).setSubstrateObjectList(value, this.substrateName);
+    }
+    /**
+     * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
+     */
+    get onObjectListChange() {
+        return turbo(this).onSubstrateObjectListChange(this.substrateName);
+    }
+    /**
+     * @description The current queue to be processed by the substrate while resolving.
+     */
+    get queue() {
+        return turbo(this).getSubstrateQueue(this.substrateName);
+    }
+    constructor(properties) {
+        super(properties);
+        this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
+        if (properties.onActivate)
+            this.onActivate = properties.onActivate;
+        if (properties.onDeactivate)
+            this.onDeactivate = properties.onDeactivate;
+        if (properties.active !== undefined)
+            this.active = properties.active;
+        if (typeof properties.priority === "number")
+            this.priority = properties.priority;
+        this.setup();
+    }
+    /**
+     * @function initialize
+     * @override
+     * @description Initialization function that calls {@link makeSubstrate} on `this.element`, sets it up, and attaches
+     * all the defined solvers.
+     */
+    initialize() {
+        super.initialize();
+        if (!this.substrateName)
+            return;
+        turbo(this).makeSubstrate(this.substrateName, {
+            onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
+            onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
+            attachedInstance: this
+        });
+        this.solversMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addSolver({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+        this.checkersMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addChecker({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+        this.mutatorsMetadata.forEach(metadata => {
+            if (!metadata.name)
+                return;
+            turbo(this).addMutator({
+                name: metadata.name,
+                substrate: this.substrateName,
+                priority: metadata.priority,
+                callback: props => this[metadata.name]?.(props)
+            });
+        });
+    }
+    /**
+     * @function addObject
+     * @description Adds the provided object to the substrate's list.
+     * @param {object} object - The object to add.
+     */
+    addObject(object) {
+        turbo(this).addObjectToSubstrate(object, this.substrateName);
+        return this;
+    }
+    /**
+     * @function removeObject
+     * @description Removes the provided object from the substrate's list.
+     * @param {object} object - The object to remove.
+     */
+    removeObject(object) {
+        turbo(this).removeObjectFromSubstrate(object, this.substrateName);
+        return this;
+    }
+    /**
+     * @function hasObject
+     * @description Whether the provided object is included in the substrate's list.
+     * @param {object} object - The object to check.
+     * @return {boolean} - Whether the object is present.
+     */
+    hasObject(object) {
+        return turbo(this).hasObjectInSubstrate(object, this.substrateName);
+    }
+    /**
+     * @function getObjectPasses
+     * @description Retrieve how many times the given object has been processed for the current resolving session
+     * of the substrate.
+     * @param {object} object - The object to query.
+     * @return {number} - Number of passes already performed on this object.
+     */
+    getObjectPasses(object) {
+        return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+    }
+    /**
+     * @function getObjectData
+     * @description Retrieve custom per-object data for this substrate. It is reset on every new
+     * resolving session.
+     * @param {object} object - The object to query.
+     * @return {Record<string, any>} - The stored data object (or an empty object if none).
+     */
+    getObjectData(object) {
+        return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+    }
+    /**
+     * @function setObjectData
+     * @description Set custom per-object data for this substrate. It is reset on every new resolving session.
+     * @param {object} object - The object to update.
+     * @param {Record<string, any>} [data] - The new data object to associate with this object.
+     * @return {this} - Itself for chaining.
+     */
+    setObjectData(object, data) {
+        return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
+    }
+    /**
+     * @function addChecker
+     * @description Register a checker in the substrate. Checkers dictate whether the event should continue
+     * executing depending on the provided context (event, tool, target, etc.).
+     * @param {SubstrateAddCallbackProperties<SubstrateChecker>} properties - Configuration object, including the
+     * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
+     * `substrate`, and the `priority` of the checker.
+     * @return {this} - Itself for chaining.
+     */
+    addChecker(properties) {
+        turbo(this).addChecker({ ...properties, substrate: this.substrateName });
+        return this;
+    }
+    /**
+     * @function removeChecker
+     * @description Remove a checker from this substrate by its name.
+     * @param {string} name - The checker name.
+     * @return {this} - Itself for chaining.
+     */
+    removeChecker(name) {
+        turbo(this).removeChecker(name, this.substrateName);
+        return this;
+    }
+    /**
+     * @function clearCheckers
+     * @description Remove all checkers attached to this substrate.
+     * @return {this} - Itself for chaining.
+     */
+    clearCheckers() {
+        turbo(this).clearCheckers(this.substrateName);
+        return this;
+    }
+    /**
+     * @function check
+     * @description Evaluate all checkers for this substrate and return whether the event should proceed or halt.
+     * @param {SubstrateCallbackProperties} [properties] - Context passed to each checker.
+     * @return {boolean} - Whether the substrate passes all checks.
+     */
+    check(properties) {
+        return turbo(this).checkSubstrate({ ...properties, substrate: this.substrateName });
+    }
+    //MUTATOR
+    /**
+     * @function addMutator
+     * @description Register a mutator in the substrate. Mutators compute or transform a value based on the context.
+     * @param {SubstrateAddCallbackProperties<SubstrateMutator>} properties - Configuration object, including the
+     * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
+     * @return {this} - Itself for chaining.
+     */
+    addMutator(properties) {
+        turbo(this).addMutator({ ...properties, substrate: this.substrateName });
+        return this;
+    }
+    /**
+     * @function removeMutator
+     * @description Remove a mutator from this substrate by its name.
+     * @param {string} name - The mutator name.
+     * @return {this} - Itself for chaining.
+     */
+    removeMutator(name) {
+        turbo(this).removeMutator(name, this.substrateName);
+        return this;
+    }
+    /**
+     * @function clearMutators
+     * @description Remove all mutators attached to this substrate.
+     * @return {this} - Itself for chaining.
+     */
+    clearMutators() {
+        turbo(this).clearMutators(this.substrateName);
+        return this;
+    }
+    /**
+     * @function mutate
+     * @template Type - The type of the value to mutate
+     * @description Execute a mutator for this substrate and return the resulting value.
+     * @param {SubstrateMutatorProperties<Type>} [properties] - Context object, including the
+     * `mutation` to execute, and the input `value` to mutate.
+     * @return {Type} - The mutated result.
+     */
+    mutate(properties) {
+        return turbo(this).mutate({ ...properties, substrate: this.substrateName });
+    }
+    /**
+     * @function addSolver
+     * @description Register a solver in the substrate. Solvers typically execute after an event is fired to
+     * ensure the substrate's constraints are maintained. They process all objects in the substrate's queue,
+     * one after the other.
+     * @param {SubstrateAddCallbackProperties<SubstrateSolver>} properties - Configuration object, including the
+     * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
+     * @return {this} - Itself for chaining.
+     */
+    addSolver(properties) {
+        turbo(this).addSolver({ ...properties, substrate: this.substrateName });
+        return this;
+    }
+    /**
+     * @function removeSolver
+     * @description Remove the given function from the substrate's list of solvers.
+     * @param {string} name - The solver's name.
+     * @return {this} - Itself for chaining.
+     */
+    removeSolver(name) {
+        turbo(this).removeSolver(name, this.substrateName);
+        return this;
+    }
+    /**
+     * @function clearSolvers
+     * @description Remove all solvers attached to the substrate.
+     * @return {this} - Itself for chaining.
+     */
+    clearSolvers() {
+        turbo(this).clearSolvers(this.substrateName);
+        return this;
+    }
+    /**
+     * @function solveSubstrate
+     * @description Solve the substrate by executing all of its attached solvers. Each solver will be executed
+     * on every object in the substrate's queue, incrementing its number of passes in the process.
+     * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context.
+     * @return {this} - Itself for chaining.
+     */
+    solve(properties = {}) {
+        turbo(this).solveSubstrate({ ...properties, substrate: this.substrateName });
+        return this;
+    }
+}
+
 class SubstrateFunctionsUtils {
     objectsSet = new TurboWeakSet();
     dataMap = new WeakMap;
@@ -7291,6 +8633,8 @@ class SubstrateFunctionsUtils {
         return this.dataMap.get(element);
     }
     createSubstrate(element, substrate) {
+        if (element instanceof TurboSelector)
+            element = element.element;
         const data = {
             active: false,
             objects: element instanceof Element ? element.children
@@ -7300,6 +8644,7 @@ class SubstrateFunctionsUtils {
             customData: new WeakMap(),
             priority: 10,
             maxPasses: 5,
+            objectsChangedDelegate: new Delegate(),
             queue: new TurboQueue(),
             passes: new WeakMap(),
             onActivate: new Delegate(),
@@ -7309,8 +8654,10 @@ class SubstrateFunctionsUtils {
             solvers: new Map(),
             sortedSolvers: []
         };
-        this.objectsSet.add(element);
-        this.data(element).substrates.set(substrate, data);
+        if (element) {
+            this.objectsSet.add(element);
+            this.data(element).substrates.set(substrate, data);
+        }
         return data;
     }
     activate(element, substrate, activate) {
@@ -7406,17 +8753,34 @@ class SubstrateFunctionsUtils {
             if (hits.length > 0)
                 data.push({ name, data: substrateData, host: object, targets: hits });
         }));
-        data.sort((a, b) => a.data.priority - b.data.priority);
+        data.sort((a, b) => this.getField(a.host, a.name, "priority") - this.getField(b.host, b.name, "priority"));
         return data;
     }
+    getField(element, substrate, field) {
+        const data = this.getSubstrateData(element, substrate);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
+            && data.attachedInstance[field] !== undefined)
+            return data.attachedInstance[field];
+        return data[field];
+    }
+    setField(element, substrate, field, value) {
+        const data = this.getSubstrateData(element, substrate);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate)
+            data.attachedInstance[field] = value;
+        else
+            data[field] = value;
+    }
     setupSubstrateCallbackProperties(element, properties) {
+        if (element instanceof TurboSelector)
+            element = element.element;
         turbo(properties).applyDefaults({
+            substrateHost: element,
             substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: properties.event?.toolName,
-            eventType: properties.event.type,
-            eventTarget: properties.event.target
+            eventType: properties.event?.type,
+            eventTarget: properties.event?.target
         });
     }
     solveSubstrateInternal(data, properties) {
@@ -7468,6 +8832,52 @@ function binaryInsert(array, item, compare) {
     return low;
 }
 
+/**
+ * @group Utilities
+ * @category Random
+ */
+function randomId(length = 8) {
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    return Array.from(array)
+        .map(b => b.toString(36).padStart(2, "0"))
+        .join("")
+        .slice(0, length);
+}
+/**
+ * @group Utilities
+ * @category Random
+ */
+function randomFromRange(n1, n2) {
+    if (typeof n1 != "number" || typeof n2 != "number")
+        return 0;
+    const min = Math.min(n1, n2);
+    const max = Math.max(n1, n2);
+    return (Math.random() * (max - min)) + min;
+}
+/**
+ * @group Utilities
+ * @category Random
+ */
+function randomColor(saturation = [50, 70], lightness = [70, 85]) {
+    if (typeof saturation != "number" && saturation.length >= 2)
+        saturation = randomFromRange(saturation[0], saturation[1]);
+    if (typeof lightness != "number" && lightness.length >= 2)
+        lightness = randomFromRange(lightness[0], lightness[1]);
+    return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
+}
+/**
+ * @group Utilities
+ * @category Random
+ */
+function randomString(length = 12) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++)
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    return result;
+}
+
 const utils$3 = new SubstrateFunctionsUtils();
 function setupSubstrateFunctions() {
     TurboSelector.prototype.makeSubstrate = function _makeSubstrate(substrate, options) {
@@ -7479,7 +8889,9 @@ function setupSubstrateFunctions() {
             this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
         if (options?.priority)
             utils$3.getSubstrateData(this, substrate).priority = options.priority;
-        if (options?.active)
+        if (options?.attachedInstance)
+            utils$3.getSubstrateData(this, substrate).attachedInstance = options.attachedInstance;
+        if (options?.active || options?.active === undefined)
             utils$3.activate(this, substrate, true);
         return this;
     };
@@ -7498,9 +8910,38 @@ function setupSubstrateFunctions() {
         configurable: false,
         enumerable: true
     });
-    TurboSelector.prototype.activateSubstrate = function _activateSubstrates(substrate = utils$3.getDefaultSubstrate(this), activate) {
+    TurboSelector.prototype.activateSubstrate = function _activateSubstrates(...substrates) {
+        const targets = substrates.length ? substrates : [utils$3.getDefaultSubstrate(this)];
+        targets.forEach(substrate => {
+            if (substrate)
+                utils$3.activate(this, substrate, true);
+        });
+        return this;
+    };
+    TurboSelector.prototype.deactivateSubstrate = function _deactivateSubstrates(...substrates) {
+        const targets = substrates.length ? substrates : [utils$3.getDefaultSubstrate(this)];
+        targets.forEach(substrate => {
+            if (substrate)
+                utils$3.activate(this, substrate, false);
+        });
+        return this;
+    };
+    TurboSelector.prototype.toggleSubstrate = function _toggleSubstrates(substrate = utils$3.getDefaultSubstrate(this), force) {
         if (substrate)
-            utils$3.activate(this, substrate, activate);
+            utils$3.activate(this, substrate, force);
+        return this;
+    };
+    TurboSelector.prototype.activateOnlySubstrate = function _activateOnlySubstrates(substrate = utils$3.getDefaultSubstrate(this)) {
+        if (substrate)
+            utils$3.getSubstrates(this).forEach(subs => utils$3.activate(this, substrate, substrate === subs));
+        return this;
+    };
+    TurboSelector.prototype.activateAllSubstrates = function _activateAllSubstrates() {
+        utils$3.getSubstrates(this).forEach(substrate => utils$3.activate(this, substrate, true));
+        return this;
+    };
+    TurboSelector.prototype.deactivateAllSubstrates = function _deactivateAllSubstrates() {
+        utils$3.getSubstrates(this).forEach(substrate => utils$3.activate(this, substrate, false));
         return this;
     };
     TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = utils$3.getDefaultSubstrate(this)) {
@@ -7511,11 +8952,11 @@ function setupSubstrateFunctions() {
     };
     //PRIORITY
     TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = utils$3.getDefaultSubstrate(this)) {
-        return utils$3.getSubstrateData(this, substrate)?.priority ?? 0;
+        return utils$3.getField(this, substrate, "priority") ?? 0;
     };
     TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = utils$3.getDefaultSubstrate(this)) {
         if (typeof priority === "number")
-            utils$3.getSubstrateData(this, substrate).priority = priority;
+            utils$3.setField(this, substrate, "priority", priority);
         return this;
     };
     //OBJECT LIST
@@ -7535,7 +8976,7 @@ function setupSubstrateFunctions() {
         utils$3.getSubstrateData(this, substrate).objects = list;
         return this;
     };
-    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
+    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, addToQueue = true, substrate = utils$3.getDefaultSubstrate(this)) {
         if (!object || !substrate)
             return this;
         utils$3.getMetadata(this, substrate, object).ignored = false;
@@ -7543,8 +8984,11 @@ function setupSubstrateFunctions() {
         if (list instanceof HTMLCollection || list instanceof NodeList)
             return this;
         try {
-            if (!list.has(object))
-                list.add(object);
+            if (list.has(object))
+                return this;
+            list.add(object);
+            this.onSubstrateObjectListChange(substrate).fire(object, "added");
+            this.getSubstrateQueue(substrate)?.push(object);
         }
         catch {
         }
@@ -7557,6 +9001,7 @@ function setupSubstrateFunctions() {
         const list = utils$3.getSubstrateData(this, substrate).objects;
         if (list instanceof Set)
             list.delete(object);
+        this.onSubstrateObjectListChange(substrate).fire(object, "removed");
         return this;
     };
     TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
@@ -7564,30 +9009,15 @@ function setupSubstrateFunctions() {
             return false;
         return this.getSubstrateObjectList(substrate).has(object);
     };
+    TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(substrate) {
+        return utils$3.getSubstrateData(this, substrate).objectsChangedDelegate;
+    };
     //QUEUE
     TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
         return utils$3.getSubstrateData(this, substrate).queue;
     };
-    // TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(
-    //     this: TurboSelector,
-    //     object: object,
-    //     substrate: string = utils.getDefaultSubstrate(this)
-    // ): TurboSelector {
-    //     const queue = utils.getSubstrateData(this, substrate).queue;
-    //     if (queue && queue instanceof TurboQueue && !queue.has(object)) queue.push(object);
-    //     return this;
-    // }
-    //
-    // TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(
-    //     this: TurboSelector,
-    //     substrate: string = utils.getDefaultSubstrate(this)
-    // ): TurboSelector {
-    //     const queue = utils.getSubstrateData(this, substrate).queue;
-    //     if (queue && queue instanceof TurboQueue) queue.clear();
-    //     return this;
-    // }
     TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
-        const queue = utils$3.getSubstrateData(this, substrate).defaultQueue;
+        const queue = utils$3.getField(this, substrate, "defaultQueue");
         if (queue)
             return queue.clone();
         return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
@@ -7598,7 +9028,7 @@ function setupSubstrateFunctions() {
         if (Array.isArray(queue))
             queue = new TurboQueue().push(...queue);
         if (queue instanceof TurboQueue)
-            utils$3.getSubstrateData(this, substrate).defaultQueue = queue.clone();
+            utils$3.setField(this, substrate, "defaultQueue", queue.clone());
         return this;
     };
     //PASSES
@@ -7608,13 +9038,13 @@ function setupSubstrateFunctions() {
         const map = utils$3.getSubstrateData(this, substrate).passes;
         if (!map || !(map instanceof WeakMap))
             return 0;
-        return map.get(object);
+        return map.get(object) ?? 0;
     };
     TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = utils$3.getDefaultSubstrate(this)) {
-        return utils$3.getSubstrateData(this, substrate).maxPasses;
+        return utils$3.getField(this, substrate, "maxPasses");
     };
     TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = utils$3.getDefaultSubstrate(this)) {
-        utils$3.getSubstrateData(this, substrate).maxPasses = passes;
+        utils$3.setField(this, substrate, "maxPasses", passes);
         return this;
     };
     //CUSTOM DATA
@@ -7702,8 +9132,10 @@ function setupSubstrateFunctions() {
     };
     //SOLVERS
     TurboSelector.prototype.addSolver = function _addSolver(properties) {
-        if (!properties || !properties.name || !properties.callback)
+        if (!properties || !properties.callback)
             return this;
+        if (!properties.name)
+            properties.name = randomString(8);
         const substrate = properties.substrate ?? utils$3.getDefaultSubstrate(this);
         const data = utils$3.getSubstrateData(this, substrate);
         if (!data)
@@ -7847,29 +9279,6 @@ function callOncePerInstance(value, context) {
         this[flag] = true;
         return value.apply(this, args);
     };
-}
-
-/**
- * @group Utilities
- * @category Numbers
- */
-function trim(value, max, min = 0) {
-    if (value < min)
-        value = min;
-    if (value > max)
-        value = max;
-    return value;
-}
-/**
- * @group Utilities
- * @category Numbers
- */
-function mod(value, modValue = 0) {
-    while (value < 0)
-        value += modValue;
-    while (value >= modValue)
-        value -= modValue;
-    return value;
 }
 
 /**
@@ -9117,6 +10526,18 @@ exports.Range = void 0;
     Range["min"] = "min";
     Range["max"] = "max";
 })(exports.Range || (exports.Range = {}));
+exports.Anchor = void 0;
+(function (Anchor) {
+    Anchor["TopLeft"] = "topLeft";
+    Anchor["TopRight"] = "topRight";
+    Anchor["TopMiddle"] = "topMiddle";
+    Anchor["BottomLeft"] = "bottomLeft";
+    Anchor["BottomMiddle"] = "bottomMiddle";
+    Anchor["BottomRight"] = "bottomRight";
+    Anchor["Center"] = "center";
+    Anchor["CenterLeft"] = "centerLeft";
+    Anchor["CenterRight"] = "centerRight";
+})(exports.Anchor || (exports.Anchor = {}));
 
 const utils$2 = new ReifectFunctionsUtils();
 const showTransition = new StatefulReifect({
@@ -9720,6 +11141,25 @@ function define(elementName, options = { injectAttributeBridge: true }) {
         const prototype = Base.prototype;
         if (name)
             utils$1.prototype(prototype).name = name;
+        Object.defineProperty(Base, "tagName", {
+            configurable: true,
+            enumerable: false,
+            writable: false,
+            value: name
+        });
+        if (typeof Base["create"] === "function" && !utils$1.prototype(Base.prototype).wrappedCreate) {
+            utils$1.prototype(Base.prototype).wrappedCreate = true;
+            const originalCreate = Base["create"];
+            Object.defineProperty(Base, "create", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: function (properties = {}) {
+                    turbo(properties).applyDefaults({ tag: name, ...(this.defaultProperties ?? {}) });
+                    return originalCreate.call(this, properties);
+                }
+            });
+        }
         Object.defineProperty(Base, "observedAttributes", {
             configurable: true,
             enumerable: false,
@@ -10015,6 +11455,12 @@ function solver(properties) {
         if (!properties.name)
             properties.name = context?.name;
         context.addInitializer(function () {
+            if (!this["solversMetadata"])
+                return;
+            for (let i = this["solversMetadata"].length - 1; i >= 0; i--) {
+                if (this["solversMetadata"][i]?.name === properties.name)
+                    this["solversMetadata"].splice(i, 1);
+            }
             this["solversMetadata"]?.push(properties);
         });
         return value;
@@ -10048,6 +11494,12 @@ function checker(properties) {
         if (!properties.name)
             properties.name = context?.name;
         context.addInitializer(function () {
+            if (!this["checkersMetadata"])
+                return;
+            for (let i = this["checkersMetadata"].length - 1; i >= 0; i--) {
+                if (this["checkersMetadata"][i]?.name === properties.name)
+                    this["checkersMetadata"].splice(i, 1);
+            }
             this["checkersMetadata"]?.push(properties);
         });
         return value;
@@ -10081,6 +11533,12 @@ function mutator(properties) {
         if (!properties.name)
             properties.name = context?.name;
         context.addInitializer(function () {
+            if (!this["mutatorsMetadata"])
+                return;
+            for (let i = this["mutatorsMetadata"].length - 1; i >= 0; i--) {
+                if (this["mutatorsMetadata"][i]?.name === properties.name)
+                    this["mutatorsMetadata"].splice(i, 1);
+            }
             this["mutatorsMetadata"]?.push(properties);
         });
         return value;
@@ -10194,6 +11652,12 @@ class TurboView {
             this.emitter = properties.emitter;
         this.setup();
     }
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     setup() { }
     /**
      * @function initialize
@@ -10233,6 +11697,7 @@ class TurboView {
      * @protected
      */
     setupUIListeners() {
+        attachListenersAndBehaviors(this);
     }
 }
 
@@ -10282,259 +11747,6 @@ class TurboInteractor extends TurboController {
             : host?.element instanceof Node ? host.element
                 : undefined;
         this.setup();
-    }
-    /**
-     * @function initialize
-     * @description Initialization function that sets up all the defined evnt listeners and attaches them to the target.
-     */
-    initialize() {
-        super.initialize();
-        const target = this.target ?? this;
-        for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
-            const handler = this[methodName];
-            if (typeof handler !== "function")
-                continue;
-            const options = this.options?.[methodName];
-            if (this.toolName)
-                $(target).onTool(eventName, this.toolName, e => handler.call(this, e), options, this.manager);
-            else
-                $(target).on(eventName, e => handler.call(this, e), options, this.manager);
-        }
-    }
-}
-
-/**
- * @class TurboSubstrate
- * @group MVC
- * @category Substrate
- *
- * @extends TurboController
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- * @description Class representing a substrate in MVC, bound to the provided element.
- */
-class TurboSubstrate extends TurboController {
-    /**
-     * @description The name of the substrate.
-     */
-    substrateName;
-    /**
-     * @description The property keys of the substrate solvers defined in the instance.
-     */
-    solversMetadata = [];
-    /**
-     * @description The property keys of the substrate checkers defined in the instance.
-     */
-    checkersMetadata = [];
-    /**
-     * @description The property keys of the substrate mutators defined in the instance.
-     */
-    mutatorsMetadata = [];
-    get priority() {
-        return turbo(this).getSubstratePriority(this.substrateName);
-    }
-    set priority(value) {
-        turbo(this).setSubstratePriority(value, this.substrateName);
-    }
-    get active() {
-        return turbo(this).activeSubstrates.includes(this.substrateName);
-    }
-    set active(value) {
-        turbo(this).activateSubstrate(this.substrateName, value);
-    }
-    /**
-     * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
-     * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
-     */
-    get objectList() {
-        return turbo(this).getSubstrateObjectList(this.substrateName);
-    }
-    set objectList(value) {
-        turbo(this).setSubstrateObjectList(value, this.substrateName);
-    }
-    get queue() {
-        return turbo(this).getSubstrateQueue(this.substrateName);
-    }
-    get defaultQueue() {
-        return turbo(this).getDefaultSubstrateQueue(this.substrateName);
-    }
-    set defaultQueue(value) {
-        turbo(this).setDefaultSubstrateQueue(value, this.substrateName);
-    }
-    get maxPasses() {
-        return turbo(this).getMaxPassesForSubstrate(this.substrateName);
-    }
-    set maxPasses(value) {
-        turbo(this).setMaxPassesForSubstrate(value, this.substrateName);
-    }
-    constructor(properties) {
-        super(properties);
-        this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
-        if (properties.onActivate)
-            this.onActivate = properties.onActivate;
-        if (properties.onDeactivate)
-            this.onDeactivate = properties.onDeactivate;
-        this.setup();
-    }
-    /**
-     * @function initialize
-     * @override
-     * @description Initialization function that calls {@link makeSubstrate} on `this.element`, sets it up, and attaches
-     * all the defined solvers.
-     */
-    initialize() {
-        super.initialize();
-        if (!this.substrateName)
-            return;
-        turbo(this).makeSubstrate(this.substrateName, {
-            onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
-            onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
-        });
-        this.solversMetadata.forEach(metadata => {
-            if (!metadata.name)
-                return;
-            turbo(this).addSolver({
-                name: metadata.name,
-                substrate: this.substrateName,
-                priority: metadata.priority,
-                callback: props => this[metadata.name]?.(props)
-            });
-        });
-        this.checkersMetadata.forEach(metadata => {
-            if (!metadata.name)
-                return;
-            turbo(this).addChecker({
-                name: metadata.name,
-                substrate: this.substrateName,
-                priority: metadata.priority,
-                callback: props => this[metadata.name]?.(props)
-            });
-        });
-        this.mutatorsMetadata.forEach(metadata => {
-            if (!metadata.name)
-                return;
-            turbo(this).addMutator({
-                name: metadata.name,
-                substrate: this.substrateName,
-                priority: metadata.priority,
-                callback: props => this[metadata.name]?.(props)
-            });
-        });
-    }
-    /**
-     * @function addObject
-     * @description Adds the provided object to the substrate's list.
-     * @param {object} object - The object to add.
-     */
-    addObject(object) {
-        turbo(this).addObjectToSubstrate(object, this.substrateName);
-        return this;
-    }
-    /**
-     * @function removeObject
-     * @description Removes the provided object from the substrate's list.
-     * @param {object} object - The object to remove.
-     */
-    removeObject(object) {
-        turbo(this).removeObjectFromSubstrate(object, this.substrateName);
-        return this;
-    }
-    /**
-     * @function hasObject
-     * @description Whether the provided object is included in the substrate's list.
-     * @param {object} object - The object to check.
-     * @return {boolean} - Whether the object is present.
-     */
-    hasObject(object) {
-        return turbo(this).hasObjectInSubstrate(object, this.substrateName);
-    }
-    // public addToQueue(object: object): this {
-    //     turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
-    //     return this;
-    // }
-    //
-    // public clearQueue(): this {
-    //     turbo(this).clearSubstrateQueue(this.substrateName);
-    //     return this;
-    // }
-    getObjectPasses(object) {
-        return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
-    }
-    getObjectData(object) {
-        return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
-    }
-    setObjectData(object, data) {
-        return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
-    }
-    addChecker(properties) {
-        turbo(this).addChecker({ ...properties, substrate: this.substrateName });
-        return this;
-    }
-    removeChecker(name) {
-        turbo(this).removeChecker(name, this.substrateName);
-        return this;
-    }
-    clearCheckers() {
-        turbo(this).clearCheckers(this.substrateName);
-        return this;
-    }
-    check(properties) {
-        return turbo(this).checkSubstrate({ ...properties, substrate: this.substrateName });
-    }
-    //MUTATOR
-    addMutator(properties) {
-        turbo(this).addMutator({ ...properties, substrate: this.substrateName });
-        return this;
-    }
-    removeMutator(name) {
-        turbo(this).removeMutator(name, this.substrateName);
-        return this;
-    }
-    clearMutators() {
-        turbo(this).clearMutators(this.substrateName);
-        return this;
-    }
-    mutate(properties) {
-        return turbo(this).mutate({ ...properties, substrate: this.substrateName });
-    }
-    /**
-     * @function addSolver
-     * @description Add the given function as a solver in the substrate.
-     * @param properties
-     */
-    addSolver(properties) {
-        turbo(this).addSolver({ ...properties, substrate: this.substrateName });
-        return this;
-    }
-    /**
-     * @function removeSolver
-     * @description Remove the given function from the substrate's list of solvers.
-     * @param name
-     * @return {this} - Itself for chaining.
-     */
-    removeSolver(name) {
-        turbo(this).removeSolver(name, this.substrateName);
-        return this;
-    }
-    /**
-     * @function clearSolvers
-     * @description Remove all solvers attached to the substrate.
-     * @return {this} - Itself for chaining.
-     */
-    clearSolvers() {
-        turbo(this).clearSolvers(this.substrateName);
-        return this;
-    }
-    /**
-     * @function resolve
-     * @description Resolve the substrate by calling all the solvers on each of the objects in the substrate's list.
-     * @param {SubstrateCallbackProperties} [properties={}] - Optional properties to provide context to the resolving loop.
-     */
-    solve(properties = {}) {
-        turbo(this).solveSubstrate({ ...properties, substrate: this.substrateName });
-        return this;
     }
 }
 
@@ -10607,26 +11819,19 @@ class TurboTool extends TurboController {
      * all the defined tool behaviors.
      */
     initialize() {
-        super.initialize();
-        if (!this.toolName)
-            return;
-        $(this).makeTool(this.toolName, {
-            onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
-            onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
-            activationEvent: this.activationEvent,
-            clickMode: this.clickMode,
-            customActivation: typeof this.customActivation === "function" ? this.customActivation.bind(this) : undefined,
-            key: this.key,
-            manager: this.manager,
-        });
+        if (this.toolName)
+            turbo(this).makeTool(this.toolName, {
+                onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
+                onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
+                activationEvent: this.activationEvent,
+                clickMode: this.clickMode,
+                customActivation: typeof this.customActivation === "function" ? this.customActivation.bind(this) : undefined,
+                key: this.key,
+                manager: this.manager,
+            });
         if (this.embeddedTarget)
-            $(this).embedTool(this.embeddedTarget, this.manager);
-        for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
-            const handler = this[methodName];
-            if (typeof handler !== "function")
-                continue;
-            $(this).addToolBehavior(eventName, (e, target) => handler.call(this, e, target), this.toolName, this.manager);
-        }
+            turbo(this).embedTool(this.embeddedTarget, this.manager);
+        super.initialize();
     }
 }
 
@@ -10697,6 +11902,11 @@ class TurboElement extends HTMLElement {
         shadowDOM: false,
         defaultSelectedClass: "selected"
     };
+    static defaultProperties = {};
+    static create(properties = {}) {
+        turbo(properties).applyDefaults(this.defaultProperties ?? {});
+        return element({ ...properties });
+    }
     /**
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
      * @protected
@@ -10784,51 +11994,6 @@ class TurboElement extends HTMLElement {
     defineMvcAccessors(TurboElement);
     defineUIPrototype(TurboElement);
 })();
-
-/**
- * @group Utilities
- * @category Equity
- */
-function areEqual(...entries) {
-    if (entries.length < 2)
-        return true;
-    for (let i = 0; i < entries.length - 1; i++) {
-        if (entries[i] != entries[i + 1])
-            return false;
-    }
-    return true;
-}
-/**
- * @group Utilities
- * @category Equity
- */
-function equalToAny(entry, ...values) {
-    if (values.length < 1)
-        return true;
-    for (const value of values) {
-        if (entry == value)
-            return true;
-    }
-    return false;
-}
-/**
- * @group Utilities
- * @category Equity
- */
-function eachEqualToAny(values, ...entries) {
-    if (entries.length < 1)
-        return true;
-    for (const entry of entries) {
-        let equals = false;
-        for (const value of values) {
-            if (entry == value)
-                equals = true;
-        }
-        if (!equals)
-            return false;
-    }
-    return true;
-}
 
 /**
  * @group Utilities
@@ -11307,6 +12472,14 @@ let TurboRichElement = (() => {
             $(this).remChild(this.rightCustomElements);
             this.addAtPosition(value, "rightCustomElements");
         }
+        static create(properties) {
+            if (properties.text && !properties.element)
+                properties.element = properties.text;
+            if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+                properties.element.tag = properties.elementTag;
+            }
+            return super.create.call(this, properties);
+        }
         constructor() {
             super(...arguments);
             tslib.__runInitializers(this, _elementTag_extraInitializers);
@@ -11505,61 +12678,15 @@ function iconToggle(properties) {
     return icon({ ...properties });
 }
 
-/**
- * @group Utilities
- * @category Random
- */
-function randomId(length = 8) {
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    return Array.from(array)
-        .map(b => b.toString(36).padStart(2, "0"))
-        .join("")
-        .slice(0, length);
-}
-/**
- * @group Utilities
- * @category Random
- */
-function randomFromRange(n1, n2) {
-    if (typeof n1 != "number" || typeof n2 != "number")
-        return 0;
-    const min = Math.min(n1, n2);
-    const max = Math.max(n1, n2);
-    return (Math.random() * (max - min)) + min;
-}
-/**
- * @group Utilities
- * @category Random
- */
-function randomColor(saturation = [50, 70], lightness = [70, 85]) {
-    if (typeof saturation != "number" && saturation.length >= 2)
-        saturation = randomFromRange(saturation[0], saturation[1]);
-    if (typeof lightness != "number" && lightness.length >= 2)
-        lightness = randomFromRange(lightness[0], lightness[1]);
-    return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
-}
-/**
- * @group Utilities
- * @category Random
- */
-function randomString(length = 12) {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < length; i++)
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    return result;
-}
-
 class TurboInputInputInteractor extends TurboInteractor {
     keyName = "__input__interactor__";
     _composing = false;
     _resizeQueued = false;
-    options = {
-        compositionStart: { capture: true },
-        compositionEnd: { capture: true },
-        input: { capture: true },
-    };
+    // public options = {
+    //     compositionStart: {capture: true},
+    //     compositionEnd: {capture: true},
+    //     input: {capture: true},
+    // }
     get inputElement() {
         return this.element.element;
     }
@@ -13395,24 +14522,406 @@ let TurboYBlock = (() => {
         shiftIndices(fromIndex, offset) {
             this.changeObservers?.toArray().forEach(observer => {
                 const itemsToShift = [];
-                for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
+                for (const [oldIndexStr, instance] of observer.getEntriesForBlock()) {
                     const oldIndex = Number(oldIndexStr);
                     if (oldIndex >= fromIndex)
                         itemsToShift.push([oldIndex, instance]);
                 }
                 itemsToShift.sort((a, b) => a[0] - b[0]);
                 for (const [oldIndex] of itemsToShift)
-                    observer.removeInstanceByKey(oldIndex, false);
+                    observer.removeKey(oldIndex, undefined, false);
                 for (const [oldIndex, instance] of itemsToShift) {
                     const newIndex = oldIndex + offset;
                     if (typeof instance === "object" && "dataId" in instance)
                         instance.dataId = newIndex;
-                    observer.setInstance(instance, (oldIndex + offset));
+                    observer.set(instance, (oldIndex + offset));
                 }
             });
         }
     };
 })();
+
+let AnchorPoint = (() => {
+    let _instanceExtraInitializers = [];
+    let _set_value_decorators;
+    return class AnchorPoint {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+            _set_value_decorators = [auto({
+                    preprocessValue: function (value) {
+                        if (typeof value === "object" && value instanceof Point)
+                            return value;
+                        if (Object.values(exports.Anchor).includes(value))
+                            return AnchorPoint.enumToPoint(value);
+                        return this._value;
+                    }
+                })];
+            tslib.__esDecorate(this, null, _set_value_decorators, { kind: "setter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        constructor(anchor) {
+            tslib.__runInitializers(this, _instanceExtraInitializers);
+            this.value = anchor;
+        }
+        set value(value) { }
+        get value() { return; }
+        get enum() {
+            return AnchorPoint.pointToEnum(this.value);
+        }
+        static pointToEnum(value) {
+            if (!value)
+                return exports.Anchor.Center;
+            const snapAxis = (n) => n < -50 ? -100 : n > 50 ? 100 : 0;
+            const x = snapAxis(value.x);
+            const y = snapAxis(value.y);
+            if (y === -100) {
+                if (x === -100)
+                    return exports.Anchor.TopLeft;
+                if (x === 0)
+                    return exports.Anchor.TopMiddle;
+                return exports.Anchor.TopRight;
+            }
+            if (y === 0) {
+                if (x === -100)
+                    return exports.Anchor.CenterLeft;
+                if (x === 0)
+                    return exports.Anchor.Center;
+                return exports.Anchor.CenterRight;
+            }
+            if (x === -100)
+                return exports.Anchor.BottomLeft;
+            if (x === 0)
+                return exports.Anchor.BottomMiddle;
+            return exports.Anchor.BottomRight;
+        }
+        static enumToPoint(value) {
+            if (!value)
+                return new Point();
+            switch (value) {
+                case exports.Anchor.TopLeft:
+                    return new Point(-100, -100);
+                case exports.Anchor.TopMiddle:
+                    return new Point(0, -100);
+                case exports.Anchor.TopRight:
+                    return new Point(100, -100);
+                case exports.Anchor.CenterLeft:
+                    return new Point(-100, 0);
+                case exports.Anchor.Center:
+                    return new Point(0, 0);
+                case exports.Anchor.CenterRight:
+                    return new Point(100, 0);
+                case exports.Anchor.BottomLeft:
+                    return new Point(-100, 100);
+                case exports.Anchor.BottomMiddle:
+                    return new Point(0, 100);
+                case exports.Anchor.BottomRight:
+                    return new Point(100, 100);
+            }
+        }
+    };
+})();
+
+function closestPointOnSegment(p, a, b) {
+    const ab = b.sub(a);
+    const ap = p.sub(a);
+    const abLen2 = ab.x * ab.x + ab.y * ab.y;
+    if (abLen2 <= 1e-12)
+        return a;
+    let t = (ap.x * ab.x + ap.y * ab.y) / abLen2;
+    t = Math.max(0, Math.min(1, t));
+    return new Point(a.x + ab.x * t, a.y + ab.y * t);
+}
+function intersectSegments(a, b, c, d) {
+    const r = b.sub(a);
+    const s = d.sub(c);
+    const rxs = r.x * s.y - r.y * s.x;
+    if (Math.abs(rxs) < 1e-12)
+        return null; // parallel (ignore collinear)
+    const q_p = c.sub(a);
+    const t = (q_p.x * s.y - q_p.y * s.x) / rxs;
+    const u = (q_p.x * r.y - q_p.y * r.x) / rxs;
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
+        return new Point(a.x + t * r.x, a.y + t * r.y);
+    return null;
+}
+
+function isPointInConvexPolygon(p, poly) {
+    let sign = 0;
+    for (let i = 0; i < poly.length; i++) {
+        const a = poly[i];
+        const b = poly[(i + 1) % poly.length];
+        const ab = b.sub(a);
+        const ap = p.sub(a);
+        const z = ab.x * ap.y - ab.y * ap.x;
+        if (Math.abs(z) < 1e-12)
+            continue;
+        const s = z > 0 ? 1 : -1;
+        if (sign === 0)
+            sign = s;
+        else if (sign !== s)
+            return false;
+    }
+    return true;
+}
+function segmentIntersectsPolygon(a, b, poly) {
+    for (let i = 0; i < poly.length; i++) {
+        const c = poly[i];
+        const d = poly[(i + 1) % poly.length];
+        const hit = intersectSegments(a, b, c, d);
+        if (hit)
+            return hit;
+    }
+    if (isPointInConvexPolygon(a, poly))
+        return a;
+    if (isPointInConvexPolygon(b, poly))
+        return b;
+    return null;
+}
+function projectPolygonOntoAxis(points, axis) {
+    const len = Math.hypot(axis.x, axis.y) || 1;
+    const ux = axis.x / len, uy = axis.y / len;
+    let min = Infinity, max = -Infinity;
+    for (const p of points) {
+        const v = p.x * ux + p.y * uy;
+        if (v < min)
+            min = v;
+        if (v > max)
+            max = v;
+    }
+    return [min, max];
+}
+function hasSeparatingAxisForPolygons(polyA, polyB) {
+    for (let i = 0; i < polyA.length; i++) {
+        const p1 = polyA[i];
+        const p2 = polyA[(i + 1) % polyA.length];
+        const edge = p2.sub(p1);
+        const axis = new Point(-edge.y, edge.x);
+        const [aMin, aMax] = projectPolygonOntoAxis(polyA, axis);
+        const [bMin, bMax] = projectPolygonOntoAxis(polyB, axis);
+        if (aMax < bMin || bMax < aMin)
+            return true;
+    }
+    return false;
+}
+function polygonsIntersect(a, b) {
+    return !hasSeparatingAxisForPolygons(a, b) && !hasSeparatingAxisForPolygons(b, a);
+}
+
+function aabbCorners(r) {
+    const x0 = r.x, y0 = r.y;
+    const x1 = r.x + r.width, y1 = r.y + r.height;
+    return [new Point(x0, y0), new Point(x1, y0), new Point(x1, y1), new Point(x0, y1)];
+}
+function closestPointOnAabb(p, r) {
+    const x0 = r.x, y0 = r.y;
+    const x1 = r.x + r.width, y1 = r.y + r.height;
+    const x = Math.max(x0, Math.min(x1, p.x));
+    const y = Math.max(y0, Math.min(y1, p.y));
+    return new Point(x, y);
+}
+
+/**
+ * @group Utilities
+ * @category CSS
+ * @description Constructs a single CSS string from a template literal containing CSS rules.
+ */
+function css(strings, ...values) {
+    let str = "";
+    strings.forEach((string, i) => {
+        str += string + (values[i] || '');
+    });
+    return str;
+}
+
+class TurboRect extends DOMRect {
+    angleRad = 0;
+    anchor;
+    constructor(properties = {}) {
+        super(properties.x ?? 0, properties.y ?? 0, properties.width ?? 0, properties.height ?? 0);
+        if (properties.angleRad !== undefined)
+            this.angleRad = properties.angleRad;
+        else if (properties.angleDeg !== undefined)
+            this.angleDeg = properties.angleDeg;
+        this.anchor = properties.anchor instanceof AnchorPoint ? properties.anchor : new AnchorPoint(properties.anchor);
+    }
+    static fromSegment(a, b, thickness = 1, properties = {}) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length = Math.hypot(dx, dy);
+        const angleRad = Math.atan2(dy, dx);
+        const mid = new Point((a.x + b.x) / 2, (a.y + b.y) / 2);
+        const x = mid.x - length / 2;
+        const y = mid.y - thickness / 2;
+        return new TurboRect({ x, y, width: length, height: thickness, ...properties, angleRad });
+    }
+    static fromDOMRect(rect, properties = {}) {
+        return new TurboRect({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, ...properties });
+    }
+    render() {
+        return element({ tag: "div", style: css `position: absolute; 
+                width: ${this.width}px; height: ${this.height}px; 
+                top: ${this.y}px; left: ${this.x}px; background-color: red; pointer-events: none; opacity: 0.4;
+                transform: rotate(${this.angleRad}rad)` });
+    }
+    get angleDeg() {
+        return (this.angleRad * 180) / Math.PI;
+    }
+    set angleDeg(value) {
+        this.angleRad = (value * Math.PI) / 180;
+    }
+    get center() {
+        return new Point(this.x + this.width / 2, this.y + this.height / 2);
+    }
+    get xAxis() {
+        return new Point(Math.cos(this.angleRad), Math.sin(this.angleRad));
+    }
+    get yAxis() {
+        return new Point(-Math.sin(this.angleRad), Math.cos(this.angleRad));
+    }
+    get half() {
+        return new Point(this.width / 2, this.height / 2);
+    }
+    /** Corners in world/screen coords (clockwise) */
+    get points() {
+        const c = this.center;
+        const ux = this.xAxis;
+        const uy = this.yAxis;
+        const half = this.half;
+        const ex = new Point(ux.x * half.x, ux.y * half.x);
+        const ey = new Point(uy.x * half.y, uy.y * half.y);
+        return [c.sub(ex).sub(ey), c.add(ex).sub(ey), c.add(ex).add(ey), c.sub(ex).add(ey)];
+    }
+    closestPoint(...args) {
+        // (1) Point -> Closest point ON THIS rect to that point
+        if (args.length === 1 && args[0] instanceof Point) {
+            const point = args[0];
+            const c = this.center;
+            const ux = this.xAxis;
+            const uy = this.yAxis;
+            const d = point.sub(c);
+            const lx = d.x * ux.x + d.y * ux.y;
+            const ly = d.x * uy.x + d.y * uy.y;
+            const cx = trim(lx, this.width / 2, -this.width / 2);
+            const cy = trim(ly, this.height / 2, -this.height / 2);
+            return c.add(new Point(ux.x * cx, ux.y * cx)).add(new Point(uy.x * cy, uy.y * cy));
+        }
+        // (2) Segment AB -> Closest point ON THIS rect to segment AB
+        if (args.length === 2 && args[0] instanceof Point && args[1] instanceof Point) {
+            const a = args[0];
+            const b = args[1];
+            const thisPoly = this.points;
+            // If segment intersects this rect, distance is 0.
+            const hit = segmentIntersectsPolygon(a, b, thisPoly);
+            if (hit)
+                return hit;
+            // Candidates on THIS rect:
+            // - closest points to endpoints
+            // - corners of this rect
+            let best = this.closestPoint(a);
+            let bestDist = Point.dist(best, a);
+            const pb = this.closestPoint(b);
+            const db = Point.dist(pb, b);
+            if (db < bestDist) {
+                bestDist = db;
+                best = pb;
+            }
+            for (const corner of thisPoly) {
+                const q = closestPointOnSegment(corner, a, b);
+                const d = Point.dist(corner, q);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = corner;
+                }
+            }
+            return best;
+        }
+        // (3) Rect (AABB DOMRect or TurboRect)
+        if (args.length === 1 && (args[0] instanceof DOMRect || args[0] instanceof TurboRect)) {
+            const other = args[0];
+            const thisPoly = this.points;
+            const otherPoly = other instanceof TurboRect ? other.points : aabbCorners(other);
+            // If intersects, any point with distance 0 is fine
+            if (polygonsIntersect(thisPoly, otherPoly)) {
+                const oc = other instanceof TurboRect ? other.center
+                    : new Point(other.x + other.width / 2, other.y + other.height / 2);
+                return this.closestPoint(oc);
+            }
+            // Otherwise pick the point ON THIS rect that minimizes distance to the other shape
+            let best = thisPoly[0];
+            let bestDist = Infinity;
+            // distance from a point p to the other rect
+            const distToOther = (p) => {
+                const q = other instanceof TurboRect ? other.closestPoint(p) : closestPointOnAabb(p, other);
+                return Point.dist(p, q);
+            };
+            // 1) corners of THIS rect
+            for (const p of thisPoly) {
+                const d = distToOther(p);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = p;
+                }
+            }
+            // 2) closest points on THIS rect to corners of OTHER rect
+            for (const p of otherPoly) {
+                const q = this.closestPoint(p); // ON THIS rect
+                const d = distToOther(q);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = q;
+                }
+            }
+            return best;
+        }
+        return;
+    }
+    distanceTo(...args) {
+        // Point
+        if (args.length === 1 && args[0] instanceof Point) {
+            const p = args[0];
+            const q = this.closestPoint(p);
+            return Point.dist(p, q);
+        }
+        // Segment AB
+        if (args.length === 2 && args[0] instanceof Point && args[1] instanceof Point) {
+            const a = args[0];
+            const b = args[1];
+            const pr = this.closestPoint(a, b);
+            const ps = closestPointOnSegment(pr, a, b);
+            return Point.dist(pr, ps);
+        }
+        // Rect
+        if (args.length === 1 && (args[0] instanceof DOMRect || args[0] instanceof TurboRect)) {
+            const other = args[0];
+            const pr = this.closestPoint(other);
+            const po = other instanceof TurboRect ? other.closestPoint(pr) : closestPointOnAabb(pr, other);
+            return Point.dist(pr, po);
+        }
+        return NaN;
+    }
+    overlaps(...args) {
+        // (1) Point
+        if (args.length === 1 && args[0] instanceof Point) {
+            const p = args[0];
+            const q = this.closestPoint(p);
+            return Point.dist(p, q) <= 1e-6;
+        }
+        // (2) Segment AB
+        if (args.length === 2 && args[0] instanceof Point && args[1] instanceof Point) {
+            const a = args[0];
+            const b = args[1];
+            return segmentIntersectsPolygon(a, b, this.points) !== null;
+        }
+        // (3) Rect (DOMRect or TurboRect)
+        if (args.length === 1 && (args[0] instanceof TurboRect || args[0] instanceof DOMRect)) {
+            const other = args[0];
+            const polyA = this.points;
+            const polyB = other instanceof TurboRect ? other.points : aabbCorners(other);
+            return polygonsIntersect(polyA, polyB);
+        }
+        return false;
+    }
+}
 
 var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
 styleInject(css_248z);
@@ -14292,19 +15801,6 @@ function bestOverlayColor(baseColor, overlayColor1 = "#000000", overlayColor2 = 
 }
 
 /**
- * @group Utilities
- * @category CSS
- * @description Constructs a single CSS string from a template literal containing CSS rules.
- */
-function css(strings, ...values) {
-    let str = "";
-    strings.forEach((string, i) => {
-        str += string + (values[i] || '');
-    });
-    return str;
-}
-
-/**
  * @internal
  * @description Default font weights, sub-names, and styles when loading a font family.
  */
@@ -14398,9 +15894,9 @@ Object.defineProperty(exports, "YText", {
     get: function () { return yjs.Text; }
 });
 exports.$ = $;
+exports.AnchorPoint = AnchorPoint;
 exports.ApplyDefaultsMergeProperties = ApplyDefaultsMergeProperties;
 exports.BasicInputEvents = BasicInputEvents;
-exports.DataBlockObserver = DataBlockObserver;
 exports.DefaultClickEventName = DefaultClickEventName;
 exports.DefaultDragEventName = DefaultDragEventName;
 exports.DefaultEventName = DefaultEventName;
@@ -14409,6 +15905,7 @@ exports.DefaultMoveEventName = DefaultMoveEventName;
 exports.DefaultWheelEventName = DefaultWheelEventName;
 exports.Delegate = Delegate;
 exports.Listener = Listener;
+exports.ListenerSet = ListenerSet;
 exports.MathMLNamespace = MathMLNamespace;
 exports.MathMLTags = MathMLTags;
 exports.Mvc = Mvc;
@@ -14445,11 +15942,13 @@ exports.TurboMap = TurboMap;
 exports.TurboMarkingMenu = TurboMarkingMenu;
 exports.TurboModel = TurboModel;
 exports.TurboMoveEventName = TurboMoveEventName;
+exports.TurboNestedMap = TurboNestedMap;
 exports.TurboNumericalInput = TurboNumericalInput;
 exports.TurboObserver = TurboObserver;
 exports.TurboPopup = TurboPopup;
 exports.TurboProxiedElement = TurboProxiedElement;
 exports.TurboQueue = TurboQueue;
+exports.TurboRect = TurboRect;
 exports.TurboRichElement = TurboRichElement;
 exports.TurboSelect = TurboSelect;
 exports.TurboSelectElement = TurboSelectElement;
@@ -14464,11 +15963,14 @@ exports.TurboWheelEvent = TurboWheelEvent;
 exports.TurboWheelEventName = TurboWheelEventName;
 exports.TurboYBlock = TurboYBlock;
 exports.a = a;
+exports.aabbCorners = aabbCorners;
 exports.addInYArray = addInYArray;
 exports.addInYMap = addInYMap;
 exports.alphabeticalSorting = alphabeticalSorting;
 exports.areEqual = areEqual;
+exports.attachListenersAndBehaviors = attachListenersAndBehaviors;
 exports.auto = auto;
+exports.behavior = behavior;
 exports.bestOverlayColor = bestOverlayColor;
 exports.blindElement = blindElement;
 exports.blockDataSignal = blockDataSignal;
@@ -14483,6 +15985,8 @@ exports.canvas = canvas;
 exports.checker = checker;
 exports.clearCache = clearCache;
 exports.clearCacheEntry = clearCacheEntry;
+exports.closestPointOnAabb = closestPointOnAabb;
+exports.closestPointOnSegment = closestPointOnSegment;
 exports.contrast = contrast;
 exports.controller = controller;
 exports.createProxy = createProxy;
@@ -14513,6 +16017,7 @@ exports.getEventPosition = getEventPosition;
 exports.getFileExtension = getFileExtension;
 exports.getFirstDescriptorInChain = getFirstDescriptorInChain;
 exports.getFirstPrototypeInChainWith = getFirstPrototypeInChainWith;
+exports.getPrototypeChain = getPrototypeChain;
 exports.getSignal = getSignal;
 exports.getSuperDescriptor = getSuperDescriptor;
 exports.getSuperMethod = getSuperMethod;
@@ -14524,6 +16029,7 @@ exports.h5 = h5;
 exports.h6 = h6;
 exports.handler = handler;
 exports.hasPropertyInChain = hasPropertyInChain;
+exports.hasSeparatingAxisForPolygons = hasSeparatingAxisForPolygons;
 exports.hashBySize = hashBySize;
 exports.hashString = hashString;
 exports.icon = icon;
@@ -14533,12 +16039,15 @@ exports.img = img;
 exports.initializeEffects = initializeEffects;
 exports.input = input;
 exports.interactor = interactor;
+exports.intersectSegments = intersectSegments;
 exports.isNull = isNull;
+exports.isPointInConvexPolygon = isPointInConvexPolygon;
 exports.isUndefined = isUndefined;
 exports.jsonToYjs = jsonToYjs;
 exports.kebabToCamelCase = kebabToCamelCase;
 exports.linearInterpolation = linearInterpolation;
 exports.link = link;
+exports.listener = listener;
 exports.loadLocalFont = loadLocalFont;
 exports.luminance = luminance;
 exports.markDirty = markDirty;
@@ -14549,7 +16058,9 @@ exports.numericalInput = numericalInput;
 exports.observe = observe;
 exports.p = p;
 exports.parse = parse;
+exports.polygonsIntersect = polygonsIntersect;
 exports.popup = popup;
+exports.projectPolygonOntoAxis = projectPolygonOntoAxis;
 exports.randomColor = randomColor;
 exports.randomFromRange = randomFromRange;
 exports.randomId = randomId;
@@ -14557,6 +16068,7 @@ exports.randomString = randomString;
 exports.reifect = reifect;
 exports.removeFromYArray = removeFromYArray;
 exports.richElement = richElement;
+exports.segmentIntersectsPolygon = segmentIntersectsPolygon;
 exports.selectElement = selectElement;
 exports.selectWheel = selectWheel;
 exports.setSignal = setSignal;

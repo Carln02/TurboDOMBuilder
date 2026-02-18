@@ -3,6 +3,7 @@ import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 import {TurboControllerProperties} from "./logic.types";
 import {initializeEffects} from "../../decorators/reactivity/reactivity";
+import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
 
 /**
  * @class TurboController
@@ -59,6 +60,12 @@ class TurboController<
         this.setup();
     }
 
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void {}
 
     /**
@@ -66,7 +73,17 @@ class TurboController<
      * @description Initializes the controller. Specifically, it will set up the change callbacks.
      */
     public initialize(): void {
+        this.setupUIListeners();
         this.setupChangedCallbacks();
+    }
+
+    /**
+     * @function setupUIListeners
+     * @description Setup method for defining DOM and input event listeners.
+     * @protected
+     */
+    protected setupUIListeners(): void {
+        attachListenersAndBehaviors(this);
     }
 
     /**

@@ -1,35 +1,84 @@
 import {Delegate} from "../../datatypes/delegate/delegate";
-import {alphabeticalSorting, isUndefined} from "../../../utils/dataManipulation/misc";
-import {ScopedKey, TurboObserverProperties} from "./observer.types";
+import {TurboObserverProperties} from "./observer.types";
 import {TurboModel} from "../../../mvc/core/model";
+import {TurboNestedMap} from "../../datatypes/nestedMap/nestedMap";
 
+/**
+ * @class TurboObserver
+ * @group Components
+ * @category TurboObserver
+ *
+ * @extends TurboNestedMap
+ * @description Generic observer that keeps a set of component instances organized by
+ * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
+ * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
+ *
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The per-item key type.
+ * @template {string | number} BlockKeyType - The block-grouping key type.
+ */
 class TurboObserver<
     DataType = any,
     ComponentType extends object = any,
     KeyType extends string | number | symbol = string,
     BlockKeyType extends string | number = string,
-> {
+> extends TurboNestedMap<ComponentType, KeyType, BlockKeyType> {
     protected _isInitialized = false;
 
+    /**
+     * @property onAdded
+     * @description Delegate called when an item appears for which no component instance exists.
+     * Handlers may return a newly-created component instance which will be stored and then receive subsequent
+     * `onUpdated` calls.
+     */
     public readonly onAdded: Delegate<
         (data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>,
          blockKey?: BlockKeyType) => ComponentType | void
     > = new Delegate();
+
+    /**
+     * @property onUpdated
+     * @description Delegate called when an item already has an associated instance and its data changes.
+     */
     public readonly onUpdated: Delegate<
         (data: DataType, instance: ComponentType, id: KeyType,
          self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void
     > = new Delegate();
+
+    /**
+     * @property onDeleted
+     * @description Delegate called when an item is removed.
+     */
     public readonly onDeleted: Delegate<
         (data: DataType, instance: ComponentType, id: KeyType,
          self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void
     > = new Delegate();
 
+    /**
+     * @property onInitialize
+     * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
+     */
     public readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void> = new Delegate();
+
+    /**
+     * @property onDestroy
+     * @description Delegate fired when the observer is destroyed.
+     */
     public readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void> = new Delegate();
 
-    protected readonly instances: Map<BlockKeyType, Map<KeyType, ComponentType>> = new Map();
-
+    /**
+     * @constructor
+     * @description Create a TurboObserver.
+     * By default, the observer wires `onUpdated` to update instance data if the instance
+     * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
+     * when the associated key is deleted.
+     * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
+     * options and lifecycle callbacks.
+     */
     public constructor(properties: TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType> = {}) {
+        super();
+
         const self = this;
         if (properties.onAdded) this.onAdded.add((data, id, self, blockKey) =>
             properties.onAdded(data, id, self, blockKey));
@@ -48,7 +97,7 @@ class TurboObserver<
 
         this.onDeleted.add((data, instance, id, self, blockKey) => {
             if (properties.onDeleted) properties.onDeleted(data, instance, id, self, blockKey);
-            else this.removeInstance(instance);
+            else this.remove(instance);
         });
 
         if (properties.onInitialize) this.onInitialize.add(() => properties.onInitialize(self));
@@ -57,95 +106,79 @@ class TurboObserver<
         if (properties.initialize) this.initialize();
     }
 
-    public getInstance(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey): ComponentType {
-        return this.instances.get(blockKey)?.get(key);
-    }
-
-    public getBlockInstancesAndKeys(blockKey: BlockKeyType = this.defaultBlockKey): [KeyType, ComponentType][] {
-        const block = this.instances.get(blockKey);
-        if (!block) return [];
-        return Array.from(block.entries());
-    }
-
-    public getBlockInstances(blockKey: BlockKeyType = this.defaultBlockKey): ComponentType[] {
-        return this.getBlockInstancesAndKeys(blockKey)
-            .sort((a, b) => alphabeticalSorting(a[0], b[0]))
-            .map(entry => entry[1]);
-    }
-
-    public getAllInstances(): ComponentType[] {
-        return Array.from(this.instances.keys())
-            .sort(alphabeticalSorting)
-            .flatMap(blockKey => this.getBlockInstances(blockKey));
-    }
-
-    public getInstanceKey(instance: ComponentType): { blockKey?: BlockKeyType, key: KeyType } {
-        for (const [blockKey, map] of this.instances.entries()) {
-            for (const [key, entry] of map.entries()) {
-                if (entry === instance) return {blockKey, key};
-            }
-        }
-    }
-
-    public getInstanceAt(flatKey: number | string): ComponentType {
-        const scoped = this.scopeKey(flatKey);
-        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key)) return;
-        return this.getInstance(scoped.key as KeyType, scoped.blockKey as BlockKeyType);
-    }
-
-    public getInstanceFlatKey(instance: ComponentType): string | number {
-        const scoped = this.getInstanceKey(instance);
-        if (!scoped) return;
-        return this.flattenKey(scoped.key, scoped.blockKey);
-    }
-
-    public setInstance(instance: ComponentType, key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey) {
-        let instancesBlock = this.instances.get(blockKey);
-        if (!instancesBlock) {
-            this.instances.set(blockKey, new Map());
-            instancesBlock = this.instances.get(blockKey);
-        }
-        instancesBlock?.set(key, instance);
-    }
-
-    public removeInstanceByKey(key: KeyType, removeFromDOM: boolean = true, blockKey: BlockKeyType = this.defaultBlockKey) {
-        const block = this.instances.get(blockKey);
-        if (!block) return;
-        const instance = block.get(key);
-        block.delete(key);
+    /**
+     * @function removeKey
+     * @description Remove the instance associated with `key` inside `blockKey`.
+     * @param {KeyType} key - The key to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
+    public removeKey(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey, removeFromDOM: boolean = true) {
+        const instance = this.get(key, blockKey);
+        super.removeKey(key, blockKey);
         if (!instance) return;
         if (removeFromDOM && instance && typeof instance === "object"
             && "remove" in instance && typeof instance.remove == "function") instance?.remove();
     }
 
-    public removeInstance(instance: ComponentType, removeFromDOM: boolean = true) {
-        const pos = this.getInstanceKey(instance);
-        if (pos) this.removeInstanceByKey(pos.key, removeFromDOM, pos.blockKey ?? this.defaultBlockKey);
+
+    /**
+     * @function remove
+     * @description Remove a given instance.
+     * @param {ComponentType} instance - The instance to remove.
+     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+     */
+    public remove(instance: ComponentType, removeFromDOM: boolean = true) {
+        const pos = this.getKey(instance);
+        if (pos) this.removeKey(pos.key, pos.blockKey ?? this.defaultBlockKey, removeFromDOM);
     }
 
+    /**
+     * @property isInitialized
+     * @description Whether the observer has been initialized (i.e. {@link initialize} called).
+     */
     public get isInitialized(): boolean {
         return this._isInitialized;
     }
 
+    /**
+     * @function initialize
+     * @description Invoke `onInitialize` and mark the observer as initialized.
+     */
     public initialize() {
         if (this.isInitialized) return;
         this.onInitialize.fire(this);
         this._isInitialized = true;
     }
 
+    /**
+     * @function clear
+     * @description Remove and destroy all managed instances and reset internal state.
+     */
     public clear() {
-        this.getAllInstances().forEach(instance => this.removeInstance(instance));
-        this.instances.clear();
+        super.clear();
         this._isInitialized = false;
     }
 
+    /**
+     * @function destroy
+     * @description Clear then fire `onDestroy`.
+     */
     public destroy() {
         this.clear();
         this.onDestroy.fire(this);
     }
 
+    /**
+     * @function keyChanged
+     * @description Function to notify the observer of a change at a certain key.
+     * @param {KeyType} key - The changed item key.
+     * @param {DataType} value - The new value for the item.
+     * @param {boolean} [deleted=false] - Whether the item was removed.
+     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     */
     public keyChanged(key: KeyType, value: DataType, deleted: boolean = false, blockKey: BlockKeyType = this.defaultBlockKey) {
-        const existingInstance = this.getInstance(key, blockKey);
+        const existingInstance = this.get(key, blockKey);
         if (existingInstance) {
             if (deleted) this.onDeleted.fire(value, existingInstance, key, this, blockKey);
             else this.onUpdated.fire(value, existingInstance, key, this, blockKey);
@@ -154,49 +187,8 @@ class TurboObserver<
         if (deleted) return;
         const instance = this.onAdded.fire(value, key, this, blockKey);
         if (!instance) return;
-        this.setInstance(instance, key, blockKey);
+        this.set(instance, key, blockKey);
         this.onUpdated.fire(value, instance, key, this, blockKey);
-    }
-
-    public flattenKey(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey): number | string {
-        if (typeof blockKey === "number") {
-            let globalIndex = 0;
-            for (const bk of Array.from(this.instances.keys()).sort(alphabeticalSorting)) {
-                if (bk === blockKey) break;
-                globalIndex += this.getBlockInstancesAndKeys(bk).length;
-            }
-            return globalIndex + Number(key);
-        } else {
-            return blockKey.toString() + "|" + key.toString();
-        }
-    }
-
-    public scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType> {
-        if (typeof flatKey === "string") {
-            const split = flatKey.toString().split("|");
-            if (split.length < 2) return {};
-            return {blockKey: split[0], key: split[1]} as ScopedKey<KeyType, BlockKeyType>;
-        }
-
-        const blockKeys = Array.from(this.instances.keys()).sort(alphabeticalSorting);
-        if (typeof flatKey === "number") {
-            if (flatKey < 0) return {blockKey: blockKeys[0] ?? 0, key: 0} as ScopedKey<KeyType, BlockKeyType>;
-            let index: number = flatKey;
-            for (const blockKey of blockKeys) {
-                const size = this.getBlockInstancesAndKeys(blockKey).length;
-                if (index < size) return {blockKey, key: index as KeyType};
-                index -= size;
-            }
-        }
-
-        const lastBlockKey = blockKeys[blockKeys.length - 1];
-        return {blockKey: lastBlockKey, key: this.getBlockInstancesAndKeys(lastBlockKey).length as KeyType};
-    }
-
-    protected get defaultBlockKey(): BlockKeyType {
-        const key = Array.from(this.instances.keys())?.[0];
-        if (!isUndefined(key)) return key;
-        return "__default__" as any;
     }
 }
 

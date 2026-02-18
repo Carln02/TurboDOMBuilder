@@ -1,6 +1,6 @@
 import "./element.types";
 import {TurboSelector} from "../turboSelector";
-import {TurboProperties} from "./element.types";
+import {CloneElementOptions, FeedforwardProperties, TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
 import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/core/model";
@@ -8,6 +8,13 @@ import {MvcGenerationProperties} from "../../mvc/mvc.types";
 import {ValidElement, ValidTag} from "../../types/element.types";
 import {DefaultEventName} from "../../types/eventNaming.types";
 import {stringify} from "../../utils/dataManipulation/string";
+import {turbo} from "../turboFunctions";
+import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
+import {equalToAny} from "../../utils/computations/equity";
+import {ElementFunctionsUtils} from "./element.utils";
+import {TurboElementProperties} from "../../turboElement/turboElement.types";
+
+const utils = new ElementFunctionsUtils();
 
 export function setupElementFunctions() {
     /**
@@ -32,11 +39,28 @@ export function setupElementFunctions() {
             let shadowDOM = !!properties.shadowDOM;
             if ("getPropertiesValue" in this.element && typeof this.element.getPropertiesValue === "function")
                 shadowDOM = this.element.getPropertiesValue(properties.shadowDOM, "shadowDOM");
-            if (shadowDOM) try {this.element.attachShadow({mode: "open"})} catch {}
+            if (shadowDOM) try {
+                this.element.attachShadow({mode: "open"})
+            } catch {
+            }
         }
 
         const mvc = this.element?.["mvc"] instanceof Mvc ? this.element["mvc"]
             : "model" in this.element && "view" in this.element ? this.element : undefined;
+
+        if (!setOnlyBaseProperties && mvc) {
+            for (const property of ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"]) {
+                const value = properties[property];
+                if (value === undefined) continue;
+                try {
+                    mvc[property] = value;
+                    if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
+                        mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
+                    }
+                } catch {
+                }
+            }
+        }
 
         for (const property of Object.keys(properties)) {
             const value = properties[property];
@@ -93,23 +117,18 @@ export function setupElementFunctions() {
                 case "interactors":
                 case "tools":
                 case "substrates":
-                    if (setOnlyBaseProperties) break;
-                    if (mvc) {
-                        try {
-                            mvc[property] = value;
-                            if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                                mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
-                            }
-                        } catch {}
-                        break;
-                    }
+                    break;
 
                 default:
                     if (setOnlyBaseProperties) break;
-                    try {this.element[property] = value}
-                    catch (e) {
-                        try {this.setAttribute(property, stringify(value))}
-                        catch (e) {console.error(e)}
+                    try {
+                        this.element[property] = value
+                    } catch (e) {
+                        try {
+                            this.setAttribute(property, stringify(value))
+                        } catch (e) {
+                            console.error(e)
+                        }
                     }
                     break;
             }
@@ -124,6 +143,97 @@ export function setupElementFunctions() {
         }
 
         return this;
+    };
+
+    //TODO maybe use .cloneNode() for vanilla nodes
+    TurboSelector.prototype.clone = function _clone<Tag extends ValidTag>(
+        this: TurboSelector<ValidElement<Tag>>,
+        options: CloneElementOptions = {}
+    ): ValidElement<Tag> {
+        const originElement = this.element instanceof Node ? this.element : undefined;
+        if (!originElement) return;
+
+        const exclude = new Set<PropertyKey>(options.exclude ?? []);
+        const force = new Set<PropertyKey>(options.forceInclude ?? []);
+        const deepClone = new Set<PropertyKey>(options.deepClone ?? []);
+        const copyReference = new Set<PropertyKey>(options.copyReference ?? []);
+
+        const shouldCopy = (key: PropertyKey, value: any, prototype: any) => {
+            if (force.has(key)) return true;
+            if (exclude.has(key) || key === "mvc" || key === "__proto__" || key === "prototype") return false;
+            if (typeof value === "function") return false;
+            if (key === "model" || key === "view" || key === "emitter" || key === "controllers"
+                || key === "handlers" || key === "interactors" || key === "tools" || key === "substrates") return false;
+
+            const desc = Object.getOwnPropertyDescriptor(prototype, key);
+            if (!desc) return false;
+            if (desc.get && !desc.set && !force.has(key)) return false;
+            if ("writable" in desc && desc.writable === false && !force.has(key)) return false;
+
+            return true;
+        };
+
+        const copyField = (key: PropertyKey, value: any): any => {
+            if (!value || typeof value !== "object") return value;
+            if (copyReference.has(key)) return value;
+
+            try {
+                if (value instanceof Node) {
+                    if (deepClone.has(key) || options.deepCloneNodes) return turbo(value).clone(options);
+                    if (options.copyNodes) return value;
+                } else {
+                    if (options.deepCloneObjects || deepClone.has(key)) {
+                        if (typeof structuredClone === "function") return structuredClone(value);
+                    }
+                    return value;
+                }
+            } catch {}
+        };
+
+        const constructor = originElement.constructor as any;
+        const prototypeChain = getPrototypeChain(originElement);
+        const mvc = originElement["mvc"];
+        let properties = {};
+
+        if (mvc && mvc instanceof Mvc) {
+            const defaultProperties: any = {};
+            for (let i = 0; i < prototypeChain.length; i++) {
+                turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
+            }
+            properties = mvc.getDifference(defaultProperties);
+        }
+
+        //TODO maybe clone the data
+        if (originElement["model"] && originElement["data"]) properties["data"] = originElement["data"];
+
+        const clone = typeof constructor.create === "function" ? constructor.create(properties)
+            : turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
+
+        for (const attr of Array.from(originElement.attributes)) {
+            if (!exclude.has(attr.name)) clone.setAttribute(attr.name, attr.value);
+        }
+
+        const keys: Map<PropertyKey, any> = new Map();
+        const addKeys = (prototype: any) => {
+            for (const property of Object.getOwnPropertyNames(prototype)) if (!keys.has(property)) keys.set(property, prototype);
+            for (const property of Object.getOwnPropertySymbols(prototype)) if (!keys.has(property)) keys.set(property, prototype);
+        }
+
+        addKeys(originElement);
+        for (const prototype of prototypeChain) {
+            if (equalToAny(prototype, Element.prototype, Node.prototype, HTMLElement.prototype,
+                SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype)) break;
+            addKeys(prototype);
+        }
+
+        for (const [key, prototype] of keys.entries()) {
+            const value = originElement[key];
+            if (!shouldCopy(key, value, prototype)) continue;
+            let newValue = copyField(key, value);
+            if (newValue !== undefined) try {clone[key] = newValue} catch {}
+        }
+
+        return clone;
     };
 
     TurboSelector.prototype.setMvc = function _setMvc(this: TurboSelector, properties: MvcGenerationProperties): Mvc {
@@ -187,4 +297,43 @@ export function setupElementFunctions() {
         if (this.element instanceof HTMLElement) this.element.focus();
         return this;
     };
+
+    TurboSelector.prototype.feedforward = function _feedforward<Tag extends ValidTag>(
+        this: TurboSelector<ValidElement<Tag>>,
+        properties: FeedforwardProperties = {}
+    ): ValidElement<Tag> {
+        if (!this.element) return;
+        const type = properties?.type ?? "___DEFAULT___";
+        const feedforwardElements = utils.data(this.element).feedforwardElements;
+        if (!feedforwardElements) return;
+
+        let saved = feedforwardElements.get(type);
+        if (!saved) {
+            if (typeof this.element["clone"] === "function") saved = this.element["clone"](properties?.cloneOptions);
+            else saved = this.clone(properties?.cloneOptions);
+        }
+        turbo(saved).setProperties(this.defaultFeedforwardProperties ?? {})
+            .setProperties({...properties, cloneOptions: undefined, type: undefined, removeOnPointerRelease: undefined});
+        feedforwardElements.set(type, saved);
+
+        if (properties.removeOnPointerRelease) turbo(document.body).on(DefaultEventName.clickEnd, () => {
+            if (typeof saved["remove"] === "function") saved["remove"]();
+            feedforwardElements.delete(type);
+
+        }, {capture: true});
+        return saved as any;
+    }
+
+    Object.defineProperty(TurboSelector.prototype, "defaultFeedforwardProperties", {
+        get: function () {
+            if ("defaultFeedforwardProperties" in this.element) return this.element.defaultFeedforwardProperties;
+            return utils.data(this.element).defaultFeedforwardProperties;
+        },
+        set: function (value: TurboElementProperties) {
+            if ("defaultFeedforwardProperties" in this.element) this.element.defaultFeedforwardProperties = value;
+            utils.data(this.element).defaultFeedforwardProperties = value;
+        },
+        configurable: true,
+        enumerable: true
+    });
 }

@@ -3,6 +3,8 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {ToolBehaviorCallback} from "./tool.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {Propagation} from "../event/event.types";
+import {ListenerSet} from "../listener/listenerSet";
+import {Listener} from "../listener/listener";
 
 type ElementData = {
     tools: Set<string>,
@@ -14,7 +16,7 @@ type ElementData = {
 };
 
 type ToolData = {
-    behaviors: Map<string, Set<ToolBehaviorCallback>>
+    behaviors: ListenerSet<Node, ToolBehaviorCallback>
 };
 
 export class ToolFunctionsUtils {
@@ -48,7 +50,7 @@ export class ToolFunctionsUtils {
     private getToolsData(manager: TurboEventManager, toolName: string): ToolData {
         const byTool = this.getOrCreate(this.tools, manager, () => new Map());
         return this.getOrCreate(byTool, toolName, () => ({
-            behaviors: new Map()
+            behaviors: new ListenerSet()
         }));
     }
 
@@ -91,19 +93,15 @@ export class ToolFunctionsUtils {
     }
 
     public addToolBehavior(toolName: string, type: string, callback: ToolBehaviorCallback, manager: TurboEventManager): void {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        const set = this.getOrCreate(behaviors, type, () => new Set());
-        set.add(callback);
+        this.getToolsData(manager, toolName).behaviors?.addListener({callback, type, toolName, manager});
     }
 
-    public getToolBehaviors(toolName: string, type: string, manager: TurboEventManager): ToolBehaviorCallback[] {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        return [...this.getOrCreate(behaviors, type, () => new Set())];
+    public getToolBehaviors(toolName: string, type: string, manager: TurboEventManager): Listener<Node, ToolBehaviorCallback>[] {
+        return this.getToolsData(manager, toolName).behaviors?.getListeners({toolName, manager, type});
     }
 
     public removeToolBehaviors(toolName: string, type: string, manager: TurboEventManager): void {
-        const behaviors = this.getToolsData(manager, toolName).behaviors;
-        this.getOrCreate(behaviors, type, () => new Set()).clear();
+        this.getToolsData(manager, toolName).behaviors?.removeMatchingListeners({toolName, manager, type});
     }
 
     public clearToolBehaviors(manager: TurboEventManager): void {
@@ -146,8 +144,7 @@ export class ToolFunctionsUtils {
         ];
 
         if (!orderedValues.includes(currentPropagation)) currentPropagation = defaultPropagation;
-        const currentIndex = orderedValues.indexOf(currentPropagation);
-        const storedIndex = orderedValues.indexOf(storedPropagation);
-        return currentIndex <= storedIndex ? currentPropagation : storedPropagation;
+        return orderedValues.indexOf(currentPropagation) <= orderedValues.indexOf(storedPropagation)
+            ? storedPropagation : currentPropagation;
     }
 }

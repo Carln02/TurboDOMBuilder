@@ -1,3 +1,6 @@
+import {TurboElementProperties} from "../../turboElement.types";
+import {CloneElementOptions, FeedforwardProperties} from "../../../turboFunctions/element/element.types";
+
 /**
  * @internal
  */
@@ -41,6 +44,12 @@ interface TurboElementDefaultInterface {
      * @description Whether the element was initialized already or not.
      */
     readonly initialized: boolean;
+
+    defaultFeedforwardProperties: TurboElementProperties;
+
+    feedforward(properties?: FeedforwardProperties): this;
+
+    clone(options?: CloneElementOptions): this;
 }
 
 export {TurboElementDefaultInterface};

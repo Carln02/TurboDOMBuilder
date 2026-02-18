@@ -172,17 +172,17 @@ class TurboYBlock<
     private shiftIndices(fromIndex: number, offset: number) {
         this.changeObservers?.toArray().forEach(observer => {
             const itemsToShift: [number, any][] = [];
-            for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
+            for (const [oldIndexStr, instance] of observer.getEntriesForBlock()) {
                 const oldIndex = Number(oldIndexStr);
                 if (oldIndex >= fromIndex) itemsToShift.push([oldIndex, instance]);
             }
 
             itemsToShift.sort((a, b) => a[0] - b[0]);
-            for (const [oldIndex] of itemsToShift) observer.removeInstanceByKey(oldIndex as KeyType, false);
+            for (const [oldIndex] of itemsToShift) observer.removeKey(oldIndex as KeyType, undefined, false);
             for (const [oldIndex, instance] of itemsToShift) {
                 const newIndex = oldIndex + offset;
                 if (typeof instance === "object" && "dataId" in instance) instance.dataId = newIndex;
-                observer.setInstance(instance, (oldIndex + offset) as KeyType);
+                observer.set(instance, (oldIndex + offset) as KeyType);
             }
         });
     }

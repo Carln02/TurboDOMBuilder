@@ -3,12 +3,13 @@ import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
 import {TurboView} from "../core/view";
 import {TurboInteractor} from "../interactor/interactor";
-import {$} from "../../turboFunctions/turboFunctions";
+import {turbo} from "../../turboFunctions/turboFunctions";
 import {div} from "../../elementCreation/basicElements";
+import {listener} from "../../decorators/listener/listener";
 
 class DemoInteractor extends TurboInteractor {
     rand = 0;
-    click(e: Event): void {this.rand++}
+    @listener() click(): void {this.rand++}
 }
 
 describe("TurboInteractor (smoke)", () => {
@@ -31,7 +32,7 @@ describe("TurboInteractor (smoke)", () => {
         expect(itc.rand).toBe(0);
         expect(() => itc.initialize()).not.toThrow();
 
-        $(element).executeAction("turbo-click", null, new Event("turbo-click"));
+        turbo(element).executeAction("turbo-click", null, new Event("turbo-click"));
         expect(itc.rand).toBe(1);
     });
 });

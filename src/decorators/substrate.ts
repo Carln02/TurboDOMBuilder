@@ -33,6 +33,10 @@ function solver(properties?: SubstrateAddCallbackProperties<SubstrateSolver>) {
         if (!properties || typeof properties !== "object") properties = {};
         if (!properties.name) properties.name = context?.name as string;
         context.addInitializer(function (this: Type) {
+            if (!this["solversMetadata"]) return;
+            for (let i = this["solversMetadata"].length - 1; i >= 0; i--) {
+                if (this["solversMetadata"][i]?.name === properties.name) this["solversMetadata"].splice(i, 1);
+            }
             this["solversMetadata"]?.push(properties)
         });
         return value;
@@ -68,7 +72,11 @@ function checker(properties?: SubstrateAddCallbackProperties<SubstrateChecker>) 
         if (!properties || typeof properties !== "object") properties = {};
         if (!properties.name) properties.name = context?.name as string;
         context.addInitializer(function (this: Type) {
-            this["checkersMetadata"]?.push(properties)
+            if (!this["checkersMetadata"]) return;
+            for (let i = this["checkersMetadata"].length - 1; i >= 0; i--) {
+                if (this["checkersMetadata"][i]?.name === properties.name) this["checkersMetadata"].splice(i, 1);
+            }
+            this["checkersMetadata"]?.push(properties);
         });
         return value;
     }
@@ -103,7 +111,11 @@ function mutator(properties?: SubstrateAddCallbackProperties<SubstrateMutator>) 
         if (!properties || typeof properties !== "object") properties = {};
         if (!properties.name) properties.name = context?.name as string;
         context.addInitializer(function (this: Type) {
-            this["mutatorsMetadata"]?.push(properties)
+            if (!this["mutatorsMetadata"]) return;
+            for (let i = this["mutatorsMetadata"].length - 1; i >= 0; i--) {
+                if (this["mutatorsMetadata"][i]?.name === properties.name) this["mutatorsMetadata"].splice(i, 1);
+            }
+            this["mutatorsMetadata"]?.push(properties);
         });
         return value;
     }

@@ -2,6 +2,7 @@ import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
+import {MakeSubstrateOptions} from "../../turboFunctions/substrate/substrate.types";
 
 /**
  * @type {TurboSubstrateProperties}
@@ -9,6 +10,8 @@ import {TurboEmitter} from "../core/emitter";
  * @category Substrate
  *
  * @extends TurboControllerProperties
+ * @extends MakeSubstrateOptions
+ *
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -16,18 +19,14 @@ import {TurboEmitter} from "../core/emitter";
  *
  * @description Options used to create a new {@link TurboSubstrate} attached to an element.
  * @property {string} [substrateName] - The name of the substrate.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
  */
 type TurboSubstrateProperties<
     ElementType extends object = object,
     ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
+> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
     substrateName?: string,
-    onActivate?: () => void,
-    onDeactivate?: () => void
 };
 
 declare module "./substrate" {

@@ -1,0 +1,14 @@
+.stickyLine, .sticky-line > svg {
+    position: absolute;
+    pointer-events: none;
+    touch-action: none;
+}
+
+.sticky-line > * {
+    position: absolute;
+}
+
+.sticky-line > .handle {
+    border-radius: 50%;
+    border: 1px solid black;
+}

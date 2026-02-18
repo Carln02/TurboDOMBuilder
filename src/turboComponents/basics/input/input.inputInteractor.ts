@@ -8,11 +8,11 @@ export class TurboInputInputInteractor extends TurboInteractor<TurboInput> {
     private _composing = false;
     private _resizeQueued = false;
 
-    public options = {
-        compositionStart: {capture: true},
-        compositionEnd: {capture: true},
-        input: {capture: true},
-    }
+    // public options = {
+    //     compositionStart: {capture: true},
+    //     compositionEnd: {capture: true},
+    //     input: {capture: true},
+    // }
 
     private get inputElement(): HTMLInputElement | HTMLTextAreaElement {
         return this.element.element;

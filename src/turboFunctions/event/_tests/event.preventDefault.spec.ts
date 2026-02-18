@@ -1,37 +1,37 @@
 import { describe, it, expect, vi } from "vitest";
-import {$} from "../../turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
+import {turbo} from "../../turboFunctions";
+import {Propagation} from "../event.types";
 
 describe("preventDefault + removeAllListeners", () => {
     it("preventDefault adds handlers that call preventDefault", () => {
         const node = div({id: "pd"});
 
-        $(node).preventDefault({types: ["click"]});
+        turbo(node).preventDefault({types: ["click"]});
 
         const ev = new Event("click", {bubbles: true, cancelable: true});
-        const consumed = $(node).executeAction("click", undefined, ev);
+        const consumed = turbo(node).executeAction("click", undefined, ev);
 
-        expect(consumed).toBe(true);
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(ev.defaultPrevented).toBe(true);
     });
 
     it("removeAllListeners clears both bound and preventDefault handlers", () => {
         const node = div({id: "rm"});
 
-        const generic = vi.fn().mockReturnValue(true);
-        $(node).on("click", generic);
-        $(node).preventDefault({types: ["click"]});
+        const generic = vi.fn().mockReturnValue(Propagation.stopImmediatePropagation);
+        turbo(node).on("click", generic);
+        turbo(node).preventDefault({types: ["click"]});
 
         let ev = new Event("click", { bubbles: true, cancelable: true });
-        $(node).executeAction("click", undefined as any, ev);
-        expect(ev.defaultPrevented).toBe(true);
+        let consumed = turbo(node).executeAction("click", undefined, ev);
+        expect(consumed).toBe(Propagation.stopImmediatePropagation);
         expect(generic).toHaveBeenCalledTimes(1);
 
-        $(node).removeAllListeners();
+        turbo(node).removeAllListeners();
 
         ev = new Event("click", { bubbles: true, cancelable: true });
-        const consumed = $(node).executeAction("click", undefined, ev);
-        expect(consumed).toBe(false);
-        expect(ev.defaultPrevented).toBe(false);
+        consumed = turbo(node).executeAction("click", undefined, ev);
+        expect(consumed).toBe(Propagation.propagate);
     });
 });

@@ -12,6 +12,7 @@ import {EventFunctionsUtils} from "./event.utils";
 import {TurboSelector} from "../turboSelector";
 import {Listener} from "../listener/listener";
 import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
+import {ListenerSet} from "../listener/listenerSet";
 
 const utils = new EventFunctionsUtils();
 
@@ -21,7 +22,7 @@ export function setupEventFunctions() {
      * listeners.
      */
     Object.defineProperty(TurboSelector.prototype, "boundListeners", {
-        get: function (): Set<Listener> {
+        get: function (): ListenerSet {
             return utils.getBoundListenersSet(this);
         },
         configurable: true,
@@ -65,14 +66,14 @@ export function setupEventFunctions() {
     ): Turbo<Type> {
         if (this.hasToolListener(type, toolName, listener, manager)) return this;
         manager.setupCustomDispatcher?.(type);
-        utils.getBoundListenersSet(this).add(new Listener({
+        utils.getBoundListenersSet(this).addListener({
             target: this,
             type,
             toolName,
             callback: listener,
             options,
             manager
-        }));
+        });
         return this;
     };
 
@@ -126,24 +127,31 @@ export function setupEventFunctions() {
         if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
 
         const checkSubstrates = (target: Node, tool?: string) => {
-            if (checkedSubstratesFor.has(target)) return;
-            checkedSubstratesFor.add(target);
-            if (tool) checkedObjectsToolMap.set(target, tool);
-            if (!options.checkSubstrates) return;
-            if (!this.checkSubstratesForEvent({
-                event,
-                toolName: tool,
-                eventType: type,
-                eventTarget: target,
-                eventOptions: options,
-                manager: manager
-            })) propagation = Propagation.stopImmediatePropagation;
+            if (!target) return;
+            if (propagation === Propagation.stopImmediatePropagation) return;
+
+            if (!checkedSubstratesFor.has(target)) {
+                checkedSubstratesFor.add(target);
+                if (tool) checkedObjectsToolMap.set(target, tool);
+
+                if (options.checkSubstrates) {
+                    const check = this.checkSubstratesForEvent({
+                        event, manager,
+                        toolName: tool,
+                        eventType: type,
+                        eventTarget: target,
+                        eventOptions: options,
+                    });
+                    if (!check) propagation = Propagation.stopImmediatePropagation;
+                }
+            }
+            checkSubstrates(target.parentNode, tool);
         };
 
         const runListeners = (target: Node, tool?: string) => {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils.getBoundListenersSet(target);
-            const entries = [...utils.getBoundListeners(target, type, tool, options, manager)];
+            const entries = utils.getBoundListeners({target, type, toolName: tool, options, manager});
             if (entries.length === 0) return;
 
             checkSubstrates(target, tool);
@@ -155,7 +163,7 @@ export function setupEventFunctions() {
                     propagation = utils.processPropagation(entry.executeOn(event, ts), propagation);
                 } finally {
                     firedListeners.add(entry);
-                    if (entry.options?.once) boundSet.delete(entry);
+                    if (entry.options?.once) boundSet.removeListener(entry);
                 }
                 if (propagation === Propagation.stopImmediatePropagation) return;
             }
@@ -164,8 +172,7 @@ export function setupEventFunctions() {
         const applyTool = (target: Node, tool?: string) => {
             if (options.capture || !tool) return;
             if (turbo(target).isToolIgnored(tool, type, manager)) return;
-            if (!this.hasToolBehavior(type, toolName, manager)) return;
-
+            if (!this.hasToolBehavior(type, tool, manager)) return;
             checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation) return;
             propagation = turbo(target).applyTool(tool, type, event, manager);
@@ -196,7 +203,6 @@ export function setupEventFunctions() {
                 }
                 if (propagation !== Propagation.propagate) return;
             }
-
             runListeners(this, undefined);
         };
 
@@ -224,7 +230,7 @@ export function setupEventFunctions() {
     TurboSelector.prototype.hasListener = function _hasListener(
         this: Turbo,
         type: string,
-        listener: ((e: Event, el: Turbo) => boolean | void),
+        listener: ListenerCallback,
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
         return this.hasToolListener(type, undefined, listener, manager);
@@ -244,11 +250,10 @@ export function setupEventFunctions() {
         this: Turbo,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo) => boolean | void),
+        listener: ListenerCallback,
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
-        return utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.callback === listener).length > 0;
+        return utils.getBoundListeners({target: this, callback: listener, type, toolName, manager}).length > 0;
     }
 
     /**
@@ -265,7 +270,7 @@ export function setupEventFunctions() {
         toolName?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): boolean {
-        return utils.getBoundListeners(this, type, toolName, undefined, manager).length > 0;
+        return utils.getBoundListeners({target: this, type, toolName, manager}).length > 0;
     }
 
     /**
@@ -279,7 +284,7 @@ export function setupEventFunctions() {
     TurboSelector.prototype.removeListener = function _removeListener<Type extends Node>(
         this: Turbo<Type>,
         type: string,
-        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
+        listener: ListenerCallback,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
         return this.removeToolListener(type, undefined, listener, manager);
@@ -299,16 +304,10 @@ export function setupEventFunctions() {
         this: Turbo<Type>,
         type: string,
         toolName: string,
-        listener: ((e: Event, el: Turbo<Type>) => boolean | void),
+        listener: ListenerCallback,
         manager: TurboEventManager = TurboEventManager.instance
     ): Turbo<Type> {
-        const boundListeners = utils.getBoundListenersSet(this);
-        utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .filter(entry => entry.callback === listener)
-            .forEach(entry => {
-                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-                boundListeners.delete(entry);
-            });
+        utils.getBoundListenersSet(this).removeMatchingListeners({target: this, type, toolName, callback: listener, manager});
         return this;
     };
 
@@ -328,12 +327,7 @@ export function setupEventFunctions() {
         toolName?: string,
         manager: TurboEventManager = TurboEventManager.instance
     ): TurboSelector {
-        const boundListeners = utils.getBoundListenersSet(this);
-        utils.getBoundListeners(this, type, toolName, undefined, manager)
-            .forEach(entry => {
-                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-                boundListeners.delete(entry);
-            });
+        utils.getBoundListenersSet(this).removeMatchingListeners({target: this, type, toolName, manager});
         return this;
     };
 
@@ -347,12 +341,7 @@ export function setupEventFunctions() {
         this: TurboSelector,
         manager: TurboEventManager = TurboEventManager.instance
     ): TurboSelector {
-        const set = this.boundListeners;
-        [...set].filter(entry => entry.manager === manager)
-            .forEach(entry => {
-                entry.target.removeEventListener(entry.type, entry.bundledListener, entry.options);
-                set.delete(entry);
-            });
+        utils.getBoundListenersSet(this).removeMatchingListeners({manager});
         return this;
     };
 

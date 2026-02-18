@@ -7,7 +7,8 @@ type DefineDataEntry = {
 type DefinePrototypeEntry = {
     setupAttributeChangedCallback?: boolean,
     setupConnectedCallback?: boolean,
-    name?: string;
+    name?: string,
+    wrappedCreate?: boolean
 };
 
 export class DefineDecoratorUtils {

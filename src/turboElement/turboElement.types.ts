@@ -39,6 +39,10 @@ type TurboElementConfig = {
 };
 
 declare module "./turboElement" {
+    interface TurboElement {
+        readonly tagName: string;
+    }
+
     interface TurboElement extends TurboElementDefaultInterface {}
 
     interface TurboElement<

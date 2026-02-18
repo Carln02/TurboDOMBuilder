@@ -15,6 +15,8 @@ function isUndefined(value: any): boolean {
 }
 
 function alphabeticalSorting(a: string | number | symbol, b: string | number | symbol): number {
+    if (typeof a === "symbol") a = String(a);
+    if (typeof b === "symbol") b = String(b);
     if (typeof a == "string" && typeof b == "string") return a.localeCompare(b);
     else if (typeof a == "number" && typeof b == "number") return a - b;
     return 0;

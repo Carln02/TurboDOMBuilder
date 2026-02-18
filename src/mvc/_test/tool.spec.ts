@@ -5,10 +5,11 @@ import {TurboEmitter} from "../core/emitter";
 import {TurboModel} from "../core/model";
 import {div} from "../../elementCreation/basicElements";
 import {$} from "../../turboFunctions/turboFunctions";
+import {behavior} from "../../decorators/listener/listener";
 
 class DemoTool extends TurboTool {
     rand = 0;
-    click() {this.rand++; return true}
+    @behavior() click(e, target) {this.rand++;}
 }
 
 describe("TurboTool (smoke)", () => {

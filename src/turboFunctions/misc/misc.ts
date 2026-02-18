@@ -20,6 +20,8 @@ export function setupMiscFunctions() {
         options: ApplyDefaultsOptions = {}
     ): TurboSelector {
         if (!this.element || typeof this.element !== "object") return this;
+        if (!defaults || typeof defaults !== "object") return this;
+
         const {
             mergeProperties = ApplyDefaultsMergeProperties,
             removeDuplicates = true

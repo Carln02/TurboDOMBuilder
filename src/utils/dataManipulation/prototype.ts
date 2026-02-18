@@ -70,5 +70,14 @@ function getSuperDescriptor(object: object, key: PropertyKey): PropertyDescripto
     return undefined;
 }
 
+function getPrototypeChain(object: object) {
+    const chain: any[] = [];
+    let constructor = Object.getPrototypeOf(object);
+    while (constructor && constructor !== Function.prototype) {
+        chain.push(constructor);
+        constructor = Object.getPrototypeOf(constructor);
+    }
+    return chain;
+}
 
-export {getFirstDescriptorInChain, getFirstPrototypeInChainWith, hasPropertyInChain, getSuperMethod, getSuperDescriptor};
+export {getPrototypeChain, getFirstDescriptorInChain, getFirstPrototypeInChainWith, hasPropertyInChain, getSuperMethod, getSuperDescriptor};

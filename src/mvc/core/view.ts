@@ -2,6 +2,7 @@ import {TurboModel} from "./model";
 import {TurboEmitter} from "./emitter";
 import {TurboViewProperties} from "./core.types";
 import {initializeEffects} from "../../decorators/reactivity/reactivity";
+import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
 
 /**
  * @class TurboView
@@ -45,6 +46,12 @@ class TurboView<
         this.setup();
     }
 
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup() {}
 
     /**
@@ -89,6 +96,7 @@ class TurboView<
      * @protected
      */
     protected setupUIListeners(): void {
+        attachListenersAndBehaviors(this);
     }
 }
 

@@ -1,29 +1,30 @@
 import {describe, it, expect, vi, beforeEach} from "vitest";
-import {$} from "../../turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
+import {turbo} from "../../turboFunctions";
+import {Propagation} from "../event.types";
 
 describe("executeAction order + semantics", () => {
-    beforeEach(() => $().clearToolBehaviors());
+    beforeEach(() => turbo().clearToolBehaviors());
 
     it("1) custom (tool,event) wins", () => {
         const node = div({id: "obj"});
-        const hit = vi.fn().mockReturnValue(true);
+        const hit = vi.fn();
 
-        $(node).onTool("click", "brush", hit);
+        turbo(node).onTool("click", "brush", hit);
 
-        const consumed = $(node).executeAction("click", "brush", new Event("x"));
-        expect(consumed).toBe(true);
+        const consumed = turbo(node).executeAction("click", "brush", new Event("x"));
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(hit).toHaveBeenCalledTimes(1);
     });
 
     it("2) tool defaults run on object when no custom", () => {
         const node2 = div({id: "obj2"});
-        const def = vi.fn().mockReturnValue(true);
+        const def = vi.fn().mockReturnValue(Propagation.stopPropagation);
 
-        $(node2).addToolBehavior("click", (ev, target) => def(ev, target), "brush");
-        const consumed = $(node2).executeAction("click", "brush", new Event("x"));
+        turbo(node2).addToolBehavior("click", (ev, target) => def(ev, target), "brush");
+        const consumed = turbo(node2).executeAction("click", "brush", new Event("click"));
 
-        expect(consumed).toBe(true);
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(def).toHaveBeenCalledTimes(1);
         expect(def.mock.calls[0][1]).toBe(node2);
     });
@@ -32,14 +33,14 @@ describe("executeAction order + semantics", () => {
         const embeddedTool = div({id: "obj3"});
         const target = div({id: "emb3"});
 
-        $(embeddedTool).makeTool("eraser");
-        $(embeddedTool).embedTool(target);
+        turbo(embeddedTool).makeTool("eraser");
+        turbo(embeddedTool).embedTool(target);
 
-        const embeddedEraserListener = vi.fn().mockReturnValue(true);
-        $(target).onTool("click", "eraser", embeddedEraserListener);
-        const consumed = $(embeddedTool).executeAction("click", "brush", new Event("x"));
+        const embeddedEraserListener = vi.fn().mockReturnValue(Propagation.stopPropagation);
+        turbo(target).onTool("click", "eraser", embeddedEraserListener);
+        const consumed = turbo(embeddedTool).executeAction("click", "brush", new Event("x"));
 
-        expect(consumed).toBe(true);
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(embeddedEraserListener).toHaveBeenCalledTimes(1);
     });
 
@@ -47,66 +48,66 @@ describe("executeAction order + semantics", () => {
         const embeddedTool = div({id: "obj4"});
         const target = div({id: "emb4"});
 
-        $(embeddedTool).makeTool("eraser");
-        $(embeddedTool).embedTool(target);
+        turbo(embeddedTool).makeTool("eraser");
+        turbo(embeddedTool).embedTool(target);
 
-        const def = vi.fn().mockReturnValue(true);
-        $(embeddedTool).addToolBehavior("click", (ev, target) => def(ev, target), "eraser");
-        const consumed = $(embeddedTool).executeAction("click", "brush", new Event("x"));
+        const def = vi.fn().mockReturnValue(Propagation.stopPropagation);
+        turbo(embeddedTool).addToolBehavior("click", (ev, target) => def(ev, target), "eraser");
+        const consumed = turbo(embeddedTool).executeAction("click", "brush", new Event("x"));
 
-        expect(consumed).toBe(true);
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(def.mock.calls[0][1]).toBe(target);
     });
 
     it("5) falls back to generic (no-tool) listeners last", () => {
         const node = div({id: "obj5"});
 
-        const generic = vi.fn().mockReturnValue(true);
-        $(node).on("pointerdown", generic);
+        const generic = vi.fn().mockReturnValue(Propagation.stopPropagation);
+        turbo(node).on("pointerdown", generic);
 
-        const consumed = $(node).executeAction("pointerdown", "nonexistent", new Event("x"));
-        expect(consumed).toBe(true);
+        const consumed = turbo(node).executeAction("pointerdown", "nonexistent", new Event("x"));
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(generic).toHaveBeenCalledTimes(1);
     });
 
     it("propagate flag makes group NOT consumed", () => {
         const node = div({id: "p"});
-        const A = vi.fn();
-        const B = vi.fn();
+        const A = vi.fn().mockReturnValue(Propagation.propagate);
+        const B = vi.fn().mockReturnValue(Propagation.propagate);
 
-        $(node).onTool("pointerdown", "brush", A);
-        $(node).onTool("pointerdown", "brush", B);
+        turbo(node).onTool("pointerdown", "brush", A);
+        turbo(node).onTool("pointerdown", "brush", B);
 
-        const consumed = $(node).executeAction("pointerdown", "brush", new Event("x"));
-        expect(consumed).toBe(false);
+        const consumed = turbo(node).executeAction("pointerdown", "brush", new Event("x"));
+        expect(consumed).toBe(Propagation.propagate);
         expect(A).toHaveBeenCalledTimes(1);
         expect(B).toHaveBeenCalledTimes(1);
     });
 
     it("once removes listener after first run", () => {
         const node = div({id: "o"});
-        const L = vi.fn().mockReturnValue(true);
+        const L = vi.fn().mockReturnValue(Propagation.stopPropagation);
 
-        $(node).onTool("click", "brush", L, {once: true});
+        turbo(node).onTool("click", "brush", L, {once: true});
 
-        $(node).executeAction("click", "brush", new Event("x"));
-        $(node).executeAction("click", "brush", new Event("x"));
+        turbo(node).executeAction("click", "brush", new Event("x"));
+        turbo(node).executeAction("click", "brush", new Event("x"));
 
         expect(L).toHaveBeenCalledTimes(1);
     });
 
     it("ignored tool on element: skips custom listeners and default behaviors", () => {
         const node = div({ id: "ign-el" });
-        const custom = vi.fn().mockReturnValue(true);
-        const def = vi.fn().mockReturnValue(true);
+        const custom = vi.fn().mockReturnValue(Propagation.stopPropagation);
+        const def = vi.fn().mockReturnValue(Propagation.stopPropagation);
 
-        $(node).onTool("click", "brush", custom);
-        $(node).addToolBehavior("click", (ev, target) => def(ev, target), "brush");
-        $(node).ignoreTool("brush");
+        turbo(node).onTool("click", "brush", custom);
+        turbo(node).addToolBehavior("click", (ev, target) => def(ev, target), "brush");
+        turbo(node).ignoreTool("brush");
 
-        const consumed = $(node).executeAction("click", "brush", new Event("x"));
+        const consumed = turbo(node).executeAction("click", "brush", new Event("x"));
 
-        expect(consumed).toBe(true);
+        expect(consumed).toBe(Propagation.stopPropagation);
         expect(custom).toHaveBeenCalled();
         expect(def).not.toHaveBeenCalled();
     });
@@ -114,23 +115,23 @@ describe("executeAction order + semantics", () => {
     it("ignored specific (tool,type): skips only that event type, others still work", () => {
         const node = div({ id: "ign-type" });
 
-        const customClick = vi.fn().mockReturnValue(true);
-        const customDown  = vi.fn().mockReturnValue(true);
-        const defClick    = vi.fn().mockReturnValue(true);
+        const customClick = vi.fn();
+        const customDown  = vi.fn();
+        const defClick    = vi.fn();
 
-        $(node).onTool("click", "brush", customClick);
-        $(node).onTool("pointerdown", "brush", customDown);
-        $(node).addToolBehavior("click", (ev, target) => defClick(ev, target), "brush");
+        turbo(node).onTool("click", "brush", customClick);
+        turbo(node).onTool("pointerdown", "brush", customDown);
+        turbo(node).addToolBehavior("click", (ev, target) => defClick(ev, target), "brush");
 
-        $(node).ignoreTool("brush", "click");
+        turbo(node).ignoreTool("brush", "click");
 
-        const consumedClick = $(node).executeAction("click", "brush", new Event("x"));
-        expect(consumedClick).toBe(true);
+        const consumedClick = turbo(node).executeAction("click", "brush", new Event("x"));
+        expect(consumedClick).toBe(Propagation.stopPropagation);
         expect(customClick).toHaveBeenCalled();
         expect(defClick).not.toHaveBeenCalled();
 
-        const consumedDown = $(node).executeAction("pointerdown", "brush", new Event("y"));
-        expect(consumedDown).toBe(true);
+        const consumedDown = turbo(node).executeAction("pointerdown", "brush", new Event("y"));
+        expect(consumedDown).toBe(Propagation.stopPropagation);
         expect(customDown).toHaveBeenCalledTimes(1);
     });
 });

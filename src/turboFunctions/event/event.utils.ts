@@ -3,10 +3,11 @@ import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventMa
 import {Propagation} from "./event.types";
 import {TurboSelector} from "../turboSelector";
 import {Listener} from "../listener/listener";
-import {ListenerOptions} from "../listener/listener.types";
+import {MatchListenerProperties} from "../listener/listener.types";
+import {ListenerSet} from "../listener/listenerSet";
 
 type ObjectListeners = {
-    boundListeners: Set<Listener>,
+    boundListeners: ListenerSet,
     preventDefaultListeners: Record<string, (e: Event) => boolean>,
     preventDefaultOn?: (type: string, e: Event) => boolean
 };
@@ -18,7 +19,7 @@ export class EventFunctionsUtils {
         if (element instanceof TurboSelector) element = element.element;
         if (!element || !this.dataMap.has(element)) {
             const entry = {
-                boundListeners: new Set<Listener>(),
+                boundListeners: new ListenerSet(),
                 preventDefaultListeners: {},
             };
             if (element) this.dataMap.set(element, entry);
@@ -26,13 +27,22 @@ export class EventFunctionsUtils {
         return this.dataMap.get(element);
     }
 
-    public getBoundListenersSet(element: Node): Set<Listener> {
+    public getBoundListenersSet(element: Node): ListenerSet {
         let set = this.data(element).boundListeners;
         if (!set) {
-            set = new Set();
+            set = new ListenerSet();
             this.data(element).boundListeners = set;
         }
         return set;
+    }
+
+    public getBoundListeners(properties: MatchListenerProperties): Listener[] {
+        if (!properties.target) return [];
+        if (!properties.manager) properties.manager = TurboEventManager.instance;
+        return this.getBoundListenersSet(properties.target).getListeners({
+            ...properties,
+            optionsToSkip: ["checkSubstrates", "solveSubstrates"]
+        });
     }
 
     public getPreventDefaultListeners(element: Node): Record<string, (e: Event) => boolean> {
@@ -63,22 +73,7 @@ export class EventFunctionsUtils {
         });
     }
 
-    public getBoundListeners(element: Node, type: string, toolName: string, options?: ListenerOptions,
-                             manager: TurboEventManager = TurboEventManager.instance): Listener[] {
-        if (element instanceof TurboSelector) element = element.element;
-        if (!element) return [];
-        if (!options) options = {};
-        return [...this.getBoundListenersSet(element)]
-            .filter(entry => entry.type === type && entry.manager === manager && entry.toolName === toolName)
-            .filter(entry => {
-                for (const [option, value] of Object.entries(options)) {
-                    if (option === "checkSubstrates" || option === "solveSubstrates") continue;
-                    if (entry.options?.[option] !== value) return false;
-                }
-                return true;
-            });
-    }
-
+    //TODO FIX IDK
     public processPropagation(
         currentPropagation: Propagation | any,
         storedPropagation: Propagation = Propagation.propagate,

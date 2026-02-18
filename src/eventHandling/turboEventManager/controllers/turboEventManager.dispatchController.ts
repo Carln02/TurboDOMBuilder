@@ -3,7 +3,7 @@ import {TurboEventManager} from "../turboEventManager";
 import {ClickMode} from "../turboEventManager.types";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboController} from "../../../mvc/logic/controller";
 import {TurboKeyEventName} from "../../../types/eventNaming.types";
 import {Propagation} from "../../../turboFunctions/event/event.types";
@@ -44,7 +44,7 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
 
         for (let i = path.length - 1; i >= 0; i--) {
             if (!(path[i] instanceof Node)) continue;
-            const propagate = $(path[i] as Node).executeAction(type, toolName, e, {capture: true}, this.element);
+            const propagate = turbo(path[i] as Node).executeAction(type, toolName, e, {capture: true}, this.element);
             if (propagate !== Propagation.propagate) {
                 e.stopPropagation();
                 break;
@@ -53,7 +53,7 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
 
         for (let i = 0; i < path.length; i++) {
             if (!(path[i] instanceof Node)) continue;
-            const propagate = $(path[i] as Node).executeAction(type, toolName, e, undefined, this.element);
+            const propagate = turbo(path[i] as Node).executeAction(type, toolName, e, undefined, this.element);
             if (propagate !== Propagation.propagate) {
                 e.stopPropagation();
                 break;

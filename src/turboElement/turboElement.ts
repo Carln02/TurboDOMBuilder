@@ -5,8 +5,10 @@ import {TurboView} from "../mvc/core/view";
 import {defineDefaultProperties} from "./setup/default/default";
 import {defineMvcAccessors} from "./setup/mvc/mvc";
 import {defineUIPrototype} from "./setup/ui/ui";
-import {TurboElementConfig} from "./turboElement.types";
+import {TurboElementConfig, TurboElementProperties} from "./turboElement.types";
 import {Delegate} from "../turboComponents/datatypes/delegate/delegate";
+import {element} from "../elementCreation/element";
+import {turbo} from "../turboFunctions/turboFunctions";
 
 /**
  * @class TurboElement
@@ -33,6 +35,16 @@ class TurboElement<
         shadowDOM: false,
         defaultSelectedClass: "selected"
     };
+
+    public static defaultProperties: TurboElementProperties = {};
+
+    public static create<Type extends typeof TurboElement>(
+        this: Type,
+        properties: TurboElementProperties = {}
+    ): InstanceType<Type> {
+        turbo(properties).applyDefaults(this.defaultProperties ?? {});
+        return element({...properties}) as InstanceType<Type>;
+    }
 
     /**
      * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.

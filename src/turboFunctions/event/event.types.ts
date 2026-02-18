@@ -2,6 +2,7 @@ import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventMa
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {Listener} from "../listener/listener";
 import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
+import {ListenerSet} from "../listener/listenerSet";
 
 enum Propagation {
     propagate = "propagate",
@@ -47,7 +48,7 @@ declare module "../turboSelector" {
         /**
          * @description Readonly set of listeners bound to this node.
          */
-        readonly boundListeners: Set<Listener>;
+        readonly boundListeners: ListenerSet;
 
         /**
          * @description If you want the element to bypass the event manager and allow native events to seep through

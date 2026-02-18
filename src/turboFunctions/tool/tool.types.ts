@@ -45,7 +45,7 @@ type MakeToolOptions = {
  * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
  * @return {boolean} - Whether to stop the propagation.
  */
-type ToolBehaviorCallback = (event: Event, target: Node, options?: ToolBehaviorOptions) => Propagation | any;
+type ToolBehaviorCallback<TargetType extends Node = Node> = (event: Event, target: TargetType, options?: ToolBehaviorOptions) => Propagation | any;
 
 /**
  * @type {ToolBehaviorOptions}

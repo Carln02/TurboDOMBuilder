@@ -29,6 +29,12 @@ class TurboHandler<ModelType extends TurboModel = TurboModel> {
         this.setup();
     }
 
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
     protected setup(): void {
         initializeEffects(this);
     }

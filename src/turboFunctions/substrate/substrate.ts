@@ -10,6 +10,7 @@ import {
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {binaryInsert} from "../../utils/computations/arrays";
+import {randomString} from "../../utils/computations/random";
 
 const utils = new SubstrateFunctionsUtils();
 
@@ -23,7 +24,8 @@ export function setupSubstrateFunctions() {
         if (options?.onActivate) this.onSubstrateActivate(substrate).add(options.onActivate);
         if (options?.onDeactivate) this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
         if (options?.priority) utils.getSubstrateData(this, substrate).priority = options.priority;
-        if (options?.active) utils.activate(this, substrate, true);
+        if (options?.attachedInstance) utils.getSubstrateData(this, substrate).attachedInstance = options.attachedInstance;
+        if (options?.active || options?.active === undefined) utils.activate(this, substrate, true);
         return this;
     }
 
@@ -47,10 +49,50 @@ export function setupSubstrateFunctions() {
 
     TurboSelector.prototype.activateSubstrate = function _activateSubstrates(
         this: TurboSelector,
-        substrate: string = utils.getDefaultSubstrate(this),
-        activate?: boolean
+        ...substrates: string[]
     ): TurboSelector {
-        if (substrate) utils.activate(this, substrate, activate);
+        const targets = substrates.length ? substrates : [utils.getDefaultSubstrate(this)];
+        targets.forEach(substrate => {
+            if (substrate) utils.activate(this, substrate, true);
+        });
+        return this;
+    }
+
+    TurboSelector.prototype.deactivateSubstrate = function _deactivateSubstrates(
+        this: TurboSelector,
+        ...substrates: string[]
+    ): TurboSelector {
+        const targets = substrates.length ? substrates : [utils.getDefaultSubstrate(this)];
+        targets.forEach(substrate => {
+            if (substrate) utils.activate(this, substrate, false);
+        });
+        return this;
+    }
+
+    TurboSelector.prototype.toggleSubstrate = function _toggleSubstrates(
+        this: TurboSelector,
+        substrate: string = utils.getDefaultSubstrate(this),
+        force?: boolean
+    ): TurboSelector {
+        if (substrate) utils.activate(this, substrate, force);
+        return this;
+    }
+
+    TurboSelector.prototype.activateOnlySubstrate = function _activateOnlySubstrates(
+        this: TurboSelector,
+        substrate: string = utils.getDefaultSubstrate(this),
+    ): TurboSelector {
+        if (substrate) utils.getSubstrates(this).forEach(subs => utils.activate(this, substrate, substrate === subs));
+        return this;
+    }
+
+    TurboSelector.prototype.activateAllSubstrates = function _activateAllSubstrates(this: TurboSelector): TurboSelector {
+        utils.getSubstrates(this).forEach(substrate => utils.activate(this, substrate, true));
+        return this;
+    }
+
+    TurboSelector.prototype.deactivateAllSubstrates = function _deactivateAllSubstrates(this: TurboSelector): TurboSelector {
+        utils.getSubstrates(this).forEach(substrate => utils.activate(this, substrate, false));
         return this;
     }
 
@@ -74,7 +116,7 @@ export function setupSubstrateFunctions() {
         this: TurboSelector,
         substrate: string = utils.getDefaultSubstrate(this)
     ): number {
-        return utils.getSubstrateData(this, substrate)?.priority ?? 0;
+        return utils.getField(this, substrate, "priority") ?? 0;
     }
 
     TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(
@@ -82,7 +124,7 @@ export function setupSubstrateFunctions() {
         priority: number,
         substrate: string = utils.getDefaultSubstrate(this)
     ): TurboSelector {
-        if (typeof priority === "number") utils.getSubstrateData(this, substrate).priority = priority;
+        if (typeof priority === "number") utils.setField(this, substrate, "priority", priority);
         return this;
     }
 
@@ -113,6 +155,7 @@ export function setupSubstrateFunctions() {
     TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(
         this: TurboSelector,
         object: object,
+        addToQueue: boolean = true,
         substrate: string = utils.getDefaultSubstrate(this)
     ): TurboSelector {
         if (!object || !substrate) return this;
@@ -120,7 +163,10 @@ export function setupSubstrateFunctions() {
         const list = utils.getSubstrateData(this, substrate).objects;
         if (list instanceof HTMLCollection || list instanceof NodeList) return this;
         try {
-            if (!list.has(object)) list.add(object)
+            if (list.has(object)) return this;
+            list.add(object);
+            this.onSubstrateObjectListChange(substrate).fire(object, "added");
+            this.getSubstrateQueue(substrate)?.push(object);
         } catch {
         }
         return this;
@@ -135,6 +181,7 @@ export function setupSubstrateFunctions() {
         utils.getMetadata(this, substrate, object).ignored = true;
         const list = utils.getSubstrateData(this, substrate).objects;
         if (list instanceof Set) list.delete(object);
+        this.onSubstrateObjectListChange(substrate).fire(object, "removed");
         return this;
     }
 
@@ -147,6 +194,13 @@ export function setupSubstrateFunctions() {
         return this.getSubstrateObjectList(substrate).has(object);
     }
 
+    TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(
+        this: TurboSelector,
+        substrate?: string
+    ): Delegate<(object: object, status: "added" | "removed") => void> {
+        return utils.getSubstrateData(this, substrate).objectsChangedDelegate;
+    }
+
     //QUEUE
 
     TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(
@@ -156,30 +210,11 @@ export function setupSubstrateFunctions() {
         return utils.getSubstrateData(this, substrate).queue;
     }
 
-    // TurboSelector.prototype.addObjectToSubstrateQueue = function _getNextInSubstrateQueue(
-    //     this: TurboSelector,
-    //     object: object,
-    //     substrate: string = utils.getDefaultSubstrate(this)
-    // ): TurboSelector {
-    //     const queue = utils.getSubstrateData(this, substrate).queue;
-    //     if (queue && queue instanceof TurboQueue && !queue.has(object)) queue.push(object);
-    //     return this;
-    // }
-    //
-    // TurboSelector.prototype.clearSubstrateQueue = function _getNextInSubstrateQueue(
-    //     this: TurboSelector,
-    //     substrate: string = utils.getDefaultSubstrate(this)
-    // ): TurboSelector {
-    //     const queue = utils.getSubstrateData(this, substrate).queue;
-    //     if (queue && queue instanceof TurboQueue) queue.clear();
-    //     return this;
-    // }
-
     TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(
         this: TurboSelector,
         substrate: string = utils.getDefaultSubstrate(this)
     ): TurboQueue<object> {
-        const queue = utils.getSubstrateData(this, substrate).defaultQueue;
+        const queue = utils.getField(this, substrate, "defaultQueue");
         if (queue) return queue.clone();
         return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
     }
@@ -191,7 +226,7 @@ export function setupSubstrateFunctions() {
     ): TurboSelector {
         if (!queue || typeof queue !== "object") return this;
         if (Array.isArray(queue)) queue = new TurboQueue().push(...queue);
-        if (queue instanceof TurboQueue) utils.getSubstrateData(this, substrate).defaultQueue = queue.clone();
+        if (queue instanceof TurboQueue) utils.setField(this, substrate, "defaultQueue", queue.clone());
         return this;
     }
 
@@ -205,14 +240,14 @@ export function setupSubstrateFunctions() {
         if (!object) return 0;
         const map = utils.getSubstrateData(this, substrate).passes;
         if (!map || !(map instanceof WeakMap)) return 0;
-        return map.get(object);
+        return map.get(object) ?? 0;
     }
 
     TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(
         this: TurboSelector,
         substrate: string = utils.getDefaultSubstrate(this)
     ): number {
-        return utils.getSubstrateData(this, substrate).maxPasses;
+        return utils.getField(this, substrate, "maxPasses");
     }
 
     TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(
@@ -220,7 +255,7 @@ export function setupSubstrateFunctions() {
         passes: number,
         substrate: string = utils.getDefaultSubstrate(this)
     ): TurboSelector {
-        utils.getSubstrateData(this, substrate).maxPasses = passes;
+        utils.setField(this, substrate, "maxPasses", passes);
         return this;
     }
 
@@ -356,7 +391,8 @@ export function setupSubstrateFunctions() {
         this: TurboSelector,
         properties: SubstrateAddCallbackProperties<SubstrateSolver>,
     ): TurboSelector {
-        if (!properties || !properties.name || !properties.callback) return this;
+        if (!properties || !properties.callback) return this;
+        if (!properties.name) properties.name = randomString(8);
         const substrate = properties.substrate ?? utils.getDefaultSubstrate(this);
 
         const data = utils.getSubstrateData(this, substrate);

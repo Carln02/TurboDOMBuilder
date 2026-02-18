@@ -2,6 +2,8 @@ import {camelToKebabCase, kebabToCamelCase, parse, stringify} from "../../utils/
 import {DefineOptions} from "./define.types";
 import {DefineDecoratorUtils} from "./define.utils";
 import {getSuperMethod} from "../../utils/dataManipulation/prototype";
+import {TurboElementProperties} from "../../turboElement/turboElement.types";
+import {turbo} from "../../turboFunctions/turboFunctions";
 
 const utils = new DefineDecoratorUtils();
 
@@ -36,6 +38,27 @@ function define(elementName?: string, options: DefineOptions = {injectAttributeB
         const name = elementName ?? camelToKebabCase(context.name);
         const prototype = Base.prototype as HTMLElement;
         if (name) utils.prototype(prototype).name = name;
+
+        Object.defineProperty(Base, "tagName", {
+            configurable: true,
+            enumerable: false,
+            writable: false,
+            value: name
+        });
+
+        if (typeof Base["create"] === "function" && !utils.prototype(Base.prototype).wrappedCreate) {
+            utils.prototype(Base.prototype).wrappedCreate = true;
+            const originalCreate = Base["create"];
+            Object.defineProperty(Base, "create", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: function (this: any, properties: TurboElementProperties = {}) {
+                    turbo(properties).applyDefaults({tag: name, ...(this.defaultProperties ?? {})});
+                    return originalCreate.call(this, properties);
+                }
+            });
+        }
 
         Object.defineProperty(Base, "observedAttributes", {
             configurable: true,

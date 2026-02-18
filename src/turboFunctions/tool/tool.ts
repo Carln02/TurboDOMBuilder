@@ -187,10 +187,10 @@ export function setupToolFunctions() {
         options.embeddedTarget = utils.getEmbeddedToolTarget(this.element, manager);
         options.isEmbedded = !!options.embeddedTarget;
 
-        behaviors.forEach(behavior => {
-            propagation = utils.processPropagation(behavior(event, this.element, options), propagation);
-            if (propagation === Propagation.stopImmediatePropagation) return;
-        });
+        for (const behavior of behaviors) {
+            propagation = utils.processPropagation(behavior.executeOn(event, this.element, options), propagation, Propagation.propagate);
+            if (propagation === Propagation.stopImmediatePropagation) break;
+        }
 
         return propagation;
     }

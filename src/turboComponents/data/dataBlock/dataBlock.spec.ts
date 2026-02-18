@@ -190,7 +190,7 @@ describe("TurboDataBlock (object data)", () => {
         // Two entries initially
         expect(added.map(a => a.key).sort()).toEqual(["a", "b"]);
         expect(updated.map(u => u.key).sort()).toEqual(["a", "b"]);
-        expect(observer.getAllInstances().length).toBe(2);
+        expect(observer.getAllValues().length).toBe(2);
 
         // Update a key => should trigger onUpdated
         added.length = 0; updated.length = 0; deleted.length = 0;
@@ -206,7 +206,7 @@ describe("TurboDataBlock (object data)", () => {
 
         // Clear observer
         observer.clear();
-        expect(observer.getAllInstances().length).toBe(0);
+        expect(observer.getAllValues().length).toBe(0);
     });
 });
 

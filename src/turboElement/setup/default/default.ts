@@ -1,6 +1,10 @@
-import {$} from "../../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {Mvc} from "../../../mvc/mvc";
 import {initializeEffects} from "../../../decorators/reactivity/reactivity";
+import {TurboSelector} from "../../../turboFunctions/turboSelector";
+import {TurboEventManagerStateProperties} from "../../../eventHandling/turboEventManager/turboEventManager.types";
+import {TurboElementProperties} from "../../turboElement.types";
+import {CloneElementOptions, FeedforwardProperties} from "../../../turboFunctions/element/element.types";
 
 export function defineDefaultProperties<Type extends new (...args: any[]) => any>(constructor: Type) {
     const prototype = constructor.prototype;
@@ -69,6 +73,29 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
             if (this.mvc && this.mvc instanceof Mvc) this.mvc.initialize();
             initializeEffects(this);
         },
+        configurable: true,
+        enumerable: false,
+    });
+
+    Object.defineProperty(prototype, "clone", {
+        value: function (properties: CloneElementOptions) {return turbo(this).clone(properties)},
+        configurable: true,
+        enumerable: false,
+    });
+
+    const ffKey = Symbol("__defaultFeedforwardProperties__");
+    Object.defineProperty(prototype, "defaultFeedforwardProperties", {
+        get(this: any) {
+            if (!this[ffKey]) this[ffKey] = {};
+            return this[ffKey];
+        },
+        set(this: any, value) {this[ffKey] = value},
+        configurable: true,
+        enumerable: true
+    });
+
+    Object.defineProperty(prototype, "feedforward", {
+        value: function (properties: FeedforwardProperties) {return turbo(this).feedforward(properties)},
         configurable: true,
         enumerable: false,
     });

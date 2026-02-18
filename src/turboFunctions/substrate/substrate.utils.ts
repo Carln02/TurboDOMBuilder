@@ -7,17 +7,21 @@ import {turbo} from "../turboFunctions";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {Propagation} from "../event/event.types";
-import {element} from "../../elementCreation/element";
+import {TurboSubstrate} from "../../mvc/substrate/substrate";
 
 type ObjectMetadata = {
     ignored?: boolean,
 };
 
 type SubstrateData = {
+    attachedInstance?: TurboSubstrate,
+
     active: boolean,
     objects: HTMLCollection | NodeList | Set<object>,
     metadata: WeakMap<object, ObjectMetadata>,
     customData: WeakMap<object, Record<string, any>>;
+
+    objectsChangedDelegate: Delegate<(object: object, status: "added" | "removed") => void>,
 
     priority: number,
     maxPasses: number,
@@ -64,6 +68,7 @@ export class SubstrateFunctionsUtils {
     }
 
     public createSubstrate(element: object, substrate: string): SubstrateData {
+        if (element instanceof TurboSelector) element = element.element;
         const data: SubstrateData = {
             active: false,
             objects: element instanceof Element ? element.children
@@ -73,6 +78,8 @@ export class SubstrateFunctionsUtils {
             customData: new WeakMap(),
             priority: 10,
             maxPasses: 5,
+
+            objectsChangedDelegate: new Delegate(),
 
             queue: new TurboQueue(),
             passes: new WeakMap(),
@@ -86,8 +93,10 @@ export class SubstrateFunctionsUtils {
             sortedSolvers: []
         };
 
-        this.objectsSet.add(element);
-        this.data(element).substrates.set(substrate, data);
+        if (element) {
+            this.objectsSet.add(element);
+            this.data(element).substrates.set(substrate, data);
+        }
         return data;
     }
 
@@ -186,18 +195,34 @@ export class SubstrateFunctionsUtils {
             })
         );
 
-        data.sort((a, b) => a.data.priority - b.data.priority);
+        data.sort((a, b) =>
+            this.getField(a.host, a.name, "priority") - this.getField(b.host, b.name, "priority"));
         return data;
     }
 
+    public getField(element: object, substrate: string, field: string): any {
+        const data = this.getSubstrateData(element, substrate);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
+            && data.attachedInstance[field] !== undefined) return data.attachedInstance[field];
+        return data[field];
+    }
+
+    public setField(element: object, substrate: string, field: string, value: any) {
+        const data = this.getSubstrateData(element, substrate);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate) data.attachedInstance[field] = value;
+        else data[field] = value;
+    }
+
     public setupSubstrateCallbackProperties(element: object, properties: SubstrateCallbackProperties) {
+        if (element instanceof TurboSelector) element = element.element;
         turbo(properties).applyDefaults({
+            substrateHost: element,
             substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: (properties.event as TurboEvent)?.toolName,
-            eventType: (properties.event as TurboEvent).type,
-            eventTarget: (properties.event as TurboEvent).target
+            eventType: (properties.event as TurboEvent)?.type,
+            eventTarget: (properties.event as TurboEvent)?.target
         });
     }
 
