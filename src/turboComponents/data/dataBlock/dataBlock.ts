@@ -190,6 +190,33 @@ class TurboDataBlock<
     }
 
     /*
+ *
+ * Iteration
+ *
+ */
+
+    /**
+     * Default iteration → yields [key, value]
+     */
+    public *[Symbol.iterator](): IterableIterator<[KeyType, any]> {
+        for (const key of this.keys) yield [key, this.get(key)];
+    }
+
+    public entries(): [KeyType, any][] {
+        return this.keys.map(key => [key, this.get(key)]);
+    }
+
+    /**
+     * forEach
+     */
+    public forEach(
+        callback: (value: any, key: KeyType, block: this) => void,
+        thisArg?: any
+    ): void {
+        for (const key of this.keys) callback.call(thisArg, this.get(key), key, this);
+    }
+
+    /*
      *
      * Utilities
      *

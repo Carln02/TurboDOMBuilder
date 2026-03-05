@@ -3,7 +3,7 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
-import {ListenerOptions} from "../../turboFunctions/listener/listener.types";
+import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 
 /**
  * @type {TurboInteractorProperties}

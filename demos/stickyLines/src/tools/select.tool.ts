@@ -1,17 +1,8 @@
-import {TurboTool, TurboDragEvent, turbo, Coordinate, Propagation, behavior} from "../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboDragEvent, Coordinate, Propagation, behavior} from "../../../../build/turbodombuilder.esm";
 
 //Select tool
 export class SelectTool extends TurboTool {
     public toolName = "select"; //Define the tool name
-
-    //On activation --> add class
-    public onActivation() {
-        turbo(this.element).toggleClass("active-tool", true);
-    }
-
-    public onDeactivation() {
-        turbo(this.element).toggleClass("active-tool", false);
-    }
 
     //Equivalent to turbo(tool).addToolBehavior("turbo-drag", "select", (e, el) => {...});
     @behavior() public drag(e: TurboDragEvent, el: Node) {
@@ -22,9 +13,5 @@ export class SelectTool extends TurboTool {
             else return Propagation.propagate;
             return Propagation.stopPropagation;
         } catch (e) {return Propagation.stopPropagation}
-    }
-
-    //TODO FIX SO NO NEED FOR THIS TO EXEC SUBSTRATE
-    @behavior() public dragEnd(e: TurboDragEvent, el: Node) {
     }
 }

@@ -1,9 +1,20 @@
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {Listener} from "../listener/listener";
-import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
-import {ListenerSet} from "../listener/listenerSet";
+import {ListenerCallback, ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
+import {ListenerSet} from "../../turboComponents/datatypes/listener/listenerSet";
 
+/**
+ * @enum {Propagation}
+ * @group Types
+ * @category Event
+ *
+ * @description Enum dictating the propagation of an event.
+ *
+ * @property {Propagation.propagate} propagate - Continue normal propagation.
+ * @property {Propagation.stopPropagation} stopPropagation - Stop propagation to parent targets.
+ * @property {Propagation.stopImmediatePropagation} stopImmediatePropagation - Stop propagation and prevent any
+ * additional listeners on the same target from executing.
+ */
 enum Propagation {
     propagate = "propagate",
     stopPropagation = "stopPropagation",
@@ -11,8 +22,24 @@ enum Propagation {
 }
 
 /**
+ * @type {PreventDefaultOptions}
  * @group Types
  * @category Event
+ *
+ * @description Options for {@link TurboSelector.preventDefault}, which prevents default browser behaviors for
+ * selected event types and can optionally stop propagation.
+ *
+ * @property {string[]} [types] - List of event types to affect. If omitted, defaults to {@link BasicInputEvents}.
+ * @property {"capture" | "bubble"} [phase] - Which phase to prevent. Defaults to `"bubble"`.
+ * @property {false | "stop" | "immediate"} [stop] - Whether to stop propagation when handling the event:
+ * - `false`: do not stop propagation,
+ * - `"stop"`: call `stopPropagation`,
+ * - `"immediate"`: call `stopImmediatePropagation`.
+ * @property {(type: string, e: Event) => boolean} [preventDefaultOn] - Predicate to decide (per event) whether to
+ * call `preventDefault`. Return `true` to prevent default for that event.
+ * @property {boolean} [clearPreviousListeners] - If true, clears previously installed prevent-default listeners
+ * before installing new ones.
+ * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
  */
 type PreventDefaultOptions = {
     types?: string[],
@@ -26,6 +53,7 @@ type PreventDefaultOptions = {
 /**
  * @group Types
  * @category Event
+ * @description Default set of basic input event types typically handled by {@link TurboSelector.preventDefault}.
  */
 const BasicInputEvents = [
     "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
@@ -38,6 +66,8 @@ const BasicInputEvents = [
 /**
  * @group Types
  * @category Event
+ * @description Event types that should usually be registered as **non-passive** when you intend to call
+ *  * `preventDefault()` (e.g., scroll/touch/pointer interactions).
  */
 const NonPassiveEvents = [
     "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"

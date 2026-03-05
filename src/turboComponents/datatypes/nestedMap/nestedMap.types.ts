@@ -13,4 +13,13 @@ type ScopedKey<KeyType = any, BlockKeyType = any> = {
     key?: KeyType,
 };
 
-export {ScopedKey};
+/**
+ * @group Components
+ * @category TurboNestedStore
+ */
+type BlockStoreType<
+    Type extends "array" | "map" = "map",
+    BlockType extends object = object
+> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+
+export {ScopedKey, BlockStoreType};

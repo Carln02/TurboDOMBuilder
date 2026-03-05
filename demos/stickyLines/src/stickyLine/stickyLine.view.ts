@@ -1,4 +1,4 @@
-import {TurboView, element, SvgNamespace, turbo, effect, Point} from "../../../../build/turbodombuilder.esm";
+import {TurboView, element, SvgNamespace, turbo, effect} from "../../../../build/turbodombuilder.esm";
 import {StickyLine} from "./stickyLine";
 import {StickyLineModel} from "./stickyLine.model";
 import {Square} from "../square/square";
@@ -13,9 +13,7 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
 
     public initialize(): void {
         super.initialize();
-        turbo(this).addObjectToSubstrate(this.line)
-            .addObjectToSubstrate(this.startHandle)
-            .addObjectToSubstrate(this.endHandle);
+        requestAnimationFrame(() => turbo(this).getSubstrateObjectList().add(this.line, this.startHandle, this.endHandle));
     }
 
     protected setupUIElements() {
@@ -25,8 +23,8 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
         this.hitLine = element({tag: "line", namespace: SvgNamespace}) as SVGLineElement;
         turbo(this.hitLine).setAttribute("stroke", "transparent").setAttribute("pointer-events", "stroke");
 
-        this.startHandle = Square.create({size: 20, color: "white", classes: "handle", position: this.model.origin.sub(100, 0)});
-        this.endHandle = Square.create({size: 20, color: "white", classes: "handle", position: this.model.origin.add(100, 0)});
+        this.startHandle = Square.create({size: 20, color: "white", classes: "handle"});
+        this.endHandle = Square.create({size: 20, color: "white", classes: "handle"});
     }
 
     protected setupUILayout() {
@@ -36,7 +34,6 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
     }
 
     @effect private updateLines() {
-        this.model.origin = Point.midPoint(this.startHandle.position, this.endHandle.position);
         this.updateLine(this.line);
         this.updateLine(this.hitLine);
     }

@@ -11,6 +11,8 @@ import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {binaryInsert} from "../../utils/computations/arrays";
 import {randomString} from "../../utils/computations/random";
+import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
+import {TurboSubstrate} from "../../mvc/substrate/substrate";
 
 const utils = new SubstrateFunctionsUtils();
 
@@ -133,65 +135,8 @@ export function setupSubstrateFunctions() {
     TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(
         this: TurboSelector,
         substrate: string = utils.getDefaultSubstrate(this)
-    ): Set<object> {
-        const set = new Set<object>();
-        if (!substrate) return set;
-        Array.from(utils.getSubstrateData(this, substrate).objects).forEach(object => {
-            if (!utils.getMetadata(this, substrate, object).ignored) set.add(object);
-        });
-        return set;
-    }
-
-    TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(
-        this: TurboSelector,
-        list: HTMLCollection | NodeList | Set<object>,
-        substrate: string = utils.getDefaultSubstrate(this)
-    ): TurboSelector {
-        if (!list || !substrate) return this;
-        utils.getSubstrateData(this, substrate).objects = list;
-        return this;
-    }
-
-    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(
-        this: TurboSelector,
-        object: object,
-        addToQueue: boolean = true,
-        substrate: string = utils.getDefaultSubstrate(this)
-    ): TurboSelector {
-        if (!object || !substrate) return this;
-        utils.getMetadata(this, substrate, object).ignored = false;
-        const list = utils.getSubstrateData(this, substrate).objects;
-        if (list instanceof HTMLCollection || list instanceof NodeList) return this;
-        try {
-            if (list.has(object)) return this;
-            list.add(object);
-            this.onSubstrateObjectListChange(substrate).fire(object, "added");
-            this.getSubstrateQueue(substrate)?.push(object);
-        } catch {
-        }
-        return this;
-    }
-
-    TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(
-        this: TurboSelector,
-        object: object,
-        substrate: string = utils.getDefaultSubstrate(this)
-    ): TurboSelector {
-        if (!object || !substrate) return this;
-        utils.getMetadata(this, substrate, object).ignored = true;
-        const list = utils.getSubstrateData(this, substrate).objects;
-        if (list instanceof Set) list.delete(object);
-        this.onSubstrateObjectListChange(substrate).fire(object, "removed");
-        return this;
-    }
-
-    TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(
-        this: TurboSelector,
-        object: object,
-        substrate: string = utils.getDefaultSubstrate(this)
-    ): boolean {
-        if (!object || !substrate) return false;
-        return this.getSubstrateObjectList(substrate).has(object);
+    ): TurboNodeList {
+        return utils.getField(this, substrate, "objectList") ?? new TurboNodeList();
     }
 
     TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(
@@ -199,6 +144,15 @@ export function setupSubstrateFunctions() {
         substrate?: string
     ): Delegate<(object: object, status: "added" | "removed") => void> {
         return utils.getSubstrateData(this, substrate).objectsChangedDelegate;
+    }
+
+    //TRIGGER LIST
+
+    TurboSelector.prototype.getSubstrateTriggerList = function _getSubstrateTriggerList(
+        this: TurboSelector,
+        substrate: string = utils.getDefaultSubstrate(this)
+    ): TurboNodeList {
+        return utils.getField(this, substrate, "triggerList") ?? new TurboNodeList();
     }
 
     //QUEUE
@@ -215,7 +169,8 @@ export function setupSubstrateFunctions() {
         substrate: string = utils.getDefaultSubstrate(this)
     ): TurboQueue<object> {
         const queue = utils.getField(this, substrate, "defaultQueue");
-        if (queue) return queue.clone();
+        if (queue instanceof TurboQueue) return queue.clone();
+        else if (queue instanceof Array || queue instanceof Set) return new TurboQueue().push(...queue);
         return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
     }
 
@@ -335,7 +290,7 @@ export function setupSubstrateFunctions() {
             if (!properties.eventTarget || typeof properties.eventTarget !== "object") return true;
         }
 
-        const substratesData = utils.getSubstratesObjectAttachedTo(properties.eventTarget);
+        const substratesData = utils.getSubstratesTriggeredByObjects(properties.eventTarget);
         for (const substrateData of substratesData) {
             for (const checker of substrateData.data.checkers.values()) {
                 if (!checker({...properties, substrate: substrateData.name})) return false;
@@ -461,7 +416,7 @@ export function setupSubstrateFunctions() {
             if (!properties.eventTarget || typeof properties.eventTarget !== "object") return this;
         }
 
-        const substratesData = utils.getSubstratesObjectAttachedTo(properties.eventTarget);
+        const substratesData = utils.getSubstratesTriggeredByObjects(properties.eventTarget);
         for (const substrateData of substratesData) utils.solveSubstrateInternal(substrateData, properties);
         return this;
     }

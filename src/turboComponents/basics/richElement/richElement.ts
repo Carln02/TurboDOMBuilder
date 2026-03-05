@@ -209,13 +209,20 @@ class TurboRichElement<
     }
 
     public static create<
-        Type extends typeof TurboElement,
+        Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>,
+        ViewType extends TurboView = TurboView<any, any>,
+        DataType extends object = object,
+        ModelType extends TurboModel<DataType> = TurboModel,
+        EmitterType extends TurboEmitter = TurboEmitter,
         ElementTag extends ValidTag = any
     >(
-        this: Type,
-        properties: TurboRichElementProperties<ElementTag>
-    ): InstanceType<Type> {
-        if (properties.text && !properties.element) properties.element = properties.text;
+        this: new(...args: any[]) => Type,
+        properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>
+    ): Type {
+        if (properties.text && !properties.element) {
+            properties.element = properties.text;
+            properties.text = undefined;
+        }
         if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
             properties.element.tag = properties.elementTag;
         }

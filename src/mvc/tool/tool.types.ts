@@ -1,11 +1,9 @@
 import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Turbo} from "../../turboFunctions/turboFunctions.types";
 import {TurboView} from "../core/view";
 import {TurboModel} from "../core/model";
 import {TurboEmitter} from "../core/emitter";
-import {DefaultEventNameEntry} from "../../types/eventNaming.types";
 import {MakeToolOptions} from "../../turboFunctions/tool/tool.types";
 
 /**
@@ -36,7 +34,7 @@ type TurboToolProperties<
 };
 
 declare module "./tool" {
-    interface TurboTool {
+    interface TurboTool<ElementType extends object = object> {
         /**
          * @function customActivation
          * @description Custom activation function.
@@ -44,7 +42,7 @@ declare module "./tool" {
          * @param {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
          * to `TurboEventManager.instance`.
          */
-        customActivation(element: Turbo<Element>, manager: TurboEventManager): void;
+        customActivation(element: ElementType, manager?: TurboEventManager): void;
 
         /**
          * @function onActivate

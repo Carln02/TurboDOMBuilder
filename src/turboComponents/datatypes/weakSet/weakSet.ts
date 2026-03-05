@@ -5,7 +5,7 @@
 class TurboWeakSet<Type extends object = object> {
     private readonly _weakRefs: Set<WeakRef<Type>>;
 
-    constructor() {
+    public constructor() {
         this._weakRefs = new Set();
     }
 
@@ -60,6 +60,22 @@ class TurboWeakSet<Type extends object = object> {
     // Clear all weak references
     public clear() {
         this._weakRefs.clear();
+    }
+
+    public forEach(callback: (value: Type, set: this) => void, thisArg?: any): void {
+        for (const weakRef of this._weakRefs) {
+            const obj = weakRef.deref();
+            if (obj !== undefined) callback.call(thisArg, obj, obj, this);
+            else this._weakRefs.delete(weakRef);
+        }
+    }
+
+    public *[Symbol.iterator](): IterableIterator<Type> {
+        for (const weakRef of this._weakRefs) {
+            const obj = weakRef.deref();
+            if (obj !== undefined) yield obj;
+            else this._weakRefs.delete(weakRef);
+        }
     }
 }
 

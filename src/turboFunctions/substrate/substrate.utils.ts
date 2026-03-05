@@ -8,19 +8,16 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {Propagation} from "../event/event.types";
 import {TurboSubstrate} from "../../mvc/substrate/substrate";
-
-type ObjectMetadata = {
-    ignored?: boolean,
-};
+import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 
 type SubstrateData = {
     attachedInstance?: TurboSubstrate,
 
     active: boolean,
-    objects: HTMLCollection | NodeList | Set<object>,
-    metadata: WeakMap<object, ObjectMetadata>,
-    customData: WeakMap<object, Record<string, any>>;
+    objectList: TurboNodeList,
+    triggerList: TurboNodeList,
 
+    customData: WeakMap<object, Record<string, any>>;
     objectsChangedDelegate: Delegate<(object: object, status: "added" | "removed") => void>,
 
     priority: number,
@@ -69,17 +66,20 @@ export class SubstrateFunctionsUtils {
 
     public createSubstrate(element: object, substrate: string): SubstrateData {
         if (element instanceof TurboSelector) element = element.element;
+        const objectList = new TurboNodeList(element instanceof Element ? element.children
+            : element instanceof Node ? element.childNodes
+                : []);
+
         const data: SubstrateData = {
             active: false,
-            objects: element instanceof Element ? element.children
-                : element instanceof Node ? element.childNodes
-                    : new Set(),
-            metadata: new WeakMap(),
+            objectList: objectList,
+            triggerList: new TurboNodeList(objectList),
+
             customData: new WeakMap(),
+            objectsChangedDelegate: new Delegate(),
+
             priority: 10,
             maxPasses: 5,
-
-            objectsChangedDelegate: new Delegate(),
 
             queue: new TurboQueue(),
             passes: new WeakMap(),
@@ -108,15 +108,15 @@ export class SubstrateFunctionsUtils {
     }
 
     public getSubstrateData(element: object, substrate: string): SubstrateData {
-        return this.data(element).substrates.get(substrate);
+        return this.data(element)?.substrates?.get(substrate);
     }
 
     public getSubstrates(element: object): string[] {
-        return [...this.data(element).substrates.keys()];
+        return [...this.data(element)?.substrates?.keys()];
     }
 
     public getActiveSubstrates(element: object): string[] {
-        const data = this.data(element).substrates;
+        const data = this.data(element)?.substrates;
         if (!data) return [];
 
         const entries = [];
@@ -136,18 +136,7 @@ export class SubstrateFunctionsUtils {
         if (allowInactive) return data.keys()[0];
     }
 
-    public getMetadata(element: object, substrate: string, object: object): ObjectMetadata {
-        const substrateData = this.getSubstrateData(element, substrate);
-        if (!substrateData || !substrateData.metadata) return {};
-        let metadata = substrateData.metadata.get(object);
-        if (!metadata) {
-            metadata = {};
-            substrateData.metadata.set(object, metadata);
-        }
-        return metadata;
-    }
-
-    public getCustomData(element: object, substrate: string, object: object): ObjectMetadata {
+    public getCustomData(element: object, substrate: string, object: object): Record<string, any> {
         const substrateData = this.getSubstrateData(element, substrate);
         if (!substrateData || !substrateData.customData) return {};
         let customData = substrateData.customData.get(object);
@@ -158,39 +147,23 @@ export class SubstrateFunctionsUtils {
         return customData;
     }
 
-    public getSubstratesObjectAttachedTo(...elements: object[]): SubstrateDataWithId[] {
+    public getSubstratesTriggeredByObjects(...elements: object[]): SubstrateDataWithId[] {
         if (!elements || elements.length === 0) return [];
 
         const nodeTargets: Node[] = elements.filter(el => el instanceof Node);
         const data: SubstrateDataWithId[] = [];
 
-        const checkTargets = (data: SubstrateData): object[] => {
+        const checkTargets = (substrateName: string, object: object): object[] => {
             const hits: Set<object> = new Set();
-            const list = data.objects;
-
-            if (list instanceof Set) {
-                for (const el of elements) {
-                    if (list.has(el) && !data.metadata.get(el)?.ignored) hits.add(el);
-                }
-            } else if (nodeTargets.length > 0) {
-                for (let t = 0; t < nodeTargets.length; t++) {
-                    for (let i = 0; i < list.length; i++) {
-                        const target = nodeTargets[t];
-                        if (list[i] === target && !data.metadata.get(target)?.ignored) {
-                            hits.add(target);
-                            break;
-                        }
-                    }
-                }
-            }
-
+            const list = this.getField(object, substrateName, "triggerList") ?? new TurboNodeList()
+            for (const el of nodeTargets) if (list.has(el)) hits.add(el);
             return Array.from(hits.values());
         };
 
         this.objectsSet.toArray().forEach(object =>
             this.data(object).substrates.forEach((substrateData, name) => {
                 if (!substrateData.active) return;
-                const hits = checkTargets(substrateData);
+                const hits = checkTargets(name, object);
                 if (hits.length > 0) data.push({name, data: substrateData, host: object, targets: hits});
             })
         );
@@ -202,6 +175,7 @@ export class SubstrateFunctionsUtils {
 
     public getField(element: object, substrate: string, field: string): any {
         const data = this.getSubstrateData(element, substrate);
+        if (!data) return;
         if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
             && data.attachedInstance[field] !== undefined) return data.attachedInstance[field];
         return data[field];

@@ -10,9 +10,9 @@ import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventMa
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {EventFunctionsUtils} from "./event.utils";
 import {TurboSelector} from "../turboSelector";
-import {Listener} from "../listener/listener";
-import {ListenerCallback, ListenerOptions} from "../listener/listener.types";
-import {ListenerSet} from "../listener/listenerSet";
+import {Listener} from "../../turboComponents/datatypes/listener/listener";
+import {ListenerCallback, ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
+import {ListenerSet} from "../../turboComponents/datatypes/listener/listenerSet";
 
 const utils = new EventFunctionsUtils();
 
@@ -152,9 +152,9 @@ export function setupEventFunctions() {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils.getBoundListenersSet(target);
             const entries = utils.getBoundListeners({target, type, toolName: tool, options, manager});
+            checkSubstrates(target, tool);
             if (entries.length === 0) return;
 
-            checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation) return;
 
             for (const entry of entries) {
@@ -172,8 +172,8 @@ export function setupEventFunctions() {
         const applyTool = (target: Node, tool?: string) => {
             if (options.capture || !tool) return;
             if (turbo(target).isToolIgnored(tool, type, manager)) return;
-            if (!this.hasToolBehavior(type, tool, manager)) return;
             checkSubstrates(target, tool);
+            if (!this.hasToolBehavior(type, tool, manager)) return;
             if (propagation === Propagation.stopImmediatePropagation) return;
             propagation = turbo(target).applyTool(tool, type, event, manager);
         };

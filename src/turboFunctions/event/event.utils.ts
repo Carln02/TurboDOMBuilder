@@ -2,9 +2,9 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {TurboEventManagerStateProperties} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {Propagation} from "./event.types";
 import {TurboSelector} from "../turboSelector";
-import {Listener} from "../listener/listener";
-import {MatchListenerProperties} from "../listener/listener.types";
-import {ListenerSet} from "../listener/listenerSet";
+import {Listener} from "../../turboComponents/datatypes/listener/listener";
+import {MatchListenerProperties} from "../../turboComponents/datatypes/listener/listener.types";
+import {ListenerSet} from "../../turboComponents/datatypes/listener/listenerSet";
 
 type ObjectListeners = {
     boundListeners: ListenerSet,

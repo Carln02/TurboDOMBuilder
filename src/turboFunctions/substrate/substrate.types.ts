@@ -2,8 +2,10 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {Propagation} from "../event/event.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
-import {ListenerOptions} from "../listener/listener.types";
+import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 import {TurboSubstrate} from "../../mvc/substrate/substrate";
+import {NodeListType} from "../../turboComponents/datatypes/nodeList/nodeList.types";
+import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 
 /**
  * @type {MakeSubstrateOptions}
@@ -235,56 +237,30 @@ declare module "../turboSelector" {
          * @function getSubstrateObjectList
          * @description Retrieve the list of objects that are constrained by the given substrate.
          * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
-         * @return {Set<object>} - A shallow copy of the list of objects as a `Set`. To modify the list, use
-         * {@link addObjectToSubstrate} and {@link removeObjectFromSubstrate}.
+         * @return {TurboNodeList} - The list of objects. To manipulate, check {@link TurboNodeList}.
          */
-        getSubstrateObjectList(substrate?: string): Set<object>;
-
-        /**
-         * @function setSubstrateObjectList
-         * @description Set the list of objects that are constrained by the given substrate.
-         * @param {HTMLCollection | NodeList | Set<object>} list - The list of objects to constrain.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
-         * @return {this} - Itself for chaining.
-         */
-        setSubstrateObjectList(list: HTMLCollection | NodeList | Set<object>, substrate?: string): this;
-
-        /**
-         * @function addObjectToSubstrate
-         * @description Adds the given object to the substrate's list.
-         * @param {object} object - The object to add to the list.
-         * @param {boolean} [addToQueue=true] - Whether to also add the object to the current queue, if the substrate
-         * is currently resolving.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
-         * @return {this} - Itself for chaining.
-         */
-        addObjectToSubstrate(object: object, addToQueue?: boolean, substrate?: string): this;
-
-        /**
-         * @function removeObjectFromSubstrate
-         * @description Removes the given object from the substrate's list.
-         * @param {object} object - The object to remove from the list.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
-         * @return {this} - Itself for chaining.
-         */
-        removeObjectFromSubstrate(object: object, substrate?: string): this;
-
-        /**
-         * @function hasObjectInSubstrate
-         * @description Check if the given object is in the substrate's object list.
-         * @param {object} object - The object to check.
-         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
-         * @return {boolean} - Whether the object is in the list or not.
-         */
-        hasObjectInSubstrate(object: object, substrate?: string): boolean;
+        getSubstrateObjectList(substrate?: string): TurboNodeList;
 
         /**
          * @function onSubstrateObjectListChange
          * @description Get the delegate fired whenever an object is added to or removed from the substrate's object list.
+         * Defaults to the children of the element the substrate is attached to.
          * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
          * @return {Delegate<(object: object, status: "added" | "removed") => void>} - The delegate.
          */
         onSubstrateObjectListChange(substrate?: string): Delegate<(object: object, status: "added" | "removed") => void>;
+
+        //TRIGGER LIST
+
+        /**
+         * @function getSubstrateTriggerList
+         * @description Retrieve the list of objects that trigger the given substrate to resolve.
+         * Interacting with any of these objects would typically lead to the solving of the given substrate.
+         * Defaults to the substrate's object list.
+         * @param {string} [substrate] - The name of the targeted substrate. Defaults to the first active substrate.
+         * @return {TurboNodeList} - The list of trigger objects. To manipulate, check {@link TurboNodeList}.
+         */
+        getSubstrateTriggerList(substrate?: string): TurboNodeList;
 
         //QUEUE
 

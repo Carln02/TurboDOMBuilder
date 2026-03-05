@@ -11,6 +11,8 @@ import {
 } from "../../turboFunctions/substrate/substrate.types";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
+import {NodeListType} from "../../turboComponents/datatypes/nodeList/nodeList.types";
+import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 
 /**
  * @class TurboSubstrate
@@ -76,6 +78,19 @@ class TurboSubstrate<
     public maxPasses: number;
 
     /**
+     * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
+     * Defaults to the children of the element the substrate is attached to.
+     */
+    public objectList: TurboNodeList;
+
+    /**
+     * @description The list of objects that trigger the substrate to resolve.
+     * Interacting with any of these objects would typically lead to the solving of the given substrate.
+     * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
+     */
+    public triggerList: TurboNodeList;
+
+    /**
      * @description Whether the substrate is active. Defaults to true.
      */
     public get active(): boolean {
@@ -84,18 +99,6 @@ class TurboSubstrate<
 
     public set active(value: boolean) {
         turbo(this).toggleSubstrate(this.substrateName, value);
-    }
-
-    /**
-     * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
-     * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
-     */
-    public get objectList(): Set<object> {
-        return turbo(this).getSubstrateObjectList(this.substrateName);
-    }
-
-    public set objectList(value: HTMLCollection | NodeList | Set<object>) {
-        turbo(this).setSubstrateObjectList(value, this.substrateName);
     }
 
     /**
@@ -114,11 +117,19 @@ class TurboSubstrate<
 
     public constructor(properties: TurboSubstrateProperties<ElementType, ViewType, ModelType, EmitterType>) {
         super(properties);
+
         this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
         if (properties.onActivate) this.onActivate = properties.onActivate;
         if (properties.onDeactivate) this.onDeactivate = properties.onDeactivate;
         if (properties.active !== undefined) this.active = properties.active;
         if (typeof properties.priority === "number") this.priority = properties.priority;
+
+        if (!this.objectList) this.objectList = new TurboNodeList(
+            this.element instanceof Element ? this.element.children
+                : this.element instanceof Node ? this.element.childNodes
+                    : []);
+        if (!this.triggerList) this.triggerList = new TurboNodeList(this.objectList);
+
         this.setup();
     }
 
@@ -167,36 +178,6 @@ class TurboSubstrate<
                 callback: props => this[metadata.name]?.(props)
             });
         });
-    }
-
-    /**
-     * @function addObject
-     * @description Adds the provided object to the substrate's list.
-     * @param {object} object - The object to add.
-     */
-    public addObject(object: object): this {
-        turbo(this).addObjectToSubstrate(object, this.substrateName);
-        return this;
-    }
-
-    /**
-     * @function removeObject
-     * @description Removes the provided object from the substrate's list.
-     * @param {object} object - The object to remove.
-     */
-    public removeObject(object: object): this {
-        turbo(this).removeObjectFromSubstrate(object, this.substrateName);
-        return this;
-    }
-
-    /**
-     * @function hasObject
-     * @description Whether the provided object is included in the substrate's list.
-     * @param {object} object - The object to check.
-     * @return {boolean} - Whether the object is present.
-     */
-    public hasObject(object: object): boolean {
-        return turbo(this).hasObjectInSubstrate(object, this.substrateName);
     }
 
     /**

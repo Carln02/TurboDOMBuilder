@@ -22,13 +22,13 @@ import {Propagation} from "../event/event.types";
  * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
  * to `TurboEventManager.instance`.
  */
-type MakeToolOptions = {
+type MakeToolOptions<ElementType extends object = object> = {
     onActivate?: () => void,
     onDeactivate?: () => void,
 
     activationEvent?: DefaultEventNameEntry,
     clickMode?: ClickMode,
-    customActivation?: (element: Turbo<Element>, manager: TurboEventManager) => void,
+    customActivation?: (element: ElementType, manager?: TurboEventManager) => void,
     key?: string,
     manager?: TurboEventManager
 };

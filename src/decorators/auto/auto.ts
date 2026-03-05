@@ -1,6 +1,6 @@
 import {AutoOptions} from "./auto.types";
 import {AutoUtils} from "./auto.utils";
-import {isNull, isUndefined} from "../../utils/dataManipulation/misc";
+import {isUndefined} from "../../utils/dataManipulation/misc";
 import {
     getFirstDescriptorInChain,
     getFirstPrototypeInChainWith,

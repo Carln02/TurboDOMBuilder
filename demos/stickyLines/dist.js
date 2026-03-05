@@ -18,7 +18,7 @@
     /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
 
 
-    function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function __esDecorate$1(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
         function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
         var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
         var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
@@ -45,7 +45,7 @@
         if (target) Object.defineProperty(target, contextIn.name, descriptor);
         done = true;
     }
-    function __runInitializers(thisArg, initializers, value) {
+    function __runInitializers$1(thisArg, initializers, value) {
         var useValue = arguments.length > 2;
         for (var i = 0; i < initializers.length; i++) {
             value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
@@ -8493,6 +8493,10 @@
         return typeof value == "undefined";
     }
     function alphabeticalSorting(a, b) {
+        if (typeof a === "symbol")
+            a = String(a);
+        if (typeof b === "symbol")
+            b = String(b);
         if (typeof a == "string" && typeof b == "string")
             return a.localeCompare(b);
         else if (typeof a == "number" && typeof b == "number")
@@ -9606,6 +9610,11 @@
         _interactors = new Map();
         _tools = new Map();
         _substrates = new Map();
+        /**
+         * @constructor
+         * @description Create a new MVC manager for a specific element.
+         * @param {MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>} properties - Generation options.
+         */
         constructor(properties) {
             if (properties.element)
                 this.element = properties.element;
@@ -9895,6 +9904,21 @@
             this._substrates.forEach(substrate => substrate.initialize());
             this.model?.initialize();
         }
+        /**
+         * @function getDifference
+         * @description Compute the structural difference between the current MVC configuration
+         * and another configuration description.
+         * The comparison is constructor-based (not instance-based):
+         * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
+         * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+         *   the result contains constructors that exist in the current MVC but not in the provided
+         *   configuration.
+         *
+         * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}]
+         *  The configuration to compare against (typically the same shape used by {@link generate}).
+         * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
+         *  A partial configuration of constructors describing missing pieces relative to `properties`.
+         */
         getDifference(properties = {}) {
             const difference = {};
             const toConstructor = (x) => {
@@ -9942,29 +9966,71 @@
             processArray("substrates");
             return difference;
         }
+        /**
+         * @protected
+         * @function updateController
+         * @description Internal helper used when a controller is added or when pieces are re-linked.
+         * It wires the controller to the current `emitter`, `model` and `view`.
+         * @param {TurboController} controller - Controller instance to update.
+         */
         updateController(controller) {
             controller.emitter = this.emitter;
             controller.model = this.model;
             controller.view = this.view;
         }
+        /**
+         * @protected
+         * @function updateHandler
+         * @description Internal helper to wire a handler to the current model. Called when handlers
+         * are added or when the MVC pieces are re-linked.
+         * @param {TurboHandler} handler - Handler instance to update.
+         */
         updateHandler(handler) {
             handler.model = this.model;
         }
+        /**
+         * @protected
+         * @function updateInteractor
+         * @description Internal helper to wire an interactor to the current `model`, `view`, and `emitter`.
+         * Called when interactors are added or when the MVC pieces are re-linked.
+         * @param {TurboInteractor} interactor - Interactor instance to update.
+         */
         updateInteractor(interactor) {
             interactor.model = this.model;
             interactor.view = this.view;
             interactor.emitter = this.emitter;
         }
+        /**
+         * @protected
+         * @function updateTool
+         * @description Internal helper to wire a tool to the current `emitter`, `model`, and `view`.
+         * Called when tools are added or when the MVC pieces are re-linked.
+         * @param {TurboTool} tool - Tool instance to update.
+         */
         updateTool(tool) {
             tool.emitter = this.emitter;
             tool.model = this.model;
             tool.view = this.view;
         }
+        /**
+         * @protected
+         * @function updateSubstrate
+         * @description Internal helper to wire a substrate to the current `model`, `view`, and `emitter`.
+         * Called when substrates are added or when the MVC pieces are re-linked.
+         * @param {TurboSubstrate} substrate - Substrate instance to update.
+         */
         updateSubstrate(substrate) {
             substrate.model = this.model;
             substrate.view = this.view;
             substrate.emitter = this.emitter;
         }
+        /**
+         * @protected
+         * @function linkPieces
+         * @description Ensure all MVC pieces are mutually linked.
+         * Use this after modifying any of the MVC collections (controllers, handlers, interactors, tools, substrates,
+         * view, model, or emitter) so every piece stays in sync.
+         */
         linkPieces() {
             if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
                 this.model.keyChangedCallback.add(this.emitterFireCallback);
@@ -9981,6 +10047,18 @@
             this._tools.forEach(tool => this.updateTool(tool));
             this._substrates.forEach(substrate => this.updateSubstrate(substrate));
         }
+        /**
+         * @private
+         * @function generateInstance
+         * @description Create a single instance from either a constructor or an already-instantiated object.
+         * If a constructor is provided and `properties` are passed, the constructor is invoked with those properties.
+         * When `shallowCopyProperties` is true, a shallow cloned copy of `properties` is passed to the constructor.
+         * @template Type, PropertiesType
+         * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor or instance to generate.
+         * @param {PropertiesType} [properties] - Optional properties passed to the constructor if `data` is a class.
+         * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` before passing them.
+         * @returns {Type|undefined} - The created instance or the object passed in.
+         */
         generateInstance(data, properties, shallowCopyProperties = true) {
             if (!data)
                 return undefined;
@@ -9991,6 +10069,17 @@
             }
             return data;
         }
+        /**
+         * @private
+         * @function generateInstances
+         * @description Normalize a value that can be a constructor, instance, or array of constructors/instances
+         * into an array of instantiated objects. Uses {@link generateInstance} internally for each entry.
+         * @template Type, PropertiesType
+         * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor(s) or instance(s).
+         * @param {PropertiesType} [properties] - Optional properties forwarded to constructors.
+         * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` for each instantiation.
+         * @returns {Type[]} - Array of instantiated objects (possibly empty).
+         */
         generateInstances(data, properties, shallowCopyProperties = true) {
             if (!data)
                 return [];
@@ -10004,7 +10093,31 @@
             });
             return result;
         }
+        /**
+         * @private
+         * @field emitterFireCallback
+         * @description Callback function wired to the model's `keyChangedCallback` that forwards
+         * key/block change notifications into the emitter. It is stored so it can be removed and reattached
+         * when the model changes.
+         * @param {string} keyName - The block key name that changed.
+         * @param {any} blockKey - The specific block key that changed.
+         * @param {...any} args - Additional arguments forwarded from the model.
+         */
         emitterFireCallback = (keyName, blockKey, ...args) => this.emitter?.fireWithBlock(keyName, blockKey, ...args);
+        /**
+         * @protected
+         * @function extractClassEssenceName
+         * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
+         * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
+         * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+         *
+         * This is used to auto-generate `keyName` values for controllers, handlers, interactors, tools and substrates
+         * when they are not provided explicitly.
+         *
+         * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
+         * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+         * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
+         */
         extractClassEssenceName(constructor, type) {
             let className = constructor.name;
             let prototype = Object.getPrototypeOf(this.element);
@@ -10021,6 +10134,62 @@
             return className.charAt(0).toLowerCase() + className.slice(1);
         }
     }
+
+    /******************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+    /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+    function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+        function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+        var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+        var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+        var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+        var _, done = false;
+        for (var i = decorators.length - 1; i >= 0; i--) {
+            var context = {};
+            for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+            for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+            context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+            var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+            if (kind === "accessor") {
+                if (result === void 0) continue;
+                if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+                if (_ = accept(result.get)) descriptor.get = _;
+                if (_ = accept(result.set)) descriptor.set = _;
+                if (_ = accept(result.init)) initializers.unshift(_);
+            }
+            else if (_ = accept(result)) {
+                if (kind === "field") initializers.unshift(_);
+                else descriptor[key] = _;
+            }
+        }
+        if (target) Object.defineProperty(target, contextIn.name, descriptor);
+        done = true;
+    }
+    function __runInitializers(thisArg, initializers, value) {
+        var useValue = arguments.length > 2;
+        for (var i = 0; i < initializers.length; i++) {
+            value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+        }
+        return useValue ? value : void 0;
+    }
+    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+        var e = new Error(message);
+        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    };
 
     /**
      * @internal
@@ -10446,6 +10615,24 @@
         clear() {
             this._weakRefs.clear();
         }
+        forEach(callback, thisArg) {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    callback.call(thisArg, obj, obj, this);
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+        }
+        *[Symbol.iterator]() {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    yield obj;
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+        }
     }
 
     /**
@@ -10526,15 +10713,452 @@
         }
     }
 
-    class TurboObserver {
+    /**
+     * @group Utilities
+     * @category String
+     *
+     * @description Converts the passed variable into a string.
+     * @param value - The variable to convert to string
+     * @returns {string} - The string representation of the value
+     */
+    function stringify(value) {
+        if (value === null || value === undefined)
+            return undefined;
+        switch (typeof value) {
+            case "string":
+                return value;
+            case "number":
+            case "boolean":
+            case "bigint":
+            case "symbol":
+            case "function":
+                return value.toString();
+            case "object":
+                if (Array.isArray(value))
+                    return JSON.stringify(value.map(entry => stringify(entry)));
+                else if (value instanceof Date)
+                    return value.toISOString();
+                else if (value instanceof Element)
+                    return "[DOM ELEMENT]";
+                else {
+                    try {
+                        return JSON.stringify(value);
+                    }
+                    catch {
+                        return "[object Object]";
+                    }
+                }
+            default:
+                return String(value);
+        }
+    }
+    /**
+     * @group Utilities
+     * @category String
+     *
+     * @description Attempts to convert the passed string back to its original type.
+     * @param str - The string to convert back to its original type
+     * @returns {any} - The original value
+     */
+    function parse(str) {
+        if (isUndefined(str))
+            return undefined;
+        switch (str) {
+            case "null":
+                return null;
+            case "true":
+                return true;
+            case "false":
+                return false;
+        }
+        if (!isNaN(Number(str)))
+            return Number(str);
+        if (/^\d+n$/.test(str))
+            return BigInt(str.slice(0, -1));
+        if (str.startsWith("function") || str.startsWith("(")) {
+            try {
+                const parsedFunction = new Function(`return (${str})`)();
+                if (typeof parsedFunction === "function")
+                    return parsedFunction;
+            }
+            catch {
+            }
+        }
+        try {
+            const parsed = JSON.parse(str);
+            if (typeof parsed === "object" && parsed != null)
+                return parsed;
+        }
+        catch {
+        }
+        return str;
+    }
+    /**
+     * @group Utilities
+     * @category String
+     *
+     * @description Extracts the extension from the given filename or path (e.g.: ".png").
+     * @param {string} str - The filename or path
+     * @return The extension, or an empty string if not found.
+     */
+    function getFileExtension(str) {
+        if (!str || str.length == 0)
+            return "";
+        const match = str.match(/\.\S{1,4}$/);
+        return match ? match[0] : "";
+    }
+    /**
+     * @group Utilities
+     * @category String
+     *
+     * @description converts the provided string from camelCase to kebab-case.
+     * @param {string} str - The string to convert
+     */
+    function camelToKebabCase(str) {
+        if (!str || str.length == 0)
+            return;
+        return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+    }
+    /**
+     * @group Utilities
+     * @category String
+     *
+     * @description converts the provided string from kebab-case to camelCase.
+     * @param {string} str - The string to convert
+     */
+    function kebabToCamelCase(str) {
+        if (!str || str.length == 0)
+            return;
+        return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
+    }
+
+    /**
+     * @class TurboNestedMap
+     * @group Components
+     * @category TurboNestedMap
+     *
+     * @template ValueType - The type of the nested map's values.
+     * @template KeyType - The per-value key type.
+     * @template BlockKeyType - The block-grouping key type.
+     */
+    class TurboNestedMap {
+        nestedMap = new Map();
+        /**
+         * @function get
+         * @description Retrieve the value at the given `key` within the optional `blockKey`.
+         * @param {KeyType} key - Item key.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {ValueType} - The associated value, or `undefined`.
+         */
+        get(key, blockKey = this.defaultBlockKey) {
+            return this.nestedMap.get(blockKey)?.get(key);
+        }
+        /**
+         * @function set
+         * @description Set the given value at the given `key` and optional `blockKey`.
+         * @param {ValueType} value - The value to set.
+         * @param {KeyType} key - The key to set.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         */
+        set(value, key, blockKey = this.defaultBlockKey) {
+            let block = this.nestedMap.get(blockKey);
+            if (!block) {
+                this.nestedMap.set(blockKey, new Map());
+                block = this.nestedMap.get(blockKey);
+            }
+            block?.set(key, value);
+        }
+        /**
+         * @function getKey
+         * @description Find the first (key, blockKey) pair for a given value.
+         * @param {ValueType} value - The value to locate.
+         * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
+         */
+        getKey(value) {
+            for (const [blockKey, map] of this.nestedMap.entries()) {
+                for (const [key, entry] of map.entries()) {
+                    if (entry === value)
+                        return { blockKey, key };
+                }
+            }
+        }
+        /**
+         * @function getKeys
+         * @description Find all (key, blockKey) pairs for a given value.
+         * @param {ValueType} value - The value to locate.
+         * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
+         */
+        getKeys(value) {
+            const result = [];
+            for (const [blockKey, map] of this.nestedMap.entries()) {
+                for (const [key, entry] of map.entries()) {
+                    if (entry === value)
+                        result.push({ blockKey, key });
+                }
+            }
+            return result;
+        }
+        /**
+         * @function getFlatKey
+         * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
+         * @param {ValueType} value - The value to query.
+         * @returns {string | number} - Flattened key, or undefined when value not found.
+         */
+        getFlatKey(value) {
+            const scoped = this.getKey(value);
+            if (!scoped)
+                return;
+            return this.flattenKey(scoped.key, scoped.blockKey);
+        }
+        /**
+         * @function getFromFlatKey
+         * @description Get the value at the given `flatKey`.
+         * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
+         * @returns {ValueType} - The value, or undefined if not found.
+         */
+        getFromFlatKey(flatKey) {
+            const scoped = this.scopeKey(flatKey);
+            if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
+                return;
+            return this.get(scoped.key, scoped.blockKey);
+        }
+        /**
+         * @function getEntriesForBlock
+         * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
+         * key values (if compatible).
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
+         */
+        getEntriesForBlock(blockKey = this.defaultBlockKey) {
+            const block = this.nestedMap.get(blockKey);
+            if (!block)
+                return [];
+            return Array.from(block.entries()).sort((a, b) => alphabeticalSorting(a[0], b[0]));
+        }
+        /**
+         * @function getKeysForBlock
+         * @description Return the keys for a block alphabetically sorted (if compatible).
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {KeyType[]} - Array of keys.
+         */
+        getKeysForBlock(blockKey = this.defaultBlockKey) {
+            return this.getEntriesForBlock(blockKey).map(entry => entry[0]);
+        }
+        /**
+         * @function getValuesForBlock
+         * @description Return the values for a block alphabetically sorted by their keys (if compatible).
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {ValueType[]} - Array of values.
+         */
+        getValuesForBlock(blockKey = this.defaultBlockKey) {
+            return this.getEntriesForBlock(blockKey).map(entry => entry[1]);
+        }
+        /**
+         * @function getAllKeys
+         * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
+         * (if compatible).
+         * @returns {KeyType[]} - Flattened list of all keys.
+         */
+        getAllKeys() {
+            return Array.from(this.nestedMap.keys())
+                .sort(alphabeticalSorting)
+                .flatMap(blockKey => this.getKeysForBlock(blockKey));
+        }
+        /**
+         * @function getAllValues
+         * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
+         * (if compatible).
+         * @returns {ValueType[]} - Flattened list of all values.
+         */
+        getAllValues() {
+            return Array.from(this.nestedMap.keys())
+                .sort(alphabeticalSorting)
+                .flatMap(blockKey => this.getValuesForBlock(blockKey));
+        }
+        /**
+         * @function hasKey
+         * @description Check whether a value exists at the given `key` inside `blockKey`.
+         * @param {KeyType} key - The targeted key.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {boolean} Whether a value exists.
+         */
+        hasKey(key, blockKey = this.defaultBlockKey) {
+            return this.nestedMap.get(blockKey)?.has(key) ?? false;
+        }
+        /**
+         * @function hasBlock
+         * @description Check whether a block exists at `blockKey`.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {boolean} Whether a block exists.
+         */
+        hasBlock(blockKey) {
+            return this.nestedMap.has(blockKey);
+        }
+        /**
+         * @function getBlockSize
+         * @description Get the number of entries inside the target block.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {number} The size of the block.
+         */
+        getBlockSize(blockKey = this.defaultBlockKey) {
+            return this.nestedMap.get(blockKey)?.size ?? 0;
+        }
+        /**
+         * @function removeKey
+         * @description Remove the entry at the given `key` inside `blockKey`.
+         * @param {KeyType} key - The key to remove.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         */
+        removeKey(key, blockKey = this.defaultBlockKey) {
+            this.nestedMap.get(blockKey)?.delete(key);
+        }
+        /**
+         * @function remove
+         * @description Remove the first entry with the given value.
+         * @param {ValueType} value - The value to remove.
+         */
+        remove(value) {
+            const pos = this.getKey(value);
+            if (pos)
+                this.removeKey(pos.key, pos.blockKey);
+        }
+        /**
+         * @function clear
+         * @description Remove all entries and reset internal state.
+         */
+        clear() {
+            for (const [blockKey, map] of this.nestedMap.entries()) {
+                for (const key of map.keys())
+                    this.removeKey(key, blockKey);
+            }
+            this.nestedMap.clear();
+        }
+        /**
+         * @function flattenKey
+         * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
+         * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
+         * @param {KeyType} key - Item key.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @returns {number | string} - The flattened key.
+         */
+        flattenKey(key, blockKey = this.defaultBlockKey) {
+            const compatibleBlockKey = this.getFlatCompatibleKey(blockKey);
+            const compatibleKey = this.getFlatCompatibleKey(key);
+            if (compatibleBlockKey === undefined)
+                return;
+            if (typeof compatibleBlockKey === "string")
+                return compatibleBlockKey + "|" + compatibleKey.toString();
+            let globalIndex = 0;
+            for (const bk of Array.from(this.nestedMap.keys()).sort(alphabeticalSorting)) {
+                if (bk === blockKey)
+                    break;
+                globalIndex += this.getEntriesForBlock(bk).length;
+            }
+            return globalIndex + Number(compatibleKey);
+        }
+        /**
+         * @function scopeKey
+         * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
+         * @param {number | string} flatKey - Flattened key or global index.
+         * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
+         */
+        scopeKey(flatKey) {
+            if (typeof flatKey === "string") {
+                const split = flatKey.toString().split("|");
+                if (split.length < 2)
+                    return {};
+                return { blockKey: split[0], key: split[1] };
+            }
+            const blockKeys = Array.from(this.nestedMap.keys()).sort(alphabeticalSorting);
+            if (typeof flatKey === "number") {
+                if (flatKey < 0)
+                    return { blockKey: blockKeys[0] ?? 0, key: 0 };
+                let index = flatKey;
+                for (const blockKey of blockKeys) {
+                    const size = this.getEntriesForBlock(blockKey).length;
+                    if (index < size)
+                        return { blockKey, key: index };
+                    index -= size;
+                }
+            }
+            const lastBlockKey = blockKeys[blockKeys.length - 1];
+            return { blockKey: lastBlockKey, key: this.getEntriesForBlock(lastBlockKey).length };
+        }
+        /**
+         * @property defaultBlockKey
+         * @protected
+         * @description Default block key used when none is supplied. It returns the first blockKey if present,
+         * otherwise returns the sentinel `"__default__"`.
+         * @returns {BlockKeyType}
+         */
+        get defaultBlockKey() {
+            const key = Array.from(this.nestedMap.keys())?.[0];
+            if (!isUndefined(key))
+                return key;
+            return "__default__";
+        }
+        getFlatCompatibleKey(key) {
+            if (typeof key === "number" || typeof key === "string")
+                return key;
+            return stringify(key);
+        }
+    }
+
+    /**
+     * @class TurboObserver
+     * @group Components
+     * @category TurboObserver
+     *
+     * @extends TurboNestedMap
+     * @description Generic observer that keeps a set of component instances organized by
+     * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
+     * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
+     *
+     * @template DataType - The type of data handled by the observer.
+     * @template {object} ComponentType - The instance type created/managed by the observer.
+     * @template {string | number | symbol} KeyType - The per-item key type.
+     * @template {string | number} BlockKeyType - The block-grouping key type.
+     */
+    class TurboObserver extends TurboNestedMap {
         _isInitialized = false;
+        /**
+         * @property onAdded
+         * @description Delegate called when an item appears for which no component instance exists.
+         * Handlers may return a newly-created component instance which will be stored and then receive subsequent
+         * `onUpdated` calls.
+         */
         onAdded = new Delegate();
+        /**
+         * @property onUpdated
+         * @description Delegate called when an item already has an associated instance and its data changes.
+         */
         onUpdated = new Delegate();
+        /**
+         * @property onDeleted
+         * @description Delegate called when an item is removed.
+         */
         onDeleted = new Delegate();
+        /**
+         * @property onInitialize
+         * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
+         */
         onInitialize = new Delegate();
+        /**
+         * @property onDestroy
+         * @description Delegate fired when the observer is destroyed.
+         */
         onDestroy = new Delegate();
-        instances = new Map();
+        /**
+         * @constructor
+         * @description Create a TurboObserver.
+         * By default, the observer wires `onUpdated` to update instance data if the instance
+         * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
+         * when the associated key is deleted.
+         * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
+         * options and lifecycle callbacks.
+         */
         constructor(properties = {}) {
+            super();
             const self = this;
             if (properties.onAdded)
                 this.onAdded.add((data, id, self, blockKey) => properties.onAdded(data, id, self, blockKey));
@@ -10558,7 +11182,7 @@
                 if (properties.onDeleted)
                     properties.onDeleted(data, instance, id, self, blockKey);
                 else
-                    this.removeInstance(instance);
+                    this.remove(instance);
             });
             if (properties.onInitialize)
                 this.onInitialize.add(() => properties.onInitialize(self));
@@ -10567,90 +11191,76 @@
             if (properties.initialize)
                 this.initialize();
         }
-        getInstance(key, blockKey = this.defaultBlockKey) {
-            return this.instances.get(blockKey)?.get(key);
-        }
-        getBlockInstancesAndKeys(blockKey = this.defaultBlockKey) {
-            const block = this.instances.get(blockKey);
-            if (!block)
-                return [];
-            return Array.from(block.entries());
-        }
-        getBlockInstances(blockKey = this.defaultBlockKey) {
-            return this.getBlockInstancesAndKeys(blockKey)
-                .sort((a, b) => alphabeticalSorting(a[0], b[0]))
-                .map(entry => entry[1]);
-        }
-        getAllInstances() {
-            return Array.from(this.instances.keys())
-                .sort(alphabeticalSorting)
-                .flatMap(blockKey => this.getBlockInstances(blockKey));
-        }
-        getInstanceKey(instance) {
-            for (const [blockKey, map] of this.instances.entries()) {
-                for (const [key, entry] of map.entries()) {
-                    if (entry === instance)
-                        return { blockKey, key };
-                }
-            }
-        }
-        getInstanceAt(flatKey) {
-            const scoped = this.scopeKey(flatKey);
-            if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
-                return;
-            return this.getInstance(scoped.key, scoped.blockKey);
-        }
-        getInstanceFlatKey(instance) {
-            const scoped = this.getInstanceKey(instance);
-            if (!scoped)
-                return;
-            return this.flattenKey(scoped.key, scoped.blockKey);
-        }
-        setInstance(instance, key, blockKey = this.defaultBlockKey) {
-            let instancesBlock = this.instances.get(blockKey);
-            if (!instancesBlock) {
-                this.instances.set(blockKey, new Map());
-                instancesBlock = this.instances.get(blockKey);
-            }
-            instancesBlock?.set(key, instance);
-        }
-        removeInstanceByKey(key, removeFromDOM = true, blockKey = this.defaultBlockKey) {
-            const block = this.instances.get(blockKey);
-            if (!block)
-                return;
-            const instance = block.get(key);
-            block.delete(key);
+        /**
+         * @function removeKey
+         * @description Remove the instance associated with `key` inside `blockKey`.
+         * @param {KeyType} key - The key to remove.
+         * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         */
+        removeKey(key, blockKey = this.defaultBlockKey, removeFromDOM = true) {
+            const instance = this.get(key, blockKey);
+            super.removeKey(key, blockKey);
             if (!instance)
                 return;
             if (removeFromDOM && instance && typeof instance === "object"
                 && "remove" in instance && typeof instance.remove == "function")
                 instance?.remove();
         }
-        removeInstance(instance, removeFromDOM = true) {
-            const pos = this.getInstanceKey(instance);
+        /**
+         * @function remove
+         * @description Remove a given instance.
+         * @param {ComponentType} instance - The instance to remove.
+         * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+         */
+        remove(instance, removeFromDOM = true) {
+            const pos = this.getKey(instance);
             if (pos)
-                this.removeInstanceByKey(pos.key, removeFromDOM, pos.blockKey ?? this.defaultBlockKey);
+                this.removeKey(pos.key, pos.blockKey ?? this.defaultBlockKey, removeFromDOM);
         }
+        /**
+         * @property isInitialized
+         * @description Whether the observer has been initialized (i.e. {@link initialize} called).
+         */
         get isInitialized() {
             return this._isInitialized;
         }
+        /**
+         * @function initialize
+         * @description Invoke `onInitialize` and mark the observer as initialized.
+         */
         initialize() {
             if (this.isInitialized)
                 return;
             this.onInitialize.fire(this);
             this._isInitialized = true;
         }
+        /**
+         * @function clear
+         * @description Remove and destroy all managed instances and reset internal state.
+         */
         clear() {
-            this.getAllInstances().forEach(instance => this.removeInstance(instance));
-            this.instances.clear();
+            super.clear();
             this._isInitialized = false;
         }
+        /**
+         * @function destroy
+         * @description Clear then fire `onDestroy`.
+         */
         destroy() {
             this.clear();
             this.onDestroy.fire(this);
         }
+        /**
+         * @function keyChanged
+         * @description Function to notify the observer of a change at a certain key.
+         * @param {KeyType} key - The changed item key.
+         * @param {DataType} value - The new value for the item.
+         * @param {boolean} [deleted=false] - Whether the item was removed.
+         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         */
         keyChanged(key, value, deleted = false, blockKey = this.defaultBlockKey) {
-            const existingInstance = this.getInstance(key, blockKey);
+            const existingInstance = this.get(key, blockKey);
             if (existingInstance) {
                 if (deleted)
                     this.onDeleted.fire(value, existingInstance, key, this, blockKey);
@@ -10663,69 +11273,25 @@
             const instance = this.onAdded.fire(value, key, this, blockKey);
             if (!instance)
                 return;
-            this.setInstance(instance, key, blockKey);
+            this.set(instance, key, blockKey);
             this.onUpdated.fire(value, instance, key, this, blockKey);
-        }
-        flattenKey(key, blockKey = this.defaultBlockKey) {
-            if (typeof blockKey === "number") {
-                let globalIndex = 0;
-                for (const bk of Array.from(this.instances.keys()).sort(alphabeticalSorting)) {
-                    if (bk === blockKey)
-                        break;
-                    globalIndex += this.getBlockInstancesAndKeys(bk).length;
-                }
-                return globalIndex + Number(key);
-            }
-            else {
-                return blockKey.toString() + "|" + key.toString();
-            }
-        }
-        scopeKey(flatKey) {
-            if (typeof flatKey === "string") {
-                const split = flatKey.toString().split("|");
-                if (split.length < 2)
-                    return {};
-                return { blockKey: split[0], key: split[1] };
-            }
-            const blockKeys = Array.from(this.instances.keys()).sort(alphabeticalSorting);
-            if (typeof flatKey === "number") {
-                if (flatKey < 0)
-                    return { blockKey: blockKeys[0] ?? 0, key: 0 };
-                let index = flatKey;
-                for (const blockKey of blockKeys) {
-                    const size = this.getBlockInstancesAndKeys(blockKey).length;
-                    if (index < size)
-                        return { blockKey, key: index };
-                    index -= size;
-                }
-            }
-            const lastBlockKey = blockKeys[blockKeys.length - 1];
-            return { blockKey: lastBlockKey, key: this.getBlockInstancesAndKeys(lastBlockKey).length };
-        }
-        get defaultBlockKey() {
-            const key = Array.from(this.instances.keys())?.[0];
-            if (!isUndefined(key))
-                return key;
-            return "__default__";
-        }
-    }
-
-    class DataBlockObserver extends TurboObserver {
-        keyChanged(key, value, deleted = false) {
-            super.keyChanged(key, value, deleted, this.defaultBlockKey);
-        }
-        // @ts-ignore
-        getInstanceKey(instance) {
-            return super.getInstanceKey(instance)?.key;
-        }
-        setInstance(instance, key) {
-            super.setInstance(instance, key);
         }
     }
 
     /**
+     * @class TurboDataBlock
      * @group Components
      * @category TurboDataBlock
+     *
+     * @template DataType - The type of the data held in the block.
+     * @template {string | number | symbol} KeyType - The type of the data's keys.
+     * @template IdType - The type of the data's ID.
+     * @template ComponentType - For observers. The type of instances that react to changes in the block.
+     * @template DataEntryType - For observers. The type of the data associated with each observer instance.
+     *
+     * @description Lightweight wrapper around a plain JS container (object, Array or Map) that exposes a consistent
+     * API for reads/writes, signals, {@link TurboObserver}s and host callbacks.
+     * Use this when you want change notifications and host integration around a simple data block.
      */
     let TurboDataBlock = (() => {
         let _enabledCallbacks_decorators;
@@ -10734,12 +11300,14 @@
         return class TurboDataBlock {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-                _enabledCallbacks_decorators = [auto({ defaultValue: true })];
                 __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             _data;
             id;
+            /**
+             * @description The data held by this block. Setting it will clear attached observers and re-initialize the block.
+             */
             get data() {
                 return this._data;
             }
@@ -10750,14 +11318,28 @@
                     this.initialize();
             }
             #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
+            /**
+             * @description Whether callbacks are enabled.
+             */
             get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
             set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
             isInitialized = (__runInitializers(this, _enabledCallbacks_extraInitializers), false);
             host;
             signals = new Map();
             changeObservers = new TurboWeakSet();
+            /**
+             * Delegate fired when the value changes at a certain key/index.
+             */
             onKeyChanged = new Delegate();
-            observerConstructor = DataBlockObserver;
+            /**
+             * The default class of observers to instantiate.
+             */
+            observerConstructor = TurboObserver;
+            /**
+             * @constructor
+             * @description Create a new TurboDataBlock.
+             * @param {DataBlockProperties} [properties] - Optional initialization properties.
+             */
             constructor(properties = {}) {
                 this.id = properties.id;
                 this._data = properties.data;
@@ -10769,11 +11351,23 @@
              * Basics
              *
              */
+            /**
+             * @function get
+             * @description Retrieve the value stored at the given key.
+             * @param {KeyType} key - The key/index to read.
+             * @returns {any} - The stored value, or `undefined` if not present.
+             */
             get(key) {
                 if (this.data instanceof Map)
                     return this.data.get(key);
                 return this.data?.[key];
             }
+            /**
+             * @function set
+             * @description Set a value at the provided key and notify observers/signals if the value changed.
+             * @param {KeyType} key - The key/index to write.
+             * @param {unknown} value - The value to set.
+             */
             set(key, value) {
                 if (!this.data)
                     return;
@@ -10786,6 +11380,14 @@
                     this.data[key] = value;
                 this.keyChanged(key, value);
             }
+            /**
+             * @function add
+             * @description Append or insert a value into an array-backed data block. If the block is not an
+             * array, the call forwards to {@link set}.
+             * @param {unknown} value - The value to insert.
+             * @param {KeyType} [key] - Optional numeric index to insert at. If omitted, the value is pushed.
+             * @returns {KeyType | void} - The index where the value was inserted (for arrays), or void for non-arrays.
+             */
             add(value, key) {
                 if (!this.data || !Array.isArray(this.data))
                     return this.set(key, value);
@@ -10801,11 +11403,22 @@
                 }
                 return index;
             }
+            /**
+             * @function has
+             * @description Check whether the given key exists in the block.
+             * @param {KeyType} key - The key/index to check.
+             * @returns {boolean} - True, if present.
+             */
             has(key) {
                 if (this.data instanceof Map)
                     return this.data.has(key);
                 return this.data?.[key] !== undefined;
             }
+            /**
+             * @function delete
+             * @description Remove the entry at the given key/index and notify observers.
+             * @param {KeyType} key - The key/index to remove.
+             */
             delete(key) {
                 if (!this.data || !this.has(key))
                     return;
@@ -10815,6 +11428,10 @@
                     delete this.data[key];
                 this.keyChanged(key, undefined, true);
             }
+            /**
+             * @property keys
+             * @description Array of all keys currently present in the block.
+             */
             get keys() {
                 if (!this.data || typeof this.data !== "object")
                     return [];
@@ -10827,16 +11444,51 @@
                     ...Object.getOwnPropertySymbols(this.data)
                 ];
             }
+            /**
+             * @property values
+             * @description The block's values in an array (in the order implied by {@link keys}).
+             */
             get values() {
                 return this.keys.map(key => this.get(key));
             }
+            /**
+             * @property size
+             * @description Number of entries in the block.
+             */
             get size() {
                 return this.keys.length;
+            }
+            /*
+         *
+         * Iteration
+         *
+         */
+            /**
+             * Default iteration → yields [key, value]
+             */
+            *[(_enabledCallbacks_decorators = [auto({ defaultValue: true })], Symbol.iterator)]() {
+                for (const key of this.keys)
+                    yield [key, this.get(key)];
+            }
+            entries() {
+                return this.keys.map(key => [key, this.get(key)]);
+            }
+            /**
+             * forEach
+             */
+            forEach(callback, thisArg) {
+                for (const key of this.keys)
+                    callback.call(thisArg, this.get(key), key, this);
             }
             /*
              *
              * Utilities
              *
+             */
+            /**
+             * @function initialize
+             * @description Fire change notifications for every existing key, initializing the block.
+             * @returns {void}
              */
             initialize() {
                 if (!this.data || this.isInitialized)
@@ -10847,7 +11499,8 @@
             }
             /**
              * @function clear
-             * @description Clears the block data.
+             * @description Clear the block and its observers.
+             * @param {boolean} [clearData=true] - If true, also clears the stored data. Otherwise, only resets observers/state.
              */
             clear(clearData = true) {
                 if (clearData)
@@ -10855,6 +11508,11 @@
                 this.changeObservers?.toArray().forEach(observer => observer.clear());
                 this.isInitialized = false;
             }
+            /**
+             * @function toJSON
+             * @description Convert the block into a plain object suitable for JSON serialization.
+             * @returns {object} - Plain JSON-serializable representation.
+             */
             toJSON() {
                 if (this.data instanceof Map)
                     return Object.fromEntries(this.data);
@@ -10871,9 +11529,18 @@
              * Host
              *
              */
+            /**
+             * @function link
+             * @description Attach a host object that will receive `onDirty` and `onChange` callbacks when keys change.
+             * @param {DataBlockHost<DataType, KeyType, IdType>} host - The host to attach.
+             */
             link(host) {
                 this.host = host;
             }
+            /**
+             * @function unlink
+             * @description Detach any previously-linked host.
+             */
             unlink() {
                 this.host = undefined;
             }
@@ -10882,6 +11549,14 @@
              * Signals
              *
              */
+            /**
+             * @function makeSignal
+             * @description Create (or return an existing) reactive {@link SignalBox} for the given key.
+             * The returned signal reads from {@link get} and writes via {@link set}.
+             * @template Type - The type of the signal's value.
+             * @param {KeyType} key - The key for which to create the signal.
+             * @returns {SignalBox<Type>} - The created or cached signal.
+             */
             makeSignal(key) {
                 if (this.signals.has(key))
                     return this.signals.get(key);
@@ -10889,9 +11564,19 @@
                 this.signals.set(key, sig);
                 return sig;
             }
+            /**
+             * @function getSignal
+             * @description Retrieve an existing {@link SignalBox} for the given key if present.
+             * @param {KeyType} key - The key whose signal to retrieve.
+             * @returns {SignalBox<any>} - The signal or undefined if none was created.
+             */
             getSignal(key) {
                 return this.signals.get(key);
             }
+            /**
+             * @function makeAllSignals
+             * @description Create signals for every key currently present in the block.
+             */
             makeAllSignals() {
                 this.keys.forEach(key => this.makeSignal(key));
             }
@@ -10900,10 +11585,16 @@
              * Change observers
              *
              */
+            /**
+             * @function generateObserver
+             * @description Create and register an observer tied to this block.
+             * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Options for observer creation.
+             * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>} - The newly created observer.
+             */
             generateObserver(properties = {}) {
                 const observer = new (properties.customConstructor
                     ?? this.observerConstructor
-                    ?? (DataBlockObserver))({
+                    ?? (TurboObserver))({
                     ...properties,
                     onDestroy: (self) => this.changeObservers?.delete(self),
                     onInitialize: (self) => {
@@ -10920,6 +11611,14 @@
              *
              * Internal utilities
              *
+             */
+            /**
+             * @protected
+             * @function keyChanged
+             * @description Internal hook called whenever a key is added/updated/deleted.
+             * @param {KeyType} key - The key that changed.
+             * @param {unknown} [value=this.get(key)] - The new value (or undefined for deletions).
+             * @param {boolean} [deleted=false] - Whether the key was removed.
              */
             keyChanged(key, value = this.get(key), deleted = false) {
                 this.signals.get(key)?.emit();
@@ -10998,6 +11697,12 @@
                     this.setBlock(data, undefined, this.defaultBlockKey, false);
                 this.setup();
             }
+            /**
+             * @function setup
+             * @description Called in the constructor. Use for setup that should happen at instantiation,
+             * before `this.initialize()` is called.
+             * @protected
+             */
             setup() {
                 initializeEffects(this);
             }
@@ -11611,125 +12316,6 @@
         compositionStart: "compositionstart",
         compositionEnd: "compositionend",
     };
-
-    /**
-     * @group Utilities
-     * @category String
-     *
-     * @description Converts the passed variable into a string.
-     * @param value - The variable to convert to string
-     * @returns {string} - The string representation of the value
-     */
-    function stringify(value) {
-        if (value === null || value === undefined)
-            return undefined;
-        switch (typeof value) {
-            case "string":
-                return value;
-            case "number":
-            case "boolean":
-            case "bigint":
-            case "symbol":
-            case "function":
-                return value.toString();
-            case "object":
-                if (Array.isArray(value))
-                    return JSON.stringify(value.map(entry => stringify(entry)));
-                else if (value instanceof Date)
-                    return value.toISOString();
-                else if (value instanceof Element)
-                    return "[DOM ELEMENT]";
-                else {
-                    try {
-                        return JSON.stringify(value);
-                    }
-                    catch {
-                        return "[object Object]";
-                    }
-                }
-            default:
-                return String(value);
-        }
-    }
-    /**
-     * @group Utilities
-     * @category String
-     *
-     * @description Attempts to convert the passed string back to its original type.
-     * @param str - The string to convert back to its original type
-     * @returns {any} - The original value
-     */
-    function parse(str) {
-        if (isUndefined(str))
-            return undefined;
-        switch (str) {
-            case "null":
-                return null;
-            case "true":
-                return true;
-            case "false":
-                return false;
-        }
-        if (!isNaN(Number(str)))
-            return Number(str);
-        if (/^\d+n$/.test(str))
-            return BigInt(str.slice(0, -1));
-        if (str.startsWith("function") || str.startsWith("(")) {
-            try {
-                const parsedFunction = new Function(`return (${str})`)();
-                if (typeof parsedFunction === "function")
-                    return parsedFunction;
-            }
-            catch {
-            }
-        }
-        try {
-            const parsed = JSON.parse(str);
-            if (typeof parsed === "object" && parsed != null)
-                return parsed;
-        }
-        catch {
-        }
-        return str;
-    }
-    /**
-     * @group Utilities
-     * @category String
-     *
-     * @description Extracts the extension from the given filename or path (e.g.: ".png").
-     * @param {string} str - The filename or path
-     * @return The extension, or an empty string if not found.
-     */
-    function getFileExtension(str) {
-        if (!str || str.length == 0)
-            return "";
-        const match = str.match(/\.\S{1,4}$/);
-        return match ? match[0] : "";
-    }
-    /**
-     * @group Utilities
-     * @category String
-     *
-     * @description converts the provided string from camelCase to kebab-case.
-     * @param {string} str - The string to convert
-     */
-    function camelToKebabCase(str) {
-        if (!str || str.length == 0)
-            return;
-        return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-    }
-    /**
-     * @group Utilities
-     * @category String
-     *
-     * @description converts the provided string from kebab-case to camelCase.
-     * @param {string} str - The string to convert
-     */
-    function kebabToCamelCase(str) {
-        if (!str || str.length == 0)
-            return;
-        return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
-    }
     /**
      * @group Utilities
      * @category Equity
@@ -11959,7 +12545,6 @@
             const clone = typeof constructor.create === "function" ? constructor.create(properties)
                 : turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
             for (const attr of Array.from(originElement.attributes)) {
-                console.log(attr.name, attr.value);
                 if (!exclude.has(attr.name))
                     clone.setAttribute(attr.name, attr.value);
             }
@@ -12092,6 +12677,18 @@
         });
     }
 
+    /**
+     * @enum {Propagation}
+     * @group Types
+     * @category Event
+     *
+     * @description Enum dictating the propagation of an event.
+     *
+     * @property {Propagation.propagate} propagate - Continue normal propagation.
+     * @property {Propagation.stopPropagation} stopPropagation - Stop propagation to parent targets.
+     * @property {Propagation.stopImmediatePropagation} stopImmediatePropagation - Stop propagation and prevent any
+     * additional listeners on the same target from executing.
+     */
     var Propagation;
     (function (Propagation) {
         Propagation["propagate"] = "propagate";
@@ -12101,6 +12698,7 @@
     /**
      * @group Types
      * @category Event
+     * @description Default set of basic input event types typically handled by {@link TurboSelector.preventDefault}.
      */
     const BasicInputEvents = [
         "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
@@ -12112,6 +12710,8 @@
     /**
      * @group Types
      * @category Event
+     * @description Event types that should usually be registered as **non-passive** when you intend to call
+     *  * `preventDefault()` (e.g., scroll/touch/pointer interactions).
      */
     const NonPassiveEvents = [
         "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
@@ -12601,6 +13201,24 @@
     }
 
     const utils$7 = new ListenerUtils();
+    /**
+     * @decorator
+     * @group Decorators
+     * @category Listeners
+     * @function behavior
+     * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
+     * via {@link attachListenersAndBehaviors}.
+     * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
+     * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
+     * to derive the event name from {@link DefaultEventName}.
+     *
+     * @example ```ts
+     * class MyElement {
+     *   @behavior() click(e: Event) { ... }
+     *   //Equivalent to: turbo(this).addToolBehavior(DefaultEventName.click, (e: Event) => { ... });
+     * }
+     * ```
+     */
     function behavior(properties = {}) {
         return function (value, context) {
             //TODO FIX
@@ -12616,6 +13234,16 @@
             return value;
         };
     }
+    /**
+     * @decorator
+     * @group Decorators
+     * @category Listeners
+     * @function attachListenersAndBehaviors
+     * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
+     * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
+     * automatically in the TurboElement lifecycle.
+     * @param {any} context - The object/instance/prototype to attach the listeners and behaviors defined for it.
+     */
     function attachListenersAndBehaviors(context) {
         if (!context || typeof context !== "object")
             return;
@@ -12696,6 +13324,12 @@
                 this.view = properties.view;
             this.setup();
         }
+        /**
+         * @function setup
+         * @description Called in the constructor. Use for setup that should happen at instantiation,
+         * before `this.initialize()` is called.
+         * @protected
+         */
         setup() { }
         /**
          * @function initialize
@@ -12705,6 +13339,11 @@
             this.setupUIListeners();
             this.setupChangedCallbacks();
         }
+        /**
+         * @function setupUIListeners
+         * @description Setup method for defining DOM and input event listeners.
+         * @protected
+         */
         setupUIListeners() {
             attachListenersAndBehaviors(this);
         }
@@ -13375,6 +14014,12 @@
                 this.model = model;
             this.setup();
         }
+        /**
+         * @function setup
+         * @description Called in the constructor. Use for setup that should happen at instantiation,
+         * before `this.initialize()` is called.
+         * @protected
+         */
         setup() {
             initializeEffects(this);
         }
@@ -14106,7 +14751,7 @@
             }
             applyAndHookEvents(turboEventNames, defaultEventNames, applyTurboEvents) {
                 this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
-                for (const name in turboEventNames) {
+                for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
                     if (applyTurboEvents)
                         this.dispatchController.setupCustomDispatcher(name);
                     else
@@ -14126,16 +14771,42 @@
         };
     })();
 
+    /**
+     * @class Listener
+     * @group Components
+     * @category Listener
+     *
+     * @template {Node} TargetType - The type of the event target.
+     * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+     * @description Object representing an event listener, storing its metadata (type, target, toolName, options,
+     * manager) and providing utilities to execute and match it.
+     */
     class Listener {
+        /** @description Event type (e.g., `"click"`, `"pointermove"`). */
         type;
+        /** @description Target node this listener is associated with. */
         target;
+        /** @description Name of the tool this listener is bound to (if any). */
         toolName;
+        /** @description Callback provided by the user. */
         callback;
+        /**
+         * @description Bundled listener that adapts native events to the {@link ListenerCallback} signature.
+         */
         bundledListener;
+        /** @description Listener options used for registration and additional behaviors.*/
         options;
+        /** @description Associated event manager used to coordinate listener execution. */
         manager;
+        /** @description Last animation frame index during which this listener executed. */
         lastExecutionFrame;
+        /** @description Last timestamp (ms) at which this listener executed. */
         lastExecutionTime;
+        /**
+         * @constructor
+         * @param {ListenerProperties<TargetType, CallbackType>} properties - Listener configuration.
+         * @description Creates a {@link Listener}.
+         */
         constructor(properties) {
             if (properties.target instanceof TurboSelector)
                 properties.target = properties.target.element;
@@ -14147,12 +14818,32 @@
             this.options = properties.options ?? {};
             this.manager = properties.manager ?? TurboEventManager.instance;
         }
+        /**
+         * @function execute
+         * @description Executes the listener using its bundled signature.
+         * @param {Event} e - Event passed to the callback.
+         * @returns {Propagation} Propagation returned by the callback.
+         */
         execute(e) {
             return this.bundledListener(e);
         }
+        /**
+         * @function executeOn
+         * @description Executes the underlying callback on an explicit target.
+         * @param {Event} e - Event passed to the callback.
+         * @param {TargetType} target - Target node.
+         * @param {...any[]} args - Additional arguments forwarded to the callback.
+         * @returns {any} Whatever the callback returns (typically {@link Propagation}).
+         */
         executeOn(e, target, ...args) {
             return this.callback(e, target, ...args);
         }
+        /**
+         * @function match
+         * @description Checks whether this listener matches a subset of properties.
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [properties={}] - Properties to match against.
+         * @returns {boolean} Whether this listener matches.
+         */
         match(properties = {}) {
             for (let [key, value] of Object.entries(properties)) {
                 if (key === "target" && value instanceof TurboSelector)
@@ -14179,8 +14870,25 @@
         }
     }
 
+    /**
+     * @class ListenerSet
+     * @group Components
+     * @category Listener
+     *
+     * @template {Node} TargetType - The type of the event target.
+     * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+     * @description Collection of {@link Listener} instances indexed by event type.
+     * Provides helpers to add/remove/query listeners and to remove listeners matching criteria.
+     */
     class ListenerSet {
+        /**
+         * @description Map from event type to a set of listeners registered for that type.
+         */
         listeners = new Map();
+        /**
+         * @readonly
+         * @description Flattened array of all listeners in the set.
+         */
         get listenersArray() {
             const listeners = [];
             for (const set of this.listeners.values()) {
@@ -14211,15 +14919,32 @@
                 this.listeners.get(listener.type)?.delete(listener);
             }
         }
+        /**
+         * @function removeMatchingListeners
+         * @description Removes all listeners that match the provided properties (see {@link Listener.match}).
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+         */
         removeMatchingListeners(matchingProperties = {}) {
             this.getListeners(matchingProperties).forEach((listener) => {
                 // listener.target?.removeEventListener(listener.type, listener.bundledListener, listener.options);
                 this.removeListener(listener);
             });
         }
+        /**
+         * @function getListeners
+         * @description Returns all listeners matching the provided properties (see {@link Listener.match}).
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+         * @returns {Listener[]} Matching listeners.
+         */
         getListeners(matchingProperties = {}) {
             return this.listenersArray.filter(listener => listener.match(matchingProperties));
         }
+        /**
+         * @function getListenersByType
+         * @description Returns the set of listeners registered for the given event type.
+         * @param {string} type - Event type.
+         * @returns {Set<Listener<TargetType, CallbackType>>} Set of listeners for that type.
+         */
         getListenersByType(type) {
             if (!type || !this.listeners.has(type))
                 return new Set();
@@ -14416,9 +15141,9 @@
                 const ts = target instanceof TurboSelector ? target : turbo(target);
                 const boundSet = utils$6.getBoundListenersSet(target);
                 const entries = utils$6.getBoundListeners({ target, type, toolName: tool, options, manager });
+                checkSubstrates(target, tool);
                 if (entries.length === 0)
                     return;
-                checkSubstrates(target, tool);
                 if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 for (const entry of entries) {
@@ -14441,9 +15166,9 @@
                     return;
                 if (turbo(target).isToolIgnored(tool, type, manager))
                     return;
+                checkSubstrates(target, tool);
                 if (!this.hasToolBehavior(type, tool, manager))
                     return;
-                checkSubstrates(target, tool);
                 if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 propagation = turbo(target).applyTool(tool, type, event, manager);
@@ -15086,6 +15811,472 @@
         }
     }
 
+    /**
+     * @class TurboNodeList
+     * @group Components
+     * @category TurboNodeList
+     *
+     * @description A composable, Set-like collection for managing nodes. Supports individual nodes, live DOM
+     * collections ({@link HTMLCollection} or {@link NodeListOf}), and nested {@link TurboNodeList} instances as
+     * sub-lists. Changes to sub-lists and live DOM collections propagate automatically on iteration.
+     *
+     * @template {object} Type - The type of the nodes held in the list.
+     */
+    class TurboNodeList {
+        customNodes = new TurboWeakSet();
+        ignoredMap = new WeakMap();
+        domLists = new TurboWeakSet();
+        subNodeLists = new TurboWeakSet();
+        /**
+         * @constructor
+         * @param {NodeListType<Type>} value - The initial value to populate the list with.
+         */
+        constructor(value) {
+            this.list = value;
+        }
+        /**
+         * @description A {@link Set} snapshot of all entries in this list, without duplicates.
+         */
+        get list() {
+            return new Set(this);
+        }
+        set list(value) {
+            if (!value)
+                return;
+            this.clear();
+            this.addEntry(value);
+        }
+        /**
+         * @description An array snapshot of all entries in this list, without duplicates.
+         */
+        get array() {
+            return Array.from(this);
+        }
+        /**
+         * @description The number of entries in this list, ignoring duplicates.
+         */
+        get size() {
+            let count = 0;
+            for (const _ of this)
+                count++;
+            return count;
+        }
+        *[Symbol.iterator]() {
+            const seen = new Set();
+            for (const subNodeList of this.subNodeLists)
+                for (const entry of subNodeList)
+                    if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                        seen.add(entry);
+                        yield entry;
+                    }
+            for (const domList of this.domLists)
+                for (const entry of Array.from(domList))
+                    if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                        seen.add(entry);
+                        yield entry;
+                    }
+            for (const entry of this.customNodes)
+                if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                    seen.add(entry);
+                    yield entry;
+                }
+        }
+        /**
+         * @function add
+         * @description Adds one or more entries to the list. Entries may be individual nodes, arrays, sets,
+         * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+         * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        add(...entries) {
+            entries.forEach(entry => this.addEntry(entry));
+            return this;
+        }
+        /**
+         * @function remove
+         * @description Removes one or more entries from the list. Entries may be individual nodes, arrays, sets,
+         * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+         * @param {...(NodeListType<Type> | Type)[]} entries - The entries to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        remove(...entries) {
+            entries.forEach(entry => this.removeEntry(entry));
+            return this;
+        }
+        /**
+         * @function has
+         * @description Checks whether the given entry (or entries) is present in the list.
+         * @param {Type | NodeListType<Type>} entry - The entry (or entries) to check.
+         * @returns {boolean} Whether the entry (or entries) is present in the list.
+         */
+        has(entry) {
+            if (entry instanceof TurboNodeList)
+                return this.subNodeLists.has(entry);
+            if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                return this.domLists.has(entry);
+            if (entry instanceof Set || entry instanceof Array) {
+                const arr = Array.from(entry);
+                if (arr.length === 0)
+                    return false;
+                return arr.every(item => this.has(item));
+            }
+            if (this.ignoredMap.get(entry))
+                return false;
+            if (this.customNodes.has(entry))
+                return true;
+            for (const subNodeList of this.subNodeLists)
+                for (const item of subNodeList.array)
+                    if (entry === item && !this.ignoredMap.get(item))
+                        return true;
+            for (const domList of this.domLists)
+                for (const item of Array.from(domList))
+                    if (entry === item && !this.ignoredMap.get(item))
+                        return true;
+            return false;
+        }
+        /**
+         * @function clear
+         * @description Clears all entries from the list.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        clear() {
+            this.customNodes.clear();
+            this.ignoredMap = new WeakMap();
+            this.domLists.clear();
+            this.subNodeLists.clear();
+            return this;
+        }
+        addEntry(entry) {
+            if (entry instanceof TurboNodeList)
+                this.subNodeLists.add(entry);
+            else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                this.domLists.add(entry);
+            else if (entry instanceof Set || entry instanceof Array)
+                for (const item of entry) {
+                    this.customNodes.add(item);
+                    this.ignoredMap.set(item, false);
+                }
+            else {
+                this.customNodes.add(entry);
+                this.ignoredMap.set(entry, false);
+            }
+        }
+        removeEntry(entry) {
+            if (entry instanceof TurboNodeList)
+                this.subNodeLists.delete(entry);
+            else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                this.domLists.delete(entry);
+            else if (entry instanceof Set || entry instanceof Array)
+                for (const item of entry) {
+                    this.customNodes.delete(item);
+                    this.ignoredMap.set(item, true);
+                }
+            else {
+                this.customNodes.delete(entry);
+                this.ignoredMap.set(entry, true);
+            }
+        }
+    }
+
+    /**
+     * @class TurboSubstrate
+     * @group MVC
+     * @category Substrate
+     *
+     * @extends TurboController
+     * @template {object} ElementType - The type of the element.
+     * @template {TurboView} ViewType - The element's view type, if any.
+     * @template {TurboModel} ModelType - The element's model type, if any.
+     * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+     * @description Class representing a substrate in MVC, bound to the provided element.
+     */
+    class TurboSubstrate extends TurboController {
+        /**
+         * @description The name of the substrate.
+         */
+        substrateName;
+        /**
+         * @description The property keys of the substrate solvers defined in the instance.
+         */
+        solversMetadata = [];
+        /**
+         * @description The property keys of the substrate checkers defined in the instance.
+         */
+        checkersMetadata = [];
+        /**
+         * @description The property keys of the substrate mutators defined in the instance.
+         */
+        mutatorsMetadata = [];
+        /**
+         * @description The priority of the substrate. Higher priority substrates (lower number) should
+         * be resolved first. Defaults to 10.
+         */
+        priority;
+        /**
+         * @description The default queue template for the substrate, used when starting a new resolving pass.
+         * It defaults to the substrate's object list.
+         */
+        defaultQueue;
+        /**
+         * @description The maximum number of passes allowed per object for this substrate during resolving.
+         * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+         */
+        maxPasses;
+        /**
+         * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
+         * Defaults to the children of the element the substrate is attached to.
+         */
+        objectList;
+        /**
+         * @description The list of objects that trigger the substrate to resolve.
+         * Interacting with any of these objects would typically lead to the solving of the given substrate.
+         * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
+         */
+        triggerList;
+        /**
+         * @description Whether the substrate is active. Defaults to true.
+         */
+        get active() {
+            return turbo(this).activeSubstrates.includes(this.substrateName);
+        }
+        set active(value) {
+            turbo(this).toggleSubstrate(this.substrateName, value);
+        }
+        /**
+         * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
+         */
+        get onObjectListChange() {
+            return turbo(this).onSubstrateObjectListChange(this.substrateName);
+        }
+        /**
+         * @description The current queue to be processed by the substrate while resolving.
+         */
+        get queue() {
+            return turbo(this).getSubstrateQueue(this.substrateName);
+        }
+        constructor(properties) {
+            super(properties);
+            this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
+            if (properties.onActivate)
+                this.onActivate = properties.onActivate;
+            if (properties.onDeactivate)
+                this.onDeactivate = properties.onDeactivate;
+            if (properties.active !== undefined)
+                this.active = properties.active;
+            if (typeof properties.priority === "number")
+                this.priority = properties.priority;
+            if (!this.objectList)
+                this.objectList = new TurboNodeList(this.element instanceof Element ? this.element.children
+                    : this.element instanceof Node ? this.element.childNodes
+                        : []);
+            if (!this.triggerList)
+                this.triggerList = new TurboNodeList(this.objectList);
+            this.setup();
+        }
+        /**
+         * @function initialize
+         * @override
+         * @description Initialization function that calls {@link makeSubstrate} on `this.element`, sets it up, and attaches
+         * all the defined solvers.
+         */
+        initialize() {
+            super.initialize();
+            if (!this.substrateName)
+                return;
+            turbo(this).makeSubstrate(this.substrateName, {
+                onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
+                onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
+                attachedInstance: this
+            });
+            this.solversMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addSolver({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
+            });
+            this.checkersMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addChecker({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
+            });
+            this.mutatorsMetadata.forEach(metadata => {
+                if (!metadata.name)
+                    return;
+                turbo(this).addMutator({
+                    name: metadata.name,
+                    substrate: this.substrateName,
+                    priority: metadata.priority,
+                    callback: props => this[metadata.name]?.(props)
+                });
+            });
+        }
+        /**
+         * @function getObjectPasses
+         * @description Retrieve how many times the given object has been processed for the current resolving session
+         * of the substrate.
+         * @param {object} object - The object to query.
+         * @return {number} - Number of passes already performed on this object.
+         */
+        getObjectPasses(object) {
+            return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+        }
+        /**
+         * @function getObjectData
+         * @description Retrieve custom per-object data for this substrate. It is reset on every new
+         * resolving session.
+         * @param {object} object - The object to query.
+         * @return {Record<string, any>} - The stored data object (or an empty object if none).
+         */
+        getObjectData(object) {
+            return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+        }
+        /**
+         * @function setObjectData
+         * @description Set custom per-object data for this substrate. It is reset on every new resolving session.
+         * @param {object} object - The object to update.
+         * @param {Record<string, any>} [data] - The new data object to associate with this object.
+         * @return {this} - Itself for chaining.
+         */
+        setObjectData(object, data) {
+            return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
+        }
+        /**
+         * @function addChecker
+         * @description Register a checker in the substrate. Checkers dictate whether the event should continue
+         * executing depending on the provided context (event, tool, target, etc.).
+         * @param {SubstrateAddCallbackProperties<SubstrateChecker>} properties - Configuration object, including the
+         * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
+         * `substrate`, and the `priority` of the checker.
+         * @return {this} - Itself for chaining.
+         */
+        addChecker(properties) {
+            turbo(this).addChecker({ ...properties, substrate: this.substrateName });
+            return this;
+        }
+        /**
+         * @function removeChecker
+         * @description Remove a checker from this substrate by its name.
+         * @param {string} name - The checker name.
+         * @return {this} - Itself for chaining.
+         */
+        removeChecker(name) {
+            turbo(this).removeChecker(name, this.substrateName);
+            return this;
+        }
+        /**
+         * @function clearCheckers
+         * @description Remove all checkers attached to this substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearCheckers() {
+            turbo(this).clearCheckers(this.substrateName);
+            return this;
+        }
+        /**
+         * @function check
+         * @description Evaluate all checkers for this substrate and return whether the event should proceed or halt.
+         * @param {SubstrateCallbackProperties} [properties] - Context passed to each checker.
+         * @return {boolean} - Whether the substrate passes all checks.
+         */
+        check(properties) {
+            return turbo(this).checkSubstrate({ ...properties, substrate: this.substrateName });
+        }
+        //MUTATOR
+        /**
+         * @function addMutator
+         * @description Register a mutator in the substrate. Mutators compute or transform a value based on the context.
+         * @param {SubstrateAddCallbackProperties<SubstrateMutator>} properties - Configuration object, including the
+         * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
+         * @return {this} - Itself for chaining.
+         */
+        addMutator(properties) {
+            turbo(this).addMutator({ ...properties, substrate: this.substrateName });
+            return this;
+        }
+        /**
+         * @function removeMutator
+         * @description Remove a mutator from this substrate by its name.
+         * @param {string} name - The mutator name.
+         * @return {this} - Itself for chaining.
+         */
+        removeMutator(name) {
+            turbo(this).removeMutator(name, this.substrateName);
+            return this;
+        }
+        /**
+         * @function clearMutators
+         * @description Remove all mutators attached to this substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearMutators() {
+            turbo(this).clearMutators(this.substrateName);
+            return this;
+        }
+        /**
+         * @function mutate
+         * @template Type - The type of the value to mutate
+         * @description Execute a mutator for this substrate and return the resulting value.
+         * @param {SubstrateMutatorProperties<Type>} [properties] - Context object, including the
+         * `mutation` to execute, and the input `value` to mutate.
+         * @return {Type} - The mutated result.
+         */
+        mutate(properties) {
+            return turbo(this).mutate({ ...properties, substrate: this.substrateName });
+        }
+        /**
+         * @function addSolver
+         * @description Register a solver in the substrate. Solvers typically execute after an event is fired to
+         * ensure the substrate's constraints are maintained. They process all objects in the substrate's queue,
+         * one after the other.
+         * @param {SubstrateAddCallbackProperties<SubstrateSolver>} properties - Configuration object, including the
+         * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
+         * @return {this} - Itself for chaining.
+         */
+        addSolver(properties) {
+            turbo(this).addSolver({ ...properties, substrate: this.substrateName });
+            return this;
+        }
+        /**
+         * @function removeSolver
+         * @description Remove the given function from the substrate's list of solvers.
+         * @param {string} name - The solver's name.
+         * @return {this} - Itself for chaining.
+         */
+        removeSolver(name) {
+            turbo(this).removeSolver(name, this.substrateName);
+            return this;
+        }
+        /**
+         * @function clearSolvers
+         * @description Remove all solvers attached to the substrate.
+         * @return {this} - Itself for chaining.
+         */
+        clearSolvers() {
+            turbo(this).clearSolvers(this.substrateName);
+            return this;
+        }
+        /**
+         * @function solveSubstrate
+         * @description Solve the substrate by executing all of its attached solvers. Each solver will be executed
+         * on every object in the substrate's queue, incrementing its number of passes in the process.
+         * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context.
+         * @return {this} - Itself for chaining.
+         */
+        solve(properties = {}) {
+            turbo(this).solveSubstrate({ ...properties, substrate: this.substrateName });
+            return this;
+        }
+    }
+
     class SubstrateFunctionsUtils {
         objectsSet = new TurboWeakSet();
         dataMap = new WeakMap;
@@ -15101,16 +16292,17 @@
         createSubstrate(element, substrate) {
             if (element instanceof TurboSelector)
                 element = element.element;
+            const objectList = new TurboNodeList(element instanceof Element ? element.children
+                : element instanceof Node ? element.childNodes
+                    : []);
             const data = {
                 active: false,
-                objects: element instanceof Element ? element.children
-                    : element instanceof Node ? element.childNodes
-                        : new Set(),
-                metadata: new WeakMap(),
+                objectList: objectList,
+                triggerList: new TurboNodeList(objectList),
                 customData: new WeakMap(),
+                objectsChangedDelegate: new Delegate(),
                 priority: 10,
                 maxPasses: 5,
-                objectsChangedDelegate: new Delegate(),
                 queue: new TurboQueue(),
                 passes: new WeakMap(),
                 onActivate: new Delegate(),
@@ -15136,13 +16328,13 @@
                 data.active = !data.active;
         }
         getSubstrateData(element, substrate) {
-            return this.data(element).substrates.get(substrate);
+            return this.data(element)?.substrates?.get(substrate);
         }
         getSubstrates(element) {
-            return [...this.data(element).substrates.keys()];
+            return [...this.data(element)?.substrates?.keys()];
         }
         getActiveSubstrates(element) {
-            const data = this.data(element).substrates;
+            const data = this.data(element)?.substrates;
             if (!data)
                 return [];
             const entries = [];
@@ -15163,17 +16355,6 @@
             if (allowInactive)
                 return data.keys()[0];
         }
-        getMetadata(element, substrate, object) {
-            const substrateData = this.getSubstrateData(element, substrate);
-            if (!substrateData || !substrateData.metadata)
-                return {};
-            let metadata = substrateData.metadata.get(object);
-            if (!metadata) {
-                metadata = {};
-                substrateData.metadata.set(object, metadata);
-            }
-            return metadata;
-        }
         getCustomData(element, substrate, object) {
             const substrateData = this.getSubstrateData(element, substrate);
             if (!substrateData || !substrateData.customData)
@@ -15185,42 +16366,44 @@
             }
             return customData;
         }
-        getSubstratesObjectAttachedTo(...elements) {
+        getSubstratesTriggeredByObjects(...elements) {
             if (!elements || elements.length === 0)
                 return [];
             const nodeTargets = elements.filter(el => el instanceof Node);
             const data = [];
-            const checkTargets = (data) => {
+            const checkTargets = (substrateName, object) => {
                 const hits = new Set();
-                const list = data.objects;
-                if (list instanceof Set) {
-                    for (const el of elements) {
-                        if (list.has(el) && !data.metadata.get(el)?.ignored)
-                            hits.add(el);
-                    }
-                }
-                else if (nodeTargets.length > 0) {
-                    for (let t = 0; t < nodeTargets.length; t++) {
-                        for (let i = 0; i < list.length; i++) {
-                            const target = nodeTargets[t];
-                            if (list[i] === target && !data.metadata.get(target)?.ignored) {
-                                hits.add(target);
-                                break;
-                            }
-                        }
-                    }
-                }
+                const list = this.getField(object, substrateName, "triggerList") ?? new TurboNodeList();
+                for (const el of nodeTargets)
+                    if (list.has(el))
+                        hits.add(el);
                 return Array.from(hits.values());
             };
             this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
                 if (!substrateData.active)
                     return;
-                const hits = checkTargets(substrateData);
+                const hits = checkTargets(name, object);
                 if (hits.length > 0)
                     data.push({ name, data: substrateData, host: object, targets: hits });
             }));
-            data.sort((a, b) => a.data.priority - b.data.priority);
+            data.sort((a, b) => this.getField(a.host, a.name, "priority") - this.getField(b.host, b.name, "priority"));
             return data;
+        }
+        getField(element, substrate, field) {
+            const data = this.getSubstrateData(element, substrate);
+            if (!data)
+                return;
+            if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
+                && data.attachedInstance[field] !== undefined)
+                return data.attachedInstance[field];
+            return data[field];
+        }
+        setField(element, substrate, field, value) {
+            const data = this.getSubstrateData(element, substrate);
+            if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate)
+                data.attachedInstance[field] = value;
+            else
+                data[field] = value;
         }
         setupSubstrateCallbackProperties(element, properties) {
             if (element instanceof TurboSelector)
@@ -15231,8 +16414,8 @@
                 manager: TurboEventManager.instance,
                 eventOptions: {},
                 toolName: properties.event?.toolName,
-                eventType: properties.event.type,
-                eventTarget: properties.event.target
+                eventType: properties.event?.type,
+                eventTarget: properties.event?.target
             });
         }
         solveSubstrateInternal(data, properties) {
@@ -15284,6 +16467,52 @@
         return low;
     }
 
+    /**
+     * @group Utilities
+     * @category Random
+     */
+    function randomId(length = 8) {
+        const array = new Uint8Array(length);
+        crypto.getRandomValues(array);
+        return Array.from(array)
+            .map(b => b.toString(36).padStart(2, "0"))
+            .join("")
+            .slice(0, length);
+    }
+    /**
+     * @group Utilities
+     * @category Random
+     */
+    function randomFromRange(n1, n2) {
+        if (typeof n1 != "number" || typeof n2 != "number")
+            return 0;
+        const min = Math.min(n1, n2);
+        const max = Math.max(n1, n2);
+        return (Math.random() * (max - min)) + min;
+    }
+    /**
+     * @group Utilities
+     * @category Random
+     */
+    function randomColor(saturation = [50, 70], lightness = [70, 85]) {
+        if (typeof saturation != "number" && saturation.length >= 2)
+            saturation = randomFromRange(saturation[0], saturation[1]);
+        if (typeof lightness != "number" && lightness.length >= 2)
+            lightness = randomFromRange(lightness[0], lightness[1]);
+        return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
+    }
+    /**
+     * @group Utilities
+     * @category Random
+     */
+    function randomString(length = 12) {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let result = "";
+        for (let i = 0; i < length; i++)
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        return result;
+    }
+
     const utils$3 = new SubstrateFunctionsUtils();
     function setupSubstrateFunctions() {
         TurboSelector.prototype.makeSubstrate = function _makeSubstrate(substrate, options) {
@@ -15295,6 +16524,8 @@
                 this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
             if (options?.priority)
                 utils$3.getSubstrateData(this, substrate).priority = options.priority;
+            if (options?.attachedInstance)
+                utils$3.getSubstrateData(this, substrate).attachedInstance = options.attachedInstance;
             if (options?.active || options?.active === undefined)
                 utils$3.activate(this, substrate, true);
             return this;
@@ -15314,9 +16545,38 @@
             configurable: false,
             enumerable: true
         });
-        TurboSelector.prototype.activateSubstrate = function _activateSubstrates(substrate = utils$3.getDefaultSubstrate(this), activate) {
+        TurboSelector.prototype.activateSubstrate = function _activateSubstrates(...substrates) {
+            const targets = substrates.length ? substrates : [utils$3.getDefaultSubstrate(this)];
+            targets.forEach(substrate => {
+                if (substrate)
+                    utils$3.activate(this, substrate, true);
+            });
+            return this;
+        };
+        TurboSelector.prototype.deactivateSubstrate = function _deactivateSubstrates(...substrates) {
+            const targets = substrates.length ? substrates : [utils$3.getDefaultSubstrate(this)];
+            targets.forEach(substrate => {
+                if (substrate)
+                    utils$3.activate(this, substrate, false);
+            });
+            return this;
+        };
+        TurboSelector.prototype.toggleSubstrate = function _toggleSubstrates(substrate = utils$3.getDefaultSubstrate(this), force) {
             if (substrate)
-                utils$3.activate(this, substrate, activate);
+                utils$3.activate(this, substrate, force);
+            return this;
+        };
+        TurboSelector.prototype.activateOnlySubstrate = function _activateOnlySubstrates(substrate = utils$3.getDefaultSubstrate(this)) {
+            if (substrate)
+                utils$3.getSubstrates(this).forEach(subs => utils$3.activate(this, substrate, substrate === subs));
+            return this;
+        };
+        TurboSelector.prototype.activateAllSubstrates = function _activateAllSubstrates() {
+            utils$3.getSubstrates(this).forEach(substrate => utils$3.activate(this, substrate, true));
+            return this;
+        };
+        TurboSelector.prototype.deactivateAllSubstrates = function _deactivateAllSubstrates() {
+            utils$3.getSubstrates(this).forEach(substrate => utils$3.activate(this, substrate, false));
             return this;
         };
         TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = utils$3.getDefaultSubstrate(this)) {
@@ -15327,73 +16587,34 @@
         };
         //PRIORITY
         TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = utils$3.getDefaultSubstrate(this)) {
-            return utils$3.getSubstrateData(this, substrate)?.priority ?? 0;
+            return utils$3.getField(this, substrate, "priority") ?? 0;
         };
         TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = utils$3.getDefaultSubstrate(this)) {
             if (typeof priority === "number")
-                utils$3.getSubstrateData(this, substrate).priority = priority;
+                utils$3.setField(this, substrate, "priority", priority);
             return this;
         };
         //OBJECT LIST
         TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$3.getDefaultSubstrate(this)) {
-            const set = new Set();
-            if (!substrate)
-                return set;
-            Array.from(utils$3.getSubstrateData(this, substrate).objects).forEach(object => {
-                if (!utils$3.getMetadata(this, substrate, object).ignored)
-                    set.add(object);
-            });
-            return set;
-        };
-        TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!list || !substrate)
-                return this;
-            utils$3.getSubstrateData(this, substrate).objects = list;
-            return this;
-        };
-        TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return this;
-            utils$3.getMetadata(this, substrate, object).ignored = false;
-            const list = utils$3.getSubstrateData(this, substrate).objects;
-            if (list instanceof HTMLCollection || list instanceof NodeList)
-                return this;
-            try {
-                if (list.has(object))
-                    return this;
-                list.add(object);
-                this.onSubstrateObjectListChange(substrate).fire(object, "added");
-            }
-            catch {
-            }
-            return this;
-        };
-        TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return this;
-            utils$3.getMetadata(this, substrate, object).ignored = true;
-            const list = utils$3.getSubstrateData(this, substrate).objects;
-            if (list instanceof Set)
-                list.delete(object);
-            this.onSubstrateObjectListChange(substrate).fire(object, "removed");
-            return this;
-        };
-        TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return false;
-            return this.getSubstrateObjectList(substrate).has(object);
+            return utils$3.getField(this, substrate, "objectList") ?? new TurboNodeList();
         };
         TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(substrate) {
             return utils$3.getSubstrateData(this, substrate).objectsChangedDelegate;
+        };
+        //TRIGGER LIST
+        TurboSelector.prototype.getSubstrateTriggerList = function _getSubstrateTriggerList(substrate = utils$3.getDefaultSubstrate(this)) {
+            return utils$3.getField(this, substrate, "triggerList") ?? new TurboNodeList();
         };
         //QUEUE
         TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
             return utils$3.getSubstrateData(this, substrate).queue;
         };
         TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
-            const queue = utils$3.getSubstrateData(this, substrate).defaultQueue;
-            if (queue)
+            const queue = utils$3.getField(this, substrate, "defaultQueue");
+            if (queue instanceof TurboQueue)
                 return queue.clone();
+            else if (queue instanceof Array || queue instanceof Set)
+                return new TurboQueue().push(...queue);
             return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
         };
         TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$3.getDefaultSubstrate(this)) {
@@ -15402,7 +16623,7 @@
             if (Array.isArray(queue))
                 queue = new TurboQueue().push(...queue);
             if (queue instanceof TurboQueue)
-                utils$3.getSubstrateData(this, substrate).defaultQueue = queue.clone();
+                utils$3.setField(this, substrate, "defaultQueue", queue.clone());
             return this;
         };
         //PASSES
@@ -15412,13 +16633,13 @@
             const map = utils$3.getSubstrateData(this, substrate).passes;
             if (!map || !(map instanceof WeakMap))
                 return 0;
-            return map.get(object);
+            return map.get(object) ?? 0;
         };
         TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = utils$3.getDefaultSubstrate(this)) {
-            return utils$3.getSubstrateData(this, substrate).maxPasses;
+            return utils$3.getField(this, substrate, "maxPasses");
         };
         TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = utils$3.getDefaultSubstrate(this)) {
-            utils$3.getSubstrateData(this, substrate).maxPasses = passes;
+            utils$3.setField(this, substrate, "maxPasses", passes);
             return this;
         };
         //CUSTOM DATA
@@ -15469,7 +16690,7 @@
                 if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                     return true;
             }
-            const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+            const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
             for (const substrateData of substratesData) {
                 for (const checker of substrateData.data.checkers.values()) {
                     if (!checker({ ...properties, substrate: substrateData.name }))
@@ -15506,8 +16727,10 @@
         };
         //SOLVERS
         TurboSelector.prototype.addSolver = function _addSolver(properties) {
-            if (!properties || !properties.name || !properties.callback)
+            if (!properties || !properties.callback)
                 return this;
+            if (!properties.name)
+                properties.name = randomString(8);
             const substrate = properties.substrate ?? utils$3.getDefaultSubstrate(this);
             const data = utils$3.getSubstrateData(this, substrate);
             if (!data)
@@ -15560,7 +16783,7 @@
                 if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                     return this;
             }
-            const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+            const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
             for (const substrateData of substratesData)
                 utils$3.solveSubstrateInternal(substrateData, properties);
             return this;
@@ -17810,6 +19033,12 @@
                 this.emitter = properties.emitter;
             this.setup();
         }
+        /**
+         * @function setup
+         * @description Called in the constructor. Use for setup that should happen at instantiation,
+         * before `this.initialize()` is called.
+         * @protected
+         */
         setup() { }
         /**
          * @function initialize
@@ -17895,248 +19124,13 @@
             this.toolName = properties.toolName ?? this.toolName ?? undefined;
             this.options = properties.listenerOptions ?? {};
             const host = this.element;
-            this.target = properties.target ?? this.target ?? host instanceof Node ? host
-                : host?.element instanceof Node ? host.element
-                    : undefined;
+            try {
+                this.target = properties.target ?? this.target ?? host instanceof Node ? host
+                    : host?.element instanceof Node ? host.element
+                        : undefined;
+            }
+            catch { }
             this.setup();
-        }
-    }
-
-    /**
-     * @class TurboSubstrate
-     * @group MVC
-     * @category Substrate
-     *
-     * @extends TurboController
-     * @template {object} ElementType - The type of the element.
-     * @template {TurboView} ViewType - The element's view type, if any.
-     * @template {TurboModel} ModelType - The element's model type, if any.
-     * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
-     * @description Class representing a substrate in MVC, bound to the provided element.
-     */
-    class TurboSubstrate extends TurboController {
-        /**
-         * @description The name of the substrate.
-         */
-        substrateName;
-        /**
-         * @description The property keys of the substrate solvers defined in the instance.
-         */
-        solversMetadata = [];
-        /**
-         * @description The property keys of the substrate checkers defined in the instance.
-         */
-        checkersMetadata = [];
-        /**
-         * @description The property keys of the substrate mutators defined in the instance.
-         */
-        mutatorsMetadata = [];
-        get priority() {
-            return turbo(this).getSubstratePriority(this.substrateName);
-        }
-        set priority(value) {
-            turbo(this).setSubstratePriority(value, this.substrateName);
-        }
-        get active() {
-            return turbo(this).activeSubstrates.includes(this.substrateName);
-        }
-        set active(value) {
-            turbo(this).activateSubstrate(this.substrateName, value);
-        }
-        /**
-         * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
-         * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
-         */
-        get objectList() {
-            return turbo(this).getSubstrateObjectList(this.substrateName);
-        }
-        set objectList(value) {
-            turbo(this).setSubstrateObjectList(value, this.substrateName);
-        }
-        get onObjectListChange() {
-            return turbo(this).onSubstrateObjectListChange(this.substrateName);
-        }
-        get queue() {
-            return turbo(this).getSubstrateQueue(this.substrateName);
-        }
-        get defaultQueue() {
-            return turbo(this).getDefaultSubstrateQueue(this.substrateName);
-        }
-        set defaultQueue(value) {
-            turbo(this).setDefaultSubstrateQueue(value, this.substrateName);
-        }
-        get maxPasses() {
-            return turbo(this).getMaxPassesForSubstrate(this.substrateName);
-        }
-        set maxPasses(value) {
-            turbo(this).setMaxPassesForSubstrate(value, this.substrateName);
-        }
-        constructor(properties) {
-            super(properties);
-            this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
-            if (properties.onActivate)
-                this.onActivate = properties.onActivate;
-            if (properties.onDeactivate)
-                this.onDeactivate = properties.onDeactivate;
-            this.setup();
-        }
-        /**
-         * @function initialize
-         * @override
-         * @description Initialization function that calls {@link makeSubstrate} on `this.element`, sets it up, and attaches
-         * all the defined solvers.
-         */
-        initialize() {
-            super.initialize();
-            if (!this.substrateName)
-                return;
-            turbo(this).makeSubstrate(this.substrateName, {
-                onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
-                onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
-            });
-            this.solversMetadata.forEach(metadata => {
-                if (!metadata.name)
-                    return;
-                turbo(this).addSolver({
-                    name: metadata.name,
-                    substrate: this.substrateName,
-                    priority: metadata.priority,
-                    callback: props => this[metadata.name]?.(props)
-                });
-            });
-            this.checkersMetadata.forEach(metadata => {
-                if (!metadata.name)
-                    return;
-                turbo(this).addChecker({
-                    name: metadata.name,
-                    substrate: this.substrateName,
-                    priority: metadata.priority,
-                    callback: props => this[metadata.name]?.(props)
-                });
-            });
-            this.mutatorsMetadata.forEach(metadata => {
-                if (!metadata.name)
-                    return;
-                turbo(this).addMutator({
-                    name: metadata.name,
-                    substrate: this.substrateName,
-                    priority: metadata.priority,
-                    callback: props => this[metadata.name]?.(props)
-                });
-            });
-        }
-        /**
-         * @function addObject
-         * @description Adds the provided object to the substrate's list.
-         * @param {object} object - The object to add.
-         */
-        addObject(object) {
-            turbo(this).addObjectToSubstrate(object, this.substrateName);
-            return this;
-        }
-        /**
-         * @function removeObject
-         * @description Removes the provided object from the substrate's list.
-         * @param {object} object - The object to remove.
-         */
-        removeObject(object) {
-            turbo(this).removeObjectFromSubstrate(object, this.substrateName);
-            return this;
-        }
-        /**
-         * @function hasObject
-         * @description Whether the provided object is included in the substrate's list.
-         * @param {object} object - The object to check.
-         * @return {boolean} - Whether the object is present.
-         */
-        hasObject(object) {
-            return turbo(this).hasObjectInSubstrate(object, this.substrateName);
-        }
-        // public addToQueue(object: object): this {
-        //     turbo(this).addObjectToSubstrateQueue(object, this.substrateName);
-        //     return this;
-        // }
-        //
-        // public clearQueue(): this {
-        //     turbo(this).clearSubstrateQueue(this.substrateName);
-        //     return this;
-        // }
-        getObjectPasses(object) {
-            return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
-        }
-        getObjectData(object) {
-            return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
-        }
-        setObjectData(object, data) {
-            return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
-        }
-        addChecker(properties) {
-            turbo(this).addChecker({ ...properties, substrate: this.substrateName });
-            return this;
-        }
-        removeChecker(name) {
-            turbo(this).removeChecker(name, this.substrateName);
-            return this;
-        }
-        clearCheckers() {
-            turbo(this).clearCheckers(this.substrateName);
-            return this;
-        }
-        check(properties) {
-            return turbo(this).checkSubstrate({ ...properties, substrate: this.substrateName });
-        }
-        //MUTATOR
-        addMutator(properties) {
-            turbo(this).addMutator({ ...properties, substrate: this.substrateName });
-            return this;
-        }
-        removeMutator(name) {
-            turbo(this).removeMutator(name, this.substrateName);
-            return this;
-        }
-        clearMutators() {
-            turbo(this).clearMutators(this.substrateName);
-            return this;
-        }
-        mutate(properties) {
-            return turbo(this).mutate({ ...properties, substrate: this.substrateName });
-        }
-        /**
-         * @function addSolver
-         * @description Add the given function as a solver in the substrate.
-         * @param properties
-         */
-        addSolver(properties) {
-            turbo(this).addSolver({ ...properties, substrate: this.substrateName });
-            return this;
-        }
-        /**
-         * @function removeSolver
-         * @description Remove the given function from the substrate's list of solvers.
-         * @param name
-         * @return {this} - Itself for chaining.
-         */
-        removeSolver(name) {
-            turbo(this).removeSolver(name, this.substrateName);
-            return this;
-        }
-        /**
-         * @function clearSolvers
-         * @description Remove all solvers attached to the substrate.
-         * @return {this} - Itself for chaining.
-         */
-        clearSolvers() {
-            turbo(this).clearSolvers(this.substrateName);
-            return this;
-        }
-        /**
-         * @function resolve
-         * @description Resolve the substrate by calling all the solvers on each of the objects in the substrate's list.
-         * @param {SubstrateCallbackProperties} [properties={}] - Optional properties to provide context to the resolving loop.
-         */
-        solve(properties = {}) {
-            turbo(this).solveSubstrate({ ...properties, substrate: this.substrateName });
-            return this;
         }
     }
 
@@ -18222,11 +19216,6 @@
             if (this.embeddedTarget)
                 turbo(this).embedTool(this.embeddedTarget, this.manager);
             super.initialize();
-            // for (const [methodName, eventName] of Object.entries(DefaultEventName)) {
-            //     const handler = this[methodName];
-            //     if (typeof handler !== "function") continue;
-            //     $(this).addToolBehavior(eventName, (e, target) => handler.call(this, e, target), this.toolName, this.manager);
-            // }
         }
     }
 
@@ -18299,7 +19288,7 @@
         };
         static defaultProperties = {};
         static create(properties = {}) {
-            turbo(properties).applyDefaults(this.defaultProperties ?? {});
+            turbo(properties).applyDefaults(this["defaultProperties"] ?? {});
             return element({ ...properties });
         }
         /**
@@ -18847,6 +19836,16 @@
                 $(this).remChild(this.rightCustomElements);
                 this.addAtPosition(value, "rightCustomElements");
             }
+            static create(properties) {
+                if (properties.text && !properties.element) {
+                    properties.element = properties.text;
+                    properties.text = undefined;
+                }
+                if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+                    properties.element.tag = properties.elementTag;
+                }
+                return super.create.call(this, properties);
+            }
             constructor() {
                 super(...arguments);
                 __runInitializers(this, _elementTag_extraInitializers);
@@ -19036,50 +20035,15 @@
         return _classThis;
     })();
 
-    /**
-     * @group Utilities
-     * @category Random
-     */
-    function randomId(length = 8) {
-        const array = new Uint8Array(length);
-        crypto.getRandomValues(array);
-        return Array.from(array)
-            .map(b => b.toString(36).padStart(2, "0"))
-            .join("")
-            .slice(0, length);
-    }
-    /**
-     * @group Utilities
-     * @category Random
-     */
-    function randomFromRange(n1, n2) {
-        if (typeof n1 != "number" || typeof n2 != "number")
-            return 0;
-        const min = Math.min(n1, n2);
-        const max = Math.max(n1, n2);
-        return (Math.random() * (max - min)) + min;
-    }
-    /**
-     * @group Utilities
-     * @category Random
-     */
-    function randomColor(saturation = [50, 70], lightness = [70, 85]) {
-        if (typeof saturation != "number" && saturation.length >= 2)
-            saturation = randomFromRange(saturation[0], saturation[1]);
-        if (typeof lightness != "number" && lightness.length >= 2)
-            lightness = randomFromRange(lightness[0], lightness[1]);
-        return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
-    }
-
     class TurboInputInputInteractor extends TurboInteractor {
         keyName = "__input__interactor__";
         _composing = false;
         _resizeQueued = false;
-        options = {
-            compositionStart: { capture: true },
-            compositionEnd: { capture: true },
-            input: { capture: true },
-        };
+        // public options = {
+        //     compositionStart: {capture: true},
+        //     compositionEnd: {capture: true},
+        //     input: {capture: true},
+        // }
         get inputElement() {
             return this.element.element;
         }
@@ -20868,19 +21832,19 @@
             shiftIndices(fromIndex, offset) {
                 this.changeObservers?.toArray().forEach(observer => {
                     const itemsToShift = [];
-                    for (const [oldIndexStr, instance] of observer.getBlockInstancesAndKeys()) {
+                    for (const [oldIndexStr, instance] of observer.getEntriesForBlock()) {
                         const oldIndex = Number(oldIndexStr);
                         if (oldIndex >= fromIndex)
                             itemsToShift.push([oldIndex, instance]);
                     }
                     itemsToShift.sort((a, b) => a[0] - b[0]);
                     for (const [oldIndex] of itemsToShift)
-                        observer.removeInstanceByKey(oldIndex, false);
+                        observer.removeKey(oldIndex, undefined, false);
                     for (const [oldIndex, instance] of itemsToShift) {
                         const newIndex = oldIndex + offset;
                         if (typeof instance === "object" && "dataId" in instance)
                             instance.dataId = newIndex;
-                        observer.setInstance(instance, (oldIndex + offset));
+                        observer.set(instance, (oldIndex + offset));
                     }
                 });
             }
@@ -21903,14 +22867,14 @@
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _color_decorators = [signal];
                 _set_entries_decorators = [auto()];
-                __esDecorate(this, null, _set_entries_decorators, { kind: "setter", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate$1(this, null, _set_entries_decorators, { kind: "setter", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                __runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers$1(_classThis, _classExtraInitializers);
             }
-            color = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _color_initializers, "white"));
+            color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _color_initializers, "white"));
             set entries(value) {
                 value.forEach(entry => this.addTool(entry));
             }
@@ -21923,7 +22887,7 @@
             }
             constructor() {
                 super(...arguments);
-                __runInitializers(this, _color_extraInitializers);
+                __runInitializers$1(this, _color_extraInitializers);
             }
         });
         return _classThis;
@@ -21934,24 +22898,14 @@
         let _classSuper = TurboTool;
         let _instanceExtraInitializers = [];
         let _drag_decorators;
-        let _dragEnd_decorators;
         return class SelectTool extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _drag_decorators = [behavior()];
-                _dragEnd_decorators = [behavior()];
-                __esDecorate(this, null, _drag_decorators, { kind: "method", name: "drag", static: false, private: false, access: { has: obj => "drag" in obj, get: obj => obj.drag }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _dragEnd_decorators, { kind: "method", name: "dragEnd", static: false, private: false, access: { has: obj => "dragEnd" in obj, get: obj => obj.dragEnd }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _drag_decorators, { kind: "method", name: "drag", static: false, private: false, access: { has: obj => "drag" in obj, get: obj => obj.drag }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            toolName = (__runInitializers(this, _instanceExtraInitializers), "select"); //Define the tool name
-            //On activation --> add class
-            onActivation() {
-                turbo(this.element).toggleClass("active-tool", true);
-            }
-            onDeactivation() {
-                turbo(this.element).toggleClass("active-tool", false);
-            }
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "select"); //Define the tool name
             //Equivalent to turbo(tool).addToolBehavior("turbo-drag", "select", (e, el) => {...});
             drag(e, el) {
                 try {
@@ -21969,9 +22923,6 @@
                     return Propagation.stopPropagation;
                 }
             }
-            //TODO FIX SO NO NEED FOR THIS TO EXEC SUBSTRATE
-            dragEnd(e, el) {
-            }
         };
     })();
 
@@ -21984,10 +22935,10 @@
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _click_decorators = [behavior()];
-                __esDecorate(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            toolName = (__runInitializers(this, _instanceExtraInitializers), "bucket"); //Define the tool name
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "bucket"); //Define the tool name
             //Equivalent to turbo(tool).addToolBehavior("click", "bucket", (e, el) => {...});
             click(e, el) {
                 if ("color" in el && typeof el.color === "string" && !(el instanceof Bucket)) {
@@ -22016,14 +22967,14 @@
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 __color_decorators = [signal];
                 _updateBorderColor_decorators = [effect];
-                __esDecorate(this, null, _updateBorderColor_decorators, { kind: "method", name: "updateBorderColor", static: false, private: false, access: { has: obj => "updateBorderColor" in obj, get: obj => obj.updateBorderColor }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(null, null, __color_decorators, { kind: "field", name: "_color", static: false, private: false, access: { has: obj => "_color" in obj, get: obj => obj._color, set: (obj, value) => { obj._color = value; } }, metadata: _metadata }, __color_initializers, __color_extraInitializers);
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate$1(this, null, _updateBorderColor_decorators, { kind: "method", name: "updateBorderColor", static: false, private: false, access: { has: obj => "updateBorderColor" in obj, get: obj => obj.updateBorderColor }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(null, null, __color_decorators, { kind: "field", name: "_color", static: false, private: false, access: { has: obj => "_color" in obj, get: obj => obj._color, set: (obj, value) => { obj._color = value; } }, metadata: _metadata }, __color_initializers, __color_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            _color = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, __color_initializers, "#000000")); //Signal to fire @effect callbacks when the value changes
-            colorInput = __runInitializers(this, __color_extraInitializers);
+            _color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, __color_initializers, "#000000")); //Signal to fire @effect callbacks when the value changes
+            colorInput = __runInitializers$1(this, __color_extraInitializers);
             static defaultProperties = {
                 tools: BucketTool
             };
@@ -22050,7 +23001,7 @@
                 turbo(this).setStyle("borderColor", this._color);
             }
             static {
-                __runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers$1(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -22082,22 +23033,22 @@
                 _rotation_decorators = [signal];
                 _size_decorators = [signal];
                 _centerAnchor_decorators = [signal];
-                __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
-                __esDecorate(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
-                __esDecorate(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
-                __esDecorate(null, null, _centerAnchor_decorators, { kind: "field", name: "centerAnchor", static: false, private: false, access: { has: obj => "centerAnchor" in obj, get: obj => obj.centerAnchor, set: (obj, value) => { obj.centerAnchor = value; } }, metadata: _metadata }, _centerAnchor_initializers, _centerAnchor_extraInitializers);
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
+                __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
+                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                __esDecorate$1(null, null, _centerAnchor_decorators, { kind: "field", name: "centerAnchor", static: false, private: false, access: { has: obj => "centerAnchor" in obj, get: obj => obj.centerAnchor, set: (obj, value) => { obj.centerAnchor = value; } }, metadata: _metadata }, _centerAnchor_initializers, _centerAnchor_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             //Turned simple fields into signals (so changing their values will trigger @effect callbacks)
-            color = __runInitializers(this, _color_initializers, randomColor([60, 90], [40, 70]));
-            position = (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _position_initializers, new Point()));
-            rotation = (__runInitializers(this, _position_extraInitializers), __runInitializers(this, _rotation_initializers, 0));
-            size = (__runInitializers(this, _rotation_extraInitializers), __runInitializers(this, _size_initializers, 100));
-            centerAnchor = (__runInitializers(this, _size_extraInitializers), __runInitializers(this, _centerAnchor_initializers, true));
+            color = __runInitializers$1(this, _color_initializers, randomColor([60, 90], [40, 70]));
+            position = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _position_initializers, new Point()));
+            rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, 0));
+            size = (__runInitializers$1(this, _rotation_extraInitializers), __runInitializers$1(this, _size_initializers, 100));
+            centerAnchor = (__runInitializers$1(this, _size_extraInitializers), __runInitializers$1(this, _centerAnchor_initializers, true));
             constructor() {
                 super(...arguments);
-                __runInitializers(this, _centerAnchor_extraInitializers);
+                __runInitializers$1(this, _centerAnchor_extraInitializers);
             }
         };
     })();
@@ -22115,9 +23066,9 @@
                 _updatePosition_decorators = [effect];
                 _updateColor_decorators = [effect];
                 _updateSize_decorators = [effect];
-                __esDecorate(this, null, _updatePosition_decorators, { kind: "method", name: "updatePosition", static: false, private: false, access: { has: obj => "updatePosition" in obj, get: obj => obj.updatePosition }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateSize_decorators, { kind: "method", name: "updateSize", static: false, private: false, access: { has: obj => "updateSize" in obj, get: obj => obj.updateSize }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updatePosition_decorators, { kind: "method", name: "updatePosition", static: false, private: false, access: { has: obj => "updatePosition" in obj, get: obj => obj.updatePosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateSize_decorators, { kind: "method", name: "updateSize", static: false, private: false, access: { has: obj => "updateSize" in obj, get: obj => obj.updateSize }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             //@effect methods will be called when the values of the signals they use change
@@ -22136,7 +23087,7 @@
             }
             constructor() {
                 super(...arguments);
-                __runInitializers(this, _instanceExtraInitializers);
+                __runInitializers$1(this, _instanceExtraInitializers);
             }
         };
     })();
@@ -22171,24 +23122,24 @@
                 _size_decorators = [expose("model")];
                 _position_decorators = [expose("model")];
                 _rotation_decorators = [expose("model")];
-                __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
-                __esDecorate(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
-                __esDecorate(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
+                __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             //Expose fields from the model
-            color = __runInitializers(this, _color_initializers, void 0);
-            size = (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _size_initializers, void 0));
-            position = (__runInitializers(this, _size_extraInitializers), __runInitializers(this, _position_initializers, void 0));
-            rotation = (__runInitializers(this, _position_extraInitializers), __runInitializers(this, _rotation_initializers, void 0));
+            color = __runInitializers$1(this, _color_initializers, void 0);
+            size = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _size_initializers, void 0));
+            position = (__runInitializers$1(this, _size_extraInitializers), __runInitializers$1(this, _position_initializers, void 0));
+            rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, void 0));
             static defaultProperties = {
                 view: SquareView,
                 model: SquareModel,
             };
-            defaultFeedforwardProperties = (__runInitializers(this, _rotation_extraInitializers), { style: "opacity: 0.4" });
+            defaultFeedforwardProperties = (__runInitializers$1(this, _rotation_extraInitializers), { style: "opacity: 0.4" });
             move(delta) {
                 this.model.position = delta.add(this.model.position);
             }
@@ -22209,7 +23160,7 @@
                 });
             }
             static {
-                __runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers$1(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -22232,22 +23183,20 @@
                 _updateThickness_decorators = [effect];
                 _updateHitThickness_decorators = [effect];
                 _updateColor_decorators = [effect];
-                __esDecorate(this, null, _updateLines_decorators, { kind: "method", name: "updateLines", static: false, private: false, access: { has: obj => "updateLines" in obj, get: obj => obj.updateLines }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateThickness_decorators, { kind: "method", name: "updateThickness", static: false, private: false, access: { has: obj => "updateThickness" in obj, get: obj => obj.updateThickness }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateHitThickness_decorators, { kind: "method", name: "updateHitThickness", static: false, private: false, access: { has: obj => "updateHitThickness" in obj, get: obj => obj.updateHitThickness }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateLines_decorators, { kind: "method", name: "updateLines", static: false, private: false, access: { has: obj => "updateLines" in obj, get: obj => obj.updateLines }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateThickness_decorators, { kind: "method", name: "updateThickness", static: false, private: false, access: { has: obj => "updateThickness" in obj, get: obj => obj.updateThickness }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateHitThickness_decorators, { kind: "method", name: "updateHitThickness", static: false, private: false, access: { has: obj => "updateHitThickness" in obj, get: obj => obj.updateHitThickness }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            svg = __runInitializers(this, _instanceExtraInitializers);
+            svg = __runInitializers$1(this, _instanceExtraInitializers);
             line;
             hitLine;
             startHandle;
             endHandle;
             initialize() {
                 super.initialize();
-                turbo(this).addObjectToSubstrate(this.line)
-                    .addObjectToSubstrate(this.startHandle)
-                    .addObjectToSubstrate(this.endHandle);
+                requestAnimationFrame(() => turbo(this).getSubstrateObjectList().add(this.line, this.startHandle, this.endHandle));
             }
             setupUIElements() {
                 super.setupUIElements();
@@ -22255,8 +23204,8 @@
                 this.line = element({ tag: "line", namespace: SvgNamespace });
                 this.hitLine = element({ tag: "line", namespace: SvgNamespace });
                 turbo(this.hitLine).setAttribute("stroke", "transparent").setAttribute("pointer-events", "stroke");
-                this.startHandle = Square.create({ size: 20, color: "white", classes: "handle", position: this.model.origin.sub(100, 0) });
-                this.endHandle = Square.create({ size: 20, color: "white", classes: "handle", position: this.model.origin.add(100, 0) });
+                this.startHandle = Square.create({ size: 20, color: "white", classes: "handle" });
+                this.endHandle = Square.create({ size: 20, color: "white", classes: "handle" });
             }
             setupUILayout() {
                 super.setupUILayout();
@@ -22264,7 +23213,6 @@
                 turbo(this).addChild([this.svg, this.startHandle, this.endHandle]);
             }
             updateLines() {
-                this.model.origin = Point.midPoint(this.startHandle.position, this.endHandle.position);
                 this.updateLine(this.line);
                 this.updateLine(this.hitLine);
             }
@@ -22292,9 +23240,6 @@
 
     let StickyLineModel = (() => {
         let _classSuper = TurboModel;
-        let _origin_decorators;
-        let _origin_initializers = [];
-        let _origin_extraInitializers = [];
         let _thickness_decorators;
         let _thickness_initializers = [];
         let _thickness_extraInitializers = [];
@@ -22307,23 +23252,20 @@
         return class StickyLineModel extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _origin_decorators = [signal];
                 _thickness_decorators = [signal];
                 _hitThickness_decorators = [signal];
                 _color_decorators = [signal];
-                __esDecorate(null, null, _origin_decorators, { kind: "field", name: "origin", static: false, private: false, access: { has: obj => "origin" in obj, get: obj => obj.origin, set: (obj, value) => { obj.origin = value; } }, metadata: _metadata }, _origin_initializers, _origin_extraInitializers);
-                __esDecorate(null, null, _thickness_decorators, { kind: "field", name: "thickness", static: false, private: false, access: { has: obj => "thickness" in obj, get: obj => obj.thickness, set: (obj, value) => { obj.thickness = value; } }, metadata: _metadata }, _thickness_initializers, _thickness_extraInitializers);
-                __esDecorate(null, null, _hitThickness_decorators, { kind: "field", name: "hitThickness", static: false, private: false, access: { has: obj => "hitThickness" in obj, get: obj => obj.hitThickness, set: (obj, value) => { obj.hitThickness = value; } }, metadata: _metadata }, _hitThickness_initializers, _hitThickness_extraInitializers);
-                __esDecorate(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _thickness_decorators, { kind: "field", name: "thickness", static: false, private: false, access: { has: obj => "thickness" in obj, get: obj => obj.thickness, set: (obj, value) => { obj.thickness = value; } }, metadata: _metadata }, _thickness_initializers, _thickness_extraInitializers);
+                __esDecorate$1(null, null, _hitThickness_decorators, { kind: "field", name: "hitThickness", static: false, private: false, access: { has: obj => "hitThickness" in obj, get: obj => obj.hitThickness, set: (obj, value) => { obj.hitThickness = value; } }, metadata: _metadata }, _hitThickness_initializers, _hitThickness_extraInitializers);
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            origin = __runInitializers(this, _origin_initializers, new Point());
-            thickness = (__runInitializers(this, _origin_extraInitializers), __runInitializers(this, _thickness_initializers, 2));
-            hitThickness = (__runInitializers(this, _thickness_extraInitializers), __runInitializers(this, _hitThickness_initializers, 10));
-            color = (__runInitializers(this, _hitThickness_extraInitializers), __runInitializers(this, _color_initializers, "black"));
+            thickness = __runInitializers$1(this, _thickness_initializers, 2);
+            hitThickness = (__runInitializers$1(this, _thickness_extraInitializers), __runInitializers$1(this, _hitThickness_initializers, 10));
+            color = (__runInitializers$1(this, _hitThickness_extraInitializers), __runInitializers$1(this, _color_initializers, "black"));
             constructor() {
                 super(...arguments);
-                __runInitializers(this, _color_extraInitializers);
+                __runInitializers$1(this, _color_extraInitializers);
             }
         };
     })();
@@ -22339,15 +23281,14 @@
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _ensureAlignment_decorators = [solver()];
-                __esDecorate(this, null, _ensureAlignment_decorators, { kind: "method", name: "ensureAlignment", static: false, private: false, access: { has: obj => "ensureAlignment" in obj, get: obj => obj.ensureAlignment }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _ensureAlignment_decorators, { kind: "method", name: "ensureAlignment", static: false, private: false, access: { has: obj => "ensureAlignment" in obj, get: obj => obj.ensureAlignment }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            substrateName = (__runInitializers(this, _instanceExtraInitializers), "stickyLine");
+            substrateName = (__runInitializers$1(this, _instanceExtraInitializers), "stickyLine");
             objectData = new WeakMap();
             initialize() {
                 super.initialize();
-                this.active = true;
-                this.objectList = new Set([this.element]);
+                this.objectList.list = [this.element];
                 this.onObjectListChange.add((object, status) => {
                     if (object === this.element)
                         return;
@@ -22357,10 +23298,11 @@
                 });
             }
             ensureAlignment(properties) {
-                if (properties.eventTarget instanceof StickyLine && this.element !== properties.eventTarget)
-                    return;
                 const target = properties.target;
                 if (!target || !(target instanceof Element) || target instanceof StickyLine)
+                    return;
+                const manipulatingStickyLine = properties.eventTarget === this.element;
+                if (!manipulatingStickyLine && target instanceof StickyLine)
                     return;
                 const start = this.view.startHandle?.position;
                 const end = this.view.endHandle?.position;
@@ -22370,8 +23312,8 @@
                 if (!rect || !(rect instanceof DOMRect))
                     return;
                 const center = new Point(rect.left + rect.width / 2, rect.top + rect.height / 2);
-                const manipulatingStickyLine = properties.eventTarget === this.element;
-                const isFeedforward = properties.eventType !== DefaultEventName.dragEnd && !manipulatingStickyLine;
+                const isFeedforward = properties.eventType !== DefaultEventName.dragEnd
+                    && !manipulatingStickyLine && !(target instanceof StickyLine);
                 if (!manipulatingStickyLine || !this.objectData.has(target))
                     this.objectData.set(target, closestPointOnSegment(center, start, end)?.linearInterpolation(start, end));
                 const data = this.objectData.get(target);
@@ -22414,25 +23356,35 @@
         let _classExtraInitializers = [];
         let _classThis;
         let _classSuper = TurboElement;
-        let _origin_decorators;
-        let _origin_initializers = [];
-        let _origin_extraInitializers = [];
+        let _startHandle_decorators;
+        let _startHandle_initializers = [];
+        let _startHandle_extraInitializers = [];
+        let _endHandle_decorators;
+        let _endHandle_initializers = [];
+        let _endHandle_extraInitializers = [];
         (class extends _classSuper {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _origin_decorators = [expose("model")];
-                __esDecorate(null, null, _origin_decorators, { kind: "field", name: "origin", static: false, private: false, access: { has: obj => "origin" in obj, get: obj => obj.origin, set: (obj, value) => { obj.origin = value; } }, metadata: _metadata }, _origin_initializers, _origin_extraInitializers);
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _startHandle_decorators = [expose("view", false)];
+                _endHandle_decorators = [expose("view", false)];
+                __esDecorate$1(this, null, _startHandle_decorators, { kind: "accessor", name: "startHandle", static: false, private: false, access: { has: obj => "startHandle" in obj, get: obj => obj.startHandle, set: (obj, value) => { obj.startHandle = value; } }, metadata: _metadata }, _startHandle_initializers, _startHandle_extraInitializers);
+                __esDecorate$1(this, null, _endHandle_decorators, { kind: "accessor", name: "endHandle", static: false, private: false, access: { has: obj => "endHandle" in obj, get: obj => obj.endHandle, set: (obj, value) => { obj.endHandle = value; } }, metadata: _metadata }, _endHandle_initializers, _endHandle_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            origin = __runInitializers(this, _origin_initializers, void 0);
-            get startPoint() {
-                return this.view.startHandle.position;
+            #startHandle_accessor_storage = __runInitializers$1(this, _startHandle_initializers, void 0);
+            get startHandle() { return this.#startHandle_accessor_storage; }
+            set startHandle(value) { this.#startHandle_accessor_storage = value; }
+            #endHandle_accessor_storage = (__runInitializers$1(this, _startHandle_extraInitializers), __runInitializers$1(this, _endHandle_initializers, void 0));
+            get endHandle() { return this.#endHandle_accessor_storage; }
+            set endHandle(value) { this.#endHandle_accessor_storage = value; }
+            get position() {
+                return Point.midPoint(this.startHandle.position, this.endHandle.position);
             }
-            get endPoint() {
-                return this.view.endHandle.position;
+            set position(value) {
+                this.move(value.sub(this.position));
             }
             static defaultProperties = {
                 model: StickyLineModel,
@@ -22445,14 +23397,14 @@
                 this.view.endHandle?.move(delta);
             }
             getBoundingClientRect() {
-                return TurboRect.fromSegment(this.startPoint, this.endPoint, 10);
+                return TurboRect.fromSegment(this.startHandle.position, this.endHandle.position, 10);
             }
             constructor() {
                 super(...arguments);
-                __runInitializers(this, _origin_extraInitializers);
+                __runInitializers$1(this, _endHandle_extraInitializers);
             }
             static {
-                __runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers$1(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -22467,35 +23419,25 @@
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _refreshStickyLinesLists_decorators = [solver()];
-                __esDecorate(this, null, _refreshStickyLinesLists_decorators, { kind: "method", name: "refreshStickyLinesLists", static: false, private: false, access: { has: obj => "refreshStickyLinesLists" in obj, get: obj => obj.refreshStickyLinesLists }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _refreshStickyLinesLists_decorators, { kind: "method", name: "refreshStickyLinesLists", static: false, private: false, access: { has: obj => "refreshStickyLinesLists" in obj, get: obj => obj.refreshStickyLinesLists }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             //Define the substrate's name. Equivalent to turbo(canvas).makeSubstrate("main").
-            substrateName = (__runInitializers(this, _instanceExtraInitializers), "main");
-            initialize() {
-                super.initialize();
-                this.defaultQueue = [];
-            }
-            get stickyLines() {
-                return Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
-            }
+            substrateName = (__runInitializers$1(this, _instanceExtraInitializers), "main");
+            defaultQueue = [];
             refreshStickyLinesLists(properties) {
                 const target = properties.target;
                 if (!target)
                     return;
-                const pool = target instanceof StickyLine
-                    ? Array.from(this.objectList)
-                    : Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
-                const overlaps = this.findOverlaps(target, pool);
-                for (const obj of this.objectList) {
-                    if (obj === target)
+                const stickylines = Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
+                const overlaps = this.findOverlaps(target, stickylines);
+                for (const stickyline of stickylines) {
+                    if (stickyline === target)
                         continue;
-                    const stickyLine = target instanceof StickyLine ? target : obj;
-                    const commonObject = target instanceof StickyLine ? obj : target;
-                    if (overlaps.includes(obj))
-                        turbo(stickyLine).addObjectToSubstrate(commonObject);
-                    else
-                        turbo(stickyLine).removeObjectFromSubstrate(commonObject);
+                    if (overlaps.includes(stickyline))
+                        turbo(stickyline).getSubstrateObjectList().add(target);
+                    else if (properties.eventTarget !== stickyline)
+                        turbo(stickyline).getSubstrateObjectList().remove(target);
                 }
             }
             /**
@@ -22555,7 +23497,7 @@
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -22563,7 +23505,7 @@
                 substrates: [CanvasSubstrate]
             };
             static {
-                __runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers$1(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -22578,10 +23520,10 @@
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _click_decorators = [behavior()];
-                __esDecorate(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            toolName = (__runInitializers(this, _instanceExtraInitializers), "addSquare"); //Define the tool name
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "addSquare"); //Define the tool name
             //Equivalent to turbo(tool).addToolBehavior("click", "addSquare", (e, target) => {...});
             click(e, target) {
                 if (target instanceof Canvas) {
@@ -22597,21 +23539,38 @@
     let AddStickyLineTool = (() => {
         let _classSuper = TurboTool;
         let _instanceExtraInitializers = [];
-        let _click_decorators;
+        let _dragStart_decorators;
+        let _drag_decorators;
+        let _dragEnd_decorators;
         return class AddStickyLineTool extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _click_decorators = [behavior()];
-                __esDecorate(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
+                _dragStart_decorators = [behavior()];
+                _drag_decorators = [behavior()];
+                _dragEnd_decorators = [behavior()];
+                __esDecorate$1(this, null, _dragStart_decorators, { kind: "method", name: "dragStart", static: false, private: false, access: { has: obj => "dragStart" in obj, get: obj => obj.dragStart }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _drag_decorators, { kind: "method", name: "drag", static: false, private: false, access: { has: obj => "drag" in obj, get: obj => obj.drag }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _dragEnd_decorators, { kind: "method", name: "dragEnd", static: false, private: false, access: { has: obj => "dragEnd" in obj, get: obj => obj.dragEnd }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            toolName = (__runInitializers(this, _instanceExtraInitializers), "addStickyLine"); //Define the tool name
-            //Equivalent to turbo(tool).addToolBehavior("click", "addSquare", (e, target) => {...});
-            click(e, target) {
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "addStickyLine"); //Define the tool name
+            currentStickyline;
+            dragStart(e, target) {
                 if (target instanceof Canvas) {
-                    StickyLine.create({ parent: target, origin: e.scaledPosition });
+                    this.currentStickyline = StickyLine.create({ parent: target });
+                    this.currentStickyline.startHandle.position = e.scaledPosition;
+                    this.currentStickyline.endHandle.position = e.scaledPosition;
                     return Propagation.stopPropagation;
                 }
+            }
+            drag(e) {
+                if (this.currentStickyline) {
+                    this.currentStickyline.endHandle.position = e.scaledPosition;
+                    return Propagation.stopPropagation;
+                }
+            }
+            dragEnd() {
+                this.currentStickyline = undefined;
             }
         };
     })();

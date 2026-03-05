@@ -174,7 +174,7 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
  * @category Signal
  *
  * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
+ * - Getter returns `this.getBlock(blockKey)`
  * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
  *
  * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey

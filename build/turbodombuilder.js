@@ -229,6 +229,18 @@
  */
 
 /**
+ * @typedef {Object} NodeListType
+ * @group Components
+ * @category TurboNodeList
+ *
+ * @description Union type representing any value that can be added to or removed from a
+ * {@link TurboNodeList}. Accepts a {@link TurboNodeList}, a live DOM {@link HTMLCollection},
+ * a {@link NodeListOf}, a {@link Set}, or a plain array.
+ *
+ * @template {object} EntryType - The type of the nodes held in the collection.
+ */
+
+/**
  * @typedef {Object} MakeSubstrateOptions
  * @group Types
  * @category Substrate
@@ -412,6 +424,70 @@
  * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+
+/**
+ * @typedef {Object} PreventDefaultOptions
+ * @group Types
+ * @category Event
+ *
+ * @description Options for {@link TurboSelector.preventDefault}, which prevents default browser behaviors for
+ * selected event types and can optionally stop propagation.
+ *
+ * @property {string[]} [types] - List of event types to affect. If omitted, defaults to {@link BasicInputEvents}.
+ * @property {"capture" | "bubble"} [phase] - Which phase to prevent. Defaults to `"bubble"`.
+ * @property {false | "stop" | "immediate"} [stop] - Whether to stop propagation when handling the event:
+ * - `false`: do not stop propagation,
+ * - `"stop"`: call `stopPropagation`,
+ * - `"immediate"`: call `stopImmediatePropagation`.
+ * @property {(type: string, e: Event) => boolean} [preventDefaultOn] - Predicate to decide (per event) whether to
+ * call `preventDefault`. Return `true` to prevent default for that event.
+ * @property {boolean} [clearPreviousListeners] - If true, clears previously installed prevent-default listeners
+ * before installing new ones.
+ * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
+ */
+
+/**
+ * @typedef {Object} ListenerProperties
+ * @group Types
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @description Configuration object used to construct a {@link Listener}.
+ *
+ * @property {string} type - Event type (e.g., `"click"`, `"pointermove"`).
+ * @property {CallbackType} callback - Listener callback.
+ * @property {TargetType} [target] - Target node.
+ * @property {string} [toolName] - Tool name to bind this listener to (if applicable).
+ * @property {ListenerOptions} [options] - Options controlling registration and execution behaviors.
+ * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
+ */
+
+/**
+ * @typedef {Object} MatchListenerProperties
+ * @group Types
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @extends ListenerProperties
+ * @description Properties used for matching listeners (see {@link Listener.match}).
+ *
+ * @property {string[]} [optionsToSkip] - List of option keys to ignore when matching `options`.
+ */
+
+/**
+ * @typedef {Object} ListenerOptions
+ * @group Types
+ * @category Listener
+ * @extends AddEventListenerOptions
+ * @description Options used for listeners.
+ *
+ * @property {boolean} [checkSubstrates] - If true, checks substrates before execution. Defaults to true.
+ * @property {boolean} [solveSubstrates] - If true, triggers substrate solving after execution. Defaults to true.
+ * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
+ * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
  */
 
 /**
@@ -639,7 +715,7 @@
  * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
  */
 
-var Turbo = (function (exports, tslib, yjs) {
+var Turbo = (function (exports, yjs) {
     'use strict';
 
     /**
@@ -2498,6 +2574,62 @@ var Turbo = (function (exports, tslib, yjs) {
         }
     }
 
+    /******************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+    /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+    function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+        function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+        var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+        var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+        var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+        var _, done = false;
+        for (var i = decorators.length - 1; i >= 0; i--) {
+            var context = {};
+            for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+            for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+            context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+            var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+            if (kind === "accessor") {
+                if (result === void 0) continue;
+                if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+                if (_ = accept(result.get)) descriptor.get = _;
+                if (_ = accept(result.set)) descriptor.set = _;
+                if (_ = accept(result.init)) initializers.unshift(_);
+            }
+            else if (_ = accept(result)) {
+                if (kind === "field") initializers.unshift(_);
+                else descriptor[key] = _;
+            }
+        }
+        if (target) Object.defineProperty(target, contextIn.name, descriptor);
+        done = true;
+    }
+    function __runInitializers(thisArg, initializers, value) {
+        var useValue = arguments.length > 2;
+        for (var i = 0; i < initializers.length; i++) {
+            value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+        }
+        return useValue ? value : void 0;
+    }
+    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+        var e = new Error(message);
+        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    };
+
     /**
      * @internal
      */
@@ -2868,7 +3000,7 @@ var Turbo = (function (exports, tslib, yjs) {
      * @category Signal
      *
      * @description Binds a signal to an entire data-block of a TurboModel/YModel.
-     * - Getter returns `this.getBlockData(blockKey)`
+     * - Getter returns `this.getBlock(blockKey)`
      * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
      *
      * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
@@ -3085,6 +3217,24 @@ var Turbo = (function (exports, tslib, yjs) {
         // Clear all weak references
         clear() {
             this._weakRefs.clear();
+        }
+        forEach(callback, thisArg) {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    callback.call(thisArg, obj, obj, this);
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+        }
+        *[Symbol.iterator]() {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    yield obj;
+                else
+                    this._weakRefs.delete(weakRef);
+            }
         }
     }
 
@@ -3753,8 +3903,7 @@ var Turbo = (function (exports, tslib, yjs) {
         return class TurboDataBlock {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-                _enabledCallbacks_decorators = [auto({ defaultValue: true })];
-                tslib.__esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
+                __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             _data;
@@ -3771,13 +3920,13 @@ var Turbo = (function (exports, tslib, yjs) {
                 if (data)
                     this.initialize();
             }
-            #enabledCallbacks_accessor_storage = tslib.__runInitializers(this, _enabledCallbacks_initializers, void 0);
+            #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
             /**
              * @description Whether callbacks are enabled.
              */
             get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
             set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
-            isInitialized = (tslib.__runInitializers(this, _enabledCallbacks_extraInitializers), false);
+            isInitialized = (__runInitializers(this, _enabledCallbacks_extraInitializers), false);
             host;
             signals = new Map();
             changeObservers = new TurboWeakSet();
@@ -3911,6 +4060,28 @@ var Turbo = (function (exports, tslib, yjs) {
              */
             get size() {
                 return this.keys.length;
+            }
+            /*
+         *
+         * Iteration
+         *
+         */
+            /**
+             * Default iteration → yields [key, value]
+             */
+            *[(_enabledCallbacks_decorators = [auto({ defaultValue: true })], Symbol.iterator)]() {
+                for (const key of this.keys)
+                    yield [key, this.get(key)];
+            }
+            entries() {
+                return this.keys.map(key => [key, this.get(key)]);
+            }
+            /**
+             * forEach
+             */
+            forEach(callback, thisArg) {
+                for (const key of this.keys)
+                    callback.call(thisArg, this.get(key), key, this);
             }
             /*
              *
@@ -4086,10 +4257,10 @@ var Turbo = (function (exports, tslib, yjs) {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
                 _set_enabledCallbacks_decorators = [auto()];
-                tslib.__esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            isDataBlocksArray = (tslib.__runInitializers(this, _instanceExtraInitializers), false);
+            isDataBlocksArray = (__runInitializers(this, _instanceExtraInitializers), false);
             dataBlocks;
             changeObservers = new TurboWeakSet();
             static dataBlockConstructor = TurboDataBlock;
@@ -5143,6 +5314,18 @@ var Turbo = (function (exports, tslib, yjs) {
         });
     }
 
+    /**
+     * @enum {Propagation}
+     * @group Types
+     * @category Event
+     *
+     * @description Enum dictating the propagation of an event.
+     *
+     * @property {Propagation.propagate} propagate - Continue normal propagation.
+     * @property {Propagation.stopPropagation} stopPropagation - Stop propagation to parent targets.
+     * @property {Propagation.stopImmediatePropagation} stopImmediatePropagation - Stop propagation and prevent any
+     * additional listeners on the same target from executing.
+     */
     exports.Propagation = void 0;
     (function (Propagation) {
         Propagation["propagate"] = "propagate";
@@ -5152,6 +5335,7 @@ var Turbo = (function (exports, tslib, yjs) {
     /**
      * @group Types
      * @category Event
+     * @description Default set of basic input event types typically handled by {@link TurboSelector.preventDefault}.
      */
     const BasicInputEvents = [
         "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
@@ -5163,6 +5347,8 @@ var Turbo = (function (exports, tslib, yjs) {
     /**
      * @group Types
      * @category Event
+     * @description Event types that should usually be registered as **non-passive** when you intend to call
+     *  * `preventDefault()` (e.g., scroll/touch/pointer interactions).
      */
     const NonPassiveEvents = [
         "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
@@ -5488,12 +5674,12 @@ var Turbo = (function (exports, tslib, yjs) {
                 _utils_decorators = [handler()];
                 _set_inputDevice_decorators = [auto({ callBefore: function (value) { if (value == exports.InputDevice.trackpad)
                             this.wasRecentlyTrackpad = true; } })];
-                tslib.__esDecorate(this, null, _set_inputDevice_decorators, { kind: "setter", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _utils_decorators, { kind: "field", name: "utils", static: false, private: false, access: { has: obj => "utils" in obj, get: obj => obj.utils, set: (obj, value) => { obj.utils = value; } }, metadata: _metadata }, _utils_initializers, _utils_extraInitializers);
+                __esDecorate(this, null, _set_inputDevice_decorators, { kind: "setter", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _utils_decorators, { kind: "field", name: "utils", static: false, private: false, access: { has: obj => "utils" in obj, get: obj => obj.utils, set: (obj, value) => { obj.utils = value; } }, metadata: _metadata }, _utils_initializers, _utils_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            utils = (tslib.__runInitializers(this, _instanceExtraInitializers), tslib.__runInitializers(this, _utils_initializers, void 0));
-            state = (tslib.__runInitializers(this, _utils_extraInitializers), {});
+            utils = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _utils_initializers, void 0));
+            state = (__runInitializers(this, _utils_extraInitializers), {});
             lockState = {};
             //Delegate fired when the input device changes
             onInputDeviceChange = new Delegate();
@@ -5558,14 +5744,14 @@ var Turbo = (function (exports, tslib, yjs) {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _closest_decorators = [cache()];
                 _get_scaledPosition_decorators = [cache()];
-                tslib.__esDecorate(this, null, _closest_decorators, { kind: "method", name: "closest", static: false, private: false, access: { has: obj => "closest" in obj, get: obj => obj.closest }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_scaledPosition_decorators, { kind: "getter", name: "scaledPosition", static: false, private: false, access: { has: obj => "scaledPosition" in obj, get: obj => obj.scaledPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _closest_decorators, { kind: "method", name: "closest", static: false, private: false, access: { has: obj => "closest" in obj, get: obj => obj.closest }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledPosition_decorators, { kind: "getter", name: "scaledPosition", static: false, private: false, access: { has: obj => "scaledPosition" in obj, get: obj => obj.scaledPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             /**
              * @description The event manager that fired this event.
              */
-            eventManager = tslib.__runInitializers(this, _instanceExtraInitializers);
+            eventManager = __runInitializers(this, _instanceExtraInitializers);
             /**
              * @description The name of the tool (if any) associated with this event.
              */
@@ -6235,19 +6421,19 @@ var Turbo = (function (exports, tslib, yjs) {
                 _get_deltaPosition_decorators = [cache()];
                 _get_scaledDeltaPositions_decorators = [cache()];
                 _get_scaledDeltaPosition_decorators = [cache()];
-                tslib.__esDecorate(this, null, _get_scaledOrigins_decorators, { kind: "getter", name: "scaledOrigins", static: false, private: false, access: { has: obj => "scaledOrigins" in obj, get: obj => obj.scaledOrigins }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_scaledPreviousPositions_decorators, { kind: "getter", name: "scaledPreviousPositions", static: false, private: false, access: { has: obj => "scaledPreviousPositions" in obj, get: obj => obj.scaledPreviousPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_scaledPositions_decorators, { kind: "getter", name: "scaledPositions", static: false, private: false, access: { has: obj => "scaledPositions" in obj, get: obj => obj.scaledPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_deltaPositions_decorators, { kind: "getter", name: "deltaPositions", static: false, private: false, access: { has: obj => "deltaPositions" in obj, get: obj => obj.deltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_deltaPosition_decorators, { kind: "getter", name: "deltaPosition", static: false, private: false, access: { has: obj => "deltaPosition" in obj, get: obj => obj.deltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_scaledDeltaPositions_decorators, { kind: "getter", name: "scaledDeltaPositions", static: false, private: false, access: { has: obj => "scaledDeltaPositions" in obj, get: obj => obj.scaledDeltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_scaledDeltaPosition_decorators, { kind: "getter", name: "scaledDeltaPosition", static: false, private: false, access: { has: obj => "scaledDeltaPosition" in obj, get: obj => obj.scaledDeltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledOrigins_decorators, { kind: "getter", name: "scaledOrigins", static: false, private: false, access: { has: obj => "scaledOrigins" in obj, get: obj => obj.scaledOrigins }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledPreviousPositions_decorators, { kind: "getter", name: "scaledPreviousPositions", static: false, private: false, access: { has: obj => "scaledPreviousPositions" in obj, get: obj => obj.scaledPreviousPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledPositions_decorators, { kind: "getter", name: "scaledPositions", static: false, private: false, access: { has: obj => "scaledPositions" in obj, get: obj => obj.scaledPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_deltaPositions_decorators, { kind: "getter", name: "deltaPositions", static: false, private: false, access: { has: obj => "deltaPositions" in obj, get: obj => obj.deltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_deltaPosition_decorators, { kind: "getter", name: "deltaPosition", static: false, private: false, access: { has: obj => "deltaPosition" in obj, get: obj => obj.deltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledDeltaPositions_decorators, { kind: "getter", name: "scaledDeltaPositions", static: false, private: false, access: { has: obj => "scaledDeltaPositions" in obj, get: obj => obj.scaledDeltaPositions }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_scaledDeltaPosition_decorators, { kind: "getter", name: "scaledDeltaPosition", static: false, private: false, access: { has: obj => "scaledDeltaPosition" in obj, get: obj => obj.scaledDeltaPosition }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             /**
              * @description Map containing the origins of the dragging points
              */
-            origins = tslib.__runInitializers(this, _instanceExtraInitializers);
+            origins = __runInitializers(this, _instanceExtraInitializers);
             /**
              * @description Map containing the previous positions of the dragging points
              */
@@ -6888,17 +7074,17 @@ var Turbo = (function (exports, tslib, yjs) {
                 _set_touchEventsEnabled_decorators = [auto()];
                 _set_clickEventEnabled_decorators = [auto()];
                 _set_dragEventEnabled_decorators = [auto()];
-                tslib.__esDecorate(this, null, _set_keyEventsEnabled_decorators, { kind: "setter", name: "keyEventsEnabled", static: false, private: false, access: { has: obj => "keyEventsEnabled" in obj, set: (obj, value) => { obj.keyEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_wheelEventsEnabled_decorators, { kind: "setter", name: "wheelEventsEnabled", static: false, private: false, access: { has: obj => "wheelEventsEnabled" in obj, set: (obj, value) => { obj.wheelEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_moveEventsEnabled_decorators, { kind: "setter", name: "moveEventsEnabled", static: false, private: false, access: { has: obj => "moveEventsEnabled" in obj, set: (obj, value) => { obj.moveEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_mouseEventsEnabled_decorators, { kind: "setter", name: "mouseEventsEnabled", static: false, private: false, access: { has: obj => "mouseEventsEnabled" in obj, set: (obj, value) => { obj.mouseEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_clickEventEnabled_decorators, { kind: "setter", name: "clickEventEnabled", static: false, private: false, access: { has: obj => "clickEventEnabled" in obj, set: (obj, value) => { obj.clickEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_dragEventEnabled_decorators, { kind: "setter", name: "dragEventEnabled", static: false, private: false, access: { has: obj => "dragEventEnabled" in obj, set: (obj, value) => { obj.dragEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
-                tslib.__esDecorate(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
-                tslib.__esDecorate(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
-                tslib.__esDecorate(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
+                __esDecorate(this, null, _set_keyEventsEnabled_decorators, { kind: "setter", name: "keyEventsEnabled", static: false, private: false, access: { has: obj => "keyEventsEnabled" in obj, set: (obj, value) => { obj.keyEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_wheelEventsEnabled_decorators, { kind: "setter", name: "wheelEventsEnabled", static: false, private: false, access: { has: obj => "wheelEventsEnabled" in obj, set: (obj, value) => { obj.wheelEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_moveEventsEnabled_decorators, { kind: "setter", name: "moveEventsEnabled", static: false, private: false, access: { has: obj => "moveEventsEnabled" in obj, set: (obj, value) => { obj.moveEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_mouseEventsEnabled_decorators, { kind: "setter", name: "mouseEventsEnabled", static: false, private: false, access: { has: obj => "mouseEventsEnabled" in obj, set: (obj, value) => { obj.mouseEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_clickEventEnabled_decorators, { kind: "setter", name: "clickEventEnabled", static: false, private: false, access: { has: obj => "clickEventEnabled" in obj, set: (obj, value) => { obj.clickEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_dragEventEnabled_decorators, { kind: "setter", name: "dragEventEnabled", static: false, private: false, access: { has: obj => "dragEventEnabled" in obj, set: (obj, value) => { obj.dragEventEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
+                __esDecorate(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
+                __esDecorate(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
+                __esDecorate(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             /*
@@ -6928,10 +7114,10 @@ var Turbo = (function (exports, tslib, yjs) {
              *
              *
              */
-            keyController = (tslib.__runInitializers(this, _instanceExtraInitializers), tslib.__runInitializers(this, _keyController_initializers, void 0));
-            wheelController = (tslib.__runInitializers(this, _keyController_extraInitializers), tslib.__runInitializers(this, _wheelController_initializers, void 0));
-            pointerController = (tslib.__runInitializers(this, _wheelController_extraInitializers), tslib.__runInitializers(this, _pointerController_initializers, void 0));
-            dispatchController = (tslib.__runInitializers(this, _pointerController_extraInitializers), tslib.__runInitializers(this, _dispatchController_initializers, void 0));
+            keyController = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _keyController_initializers, void 0));
+            wheelController = (__runInitializers(this, _keyController_extraInitializers), __runInitializers(this, _wheelController_initializers, void 0));
+            pointerController = (__runInitializers(this, _wheelController_extraInitializers), __runInitializers(this, _pointerController_initializers, void 0));
+            dispatchController = (__runInitializers(this, _pointerController_extraInitializers), __runInitializers(this, _dispatchController_initializers, void 0));
             /*
              *
              *
@@ -6941,7 +7127,7 @@ var Turbo = (function (exports, tslib, yjs) {
              */
             constructor(properties = {}) {
                 super();
-                tslib.__runInitializers(this, _dispatchController_extraInitializers);
+                __runInitializers(this, _dispatchController_extraInitializers);
                 this.mvc.generate({
                     model: TurboEventManagerModel,
                     controllers: [
@@ -7319,7 +7505,7 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             applyAndHookEvents(turboEventNames, defaultEventNames, applyTurboEvents) {
                 this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
-                for (const name in turboEventNames) {
+                for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
                     if (applyTurboEvents)
                         this.dispatchController.setupCustomDispatcher(name);
                     else
@@ -7339,16 +7525,42 @@ var Turbo = (function (exports, tslib, yjs) {
         };
     })();
 
+    /**
+     * @class Listener
+     * @group Components
+     * @category Listener
+     *
+     * @template {Node} TargetType - The type of the event target.
+     * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+     * @description Object representing an event listener, storing its metadata (type, target, toolName, options,
+     * manager) and providing utilities to execute and match it.
+     */
     class Listener {
+        /** @description Event type (e.g., `"click"`, `"pointermove"`). */
         type;
+        /** @description Target node this listener is associated with. */
         target;
+        /** @description Name of the tool this listener is bound to (if any). */
         toolName;
+        /** @description Callback provided by the user. */
         callback;
+        /**
+         * @description Bundled listener that adapts native events to the {@link ListenerCallback} signature.
+         */
         bundledListener;
+        /** @description Listener options used for registration and additional behaviors.*/
         options;
+        /** @description Associated event manager used to coordinate listener execution. */
         manager;
+        /** @description Last animation frame index during which this listener executed. */
         lastExecutionFrame;
+        /** @description Last timestamp (ms) at which this listener executed. */
         lastExecutionTime;
+        /**
+         * @constructor
+         * @param {ListenerProperties<TargetType, CallbackType>} properties - Listener configuration.
+         * @description Creates a {@link Listener}.
+         */
         constructor(properties) {
             if (properties.target instanceof TurboSelector)
                 properties.target = properties.target.element;
@@ -7360,12 +7572,32 @@ var Turbo = (function (exports, tslib, yjs) {
             this.options = properties.options ?? {};
             this.manager = properties.manager ?? TurboEventManager.instance;
         }
+        /**
+         * @function execute
+         * @description Executes the listener using its bundled signature.
+         * @param {Event} e - Event passed to the callback.
+         * @returns {Propagation} Propagation returned by the callback.
+         */
         execute(e) {
             return this.bundledListener(e);
         }
+        /**
+         * @function executeOn
+         * @description Executes the underlying callback on an explicit target.
+         * @param {Event} e - Event passed to the callback.
+         * @param {TargetType} target - Target node.
+         * @param {...any[]} args - Additional arguments forwarded to the callback.
+         * @returns {any} Whatever the callback returns (typically {@link Propagation}).
+         */
         executeOn(e, target, ...args) {
             return this.callback(e, target, ...args);
         }
+        /**
+         * @function match
+         * @description Checks whether this listener matches a subset of properties.
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [properties={}] - Properties to match against.
+         * @returns {boolean} Whether this listener matches.
+         */
         match(properties = {}) {
             for (let [key, value] of Object.entries(properties)) {
                 if (key === "target" && value instanceof TurboSelector)
@@ -7392,8 +7624,25 @@ var Turbo = (function (exports, tslib, yjs) {
         }
     }
 
+    /**
+     * @class ListenerSet
+     * @group Components
+     * @category Listener
+     *
+     * @template {Node} TargetType - The type of the event target.
+     * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+     * @description Collection of {@link Listener} instances indexed by event type.
+     * Provides helpers to add/remove/query listeners and to remove listeners matching criteria.
+     */
     class ListenerSet {
+        /**
+         * @description Map from event type to a set of listeners registered for that type.
+         */
         listeners = new Map();
+        /**
+         * @readonly
+         * @description Flattened array of all listeners in the set.
+         */
         get listenersArray() {
             const listeners = [];
             for (const set of this.listeners.values()) {
@@ -7424,15 +7673,32 @@ var Turbo = (function (exports, tslib, yjs) {
                 this.listeners.get(listener.type)?.delete(listener);
             }
         }
+        /**
+         * @function removeMatchingListeners
+         * @description Removes all listeners that match the provided properties (see {@link Listener.match}).
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+         */
         removeMatchingListeners(matchingProperties = {}) {
             this.getListeners(matchingProperties).forEach((listener) => {
                 // listener.target?.removeEventListener(listener.type, listener.bundledListener, listener.options);
                 this.removeListener(listener);
             });
         }
+        /**
+         * @function getListeners
+         * @description Returns all listeners matching the provided properties (see {@link Listener.match}).
+         * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+         * @returns {Listener[]} Matching listeners.
+         */
         getListeners(matchingProperties = {}) {
             return this.listenersArray.filter(listener => listener.match(matchingProperties));
         }
+        /**
+         * @function getListenersByType
+         * @description Returns the set of listeners registered for the given event type.
+         * @param {string} type - Event type.
+         * @returns {Set<Listener<TargetType, CallbackType>>} Set of listeners for that type.
+         */
         getListenersByType(type) {
             if (!type || !this.listeners.has(type))
                 return new Set();
@@ -7629,9 +7895,9 @@ var Turbo = (function (exports, tslib, yjs) {
                 const ts = target instanceof TurboSelector ? target : turbo(target);
                 const boundSet = utils$6.getBoundListenersSet(target);
                 const entries = utils$6.getBoundListeners({ target, type, toolName: tool, options, manager });
+                checkSubstrates(target, tool);
                 if (entries.length === 0)
                     return;
-                checkSubstrates(target, tool);
                 if (propagation === exports.Propagation.stopImmediatePropagation)
                     return;
                 for (const entry of entries) {
@@ -7654,9 +7920,9 @@ var Turbo = (function (exports, tslib, yjs) {
                     return;
                 if (turbo(target).isToolIgnored(tool, type, manager))
                     return;
+                checkSubstrates(target, tool);
                 if (!this.hasToolBehavior(type, tool, manager))
                     return;
-                checkSubstrates(target, tool);
                 if (propagation === exports.Propagation.stopImmediatePropagation)
                     return;
                 propagation = turbo(target).applyTool(tool, type, event, manager);
@@ -8300,6 +8566,173 @@ var Turbo = (function (exports, tslib, yjs) {
     }
 
     /**
+     * @class TurboNodeList
+     * @group Components
+     * @category TurboNodeList
+     *
+     * @description A composable, Set-like collection for managing nodes. Supports individual nodes, live DOM
+     * collections ({@link HTMLCollection} or {@link NodeListOf}), and nested {@link TurboNodeList} instances as
+     * sub-lists. Changes to sub-lists and live DOM collections propagate automatically on iteration.
+     *
+     * @template {object} Type - The type of the nodes held in the list.
+     */
+    class TurboNodeList {
+        customNodes = new TurboWeakSet();
+        ignoredMap = new WeakMap();
+        domLists = new TurboWeakSet();
+        subNodeLists = new TurboWeakSet();
+        /**
+         * @constructor
+         * @param {NodeListType<Type>} value - The initial value to populate the list with.
+         */
+        constructor(value) {
+            this.list = value;
+        }
+        /**
+         * @description A {@link Set} snapshot of all entries in this list, without duplicates.
+         */
+        get list() {
+            return new Set(this);
+        }
+        set list(value) {
+            if (!value)
+                return;
+            this.clear();
+            this.addEntry(value);
+        }
+        /**
+         * @description An array snapshot of all entries in this list, without duplicates.
+         */
+        get array() {
+            return Array.from(this);
+        }
+        /**
+         * @description The number of entries in this list, ignoring duplicates.
+         */
+        get size() {
+            let count = 0;
+            for (const _ of this)
+                count++;
+            return count;
+        }
+        *[Symbol.iterator]() {
+            const seen = new Set();
+            for (const subNodeList of this.subNodeLists)
+                for (const entry of subNodeList)
+                    if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                        seen.add(entry);
+                        yield entry;
+                    }
+            for (const domList of this.domLists)
+                for (const entry of Array.from(domList))
+                    if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                        seen.add(entry);
+                        yield entry;
+                    }
+            for (const entry of this.customNodes)
+                if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                    seen.add(entry);
+                    yield entry;
+                }
+        }
+        /**
+         * @function add
+         * @description Adds one or more entries to the list. Entries may be individual nodes, arrays, sets,
+         * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+         * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        add(...entries) {
+            entries.forEach(entry => this.addEntry(entry));
+            return this;
+        }
+        /**
+         * @function remove
+         * @description Removes one or more entries from the list. Entries may be individual nodes, arrays, sets,
+         * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+         * @param {...(NodeListType<Type> | Type)[]} entries - The entries to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        remove(...entries) {
+            entries.forEach(entry => this.removeEntry(entry));
+            return this;
+        }
+        /**
+         * @function has
+         * @description Checks whether the given entry (or entries) is present in the list.
+         * @param {Type | NodeListType<Type>} entry - The entry (or entries) to check.
+         * @returns {boolean} Whether the entry (or entries) is present in the list.
+         */
+        has(entry) {
+            if (entry instanceof TurboNodeList)
+                return this.subNodeLists.has(entry);
+            if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                return this.domLists.has(entry);
+            if (entry instanceof Set || entry instanceof Array) {
+                const arr = Array.from(entry);
+                if (arr.length === 0)
+                    return false;
+                return arr.every(item => this.has(item));
+            }
+            if (this.ignoredMap.get(entry))
+                return false;
+            if (this.customNodes.has(entry))
+                return true;
+            for (const subNodeList of this.subNodeLists)
+                for (const item of subNodeList.array)
+                    if (entry === item && !this.ignoredMap.get(item))
+                        return true;
+            for (const domList of this.domLists)
+                for (const item of Array.from(domList))
+                    if (entry === item && !this.ignoredMap.get(item))
+                        return true;
+            return false;
+        }
+        /**
+         * @function clear
+         * @description Clears all entries from the list.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        clear() {
+            this.customNodes.clear();
+            this.ignoredMap = new WeakMap();
+            this.domLists.clear();
+            this.subNodeLists.clear();
+            return this;
+        }
+        addEntry(entry) {
+            if (entry instanceof TurboNodeList)
+                this.subNodeLists.add(entry);
+            else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                this.domLists.add(entry);
+            else if (entry instanceof Set || entry instanceof Array)
+                for (const item of entry) {
+                    this.customNodes.add(item);
+                    this.ignoredMap.set(item, false);
+                }
+            else {
+                this.customNodes.add(entry);
+                this.ignoredMap.set(entry, false);
+            }
+        }
+        removeEntry(entry) {
+            if (entry instanceof TurboNodeList)
+                this.subNodeLists.delete(entry);
+            else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+                this.domLists.delete(entry);
+            else if (entry instanceof Set || entry instanceof Array)
+                for (const item of entry) {
+                    this.customNodes.delete(item);
+                    this.ignoredMap.set(item, true);
+                }
+            else {
+                this.customNodes.delete(entry);
+                this.ignoredMap.set(entry, true);
+            }
+        }
+    }
+
+    /**
      * @class TurboSubstrate
      * @group MVC
      * @category Substrate
@@ -8344,6 +8777,17 @@ var Turbo = (function (exports, tslib, yjs) {
          */
         maxPasses;
         /**
+         * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
+         * Defaults to the children of the element the substrate is attached to.
+         */
+        objectList;
+        /**
+         * @description The list of objects that trigger the substrate to resolve.
+         * Interacting with any of these objects would typically lead to the solving of the given substrate.
+         * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
+         */
+        triggerList;
+        /**
          * @description Whether the substrate is active. Defaults to true.
          */
         get active() {
@@ -8351,16 +8795,6 @@ var Turbo = (function (exports, tslib, yjs) {
         }
         set active(value) {
             turbo(this).toggleSubstrate(this.substrateName, value);
-        }
-        /**
-         * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
-         * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
-         */
-        get objectList() {
-            return turbo(this).getSubstrateObjectList(this.substrateName);
-        }
-        set objectList(value) {
-            turbo(this).setSubstrateObjectList(value, this.substrateName);
         }
         /**
          * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
@@ -8385,6 +8819,12 @@ var Turbo = (function (exports, tslib, yjs) {
                 this.active = properties.active;
             if (typeof properties.priority === "number")
                 this.priority = properties.priority;
+            if (!this.objectList)
+                this.objectList = new TurboNodeList(this.element instanceof Element ? this.element.children
+                    : this.element instanceof Node ? this.element.childNodes
+                        : []);
+            if (!this.triggerList)
+                this.triggerList = new TurboNodeList(this.objectList);
             this.setup();
         }
         /**
@@ -8432,33 +8872,6 @@ var Turbo = (function (exports, tslib, yjs) {
                     callback: props => this[metadata.name]?.(props)
                 });
             });
-        }
-        /**
-         * @function addObject
-         * @description Adds the provided object to the substrate's list.
-         * @param {object} object - The object to add.
-         */
-        addObject(object) {
-            turbo(this).addObjectToSubstrate(object, this.substrateName);
-            return this;
-        }
-        /**
-         * @function removeObject
-         * @description Removes the provided object from the substrate's list.
-         * @param {object} object - The object to remove.
-         */
-        removeObject(object) {
-            turbo(this).removeObjectFromSubstrate(object, this.substrateName);
-            return this;
-        }
-        /**
-         * @function hasObject
-         * @description Whether the provided object is included in the substrate's list.
-         * @param {object} object - The object to check.
-         * @return {boolean} - Whether the object is present.
-         */
-        hasObject(object) {
-            return turbo(this).hasObjectInSubstrate(object, this.substrateName);
         }
         /**
          * @function getObjectPasses
@@ -8633,16 +9046,17 @@ var Turbo = (function (exports, tslib, yjs) {
         createSubstrate(element, substrate) {
             if (element instanceof TurboSelector)
                 element = element.element;
+            const objectList = new TurboNodeList(element instanceof Element ? element.children
+                : element instanceof Node ? element.childNodes
+                    : []);
             const data = {
                 active: false,
-                objects: element instanceof Element ? element.children
-                    : element instanceof Node ? element.childNodes
-                        : new Set(),
-                metadata: new WeakMap(),
+                objectList: objectList,
+                triggerList: new TurboNodeList(objectList),
                 customData: new WeakMap(),
+                objectsChangedDelegate: new Delegate(),
                 priority: 10,
                 maxPasses: 5,
-                objectsChangedDelegate: new Delegate(),
                 queue: new TurboQueue(),
                 passes: new WeakMap(),
                 onActivate: new Delegate(),
@@ -8668,13 +9082,13 @@ var Turbo = (function (exports, tslib, yjs) {
                 data.active = !data.active;
         }
         getSubstrateData(element, substrate) {
-            return this.data(element).substrates.get(substrate);
+            return this.data(element)?.substrates?.get(substrate);
         }
         getSubstrates(element) {
-            return [...this.data(element).substrates.keys()];
+            return [...this.data(element)?.substrates?.keys()];
         }
         getActiveSubstrates(element) {
-            const data = this.data(element).substrates;
+            const data = this.data(element)?.substrates;
             if (!data)
                 return [];
             const entries = [];
@@ -8695,17 +9109,6 @@ var Turbo = (function (exports, tslib, yjs) {
             if (allowInactive)
                 return data.keys()[0];
         }
-        getMetadata(element, substrate, object) {
-            const substrateData = this.getSubstrateData(element, substrate);
-            if (!substrateData || !substrateData.metadata)
-                return {};
-            let metadata = substrateData.metadata.get(object);
-            if (!metadata) {
-                metadata = {};
-                substrateData.metadata.set(object, metadata);
-            }
-            return metadata;
-        }
         getCustomData(element, substrate, object) {
             const substrateData = this.getSubstrateData(element, substrate);
             if (!substrateData || !substrateData.customData)
@@ -8717,37 +9120,23 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             return customData;
         }
-        getSubstratesObjectAttachedTo(...elements) {
+        getSubstratesTriggeredByObjects(...elements) {
             if (!elements || elements.length === 0)
                 return [];
             const nodeTargets = elements.filter(el => el instanceof Node);
             const data = [];
-            const checkTargets = (data) => {
+            const checkTargets = (substrateName, object) => {
                 const hits = new Set();
-                const list = data.objects;
-                if (list instanceof Set) {
-                    for (const el of elements) {
-                        if (list.has(el) && !data.metadata.get(el)?.ignored)
-                            hits.add(el);
-                    }
-                }
-                else if (nodeTargets.length > 0) {
-                    for (let t = 0; t < nodeTargets.length; t++) {
-                        for (let i = 0; i < list.length; i++) {
-                            const target = nodeTargets[t];
-                            if (list[i] === target && !data.metadata.get(target)?.ignored) {
-                                hits.add(target);
-                                break;
-                            }
-                        }
-                    }
-                }
+                const list = this.getField(object, substrateName, "triggerList") ?? new TurboNodeList();
+                for (const el of nodeTargets)
+                    if (list.has(el))
+                        hits.add(el);
                 return Array.from(hits.values());
             };
             this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
                 if (!substrateData.active)
                     return;
-                const hits = checkTargets(substrateData);
+                const hits = checkTargets(name, object);
                 if (hits.length > 0)
                     data.push({ name, data: substrateData, host: object, targets: hits });
             }));
@@ -8756,6 +9145,8 @@ var Turbo = (function (exports, tslib, yjs) {
         }
         getField(element, substrate, field) {
             const data = this.getSubstrateData(element, substrate);
+            if (!data)
+                return;
             if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
                 && data.attachedInstance[field] !== undefined)
                 return data.attachedInstance[field];
@@ -8959,56 +9350,14 @@ var Turbo = (function (exports, tslib, yjs) {
         };
         //OBJECT LIST
         TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$3.getDefaultSubstrate(this)) {
-            const set = new Set();
-            if (!substrate)
-                return set;
-            Array.from(utils$3.getSubstrateData(this, substrate).objects).forEach(object => {
-                if (!utils$3.getMetadata(this, substrate, object).ignored)
-                    set.add(object);
-            });
-            return set;
-        };
-        TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!list || !substrate)
-                return this;
-            utils$3.getSubstrateData(this, substrate).objects = list;
-            return this;
-        };
-        TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, addToQueue = true, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return this;
-            utils$3.getMetadata(this, substrate, object).ignored = false;
-            const list = utils$3.getSubstrateData(this, substrate).objects;
-            if (list instanceof HTMLCollection || list instanceof NodeList)
-                return this;
-            try {
-                if (list.has(object))
-                    return this;
-                list.add(object);
-                this.onSubstrateObjectListChange(substrate).fire(object, "added");
-                this.getSubstrateQueue(substrate)?.push(object);
-            }
-            catch {
-            }
-            return this;
-        };
-        TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return this;
-            utils$3.getMetadata(this, substrate, object).ignored = true;
-            const list = utils$3.getSubstrateData(this, substrate).objects;
-            if (list instanceof Set)
-                list.delete(object);
-            this.onSubstrateObjectListChange(substrate).fire(object, "removed");
-            return this;
-        };
-        TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-            if (!object || !substrate)
-                return false;
-            return this.getSubstrateObjectList(substrate).has(object);
+            return utils$3.getField(this, substrate, "objectList") ?? new TurboNodeList();
         };
         TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(substrate) {
             return utils$3.getSubstrateData(this, substrate).objectsChangedDelegate;
+        };
+        //TRIGGER LIST
+        TurboSelector.prototype.getSubstrateTriggerList = function _getSubstrateTriggerList(substrate = utils$3.getDefaultSubstrate(this)) {
+            return utils$3.getField(this, substrate, "triggerList") ?? new TurboNodeList();
         };
         //QUEUE
         TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
@@ -9016,8 +9365,10 @@ var Turbo = (function (exports, tslib, yjs) {
         };
         TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
             const queue = utils$3.getField(this, substrate, "defaultQueue");
-            if (queue)
+            if (queue instanceof TurboQueue)
                 return queue.clone();
+            else if (queue instanceof Array || queue instanceof Set)
+                return new TurboQueue().push(...queue);
             return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
         };
         TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$3.getDefaultSubstrate(this)) {
@@ -9093,7 +9444,7 @@ var Turbo = (function (exports, tslib, yjs) {
                 if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                     return true;
             }
-            const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+            const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
             for (const substrateData of substratesData) {
                 for (const checker of substrateData.data.checkers.values()) {
                     if (!checker({ ...properties, substrate: substrateData.name }))
@@ -9186,7 +9537,7 @@ var Turbo = (function (exports, tslib, yjs) {
                 if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                     return this;
             }
-            const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+            const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
             for (const substrateData of substratesData)
                 utils$3.solveSubstrateInternal(substrateData, properties);
             return this;
@@ -9346,26 +9697,26 @@ var Turbo = (function (exports, tslib, yjs) {
                         setIfUndefined: true,
                         preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionDelay, value); }
                     })];
-                tslib.__esDecorate(this, null, _get_enabled_decorators, { kind: "getter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, get: obj => obj.enabled }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_classes_decorators, { kind: "setter", name: "classes", static: false, private: false, access: { has: obj => "classes" in obj, set: (obj, value) => { obj.classes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_replaceWith_decorators, { kind: "setter", name: "replaceWith", static: false, private: false, access: { has: obj => "replaceWith" in obj, set: (obj, value) => { obj.replaceWith = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_transitionProperties_decorators, { kind: "setter", name: "transitionProperties", static: false, private: false, access: { has: obj => "transitionProperties" in obj, set: (obj, value) => { obj.transitionProperties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _states_decorators, { kind: "field", name: "states", static: false, private: false, access: { has: obj => "states" in obj, get: obj => obj.states, set: (obj, value) => { obj.states = value; } }, metadata: _metadata }, _states_initializers, _states_extraInitializers);
+                __esDecorate(this, null, _get_enabled_decorators, { kind: "getter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, get: obj => obj.enabled }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_classes_decorators, { kind: "setter", name: "classes", static: false, private: false, access: { has: obj => "classes" in obj, set: (obj, value) => { obj.classes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_replaceWith_decorators, { kind: "setter", name: "replaceWith", static: false, private: false, access: { has: obj => "replaceWith" in obj, set: (obj, value) => { obj.replaceWith = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_transitionProperties_decorators, { kind: "setter", name: "transitionProperties", static: false, private: false, access: { has: obj => "transitionProperties" in obj, set: (obj, value) => { obj.transitionProperties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _states_decorators, { kind: "field", name: "states", static: false, private: false, access: { has: obj => "states" in obj, get: obj => obj.states, set: (obj, value) => { obj.states = value; } }, metadata: _metadata }, _states_initializers, _states_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             static fields = ["properties", "classes", "styles",
                 "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
-            timeRegex = (tslib.__runInitializers(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
+            timeRegex = (__runInitializers(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
             attachedObjects = [];
             /**
              * @description All possible states.
              */
-            states = tslib.__runInitializers(this, _states_initializers, void 0);
+            states = __runInitializers(this, _states_initializers, void 0);
             get enabled() { return; }
             set enabled(value) {
                 const object = value;
@@ -9523,7 +9874,7 @@ var Turbo = (function (exports, tslib, yjs) {
              * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
              */
             constructor(properties) {
-                tslib.__runInitializers(this, _states_extraInitializers);
+                __runInitializers(this, _states_extraInitializers);
                 if (properties.states)
                     this.states = properties.states;
                 Object.entries(properties).forEach(([key, value]) => {
@@ -11741,9 +12092,12 @@ var Turbo = (function (exports, tslib, yjs) {
             this.toolName = properties.toolName ?? this.toolName ?? undefined;
             this.options = properties.listenerOptions ?? {};
             const host = this.element;
-            this.target = properties.target ?? this.target ?? host instanceof Node ? host
-                : host?.element instanceof Node ? host.element
-                    : undefined;
+            try {
+                this.target = properties.target ?? this.target ?? host instanceof Node ? host
+                    : host?.element instanceof Node ? host.element
+                        : undefined;
+            }
+            catch { }
             this.setup();
         }
     }
@@ -11902,7 +12256,7 @@ var Turbo = (function (exports, tslib, yjs) {
         };
         static defaultProperties = {};
         static create(properties = {}) {
-            turbo(properties).applyDefaults(this.defaultProperties ?? {});
+            turbo(properties).applyDefaults(this["defaultProperties"] ?? {});
             return element({ ...properties });
         }
         /**
@@ -12116,12 +12470,12 @@ var Turbo = (function (exports, tslib, yjs) {
                 _set_icon_decorators = [observe, auto()];
                 _set_iconColor_decorators = [observe, auto()];
                 _loadSvg_decorators = [cache()];
-                tslib.__esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_iconColor_decorators, { kind: "setter", name: "iconColor", static: false, private: false, access: { has: obj => "iconColor" in obj, set: (obj, value) => { obj.iconColor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _loadSvg_decorators, { kind: "method", name: "loadSvg", static: false, private: false, access: { has: obj => "loadSvg" in obj, get: obj => obj.loadSvg }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _type_decorators, { kind: "field", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
-                tslib.__esDecorate(null, null, _directory_decorators, { kind: "field", name: "directory", static: false, private: false, access: { has: obj => "directory" in obj, get: obj => obj.directory, set: (obj, value) => { obj.directory = value; } }, metadata: _metadata }, _directory_initializers, _directory_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_iconColor_decorators, { kind: "setter", name: "iconColor", static: false, private: false, access: { has: obj => "iconColor" in obj, set: (obj, value) => { obj.iconColor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _loadSvg_decorators, { kind: "method", name: "loadSvg", static: false, private: false, access: { has: obj => "loadSvg" in obj, get: obj => obj.loadSvg }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _type_decorators, { kind: "field", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+                __esDecorate(null, null, _directory_decorators, { kind: "field", name: "directory", static: false, private: false, access: { has: obj => "directory" in obj, get: obj => obj.directory, set: (obj, value) => { obj.directory = value; } }, metadata: _metadata }, _directory_initializers, _directory_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -12132,17 +12486,17 @@ var Turbo = (function (exports, tslib, yjs) {
             };
             static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
                 "PNG", "JPG", "JPEG", "GIF", "WEBP"];
-            _element = tslib.__runInitializers(this, _instanceExtraInitializers);
+            _element = __runInitializers(this, _instanceExtraInitializers);
             _loadToken = 0;
             onLoaded;
             /**
              * @description The type of the icon.
              */
-            type = tslib.__runInitializers(this, _type_initializers, void 0);
+            type = __runInitializers(this, _type_initializers, void 0);
             /**
              * @description The user-provided (or statically configured) directory to the icon's file.
              */
-            directory = (tslib.__runInitializers(this, _type_extraInitializers), tslib.__runInitializers(this, _directory_initializers, void 0));
+            directory = (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _directory_initializers, void 0));
             /**
              * @description The path to the icon's source file.
              */
@@ -12240,10 +12594,10 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _directory_extraInitializers);
+                __runInitializers(this, _directory_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -12368,15 +12722,15 @@ var Turbo = (function (exports, tslib, yjs) {
                         }
                     })];
                 _set_rightCustomElements_decorators = [auto({ executeSetterBeforeStoring: true })];
-                tslib.__esDecorate(this, null, _set_leftCustomElements_decorators, { kind: "setter", name: "leftCustomElements", static: false, private: false, access: { has: obj => "leftCustomElements" in obj, set: (obj, value) => { obj.leftCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_leftIcon_decorators, { kind: "setter", name: "leftIcon", static: false, private: false, access: { has: obj => "leftIcon" in obj, set: (obj, value) => { obj.leftIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_prefixEntry_decorators, { kind: "setter", name: "prefixEntry", static: false, private: false, access: { has: obj => "prefixEntry" in obj, set: (obj, value) => { obj.prefixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_element_decorators, { kind: "setter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, set: (obj, value) => { obj.element = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_suffixEntry_decorators, { kind: "setter", name: "suffixEntry", static: false, private: false, access: { has: obj => "suffixEntry" in obj, set: (obj, value) => { obj.suffixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_rightIcon_decorators, { kind: "setter", name: "rightIcon", static: false, private: false, access: { has: obj => "rightIcon" in obj, set: (obj, value) => { obj.rightIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_rightCustomElements_decorators, { kind: "setter", name: "rightCustomElements", static: false, private: false, access: { has: obj => "rightCustomElements" in obj, set: (obj, value) => { obj.rightCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _elementTag_decorators, { kind: "field", name: "elementTag", static: false, private: false, access: { has: obj => "elementTag" in obj, get: obj => obj.elementTag, set: (obj, value) => { obj.elementTag = value; } }, metadata: _metadata }, _elementTag_initializers, _elementTag_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_leftCustomElements_decorators, { kind: "setter", name: "leftCustomElements", static: false, private: false, access: { has: obj => "leftCustomElements" in obj, set: (obj, value) => { obj.leftCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_leftIcon_decorators, { kind: "setter", name: "leftIcon", static: false, private: false, access: { has: obj => "leftIcon" in obj, set: (obj, value) => { obj.leftIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_prefixEntry_decorators, { kind: "setter", name: "prefixEntry", static: false, private: false, access: { has: obj => "prefixEntry" in obj, set: (obj, value) => { obj.prefixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_element_decorators, { kind: "setter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, set: (obj, value) => { obj.element = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_suffixEntry_decorators, { kind: "setter", name: "suffixEntry", static: false, private: false, access: { has: obj => "suffixEntry" in obj, set: (obj, value) => { obj.suffixEntry = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_rightIcon_decorators, { kind: "setter", name: "rightIcon", static: false, private: false, access: { has: obj => "rightIcon" in obj, set: (obj, value) => { obj.rightIcon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_rightCustomElements_decorators, { kind: "setter", name: "rightCustomElements", static: false, private: false, access: { has: obj => "rightCustomElements" in obj, set: (obj, value) => { obj.rightCustomElements = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _elementTag_decorators, { kind: "field", name: "elementTag", static: false, private: false, access: { has: obj => "elementTag" in obj, get: obj => obj.elementTag, set: (obj, value) => { obj.elementTag = value; } }, metadata: _metadata }, _elementTag_initializers, _elementTag_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -12384,7 +12738,7 @@ var Turbo = (function (exports, tslib, yjs) {
                 ...TurboElement.config,
                 defaultElementTag: "h4"
             };
-            childrenOrder = (tslib.__runInitializers(this, _instanceExtraInitializers), ["leftCustomElements", "leftIcon",
+            childrenOrder = (__runInitializers(this, _instanceExtraInitializers), ["leftCustomElements", "leftIcon",
                 "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"]);
             /**
              * @description Adds a given element or elements to the button at a specified position.
@@ -12410,7 +12764,7 @@ var Turbo = (function (exports, tslib, yjs) {
             /**
              * @description The tag of the text element in the button
              */
-            elementTag = tslib.__runInitializers(this, _elementTag_initializers, void 0);
+            elementTag = __runInitializers(this, _elementTag_initializers, void 0);
             /**
              * @description The custom element(s) on the left. Can be set to new element(s) by a simple assignment.
              */
@@ -12471,8 +12825,10 @@ var Turbo = (function (exports, tslib, yjs) {
                 this.addAtPosition(value, "rightCustomElements");
             }
             static create(properties) {
-                if (properties.text && !properties.element)
+                if (properties.text && !properties.element) {
                     properties.element = properties.text;
+                    properties.text = undefined;
+                }
                 if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
                     properties.element.tag = properties.elementTag;
                 }
@@ -12480,10 +12836,10 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _elementTag_extraInitializers);
+                __runInitializers(this, _elementTag_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -12522,13 +12878,13 @@ var Turbo = (function (exports, tslib, yjs) {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             static config = { ...TurboRichElement.config, defaultElementTag: "h4" };
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -12572,15 +12928,15 @@ var Turbo = (function (exports, tslib, yjs) {
                     })];
                 _set_defaultState_decorators = [auto()];
                 _set_appendStateToIconName_decorators = [auto()];
-                tslib.__esDecorate(this, null, _set_switchReifect_decorators, { kind: "setter", name: "switchReifect", static: false, private: false, access: { has: obj => "switchReifect" in obj, set: (obj, value) => { obj.switchReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_defaultState_decorators, { kind: "setter", name: "defaultState", static: false, private: false, access: { has: obj => "defaultState" in obj, set: (obj, value) => { obj.defaultState = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_appendStateToIconName_decorators, { kind: "setter", name: "appendStateToIconName", static: false, private: false, access: { has: obj => "appendStateToIconName" in obj, set: (obj, value) => { obj.appendStateToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_switchReifect_decorators, { kind: "setter", name: "switchReifect", static: false, private: false, access: { has: obj => "switchReifect" in obj, set: (obj, value) => { obj.switchReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_defaultState_decorators, { kind: "setter", name: "defaultState", static: false, private: false, access: { has: obj => "defaultState" in obj, set: (obj, value) => { obj.defaultState = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_appendStateToIconName_decorators, { kind: "setter", name: "appendStateToIconName", static: false, private: false, access: { has: obj => "appendStateToIconName" in obj, set: (obj, value) => { obj.appendStateToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            config = (tslib.__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
+            config = (__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
             get switchReifect() { return; }
             set switchReifect(value) {
                 this.switchReifect.attach(this);
@@ -12636,14 +12992,14 @@ var Turbo = (function (exports, tslib, yjs) {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _set_toggled_decorators = [auto({ initialValue: false })];
                 _set_toggleOnClick_decorators = [auto({ initialValue: false })];
-                tslib.__esDecorate(this, null, _set_toggled_decorators, { kind: "setter", name: "toggled", static: false, private: false, access: { has: obj => "toggled" in obj, set: (obj, value) => { obj.toggled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_toggleOnClick_decorators, { kind: "setter", name: "toggleOnClick", static: false, private: false, access: { has: obj => "toggleOnClick" in obj, set: (obj, value) => { obj.toggleOnClick = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_toggled_decorators, { kind: "setter", name: "toggled", static: false, private: false, access: { has: obj => "toggled" in obj, set: (obj, value) => { obj.toggled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_toggleOnClick_decorators, { kind: "setter", name: "toggleOnClick", static: false, private: false, access: { has: obj => "toggleOnClick" in obj, set: (obj, value) => { obj.toggleOnClick = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            config = (tslib.__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
+            config = (__runInitializers(this, _instanceExtraInitializers), { ...TurboIcon.config });
             stopPropagationOnClick = true;
             onToggle;
             clickListener = () => {
@@ -12792,11 +13148,11 @@ var Turbo = (function (exports, tslib, yjs) {
                 _placeholder_decorators = [expose("element")];
                 _pattern_decorators = [expose("element")];
                 _size_decorators = [expose("element")];
-                tslib.__esDecorate(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
-                tslib.__esDecorate(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
-                tslib.__esDecorate(this, null, _pattern_decorators, { kind: "accessor", name: "pattern", static: false, private: false, access: { has: obj => "pattern" in obj, get: obj => obj.pattern, set: (obj, value) => { obj.pattern = value; } }, metadata: _metadata }, _pattern_initializers, _pattern_extraInitializers);
-                tslib.__esDecorate(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+                __esDecorate(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+                __esDecorate(this, null, _pattern_decorators, { kind: "accessor", name: "pattern", static: false, private: false, access: { has: obj => "pattern" in obj, get: obj => obj.pattern, set: (obj, value) => { obj.pattern = value; } }, metadata: _metadata }, _pattern_initializers, _pattern_extraInitializers);
+                __esDecorate(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -12859,16 +13215,16 @@ var Turbo = (function (exports, tslib, yjs) {
             get element() {
                 return super.element;
             }
-            #type_accessor_storage = tslib.__runInitializers(this, _type_initializers, void 0);
+            #type_accessor_storage = __runInitializers(this, _type_initializers, void 0);
             get type() { return this.#type_accessor_storage; }
             set type(value) { this.#type_accessor_storage = value; }
-            #placeholder_accessor_storage = (tslib.__runInitializers(this, _type_extraInitializers), tslib.__runInitializers(this, _placeholder_initializers, void 0));
+            #placeholder_accessor_storage = (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _placeholder_initializers, void 0));
             get placeholder() { return this.#placeholder_accessor_storage; }
             set placeholder(value) { this.#placeholder_accessor_storage = value; }
-            #pattern_accessor_storage = (tslib.__runInitializers(this, _placeholder_extraInitializers), tslib.__runInitializers(this, _pattern_initializers, void 0));
+            #pattern_accessor_storage = (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _pattern_initializers, void 0));
             get pattern() { return this.#pattern_accessor_storage; }
             set pattern(value) { this.#pattern_accessor_storage = value; }
-            #size_accessor_storage = (tslib.__runInitializers(this, _pattern_extraInitializers), tslib.__runInitializers(this, _size_initializers, void 0));
+            #size_accessor_storage = (__runInitializers(this, _pattern_extraInitializers), __runInitializers(this, _size_initializers, void 0));
             get size() { return this.#size_accessor_storage; }
             set size(value) { this.#size_accessor_storage = value; }
             initialize() {
@@ -12950,10 +13306,10 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _size_extraInitializers);
+                __runInitializers(this, _size_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -12988,10 +13344,10 @@ var Turbo = (function (exports, tslib, yjs) {
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
             multiplier = 1;
             decimalPlaces;
@@ -13135,18 +13491,18 @@ var Turbo = (function (exports, tslib, yjs) {
                         callBefore: function (value) { this.entries.forEach(entry => turbo(entry).removeClass(value)); },
                         callAfter: function (value) { this.entries.forEach(entry => turbo(entry).addClass(value)); }
                     })];
-                tslib.__esDecorate(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
-                tslib.__esDecorate(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
-                tslib.__esDecorate(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
-                tslib.__esDecorate(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
-                tslib.__esDecorate(null, null, _selectedEntriesClasses_decorators, { kind: "field", name: "selectedEntriesClasses", static: false, private: false, access: { has: obj => "selectedEntriesClasses" in obj, get: obj => obj.selectedEntriesClasses, set: (obj, value) => { obj.selectedEntriesClasses = value; } }, metadata: _metadata }, _selectedEntriesClasses_initializers, _selectedEntriesClasses_extraInitializers);
-                tslib.__esDecorate(null, null, _entriesClasses_decorators, { kind: "field", name: "entriesClasses", static: false, private: false, access: { has: obj => "entriesClasses" in obj, get: obj => obj.entriesClasses, set: (obj, value) => { obj.entriesClasses = value; } }, metadata: _metadata }, _entriesClasses_initializers, _entriesClasses_extraInitializers);
+                __esDecorate(this, null, _set_parent_decorators, { kind: "setter", name: "parent", static: false, private: false, access: { has: obj => "parent" in obj, set: (obj, value) => { obj.parent = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_multiSelection_decorators, { kind: "setter", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _getValue_decorators, { kind: "field", name: "getValue", static: false, private: false, access: { has: obj => "getValue" in obj, get: obj => obj.getValue, set: (obj, value) => { obj.getValue = value; } }, metadata: _metadata }, _getValue_initializers, _getValue_extraInitializers);
+                __esDecorate(null, null, _getSecondaryValue_decorators, { kind: "field", name: "getSecondaryValue", static: false, private: false, access: { has: obj => "getSecondaryValue" in obj, get: obj => obj.getSecondaryValue, set: (obj, value) => { obj.getSecondaryValue = value; } }, metadata: _metadata }, _getSecondaryValue_initializers, _getSecondaryValue_extraInitializers);
+                __esDecorate(null, null, _createEntry_decorators, { kind: "field", name: "createEntry", static: false, private: false, access: { has: obj => "createEntry" in obj, get: obj => obj.createEntry, set: (obj, value) => { obj.createEntry = value; } }, metadata: _metadata }, _createEntry_initializers, _createEntry_extraInitializers);
+                __esDecorate(null, null, _forceSelection_decorators, { kind: "field", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
+                __esDecorate(null, null, _selectedEntriesClasses_decorators, { kind: "field", name: "selectedEntriesClasses", static: false, private: false, access: { has: obj => "selectedEntriesClasses" in obj, get: obj => obj.selectedEntriesClasses, set: (obj, value) => { obj.selectedEntriesClasses = value; } }, metadata: _metadata }, _selectedEntriesClasses_initializers, _selectedEntriesClasses_extraInitializers);
+                __esDecorate(null, null, _entriesClasses_decorators, { kind: "field", name: "entriesClasses", static: false, private: false, access: { has: obj => "entriesClasses" in obj, get: obj => obj.entriesClasses, set: (obj, value) => { obj.entriesClasses = value; } }, metadata: _metadata }, _entriesClasses_initializers, _entriesClasses_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             static config = { defaultSelectedEntriesClasses: "selected" };
-            _inputField = tslib.__runInitializers(this, _instanceExtraInitializers);
+            _inputField = __runInitializers(this, _instanceExtraInitializers);
             _entries = [];
             _entriesData = new WeakMap();
             parentObserver;
@@ -13217,9 +13573,9 @@ var Turbo = (function (exports, tslib, yjs) {
                     value.appendChild(this.inputField);
                 this.setupParentObserver();
             }
-            getValue = tslib.__runInitializers(this, _getValue_initializers, void 0);
-            getSecondaryValue = (tslib.__runInitializers(this, _getValue_extraInitializers), tslib.__runInitializers(this, _getSecondaryValue_initializers, void 0));
-            createEntry = (tslib.__runInitializers(this, _getSecondaryValue_extraInitializers), tslib.__runInitializers(this, _createEntry_initializers, void 0));
+            getValue = __runInitializers(this, _getValue_initializers, void 0);
+            getSecondaryValue = (__runInitializers(this, _getValue_extraInitializers), __runInitializers(this, _getSecondaryValue_initializers, void 0));
+            createEntry = (__runInitializers(this, _getSecondaryValue_extraInitializers), __runInitializers(this, _createEntry_initializers, void 0));
             /**
              * The dropdown's underlying hidden input. Might be undefined.
              */
@@ -13241,7 +13597,7 @@ var Turbo = (function (exports, tslib, yjs) {
             set multiSelection(value) {
                 this.forceSelection = !value;
             }
-            forceSelection = (tslib.__runInitializers(this, _createEntry_extraInitializers), tslib.__runInitializers(this, _forceSelection_initializers, void 0));
+            forceSelection = (__runInitializers(this, _createEntry_extraInitializers), __runInitializers(this, _forceSelection_initializers, void 0));
             set onSelect(value) {
                 if (value)
                     this.onSelectDelegate.add(value);
@@ -13250,15 +13606,15 @@ var Turbo = (function (exports, tslib, yjs) {
                 if (value)
                     this.onEnabledDelegate.add(value);
             }
-            selectedEntriesClasses = (tslib.__runInitializers(this, _forceSelection_extraInitializers), tslib.__runInitializers(this, _selectedEntriesClasses_initializers, void 0));
-            entriesClasses = (tslib.__runInitializers(this, _selectedEntriesClasses_extraInitializers), tslib.__runInitializers(this, _entriesClasses_initializers, void 0));
+            selectedEntriesClasses = (__runInitializers(this, _forceSelection_extraInitializers), __runInitializers(this, _selectedEntriesClasses_initializers, void 0));
+            entriesClasses = (__runInitializers(this, _selectedEntriesClasses_extraInitializers), __runInitializers(this, _entriesClasses_initializers, void 0));
             /**
              * @description Dropdown constructor
              * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
              */
             constructor(properties = {}) {
                 super();
-                tslib.__runInitializers(this, _entriesClasses_extraInitializers);
+                __runInitializers(this, _entriesClasses_extraInitializers);
                 const selectedValues = properties.selectedValues || [];
                 properties.selectedValues = undefined;
                 this.onEntryClicked.add((entry) => this.select(entry, !this.isSelected(entry)));
@@ -13656,25 +14012,25 @@ var Turbo = (function (exports, tslib, yjs) {
                 _selectedSecondaryValues_decorators = [expose("select", false)];
                 _selectedSecondaryValue_decorators = [expose("select", false)];
                 _stringSelectedValue_decorators = [expose("select", false)];
-                tslib.__esDecorate(this, null, _selectedEntries_decorators, { kind: "accessor", name: "selectedEntries", static: false, private: false, access: { has: obj => "selectedEntries" in obj, get: obj => obj.selectedEntries, set: (obj, value) => { obj.selectedEntries = value; } }, metadata: _metadata }, _selectedEntries_initializers, _selectedEntries_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
-                tslib.__esDecorate(this, null, _inputName_decorators, { kind: "accessor", name: "inputName", static: false, private: false, access: { has: obj => "inputName" in obj, get: obj => obj.inputName, set: (obj, value) => { obj.inputName = value; } }, metadata: _metadata }, _inputName_initializers, _inputName_extraInitializers);
-                tslib.__esDecorate(this, null, _inputField_decorators, { kind: "accessor", name: "inputField", static: false, private: false, access: { has: obj => "inputField" in obj, get: obj => obj.inputField, set: (obj, value) => { obj.inputField = value; } }, metadata: _metadata }, _inputField_initializers, _inputField_extraInitializers);
-                tslib.__esDecorate(this, null, _multiSelection_decorators, { kind: "accessor", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, get: obj => obj.multiSelection, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, _multiSelection_initializers, _multiSelection_extraInitializers);
-                tslib.__esDecorate(this, null, _forceSelection_decorators, { kind: "accessor", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
-                tslib.__esDecorate(this, null, _enabledEntries_decorators, { kind: "accessor", name: "enabledEntries", static: false, private: false, access: { has: obj => "enabledEntries" in obj, get: obj => obj.enabledEntries, set: (obj, value) => { obj.enabledEntries = value; } }, metadata: _metadata }, _enabledEntries_initializers, _enabledEntries_extraInitializers);
-                tslib.__esDecorate(this, null, _enabledValues_decorators, { kind: "accessor", name: "enabledValues", static: false, private: false, access: { has: obj => "enabledValues" in obj, get: obj => obj.enabledValues, set: (obj, value) => { obj.enabledValues = value; } }, metadata: _metadata }, _enabledValues_initializers, _enabledValues_extraInitializers);
-                tslib.__esDecorate(this, null, _enabledSecondaryValues_decorators, { kind: "accessor", name: "enabledSecondaryValues", static: false, private: false, access: { has: obj => "enabledSecondaryValues" in obj, get: obj => obj.enabledSecondaryValues, set: (obj, value) => { obj.enabledSecondaryValues = value; } }, metadata: _metadata }, _enabledSecondaryValues_initializers, _enabledSecondaryValues_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedValues_decorators, { kind: "accessor", name: "selectedValues", static: false, private: false, access: { has: obj => "selectedValues" in obj, get: obj => obj.selectedValues, set: (obj, value) => { obj.selectedValues = value; } }, metadata: _metadata }, _selectedValues_initializers, _selectedValues_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedSecondaryValues_decorators, { kind: "accessor", name: "selectedSecondaryValues", static: false, private: false, access: { has: obj => "selectedSecondaryValues" in obj, get: obj => obj.selectedSecondaryValues, set: (obj, value) => { obj.selectedSecondaryValues = value; } }, metadata: _metadata }, _selectedSecondaryValues_initializers, _selectedSecondaryValues_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedSecondaryValue_decorators, { kind: "accessor", name: "selectedSecondaryValue", static: false, private: false, access: { has: obj => "selectedSecondaryValue" in obj, get: obj => obj.selectedSecondaryValue, set: (obj, value) => { obj.selectedSecondaryValue = value; } }, metadata: _metadata }, _selectedSecondaryValue_initializers, _selectedSecondaryValue_extraInitializers);
-                tslib.__esDecorate(this, null, _stringSelectedValue_decorators, { kind: "accessor", name: "stringSelectedValue", static: false, private: false, access: { has: obj => "stringSelectedValue" in obj, get: obj => obj.stringSelectedValue, set: (obj, value) => { obj.stringSelectedValue = value; } }, metadata: _metadata }, _stringSelectedValue_initializers, _stringSelectedValue_extraInitializers);
-                tslib.__esDecorate(null, null, _entriesTag_decorators, { kind: "field", name: "entriesTag", static: false, private: false, access: { has: obj => "entriesTag" in obj, get: obj => obj.entriesTag, set: (obj, value) => { obj.entriesTag = value; } }, metadata: _metadata }, _entriesTag_initializers, _entriesTag_extraInitializers);
-                tslib.__esDecorate(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
-                tslib.__esDecorate(null, null, _entriesClasses_decorators, { kind: "field", name: "entriesClasses", static: false, private: false, access: { has: obj => "entriesClasses" in obj, get: obj => obj.entriesClasses, set: (obj, value) => { obj.entriesClasses = value; } }, metadata: _metadata }, _entriesClasses_initializers, _entriesClasses_extraInitializers);
-                tslib.__esDecorate(null, null, _selectedEntriesClasses_decorators, { kind: "field", name: "selectedEntriesClasses", static: false, private: false, access: { has: obj => "selectedEntriesClasses" in obj, get: obj => obj.selectedEntriesClasses, set: (obj, value) => { obj.selectedEntriesClasses = value; } }, metadata: _metadata }, _selectedEntriesClasses_initializers, _selectedEntriesClasses_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _selectedEntries_decorators, { kind: "accessor", name: "selectedEntries", static: false, private: false, access: { has: obj => "selectedEntries" in obj, get: obj => obj.selectedEntries, set: (obj, value) => { obj.selectedEntries = value; } }, metadata: _metadata }, _selectedEntries_initializers, _selectedEntries_extraInitializers);
+                __esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+                __esDecorate(this, null, _inputName_decorators, { kind: "accessor", name: "inputName", static: false, private: false, access: { has: obj => "inputName" in obj, get: obj => obj.inputName, set: (obj, value) => { obj.inputName = value; } }, metadata: _metadata }, _inputName_initializers, _inputName_extraInitializers);
+                __esDecorate(this, null, _inputField_decorators, { kind: "accessor", name: "inputField", static: false, private: false, access: { has: obj => "inputField" in obj, get: obj => obj.inputField, set: (obj, value) => { obj.inputField = value; } }, metadata: _metadata }, _inputField_initializers, _inputField_extraInitializers);
+                __esDecorate(this, null, _multiSelection_decorators, { kind: "accessor", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, get: obj => obj.multiSelection, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, _multiSelection_initializers, _multiSelection_extraInitializers);
+                __esDecorate(this, null, _forceSelection_decorators, { kind: "accessor", name: "forceSelection", static: false, private: false, access: { has: obj => "forceSelection" in obj, get: obj => obj.forceSelection, set: (obj, value) => { obj.forceSelection = value; } }, metadata: _metadata }, _forceSelection_initializers, _forceSelection_extraInitializers);
+                __esDecorate(this, null, _enabledEntries_decorators, { kind: "accessor", name: "enabledEntries", static: false, private: false, access: { has: obj => "enabledEntries" in obj, get: obj => obj.enabledEntries, set: (obj, value) => { obj.enabledEntries = value; } }, metadata: _metadata }, _enabledEntries_initializers, _enabledEntries_extraInitializers);
+                __esDecorate(this, null, _enabledValues_decorators, { kind: "accessor", name: "enabledValues", static: false, private: false, access: { has: obj => "enabledValues" in obj, get: obj => obj.enabledValues, set: (obj, value) => { obj.enabledValues = value; } }, metadata: _metadata }, _enabledValues_initializers, _enabledValues_extraInitializers);
+                __esDecorate(this, null, _enabledSecondaryValues_decorators, { kind: "accessor", name: "enabledSecondaryValues", static: false, private: false, access: { has: obj => "enabledSecondaryValues" in obj, get: obj => obj.enabledSecondaryValues, set: (obj, value) => { obj.enabledSecondaryValues = value; } }, metadata: _metadata }, _enabledSecondaryValues_initializers, _enabledSecondaryValues_extraInitializers);
+                __esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+                __esDecorate(this, null, _selectedValues_decorators, { kind: "accessor", name: "selectedValues", static: false, private: false, access: { has: obj => "selectedValues" in obj, get: obj => obj.selectedValues, set: (obj, value) => { obj.selectedValues = value; } }, metadata: _metadata }, _selectedValues_initializers, _selectedValues_extraInitializers);
+                __esDecorate(this, null, _selectedSecondaryValues_decorators, { kind: "accessor", name: "selectedSecondaryValues", static: false, private: false, access: { has: obj => "selectedSecondaryValues" in obj, get: obj => obj.selectedSecondaryValues, set: (obj, value) => { obj.selectedSecondaryValues = value; } }, metadata: _metadata }, _selectedSecondaryValues_initializers, _selectedSecondaryValues_extraInitializers);
+                __esDecorate(this, null, _selectedSecondaryValue_decorators, { kind: "accessor", name: "selectedSecondaryValue", static: false, private: false, access: { has: obj => "selectedSecondaryValue" in obj, get: obj => obj.selectedSecondaryValue, set: (obj, value) => { obj.selectedSecondaryValue = value; } }, metadata: _metadata }, _selectedSecondaryValue_initializers, _selectedSecondaryValue_extraInitializers);
+                __esDecorate(this, null, _stringSelectedValue_decorators, { kind: "accessor", name: "stringSelectedValue", static: false, private: false, access: { has: obj => "stringSelectedValue" in obj, get: obj => obj.stringSelectedValue, set: (obj, value) => { obj.stringSelectedValue = value; } }, metadata: _metadata }, _stringSelectedValue_initializers, _stringSelectedValue_extraInitializers);
+                __esDecorate(null, null, _entriesTag_decorators, { kind: "field", name: "entriesTag", static: false, private: false, access: { has: obj => "entriesTag" in obj, get: obj => obj.entriesTag, set: (obj, value) => { obj.entriesTag = value; } }, metadata: _metadata }, _entriesTag_initializers, _entriesTag_extraInitializers);
+                __esDecorate(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
+                __esDecorate(null, null, _entriesClasses_decorators, { kind: "field", name: "entriesClasses", static: false, private: false, access: { has: obj => "entriesClasses" in obj, get: obj => obj.entriesClasses, set: (obj, value) => { obj.entriesClasses = value; } }, metadata: _metadata }, _entriesClasses_initializers, _entriesClasses_extraInitializers);
+                __esDecorate(null, null, _selectedEntriesClasses_decorators, { kind: "field", name: "selectedEntriesClasses", static: false, private: false, access: { has: obj => "selectedEntriesClasses" in obj, get: obj => obj.selectedEntriesClasses, set: (obj, value) => { obj.selectedEntriesClasses = value; } }, metadata: _metadata }, _selectedEntriesClasses_initializers, _selectedEntriesClasses_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -13683,56 +14039,56 @@ var Turbo = (function (exports, tslib, yjs) {
                 defaultEntriesTag: "turbo-rich-element"
             };
             select = new TurboSelect();
-            entriesTag = tslib.__runInitializers(this, _entriesTag_initializers, void 0);
+            entriesTag = __runInitializers(this, _entriesTag_initializers, void 0);
             get entries() {
                 return this.select.entries;
             }
             set entries(value) {
                 this.select.entries = value;
             }
-            values = (tslib.__runInitializers(this, _entriesTag_extraInitializers), tslib.__runInitializers(this, _values_initializers, void 0));
-            #selectedEntries_accessor_storage = (tslib.__runInitializers(this, _values_extraInitializers), tslib.__runInitializers(this, _selectedEntries_initializers, void 0));
+            values = (__runInitializers(this, _entriesTag_extraInitializers), __runInitializers(this, _values_initializers, void 0));
+            #selectedEntries_accessor_storage = (__runInitializers(this, _values_extraInitializers), __runInitializers(this, _selectedEntries_initializers, void 0));
             get selectedEntries() { return this.#selectedEntries_accessor_storage; }
             set selectedEntries(value) { this.#selectedEntries_accessor_storage = value; }
-            #selectedEntry_accessor_storage = (tslib.__runInitializers(this, _selectedEntries_extraInitializers), tslib.__runInitializers(this, _selectedEntry_initializers, void 0));
+            #selectedEntry_accessor_storage = (__runInitializers(this, _selectedEntries_extraInitializers), __runInitializers(this, _selectedEntry_initializers, void 0));
             get selectedEntry() { return this.#selectedEntry_accessor_storage; }
             set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
-            entriesClasses = (tslib.__runInitializers(this, _selectedEntry_extraInitializers), tslib.__runInitializers(this, _entriesClasses_initializers, void 0));
-            selectedEntriesClasses = (tslib.__runInitializers(this, _entriesClasses_extraInitializers), tslib.__runInitializers(this, _selectedEntriesClasses_initializers, void 0));
-            #inputName_accessor_storage = (tslib.__runInitializers(this, _selectedEntriesClasses_extraInitializers), tslib.__runInitializers(this, _inputName_initializers, void 0));
+            entriesClasses = (__runInitializers(this, _selectedEntry_extraInitializers), __runInitializers(this, _entriesClasses_initializers, void 0));
+            selectedEntriesClasses = (__runInitializers(this, _entriesClasses_extraInitializers), __runInitializers(this, _selectedEntriesClasses_initializers, void 0));
+            #inputName_accessor_storage = (__runInitializers(this, _selectedEntriesClasses_extraInitializers), __runInitializers(this, _inputName_initializers, void 0));
             get inputName() { return this.#inputName_accessor_storage; }
             set inputName(value) { this.#inputName_accessor_storage = value; }
-            #inputField_accessor_storage = (tslib.__runInitializers(this, _inputName_extraInitializers), tslib.__runInitializers(this, _inputField_initializers, void 0));
+            #inputField_accessor_storage = (__runInitializers(this, _inputName_extraInitializers), __runInitializers(this, _inputField_initializers, void 0));
             get inputField() { return this.#inputField_accessor_storage; }
             set inputField(value) { this.#inputField_accessor_storage = value; }
-            #multiSelection_accessor_storage = (tslib.__runInitializers(this, _inputField_extraInitializers), tslib.__runInitializers(this, _multiSelection_initializers, void 0));
+            #multiSelection_accessor_storage = (__runInitializers(this, _inputField_extraInitializers), __runInitializers(this, _multiSelection_initializers, void 0));
             get multiSelection() { return this.#multiSelection_accessor_storage; }
             set multiSelection(value) { this.#multiSelection_accessor_storage = value; }
-            #forceSelection_accessor_storage = (tslib.__runInitializers(this, _multiSelection_extraInitializers), tslib.__runInitializers(this, _forceSelection_initializers, void 0));
+            #forceSelection_accessor_storage = (__runInitializers(this, _multiSelection_extraInitializers), __runInitializers(this, _forceSelection_initializers, void 0));
             get forceSelection() { return this.#forceSelection_accessor_storage; }
             set forceSelection(value) { this.#forceSelection_accessor_storage = value; }
-            #enabledEntries_accessor_storage = (tslib.__runInitializers(this, _forceSelection_extraInitializers), tslib.__runInitializers(this, _enabledEntries_initializers, void 0));
+            #enabledEntries_accessor_storage = (__runInitializers(this, _forceSelection_extraInitializers), __runInitializers(this, _enabledEntries_initializers, void 0));
             get enabledEntries() { return this.#enabledEntries_accessor_storage; }
             set enabledEntries(value) { this.#enabledEntries_accessor_storage = value; }
-            #enabledValues_accessor_storage = (tslib.__runInitializers(this, _enabledEntries_extraInitializers), tslib.__runInitializers(this, _enabledValues_initializers, void 0));
+            #enabledValues_accessor_storage = (__runInitializers(this, _enabledEntries_extraInitializers), __runInitializers(this, _enabledValues_initializers, void 0));
             get enabledValues() { return this.#enabledValues_accessor_storage; }
             set enabledValues(value) { this.#enabledValues_accessor_storage = value; }
-            #enabledSecondaryValues_accessor_storage = (tslib.__runInitializers(this, _enabledValues_extraInitializers), tslib.__runInitializers(this, _enabledSecondaryValues_initializers, void 0));
+            #enabledSecondaryValues_accessor_storage = (__runInitializers(this, _enabledValues_extraInitializers), __runInitializers(this, _enabledSecondaryValues_initializers, void 0));
             get enabledSecondaryValues() { return this.#enabledSecondaryValues_accessor_storage; }
             set enabledSecondaryValues(value) { this.#enabledSecondaryValues_accessor_storage = value; }
-            #selectedValue_accessor_storage = (tslib.__runInitializers(this, _enabledSecondaryValues_extraInitializers), tslib.__runInitializers(this, _selectedValue_initializers, void 0));
+            #selectedValue_accessor_storage = (__runInitializers(this, _enabledSecondaryValues_extraInitializers), __runInitializers(this, _selectedValue_initializers, void 0));
             get selectedValue() { return this.#selectedValue_accessor_storage; }
             set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
-            #selectedValues_accessor_storage = (tslib.__runInitializers(this, _selectedValue_extraInitializers), tslib.__runInitializers(this, _selectedValues_initializers, void 0));
+            #selectedValues_accessor_storage = (__runInitializers(this, _selectedValue_extraInitializers), __runInitializers(this, _selectedValues_initializers, void 0));
             get selectedValues() { return this.#selectedValues_accessor_storage; }
             set selectedValues(value) { this.#selectedValues_accessor_storage = value; }
-            #selectedSecondaryValues_accessor_storage = (tslib.__runInitializers(this, _selectedValues_extraInitializers), tslib.__runInitializers(this, _selectedSecondaryValues_initializers, void 0));
+            #selectedSecondaryValues_accessor_storage = (__runInitializers(this, _selectedValues_extraInitializers), __runInitializers(this, _selectedSecondaryValues_initializers, void 0));
             get selectedSecondaryValues() { return this.#selectedSecondaryValues_accessor_storage; }
             set selectedSecondaryValues(value) { this.#selectedSecondaryValues_accessor_storage = value; }
-            #selectedSecondaryValue_accessor_storage = (tslib.__runInitializers(this, _selectedSecondaryValues_extraInitializers), tslib.__runInitializers(this, _selectedSecondaryValue_initializers, void 0));
+            #selectedSecondaryValue_accessor_storage = (__runInitializers(this, _selectedSecondaryValues_extraInitializers), __runInitializers(this, _selectedSecondaryValue_initializers, void 0));
             get selectedSecondaryValue() { return this.#selectedSecondaryValue_accessor_storage; }
             set selectedSecondaryValue(value) { this.#selectedSecondaryValue_accessor_storage = value; }
-            #stringSelectedValue_accessor_storage = (tslib.__runInitializers(this, _selectedSecondaryValue_extraInitializers), tslib.__runInitializers(this, _stringSelectedValue_initializers, void 0));
+            #stringSelectedValue_accessor_storage = (__runInitializers(this, _selectedSecondaryValue_extraInitializers), __runInitializers(this, _stringSelectedValue_initializers, void 0));
             get stringSelectedValue() { return this.#stringSelectedValue_accessor_storage; }
             set stringSelectedValue(value) { this.#stringSelectedValue_accessor_storage = value; }
             initialize() {
@@ -13742,10 +14098,10 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _stringSelectedValue_extraInitializers);
+                __runInitializers(this, _stringSelectedValue_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -13844,23 +14200,23 @@ var Turbo = (function (exports, tslib, yjs) {
                         },
                         callAfter: function () { this.transition.attachAll(this, this.panelContainer); },
                     })];
-                tslib.__esDecorate(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_hideOverflow_decorators, { kind: "setter", name: "hideOverflow", static: false, private: false, access: { has: obj => "hideOverflow" in obj, set: (obj, value) => { obj.hideOverflow = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_attachSideToIconName_decorators, { kind: "setter", name: "attachSideToIconName", static: false, private: false, access: { has: obj => "attachSideToIconName" in obj, set: (obj, value) => { obj.attachSideToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_rotateIconBasedOnSide_decorators, { kind: "setter", name: "rotateIconBasedOnSide", static: false, private: false, access: { has: obj => "rotateIconBasedOnSide" in obj, set: (obj, value) => { obj.rotateIconBasedOnSide = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_side_decorators, { kind: "setter", name: "side", static: false, private: false, access: { has: obj => "side" in obj, set: (obj, value) => { obj.side = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_offset_decorators, { kind: "setter", name: "offset", static: false, private: false, access: { has: obj => "offset" in obj, set: (obj, value) => { obj.offset = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_translation_decorators, { kind: "setter", name: "translation", static: false, private: false, access: { has: obj => "translation" in obj, set: (obj, value) => { obj.translation = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _transition_decorators, { kind: "field", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, get: obj => obj.transition, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, _transition_initializers, _transition_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_thumb_decorators, { kind: "setter", name: "thumb", static: false, private: false, access: { has: obj => "thumb" in obj, set: (obj, value) => { obj.thumb = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_panel_decorators, { kind: "setter", name: "panel", static: false, private: false, access: { has: obj => "panel" in obj, set: (obj, value) => { obj.panel = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_icon_decorators, { kind: "setter", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_hideOverflow_decorators, { kind: "setter", name: "hideOverflow", static: false, private: false, access: { has: obj => "hideOverflow" in obj, set: (obj, value) => { obj.hideOverflow = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_attachSideToIconName_decorators, { kind: "setter", name: "attachSideToIconName", static: false, private: false, access: { has: obj => "attachSideToIconName" in obj, set: (obj, value) => { obj.attachSideToIconName = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_rotateIconBasedOnSide_decorators, { kind: "setter", name: "rotateIconBasedOnSide", static: false, private: false, access: { has: obj => "rotateIconBasedOnSide" in obj, set: (obj, value) => { obj.rotateIconBasedOnSide = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_side_decorators, { kind: "setter", name: "side", static: false, private: false, access: { has: obj => "side" in obj, set: (obj, value) => { obj.side = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_offset_decorators, { kind: "setter", name: "offset", static: false, private: false, access: { has: obj => "offset" in obj, set: (obj, value) => { obj.offset = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_translation_decorators, { kind: "setter", name: "translation", static: false, private: false, access: { has: obj => "translation" in obj, set: (obj, value) => { obj.translation = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _transition_decorators, { kind: "field", name: "transition", static: false, private: false, access: { has: obj => "transition" in obj, get: obj => obj.transition, set: (obj, value) => { obj.transition = value; } }, metadata: _metadata }, _transition_initializers, _transition_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            _panelContainer = tslib.__runInitializers(this, _instanceExtraInitializers);
+            _panelContainer = __runInitializers(this, _instanceExtraInitializers);
             get panelContainer() { return this._panelContainer; }
             dragging = false;
             resizeObserver;
@@ -13948,7 +14304,7 @@ var Turbo = (function (exports, tslib, yjs) {
                         break;
                 }
             }
-            transition = tslib.__runInitializers(this, _transition_initializers, void 0);
+            transition = __runInitializers(this, _transition_initializers, void 0);
             get translation() { return; }
             initialize() {
                 super.initialize();
@@ -14081,7 +14437,7 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _transition_extraInitializers);
+                __runInitializers(this, _transition_extraInitializers);
             }
         });
         return _classThis;
@@ -14179,19 +14535,19 @@ var Turbo = (function (exports, tslib, yjs) {
                 _get_computedStyle_decorators = [cache({ clearOnNextFrame: true })];
                 _get_anchorComputedStyle_decorators = [cache({ clearOnNextFrame: true })];
                 _get_computedMargins_decorators = [cache({ clearOnNextFrame: true })];
-                tslib.__esDecorate(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
-                tslib.__esDecorate(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_popupPosition_decorators, { kind: "setter", name: "popupPosition", static: false, private: false, access: { has: obj => "popupPosition" in obj, set: (obj, value) => { obj.popupPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_anchorPosition_decorators, { kind: "setter", name: "anchorPosition", static: false, private: false, access: { has: obj => "anchorPosition" in obj, set: (obj, value) => { obj.anchorPosition = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_viewportMargin_decorators, { kind: "setter", name: "viewportMargin", static: false, private: false, access: { has: obj => "viewportMargin" in obj, set: (obj, value) => { obj.viewportMargin = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_offsetFromAnchor_decorators, { kind: "setter", name: "offsetFromAnchor", static: false, private: false, access: { has: obj => "offsetFromAnchor" in obj, set: (obj, value) => { obj.offsetFromAnchor = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_fallbackModes_decorators, { kind: "setter", name: "fallbackModes", static: false, private: false, access: { has: obj => "fallbackModes" in obj, set: (obj, value) => { obj.fallbackModes = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_rect_decorators, { kind: "getter", name: "rect", static: false, private: false, access: { has: obj => "rect" in obj, get: obj => obj.rect }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_anchorRect_decorators, { kind: "getter", name: "anchorRect", static: false, private: false, access: { has: obj => "anchorRect" in obj, get: obj => obj.anchorRect }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_computedStyle_decorators, { kind: "getter", name: "computedStyle", static: false, private: false, access: { has: obj => "computedStyle" in obj, get: obj => obj.computedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_anchorComputedStyle_decorators, { kind: "getter", name: "anchorComputedStyle", static: false, private: false, access: { has: obj => "anchorComputedStyle" in obj, get: obj => obj.anchorComputedStyle }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_computedMargins_decorators, { kind: "getter", name: "computedMargins", static: false, private: false, access: { has: obj => "computedMargins" in obj, get: obj => obj.computedMargins }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _static_parentElement_decorators, { kind: "field", name: "parentElement", static: true, private: false, access: { has: obj => "parentElement" in obj, get: obj => obj.parentElement, set: (obj, value) => { obj.parentElement = value; } }, metadata: _metadata }, _static_parentElement_initializers, _static_parentElement_extraInitializers);
+                __esDecorate(null, null, _anchor_decorators, { kind: "field", name: "anchor", static: false, private: false, access: { has: obj => "anchor" in obj, get: obj => obj.anchor, set: (obj, value) => { obj.anchor = value; } }, metadata: _metadata }, _anchor_initializers, _anchor_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 TurboPopup = _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -14202,8 +14558,8 @@ var Turbo = (function (exports, tslib, yjs) {
                 defaultViewportMargin: 4,
                 defaultOffsetFromAnchor: { x: 0, y: 4 }
             };
-            static parentElement = tslib.__runInitializers(_classThis, _static_parentElement_initializers, void 0);
-            anchor = (tslib.__runInitializers(this, _instanceExtraInitializers), tslib.__runInitializers(this, _anchor_initializers, void 0));
+            static parentElement = __runInitializers(_classThis, _static_parentElement_initializers, void 0);
+            anchor = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _anchor_initializers, void 0));
             set popupPosition(value) { }
             get popupPosition() { return; }
             set anchorPosition(value) { }
@@ -14310,11 +14666,11 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _anchor_extraInitializers);
+                __runInitializers(this, _anchor_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _static_parentElement_extraInitializers);
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _static_parentElement_extraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         };
         return TurboPopup = _classThis;
@@ -14339,10 +14695,10 @@ var Turbo = (function (exports, tslib, yjs) {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _set_enabledCallbacks_decorators = [auto({ override: true })];
-                tslib.__esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            observer = (tslib.__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+            observer = (__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
             set enabledCallbacks(value) {
                 if (!this.data || !(this.data instanceof yjs.AbstractType))
                     return;
@@ -14554,11 +14910,11 @@ var Turbo = (function (exports, tslib, yjs) {
                             return this._value;
                         }
                     })];
-                tslib.__esDecorate(this, null, _set_value_decorators, { kind: "setter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_value_decorators, { kind: "setter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             constructor(anchor) {
-                tslib.__runInitializers(this, _instanceExtraInitializers);
+                __runInitializers(this, _instanceExtraInitializers);
                 this.value = anchor;
             }
             set value(value) { }
@@ -14978,24 +15334,24 @@ var Turbo = (function (exports, tslib, yjs) {
                         }
                     })];
                 _set_popup_decorators = [auto({ defaultValueCallback: () => popup() })];
-                tslib.__esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
-                tslib.__esDecorate(null, null, _selectorClasses_decorators, { kind: "field", name: "selectorClasses", static: false, private: false, access: { has: obj => "selectorClasses" in obj, get: obj => obj.selectorClasses, set: (obj, value) => { obj.selectorClasses = value; } }, metadata: _metadata }, _selectorClasses_initializers, _selectorClasses_extraInitializers);
-                tslib.__esDecorate(null, null, _popupClasses_decorators, { kind: "field", name: "popupClasses", static: false, private: false, access: { has: obj => "popupClasses" in obj, get: obj => obj.popupClasses, set: (obj, value) => { obj.popupClasses = value; } }, metadata: _metadata }, _popupClasses_initializers, _popupClasses_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _set_selector_decorators, { kind: "setter", name: "selector", static: false, private: false, access: { has: obj => "selector" in obj, set: (obj, value) => { obj.selector = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_popup_decorators, { kind: "setter", name: "popup", static: false, private: false, access: { has: obj => "popup" in obj, set: (obj, value) => { obj.popup = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _selectorTag_decorators, { kind: "field", name: "selectorTag", static: false, private: false, access: { has: obj => "selectorTag" in obj, get: obj => obj.selectorTag, set: (obj, value) => { obj.selectorTag = value; } }, metadata: _metadata }, _selectorTag_initializers, _selectorTag_extraInitializers);
+                __esDecorate(null, null, _selectorClasses_decorators, { kind: "field", name: "selectorClasses", static: false, private: false, access: { has: obj => "selectorClasses" in obj, get: obj => obj.selectorClasses, set: (obj, value) => { obj.selectorClasses = value; } }, metadata: _metadata }, _selectorClasses_initializers, _selectorClasses_extraInitializers);
+                __esDecorate(null, null, _popupClasses_decorators, { kind: "field", name: "popupClasses", static: false, private: false, access: { has: obj => "popupClasses" in obj, get: obj => obj.popupClasses, set: (obj, value) => { obj.popupClasses = value; } }, metadata: _metadata }, _popupClasses_initializers, _popupClasses_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
             static config = { ...TurboElement.config, defaultSelectorTag: "h4" };
-            select = (tslib.__runInitializers(this, _instanceExtraInitializers), new TurboSelect({
+            select = (__runInitializers(this, _instanceExtraInitializers), new TurboSelect({
                 onEntryClicked: () => this.openPopup(false)
             }));
             popupOpen = false;
-            selectorTag = tslib.__runInitializers(this, _selectorTag_initializers, void 0);
-            selectorClasses = (tslib.__runInitializers(this, _selectorTag_extraInitializers), tslib.__runInitializers(this, _selectorClasses_initializers, void 0));
-            popupClasses = (tslib.__runInitializers(this, _selectorClasses_extraInitializers), tslib.__runInitializers(this, _popupClasses_initializers, void 0));
+            selectorTag = __runInitializers(this, _selectorTag_initializers, void 0);
+            selectorClasses = (__runInitializers(this, _selectorTag_extraInitializers), __runInitializers(this, _selectorClasses_initializers, void 0));
+            popupClasses = (__runInitializers(this, _selectorClasses_extraInitializers), __runInitializers(this, _popupClasses_initializers, void 0));
             /**
              * The dropdown's selector element.
              */
@@ -15043,10 +15399,10 @@ var Turbo = (function (exports, tslib, yjs) {
             }
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _popupClasses_extraInitializers);
+                __runInitializers(this, _popupClasses_extraInitializers);
             }
             static {
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
         });
         return _classThis;
@@ -15090,23 +15446,23 @@ var Turbo = (function (exports, tslib, yjs) {
                         initialValue: Math.PI * 2,
                         preprocessValue: (value) => value - Math.PI / 2
                     })];
-                tslib.__esDecorate(null, null, _startAngle_decorators, { kind: "field", name: "startAngle", static: false, private: false, access: { has: obj => "startAngle" in obj, get: obj => obj.startAngle, set: (obj, value) => { obj.startAngle = value; } }, metadata: _metadata }, _startAngle_initializers, _startAngle_extraInitializers);
-                tslib.__esDecorate(null, null, _endAngle_decorators, { kind: "field", name: "endAngle", static: false, private: false, access: { has: obj => "endAngle" in obj, get: obj => obj.endAngle, set: (obj, value) => { obj.endAngle = value; } }, metadata: _metadata }, _endAngle_initializers, _endAngle_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(null, null, _startAngle_decorators, { kind: "field", name: "startAngle", static: false, private: false, access: { has: obj => "startAngle" in obj, get: obj => obj.startAngle, set: (obj, value) => { obj.startAngle = value; } }, metadata: _metadata }, _startAngle_initializers, _startAngle_extraInitializers);
+                __esDecorate(null, null, _endAngle_decorators, { kind: "field", name: "endAngle", static: false, private: false, access: { has: obj => "endAngle" in obj, get: obj => obj.endAngle, set: (obj, value) => { obj.endAngle = value; } }, metadata: _metadata }, _endAngle_initializers, _endAngle_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
             transition;
             currentOrigin;
             minDragDistance = 20;
             semiMajor = 50;
             semiMinor = 45;
-            startAngle = tslib.__runInitializers(this, _startAngle_initializers, void 0);
-            endAngle = (tslib.__runInitializers(this, _startAngle_extraInitializers), tslib.__runInitializers(this, _endAngle_initializers, void 0));
+            startAngle = __runInitializers(this, _startAngle_initializers, void 0);
+            endAngle = (__runInitializers(this, _startAngle_extraInitializers), __runInitializers(this, _endAngle_initializers, void 0));
             constructor() {
                 super(...arguments);
-                tslib.__runInitializers(this, _endAngle_extraInitializers);
+                __runInitializers(this, _endAngle_extraInitializers);
             }
         });
         return _classThis;
@@ -15212,35 +15568,35 @@ var Turbo = (function (exports, tslib, yjs) {
                 _set_alwaysOpen_decorators = [auto({ defaultValue: false })];
                 _set_index_decorators = [auto({ cancelIfUnchanged: false })];
                 _set_open_decorators = [auto()];
-                tslib.__esDecorate(this, null, _entries_decorators, { kind: "accessor", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
-                tslib.__esDecorate(this, null, _values_decorators, { kind: "accessor", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
-                tslib.__esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
-                tslib.__esDecorate(this, null, _set_size_decorators, { kind: "setter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _get_reifect_decorators, { kind: "getter", name: "reifect", static: false, private: false, access: { has: obj => "reifect" in obj, get: obj => obj.reifect }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_index_decorators, { kind: "setter", name: "index", static: false, private: false, access: { has: obj => "index" in obj, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                tslib.__esDecorate(null, null, _opacity_decorators, { kind: "field", name: "opacity", static: false, private: false, access: { has: obj => "opacity" in obj, get: obj => obj.opacity, set: (obj, value) => { obj.opacity = value; } }, metadata: _metadata }, _opacity_initializers, _opacity_extraInitializers);
-                tslib.__esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                __esDecorate(this, null, _entries_decorators, { kind: "accessor", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
+                __esDecorate(this, null, _values_decorators, { kind: "accessor", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
+                __esDecorate(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+                __esDecorate(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
+                __esDecorate(this, null, _set_size_decorators, { kind: "setter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_reifect_decorators, { kind: "getter", name: "reifect", static: false, private: false, access: { has: obj => "reifect" in obj, get: obj => obj.reifect }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_index_decorators, { kind: "setter", name: "index", static: false, private: false, access: { has: obj => "index" in obj, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _opacity_decorators, { kind: "field", name: "opacity", static: false, private: false, access: { has: obj => "opacity" in obj, get: obj => obj.opacity, set: (obj, value) => { obj.opacity = value; } }, metadata: _metadata }, _opacity_initializers, _opacity_extraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 _classThis = _classDescriptor.value;
                 if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                tslib.__runInitializers(_classThis, _classExtraInitializers);
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            selector = tslib.__runInitializers(this, _instanceExtraInitializers);
-            #entries_accessor_storage = tslib.__runInitializers(this, _entries_initializers, void 0);
+            selector = __runInitializers(this, _instanceExtraInitializers);
+            #entries_accessor_storage = __runInitializers(this, _entries_initializers, void 0);
             get entries() { return this.#entries_accessor_storage; }
             set entries(value) { this.#entries_accessor_storage = value; }
-            #values_accessor_storage = (tslib.__runInitializers(this, _entries_extraInitializers), tslib.__runInitializers(this, _values_initializers, void 0));
+            #values_accessor_storage = (__runInitializers(this, _entries_extraInitializers), __runInitializers(this, _values_initializers, void 0));
             get values() { return this.#values_accessor_storage; }
             set values(value) { this.#values_accessor_storage = value; }
-            #selectedEntry_accessor_storage = (tslib.__runInitializers(this, _values_extraInitializers), tslib.__runInitializers(this, _selectedEntry_initializers, void 0));
+            #selectedEntry_accessor_storage = (__runInitializers(this, _values_extraInitializers), __runInitializers(this, _selectedEntry_initializers, void 0));
             get selectedEntry() { return this.#selectedEntry_accessor_storage; }
             set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
-            #selectedValue_accessor_storage = (tslib.__runInitializers(this, _selectedEntry_extraInitializers), tslib.__runInitializers(this, _selectedValue_initializers, void 0));
+            #selectedValue_accessor_storage = (__runInitializers(this, _selectedEntry_extraInitializers), __runInitializers(this, _selectedValue_initializers, void 0));
             get selectedValue() { return this.#selectedValue_accessor_storage; }
             set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
-            _currentPosition = (tslib.__runInitializers(this, _selectedValue_extraInitializers), 0);
+            _currentPosition = (__runInitializers(this, _selectedValue_extraInitializers), 0);
             sizePerEntry = [];
             positionPerEntry = [];
             totalSize = 0;
@@ -15297,14 +15653,14 @@ var Turbo = (function (exports, tslib, yjs) {
                 this.refresh();
                 turbo(this).setStyles({ display: "block", position: "relative" });
             }
-            opacity = tslib.__runInitializers(this, _opacity_initializers, void 0);
+            opacity = __runInitializers(this, _opacity_initializers, void 0);
             set size(value) { }
             get size() { return; }
             get reifect() { return; }
             set reifect(value) {
                 this.reifect.attachAll(...this.entries);
             }
-            closeOnClick = (tslib.__runInitializers(this, _opacity_extraInitializers), () => this.open = false);
+            closeOnClick = (__runInitializers(this, _opacity_extraInitializers), () => this.open = false);
             set alwaysOpen(value) {
                 if (value)
                     turbo(document.body).removeListener(DefaultEventName.click, this.closeOnClick);
@@ -15467,6 +15823,9 @@ var Turbo = (function (exports, tslib, yjs) {
     function selectWheel(properties) {
         turbo(properties).applyDefaults({ tag: "turbo-select-wheel" });
         return element({ ...properties });
+    }
+
+    class TurboGrid extends TurboElement {
     }
 
     /**
@@ -15927,6 +16286,7 @@ var Turbo = (function (exports, tslib, yjs) {
     exports.TurboEvent = TurboEvent;
     exports.TurboEventManager = TurboEventManager;
     exports.TurboEventName = TurboEventName;
+    exports.TurboGrid = TurboGrid;
     exports.TurboHandler = TurboHandler;
     exports.TurboHeadlessElement = TurboHeadlessElement;
     exports.TurboIcon = TurboIcon;
@@ -15941,6 +16301,7 @@ var Turbo = (function (exports, tslib, yjs) {
     exports.TurboModel = TurboModel;
     exports.TurboMoveEventName = TurboMoveEventName;
     exports.TurboNestedMap = TurboNestedMap;
+    exports.TurboNodeList = TurboNodeList;
     exports.TurboNumericalInput = TurboNumericalInput;
     exports.TurboObserver = TurboObserver;
     exports.TurboPopup = TurboPopup;
@@ -16092,4 +16453,4 @@ var Turbo = (function (exports, tslib, yjs) {
 
     return exports;
 
-})({}, tslib, yjs);
+})({}, yjs);

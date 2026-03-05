@@ -229,6 +229,18 @@
  */
 
 /**
+ * @typedef {Object} NodeListType
+ * @group Components
+ * @category TurboNodeList
+ *
+ * @description Union type representing any value that can be added to or removed from a
+ * {@link TurboNodeList}. Accepts a {@link TurboNodeList}, a live DOM {@link HTMLCollection},
+ * a {@link NodeListOf}, a {@link Set}, or a plain array.
+ *
+ * @template {object} EntryType - The type of the nodes held in the collection.
+ */
+
+/**
  * @typedef {Object} MakeSubstrateOptions
  * @group Types
  * @category Substrate
@@ -412,6 +424,70 @@
  * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
+ */
+
+/**
+ * @typedef {Object} PreventDefaultOptions
+ * @group Types
+ * @category Event
+ *
+ * @description Options for {@link TurboSelector.preventDefault}, which prevents default browser behaviors for
+ * selected event types and can optionally stop propagation.
+ *
+ * @property {string[]} [types] - List of event types to affect. If omitted, defaults to {@link BasicInputEvents}.
+ * @property {"capture" | "bubble"} [phase] - Which phase to prevent. Defaults to `"bubble"`.
+ * @property {false | "stop" | "immediate"} [stop] - Whether to stop propagation when handling the event:
+ * - `false`: do not stop propagation,
+ * - `"stop"`: call `stopPropagation`,
+ * - `"immediate"`: call `stopImmediatePropagation`.
+ * @property {(type: string, e: Event) => boolean} [preventDefaultOn] - Predicate to decide (per event) whether to
+ * call `preventDefault`. Return `true` to prevent default for that event.
+ * @property {boolean} [clearPreviousListeners] - If true, clears previously installed prevent-default listeners
+ * before installing new ones.
+ * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
+ */
+
+/**
+ * @typedef {Object} ListenerProperties
+ * @group Types
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @description Configuration object used to construct a {@link Listener}.
+ *
+ * @property {string} type - Event type (e.g., `"click"`, `"pointermove"`).
+ * @property {CallbackType} callback - Listener callback.
+ * @property {TargetType} [target] - Target node.
+ * @property {string} [toolName] - Tool name to bind this listener to (if applicable).
+ * @property {ListenerOptions} [options] - Options controlling registration and execution behaviors.
+ * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
+ */
+
+/**
+ * @typedef {Object} MatchListenerProperties
+ * @group Types
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @extends ListenerProperties
+ * @description Properties used for matching listeners (see {@link Listener.match}).
+ *
+ * @property {string[]} [optionsToSkip] - List of option keys to ignore when matching `options`.
+ */
+
+/**
+ * @typedef {Object} ListenerOptions
+ * @group Types
+ * @category Listener
+ * @extends AddEventListenerOptions
+ * @description Options used for listeners.
+ *
+ * @property {boolean} [checkSubstrates] - If true, checks substrates before execution. Defaults to true.
+ * @property {boolean} [solveSubstrates] - If true, triggers substrate solving after execution. Defaults to true.
+ * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
+ * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
  */
 
 /**
@@ -639,7 +715,6 @@
  * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
  */
 
-import { __esDecorate, __runInitializers } from 'tslib';
 import { AbstractType, Map as Map$1, Array as Array$1, YMapEvent, YArrayEvent } from 'yjs';
 export { AbstractType as YAbstractType, Array as YArray, YArrayEvent, Doc as YDoc, YEvent, Map as YMap, YMapEvent, Text as YText } from 'yjs';
 
@@ -2499,6 +2574,62 @@ class Mvc {
     }
 }
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+}
+function __runInitializers(thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+}
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
 /**
  * @internal
  */
@@ -2869,7 +3000,7 @@ function modelSignal(dataKey, blockKey) {
  * @category Signal
  *
  * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
+ * - Getter returns `this.getBlock(blockKey)`
  * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
  *
  * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
@@ -3086,6 +3217,24 @@ class TurboWeakSet {
     // Clear all weak references
     clear() {
         this._weakRefs.clear();
+    }
+    forEach(callback, thisArg) {
+        for (const weakRef of this._weakRefs) {
+            const obj = weakRef.deref();
+            if (obj !== undefined)
+                callback.call(thisArg, obj, obj, this);
+            else
+                this._weakRefs.delete(weakRef);
+        }
+    }
+    *[Symbol.iterator]() {
+        for (const weakRef of this._weakRefs) {
+            const obj = weakRef.deref();
+            if (obj !== undefined)
+                yield obj;
+            else
+                this._weakRefs.delete(weakRef);
+        }
     }
 }
 
@@ -3754,7 +3903,6 @@ let TurboDataBlock = (() => {
     return class TurboDataBlock {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-            _enabledCallbacks_decorators = [auto({ defaultValue: true })];
             __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -3912,6 +4060,28 @@ let TurboDataBlock = (() => {
          */
         get size() {
             return this.keys.length;
+        }
+        /*
+     *
+     * Iteration
+     *
+     */
+        /**
+         * Default iteration → yields [key, value]
+         */
+        *[(_enabledCallbacks_decorators = [auto({ defaultValue: true })], Symbol.iterator)]() {
+            for (const key of this.keys)
+                yield [key, this.get(key)];
+        }
+        entries() {
+            return this.keys.map(key => [key, this.get(key)]);
+        }
+        /**
+         * forEach
+         */
+        forEach(callback, thisArg) {
+            for (const key of this.keys)
+                callback.call(thisArg, this.get(key), key, this);
         }
         /*
          *
@@ -5144,6 +5314,18 @@ function setupElementFunctions() {
     });
 }
 
+/**
+ * @enum {Propagation}
+ * @group Types
+ * @category Event
+ *
+ * @description Enum dictating the propagation of an event.
+ *
+ * @property {Propagation.propagate} propagate - Continue normal propagation.
+ * @property {Propagation.stopPropagation} stopPropagation - Stop propagation to parent targets.
+ * @property {Propagation.stopImmediatePropagation} stopImmediatePropagation - Stop propagation and prevent any
+ * additional listeners on the same target from executing.
+ */
 var Propagation;
 (function (Propagation) {
     Propagation["propagate"] = "propagate";
@@ -5153,6 +5335,7 @@ var Propagation;
 /**
  * @group Types
  * @category Event
+ * @description Default set of basic input event types typically handled by {@link TurboSelector.preventDefault}.
  */
 const BasicInputEvents = [
     "mousedown", "mouseup", "mousemove", "click", "dblclick", "contextmenu",
@@ -5164,6 +5347,8 @@ const BasicInputEvents = [
 /**
  * @group Types
  * @category Event
+ * @description Event types that should usually be registered as **non-passive** when you intend to call
+ *  * `preventDefault()` (e.g., scroll/touch/pointer interactions).
  */
 const NonPassiveEvents = [
     "wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"
@@ -7320,7 +7505,7 @@ let TurboEventManager = (() => {
         }
         applyAndHookEvents(turboEventNames, defaultEventNames, applyTurboEvents) {
             this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
-            for (const name in turboEventNames) {
+            for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
                 if (applyTurboEvents)
                     this.dispatchController.setupCustomDispatcher(name);
                 else
@@ -7340,16 +7525,42 @@ let TurboEventManager = (() => {
     };
 })();
 
+/**
+ * @class Listener
+ * @group Components
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @description Object representing an event listener, storing its metadata (type, target, toolName, options,
+ * manager) and providing utilities to execute and match it.
+ */
 class Listener {
+    /** @description Event type (e.g., `"click"`, `"pointermove"`). */
     type;
+    /** @description Target node this listener is associated with. */
     target;
+    /** @description Name of the tool this listener is bound to (if any). */
     toolName;
+    /** @description Callback provided by the user. */
     callback;
+    /**
+     * @description Bundled listener that adapts native events to the {@link ListenerCallback} signature.
+     */
     bundledListener;
+    /** @description Listener options used for registration and additional behaviors.*/
     options;
+    /** @description Associated event manager used to coordinate listener execution. */
     manager;
+    /** @description Last animation frame index during which this listener executed. */
     lastExecutionFrame;
+    /** @description Last timestamp (ms) at which this listener executed. */
     lastExecutionTime;
+    /**
+     * @constructor
+     * @param {ListenerProperties<TargetType, CallbackType>} properties - Listener configuration.
+     * @description Creates a {@link Listener}.
+     */
     constructor(properties) {
         if (properties.target instanceof TurboSelector)
             properties.target = properties.target.element;
@@ -7361,12 +7572,32 @@ class Listener {
         this.options = properties.options ?? {};
         this.manager = properties.manager ?? TurboEventManager.instance;
     }
+    /**
+     * @function execute
+     * @description Executes the listener using its bundled signature.
+     * @param {Event} e - Event passed to the callback.
+     * @returns {Propagation} Propagation returned by the callback.
+     */
     execute(e) {
         return this.bundledListener(e);
     }
+    /**
+     * @function executeOn
+     * @description Executes the underlying callback on an explicit target.
+     * @param {Event} e - Event passed to the callback.
+     * @param {TargetType} target - Target node.
+     * @param {...any[]} args - Additional arguments forwarded to the callback.
+     * @returns {any} Whatever the callback returns (typically {@link Propagation}).
+     */
     executeOn(e, target, ...args) {
         return this.callback(e, target, ...args);
     }
+    /**
+     * @function match
+     * @description Checks whether this listener matches a subset of properties.
+     * @param {MatchListenerProperties<TargetType, CallbackType>} [properties={}] - Properties to match against.
+     * @returns {boolean} Whether this listener matches.
+     */
     match(properties = {}) {
         for (let [key, value] of Object.entries(properties)) {
             if (key === "target" && value instanceof TurboSelector)
@@ -7393,8 +7624,25 @@ class Listener {
     }
 }
 
+/**
+ * @class ListenerSet
+ * @group Components
+ * @category Listener
+ *
+ * @template {Node} TargetType - The type of the event target.
+ * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
+ * @description Collection of {@link Listener} instances indexed by event type.
+ * Provides helpers to add/remove/query listeners and to remove listeners matching criteria.
+ */
 class ListenerSet {
+    /**
+     * @description Map from event type to a set of listeners registered for that type.
+     */
     listeners = new Map();
+    /**
+     * @readonly
+     * @description Flattened array of all listeners in the set.
+     */
     get listenersArray() {
         const listeners = [];
         for (const set of this.listeners.values()) {
@@ -7425,15 +7673,32 @@ class ListenerSet {
             this.listeners.get(listener.type)?.delete(listener);
         }
     }
+    /**
+     * @function removeMatchingListeners
+     * @description Removes all listeners that match the provided properties (see {@link Listener.match}).
+     * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+     */
     removeMatchingListeners(matchingProperties = {}) {
         this.getListeners(matchingProperties).forEach((listener) => {
             // listener.target?.removeEventListener(listener.type, listener.bundledListener, listener.options);
             this.removeListener(listener);
         });
     }
+    /**
+     * @function getListeners
+     * @description Returns all listeners matching the provided properties (see {@link Listener.match}).
+     * @param {MatchListenerProperties<TargetType, CallbackType>} [matchingProperties={}] - Properties to match.
+     * @returns {Listener[]} Matching listeners.
+     */
     getListeners(matchingProperties = {}) {
         return this.listenersArray.filter(listener => listener.match(matchingProperties));
     }
+    /**
+     * @function getListenersByType
+     * @description Returns the set of listeners registered for the given event type.
+     * @param {string} type - Event type.
+     * @returns {Set<Listener<TargetType, CallbackType>>} Set of listeners for that type.
+     */
     getListenersByType(type) {
         if (!type || !this.listeners.has(type))
             return new Set();
@@ -7630,9 +7895,9 @@ function setupEventFunctions() {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils$6.getBoundListenersSet(target);
             const entries = utils$6.getBoundListeners({ target, type, toolName: tool, options, manager });
+            checkSubstrates(target, tool);
             if (entries.length === 0)
                 return;
-            checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation)
                 return;
             for (const entry of entries) {
@@ -7655,9 +7920,9 @@ function setupEventFunctions() {
                 return;
             if (turbo(target).isToolIgnored(tool, type, manager))
                 return;
+            checkSubstrates(target, tool);
             if (!this.hasToolBehavior(type, tool, manager))
                 return;
-            checkSubstrates(target, tool);
             if (propagation === Propagation.stopImmediatePropagation)
                 return;
             propagation = turbo(target).applyTool(tool, type, event, manager);
@@ -8301,6 +8566,173 @@ class TurboQueue {
 }
 
 /**
+ * @class TurboNodeList
+ * @group Components
+ * @category TurboNodeList
+ *
+ * @description A composable, Set-like collection for managing nodes. Supports individual nodes, live DOM
+ * collections ({@link HTMLCollection} or {@link NodeListOf}), and nested {@link TurboNodeList} instances as
+ * sub-lists. Changes to sub-lists and live DOM collections propagate automatically on iteration.
+ *
+ * @template {object} Type - The type of the nodes held in the list.
+ */
+class TurboNodeList {
+    customNodes = new TurboWeakSet();
+    ignoredMap = new WeakMap();
+    domLists = new TurboWeakSet();
+    subNodeLists = new TurboWeakSet();
+    /**
+     * @constructor
+     * @param {NodeListType<Type>} value - The initial value to populate the list with.
+     */
+    constructor(value) {
+        this.list = value;
+    }
+    /**
+     * @description A {@link Set} snapshot of all entries in this list, without duplicates.
+     */
+    get list() {
+        return new Set(this);
+    }
+    set list(value) {
+        if (!value)
+            return;
+        this.clear();
+        this.addEntry(value);
+    }
+    /**
+     * @description An array snapshot of all entries in this list, without duplicates.
+     */
+    get array() {
+        return Array.from(this);
+    }
+    /**
+     * @description The number of entries in this list, ignoring duplicates.
+     */
+    get size() {
+        let count = 0;
+        for (const _ of this)
+            count++;
+        return count;
+    }
+    *[Symbol.iterator]() {
+        const seen = new Set();
+        for (const subNodeList of this.subNodeLists)
+            for (const entry of subNodeList)
+                if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                    seen.add(entry);
+                    yield entry;
+                }
+        for (const domList of this.domLists)
+            for (const entry of Array.from(domList))
+                if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                    seen.add(entry);
+                    yield entry;
+                }
+        for (const entry of this.customNodes)
+            if (!this.ignoredMap.get(entry) && !seen.has(entry)) {
+                seen.add(entry);
+                yield entry;
+            }
+    }
+    /**
+     * @function add
+     * @description Adds one or more entries to the list. Entries may be individual nodes, arrays, sets,
+     * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+     * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    add(...entries) {
+        entries.forEach(entry => this.addEntry(entry));
+        return this;
+    }
+    /**
+     * @function remove
+     * @description Removes one or more entries from the list. Entries may be individual nodes, arrays, sets,
+     * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+     * @param {...(NodeListType<Type> | Type)[]} entries - The entries to remove.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    remove(...entries) {
+        entries.forEach(entry => this.removeEntry(entry));
+        return this;
+    }
+    /**
+     * @function has
+     * @description Checks whether the given entry (or entries) is present in the list.
+     * @param {Type | NodeListType<Type>} entry - The entry (or entries) to check.
+     * @returns {boolean} Whether the entry (or entries) is present in the list.
+     */
+    has(entry) {
+        if (entry instanceof TurboNodeList)
+            return this.subNodeLists.has(entry);
+        if (entry instanceof HTMLCollection || entry instanceof NodeList)
+            return this.domLists.has(entry);
+        if (entry instanceof Set || entry instanceof Array) {
+            const arr = Array.from(entry);
+            if (arr.length === 0)
+                return false;
+            return arr.every(item => this.has(item));
+        }
+        if (this.ignoredMap.get(entry))
+            return false;
+        if (this.customNodes.has(entry))
+            return true;
+        for (const subNodeList of this.subNodeLists)
+            for (const item of subNodeList.array)
+                if (entry === item && !this.ignoredMap.get(item))
+                    return true;
+        for (const domList of this.domLists)
+            for (const item of Array.from(domList))
+                if (entry === item && !this.ignoredMap.get(item))
+                    return true;
+        return false;
+    }
+    /**
+     * @function clear
+     * @description Clears all entries from the list.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    clear() {
+        this.customNodes.clear();
+        this.ignoredMap = new WeakMap();
+        this.domLists.clear();
+        this.subNodeLists.clear();
+        return this;
+    }
+    addEntry(entry) {
+        if (entry instanceof TurboNodeList)
+            this.subNodeLists.add(entry);
+        else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+            this.domLists.add(entry);
+        else if (entry instanceof Set || entry instanceof Array)
+            for (const item of entry) {
+                this.customNodes.add(item);
+                this.ignoredMap.set(item, false);
+            }
+        else {
+            this.customNodes.add(entry);
+            this.ignoredMap.set(entry, false);
+        }
+    }
+    removeEntry(entry) {
+        if (entry instanceof TurboNodeList)
+            this.subNodeLists.delete(entry);
+        else if (entry instanceof HTMLCollection || entry instanceof NodeList)
+            this.domLists.delete(entry);
+        else if (entry instanceof Set || entry instanceof Array)
+            for (const item of entry) {
+                this.customNodes.delete(item);
+                this.ignoredMap.set(item, true);
+            }
+        else {
+            this.customNodes.delete(entry);
+            this.ignoredMap.set(entry, true);
+        }
+    }
+}
+
+/**
  * @class TurboSubstrate
  * @group MVC
  * @category Substrate
@@ -8345,6 +8777,17 @@ class TurboSubstrate extends TurboController {
      */
     maxPasses;
     /**
+     * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
+     * Defaults to the children of the element the substrate is attached to.
+     */
+    objectList;
+    /**
+     * @description The list of objects that trigger the substrate to resolve.
+     * Interacting with any of these objects would typically lead to the solving of the given substrate.
+     * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
+     */
+    triggerList;
+    /**
      * @description Whether the substrate is active. Defaults to true.
      */
     get active() {
@@ -8352,16 +8795,6 @@ class TurboSubstrate extends TurboController {
     }
     set active(value) {
         turbo(this).toggleSubstrate(this.substrateName, value);
-    }
-    /**
-     * @description The list of objects constrained by the substrate. Retrieving it will return a shallow copy as a
-     * Set. Use {@link addObject} and {@link removeObject} to manipulate the list.
-     */
-    get objectList() {
-        return turbo(this).getSubstrateObjectList(this.substrateName);
-    }
-    set objectList(value) {
-        turbo(this).setSubstrateObjectList(value, this.substrateName);
     }
     /**
      * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
@@ -8386,6 +8819,12 @@ class TurboSubstrate extends TurboController {
             this.active = properties.active;
         if (typeof properties.priority === "number")
             this.priority = properties.priority;
+        if (!this.objectList)
+            this.objectList = new TurboNodeList(this.element instanceof Element ? this.element.children
+                : this.element instanceof Node ? this.element.childNodes
+                    : []);
+        if (!this.triggerList)
+            this.triggerList = new TurboNodeList(this.objectList);
         this.setup();
     }
     /**
@@ -8433,33 +8872,6 @@ class TurboSubstrate extends TurboController {
                 callback: props => this[metadata.name]?.(props)
             });
         });
-    }
-    /**
-     * @function addObject
-     * @description Adds the provided object to the substrate's list.
-     * @param {object} object - The object to add.
-     */
-    addObject(object) {
-        turbo(this).addObjectToSubstrate(object, this.substrateName);
-        return this;
-    }
-    /**
-     * @function removeObject
-     * @description Removes the provided object from the substrate's list.
-     * @param {object} object - The object to remove.
-     */
-    removeObject(object) {
-        turbo(this).removeObjectFromSubstrate(object, this.substrateName);
-        return this;
-    }
-    /**
-     * @function hasObject
-     * @description Whether the provided object is included in the substrate's list.
-     * @param {object} object - The object to check.
-     * @return {boolean} - Whether the object is present.
-     */
-    hasObject(object) {
-        return turbo(this).hasObjectInSubstrate(object, this.substrateName);
     }
     /**
      * @function getObjectPasses
@@ -8634,16 +9046,17 @@ class SubstrateFunctionsUtils {
     createSubstrate(element, substrate) {
         if (element instanceof TurboSelector)
             element = element.element;
+        const objectList = new TurboNodeList(element instanceof Element ? element.children
+            : element instanceof Node ? element.childNodes
+                : []);
         const data = {
             active: false,
-            objects: element instanceof Element ? element.children
-                : element instanceof Node ? element.childNodes
-                    : new Set(),
-            metadata: new WeakMap(),
+            objectList: objectList,
+            triggerList: new TurboNodeList(objectList),
             customData: new WeakMap(),
+            objectsChangedDelegate: new Delegate(),
             priority: 10,
             maxPasses: 5,
-            objectsChangedDelegate: new Delegate(),
             queue: new TurboQueue(),
             passes: new WeakMap(),
             onActivate: new Delegate(),
@@ -8669,13 +9082,13 @@ class SubstrateFunctionsUtils {
             data.active = !data.active;
     }
     getSubstrateData(element, substrate) {
-        return this.data(element).substrates.get(substrate);
+        return this.data(element)?.substrates?.get(substrate);
     }
     getSubstrates(element) {
-        return [...this.data(element).substrates.keys()];
+        return [...this.data(element)?.substrates?.keys()];
     }
     getActiveSubstrates(element) {
-        const data = this.data(element).substrates;
+        const data = this.data(element)?.substrates;
         if (!data)
             return [];
         const entries = [];
@@ -8696,17 +9109,6 @@ class SubstrateFunctionsUtils {
         if (allowInactive)
             return data.keys()[0];
     }
-    getMetadata(element, substrate, object) {
-        const substrateData = this.getSubstrateData(element, substrate);
-        if (!substrateData || !substrateData.metadata)
-            return {};
-        let metadata = substrateData.metadata.get(object);
-        if (!metadata) {
-            metadata = {};
-            substrateData.metadata.set(object, metadata);
-        }
-        return metadata;
-    }
     getCustomData(element, substrate, object) {
         const substrateData = this.getSubstrateData(element, substrate);
         if (!substrateData || !substrateData.customData)
@@ -8718,37 +9120,23 @@ class SubstrateFunctionsUtils {
         }
         return customData;
     }
-    getSubstratesObjectAttachedTo(...elements) {
+    getSubstratesTriggeredByObjects(...elements) {
         if (!elements || elements.length === 0)
             return [];
         const nodeTargets = elements.filter(el => el instanceof Node);
         const data = [];
-        const checkTargets = (data) => {
+        const checkTargets = (substrateName, object) => {
             const hits = new Set();
-            const list = data.objects;
-            if (list instanceof Set) {
-                for (const el of elements) {
-                    if (list.has(el) && !data.metadata.get(el)?.ignored)
-                        hits.add(el);
-                }
-            }
-            else if (nodeTargets.length > 0) {
-                for (let t = 0; t < nodeTargets.length; t++) {
-                    for (let i = 0; i < list.length; i++) {
-                        const target = nodeTargets[t];
-                        if (list[i] === target && !data.metadata.get(target)?.ignored) {
-                            hits.add(target);
-                            break;
-                        }
-                    }
-                }
-            }
+            const list = this.getField(object, substrateName, "triggerList") ?? new TurboNodeList();
+            for (const el of nodeTargets)
+                if (list.has(el))
+                    hits.add(el);
             return Array.from(hits.values());
         };
         this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
             if (!substrateData.active)
                 return;
-            const hits = checkTargets(substrateData);
+            const hits = checkTargets(name, object);
             if (hits.length > 0)
                 data.push({ name, data: substrateData, host: object, targets: hits });
         }));
@@ -8757,6 +9145,8 @@ class SubstrateFunctionsUtils {
     }
     getField(element, substrate, field) {
         const data = this.getSubstrateData(element, substrate);
+        if (!data)
+            return;
         if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
             && data.attachedInstance[field] !== undefined)
             return data.attachedInstance[field];
@@ -8960,56 +9350,14 @@ function setupSubstrateFunctions() {
     };
     //OBJECT LIST
     TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$3.getDefaultSubstrate(this)) {
-        const set = new Set();
-        if (!substrate)
-            return set;
-        Array.from(utils$3.getSubstrateData(this, substrate).objects).forEach(object => {
-            if (!utils$3.getMetadata(this, substrate, object).ignored)
-                set.add(object);
-        });
-        return set;
-    };
-    TurboSelector.prototype.setSubstrateObjectList = function _setSubstrateObjectList(list, substrate = utils$3.getDefaultSubstrate(this)) {
-        if (!list || !substrate)
-            return this;
-        utils$3.getSubstrateData(this, substrate).objects = list;
-        return this;
-    };
-    TurboSelector.prototype.addObjectToSubstrate = function _addObjectToSubstrate(object, addToQueue = true, substrate = utils$3.getDefaultSubstrate(this)) {
-        if (!object || !substrate)
-            return this;
-        utils$3.getMetadata(this, substrate, object).ignored = false;
-        const list = utils$3.getSubstrateData(this, substrate).objects;
-        if (list instanceof HTMLCollection || list instanceof NodeList)
-            return this;
-        try {
-            if (list.has(object))
-                return this;
-            list.add(object);
-            this.onSubstrateObjectListChange(substrate).fire(object, "added");
-            this.getSubstrateQueue(substrate)?.push(object);
-        }
-        catch {
-        }
-        return this;
-    };
-    TurboSelector.prototype.removeObjectFromSubstrate = function _removeObjectFromSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-        if (!object || !substrate)
-            return this;
-        utils$3.getMetadata(this, substrate, object).ignored = true;
-        const list = utils$3.getSubstrateData(this, substrate).objects;
-        if (list instanceof Set)
-            list.delete(object);
-        this.onSubstrateObjectListChange(substrate).fire(object, "removed");
-        return this;
-    };
-    TurboSelector.prototype.hasObjectInSubstrate = function _hasObjectInSubstrate(object, substrate = utils$3.getDefaultSubstrate(this)) {
-        if (!object || !substrate)
-            return false;
-        return this.getSubstrateObjectList(substrate).has(object);
+        return utils$3.getField(this, substrate, "objectList") ?? new TurboNodeList();
     };
     TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(substrate) {
         return utils$3.getSubstrateData(this, substrate).objectsChangedDelegate;
+    };
+    //TRIGGER LIST
+    TurboSelector.prototype.getSubstrateTriggerList = function _getSubstrateTriggerList(substrate = utils$3.getDefaultSubstrate(this)) {
+        return utils$3.getField(this, substrate, "triggerList") ?? new TurboNodeList();
     };
     //QUEUE
     TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
@@ -9017,8 +9365,10 @@ function setupSubstrateFunctions() {
     };
     TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$3.getDefaultSubstrate(this)) {
         const queue = utils$3.getField(this, substrate, "defaultQueue");
-        if (queue)
+        if (queue instanceof TurboQueue)
             return queue.clone();
+        else if (queue instanceof Array || queue instanceof Set)
+            return new TurboQueue().push(...queue);
         return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
     };
     TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$3.getDefaultSubstrate(this)) {
@@ -9094,7 +9444,7 @@ function setupSubstrateFunctions() {
             if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                 return true;
         }
-        const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+        const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
         for (const substrateData of substratesData) {
             for (const checker of substrateData.data.checkers.values()) {
                 if (!checker({ ...properties, substrate: substrateData.name }))
@@ -9187,7 +9537,7 @@ function setupSubstrateFunctions() {
             if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                 return this;
         }
-        const substratesData = utils$3.getSubstratesObjectAttachedTo(properties.eventTarget);
+        const substratesData = utils$3.getSubstratesTriggeredByObjects(properties.eventTarget);
         for (const substrateData of substratesData)
             utils$3.solveSubstrateInternal(substrateData, properties);
         return this;
@@ -11742,9 +12092,12 @@ class TurboInteractor extends TurboController {
         this.toolName = properties.toolName ?? this.toolName ?? undefined;
         this.options = properties.listenerOptions ?? {};
         const host = this.element;
-        this.target = properties.target ?? this.target ?? host instanceof Node ? host
-            : host?.element instanceof Node ? host.element
-                : undefined;
+        try {
+            this.target = properties.target ?? this.target ?? host instanceof Node ? host
+                : host?.element instanceof Node ? host.element
+                    : undefined;
+        }
+        catch { }
         this.setup();
     }
 }
@@ -11903,7 +12256,7 @@ class TurboElement extends HTMLElement {
     };
     static defaultProperties = {};
     static create(properties = {}) {
-        turbo(properties).applyDefaults(this.defaultProperties ?? {});
+        turbo(properties).applyDefaults(this["defaultProperties"] ?? {});
         return element({ ...properties });
     }
     /**
@@ -12472,8 +12825,10 @@ let TurboRichElement = (() => {
             this.addAtPosition(value, "rightCustomElements");
         }
         static create(properties) {
-            if (properties.text && !properties.element)
+            if (properties.text && !properties.element) {
                 properties.element = properties.text;
+                properties.text = undefined;
+            }
             if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
                 properties.element.tag = properties.elementTag;
             }
@@ -15470,6 +15825,9 @@ function selectWheel(properties) {
     return element({ ...properties });
 }
 
+class TurboGrid extends TurboElement {
+}
+
 /**
  * @class TurboProxiedElement
  * @group TurboElement
@@ -15860,4 +16218,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

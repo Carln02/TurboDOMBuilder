@@ -10,30 +10,21 @@ export class CanvasSubstrate extends TurboSubstrate {
     //Define the substrate's name. Equivalent to turbo(canvas).makeSubstrate("main").
     public substrateName = "main";
 
-    public initialize() {
-        super.initialize();
-        this.defaultQueue = [];
-    }
-
-    protected get stickyLines(): StickyLine[] {
-        return Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
-    }
+    public defaultQueue = [];
 
     @solver() protected refreshStickyLinesLists(properties: SubstrateCallbackProperties) {
         const target = properties.target;
         if (!target) return;
 
-        const pool = target instanceof StickyLine
-            ? Array.from(this.objectList)
-            : Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
-        const overlaps = this.findOverlaps(target, pool);
-        for (const obj of this.objectList) {
-            if (obj === target) continue;
-            const stickyLine = target instanceof StickyLine ? target : obj;
-            const commonObject = target instanceof StickyLine ? obj : target;
-            if (overlaps.includes(obj)) turbo(stickyLine).addObjectToSubstrate(commonObject);
-            else turbo(stickyLine).removeObjectFromSubstrate(commonObject);
+        const stickylines = Array.from(this.objectList).filter(entry => entry instanceof StickyLine);
+        const overlaps = this.findOverlaps(target, stickylines);
+
+        for (const stickyline of stickylines) {
+            if (stickyline === target) continue;
+            if (overlaps.includes(stickyline)) turbo(stickyline).getSubstrateObjectList().add(target);
+            else if (properties.eventTarget !== stickyline) turbo(stickyline).getSubstrateObjectList().remove(target);
         }
+
     }
 
     /**

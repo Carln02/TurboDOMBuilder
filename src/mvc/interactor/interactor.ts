@@ -4,7 +4,7 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {TurboView} from "../core/view";
 import {TurboEmitter} from "../core/emitter";
 import {TurboController} from "../logic/controller";
-import {ListenerOptions} from "../../turboFunctions/listener/listener.types";
+import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 
 /**
  * @class TurboInteractor
@@ -63,10 +63,11 @@ class TurboInteractor<
         this.options = properties.listenerOptions ?? {};
 
         const host = this.element as any;
-        this.target = properties.target ?? this.target ?? host instanceof Node ? host
-            : host?.element instanceof Node ? host.element
-                : undefined;
+        try {this.target = properties.target ?? this.target ?? host instanceof Node ? host
+                : host?.element instanceof Node ? host.element
+                    : undefined} catch {}
         this.setup();
+
     }
 }
 

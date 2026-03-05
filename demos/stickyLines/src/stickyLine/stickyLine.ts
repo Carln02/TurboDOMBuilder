@@ -3,17 +3,19 @@ import {StickyLineView} from "./stickyLine.view";
 import {StickyLineModel} from "./stickyLine.model";
 import "./stickyLine.css";
 import {StickyLineSubstrate} from "./stickyLine.substrate";
+import {Square} from "../square/square";
 
 @define("sticky-line")
 export class StickyLine extends TurboElement<StickyLineView, any, StickyLineModel> {
-    @expose("model") public origin: Point;
+    @expose("view", false) public accessor startHandle: Square;
+    @expose("view", false) public accessor endHandle: Square;
 
-    public get startPoint(): Point {
-        return this.view.startHandle.position;
+    public get position(): Point {
+        return Point.midPoint(this.startHandle.position, this.endHandle.position);
     }
 
-    public get endPoint(): Point {
-        return this.view.endHandle.position;
+    public set position(value: Point) {
+        this.move(value.sub(this.position));
     }
 
     public static defaultProperties = {
@@ -29,6 +31,6 @@ export class StickyLine extends TurboElement<StickyLineView, any, StickyLineMode
     }
 
     public getBoundingClientRect() {
-        return TurboRect.fromSegment(this.startPoint, this.endPoint, 10);
+        return TurboRect.fromSegment(this.startHandle.position, this.endHandle.position, 10);
     }
 }

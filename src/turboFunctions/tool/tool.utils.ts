@@ -3,8 +3,8 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
 import {ToolBehaviorCallback} from "./tool.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {Propagation} from "../event/event.types";
-import {ListenerSet} from "../listener/listenerSet";
-import {Listener} from "../listener/listener";
+import {ListenerSet} from "../../turboComponents/datatypes/listener/listenerSet";
+import {Listener} from "../../turboComponents/datatypes/listener/listener";
 
 type ElementData = {
     tools: Set<string>,

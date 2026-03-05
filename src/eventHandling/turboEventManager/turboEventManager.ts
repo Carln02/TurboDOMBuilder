@@ -508,7 +508,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     protected applyAndHookEvents(turboEventNames: Record<string, string>,
                                  defaultEventNames: Record<string, string>, applyTurboEvents: boolean) {
         this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
-        for (const name in turboEventNames) {
+        for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
             if (applyTurboEvents) this.dispatchController.setupCustomDispatcher(name as TurboEventNameEntry);
             else this.dispatchController.removeCustomDispatcher(name as TurboEventNameEntry);
         }

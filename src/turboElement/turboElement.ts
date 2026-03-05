@@ -38,12 +38,18 @@ class TurboElement<
 
     public static defaultProperties: TurboElementProperties = {};
 
-    public static create<Type extends typeof TurboElement>(
-        this: Type,
+    public static create<
+        Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>,
+        ViewType extends TurboView = TurboView<any, any>,
+        DataType extends object = object,
+        ModelType extends TurboModel = TurboModel,
+        EmitterType extends TurboEmitter = TurboEmitter<any>
+    >(
+        this: new(...args: any[]) => Type,
         properties: TurboElementProperties = {}
-    ): InstanceType<Type> {
-        turbo(properties).applyDefaults(this.defaultProperties ?? {});
-        return element({...properties}) as InstanceType<Type>;
+    ): Type {
+        turbo(properties).applyDefaults(this["defaultProperties"] ?? {});
+        return element({...properties}) as Type;
     }
 
     /**

@@ -5,8 +5,8 @@ import {
     Point,
     DefaultEventName,
     turbo,
-    trim,
-    closestPointOnSegment
+    closestPointOnSegment,
+    TurboNodeList
 } from "../../../../build/turbodombuilder.esm";
 import {StickyLine} from "./stickyLine";
 import {StickyLineView} from "./stickyLine.view";
@@ -19,8 +19,8 @@ export class StickyLineSubstrate extends TurboSubstrate<StickyLine, StickyLineVi
 
     public initialize(): void {
         super.initialize();
-        this.active = true;
-        this.objectList = new Set([this.element]);
+        this.objectList.list = [this.element];
+
         this.onObjectListChange.add((object: object, status) => {
             if (object === this.element) return;
             if (status === "added") return;
@@ -29,9 +29,11 @@ export class StickyLineSubstrate extends TurboSubstrate<StickyLine, StickyLineVi
     }
 
     @solver() protected ensureAlignment(properties: SubstrateCallbackProperties) {
-        if (properties.eventTarget instanceof StickyLine && this.element !== properties.eventTarget) return;
         const target = properties.target as Element;
         if (!target || !(target instanceof Element) || target instanceof StickyLine) return;
+
+        const manipulatingStickyLine = properties.eventTarget === this.element;
+        if (!manipulatingStickyLine && target instanceof StickyLine) return;
 
         const start = this.view.startHandle?.position;
         const end = this.view.endHandle?.position;
@@ -41,8 +43,8 @@ export class StickyLineSubstrate extends TurboSubstrate<StickyLine, StickyLineVi
         if (!rect || !(rect instanceof DOMRect)) return;
         const center = new Point(rect.left + rect.width / 2, rect.top + rect.height / 2);
 
-        const manipulatingStickyLine = properties.eventTarget === this.element;
-        const isFeedforward = properties.eventType !== DefaultEventName.dragEnd && !manipulatingStickyLine;
+        const isFeedforward = properties.eventType !== DefaultEventName.dragEnd
+            && !manipulatingStickyLine && !(target instanceof StickyLine);
 
         if (!manipulatingStickyLine || !this.objectData.has(target))
             this.objectData.set(target, closestPointOnSegment(center, start, end)?.linearInterpolation(start, end));
