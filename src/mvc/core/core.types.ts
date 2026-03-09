@@ -17,6 +17,10 @@ type MvcBlocksType<
  */
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
 
+/**
+ * @group MVC
+ * @category Model
+ */
 type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
 
 /**

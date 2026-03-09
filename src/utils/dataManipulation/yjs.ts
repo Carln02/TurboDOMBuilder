@@ -1,6 +1,24 @@
-import {YAbstractType, YArray, YArrayEvent, YEvent, YMap, YMapEvent } from "../../types/yjs.types";
+import {YAbstractType, YArray, YArrayEvent, YDoc, YEvent, YMap, YMapEvent} from "../../types/yjs.types";
 import {randomId} from "../computations/random";
 import {hashBySize} from "../computations/hash";
+
+/**
+ * @function createYDoc
+ * @group Utilities
+ * @category Yjs
+ *
+ * @static
+ * @description Creates a new YDoc with a default map and populates it with optional data.
+ * @param {string} [mapKey="content"] - The key of the default map to setup. Defaults to "content".
+ * @param {object} [data] - Optional data to set inside the default map.
+ * @returns {{doc: YDoc, map: YMap}} - An object containing the YDoc and the default YMap.
+ */
+function createYDoc(mapKey: string = "content", data?: object): { doc: YDoc, map: YMap } {
+    const doc = new YDoc();
+    const map = doc.getMap(mapKey);
+    if (data) for (const [key, value] of Object.entries(data)) map.set(key, value);
+    return {doc, map};
+}
 
 /**
  * @function createYMap
@@ -35,6 +53,15 @@ function createYArray<DataType = object>(data: DataType[]): YArray {
     return array;
 }
 
+/**
+ * @function jsonToYjs
+ * @group Utilities
+ * @category Yjs
+ *
+ * @description Attempts to deep-convert a JSON structure into Yjs data.
+ * @param {object} data - The JSON data to convert.
+ * @return {YAbstractType} - The Yjs data.
+ */
 function jsonToYjs(data: object): YAbstractType {
     if (Array.isArray(data)) {
         const arr = new YArray();
@@ -203,4 +230,14 @@ function deepObserveAll(
     });
 }
 
-export {deepObserveAll, deepObserveAny, createYMap, jsonToYjs, createYArray, addInYArray, addInYMap, removeFromYArray};
+export {
+    createYDoc,
+    deepObserveAll,
+    deepObserveAny,
+    createYMap,
+    jsonToYjs,
+    createYArray,
+    addInYArray,
+    addInYMap,
+    removeFromYArray
+};

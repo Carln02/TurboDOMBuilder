@@ -70,6 +70,10 @@ function getSuperDescriptor(object: object, key: PropertyKey): PropertyDescripto
     return undefined;
 }
 
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function getPrototypeChain(object: object) {
     const chain: any[] = [];
     let constructor = Object.getPrototypeOf(object);

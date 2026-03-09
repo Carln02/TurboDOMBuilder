@@ -9,9 +9,10 @@ const utils = new ListenerUtils();
 
 /**
  * @decorator
+ * @function listener
  * @group Decorators
  * @category Listeners
- * @function listener
+ *
  * @description Method decorator that registers the decorated method as an event listener, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -48,9 +49,10 @@ function listener(properties: Partial<Omit<ListenerProperties, "callback">> = {}
 
 /**
  * @decorator
+ * @function behavior
  * @group Decorators
  * @category Listeners
- * @function behavior
+ *
  * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -87,9 +89,10 @@ function behavior(properties: Partial<Omit<ListenerProperties, "callback" | "opt
 
 /**
  * @decorator
+ * @function attachListenersAndBehaviors
  * @group Decorators
  * @category Listeners
- * @function attachListenersAndBehaviors
+ *
  * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
  * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
  * automatically in the TurboElement lifecycle.

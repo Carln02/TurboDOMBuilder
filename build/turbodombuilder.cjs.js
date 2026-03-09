@@ -449,7 +449,7 @@
 
 /**
  * @typedef {Object} ListenerProperties
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -466,7 +466,7 @@
 
 /**
  * @typedef {Object} MatchListenerProperties
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -479,7 +479,7 @@
 
 /**
  * @typedef {Object} ListenerOptions
- * @group Types
+ * @group Components
  * @category Listener
  * @extends AddEventListenerOptions
  * @description Options used for listeners.
@@ -748,6 +748,10 @@ function isNull(value) {
 function isUndefined(value) {
     return typeof value == "undefined";
 }
+/**
+ * @group Utilities
+ * @category Sorting
+ */
 function alphabeticalSorting(a, b) {
     if (typeof a === "symbol")
         a = String(a);
@@ -832,6 +836,10 @@ function getSuperDescriptor(object, key) {
     }
     return undefined;
 }
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 function getPrototypeChain(object) {
     const chain = [];
     let constructor = Object.getPrototypeOf(object);
@@ -5925,9 +5933,10 @@ class ListenerUtils {
 const utils$7 = new ListenerUtils();
 /**
  * @decorator
+ * @function listener
  * @group Decorators
  * @category Listeners
- * @function listener
+ *
  * @description Method decorator that registers the decorated method as an event listener, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -5958,9 +5967,10 @@ function listener(properties = {}) {
 }
 /**
  * @decorator
+ * @function behavior
  * @group Decorators
  * @category Listeners
- * @function behavior
+ *
  * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -5991,9 +6001,10 @@ function behavior(properties = {}) {
 }
 /**
  * @decorator
+ * @function attachListenersAndBehaviors
  * @group Decorators
  * @category Listeners
- * @function attachListenersAndBehaviors
+ *
  * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
  * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
  * automatically in the TurboElement lifecycle.
@@ -6916,8 +6927,8 @@ function defineDefaultProperties(constructor) {
             this[selectedKey] = value;
             this[selectedClass] = nextClass;
             if (prevClass && prevClass !== nextClass)
-                $(element).toggleClass(prevClass, false);
-            $(element).toggleClass(nextClass, !!value);
+                turbo(element).toggleClass(prevClass, false);
+            turbo(element).toggleClass(nextClass, !!value);
         },
         enumerable: true,
         configurable: true,
@@ -8488,6 +8499,11 @@ function setupToolFunctions() {
     };
 }
 
+/**
+ * @class TurboQueue
+ * @group Components
+ * @category TurboQueue
+ */
 class TurboQueue {
     items = [];
     head = 0;
@@ -8768,16 +8784,6 @@ class TurboSubstrate extends TurboController {
      */
     priority;
     /**
-     * @description The default queue template for the substrate, used when starting a new resolving pass.
-     * It defaults to the substrate's object list.
-     */
-    defaultQueue;
-    /**
-     * @description The maximum number of passes allowed per object for this substrate during resolving.
-     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
-     */
-    maxPasses;
-    /**
      * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
      * Defaults to the children of the element the substrate is attached to.
      */
@@ -8788,6 +8794,16 @@ class TurboSubstrate extends TurboController {
      * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
      */
     triggerList;
+    /**
+     * @description The default queue template for the substrate, used when starting a new resolving pass.
+     * It defaults to the substrate's object list.
+     */
+    defaultQueue;
+    /**
+     * @description The maximum number of passes allowed per object for this substrate during resolving.
+     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+     */
+    maxPasses;
     /**
      * @description Whether the substrate is active. Defaults to true.
      */
@@ -10876,6 +10892,10 @@ exports.Range = void 0;
     Range["min"] = "min";
     Range["max"] = "max";
 })(exports.Range || (exports.Range = {}));
+/**
+ * @group Types
+ * @category Enums
+ */
 exports.Anchor = void 0;
 (function (Anchor) {
     Anchor["TopLeft"] = "topLeft";
@@ -14896,6 +14916,11 @@ let TurboYBlock = (() => {
     };
 })();
 
+/**
+ * @class AnchorPoint
+ * @group Components
+ * @category AnchorPoint
+ */
 let AnchorPoint = (() => {
     let _instanceExtraInitializers = [];
     let _set_value_decorators;
@@ -14976,6 +15001,10 @@ let AnchorPoint = (() => {
     };
 })();
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function closestPointOnSegment(p, a, b) {
     const ab = b.sub(a);
     const ap = p.sub(a);
@@ -14986,6 +15015,10 @@ function closestPointOnSegment(p, a, b) {
     t = Math.max(0, Math.min(1, t));
     return new Point(a.x + ab.x * t, a.y + ab.y * t);
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function intersectSegments(a, b, c, d) {
     const r = b.sub(a);
     const s = d.sub(c);
@@ -15000,6 +15033,10 @@ function intersectSegments(a, b, c, d) {
     return null;
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function isPointInConvexPolygon(p, poly) {
     let sign = 0;
     for (let i = 0; i < poly.length; i++) {
@@ -15018,6 +15055,10 @@ function isPointInConvexPolygon(p, poly) {
     }
     return true;
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function segmentIntersectsPolygon(a, b, poly) {
     for (let i = 0; i < poly.length; i++) {
         const c = poly[i];
@@ -15032,6 +15073,10 @@ function segmentIntersectsPolygon(a, b, poly) {
         return b;
     return null;
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function projectPolygonOntoAxis(points, axis) {
     const len = Math.hypot(axis.x, axis.y) || 1;
     const ux = axis.x / len, uy = axis.y / len;
@@ -15045,6 +15090,10 @@ function projectPolygonOntoAxis(points, axis) {
     }
     return [min, max];
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function hasSeparatingAxisForPolygons(polyA, polyB) {
     for (let i = 0; i < polyA.length; i++) {
         const p1 = polyA[i];
@@ -15058,15 +15107,27 @@ function hasSeparatingAxisForPolygons(polyA, polyB) {
     }
     return false;
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function polygonsIntersect(a, b) {
     return !hasSeparatingAxisForPolygons(a, b) && !hasSeparatingAxisForPolygons(b, a);
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function aabbCorners(r) {
     const x0 = r.x, y0 = r.y;
     const x1 = r.x + r.width, y1 = r.y + r.height;
     return [new Point(x0, y0), new Point(x1, y0), new Point(x1, y1), new Point(x0, y1)];
 }
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function closestPointOnAabb(p, r) {
     const x0 = r.x, y0 = r.y;
     const x1 = r.x + r.width, y1 = r.y + r.height;
@@ -15088,6 +15149,11 @@ function css(strings, ...values) {
     return str;
 }
 
+/**
+ * @class TurboRect
+ * @group Components
+ * @category TurboRect
+ */
 class TurboRect extends DOMRect {
     angleRad = 0;
     anchor;
@@ -15821,10 +15887,6 @@ let TurboSelectWheel = (() => {
     });
     return _classThis;
 })();
-function selectWheel(properties) {
-    turbo(properties).applyDefaults({ tag: "turbo-select-wheel" });
-    return element({ ...properties });
-}
 
 class TurboGrid extends TurboElement {
 }
@@ -15913,6 +15975,25 @@ async function hashBySize(input, chars = 12) {
 }
 
 /**
+ * @function createYDoc
+ * @group Utilities
+ * @category Yjs
+ *
+ * @static
+ * @description Creates a new YDoc with a default map and populates it with optional data.
+ * @param {string} [mapKey="content"] - The key of the default map to setup. Defaults to "content".
+ * @param {object} [data] - Optional data to set inside the default map.
+ * @returns {{doc: YDoc, map: YMap}} - An object containing the YDoc and the default YMap.
+ */
+function createYDoc(mapKey = "content", data) {
+    const doc = new yjs.Doc();
+    const map = doc.getMap(mapKey);
+    if (data)
+        for (const [key, value] of Object.entries(data))
+            map.set(key, value);
+    return { doc, map };
+}
+/**
  * @function createYMap
  * @group Utilities
  * @category Yjs
@@ -15944,6 +16025,15 @@ function createYArray(data) {
     array.push(data);
     return array;
 }
+/**
+ * @function jsonToYjs
+ * @group Utilities
+ * @category Yjs
+ *
+ * @description Attempts to deep-convert a JSON structure into Yjs data.
+ * @param {object} data - The JSON data to convert.
+ * @return {YAbstractType} - The Yjs data.
+ */
 function jsonToYjs(data) {
     if (Array.isArray(data)) {
         const arr = new yjs.Array();
@@ -16351,6 +16441,7 @@ exports.contrast = contrast;
 exports.controller = controller;
 exports.createProxy = createProxy;
 exports.createYArray = createYArray;
+exports.createYDoc = createYDoc;
 exports.createYMap = createYMap;
 exports.css = css;
 exports.deepObserveAll = deepObserveAll;
@@ -16430,7 +16521,6 @@ exports.removeFromYArray = removeFromYArray;
 exports.richElement = richElement;
 exports.segmentIntersectsPolygon = segmentIntersectsPolygon;
 exports.selectElement = selectElement;
-exports.selectWheel = selectWheel;
 exports.setSignal = setSignal;
 exports.signal = signal;
 exports.solver = solver;

@@ -91,6 +91,10 @@ enum Range {
     max = "max",
 }
 
+/**
+ * @group Types
+ * @category Enums
+ */
 enum Anchor {
     TopLeft = "topLeft",
     TopRight = "topRight",

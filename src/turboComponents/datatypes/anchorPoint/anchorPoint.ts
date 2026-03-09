@@ -2,6 +2,11 @@ import {Point} from "../point/point";
 import {Anchor} from "../../../types/enums.types";
 import {auto} from "../../../decorators/auto/auto";
 
+/**
+ * @class AnchorPoint
+ * @group Components
+ * @category AnchorPoint
+ */
 class AnchorPoint {
     public constructor(anchor?: Point | Anchor) {
         this.value = anchor;

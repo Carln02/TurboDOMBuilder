@@ -14,6 +14,10 @@ function isUndefined(value: any): boolean {
     return typeof value == "undefined";
 }
 
+/**
+ * @group Utilities
+ * @category Sorting
+ */
 function alphabeticalSorting(a: string | number | symbol, b: string | number | symbol): number {
     if (typeof a === "symbol") a = String(a);
     if (typeof b === "symbol") b = String(b);

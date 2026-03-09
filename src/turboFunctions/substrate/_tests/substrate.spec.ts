@@ -53,7 +53,7 @@ describe("Substrate functions", () => {
         turbo(host).makeSubstrate("main");
 
         const custom = new Set<Node>();
-        turbo(host).setSubstrateObjectList(custom, "main");
+        turbo(host).getSubstrateObjectList("main").list = custom;
 
         const list = turbo(host).getSubstrateObjectList("main");
         expect(list).toEqual(custom);

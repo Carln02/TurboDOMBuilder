@@ -1,9 +1,6 @@
-import {$, turbo} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {Mvc} from "../../../mvc/mvc";
 import {initializeEffects} from "../../../decorators/reactivity/reactivity";
-import {TurboSelector} from "../../../turboFunctions/turboSelector";
-import {TurboEventManagerStateProperties} from "../../../eventHandling/turboEventManager/turboEventManager.types";
-import {TurboElementProperties} from "../../turboElement.types";
 import {CloneElementOptions, FeedforwardProperties} from "../../../turboFunctions/element/element.types";
 
 export function defineDefaultProperties<Type extends new (...args: any[]) => any>(constructor: Type) {
@@ -26,8 +23,8 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
 
             this[selectedKey] = value;
             this[selectedClass] = nextClass;
-            if (prevClass && prevClass !== nextClass) $(element).toggleClass(prevClass, false);
-            $(element).toggleClass(nextClass, !!value);
+            if (prevClass && prevClass !== nextClass) turbo(element).toggleClass(prevClass, false);
+            turbo(element).toggleClass(nextClass, !!value);
         },
         enumerable: true,
         configurable: true,

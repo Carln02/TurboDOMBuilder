@@ -3,7 +3,7 @@ import {TurboEventManager} from "../../../eventHandling/turboEventManager/turboE
 
 /**
  * @type {ListenerProperties}
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -31,7 +31,7 @@ type ListenerProperties<
 
 /**
  * @type {MatchListenerProperties}
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -50,7 +50,7 @@ type MatchListenerProperties<
 
 /**
  * @callback ListenerCallback
- * @group Types
+ * @group Components
  * @category Listener
  * @template {Node} Type - The type of the event target.
  *
@@ -64,7 +64,7 @@ type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propa
 
 /**
  * @type {ListenerOptions}
- * @group Types
+ * @group Components
  * @category Listener
  * @extends AddEventListenerOptions
  * @description Options used for listeners.

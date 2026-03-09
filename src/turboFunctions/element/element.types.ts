@@ -3,6 +3,10 @@ import {Mvc} from "../../mvc/mvc";
 import {ElementTagDefinition, HTMLElementMutableFields, ValidElement, ValidTag} from "../../types/element.types";
 import {TurboElementProperties} from "../../turboElement/turboElement.types";
 
+/**
+ * @group Types
+ * @category Element
+ */
 type CloneElementOptions = {
     exclude?: PropertyKey[],
     forceInclude?: PropertyKey[],
@@ -14,6 +18,10 @@ type CloneElementOptions = {
     deepCloneNodes?: boolean,
 };
 
+/**
+ * @group Types
+ * @category Element
+ */
 type FeedforwardProperties = TurboElementProperties & {
     removeOnPointerRelease?: boolean,
     type?: string,

@@ -745,6 +745,10 @@ type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends objec
  * @category Model
  */
 type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+/**
+ * @group MVC
+ * @category Model
+ */
 type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
 /**
  * @group MVC
@@ -2495,6 +2499,11 @@ declare class TurboTool<ElementType extends object = object, ViewType extends Tu
     initialize(): void;
 }
 
+/**
+ * @class TurboQueue
+ * @group Components
+ * @category TurboQueue
+ */
 declare class TurboQueue<Type = any> {
     private items;
     private head;
@@ -2762,16 +2771,6 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      */
     priority: number;
     /**
-     * @description The default queue template for the substrate, used when starting a new resolving pass.
-     * It defaults to the substrate's object list.
-     */
-    defaultQueue: object[] | TurboQueue<object>;
-    /**
-     * @description The maximum number of passes allowed per object for this substrate during resolving.
-     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
-     */
-    maxPasses: number;
-    /**
      * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
      * Defaults to the children of the element the substrate is attached to.
      */
@@ -2782,6 +2781,16 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
      * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
      */
     triggerList: TurboNodeList;
+    /**
+     * @description The default queue template for the substrate, used when starting a new resolving pass.
+     * It defaults to the substrate's object list.
+     */
+    defaultQueue: object[] | TurboQueue<object>;
+    /**
+     * @description The maximum number of passes allowed per object for this substrate during resolving.
+     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+     */
+    maxPasses: number;
     /**
      * @description Whether the substrate is active. Defaults to true.
      */
@@ -3863,6 +3872,10 @@ declare global {
     }
 }
 
+/**
+ * @group Types
+ * @category Element
+ */
 type CloneElementOptions = {
     exclude?: PropertyKey[];
     forceInclude?: PropertyKey[];
@@ -3872,6 +3885,10 @@ type CloneElementOptions = {
     deepCloneObjects?: boolean;
     deepCloneNodes?: boolean;
 };
+/**
+ * @group Types
+ * @category Element
+ */
 type FeedforwardProperties = TurboElementProperties & {
     removeOnPointerRelease?: boolean;
     type?: string;
@@ -4380,7 +4397,7 @@ declare const BasicInputEvents: readonly ["mousedown", "mouseup", "mousemove", "
 declare const NonPassiveEvents: readonly ["wheel", "touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"];
 /**
  * @type {ListenerProperties}
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -4404,7 +4421,7 @@ type ListenerProperties<TargetType extends Node = Node, CallbackType extends Lis
 };
 /**
  * @type {MatchListenerProperties}
- * @group Types
+ * @group Components
  * @category Listener
  *
  * @template {Node} TargetType - The type of the event target.
@@ -4419,7 +4436,7 @@ type MatchListenerProperties<TargetType extends Node = Node, CallbackType extend
 };
 /**
  * @callback ListenerCallback
- * @group Types
+ * @group Components
  * @category Listener
  * @template {Node} Type - The type of the event target.
  *
@@ -4432,7 +4449,7 @@ type MatchListenerProperties<TargetType extends Node = Node, CallbackType extend
 type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propagation | any);
 /**
  * @type {ListenerOptions}
- * @group Types
+ * @group Components
  * @category Listener
  * @extends AddEventListenerOptions
  * @description Options used for listeners.
@@ -4451,9 +4468,10 @@ type ListenerOptions = AddEventListenerOptions & {
 
 /**
  * @decorator
+ * @function listener
  * @group Decorators
  * @category Listeners
- * @function listener
+ *
  * @description Method decorator that registers the decorated method as an event listener, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -4470,9 +4488,10 @@ type ListenerOptions = AddEventListenerOptions & {
 declare function listener(properties?: Partial<Omit<ListenerProperties, "callback">>): <T extends object>(value: (this: T, e?: Event, target?: Node) => any, context: ClassMethodDecoratorContext<T>) => (this: T, e?: Event, target?: Node) => any;
 /**
  * @decorator
+ * @function behavior
  * @group Decorators
  * @category Listeners
- * @function behavior
+ *
  * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
  * via {@link attachListenersAndBehaviors}.
  * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -4489,9 +4508,10 @@ declare function listener(properties?: Partial<Omit<ListenerProperties, "callbac
 declare function behavior(properties?: Partial<Omit<ListenerProperties, "callback" | "options">>): <T extends object>(value: (this: T, e?: Event, target?: Node) => any, context: ClassMethodDecoratorContext<T>) => (this: T, e?: Event, target?: Node) => any;
 /**
  * @decorator
+ * @function attachListenersAndBehaviors
  * @group Decorators
  * @category Listeners
- * @function attachListenersAndBehaviors
+ *
  * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
  * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
  * automatically in the TurboElement lifecycle.
@@ -6243,6 +6263,10 @@ declare enum Range {
     min = "min",
     max = "max"
 }
+/**
+ * @group Types
+ * @category Enums
+ */
 declare enum Anchor {
     TopLeft = "topLeft",
     TopRight = "topRight",
@@ -7017,6 +7041,11 @@ declare class TurboYBlock<YType extends Map$1 | Array = Map$1 | Array, KeyType e
     private shiftIndices;
 }
 
+/**
+ * @class AnchorPoint
+ * @group Components
+ * @category AnchorPoint
+ */
 declare class AnchorPoint {
     constructor(anchor?: Point | Anchor);
     set value(value: Point | Anchor);
@@ -7026,6 +7055,11 @@ declare class AnchorPoint {
     static enumToPoint(value: Anchor): Point;
 }
 
+/**
+ * @type TurboRectProperties
+ * @group Components
+ * @category TurboRect
+ */
 type TurboRectProperties = {
     x?: number;
     y?: number;
@@ -7036,6 +7070,11 @@ type TurboRectProperties = {
     anchor?: Point | Anchor | AnchorPoint;
 };
 
+/**
+ * @class TurboRect
+ * @group Components
+ * @category TurboRect
+ */
 declare class TurboRect extends DOMRect {
     angleRad: number;
     anchor: AnchorPoint;
@@ -7269,7 +7308,6 @@ declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, 
     protected clearOpenTimer(): void;
     protected setOpenTimer(): void;
 }
-declare function selectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>): TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
 
 declare class TurboGrid<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
 }
@@ -7627,6 +7665,10 @@ declare function isNull(value: any): boolean;
  * @category Null Check
  */
 declare function isUndefined(value: any): boolean;
+/**
+ * @group Utilities
+ * @category Sorting
+ */
 declare function alphabeticalSorting(a: string | number | symbol, b: string | number | symbol): number;
 
 /**
@@ -7654,6 +7696,10 @@ declare function getSuperMethod(object: object, key: PropertyKey, wrapperFn: Fun
  * @category Prototype
  */
 declare function getSuperDescriptor(object: object, key: PropertyKey): PropertyDescriptor;
+/**
+ * @group Utilities
+ * @category Prototype
+ */
 declare function getPrototypeChain(object: object): any[];
 
 /**
@@ -7712,6 +7758,21 @@ declare function kebabToCamelCase(str?: string): string;
 declare function fetchSvg(path: string, logError?: boolean): Promise<SVGElement>;
 
 /**
+ * @function createYDoc
+ * @group Utilities
+ * @category Yjs
+ *
+ * @static
+ * @description Creates a new YDoc with a default map and populates it with optional data.
+ * @param {string} [mapKey="content"] - The key of the default map to setup. Defaults to "content".
+ * @param {object} [data] - Optional data to set inside the default map.
+ * @returns {{doc: YDoc, map: YMap}} - An object containing the YDoc and the default YMap.
+ */
+declare function createYDoc(mapKey?: string, data?: object): {
+    doc: Doc;
+    map: Map$1;
+};
+/**
  * @function createYMap
  * @group Utilities
  * @category Yjs
@@ -7734,6 +7795,15 @@ declare function createYMap<DataType = object>(data: DataType): Map$1 & DataType
  * @returns {YArray} A new YArray instance.
  */
 declare function createYArray<DataType = object>(data: DataType[]): Array;
+/**
+ * @function jsonToYjs
+ * @group Utilities
+ * @category Yjs
+ *
+ * @description Attempts to deep-convert a JSON structure into Yjs data.
+ * @param {object} data - The JSON data to convert.
+ * @return {YAbstractType} - The Yjs data.
+ */
 declare function jsonToYjs(data: object): AbstractType;
 /**
  * @function addInYMap
@@ -7809,16 +7879,52 @@ declare function deepObserveAll(data: AbstractType, callback: (event: YEvent, ta
  */
 declare function getEventPosition(e: Event): Point;
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function aabbCorners(r: DOMRect): [Point, Point, Point, Point];
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function closestPointOnAabb(p: Point, r: DOMRect): Point;
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function isPointInConvexPolygon(p: Point, poly: Point[]): boolean;
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function segmentIntersectsPolygon(a: Point, b: Point, poly: Point[]): Point | null;
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function projectPolygonOntoAxis(points: Point[], axis: Point): [number, number];
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function hasSeparatingAxisForPolygons(polyA: Point[], polyB: Point[]): boolean;
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function polygonsIntersect(a: Point[], b: Point[]): boolean;
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function closestPointOnSegment(p: Point, a: Point, b: Point): Point;
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 declare function intersectSegments(a: Point, b: Point, c: Point, d: Point): Point;
 
 /**
@@ -7893,7 +7999,7 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, selectWheel, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
 export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataBlockHost, DataBlockProperties, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations

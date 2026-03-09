@@ -172,8 +172,8 @@ import {TurboMarkingMenu} from "./turboComponents/menus/markingMenu/markingMenu"
 export {TurboMarkingMenu};
 import {TurboMarkingMenuProperties} from "./turboComponents/menus/markingMenu/markingMenu.types";
 export {TurboMarkingMenuProperties};
-import {TurboSelectWheel, selectWheel} from "./turboComponents/menus/selectWheel/selectWheel";
-export {TurboSelectWheel, selectWheel};
+import {TurboSelectWheel} from "./turboComponents/menus/selectWheel/selectWheel";
+export {TurboSelectWheel};
 import {TurboSelectWheelProperties, TurboSelectWheelStylingProperties} from "./turboComponents/menus/selectWheel/selectWheel.types";
 export {TurboSelectWheelProperties, TurboSelectWheelStylingProperties};
 import {TurboGrid} from "./turboComponents/substrates/grid/grid";
@@ -264,8 +264,8 @@ import {stringify, parse, getFileExtension, camelToKebabCase, kebabToCamelCase} 
 export {stringify, parse, getFileExtension, camelToKebabCase, kebabToCamelCase};
 import {fetchSvg} from "./utils/dataManipulation/svg";
 export {fetchSvg};
-import {deepObserveAll, deepObserveAny, createYMap, jsonToYjs, createYArray, addInYArray, addInYMap, removeFromYArray} from "./utils/dataManipulation/yjs";
-export {deepObserveAll, deepObserveAny, createYMap, jsonToYjs, createYArray, addInYArray, addInYMap, removeFromYArray};
+import {createYDoc,deepObserveAll,deepObserveAny,createYMap,jsonToYjs,createYArray,addInYArray,addInYMap,removeFromYArray} from "./utils/dataManipulation/yjs";
+export {createYDoc,deepObserveAll,deepObserveAny,createYMap,jsonToYjs,createYArray,addInYArray,addInYMap,removeFromYArray};
 import {getEventPosition} from "./utils/events/events";
 export {getEventPosition};
 import {aabbCorners, closestPointOnAabb} from "./utils/geometry/aabb";

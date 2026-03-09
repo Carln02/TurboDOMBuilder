@@ -317,20 +317,20 @@ class TurboSelectWheel<
         this.openTimer = setTimeout(() => this.open = false, this.openTimeout);
     }
 }
+//
+// function selectWheel<
+//     ValueType = string,
+//     SecondaryValueType = string,
+//     EntryType extends HTMLElement = HTMLElement,
+//     ViewType extends TurboView = TurboView<any, any>,
+//     DataType extends object = object,
+//     ModelType extends TurboModel<DataType> = TurboModel,
+//     EmitterType extends TurboEmitter = TurboEmitter
+// >(
+//     properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>
+// ): TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
+//     turbo(properties).applyDefaults({tag: "turbo-select-wheel"});
+//     return element({...properties}) as TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
+// }
 
-function selectWheel<
-    ValueType = string,
-    SecondaryValueType = string,
-    EntryType extends HTMLElement = HTMLElement,
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(
-    properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>
-): TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
-    turbo(properties).applyDefaults({tag: "turbo-select-wheel"});
-    return element({...properties}) as TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
-}
-
-export {TurboSelectWheel, selectWheel};
+export {TurboSelectWheel};

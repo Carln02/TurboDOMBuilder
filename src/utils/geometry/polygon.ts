@@ -1,6 +1,10 @@
 import {Point} from "../../turboComponents/datatypes/point/point";
 import {intersectSegments} from "./segment";
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function isPointInConvexPolygon(p: Point, poly: Point[]): boolean {
     let sign = 0;
     for (let i = 0; i < poly.length; i++) {
@@ -17,6 +21,10 @@ function isPointInConvexPolygon(p: Point, poly: Point[]): boolean {
     return true;
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function segmentIntersectsPolygon(a: Point, b: Point, poly: Point[]): Point | null {
     for (let i = 0; i < poly.length; i++) {
         const c = poly[i];
@@ -29,6 +37,10 @@ function segmentIntersectsPolygon(a: Point, b: Point, poly: Point[]): Point | nu
     return null;
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function projectPolygonOntoAxis(points: Point[], axis: Point): [number, number] {
     const len = Math.hypot(axis.x, axis.y) || 1;
     const ux = axis.x / len, uy = axis.y / len;
@@ -42,6 +54,10 @@ function projectPolygonOntoAxis(points: Point[], axis: Point): [number, number] 
     return [min, max];
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function hasSeparatingAxisForPolygons(polyA: Point[], polyB: Point[]): boolean {
     for (let i = 0; i < polyA.length; i++) {
         const p1 = polyA[i];
@@ -57,6 +73,10 @@ function hasSeparatingAxisForPolygons(polyA: Point[], polyB: Point[]): boolean {
     return false;
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function polygonsIntersect(a: Point[], b: Point[]): boolean {
     return !hasSeparatingAxisForPolygons(a, b) && !hasSeparatingAxisForPolygons(b, a);
 }

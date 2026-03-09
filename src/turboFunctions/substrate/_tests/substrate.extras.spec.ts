@@ -7,25 +7,22 @@ describe("Substrate functions – extras", () => {
         const host = div({parent: document.body});
         turbo(host).makeSubstrate("main");
 
-        const set = new Set<object>();
-        turbo(host).setSubstrateObjectList(set, "main");
+        const objectList = turbo(host).getSubstrateObjectList("main");
 
         const a = {id: "a"};
         const b = {id: "b"};
 
         // add
-        turbo(host).addObjectToSubstrate(a);
-        turbo(host).addObjectToSubstrate(a); // duplicate
-        turbo(host).addObjectToSubstrate(b);
-        expect(turbo(host).getSubstrateObjectList().size).toBe(2);
+        objectList.add(a, a, b);
+        expect(objectList.size).toBe(2);
 
         // has
-        expect(turbo(host).hasObjectInSubstrate(a)).toBe(true);
-        expect(turbo(host).hasObjectInSubstrate({id: "z"})).toBe(false);
+        expect(objectList.has(a)).toBe(true);
+        expect(objectList.has({id: "z"})).toBe(false);
 
         // remove
-        turbo(host).removeObjectFromSubstrate(a, "main");
-        expect(turbo(host).getSubstrateObjectList("main").size).toBe(1);
+        objectList.remove(a);
+        expect(objectList.size).toBe(1);
     });
 
     it("hasObjectInSubstrate works for HTMLCollection and NodeList", () => {
@@ -35,23 +32,23 @@ describe("Substrate functions – extras", () => {
         // HTMLCollection (children)
         const span = document.createElement("span");
         host.appendChild(span);
-        expect(turbo(host).hasObjectInSubstrate(span, "main")).toBe(true);
+        const objectList = turbo(host).getSubstrateObjectList("main");
+        expect(objectList.has(span)).toBe(true);
 
         // NodeList (childNodes)
         const txt = document.createTextNode("x");
-        turbo(host).setSubstrateObjectList(host.childNodes, "main");
+        objectList.list = host.childNodes;
         host.appendChild(txt);
-        expect(turbo(host).hasObjectInSubstrate(txt, "main")).toBe(true);
+        expect(objectList.has(txt)).toBe(true);
     });
 
     it("wasObjectProcessedBySubstrate changes after resolveSubstrate", () => {
         const host = div({parent: document.body});
         turbo(host).makeSubstrate("main");
 
-        const set = new Set<object>();
+        const objectList = turbo(host).getSubstrateObjectList("main");
         const a = {id: "a"};
-        set.add(a);
-        turbo(host).setSubstrateObjectList(set, "main");
+        objectList.add(a);
 
         const solver = vi.fn();
         turbo(host).addSolver({callback: solver});
@@ -68,12 +65,10 @@ describe("Substrate functions – extras", () => {
         const host = div({parent: document.body});
         turbo(host).makeSubstrate("main");
 
-        const set = new Set<object>();
+        const objectList = turbo(host).getSubstrateObjectList("main");
         const a = {id: "a"};
         const b = {id: "b"};
-        set.add(a);
-        set.add(b);
-        turbo(host).setSubstrateObjectList(set, "main");
+        objectList.add(a, b);
 
         const calls: any[] = [];
         const solver = vi.fn((props) => calls.push(props.target));
@@ -91,19 +86,16 @@ describe("Substrate functions – extras", () => {
         const host = div({parent: document.body});
         turbo(host).makeSubstrate("main");
 
-        const set = new Set<object>();
+        const objectList = turbo(host).getSubstrateObjectList("main");
         const a = {id: "a"};
         const b = {id: "b"};
         const c = {id: "c"};
-        set.add(a);
-        set.add(b);
-        turbo(host).setSubstrateObjectList(set, "main");
+        objectList.add(a, b);
 
         const seen: object[] = [];
         const solver = vi.fn((props: any) => {
             seen.push(props.target);
-            // When first called, add 'c' so the next iterations should pick it up
-            if (!turbo(host).hasObjectInSubstrate(c)) turbo(host).addObjectToSubstrate(c);
+            objectList.add(c);
         });
         turbo(host).addSolver({callback: solver, substrate: "main"});
 

@@ -8,6 +8,11 @@ import {aabbCorners, closestPointOnAabb} from "../../../utils/geometry/aabb";
 import {element} from "../../../elementCreation/element";
 import {css} from "../../../utils/styling/css";
 
+/**
+ * @class TurboRect
+ * @group Components
+ * @category TurboRect
+ */
 class TurboRect extends DOMRect {
     public angleRad: number = 0;
     public anchor: AnchorPoint;

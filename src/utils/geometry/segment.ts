@@ -1,5 +1,9 @@
 import {Point} from "../../turboComponents/datatypes/point/point";
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function closestPointOnSegment(p: Point, a: Point, b: Point): Point {
     const ab = b.sub(a);
     const ap = p.sub(a);
@@ -10,6 +14,10 @@ function closestPointOnSegment(p: Point, a: Point, b: Point): Point {
     return new Point(a.x + ab.x * t, a.y + ab.y * t);
 }
 
+/**
+ * @group Utilities
+ * @category Geometry
+ */
 function intersectSegments(a: Point, b: Point, c: Point, d: Point): Point {
     const r = b.sub(a);
     const s = d.sub(c);

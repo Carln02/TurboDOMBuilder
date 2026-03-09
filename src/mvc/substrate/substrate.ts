@@ -66,18 +66,6 @@ class TurboSubstrate<
     public priority: number;
 
     /**
-     * @description The default queue template for the substrate, used when starting a new resolving pass.
-     * It defaults to the substrate's object list.
-     */
-    public defaultQueue: object[] | TurboQueue<object>;
-
-    /**
-     * @description The maximum number of passes allowed per object for this substrate during resolving.
-     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
-     */
-    public maxPasses: number;
-
-    /**
      * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
      * Defaults to the children of the element the substrate is attached to.
      */
@@ -89,6 +77,18 @@ class TurboSubstrate<
      * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
      */
     public triggerList: TurboNodeList;
+
+    /**
+     * @description The default queue template for the substrate, used when starting a new resolving pass.
+     * It defaults to the substrate's object list.
+     */
+    public defaultQueue: object[] | TurboQueue<object>;
+
+    /**
+     * @description The maximum number of passes allowed per object for this substrate during resolving.
+     * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+     */
+    public maxPasses: number;
 
     /**
      * @description Whether the substrate is active. Defaults to true.

@@ -1,3 +1,8 @@
+/**
+ * @class TurboQueue
+ * @group Components
+ * @category TurboQueue
+ */
 class TurboQueue<Type = any> {
     private items: Type[] = [];
     private head = 0;
