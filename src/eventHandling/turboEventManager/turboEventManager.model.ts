@@ -7,7 +7,7 @@ import {
 } from "./turboEventManager.types";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {handler} from "../../decorators/mvc";
-import {TurboModel} from "../../mvc/core/model";
+import {TurboModel} from "../../mvc/model/model";
 import {auto} from "../../decorators/auto/auto";
 import {Point} from "../../turboComponents/datatypes/point/point";
 import {TurboMap} from "../../turboComponents/datatypes/map/map";

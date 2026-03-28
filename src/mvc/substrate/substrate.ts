@@ -1,7 +1,4 @@
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
-import {TurboController} from "../logic/controller";
+import {TurboView} from "../view/view";
 import {TurboSubstrateProperties} from "./substrate.types";
 import {turbo} from "../../turboFunctions/turboFunctions";
 import {
@@ -11,8 +8,10 @@ import {
 } from "../../turboFunctions/substrate/substrate.types";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
-import {NodeListType} from "../../turboComponents/datatypes/nodeList/nodeList.types";
 import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboController} from "../controller/controller";
 
 /**
  * @class TurboSubstrate

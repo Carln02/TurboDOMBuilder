@@ -1,9 +1,9 @@
 import {TurboIcon} from "../icon/icon";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {TurboRichElement} from "./richElement";
 import {ValidElement, ValidTag} from "../../../types/element.types";
 import {HTMLTag} from "../../../types/htmlElement.types";

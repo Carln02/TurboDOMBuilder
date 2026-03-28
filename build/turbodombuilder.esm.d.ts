@@ -633,172 +633,401 @@ declare enum InputDevice {
 }
 
 /**
- * @class TurboEmitter
- * @group MVC
- * @category Emitter
- *
- * @template {TurboModel} ModelType -The element's MVC model type.
- * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
- * MVC structure to fire events or listen to some, with various methods.
+ * @internal
+ * @class SimpleDelegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
  */
-declare class TurboEmitter<ModelType extends TurboModel = TurboModel> {
+declare class SimpleDelegate<CallbackType extends (...args: any[]) => any> {
+    private callbacks;
     /**
-     * @description Map containing all callbacks.
-     * @protected
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
      */
-    protected readonly callbacks: Map<string, Map<string, ((...args: any[]) => void)[]>>;
+    add(callback: CallbackType): void;
     /**
-     * @description The attached MVC model.
+     * @description Removes a callback from the list.
+     * @param callback - The callback function to remove.
+     * @returns A boolean indicating whether the callback was found and removed.
      */
-    model?: ModelType;
-    constructor(model?: ModelType);
-    private get defaultBlockKey();
+    remove(callback: CallbackType): boolean;
     /**
-     * @function getBlock
-     * @description Retrieves the callback block by the given blockKey.
-     * @param {number | string} [blockKey] - The key of the block to retrieve.
-     * @protected
+     * @description Checks whether a callback is in the list.
+     * @param callback - The callback function to check for.
+     * @returns A boolean indicating whether the callback was found.
      */
-    protected getBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    has(callback: CallbackType): boolean;
     /**
-     * @function getOrGenerateBlock
-     * @description Retrieves or creates a callback map for a given blockKey.
-     * @param {number | string} [blockKey] - The block key.
-     * @returns {Map<string, ((...args: any[]) => void)[]>} - The ensured callback map.
-     * @protected
+     * @description Invokes all callbacks with the provided arguments.
+     * @param args - The arguments to pass to the callbacks.
      */
-    protected getOrGenerateBlock(blockKey?: number | string): Map<string, ((...args: any[]) => void)[]>;
+    fire(...args: Parameters<CallbackType>): ReturnType<CallbackType>;
+    /**
+     * @description Clears added callbacks
+     */
+    clear(): void;
+}
+/**
+ * @class Delegate
+ * @group Components
+ * @category Delegate
+ * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+ * @description Class representing a set of callbacks that can be maintained and executed together.
+ */
+declare class Delegate<CallbackType extends (...args: any[]) => any> extends SimpleDelegate<CallbackType> {
+    /**
+     * @description Delegate fired when a callback is added.
+     */
+    onAdded: SimpleDelegate<(callback: CallbackType) => void>;
+    /**
+     * @description Adds a callback to the list.
+     * @param callback - The callback function to add.
+     */
+    add(callback: CallbackType): void;
+}
+
+declare class TurboNestedMapNode<KeyType, ValueType> extends Map<KeyType, ValueType> {
+}
+/**
+ * @class TurboNestedMap
+ * @group Components
+ * @category TurboNestedMap
+ *
+ * @description A map of arbitrary nesting depth, addressed via `...keys` paths.
+ *
+ * @template ValueType - The type of stored values.
+ * @template KeyType - The type of keys at each level of the path. Defaults to `string | symbol | number`.
+ */
+declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
+    protected readonly nestedMap: TurboNestedMapNode<KeyType, any>;
+    /**
+     * @function get
+     * @description Retrieve the value at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
+     */
+    get(...keys: KeyType[]): ValueType;
+    /**
+     * @function getFlat
+     * @description Retrieve the value at the given flat key.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
+     */
+    getFlat(flatKey: number | string): ValueType;
     /**
      * @function getKey
-     * @description Gets all callbacks for a given event key within a block.
-     * @param {string} key - The event name.
-     * @param {number | string} [blockKey] - The block in which the event is scoped.
-     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
-     * @protected
+     * @description Find the key path of the first occurrence of the given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {KeyType[] | undefined} The key path, or `undefined` if not found.
      */
-    protected getKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    getKey(value: ValueType): KeyType[];
     /**
-     * @function getOrGenerateKey
-     * @description Ensures and returns the array of callbacks for a given event key within a block.
-     * @param {string} key - The event name.
-     * @param {number | string} [blockKey] - The block in which the event is scoped.
-     * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
-     * @protected
+     * @function getKeys
+     * @description Find the key paths of all occurrences of the given value.
+     * @param {ValueType} value - The value to locate.
+     * @returns {KeyType[][]} Array of key paths.
      */
-    protected getOrGenerateKey(key: string, blockKey?: number | string): ((...args: any[]) => void)[];
+    getKeys(value: ValueType): KeyType[][];
     /**
-     * @function addWithBlock
-     * @description Registers a callback for an event key within a specified block -- usually for the corresponding
-     * data block in the model.
-     * @param {string} key - The event name.
-     * @param {number | string} blockKey - The block to register the event in.
-     * @param {(...args: any[]) => void} callback - The callback function to invoke when the event is fired.
+     * @function getFlatKey
+     * @description Return the flat key of the first occurrence of the given value.
+     * @param {ValueType} value - The value to query.
+     * @returns {string | number | undefined} The flat key, or `undefined` if not found.
      */
-    addWithBlock(key: string, blockKey: number | string, callback: (...args: any[]) => void): void;
+    getFlatKey(value: ValueType): string | number;
     /**
-     * @function add
-     * @description Registers a callback for an event key in the default block.
-     * @param {string} key - The event name.
-     * @param {(...args: any[]) => void} callback - The callback function.
+     * @function set
+     * @description Store a value at the given key path. Intermediate nodes are created automatically.
+     * @param {ValueType} value - The value to store.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    add(key: string, callback: (...args: any[]) => void): void;
+    set(value: ValueType, ...keys: KeyType[]): void;
     /**
-     * @function removeWithBlock
-     * @description Removes a specific callback or all callbacks for a key within a block.
-     * @param {string} key - The event name.
-     * @param {number | string} blockKey - The block from which to remove the event.
-     * @param {(...args: any[]) => void} [callback] - The specific callback to remove. If undefined, all callbacks
-     * for the key are removed.
+     * @function setFlat
+     * @description Store a value at the given flat key.
+     * @param {ValueType} value - The value to store.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
      */
-    removeWithBlock(key: string, blockKey: number | string, callback?: (...args: any[]) => void): void;
+    setFlat(value: ValueType, flatKey: number | string): void;
+    /**
+     * @function has
+     * @description Check whether an entry exists at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {boolean}
+     */
+    has(...keys: KeyType[]): boolean;
+    /**
+     * @function hasFlat
+     * @description Check whether an entry exists at the given flat key.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @returns {boolean}
+     */
+    hasFlat(flatKey: number | string): boolean;
+    /**
+     * @function hasValue
+     * @description Check whether the given value exists anywhere in the map.
+     * @param {ValueType} value - The value to look for.
+     * @returns {boolean}
+     */
+    hasValue(value: ValueType): boolean;
     /**
      * @function remove
-     * @description Removes a specific callback or all callbacks for a key in the default block.
-     * @param {string} key - The event name.
-     * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
+     * @description Remove the entry at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    remove(key: string, callback?: (...args: any[]) => void): void;
+    remove(...keys: KeyType[]): void;
     /**
-     * @function fireWithBlock
-     * @description Triggers all callbacks associated with an event key in a specified block.
-     * @param {string} key - The event name.
-     * @param {number | string} blockKey - The block in which the event is scoped.
-     * @param {...any[]} args - Arguments passed to each callback.
+     * @function removeValue
+     * @description Remove the first occurrence of the given value.
+     * @param {ValueType} value - The value to remove.
      */
-    fireWithBlock(key: string, blockKey: string | number, ...args: any[]): void;
+    removeValue(value: ValueType): void;
     /**
-     * @function fire
-     * @description Triggers all callbacks associated with an event key in the default block.
-     * @param {string} key - The event name.
-     * @param {...any[]} args - Arguments passed to the callback.
+     * @function removeValues
+     * @description Remove all occurrences of the given value.
+     * @param {ValueType} value - The value to remove.
      */
-    fire(key: string, ...args: any[]): void;
+    removeValues(value: ValueType): void;
+    /**
+     * @function getEntriesAt
+     * @description Return all leaf `[key, value]` pairs under the given path, sorted alphabetically by key.
+     * Pass no keys to get all leaf entries in the map.
+     * @param {...KeyType[]} keys - Path to the subtree root.
+     * @returns {[KeyType, ValueType][]}
+     */
+    getEntriesAt(...keys: KeyType[]): [KeyType, ValueType][];
+    /**
+     * @description All leaf `[key, value]` pairs in the nested map, sorted alphabetically by key.
+     */
+    get entries(): [KeyType, ValueType][];
+    /**
+     * @function getKeysAt
+     * @description Return all leaf keys under the given path, sorted alphabetically.
+     * Pass no keys to get all leaf keys in the map.
+     * @param {...KeyType[]} keys - Path to the parent node.
+     * @returns {KeyType[]}
+     */
+    getKeysAt(...keys: KeyType[]): KeyType[];
+    /**
+     * @description All leaf keys in the nested map, sorted alphabetically.
+     */
+    get keys(): KeyType[];
+    /**
+     * @function getValuesAt
+     * @description Return all leaf values under the given path, sorted alphabetically by key.
+     * Pass no keys to get all leaf values in the map.
+     * @param {...KeyType[]} keys - Path to the parent node.
+     * @returns {ValueType[]}
+     */
+    getValuesAt(...keys: KeyType[]): ValueType[];
+    /**
+     * @description All leaf values in the nested map, sorted alphabetically by key.
+     */
+    get values(): ValueType[];
+    /**
+     * @function getPathsAt
+     * @description Return all leaf key paths under the given path.
+     * Pass no keys to get all leaf paths in the map.
+     * @param {...KeyType[]} keys - Path to the subtree root.
+     * @returns {KeyType[][]}
+     */
+    getPathsAt(...keys: KeyType[]): KeyType[][];
+    /**
+     * @description All leaf key paths in the map.
+     */
+    get paths(): KeyType[][];
+    /**
+     * @function getSizeAt
+     * @description Return the number of leaf entries under the given path.
+     * Pass no keys to get the number of all leaf entries.
+     * @param {...KeyType[]} keys - Path to the root.
+     * @returns {number}
+     */
+    getSizeAt(...keys: KeyType[]): number;
+    /**
+     * @description Number of all leaf entries in the nested map.
+     */
+    get size(): number;
+    /**
+     * @function flattenKey
+     * @description Serialize a key path into a single flat key.
+     * - Fully numeric paths produce a numeric global leaf index.
+     * - All other paths produce a `"k0|k1|k2|..."` string.
+     * @param {...KeyType[]} keys - The key path to serialize.
+     * @returns {string | number | undefined} The flat key, or `undefined` if the path is invalid.
+     */
+    flattenKey(...keys: KeyType[]): string | number;
+    /**
+     * @function scopeKey
+     * @description Convert a flat key back into a key path. Reverses {@link flattenKey}.
+     * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
+     * - A numeric global leaf index becomes the corresponding numeric path.
+     * @param {number | string} flatKey - The flat key to convert.
+     * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
+     */
+    scopeKey(flatKey: number | string): KeyType[];
+    /**
+     * @function clear
+     * @description Remove all entries from the map.
+     */
+    clear(): void;
+    protected findPaths(node: Map<KeyType, any>, target?: ValueType, allPaths?: boolean, prefix?: KeyType[]): KeyType[][];
+    protected getFlatCompatibleKey(key: any): string | number | undefined;
 }
 
 /**
+ * @class TurboObserver
  * @group MVC
- * @category Model
- */
-type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends object = object> = Type extends "map" ? Map<string, BlockType> : BlockType[];
-/**
- * @group MVC
- * @category Model
- */
-type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
-/**
- * @group MVC
- * @category Model
- */
-type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
-/**
- * @group MVC
- * @category View
- */
-type TurboViewProperties<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
-    element: ElementType;
-    model?: ModelType;
-    emitter?: EmitterType;
-};
-
-/**
- * @type DataBlockProperties
- * @group Components
- * @category TurboDataBlock
+ * @category TurboModel
  *
- * @description Configuration object used when creating a {@link TurboDataBlock}.
- * @template DataType - The type of data stored in the block.
+ * @extends TurboNestedMap
+ * @description Generic observer that keeps a set of component instances organized by key path.
+ * Useful to maintain UI components or other per-entry objects synchronized with a data source
+ * ({@link TurboModel}).
+ *
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The key type used at each level of the path.
+ */
+declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends DataKeyType = DataKeyType> extends TurboNestedMap<ComponentType, KeyType> {
+    protected _isInitialized: boolean;
+    /**
+     * @property onAdded
+     * @description Delegate called when a change is reported at a key path for which no component instance exists yet.
+     * Handlers may return a newly-created component instance, which will be stored and passed to subsequent
+     * `onUpdated` calls.
+     */
+    readonly onAdded: Delegate<(data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void>;
+    /**
+     * @property onUpdated
+     * @description Delegate called when a change is reported at a key path that already has an associated instance.
+     */
+    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void>;
+    /**
+     * @property onDeleted
+     * @description Delegate called when a key path is reported as deleted.
+     */
+    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void>;
+    /**
+     * @property onInitialize
+     * @description Delegate fired once when the observer is initialized. Useful for initial population.
+     */
+    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void>;
+    /**
+     * @property onDestroy
+     * @description Delegate fired when the observer is destroyed.
+     */
+    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void>;
+    /**
+     * @constructor
+     * @description Create a TurboObserver.
+     * By default, `onUpdated` updates the data of the mapped instance if it exposes a {@link TurboModel} model,
+     * or `data` / `dataId` fields. `onDeleted` removes the instance from the map and the DOM.
+     * @param {TurboObserverProperties<DataType, ComponentType, KeyType>} [properties] - Initialization
+     * options and lifecycle callbacks.
+     */
+    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType>);
+    /**
+     * @function remove
+     * @description Remove the instance at the given key path from the map and call `instance.remove()` if available.
+     * @param {...KeyType[]} keys - Ordered path to the instance.
+     */
+    remove(...keys: KeyType[]): void;
+    /**
+     * @function detach
+     * @description Remove the instance at the given key path from the map without calling `instance.remove()`,
+     * detaching it from the observer.
+     * @param {...KeyType[]} keys - Ordered path to the instance.
+     */
+    detach(...keys: KeyType[]): void;
+    /**
+     * @property isInitialized
+     * @description Whether the observer has been initialized (i.e. {@link initialize} has been called).
+     */
+    get isInitialized(): boolean;
+    /**
+     * @function initialize
+     * @description Initialization method that fires `onInitialize`. No-op if already initialized.
+     */
+    initialize(): void;
+    /**
+     * @function clear
+     * @description Remove all managed instances, reset the observer to an uninitialized state, and optionally
+     * call `instance.remove()` on each instance.
+     * @param {boolean} [removeFromDom=true] - Whether to call `instance.remove()` on each managed instance.
+     */
+    clear(removeFromDom?: boolean): void;
+    /**
+     * @function destroy
+     * @description Remove all managed instances, reset the observer to an uninitialized state, optionally
+     * call `instance.remove()` on each instance, and fire `onDestroy`.
+     * @param {boolean} [removeFromDom=true] - Whether to call `instance.remove()` on each managed instance.
+     */
+    destroy(removeFromDom?: boolean): void;
+    /**
+     * @function keyChanged
+     * @description Notify the observer of a change at the given key path.
+     * Fires `onDeleted` if `deleted` is `true` and an instance exists, `onAdded` if no instance exists yet
+     * (storing the returned instance if any), and `onUpdated` otherwise.
+     * @param {KeyType[]} keys - The key path that changed.
+     * @param {DataType} value - The new value at that path.
+     * @param {boolean} [deleted=false] - Whether the entry was deleted.
+     */
+    keyChanged(keys: KeyType[], value: DataType, deleted?: boolean): void;
+}
+
+type DataKeyType = string | number | symbol;
+type FlatKeyType = string | number;
+/**
+ * @type TurboModelProperties
+ * @group MVC
+ * @category TurboModel
+ *
+ * @description Configuration object used when creating a {@link TurboModel}.
+ * @template DataType - The type of data stored in the model.
  * @template IdType - The type of the data's ID.
- * @property {IdType} [id] - Optional ID attached to the block. Useful to reference the data in a nested structure.
+ * @property {IdType} [id] - Optional ID attached to the model. Useful to reference the data in a nested structure.
  * @property {DataType} [data] - Initial data.
- * @property {boolean} [initialize] - If true, {@link TurboDataBlock.initialize} is called immediately after
+ * @property {boolean} [initialize] - If true, {@link TurboModel.initialize} is called immediately after
  * construction.
  */
-type DataBlockProperties<DataType = any, IdType extends string | number | symbol = any> = {
+type TurboModelProperties<DataType = any, IdType extends DataKeyType = any> = {
     id?: IdType;
     data?: DataType;
     initialize?: boolean;
+    enabledCallbacks?: boolean;
+    bubbleChanges?: boolean;
 };
 /**
- * @type DataBlockHost
+ * @type TurboObserverProperties
  * @group Components
  * @category TurboDataBlock
  *
- * @description Interface implemented by objects that host a {@link TurboDataBlock}.
- * The host receives lifecycle callbacks whenever the block mutates. This allows
- * higher-level structures (such as TurboModels) to react to low-level data changes.
+ * @description Configuration object to create a new {@link TurboObserver}.
  *
- * @template DataType - The type stored in the block.
- * @template KeyType - The key/index type of entries.
- * @template IdType - The identifier type of the block.
+ * @template DataType - The type of data handled by the observer.
+ * @template {object} ComponentType - The instance type created/managed by the observer.
+ * @template {string | number | symbol} KeyType - The per-item key type.
+ * @template {string | number} BlockKeyType - The block-grouping key type.
  *
- * @property {(key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void} [onDirty] -
- * Called whenever a key is modified *before* external callbacks are fired. Useful to mark bound signals as dirty.
- * @property {(key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void} [onChange]
- * Called after a change has been committed and callbacks are enabled. Provides the key that changed and its new value.
+ * @property {new(...args:any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>} [customConstructor] -
+ * Optional custom observer constructor to instantiate instead of the default `TurboObserver`.
+ * @property {boolean} [initialize] - If true, the observer is initialized immediately.
+ * @property {(data, id, self, blockKey?) => ComponentType | void} [onAdded] - Called when a new item appears.
+ * @property {(data, instance, id, self, blockKey?) => void} [onUpdated] - Called when an existing item changes.
+ * @property {(data, instance, id, self, blockKey?) => void} [onDeleted] - Called when an item is deleted.
+ * @property {(self) => void} [onInitialize] - Called when the observer is initialized.
+ * @property {(self) => void} [onDestroy] - Called when the observer is destroyed.
  */
-type DataBlockHost<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> = {
-    onDirty?: (key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
-    onChange?: (key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>) => void;
+type TurboObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> = {
+    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType>;
+    depth?: number;
+    initialize?: boolean;
+    onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void;
+    onUpdated?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void;
+    onDeleted?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void;
+    onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void;
+    onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void;
 };
 
 type SignalSubscriber = () => void;
@@ -900,577 +1129,71 @@ declare class TurboWeakSet<Type extends object = object> {
 }
 
 /**
- * @internal
- * @class SimpleDelegate
- * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
- * @description Class representing a set of callbacks that can be maintained and executed together.
- */
-declare class SimpleDelegate<CallbackType extends (...args: any[]) => any> {
-    private callbacks;
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback: CallbackType): void;
-    /**
-     * @description Removes a callback from the list.
-     * @param callback - The callback function to remove.
-     * @returns A boolean indicating whether the callback was found and removed.
-     */
-    remove(callback: CallbackType): boolean;
-    /**
-     * @description Checks whether a callback is in the list.
-     * @param callback - The callback function to check for.
-     * @returns A boolean indicating whether the callback was found.
-     */
-    has(callback: CallbackType): boolean;
-    /**
-     * @description Invokes all callbacks with the provided arguments.
-     * @param args - The arguments to pass to the callbacks.
-     */
-    fire(...args: Parameters<CallbackType>): ReturnType<CallbackType>;
-    /**
-     * @description Clears added callbacks
-     */
-    clear(): void;
-}
-/**
- * @class Delegate
- * @group Components
- * @category Delegate
- * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
- * @description Class representing a set of callbacks that can be maintained and executed together.
- */
-declare class Delegate<CallbackType extends (...args: any[]) => any> extends SimpleDelegate<CallbackType> {
-    /**
-     * @description Delegate fired when a callback is added.
-     */
-    onAdded: SimpleDelegate<(callback: CallbackType) => void>;
-    /**
-     * @description Adds a callback to the list.
-     * @param callback - The callback function to add.
-     */
-    add(callback: CallbackType): void;
-}
-
-/**
- * @type ScopedKey
- * @group Components
- * @category TurboNestedMap
- *
- * @template KeyType - The per-item key type.
- * @template BlockKeyType - The block-grouping key type.
- *
- * @description Pair containing a `blockKey` and an item `key`.
- */
-type ScopedKey<KeyType = any, BlockKeyType = any> = {
-    blockKey?: BlockKeyType;
-    key?: KeyType;
-};
-/**
- * @group Components
- * @category TurboNestedStore
- */
-type BlockStoreType<Type extends "array" | "map" = "map", BlockType extends object = object> = Type extends "map" ? Map<string, BlockType> : BlockType[];
-
-/**
- * @class TurboNestedMap
- * @group Components
- * @category TurboNestedMap
- *
- * @template ValueType - The type of the nested map's values.
- * @template KeyType - The per-value key type.
- * @template BlockKeyType - The block-grouping key type.
- */
-declare class TurboNestedMap<ValueType = any, KeyType = any, BlockKeyType = any> {
-    protected readonly nestedMap: Map<BlockKeyType, Map<KeyType, ValueType>>;
-    /**
-     * @function get
-     * @description Retrieve the value at the given `key` within the optional `blockKey`.
-     * @param {KeyType} key - Item key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {ValueType} - The associated value, or `undefined`.
-     */
-    get(key: KeyType, blockKey?: BlockKeyType): ValueType;
-    /**
-     * @function set
-     * @description Set the given value at the given `key` and optional `blockKey`.
-     * @param {ValueType} value - The value to set.
-     * @param {KeyType} key - The key to set.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     */
-    set(value: ValueType, key: KeyType, blockKey?: BlockKeyType): void;
-    /**
-     * @function getKey
-     * @description Find the first (key, blockKey) pair for a given value.
-     * @param {ValueType} value - The value to locate.
-     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
-     */
-    getKey(value: ValueType): ScopedKey<KeyType, BlockKeyType>;
-    /**
-     * @function getKeys
-     * @description Find all (key, blockKey) pairs for a given value.
-     * @param {ValueType} value - The value to locate.
-     * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
-     */
-    getKeys(value: ValueType): ScopedKey<KeyType, BlockKeyType>[];
-    /**
-     * @function getFlatKey
-     * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
-     * @param {ValueType} value - The value to query.
-     * @returns {string | number} - Flattened key, or undefined when value not found.
-     */
-    getFlatKey(value: ValueType): string | number;
-    /**
-     * @function getFromFlatKey
-     * @description Get the value at the given `flatKey`.
-     * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
-     * @returns {ValueType} - The value, or undefined if not found.
-     */
-    getFromFlatKey(flatKey: number | string): ValueType;
-    /**
-     * @function getEntriesForBlock
-     * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
-     * key values (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
-     */
-    getEntriesForBlock(blockKey?: BlockKeyType): [KeyType, ValueType][];
-    /**
-     * @function getKeysForBlock
-     * @description Return the keys for a block alphabetically sorted (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {KeyType[]} - Array of keys.
-     */
-    getKeysForBlock(blockKey?: BlockKeyType): KeyType[];
-    /**
-     * @function getValuesForBlock
-     * @description Return the values for a block alphabetically sorted by their keys (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {ValueType[]} - Array of values.
-     */
-    getValuesForBlock(blockKey?: BlockKeyType): ValueType[];
-    /**
-     * @function getAllKeys
-     * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
-     * (if compatible).
-     * @returns {KeyType[]} - Flattened list of all keys.
-     */
-    getAllKeys(): KeyType[];
-    /**
-     * @function getAllValues
-     * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
-     * (if compatible).
-     * @returns {ValueType[]} - Flattened list of all values.
-     */
-    getAllValues(): ValueType[];
-    /**
-     * @function hasKey
-     * @description Check whether a value exists at the given `key` inside `blockKey`.
-     * @param {KeyType} key - The targeted key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {boolean} Whether a value exists.
-     */
-    hasKey(key: KeyType, blockKey?: BlockKeyType): boolean;
-    /**
-     * @function hasBlock
-     * @description Check whether a block exists at `blockKey`.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {boolean} Whether a block exists.
-     */
-    hasBlock(blockKey: BlockKeyType): boolean;
-    /**
-     * @function getBlockSize
-     * @description Get the number of entries inside the target block.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {number} The size of the block.
-     */
-    getBlockSize(blockKey?: BlockKeyType): number;
-    /**
-     * @function removeKey
-     * @description Remove the entry at the given `key` inside `blockKey`.
-     * @param {KeyType} key - The key to remove.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     */
-    removeKey(key: KeyType, blockKey?: BlockKeyType): void;
-    /**
-     * @function remove
-     * @description Remove the first entry with the given value.
-     * @param {ValueType} value - The value to remove.
-     */
-    remove(value: ValueType): void;
-    /**
-     * @function clear
-     * @description Remove all entries and reset internal state.
-     */
-    clear(): void;
-    /**
-     * @function flattenKey
-     * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
-     * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
-     * @param {KeyType} key - Item key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {number | string} - The flattened key.
-     */
-    flattenKey(key: KeyType, blockKey?: BlockKeyType): string | number;
-    /**
-     * @function scopeKey
-     * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
-     * @param {number | string} flatKey - Flattened key or global index.
-     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
-     */
-    scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType>;
-    /**
-     * @property defaultBlockKey
-     * @protected
-     * @description Default block key used when none is supplied. It returns the first blockKey if present,
-     * otherwise returns the sentinel `"__default__"`.
-     * @returns {BlockKeyType}
-     */
-    protected get defaultBlockKey(): BlockKeyType;
-    protected getFlatCompatibleKey(key: BlockKeyType | KeyType): string | number;
-}
-
-/**
- * @class TurboObserver
- * @group Components
- * @category TurboObserver
- *
- * @extends TurboNestedMap
- * @description Generic observer that keeps a set of component instances organized by
- * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
- * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
- *
- * @template DataType - The type of data handled by the observer.
- * @template {object} ComponentType - The instance type created/managed by the observer.
- * @template {string | number | symbol} KeyType - The per-item key type.
- * @template {string | number} BlockKeyType - The block-grouping key type.
- */
-declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> extends TurboNestedMap<ComponentType, KeyType, BlockKeyType> {
-    protected _isInitialized: boolean;
-    /**
-     * @property onAdded
-     * @description Delegate called when an item appears for which no component instance exists.
-     * Handlers may return a newly-created component instance which will be stored and then receive subsequent
-     * `onUpdated` calls.
-     */
-    readonly onAdded: Delegate<(data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void>;
-    /**
-     * @property onUpdated
-     * @description Delegate called when an item already has an associated instance and its data changes.
-     */
-    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
-    /**
-     * @property onDeleted
-     * @description Delegate called when an item is removed.
-     */
-    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void>;
-    /**
-     * @property onInitialize
-     * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
-     */
-    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
-    /**
-     * @property onDestroy
-     * @description Delegate fired when the observer is destroyed.
-     */
-    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void>;
-    /**
-     * @constructor
-     * @description Create a TurboObserver.
-     * By default, the observer wires `onUpdated` to update instance data if the instance
-     * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
-     * when the associated key is deleted.
-     * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
-     * options and lifecycle callbacks.
-     */
-    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>);
-    /**
-     * @function removeKey
-     * @description Remove the instance associated with `key` inside `blockKey`.
-     * @param {KeyType} key - The key to remove.
-     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     */
-    removeKey(key: KeyType, blockKey?: BlockKeyType, removeFromDOM?: boolean): void;
-    /**
-     * @function remove
-     * @description Remove a given instance.
-     * @param {ComponentType} instance - The instance to remove.
-     * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
-     */
-    remove(instance: ComponentType, removeFromDOM?: boolean): void;
-    /**
-     * @property isInitialized
-     * @description Whether the observer has been initialized (i.e. {@link initialize} called).
-     */
-    get isInitialized(): boolean;
-    /**
-     * @function initialize
-     * @description Invoke `onInitialize` and mark the observer as initialized.
-     */
-    initialize(): void;
-    /**
-     * @function clear
-     * @description Remove and destroy all managed instances and reset internal state.
-     */
-    clear(): void;
-    /**
-     * @function destroy
-     * @description Clear then fire `onDestroy`.
-     */
-    destroy(): void;
-    /**
-     * @function keyChanged
-     * @description Function to notify the observer of a change at a certain key.
-     * @param {KeyType} key - The changed item key.
-     * @param {DataType} value - The new value for the item.
-     * @param {boolean} [deleted=false] - Whether the item was removed.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     */
-    keyChanged(key: KeyType, value: DataType, deleted?: boolean, blockKey?: BlockKeyType): void;
-}
-
-/**
- * @type TurboObserverProperties
- * @group Components
- * @category TurboDataBlock
- *
- * @description Configuration object to create a new {@link TurboObserver}.
- *
- * @template DataType - The type of data handled by the observer.
- * @template {object} ComponentType - The instance type created/managed by the observer.
- * @template {string | number | symbol} KeyType - The per-item key type.
- * @template {string | number} BlockKeyType - The block-grouping key type.
- *
- * @property {new(...args:any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>} [customConstructor] -
- * Optional custom observer constructor to instantiate instead of the default `TurboObserver`.
- * @property {boolean} [initialize] - If true, the observer is initialized immediately.
- * @property {(data, id, self, blockKey?) => ComponentType | void} [onAdded] - Called when a new item appears.
- * @property {(data, instance, id, self, blockKey?) => void} [onUpdated] - Called when an existing item changes.
- * @property {(data, instance, id, self, blockKey?) => void} [onDeleted] - Called when an item is deleted.
- * @property {(self) => void} [onInitialize] - Called when the observer is initialized.
- * @property {(self) => void} [onDestroy] - Called when the observer is destroyed.
- */
-type TurboObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string, BlockKeyType extends string | number = string> = {
-    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>;
-    initialize?: boolean;
-    onAdded?: (data: DataType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => ComponentType | void;
-    onUpdated?: (data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void;
-    onDeleted?: (data: DataType, instance: ComponentType, id: KeyType, self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>, blockKey?: BlockKeyType) => void;
-    onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
-    onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType, BlockKeyType>) => void;
-};
-
-/**
- * @class TurboDataBlock
- * @group Components
- * @category TurboDataBlock
- *
- * @template DataType - The type of the data held in the block.
- * @template {string | number | symbol} KeyType - The type of the data's keys.
- * @template IdType - The type of the data's ID.
- * @template ComponentType - For observers. The type of instances that react to changes in the block.
- * @template DataEntryType - For observers. The type of the data associated with each observer instance.
- *
- * @description Lightweight wrapper around a plain JS container (object, Array or Map) that exposes a consistent
- * API for reads/writes, signals, {@link TurboObserver}s and host callbacks.
- * Use this when you want change notifications and host integration around a simple data block.
- */
-declare class TurboDataBlock<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> {
-    private _data;
-    id: IdType;
-    /**
-     * @description The data held by this block. Setting it will clear attached observers and re-initialize the block.
-     */
-    get data(): DataType;
-    set data(data: DataType);
-    /**
-     * @description Whether callbacks are enabled.
-     */
-    accessor enabledCallbacks: boolean;
-    protected isInitialized: boolean;
-    private host;
-    private signals;
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, KeyType>>;
-    /**
-     * Delegate fired when the value changes at a certain key/index.
-     */
-    readonly onKeyChanged: Delegate<(key: KeyType, value: any) => void>;
-    /**
-     * The default class of observers to instantiate.
-     */
-    observerConstructor: new (...args: any[]) => TurboObserver;
-    /**
-     * @constructor
-     * @description Create a new TurboDataBlock.
-     * @param {DataBlockProperties} [properties] - Optional initialization properties.
-     */
-    constructor(properties?: DataBlockProperties);
-    /**
-     * @function get
-     * @description Retrieve the value stored at the given key.
-     * @param {KeyType} key - The key/index to read.
-     * @returns {any} - The stored value, or `undefined` if not present.
-     */
-    get(key: KeyType): any;
-    /**
-     * @function set
-     * @description Set a value at the provided key and notify observers/signals if the value changed.
-     * @param {KeyType} key - The key/index to write.
-     * @param {unknown} value - The value to set.
-     */
-    set(key: KeyType, value: unknown): void;
-    /**
-     * @function add
-     * @description Append or insert a value into an array-backed data block. If the block is not an
-     * array, the call forwards to {@link set}.
-     * @param {unknown} value - The value to insert.
-     * @param {KeyType} [key] - Optional numeric index to insert at. If omitted, the value is pushed.
-     * @returns {KeyType | void} - The index where the value was inserted (for arrays), or void for non-arrays.
-     */
-    add(value: unknown, key?: KeyType): KeyType | void;
-    /**
-     * @function has
-     * @description Check whether the given key exists in the block.
-     * @param {KeyType} key - The key/index to check.
-     * @returns {boolean} - True, if present.
-     */
-    has(key: KeyType): boolean;
-    /**
-     * @function delete
-     * @description Remove the entry at the given key/index and notify observers.
-     * @param {KeyType} key - The key/index to remove.
-     */
-    delete(key: KeyType): void;
-    /**
-     * @property keys
-     * @description Array of all keys currently present in the block.
-     */
-    get keys(): KeyType[];
-    /**
-     * @property values
-     * @description The block's values in an array (in the order implied by {@link keys}).
-     */
-    get values(): any[];
-    /**
-     * @property size
-     * @description Number of entries in the block.
-     */
-    get size(): number;
-    /**
-     * Default iteration → yields [key, value]
-     */
-    [Symbol.iterator](): IterableIterator<[KeyType, any]>;
-    entries(): [KeyType, any][];
-    /**
-     * forEach
-     */
-    forEach(callback: (value: any, key: KeyType, block: this) => void, thisArg?: any): void;
-    /**
-     * @function initialize
-     * @description Fire change notifications for every existing key, initializing the block.
-     * @returns {void}
-     */
-    initialize(): void;
-    /**
-     * @function clear
-     * @description Clear the block and its observers.
-     * @param {boolean} [clearData=true] - If true, also clears the stored data. Otherwise, only resets observers/state.
-     */
-    clear(clearData?: boolean): void;
-    /**
-     * @function toJSON
-     * @description Convert the block into a plain object suitable for JSON serialization.
-     * @returns {object} - Plain JSON-serializable representation.
-     */
-    toJSON(): object;
-    /**
-     * @function link
-     * @description Attach a host object that will receive `onDirty` and `onChange` callbacks when keys change.
-     * @param {DataBlockHost<DataType, KeyType, IdType>} host - The host to attach.
-     */
-    link(host: DataBlockHost<DataType, KeyType, IdType>): void;
-    /**
-     * @function unlink
-     * @description Detach any previously-linked host.
-     */
-    unlink(): void;
-    /**
-     * @function makeSignal
-     * @description Create (or return an existing) reactive {@link SignalBox} for the given key.
-     * The returned signal reads from {@link get} and writes via {@link set}.
-     * @template Type - The type of the signal's value.
-     * @param {KeyType} key - The key for which to create the signal.
-     * @returns {SignalBox<Type>} - The created or cached signal.
-     */
-    makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
-    /**
-     * @function getSignal
-     * @description Retrieve an existing {@link SignalBox} for the given key if present.
-     * @param {KeyType} key - The key whose signal to retrieve.
-     * @returns {SignalBox<any>} - The signal or undefined if none was created.
-     */
-    getSignal(key: KeyType): SignalBox<any>;
-    /**
-     * @function makeAllSignals
-     * @description Create signals for every key currently present in the block.
-     */
-    makeAllSignals(): void;
-    /**
-     * @function generateObserver
-     * @description Create and register an observer tied to this block.
-     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Options for observer creation.
-     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>} - The newly created observer.
-     */
-    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>): TurboObserver<DataEntryType, ComponentType, KeyType>;
-    /**
-     * @protected
-     * @function keyChanged
-     * @description Internal hook called whenever a key is added/updated/deleted.
-     * @param {KeyType} key - The key that changed.
-     * @param {unknown} [value=this.get(key)] - The new value (or undefined for deletions).
-     * @param {boolean} [deleted=false] - Whether the key was removed.
-     */
-    protected keyChanged(key: KeyType, value?: unknown, deleted?: boolean): void;
-}
-
-/**
  * @class TurboModel
  * @group MVC
- * @category Model
+ * @category TurboModel
  *
- * @template DataType - The type of the data stored in each block.
- * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
- * @template {string | number | symbol} IdType - The type of the block IDs.
- * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
- * @template {TurboDataBlock<DataType, KeyType, IdType>} BlockType - The structure of each data block.
- * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
- * propagation.
+ * @template DataType - The type of the data held in the model.
+ * @template {DataKeyType} KeyType - The type of the data's keys.
+ * @template IdType - The type of the data's ID.
+ * @template ComponentType - The type of instances managed by attached observers.
+ * @template DataEntryType - The type of data associated with each observer instance.
+ *
+ * @description Wrapper around a plain JS container (object, Array, or Map) that exposes a
+ * consistent API for reads/writes, signals, and {@link TurboObserver}s.
  */
-declare class TurboModel<DataType = any, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, BlocksType extends "array" | "map" = "array" | "map", BlockType extends TurboDataBlock<DataType, KeyType, IdType> = TurboDataBlock<DataType, KeyType, IdType>> implements DataBlockHost<DataType, KeyType, IdType> {
-    protected readonly isDataBlocksArray: boolean;
-    protected readonly dataBlocks: MvcBlocksType<BlocksType, BlockType>;
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<any, any, KeyType>>;
-    static dataBlockConstructor: new () => TurboDataBlock;
-    observerConstructor: new () => TurboObserver;
-    onSetBlock: Delegate<(blockKey: MvcBlockKeyType<BlocksType>) => void>;
+declare class TurboModel<DataType = any, KeyType extends DataKeyType = any, IdType extends DataKeyType = any, ComponentType extends object = any, DataEntryType = any> {
+    /**
+     * @description Symbol used in {@link nestAll}, {@link makeSignals}, and {@link generateObserver}
+     * to target all entries at a certain level inside the data.
+     */
+    static readonly ALL: unique symbol;
+    /**
+     * @description The default constructor used to create nested {@link TurboModel} instances.
+     */
+    modelConstructor: new (...args: any[]) => TurboModel;
+    /**
+     * @description The default constructor used to create {@link TurboObserver} instances via {@link generateObserver}.
+     */
+    observerConstructor: new (...args: any[]) => TurboObserver;
     /**
      * @description Map of MVC handlers bound to this model.
      */
     handlers: Map<string, TurboHandler>;
     /**
-     * @description Delegate triggered when a key changes.
+     * @description Whether change callbacks and observer notifications are enabled.
      */
-    keyChangedCallback: Delegate<(keyName: KeyType, blockKey: MvcBlockKeyType<BlocksType>, ...args: any[]) => void>;
-    onDirty(key: KeyType, block: TurboDataBlock<DataType, KeyType, IdType>): void;
-    onChange(key: KeyType, value: unknown, block: TurboDataBlock<DataType, KeyType, IdType>): void;
+    accessor enabledCallbacks: boolean;
+    /**
+     * @description Whether changes bubble up from nested models to their parent.
+     */
+    accessor bubbleChanges: boolean;
+    /**
+     * @description Delegate fired whenever a value changes at a key path. Receives the new value followed
+     * by the key path as spread arguments.
+     */
+    readonly onKeyChanged: Delegate<(value: any, ...keys: DataKeyType[]) => void>;
+    protected isInitialized: boolean;
+    private readonly signals;
+    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, KeyType>>;
+    protected readonly nestedModels: Map<KeyType, TurboModel>;
+    protected readonly nestListeners: Set<(model: TurboModel, key: DataKeyType) => void>;
+    /**
+     * @description The ID of the data held by this model.
+     */
+    id: IdType;
+    private _data;
+    /**
+     * @description The data held by this model. Setting it clears the current state and re-initializes the model.
+     */
+    get data(): DataType;
+    set data(data: DataType);
     /**
      * @constructor
-     * @param {DataType} [data] - Initial data. Not initialized if provided.
-     * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
+     * @description Create a new TurboModel.
+     * @param {TurboModelProperties} [properties] - Optional initialization properties.
      */
-    constructor(data?: DataType, dataBlocksType?: BlocksType);
+    constructor(properties?: TurboModelProperties);
     /**
      * @function setup
      * @description Called in the constructor. Use for setup that should happen at instantiation,
@@ -1479,221 +1202,441 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      */
     protected setup(): void;
     /**
-     * @description The default block.
-     */
-    get block(): BlockType;
-    set block(value: BlockType);
-    /**
-     * @description The data of the default block.
-     */
-    get data(): DataType;
-    set data(value: DataType);
-    /**
-     * @description The ID of the default block.
-     */
-    get dataId(): IdType;
-    set dataId(value: IdType);
-    /**
-     * @description Whether callbacks are enabled or not.
-     */
-    set enabledCallbacks(value: boolean);
-    /**
-     * @function getBlock
-     * @description Retrieves the data block for the given blockKey.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key to retrieve.
-     * @returns {BlockType | null} The block or null if it doesn't exist.
-     */
-    getBlock(blockKey?: MvcBlockKeyType<BlocksType>): BlockType;
-    /**
-     * @function createBlock
-     * @description Creates a data block entry.
-     * @param {DataType} value - The data of the block.
-     * @param {IdType} [id] - The optional ID of the data.
-     * @param initialize
      * @protected
-     * @return {BlockType} - The created block.
+     * @function getAction
+     * @description Read a single key from a data container. Override this method to support other datatypes.
+     * @param {any} data - The container to read from.
+     * @param {DataKeyType} key - The key to read.
+     * @returns {any} The value at the key, or `undefined` if not found.
      */
-    protected createBlock(value: DataType | BlockType, id?: IdType, initialize?: boolean): BlockType;
+    protected getAction(data: any, key: DataKeyType): any;
     /**
-     * @function setBlock
-     * @description Creates and sets a data block at the specified key.
-     * @param {DataType} value - The data to set.
-     * @param {IdType} [id] - Optional block ID.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
-     * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
+     * @function get
+     * @description Retrieve the value at the given key.
+     * @param {KeyType} key - The key to read.
+     * @returns {any} The stored value, or `undefined` if not found.
      */
-    setBlock(value: DataType | BlockType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): void;
+    get(key: KeyType): any;
     /**
-     * @function hasBlock
-     * @description Check if a block exists at the given key.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key.
-     * @return {boolean} - Whether the block exists or not.
+     * @function get
+     * @description Retrieve the value at the given key path. Pass no keys to get the root data.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {any} The stored value, or `undefined` if not found.
      */
-    hasBlock(blockKey: MvcBlockKeyType<BlocksType>): boolean;
-    deleteBlock(blockKey: MvcBlockKeyType<BlocksType>): void;
+    get(...keys: DataKeyType[]): any;
     /**
-     * @function addBlock
-     * @description Adds a new block into the structure. Appends or inserts based on key if using array.
-     * @param {DataType} value - The block data.
-     * @param {IdType} [id] - Optional block ID.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
-     * @param {boolean} [initialize=true] - Whether to initialize after adding.
+     * @function getFlat
+     * @description Retrieve the value at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {any} The stored value, or `undefined` if not found.
      */
-    addBlock(value: DataType | BlockType, id?: IdType, blockKey?: MvcBlockKeyType<BlocksType>, initialize?: boolean): number | void;
+    getFlat(flatKey: FlatKeyType, depth?: number): any;
     /**
-     * @function getData
-     * @description Retrieves the value associated with a given key in the specified block.
-     * @param {KeyType} key - The key to retrieve.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
-     * data.
-     * @returns {unknown} The value associated with the key, or null if not found.
+     * @function getKey
+     * @description Find the key path of the first occurrence of the given value, searching depth-first.
+     * @param {any} value - The value to locate.
+     * @returns {DataKeyType[]} The key path, or `undefined` if not found.
      */
-    getData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): any;
+    getKey(value: any): DataKeyType[];
     /**
-     * @function getDataAt
-     * @description Retrieves the value associated with a given flat key.
-     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to retrieve.
-     * @returns {unknown} The value associated with the key, or null if not found.
+     * @function getFlatKey
+     * @description Return the flat key of the first occurrence of the given value.
+     * @param {any} value - The value to query.
+     * @returns {FlatKeyType | undefined} The flat key, or `undefined` if not found.
      */
-    getDataAt(flatKey: MvcFlatKeyType<BlocksType>): any;
+    getFlatKey(value: any): FlatKeyType | undefined;
     /**
-     * @function setData
-     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-     * @param {KeyType} key - The key to update.
-     * @param {unknown} value - The value to assign.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     * @function getKeys
+     * @description Find the key paths of all occurrences of the given value, searching depth-first.
+     * @param {any} value - The value to locate.
+     * @returns {DataKeyType[][]} Array of key paths.
      */
-    setData(key: KeyType, value: unknown, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    getKeys(value: any): DataKeyType[][];
     /**
-     * @function setDataAt
-     * @description Sets the value for a given flat key and triggers callbacks (if enabled).
-     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to update.
-     * @param {unknown} value - The value to assign.
+     * @function getFlatKeys
+     * @description Return the flat keys of all occurrences of the given value.
+     * @param {any} value - The value to query.
+     * @returns {FlatKeyType[]} Array of flat keys.
      */
-    setDataAt(flatKey: MvcFlatKeyType<BlocksType>, value: unknown): void;
-    addData(value: unknown, key?: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): KeyType | void;
-    addDataAt(value: unknown, flatKey?: MvcFlatKeyType<BlocksType>): KeyType | void;
+    getFlatKeys(value: any): FlatKeyType[];
     /**
-     * @function hasData
-     * @description Checks the value for a given key in the specified block and triggers callbacks (if enabled).
-     * @param {KeyType} key - The key to update.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
+     * @protected
+     * @function setAction
+     * @description Write a single key to a data container. Override this method to support other datatypes.
+     * @param {any} data - The container to write to.
+     * @param {DataKeyType} key - The key to write.
+     * @param {any} value - The value to set.
      */
-    hasData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): boolean;
+    protected setAction(data: any, value: any, key: DataKeyType): void;
     /**
-     * @function hasDataAt
-     * @description Sets the value for a given flat key in the specified block and triggers callbacks (if enabled).
-     * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to check.
+     * @protected
+     * @function internalSet
+     * @description Write a value at a key, propagating the change to a nested model if one exists,
+     * and firing {@link keyChanged} if the value actually changed.
+     * @param {TurboModel} model - The owning model (used for nested model lookup and change notification),
+     * or `undefined` if operating on a non-root container.
+     * @param {any} data - The container to write to.
+     * @param {DataKeyType} key - The key to write.
+     * @param {any} value - The value to set.
      */
-    hasDataAt(flatKey: MvcFlatKeyType<BlocksType>): boolean;
-    deleteData(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): void;
-    deleteDataAt(flatKey: MvcFlatKeyType<BlocksType>): false | void;
+    protected internalSet(model: TurboModel, data: any, value: any, key: DataKeyType): void;
     /**
-     * @function getSize
-     * @description Returns the size of the specified block.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
-     * @returns {number} The size.
+     * @function set
+     * @description Set a value at the given key and notify observers and signals if the value changed.
+     * @param {KeyType} key - The key to write.
+     * @param {unknown} value - The value to set.
      */
-    getSize(blockKey?: MvcBlockKeyType<BlocksType>): number;
-    toJSON(blockKey?: MvcBlockKeyType<BlocksType>): object;
+    set(value: unknown, key: KeyType): void;
     /**
-     * @function getBlockData
-     * @description Retrieves the data from a specific block.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-     * @returns {DataType} The block's data or  if it doesn't exist.
+     * @function set
+     * @description Set a value at the given key path and notify observers and signals if the value changed.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {unknown} value - The value to set.
      */
-    getBlockData(blockKey?: MvcBlockKeyType<BlocksType>): DataType;
+    set(value: unknown, ...keys: DataKeyType[]): void;
     /**
-     * @function getBlockId
-     * @description Retrieves the ID from a specific block.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-     * @returns {IdType} The block ID or null.
+     * @function setFlat
+     * @description Set a value at the given flat key.
+     * @param {unknown} value - The value to set.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
      */
-    getBlockId(blockKey?: MvcBlockKeyType<BlocksType>): IdType;
+    setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): void;
     /**
-     * @function setBlockId
-     * @description Sets the ID for a specific block.
-     * @param {IdType} value - The new ID.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
+     * @protected
+     * @function internalAdd
+     * @description Insert a value into a container via {@link addAction} and fire {@link keyChanged}.
+     * @param {TurboModel} model - The owning model for change notification, or `undefined` for non-root containers.
+     * @param {any} data - The container to insert into.
+     * @param {any} value - The value to insert.
+     * @param {DataKeyType} key - The target index or key.
+     * @returns {DataKeyType} The index or key where the value was stored.
      */
-    setBlockId(value: IdType, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    protected internalAdd(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
     /**
-     * @function fireCallback
-     * @description Fires the emitter's change callback for the given key in the default blocks.
-     * @param {string | KeyType} key - The key to fire for.
-     * @param {...any[]} args - Additional arguments.
+     * @protected
+     * @function addAction
+     * @description Perform the raw insertion. Override this method to support other datatypes.
+     * @param {TurboModel} model - The owning model.
+     * @param {any} data - The container to insert into.
+     * @param {any} value - The value to insert.
+     * @param {DataKeyType} key - The target index or key. Clamped to valid array bounds for array containers.
+     * @returns {DataKeyType} The index or key where the value was stored.
      */
-    protected fireCallback(key: string | KeyType, ...args: any[]): void;
+    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
     /**
-     * @function fireBlockCallback
-     * @description Fires the emitter's change callback for the given key in a specific block with custom arguments.
-     * @param {string | KeyType} key - The key to fire for.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
-     * @param {...any[]} args - Additional arguments.
+     * @function add
+     * @description Push a value to the end of an array-backed model. For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @returns {KeyType} The index where the value was stored.
      */
-    protected fireBlockCallback(key: string | KeyType, blockKey?: MvcBlockKeyType<BlocksType>, ...args: any[]): void;
+    add(value: unknown): KeyType;
+    /**
+     * @function add
+     * @description Insert a value into an array-backed model at the given index, or push it if no index is given.
+     * For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @param {KeyType} [key] - The index to insert at. If omitted, the value is pushed to the end.
+     * @returns {KeyType} The index where the value was stored.
+     */
+    add(value: unknown, key?: KeyType): KeyType;
+    /**
+     * @function add
+     * @description Insert a value at the given key path. For array-backed nodes, the last key is the insertion index.
+     * For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @param {...DataKeyType[]} keys - Key path to the target node, with the last key as the insertion index.
+     * @returns {DataKeyType} The index or key where the value was stored.
+     */
+    add(value: unknown, ...keys: DataKeyType[]): DataKeyType;
+    /**
+     * @function addFlat
+     * @description Insert a value at the position described by the given flat key.
+     * @param {unknown} value - The value to insert.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {DataKeyType} The index or key where the value was stored.
+     */
+    addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): DataKeyType;
+    /**
+     * @protected
+     * @function hasAction
+     * @description Check whether a key exists in a container. Override this method to support other datatypes.
+     * @param {any} data - The container to check.
+     * @param {DataKeyType} key - The key to check.
+     * @returns {boolean} `true` if the key is present.
+     */
+    protected hasAction(data: any, key: DataKeyType): boolean;
+    /**
+     * @function has
+     * @description Check whether the given key exists in the model.
+     * @param {KeyType} key - The key to check.
+     * @returns {boolean} `true` if the entry exists.
+     */
+    has(key: KeyType): boolean;
+    /**
+     * @function has
+     * @description Check whether the given key path exists in the model.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {boolean} `true` if the entry exists.
+     */
+    has(...keys: DataKeyType[]): boolean;
+    /**
+     * @function hasFlat
+     * @description Check whether an entry exists at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {boolean}
+     */
+    hasFlat(flatKey: FlatKeyType, depth?: number): boolean;
+    /**
+     * @protected
+     * @function deleteAction
+     * @description Remove a single key from a container. Override this method to support other datatypes.
+     * @param {any} data - The container to remove from.
+     * @param {DataKeyType} key - The key to remove.
+     */
+    protected deleteAction(data: any, key: DataKeyType): void;
+    /**
+     * @protected
+     * @function internalDelete
+     * @description Remove a key from a container, clearing any associated nested model, and firing {@link keyChanged}.
+     * No-op if the key does not exist.
+     * @param {TurboModel} model - The owning model for nested model cleanup and change notification,
+     * or `undefined` for non-root containers.
+     * @param {any} data - The container to remove from.
+     * @param {DataKeyType} key - The key to remove.
+     */
+    protected internalDelete(model: TurboModel, data: any, key: DataKeyType): void;
+    /**
+     * @function delete
+     * @description Remove the entry at the given key and notify observers.
+     * @param {KeyType} key - The key to remove.
+     */
+    delete(key: KeyType): void;
+    /**
+     * @function delete
+     * @description Remove the entry at the given key path and notify observers.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    delete(...keys: DataKeyType[]): void;
+    /**
+     * @function deleteFlat
+     * @description Remove the entry at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     */
+    deleteFlat(flatKey: FlatKeyType, depth?: number): void;
+    /**
+     * @property keys
+     * @description All keys currently present in the model.
+     */
+    get keys(): KeyType[];
+    /**
+     * @property values
+     * @description All values in the model, in the order of {@link keys}.
+     */
+    get values(): any[];
+    /**
+     * @property size
+     * @description Number of entries in the model.
+     */
+    get size(): number;
+    /**
+     * @function flatSize
+     * @description Return the total number of entries reachable from this model at the given depth.
+     * @param {number} depth - How many levels deep to count.
+     * @returns {number}
+     */
+    flatSize(depth: number): number;
+    /**
+     * @description Iterate over `[key, value]` pairs.
+     */
+    [Symbol.iterator](): IterableIterator<[KeyType, any]>;
+    /**
+     * @function entries
+     * @description Return all `[key, value]` pairs in the model.
+     * @returns {[KeyType, any][]}
+     */
+    entries(): [KeyType, any][];
+    /**
+     * @function forEach
+     * @description Execute a callback for each entry in the model.
+     * @param {(value: any, key: KeyType, model: this) => void} callback - Called with the value, key, and model.
+     * @param {any} [thisArg] - Value to use as `this` when calling the callback.
+     */
+    forEach(callback: (value: any, key: KeyType, model: this) => void, thisArg?: any): void;
     /**
      * @function initialize
-     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @description Fire change notifications for all existing keys, marking the model as initialized.
+     * No-op if already initialized or if data is empty.
      */
-    initialize(blockKey?: MvcBlockKeyType<BlocksType>): void;
+    initialize(): void;
     /**
      * @function clear
-     * @description Clears the block data at the given key.
-     * @param clearData
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
+     * @description Reset the model, clearing nested models, observers, and signals.
+     * @param {boolean} [clearData=true] - Whether to also clear the stored data.
      */
-    clear(clearData?: boolean, blockKey?: MvcBlockKeyType<BlocksType>): void;
+    clear(clearData?: boolean): void;
     /**
-     * @description The default block key based on whether the data structure is an array or map.
+     * @function toJSON
+     * @description Convert the model's data into a JSON-serializable form.
+     * Maps become plain objects. For non-object data types, the raw value is returned.
+     * @returns {object | DataType}
      */
-    get defaultBlockKey(): MvcBlockKeyType<BlocksType>;
+    toJSON(): object | DataType;
     /**
-     * @description The default block key if there's only one block, otherwise null.
+     * @function makeSignal
+     * @description Return an existing reactive {@link SignalBox} for the given key, or create one if absent.
+     * The signal reads via {@link get} and writes via {@link set}.
+     * @template Type - The type of the signal's value.
+     * @param {KeyType} key - The key to create a signal for.
+     * @returns {SignalBox<Type>}
      */
-    protected get defaultComputationBlockKey(): MvcBlockKeyType<BlocksType>;
+    makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
     /**
-     * @function isValidBlockKey
-     * @description Checks if the block key is a valid string or number.
-     * @param {MvcBlockKeyType<BlocksType>} blockKey - The block key to validate.
-     * @returns {boolean} True if valid, false otherwise.
+     * @function makeSignal
+     * @description Return an existing reactive {@link SignalBox} for the given key path, or create one if absent.
+     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
+     * The signal reads via {@link get} and writes via {@link set}.
+     * @template Type - The type of the signal's value.
+     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
+     * @returns {SignalBox<Type>}
      */
-    protected isValidBlockKey(blockKey: MvcBlockKeyType<BlocksType>): boolean;
+    makeSignal<Type = any>(...keys: DataKeyType[]): SignalBox<Type>;
     /**
-     * @function getAllBlockKeys
-     * @description Retrieves all block keys in the model.
-     * @returns {MvcBlockKeyType<BlocksType>[]} Array of block keys.
+     * @function makeSignals
+     * @description Return reactive {@link SignalBox} instances for multiple keys at the given path.
+     * Pass {@link TurboModel.ALL} at any level of the path to expand all entries at that level.
+     * @template Type - The type of the signals' values.
+     * @param {...DataKeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
+     * @returns {SignalBox<Type>[]}
      */
-    getAllBlockKeys(): MvcBlockKeyType<BlocksType>[];
+    makeSignals<Type = any>(...keys: DataKeyType[]): SignalBox<Type>[];
     /**
-     * @function getAllBlockIds
-     * @description Retrieves all block (data) IDs in the model.
-     * @returns {IdType[]} Array of IDs.
+     * @function getSignal
+     * @description Retrieve an existing {@link SignalBox} for the given key, or `undefined` if none exists.
+     * @param {KeyType} key - The key whose signal to retrieve.
+     * @returns {SignalBox<any>}
      */
-    getAllBlockIds(): IdType[];
+    getSignal(key: KeyType): SignalBox<any>;
     /**
-     * @function getAllBlocks
-     * @description Retrieves all blocks or a specific one if blockKey is defined.
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-     * @returns {BlockType[]} Array of blocks.
+     * @function getSignal
+     * @description Retrieve an existing {@link SignalBox} for the given key path, or `undefined` if none exists.
+     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
+     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
+     * @returns {SignalBox<any>}
      */
-    getAllBlocks(blockKey?: MvcBlockKeyType<BlocksType>): BlockType[];
-    getBlockKey(block: TurboDataBlock<DataType, KeyType, IdType>): MvcBlockKeyType<BlocksType>;
+    getSignal(...keys: DataKeyType[]): SignalBox<any>;
     /**
-     * @function getAllKeys
-     * @description Retrieves all keys within the given block(s).
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-     * @returns {KeyType[]} Array of keys.
+     * @function nestAll
+     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path.
+     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
+     * @param {...DataKeyType[]} keys - Key path to the subtree to expand.
+     * @returns {TurboModel[]} Array of nested models.
      */
-    getAllKeys(blockKey?: MvcBlockKeyType<BlocksType>): KeyType[];
+    nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keys: DataKeyType[]): TurboModel<NestedDataType, NestedKeyType>[];
     /**
-     * @function getAllValues
-     * @description Retrieves all values across block(s).
-     * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-     * @returns {unknown[]} Array of values.
+     * @function nestAll
+     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path,
+     * with custom initialization properties for the nested models.
+     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
+     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @returns {TurboModel[]} Array of nested models.
      */
-    getAllValues(blockKey?: MvcBlockKeyType<BlocksType>): any[];
+    nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keysAndProperties: [...DataKeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>[];
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key.
+     * @param {KeyType} key - The key of the nested model.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(key: KeyType): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key path.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keys: DataKeyType[]): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key path,
+     * with custom initialization properties.
+     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keysAndProperties: [...DataKeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function getNested
+     * @description Return `this`.
+     * @returns {TurboModel}
+     */
+    getNested(): TurboModel;
+    /**
+     * @function getNested
+     * @description Retrieve an already-created nested model at the given key, or `undefined` if none exists.
+     * @param {KeyType} key - The key of the nested model.
+     * @returns {TurboModel | undefined}
+     */
+    getNested(key: KeyType): TurboModel;
+    /**
+     * @function getNested
+     * @description Retrieve an already-created nested model at the given key path, or `undefined` if none exists.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {TurboModel | undefined}
+     */
+    getNested(...keys: DataKeyType[]): TurboModel;
+    /**
+     * @function generateObserver
+     * @description Create and attach a {@link TurboObserver} to this model.
+     * If a key path is provided, the observer is attached to the nested model(s) at that path instead.
+     * Pass {@link TurboModel.ALL} at any level of the path to process all entries at that level,
+     * allowing a single observer to track multiple subtrees simultaneously.
+     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+     * @param {...DataKeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
+     * any level to process all entries there.
+     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+     */
+    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>, ...keys: DataKeyType[]): TurboObserver<DataEntryType, ComponentType, KeyType>;
+    /**
+     * @protected
+     * @function keyChanged
+     * @description Called internally whenever an entry is added, updated, or deleted.
+     * Emits signals, fires {@link onKeyChanged}, and notifies attached observers.
+     * @param {DataKeyType[]} keys - The key path that changed.
+     * @param {unknown} [value] - The new value. Defaults to the current value at the key.
+     * @param {boolean} [deleted=false] - Whether the entry was removed.
+     */
+    protected keyChanged(keys: DataKeyType[], value?: unknown, deleted?: boolean): void;
+    private static flattenSize;
+    /**
+     * @function flattenKey
+     * @description Serialize a key path into a single flat key.
+     * - Fully numeric paths into array-backed data produce a numeric global leaf index.
+     * - All other paths produce a `"k0|k1|k2|..."` string, with symbols encoded as `"@@description"`.
+     * @param {...DataKeyType[]} keys - The key path to serialize.
+     * @returns {FlatKeyType}
+     */
+    flattenKey(...keys: DataKeyType[]): FlatKeyType;
+    /**
+     * @function scopeKey
+     * @description Convert a flat string key back into a key path. Reverses the string form of {@link flattenKey}.
+     * Segments starting with `"@@"` are decoded back to symbols.
+     * @param {string} flatKey - The flat string key to convert.
+     * @returns {DataKeyType[]}
+     */
+    scopeKey(flatKey: string): DataKeyType[];
+    /**
+     * @function scopeKey
+     * @description Convert a numeric global index back into a numeric key path.
+     * Reverses the numeric form of {@link flattenKey}.
+     * @param {number} flatKey - The numeric index to convert.
+     * @param {number} depth - The depth of the key path to reconstruct.
+     * @returns {DataKeyType[]}
+     */
+    scopeKey(flatKey: number, depth: number): DataKeyType[];
     /**
      * @function getHandler
      * @description Retrieves the attached MVC handler with the given key.
@@ -1709,9 +1652,8 @@ declare class TurboModel<DataType = any, KeyType extends string | number | symbo
      * @param {TurboHandler} handler - The handler instance to register.
      */
     addHandler(handler: TurboHandler): void;
-    generateObserver<DataEntryType = any, ComponentType extends object = object>(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType, MvcBlockKeyType<BlocksType>>): TurboObserver<DataEntryType, ComponentType, KeyType, MvcBlockKeyType<BlocksType>>;
-    flattenKey(key: KeyType, blockKey?: MvcBlockKeyType<BlocksType>): MvcFlatKeyType<BlocksType>;
-    scopeKey(flatKey: MvcFlatKeyType<BlocksType>): ScopedKey<KeyType, MvcBlockKeyType<BlocksType>>;
+    setDataWithoutInitializing(data: DataType): void;
+    private routeMutation;
 }
 
 /**
@@ -1802,6 +1744,112 @@ declare class TurboEventManagerModel extends TurboModel {
     readonly currentTools: Map<ClickMode, Node>;
     set inputDevice(value: InputDevice);
 }
+
+/**
+ * @class TurboEmitter
+ * @group MVC
+ * @category Emitter
+ *
+ * @template {TurboModel} ModelType -The element's MVC model type.
+ * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
+ * MVC structure to fire events or listen to some, with various methods.
+ */
+declare class TurboEmitter<ModelType extends TurboModel = TurboModel, KeyType extends DataKeyType = DataKeyType> {
+    /**
+     * @description Map containing all custom callbacks.
+     * @protected
+     */
+    protected readonly callbacks: Map<string, Delegate<(...args: any[]) => void>>;
+    /**
+     * @description Map containing all data callbacks.
+     * @protected
+     */
+    protected readonly dataCallbacks: Map<FlatKeyType, Delegate<(value: any, ...keys: KeyType[]) => void>>;
+    /**
+     * @description The attached MVC model.
+     */
+    model?: ModelType;
+    constructor(model?: ModelType);
+    /**
+     * @function add
+     * @description Register a callback for the given event name.
+     * @param {string} event - The event name.
+     * @param {(...args: any[]) => void} callback - The callback to invoke when the event fires.
+     */
+    add(event: string, callback: (...args: any[]) => void): void;
+    /**
+     * @function remove
+     * @description Remove a specific callback from the given event, or all callbacks if omitted.
+     * @param {string} event - The event name.
+     * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted,
+     * all callbacks for the event are removed.
+     */
+    remove(event: string, callback?: (...args: any[]) => void): void;
+    /**
+     * @function fire
+     * @description Trigger all callbacks registered for the given event name.
+     * @param {string} event - The event name.
+     * @param {...any[]} args - Arguments passed to each callback.
+     */
+    fire(event: string, ...args: any[]): void;
+    /**
+     * @function addKey
+     * @description Register a callback fired when the entry at the given key path changes in the model.
+     * The callback receives the new value as its first argument, followed by the key path as spread arguments.
+     * @param {(value: any, ...keys: KeyType[]) => void} callback - The callback to register.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    addKey(callback: (value: any, ...keys: KeyType[]) => void, ...keys: KeyType[]): void;
+    /**
+     * @function removeKey
+     * @description Remove a specific callback for the given key path, or all callbacks if omitted.
+     * @param {(value: any, ...keys: KeyType[]) => void} [callback] - The callback to remove. If omitted,
+     * all callbacks for this path are removed.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    removeKey(callback: (value: any, ...keys: KeyType[]) => void, ...keys: KeyType[]): void;
+    /**
+     * @function fireKey
+     * @description Trigger all callbacks registered for the given key path.
+     * Called automatically when the model fires a change notification at this path.
+     * @param {any} value - The new value at the key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    fireKey(value: any, ...keys: KeyType[]): void;
+    /**
+     * @protected
+     * @function resolveFlatKey
+     * @description Convert a key path to a stable flat string key for internal storage lookup. Joins with `"|"`.
+     * @param {KeyType[]} keys - The key path to flatten.
+     * @returns {FlatKeyType}
+     */
+    protected resolveFlatKey(keys: KeyType[]): FlatKeyType;
+}
+
+/**
+ * @group MVC
+ * @category Model
+ */
+type MvcBlocksType<Type extends "array" | "map" = "map", BlockType extends object = object> = Type extends "map" ? Map<string, BlockType> : BlockType[];
+/**
+ * @group MVC
+ * @category Model
+ */
+type MvcBlockKeyType<Type extends "array" | "map" = "map"> = Type extends "map" ? string : number;
+/**
+ * @group MVC
+ * @category Model
+ */
+type MvcFlatKeyType<B extends "array" | "map"> = B extends "array" ? number : string;
+/**
+ * @group MVC
+ * @category View
+ */
+type TurboViewProperties<ElementType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    element: ElementType;
+    model?: ModelType;
+    emitter?: EmitterType;
+};
 
 /**
  * @class TurboView
@@ -3294,9 +3342,8 @@ declare class Mvc<ElementType extends object = object, ViewType extends TurboVie
      * @description Callback function wired to the model's `keyChangedCallback` that forwards
      * key/block change notifications into the emitter. It is stored so it can be removed and reattached
      * when the model changes.
-     * @param {string} keyName - The block key name that changed.
-     * @param {any} blockKey - The specific block key that changed.
-     * @param {...any} args - Additional arguments forwarded from the model.
+     * @param value
+     * @param keys
      */
     private emitterFireCallback;
     /**
@@ -5367,6 +5414,78 @@ declare class TurboWheelEvent extends TurboEvent {
     constructor(properties: TurboWheelEventProperties);
 }
 
+declare module "yjs" {
+    interface Map<MapType = any> {
+    }
+    interface Array<T = any> {
+    }
+    interface AbstractType<EventType = any> {
+    }
+    interface YEvent<T = any, EventType = any> {
+    }
+    interface YMapEvent<T = any, EventType = any> {
+    }
+    interface YArrayEvent<T = any, EventType = any> {
+    }
+}
+/**
+ * @group Types
+ * @category Yjs
+ */
+type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    document: Doc;
+};
+
+/**
+ * @group MVC
+ * @category TurboYBlock
+ */
+declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<YType, KeyType, IdType, ComponentType, DataEntryType> {
+    private observer;
+    /**
+     * @inheritDoc
+     */
+    modelConstructor: new (...args: any[]) => TurboModel;
+    /**
+     * @inheritDoc
+     */
+    set enabledCallbacks(value: boolean);
+    /**
+     * @inheritDoc
+     */
+    protected getAction(data: any, key: DataKeyType): any;
+    /**
+     * @inheritDoc
+     */
+    protected setAction(data: any, value: any, key: DataKeyType): void;
+    /**
+     * @inheritDoc
+     */
+    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
+    /**
+     * @inheritDoc
+     */
+    protected hasAction(data: any, key: DataKeyType): boolean;
+    /**
+     * @inheritDoc
+     */
+    protected deleteAction(data: any, key: DataKeyType): void;
+    /**
+     * @inheritDoc
+     */
+    get keys(): KeyType[];
+    /**
+     * @inheritDoc
+     */
+    initialize(): void;
+    /**
+     * @inheritDoc
+     */
+    clear(clearData?: boolean): void;
+    protected observeChanges(event: YEvent, transaction: any): void;
+    private shiftIndices;
+}
+
 /**
  * @type {TurboIconProperties}
  * @group Components
@@ -6973,74 +7092,6 @@ declare class TurboPopup<ViewType extends TurboView = TurboView<any, any>, DataT
  */
 declare function popup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType>): TurboPopup<ViewType, DataType, ModelType, EmitterType>;
 
-declare module "yjs" {
-    interface Map<MapType = any> {
-    }
-    interface Array<T = any> {
-    }
-    interface AbstractType<EventType = any> {
-    }
-    interface YEvent<T = any, EventType = any> {
-    }
-    interface YMapEvent<T = any, EventType = any> {
-    }
-    interface YArrayEvent<T = any, EventType = any> {
-    }
-}
-/**
- * @group Types
- * @category Yjs
- */
-type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    document: Doc;
-};
-
-/**
- * @group Components
- * @category TurboYBlock
- */
-declare class TurboYBlock<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any> extends TurboDataBlock<YType, KeyType, IdType> {
-    private observer;
-    set enabledCallbacks(value: boolean);
-    /**
-     * @function get
-     * @description Retrieves the value associated with a given key in the specified block.
-     * @param {KeyType} key - The key to retrieve.
-     * @returns {unknown} The value associated with the key, or null if not found.
-     */
-    get(key: KeyType): unknown;
-    /**
-     * @function set
-     * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-     * @param {KeyType} key - The key to update.
-     * @param {unknown} value - The value to assign.
-     */
-    set(key: KeyType, value: unknown): void;
-    add(value: unknown, key?: KeyType): void | KeyType;
-    has(key: KeyType): boolean;
-    delete(key: KeyType): void;
-    /**
-     * @function keys
-     * @description Retrieves all keys within the given block(s).
-     * @returns {KeyType[]} Array of keys.
-     */
-    get keys(): KeyType[];
-    /**
-     * @function size
-     * @description Returns the size of the specified block.
-     * @returns {number} The size.
-     */
-    get size(): number;
-    /**
-     * @function initialize
-     * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-     */
-    initialize(): void;
-    clear(clearData?: boolean): void;
-    protected observeChanges(event: YEvent, transaction: any): void;
-    private shiftIndices;
-}
-
 /**
  * @class AnchorPoint
  * @group Components
@@ -7054,6 +7105,26 @@ declare class AnchorPoint {
     static pointToEnum(value: Point): Anchor;
     static enumToPoint(value: Anchor): Point;
 }
+
+/**
+ * @type ScopedKey
+ * @group Components
+ * @category TurboNestedMap
+ *
+ * @template KeyType - The per-item key type.
+ * @template BlockKeyType - The block-grouping key type.
+ *
+ * @description Pair containing a `blockKey` and an item `key`.
+ */
+type ScopedKey<KeyType = any, BlockKeyType = any> = {
+    blockKey?: BlockKeyType;
+    key?: KeyType;
+};
+/**
+ * @group Components
+ * @category TurboNestedStore
+ */
+type BlockStoreType<Type extends "array" | "map" = "map", BlockType extends object = object> = Type extends "map" ? Map<string, BlockType> : BlockType[];
 
 /**
  * @type TurboRectProperties
@@ -7999,8 +8070,8 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDataBlock, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYBlock, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataBlockHost, DataBlockProperties, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataKeyType, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
 interface TurboSelector {

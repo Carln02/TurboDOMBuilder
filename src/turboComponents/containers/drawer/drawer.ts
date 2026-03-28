@@ -4,14 +4,14 @@ import {iconSwitch, TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwit
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {div} from "../../../elementCreation/basicElements";
 import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
 import {auto} from "../../../decorators/auto/auto";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {element} from "../../../elementCreation/element";
 import {Open, Side} from "../../../types/enums.types";

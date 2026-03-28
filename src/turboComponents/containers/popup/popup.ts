@@ -1,12 +1,12 @@
 import {PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
 import "./popup.css";
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {cache} from "../../../decorators/cache/cache";
 import {auto} from "../../../decorators/auto/auto";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {element} from "../../../elementCreation/element";
 import {div} from "../../../elementCreation/basicElements";
 import {turbo} from "../../../turboFunctions/turboFunctions";

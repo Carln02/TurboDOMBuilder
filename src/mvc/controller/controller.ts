@@ -1,9 +1,9 @@
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
-import {TurboControllerProperties} from "./logic.types";
+import {TurboView} from "../view/view";
 import {initializeEffects} from "../../decorators/reactivity/reactivity";
 import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboControllerProperties} from "./controller.types";
 
 /**
  * @class TurboController

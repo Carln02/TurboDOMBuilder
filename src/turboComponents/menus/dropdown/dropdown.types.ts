@@ -1,8 +1,8 @@
 import {TurboSelectProperties} from "../../basics/select/select.types";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {HTMLTag} from "../../../types/htmlElement.types";
 import {TurboSelectElementConfig} from "../../basics/selectElement/selectElement.types";
 

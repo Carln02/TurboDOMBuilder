@@ -3,9 +3,9 @@ import "./button.css";
 import {richElement, TurboRichElement} from "../richElement/richElement";
 import {TurboRichElementProperties} from "../richElement/richElement.types";
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidTag} from "../../../types/element.types";
 
 /**

@@ -1,7 +1,7 @@
-import {TurboViewProperties} from "../core/core.types";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
+import {TurboView} from "../view/view";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboViewProperties} from "../view/view.types";
 
 /**
  * @type {TurboControllerProperties}

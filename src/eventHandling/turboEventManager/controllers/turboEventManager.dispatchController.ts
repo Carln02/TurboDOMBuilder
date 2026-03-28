@@ -4,7 +4,7 @@ import {ClickMode} from "../turboEventManager.types";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
 import {turbo} from "../../../turboFunctions/turboFunctions";
-import {TurboController} from "../../../mvc/logic/controller";
+import {TurboController} from "../../../mvc/controller/controller";
 import {TurboKeyEventName} from "../../../types/eventNaming.types";
 import {Propagation} from "../../../turboFunctions/event/event.types";
 

@@ -1,16 +1,16 @@
 import {TurboInteractorProperties} from "./interactor/interactor.types";
-import {TurboControllerProperties} from "./logic/logic.types";
-import {TurboViewProperties} from "./core/core.types";
-import {TurboView} from "./core/view";
-import {TurboModel} from "./core/model";
-import {TurboHandler} from "./logic/handler";
-import {TurboController} from "./logic/controller";
+import {TurboView} from "./view/view";
+import {TurboHandler} from "./handler/handler";
 import {TurboInteractor} from "./interactor/interactor";
-import {TurboEmitter} from "./core/emitter";
 import {TurboTool} from "./tool/tool";
 import {TurboToolProperties} from "./tool/tool.types";
 import {TurboSubstrate} from "./substrate/substrate";
 import {TurboSubstrateProperties} from "./substrate/substrate.types";
+import {TurboModel} from "./model/model";
+import {TurboEmitter} from "./emitter/emitter";
+import {TurboViewProperties} from "./view/view.types";
+import {TurboController} from "./controller/controller";
+import {TurboControllerProperties} from "./controller/controller.types";
 
 /**
  * @group MVC

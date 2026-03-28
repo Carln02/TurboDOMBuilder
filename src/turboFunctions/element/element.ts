@@ -3,7 +3,7 @@ import {TurboSelector} from "../turboSelector";
 import {CloneElementOptions, FeedforwardProperties, TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
 import {Mvc} from "../../mvc/mvc";
-import {TurboModel} from "../../mvc/core/model";
+import {TurboModel} from "../../mvc/model/model";
 import {MvcGenerationProperties} from "../../mvc/mvc.types";
 import {ValidElement, ValidTag} from "../../types/element.types";
 import {DefaultEventName} from "../../types/eventNaming.types";
@@ -55,7 +55,8 @@ export function setupElementFunctions() {
                 try {
                     mvc[property] = value;
                     if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                        mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
+                        mvc["model"].setDataWithoutInitializing(properties.data);
+                        mvc["model"].id = properties.dataId;
                     }
                 } catch {
                 }
@@ -302,6 +303,7 @@ export function setupElementFunctions() {
         this: TurboSelector<ValidElement<Tag>>,
         properties: FeedforwardProperties = {}
     ): ValidElement<Tag> {
+        if (properties.removeOnPointerRelease === undefined) properties.removeOnPointerRelease = true;
         if (!this.element) return;
         const type = properties?.type ?? "___DEFAULT___";
         const feedforwardElements = utils.data(this.element).feedforwardElements;

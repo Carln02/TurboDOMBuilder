@@ -1,5 +1,5 @@
-import {TurboModel} from "../core/model";
 import {initializeEffects} from "../../decorators/reactivity/reactivity";
+import {TurboModel} from "../model/model";
 
 /**
  * @class TurboHandler

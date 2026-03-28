@@ -1,11 +1,11 @@
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
 import {TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {Open, Side} from "../../../types/enums.types";
 import {PartialRecord} from "../../../types/basic.types";
 

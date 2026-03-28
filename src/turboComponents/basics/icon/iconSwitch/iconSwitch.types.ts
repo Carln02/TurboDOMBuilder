@@ -2,9 +2,9 @@ import {TurboIconProperties} from "../icon.types";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboIcon} from "../icon";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
-import {TurboModel} from "../../../../mvc/core/model";
-import {TurboView} from "../../../../mvc/core/view";
-import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboModel} from "../../../../mvc/model/model";
+import {TurboView} from "../../../../mvc/view/view";
+import {TurboEmitter} from "../../../../mvc/emitter/emitter";
 import {TurboIconSwitch} from "./iconSwitch";
 
 /**

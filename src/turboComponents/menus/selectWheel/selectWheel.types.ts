@@ -1,11 +1,11 @@
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {Direction, Range} from "../../../types/enums.types";
 import {PartialRecord} from "../../../types/basic.types";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 
 /**
  * @group Components

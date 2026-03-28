@@ -3,10 +3,10 @@ import {TurboIconSwitchProperties} from "./iconSwitch.types";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
 import {define} from "../../../../decorators/define/define";
-import {TurboView} from "../../../../mvc/core/view";
-import {TurboModel} from "../../../../mvc/core/model";
+import {TurboView} from "../../../../mvc/view/view";
+import {TurboModel} from "../../../../mvc/model/model";
 import {auto} from "../../../../decorators/auto/auto";
-import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../../mvc/emitter/emitter";
 import {TurboIconConfig} from "../icon.types";
 import {OnOff} from "../../../../types/enums.types";
 

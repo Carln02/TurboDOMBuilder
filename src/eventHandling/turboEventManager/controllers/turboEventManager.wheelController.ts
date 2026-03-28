@@ -2,7 +2,7 @@ import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {InputDevice} from "../turboEventManager.types";
 import {TurboWheelEvent} from "../../events/turboWheelEvent";
-import {TurboController} from "../../../mvc/logic/controller";
+import {TurboController} from "../../../mvc/controller/controller";
 import {Point} from "../../../turboComponents/datatypes/point/point";
 import {TurboEventName, TurboEventNameEntry} from "../../../types/eventNaming.types";
 

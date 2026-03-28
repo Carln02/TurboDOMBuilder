@@ -1,4 +1,4 @@
-import {TurboController} from "../../../mvc/logic/controller";
+import {TurboController} from "../../../mvc/controller/controller";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ActionMode, ClickMode, InputDevice} from "../turboEventManager.types";

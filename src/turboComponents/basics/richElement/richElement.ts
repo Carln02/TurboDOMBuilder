@@ -1,14 +1,14 @@
 import {icon, TurboIcon} from "../icon/icon";
 import {TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {define} from "../../../decorators/define/define";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {auto} from "../../../decorators/auto/auto";
 import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement, ValidTag} from "../../../types/element.types";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 

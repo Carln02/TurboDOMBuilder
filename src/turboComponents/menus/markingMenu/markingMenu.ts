@@ -1,8 +1,8 @@
 import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
-import {TurboView} from "../../../mvc/core/view";
+import {TurboView} from "../../../mvc/view/view";
 import {define} from "../../../decorators/define/define";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboModel} from "../../../mvc/model/model";
 import {auto} from "../../../decorators/auto/auto";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {TurboElement} from "../../../turboElement/turboElement";

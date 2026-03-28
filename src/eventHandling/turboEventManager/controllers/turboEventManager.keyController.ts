@@ -1,7 +1,7 @@
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {TurboKeyEvent} from "../../events/turboKeyEvent";
 import {TurboEventManager} from "../turboEventManager";
-import {TurboController} from "../../../mvc/logic/controller";
+import {TurboController} from "../../../mvc/controller/controller";
 import {TurboKeyEventName} from "../../../types/eventNaming.types";
 
 export class TurboEventManagerKeyController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {

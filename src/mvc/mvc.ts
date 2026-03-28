@@ -1,17 +1,18 @@
-import {TurboEmitter} from "./core/emitter";
-import {TurboModel} from "./core/model";
-import {TurboView} from "./core/view";
+import {TurboModel} from "./model/model";
+import {TurboView} from "./view/view";
 import {MvcGenerationProperties, MvcManyInstancesOrConstructors, MvcProperties} from "./mvc.types";
 import {TurboInteractor} from "./interactor/interactor";
-import {TurboController} from "./logic/controller";
-import {TurboHandler} from "./logic/handler";
+import {TurboHandler} from "./handler/handler";
 import {TurboTool} from "./tool/tool";
 import {TurboSubstrate} from "./substrate/substrate";
-import {TurboViewProperties} from "./core/core.types";
 import {TurboInteractorProperties} from "./interactor/interactor.types";
 import {TurboToolProperties} from "./tool/tool.types";
 import {TurboSubstrateProperties} from "./substrate/substrate.types";
-import {TurboControllerProperties} from "./logic/logic.types";
+import {TurboEmitter} from "./emitter/emitter";
+import {TurboController} from "./controller/controller";
+import {TurboViewProperties} from "./view/view.types";
+import {TurboControllerProperties} from "./controller/controller.types";
+import {DataKeyType} from "./model/model.types";
 
 /**
  * @class Mvc
@@ -80,7 +81,7 @@ class Mvc<
     }
 
     public set model(model: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType)) {
-        this.model?.keyChangedCallback.remove(this.emitterFireCallback);
+        this.model?.onKeyChanged.remove(this.emitterFireCallback);
         this._model = this.generateInstance(model);
         this._model.handlers = this._handlers;
         this._model.addHandler = (handler: TurboHandler) => this.addHandler(handler);
@@ -184,11 +185,11 @@ class Mvc<
      * @description The ID of the main data block (if any) attached to the model (if any).
      */
     public get dataId(): string {
-        return this.model?.dataId;
+        return this.model?.id;
     }
 
     public set dataId(value: string) {
-        if (this.model) this.model.dataId = value;
+        if (this.model) this.model.id = value;
     }
 
     /**
@@ -199,14 +200,14 @@ class Mvc<
     }
 
     public set dataIndex(value: number) {
-        if (this.model) this.model.dataId = value.toString();
+        if (this.model) this.model.id = value.toString();
     }
 
     /**
      * @description The size (number) of the main data block (if any) attached to the model (if any).
      */
     public get dataSize(): number {
-        return this.model?.getSize?.();
+        return this.model?.size;
     }
 
     /**
@@ -345,7 +346,7 @@ class Mvc<
         }
 
         if (!this._emitter) this.emitter = new TurboEmitter() as EmitterType;
-        if (properties.data && this.model) this.model.setBlock(properties.data, undefined, undefined, false);
+        if (properties.data && this.model) this.model.setDataWithoutInitializing(properties.data);
         if (properties.initialize === undefined || properties.initialize) this.initialize();
     }
 
@@ -495,8 +496,8 @@ class Mvc<
      * view, model, or emitter) so every piece stays in sync.
      */
     protected linkPieces() {
-        if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
-            this.model.keyChangedCallback.add(this.emitterFireCallback);
+        if (this.model && !this.model.onKeyChanged.has(this.emitterFireCallback)) {
+            this.model.onKeyChanged.add(this.emitterFireCallback);
         }
 
         if (this.emitter) this.emitter.model = this.model;
@@ -571,12 +572,11 @@ class Mvc<
      * @description Callback function wired to the model's `keyChangedCallback` that forwards
      * key/block change notifications into the emitter. It is stored so it can be removed and reattached
      * when the model changes.
-     * @param {string} keyName - The block key name that changed.
-     * @param {any} blockKey - The specific block key that changed.
-     * @param {...any} args - Additional arguments forwarded from the model.
+     * @param value
+     * @param keys
      */
-    private emitterFireCallback = (keyName: string, blockKey: any, ...args: any[]) =>
-        this.emitter?.fireWithBlock(keyName, blockKey, ...args);
+    private emitterFireCallback = (value: any, ...keys: DataKeyType[]) =>
+        this.emitter?.fireKey(value, ...keys);
 
     /**
      * @protected

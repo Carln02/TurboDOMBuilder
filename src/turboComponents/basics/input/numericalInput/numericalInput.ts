@@ -1,9 +1,9 @@
 import {turboInput, TurboInput} from "../input";
 import {TurboInputProperties} from "../input.types";
 import {define} from "../../../../decorators/define/define";
-import {TurboView} from "../../../../mvc/core/view";
-import {TurboModel} from "../../../../mvc/core/model";
-import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboView} from "../../../../mvc/view/view";
+import {TurboModel} from "../../../../mvc/model/model";
+import {TurboEmitter} from "../../../../mvc/emitter/emitter";
 import {element} from "../../../../elementCreation/element";
 import {TurboNumericalInputProperties} from "./numericalInput.types";
 

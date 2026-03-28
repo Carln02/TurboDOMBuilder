@@ -1,10 +1,9 @@
-import {TurboControllerProperties} from "../logic/logic.types";
-import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {Turbo} from "../../turboFunctions/turboFunctions.types";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
+import {TurboView} from "../view/view";
 import {MakeToolOptions} from "../../turboFunctions/tool/tool.types";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboControllerProperties} from "../controller/controller.types";
+import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 
 /**
  * @type {TurboToolProperties}

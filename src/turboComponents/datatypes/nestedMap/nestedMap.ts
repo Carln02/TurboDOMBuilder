@@ -1,294 +1,416 @@
-import {alphabeticalSorting, isUndefined} from "../../../utils/dataManipulation/misc";
-import {ScopedKey} from "./nestedMap.types";
+import {alphabeticalSorting} from "../../../utils/dataManipulation/misc";
 import {stringify} from "../../../utils/dataManipulation/string";
+
+class TurboNestedMapNode<KeyType, ValueType> extends Map<KeyType, ValueType> {}
 
 /**
  * @class TurboNestedMap
  * @group Components
  * @category TurboNestedMap
  *
- * @template ValueType - The type of the nested map's values.
- * @template KeyType - The per-value key type.
- * @template BlockKeyType - The block-grouping key type.
+ * @description A map of arbitrary nesting depth, addressed via `...keys` paths.
+ *
+ * @template ValueType - The type of stored values.
+ * @template KeyType - The type of keys at each level of the path. Defaults to `string | symbol | number`.
  */
-class TurboNestedMap<
-    ValueType = any,
-    KeyType = any,
-    BlockKeyType = any,
-> {
-    protected readonly nestedMap: Map<BlockKeyType, Map<KeyType, ValueType>> = new Map();
+class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
+    protected readonly nestedMap: TurboNestedMapNode<KeyType, any> = new TurboNestedMapNode();
+
+    /*
+     *
+     * GET
+     *
+     */
 
     /**
      * @function get
-     * @description Retrieve the value at the given `key` within the optional `blockKey`.
-     * @param {KeyType} key - Item key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {ValueType} - The associated value, or `undefined`.
+     * @description Retrieve the value at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
      */
-    public get(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey): ValueType {
-        return this.nestedMap.get(blockKey)?.get(key);
+    public get(...keys: KeyType[]): ValueType {
+        let node: any = this.nestedMap;
+        for (const key of keys) {
+            if (!(node instanceof TurboNestedMapNode)) return;
+            node = node.get(key);
+        }
+        return node;
     }
 
     /**
-     * @function set
-     * @description Set the given value at the given `key` and optional `blockKey`.
-     * @param {ValueType} value - The value to set.
-     * @param {KeyType} key - The key to set.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+     * @function getFlat
+     * @description Retrieve the value at the given flat key.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
      */
-    public set(value: ValueType, key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey) {
-        let block = this.nestedMap.get(blockKey);
-        if (!block) {
-            this.nestedMap.set(blockKey, new Map());
-            block = this.nestedMap.get(blockKey);
-        }
-        block?.set(key, value);
+    public getFlat(flatKey: number | string): ValueType {
+        const keys = this.scopeKey(flatKey);
+        if (keys.length) return this.get(...keys) as ValueType;
     }
 
     /**
      * @function getKey
-     * @description Find the first (key, blockKey) pair for a given value.
+     * @description Find the key path of the first occurrence of the given value.
      * @param {ValueType} value - The value to locate.
-     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
+     * @returns {KeyType[] | undefined} The key path, or `undefined` if not found.
      */
-    public getKey(value: ValueType): ScopedKey<KeyType, BlockKeyType> {
-        for (const [blockKey, map] of this.nestedMap.entries()) {
-            for (const [key, entry] of map.entries()) {
-                if (entry === value) return {blockKey, key};
-            }
-        }
+    public getKey(value: ValueType): KeyType[] {
+        return this.findPaths(this.nestedMap, value, false)[0];
     }
 
     /**
      * @function getKeys
-     * @description Find all (key, blockKey) pairs for a given value.
+     * @description Find the key paths of all occurrences of the given value.
      * @param {ValueType} value - The value to locate.
-     * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
+     * @returns {KeyType[][]} Array of key paths.
      */
-    public getKeys(value: ValueType): ScopedKey<KeyType, BlockKeyType>[] {
-        const result: ScopedKey<KeyType, BlockKeyType>[] = [];
-        for (const [blockKey, map] of this.nestedMap.entries()) {
-            for (const [key, entry] of map.entries()) {
-                if (entry === value) result.push({blockKey, key});
-            }
-        }
-        return result;
+    public getKeys(value: ValueType): KeyType[][] {
+        return this.findPaths(this.nestedMap, value);
     }
 
     /**
      * @function getFlatKey
-     * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
+     * @description Return the flat key of the first occurrence of the given value.
      * @param {ValueType} value - The value to query.
-     * @returns {string | number} - Flattened key, or undefined when value not found.
+     * @returns {string | number | undefined} The flat key, or `undefined` if not found.
      */
     public getFlatKey(value: ValueType): string | number {
-        const scoped = this.getKey(value);
-        if (!scoped) return;
-        return this.flattenKey(scoped.key, scoped.blockKey);
+        const path = this.findPaths(this.nestedMap, value, false)[0];
+        if (!path) return undefined;
+        return this.flattenKey(...path);
+    }
+
+    /*
+     *
+     * SET
+     *
+     */
+
+    /**
+     * @function set
+     * @description Store a value at the given key path. Intermediate nodes are created automatically.
+     * @param {ValueType} value - The value to store.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    public set(value: ValueType, ...keys: KeyType[]) {
+        if (!keys.length) return;
+        let node = this.nestedMap;
+        for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!node.has(key) || !(node.get(key) instanceof TurboNestedMapNode)) node.set(key, new TurboNestedMapNode());
+            node = node.get(key);
+        }
+        node.set(keys[keys.length - 1], value);
     }
 
     /**
-     * @function getFromFlatKey
-     * @description Get the value at the given `flatKey`.
-     * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
-     * @returns {ValueType} - The value, or undefined if not found.
+     * @function setFlat
+     * @description Store a value at the given flat key.
+     * @param {ValueType} value - The value to store.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
      */
-    public getFromFlatKey(flatKey: number | string): ValueType {
-        const scoped = this.scopeKey(flatKey);
-        if (isUndefined(scoped.blockKey) || isUndefined(scoped.key)) return;
-        return this.get(scoped.key, scoped.blockKey);
+    public setFlat(value: ValueType, flatKey: number | string) {
+        const keys = this.scopeKey(flatKey);
+        if (keys.length) this.set(value, ...keys);
+    }
+
+    /*
+     *
+     * HAS
+     *
+     */
+
+    /**
+     * @function has
+     * @description Check whether an entry exists at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {boolean}
+     */
+    public has(...keys: KeyType[]): boolean {
+        if (!keys.length) return false;
+        const parent = this.get(...keys.slice(0, -1));
+        if (!(parent instanceof TurboNestedMapNode)) return false;
+        return parent.has(keys[keys.length - 1]);
     }
 
     /**
-     * @function getEntriesForBlock
-     * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
-     * key values (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
+     * @function hasFlat
+     * @description Check whether an entry exists at the given flat key.
+     * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @returns {boolean}
      */
-    public getEntriesForBlock(blockKey: BlockKeyType = this.defaultBlockKey): [KeyType, ValueType][] {
-        const block = this.nestedMap.get(blockKey);
-        if (!block) return [];
-        return Array.from(block.entries()).sort((a, b) =>
-            alphabeticalSorting(a[0] as any, b[0] as any));
+    public hasFlat(flatKey: number | string): boolean {
+        const keys = this.scopeKey(flatKey);
+        return keys.length ? this.has(...keys) : false;
     }
 
     /**
-     * @function getKeysForBlock
-     * @description Return the keys for a block alphabetically sorted (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {KeyType[]} - Array of keys.
+     * @function hasValue
+     * @description Check whether the given value exists anywhere in the map.
+     * @param {ValueType} value - The value to look for.
+     * @returns {boolean}
      */
-    public getKeysForBlock(blockKey: BlockKeyType = this.defaultBlockKey): KeyType[] {
-        return this.getEntriesForBlock(blockKey).map(entry => entry[0]);
+    public hasValue(value: ValueType): boolean {
+        return !!this.getKey(value);
     }
 
-    /**
-     * @function getValuesForBlock
-     * @description Return the values for a block alphabetically sorted by their keys (if compatible).
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {ValueType[]} - Array of values.
+    /*
+     *
+     * REMOVE
+     *
      */
-    public getValuesForBlock(blockKey: BlockKeyType = this.defaultBlockKey): ValueType[] {
-        return this.getEntriesForBlock(blockKey).map(entry => entry[1]);
-    }
-
-    /**
-     * @function getAllKeys
-     * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
-     * (if compatible).
-     * @returns {KeyType[]} - Flattened list of all keys.
-     */
-    public getAllKeys(): KeyType[] {
-        return Array.from(this.nestedMap.keys())
-            .sort(alphabeticalSorting as any)
-            .flatMap(blockKey => this.getKeysForBlock(blockKey));
-    }
-
-    /**
-     * @function getAllValues
-     * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
-     * (if compatible).
-     * @returns {ValueType[]} - Flattened list of all values.
-     */
-    public getAllValues(): ValueType[] {
-        return Array.from(this.nestedMap.keys())
-            .sort(alphabeticalSorting as any)
-            .flatMap(blockKey => this.getValuesForBlock(blockKey));
-    }
-
-    /**
-     * @function hasKey
-     * @description Check whether a value exists at the given `key` inside `blockKey`.
-     * @param {KeyType} key - The targeted key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {boolean} Whether a value exists.
-     */
-    public hasKey(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey): boolean {
-        return this.nestedMap.get(blockKey)?.has(key) ?? false;
-    }
-
-    /**
-     * @function hasBlock
-     * @description Check whether a block exists at `blockKey`.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {boolean} Whether a block exists.
-     */
-    public hasBlock(blockKey: BlockKeyType): boolean {
-        return this.nestedMap.has(blockKey);
-    }
-
-    /**
-     * @function getBlockSize
-     * @description Get the number of entries inside the target block.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {number} The size of the block.
-     */
-    public getBlockSize(blockKey: BlockKeyType = this.defaultBlockKey): number {
-        return this.nestedMap.get(blockKey)?.size ?? 0;
-    }
-
-    /**
-     * @function removeKey
-     * @description Remove the entry at the given `key` inside `blockKey`.
-     * @param {KeyType} key - The key to remove.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     */
-    public removeKey(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey) {
-        this.nestedMap.get(blockKey)?.delete(key);
-    }
-
 
     /**
      * @function remove
-     * @description Remove the first entry with the given value.
-     * @param {ValueType} value - The value to remove.
+     * @description Remove the entry at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    public remove(value: ValueType) {
-        const pos = this.getKey(value);
-        if (pos) this.removeKey(pos.key, pos.blockKey);
+    public remove(...keys: KeyType[]): void {
+        if (!keys.length) return;
+        const parent = this.get(...keys.slice(0, -1));
+        if (parent instanceof TurboNestedMapNode) parent.delete(keys[keys.length - 1]);
     }
 
     /**
-     * @function clear
-     * @description Remove all entries and reset internal state.
+     * @function removeValue
+     * @description Remove the first occurrence of the given value.
+     * @param {ValueType} value - The value to remove.
      */
-    public clear() {
-        for (const [blockKey, map] of this.nestedMap.entries()) {
-            for (const key of map.keys()) this.removeKey(key, blockKey);
-        }
-        this.nestedMap.clear();
+    public removeValue(value: ValueType): void {
+        const path = this.findPaths(this.nestedMap, value, false)[0];
+        if (path) this.remove(...path);
     }
+
+    /**
+     * @function removeValues
+     * @description Remove all occurrences of the given value.
+     * @param {ValueType} value - The value to remove.
+     */
+    public removeValues(value: ValueType): void {
+        this.findPaths(this.nestedMap, value).forEach(path => this.remove(...path));
+    }
+
+    /*
+     *
+     * ENTRIES
+     *
+     */
+
+    /**
+     * @function getEntriesAt
+     * @description Return all leaf `[key, value]` pairs under the given path, sorted alphabetically by key.
+     * Pass no keys to get all leaf entries in the map.
+     * @param {...KeyType[]} keys - Path to the subtree root.
+     * @returns {[KeyType, ValueType][]}
+     */
+    public getEntriesAt(...keys: KeyType[]): [KeyType, ValueType][] {
+        return this.getPathsAt(...keys).map(path => [path[path.length - 1], this.get(...path)]);
+    }
+
+    /**
+     * @description All leaf `[key, value]` pairs in the nested map, sorted alphabetically by key.
+     */
+    public get entries(): [KeyType, ValueType][] {
+        return this.getEntriesAt();
+    }
+
+    /*
+     *
+     * KEYS
+     *
+     */
+
+    /**
+     * @function getKeysAt
+     * @description Return all leaf keys under the given path, sorted alphabetically.
+     * Pass no keys to get all leaf keys in the map.
+     * @param {...KeyType[]} keys - Path to the parent node.
+     * @returns {KeyType[]}
+     */
+    public getKeysAt(...keys: KeyType[]): KeyType[] {
+        return this.getEntriesAt(...keys).map(e => e[0]);
+    }
+
+    /**
+     * @description All leaf keys in the nested map, sorted alphabetically.
+     */
+    public get keys(): KeyType[] {
+        return this.getKeysAt();
+    }
+
+    /*
+     *
+     * VALUES
+     *
+     */
+
+    /**
+     * @function getValuesAt
+     * @description Return all leaf values under the given path, sorted alphabetically by key.
+     * Pass no keys to get all leaf values in the map.
+     * @param {...KeyType[]} keys - Path to the parent node.
+     * @returns {ValueType[]}
+     */
+    public getValuesAt(...keys: KeyType[]): ValueType[] {
+        return this.getEntriesAt(...keys).map(e => e[1]);
+    }
+
+    /**
+     * @description All leaf values in the nested map, sorted alphabetically by key.
+     */
+    public get values(): ValueType[] {
+        return this.getValuesAt();
+    }
+
+    /*
+     *
+     * PATHS
+     *
+     */
+
+    /**
+     * @function getPathsAt
+     * @description Return all leaf key paths under the given path.
+     * Pass no keys to get all leaf paths in the map.
+     * @param {...KeyType[]} keys - Path to the subtree root.
+     * @returns {KeyType[][]}
+     */
+    public getPathsAt(...keys: KeyType[]): KeyType[][] {
+        return this.findPaths(this.get(...keys) as Map<KeyType, any>);
+    }
+
+    /**
+     * @description All leaf key paths in the map.
+     */
+    public get paths(): KeyType[][] {
+        return this.getPathsAt();
+    }
+
+    /*
+     *
+     * SIZE
+     *
+     */
+
+    /**
+     * @function getSizeAt
+     * @description Return the number of leaf entries under the given path.
+     * Pass no keys to get the number of all leaf entries.
+     * @param {...KeyType[]} keys - Path to the root.
+     * @returns {number}
+     */
+    public getSizeAt(...keys: KeyType[]): number {
+        return this.getPathsAt(...keys).length;
+    }
+
+    /**
+     * @description Number of all leaf entries in the nested map.
+     */
+    public get size(): number {
+        return this.getSizeAt();
+    }
+
+    /*
+     *
+     * SCOPE AND FLAT UTILS
+     *
+     */
 
     /**
      * @function flattenKey
-     * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
-     * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
-     * @param {KeyType} key - Item key.
-     * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-     * @returns {number | string} - The flattened key.
+     * @description Serialize a key path into a single flat key.
+     * - Fully numeric paths produce a numeric global leaf index.
+     * - All other paths produce a `"k0|k1|k2|..."` string.
+     * @param {...KeyType[]} keys - The key path to serialize.
+     * @returns {string | number | undefined} The flat key, or `undefined` if the path is invalid.
      */
-    public flattenKey(key: KeyType, blockKey: BlockKeyType = this.defaultBlockKey): string | number {
-        const compatibleBlockKey = this.getFlatCompatibleKey(blockKey);
-        const compatibleKey = this.getFlatCompatibleKey(key);
+    public flattenKey(...keys: KeyType[]): string | number {
+        if (!keys.length) return;
 
-        if (compatibleBlockKey === undefined) return;
-        if (typeof compatibleBlockKey === "string") return compatibleBlockKey + "|" + compatibleKey.toString();
+        const compatible = keys.map(k => this.getFlatCompatibleKey(k));
+        if (compatible.some(k => k === undefined)) return;
 
-        let globalIndex = 0;
-        for (const bk of Array.from(this.nestedMap.keys()).sort(alphabeticalSorting as any)) {
-            if (bk === blockKey) break;
-            globalIndex += this.getEntriesForBlock(bk).length;
+        if (compatible.every(k => typeof k === "number")) {
+            let index = 0;
+            const allLeafPaths = this.findPaths(this.nestedMap);
+            for (const path of allLeafPaths) {
+                if (path.length === keys.length && path.every((k, i) => k === keys[i])) return index;
+                index++;
+            }
         }
-        return globalIndex + Number(compatibleKey);
+
+        return compatible.map(k => k!.toString()).join("|");
     }
 
     /**
      * @function scopeKey
-     * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
-     * @param {number | string} flatKey - Flattened key or global index.
-     * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
+     * @description Convert a flat key back into a key path. Reverses {@link flattenKey}.
+     * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
+     * - A numeric global leaf index becomes the corresponding numeric path.
+     * @param {number | string} flatKey - The flat key to convert.
+     * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
      */
-    public scopeKey(flatKey: number | string): ScopedKey<KeyType, BlockKeyType> {
+    public scopeKey(flatKey: number | string): KeyType[] {
         if (typeof flatKey === "string") {
-            const split = flatKey.toString().split("|");
-            if (split.length < 2) return {};
-            return {blockKey: split[0], key: split[1]} as ScopedKey<KeyType, BlockKeyType>;
+            const parts = flatKey.split("|") as any;
+            return parts.length >= 1 ? parts : undefined;
         }
 
-        const blockKeys = Array.from(this.nestedMap.keys()).sort(alphabeticalSorting as any);
         if (typeof flatKey === "number") {
-            if (flatKey < 0) return {blockKey: blockKeys[0] ?? 0, key: 0} as ScopedKey<KeyType, BlockKeyType>;
-            let index: number = flatKey;
-            for (const blockKey of blockKeys) {
-                const size = this.getEntriesForBlock(blockKey).length;
-                if (index < size) return {blockKey, key: index as KeyType};
-                index -= size;
-            }
+            const allLeafPaths = this.findPaths(this.nestedMap);
+            if (flatKey < 0) return allLeafPaths[0];
+            if (flatKey >= allLeafPaths.length) return allLeafPaths[allLeafPaths.length - 1];
+            return allLeafPaths[flatKey];
         }
 
-        const lastBlockKey = blockKeys[blockKeys.length - 1];
-        return {blockKey: lastBlockKey, key: this.getEntriesForBlock(lastBlockKey).length as KeyType};
+        return undefined;
     }
 
     /**
-     * @property defaultBlockKey
-     * @protected
-     * @description Default block key used when none is supplied. It returns the first blockKey if present,
-     * otherwise returns the sentinel `"__default__"`.
-     * @returns {BlockKeyType}
+     * @function clear
+     * @description Remove all entries from the map.
      */
-    protected get defaultBlockKey(): BlockKeyType {
-        const key = Array.from(this.nestedMap.keys())?.[0];
-        if (!isUndefined(key)) return key;
-        return "__default__" as any;
+    public clear(): void {
+        this.nestedMap.clear();
     }
 
-    protected getFlatCompatibleKey(key: BlockKeyType | KeyType): string | number {
+    /*
+     *
+     * PROTECTED
+     *
+     */
+
+    protected findPaths(
+        node: Map<KeyType, any>, target?: ValueType, allPaths: boolean = true, prefix: KeyType[] = []
+    ): KeyType[][] {
+        if (!node || !(node instanceof TurboNestedMapNode)) return [];
+
+        const results: KeyType[][] = [];
+        const entries = Array.from(node.entries())
+            .sort((a, b) => alphabeticalSorting(a[0] as any, b[0] as any));
+
+        for (const [key, value] of entries) {
+            const path = [...prefix, key];
+            if (value instanceof TurboNestedMapNode) {
+                const nested = this.findPaths(value, target, allPaths, path);
+                if (!allPaths && target !== undefined && nested.length) return nested;
+                else results.push(...nested);
+            } else {
+                if (allPaths && target === undefined) results.push(path);
+                else if (value === target) {
+                    results.push(path);
+                    if (!allPaths) return results;
+                }
+            }
+        }
+        return results;
+    }
+
+    protected getFlatCompatibleKey(key: any): string | number | undefined {
         if (typeof key === "number" || typeof key === "string") return key;
-        return stringify(key);
+        const s = stringify(key);
+        return s !== undefined ? s : undefined;
     }
-
 }
 
 export {TurboNestedMap};

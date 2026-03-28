@@ -1,6 +1,5 @@
-import {TurboModel} from "./model";
-import {TurboEmitter} from "./emitter";
-import {TurboDataBlock} from "../../turboComponents/data/dataBlock/dataBlock";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
 
 /**
  * @group MVC

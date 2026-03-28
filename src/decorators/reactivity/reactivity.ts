@@ -2,7 +2,7 @@ import {ReactivityUtils} from "./reactivity.utils";
 import {SignalBox, SignalEntry} from "./reactivity.types";
 import {SignalUtils} from "./reactivity.signal";
 import {EffectUtils} from "./reactivity.effect";
-import {TurboModel} from "../../mvc/core/model";
+import {TurboModel} from "../../mvc/model/model";
 import {isUndefined} from "../../utils/dataManipulation/misc";
 
 const utils = new ReactivityUtils();

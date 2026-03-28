@@ -1,8 +1,8 @@
 import {TurboIconProperties} from "../icon.types";
 import {TurboIconToggle} from "./iconToggle";
-import {TurboView} from "../../../../mvc/core/view";
-import {TurboModel} from "../../../../mvc/core/model";
-import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboView} from "../../../../mvc/view/view";
+import {TurboModel} from "../../../../mvc/model/model";
+import {TurboEmitter} from "../../../../mvc/emitter/emitter";
 
 /**
  * @group Components

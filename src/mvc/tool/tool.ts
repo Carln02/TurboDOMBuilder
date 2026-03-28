@@ -1,12 +1,12 @@
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
+import {TurboView} from "../view/view";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {TurboEmitter} from "../core/emitter";
 import {TurboToolProperties} from "./tool.types";
-import {TurboController} from "../logic/controller";
 import {turbo} from "../../turboFunctions/turboFunctions";
 import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager.types";
 import {DefaultEventName, DefaultEventNameEntry} from "../../types/eventNaming.types";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboModel} from "../model/model";
+import {TurboController} from "../controller/controller";
 
 /**
  * @class TurboTool

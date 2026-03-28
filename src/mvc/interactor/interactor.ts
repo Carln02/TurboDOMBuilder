@@ -1,10 +1,10 @@
-import {TurboModel} from "../core/model";
 import {TurboInteractorProperties} from "./interactor.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {TurboView} from "../core/view";
-import {TurboEmitter} from "../core/emitter";
-import {TurboController} from "../logic/controller";
+import {TurboView} from "../view/view";
 import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboModel} from "../model/model";
+import {TurboController} from "../controller/controller";
 
 /**
  * @class TurboInteractor

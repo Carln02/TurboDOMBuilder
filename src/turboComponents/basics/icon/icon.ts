@@ -1,14 +1,14 @@
 import {TurboIconProperties, TurboIconConfig} from "./icon.types";
 import {$} from "../../../turboFunctions/turboFunctions";
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {observe} from "../../../decorators/observe/observe";
 import {auto} from "../../../decorators/auto/auto";
 import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {element} from "../../../elementCreation/element";
 import {cache} from "../../../decorators/cache/cache";
 import {isUndefined} from "../../../utils/dataManipulation/misc";
@@ -172,6 +172,17 @@ class TurboIcon<
         $(this.element).destroy();
         this.element = null;
     }
+
+    // public static create<
+    //     ViewType extends TurboView = TurboView<any, any>,
+    //     DataType extends object = object,
+    //     ModelType extends TurboModel<DataType> = TurboModel,
+    //     EmitterType extends TurboEmitter = TurboEmitter
+    // >(
+    //     properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>
+    // ): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
+    //     return super.create(properties);
+    // }
 }
 
 /**

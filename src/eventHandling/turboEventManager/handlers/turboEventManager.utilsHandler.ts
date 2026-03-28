@@ -1,7 +1,7 @@
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ClickMode} from "../turboEventManager.types";
 import {$} from "../../../turboFunctions/turboFunctions";
-import {TurboHandler} from "../../../mvc/logic/handler";
+import {TurboHandler} from "../../../mvc/handler/handler";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 
 export class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManagerModel> {

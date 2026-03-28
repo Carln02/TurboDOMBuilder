@@ -1,9 +1,9 @@
-import {TurboControllerProperties} from "../logic/logic.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
+import {TurboView} from "../view/view";
 import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboControllerProperties} from "../controller/controller.types";
 
 /**
  * @type {TurboInteractorProperties}

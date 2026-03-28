@@ -1,42 +1,88 @@
-import { describe, it, expect } from "vitest";
+import {describe, it, expect} from "vitest";
 import {TurboTool} from "../tool/tool";
-import {TurboView} from "../core/view";
-import {TurboEmitter} from "../core/emitter";
-import {TurboModel} from "../core/model";
+import {TurboController} from "../controller/controller";
+import {TurboView} from "../view/view";
 import {div} from "../../elementCreation/basicElements";
-import {$} from "../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../turboFunctions/turboFunctions";
 import {behavior} from "../../decorators/listener/listener";
+import {TurboModel} from "../model/model";
+import {TurboEmitter} from "../emitter/emitter";
 
 class DemoTool extends TurboTool {
-    rand = 0;
-    @behavior() click(e, target) {this.rand++;}
+    public rand = 0;
+
+    @behavior() click(_e: any, _target: any): void { this.rand++; }
 }
 
-describe("TurboTool (smoke)", () => {
-    it("constructs and initialize() runs when toolName is set", () => {
-        const element = div({parent: document.body});
-        const model = new TurboModel<any>({});
-        const emitter = new TurboEmitter(model);
-        const view = new TurboView({ element, model, emitter });
+class MinimalTool extends TurboTool {}
 
-        const tool = new DemoTool({
-            element, view, model, emitter,
-            toolName: "brush"
-        });
+describe("TurboTool", () => {
+    it("is a subclass of TurboController", () => {
+        const element = div({parent: document.body});
+        const tool = new MinimalTool({element});
+        expect(tool).toBeInstanceOf(TurboController);
+    });
+
+    it("constructor assigns element, view, model, emitter, toolName", () => {
+        const element = div({parent: document.body});
+        const model = new TurboModel({data: {}});
+        const emitter = new TurboEmitter(model);
+        const view = new TurboView({element, model, emitter} as any);
+
+        const tool = new MinimalTool({element, view, model, emitter, toolName: "brush"} as any);
+
+        expect(tool.element).toBe(element);
+        expect(tool.view).toBe(view);
+        expect(tool.model).toBe(model);
+        expect(tool.emitter).toBe(emitter);
+        expect(tool.toolName).toBe("brush");
+    });
+
+    it("toolName defaults to undefined when not provided", () => {
+        const element = div({parent: document.body});
+        const tool = new MinimalTool({element} as any);
+        expect(tool.toolName).toBeUndefined();
+    });
+
+    it("key property is set from properties", () => {
+        const element = div({parent: document.body});
+        const tool = new MinimalTool({element, key: "b"} as any);
+        expect(tool.key).toBe("b");
+    });
+
+    it("initialize() does not throw when toolName is undefined", () => {
+        const element = {};
+        const tool = new MinimalTool({element} as any);
+        expect(() => tool.initialize()).not.toThrow();
+    });
+
+    it("initialize() does not throw when toolName is set", () => {
+        const element = div({parent: document.body});
+        const model = new TurboModel({data: {}});
+        const emitter = new TurboEmitter(model);
+        const view = new TurboView({element, model, emitter} as any);
+
+        const tool = new DemoTool({element, view, model, emitter, toolName: "brush"} as any);
+        expect(() => tool.initialize()).not.toThrow();
+    });
+
+    it("@behavior decorator wires click events after initialize() with a toolName", () => {
+        const element = div({parent: document.body});
+        const model = new TurboModel({data: {}});
+        const emitter = new TurboEmitter(model);
+        const view = new TurboView({element, model, emitter} as any);
+
+        const tool = new DemoTool({element, view, model, emitter, toolName: "brush"} as any);
+        tool.initialize();
 
         expect(tool.rand).toBe(0);
-        expect(() => tool.initialize()).not.toThrow();
         $(div()).executeAction("turbo-click", "brush", new Event("turbo-click"));
         expect(tool.rand).toBe(1);
     });
 
-    it("initialize() is a no-op when toolName is missing", () => {
-        const element = {};
-        const model = new TurboModel<any>({});
-        const emitter = new TurboEmitter(model);
-        const view = new TurboView({ element, model, emitter });
-
-        const tool = new DemoTool({ element, view, model, emitter });
-        expect(() => tool.initialize()).not.toThrow();
+    it("keyName can be assigned explicitly", () => {
+        const tool = new MinimalTool({element: {}} as any);
+        tool.keyName = "myTool";
+        expect(tool.keyName).toBe("myTool");
     });
 });

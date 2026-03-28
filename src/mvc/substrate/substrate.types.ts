@@ -1,8 +1,8 @@
-import {TurboControllerProperties} from "../logic/logic.types";
-import {TurboView} from "../core/view";
-import {TurboModel} from "../core/model";
-import {TurboEmitter} from "../core/emitter";
 import {MakeSubstrateOptions} from "../../turboFunctions/substrate/substrate.types";
+import {TurboModel} from "../model/model";
+import {TurboView} from "../view/view";
+import {TurboEmitter} from "../emitter/emitter";
+import {TurboControllerProperties} from "../controller/controller.types";
 
 /**
  * @type {TurboSubstrateProperties}

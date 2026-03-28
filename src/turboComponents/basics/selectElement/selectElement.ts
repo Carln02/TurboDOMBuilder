@@ -1,10 +1,10 @@
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {auto} from "../../../decorators/auto/auto";
 import {expose} from "../../../decorators/expose";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {element} from "../../../elementCreation/element";
 import {TurboSelectElementConfig, TurboSelectElementProperties} from "./selectElement.types";
 import {TurboSelect} from "../select/select";

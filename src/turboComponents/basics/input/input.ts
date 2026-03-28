@@ -1,10 +1,10 @@
 import {richElement, TurboRichElement} from "../richElement/richElement";
 import {define} from "../../../decorators/define/define";
-import {TurboView} from "../../../mvc/core/view";
-import {TurboModel} from "../../../mvc/core/model";
+import {TurboView} from "../../../mvc/view/view";
+import {TurboModel} from "../../../mvc/model/model";
 import {element} from "../../../elementCreation/element";
 import {$} from "../../../turboFunctions/turboFunctions";
-import {TurboEmitter} from "../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {div} from "../../../elementCreation/basicElements";
 import {TurboRichElementConfig} from "../richElement/richElement.types";
 import {TurboInputProperties} from "./input.types";

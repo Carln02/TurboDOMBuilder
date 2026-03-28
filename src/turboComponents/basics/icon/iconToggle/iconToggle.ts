@@ -1,10 +1,10 @@
 import {icon, TurboIcon} from "../icon";
 import {define} from "../../../../decorators/define/define";
-import {TurboView} from "../../../../mvc/core/view";
-import {TurboModel} from "../../../../mvc/core/model";
+import {TurboView} from "../../../../mvc/view/view";
+import {TurboModel} from "../../../../mvc/model/model";
 import {auto} from "../../../../decorators/auto/auto";
 import {$} from "../../../../turboFunctions/turboFunctions";
-import {TurboEmitter} from "../../../../mvc/core/emitter";
+import {TurboEmitter} from "../../../../mvc/emitter/emitter";
 import {TurboIconToggleProperties} from "./iconToggle.types";
 import {TurboIconConfig} from "../icon.types";
 import {DefaultEventName} from "../../../../types/eventNaming.types";
