@@ -485,6 +485,7 @@ class TurboModel<
      */
     protected deleteAction(data: any, key: DataKeyType) {
         if (data instanceof Map) data.delete(key);
+        else if (Array.isArray(data)) data.splice(key as number, 1);
         else delete (data as any)[key];
     }
 
@@ -914,6 +915,7 @@ class TurboModel<
             ?? this.observerConstructor
             ?? TurboObserver<DataEntryType, ComponentType, KeyType>
         )({
+            initialize: true,
             ...properties,
             onDestroy: (self) => {
                 models.forEach(model => model.changeObservers?.delete(self));
@@ -1099,6 +1101,7 @@ class TurboModel<
         if (childKeys.length === 0) return rawCallback(this.data, firstKey);
         if (nested) return nestedCallback(nested, childKeys);
         const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
+        if (typeof parentData !== "object") return;
         return rawCallback(parentData, childKeys[childKeys.length - 1]);
     }
 }

@@ -8,7 +8,7 @@ import "./square.css";
 export class Square extends TurboElement<SquareView, any, SquareModel> {
     //Expose fields from the model
     @expose("model") color: string;
-    @expose("model") size: number;
+    @expose("model") elementSize: number;
     @expose("model") position: Point;
     @expose("model") rotation: number;
 
@@ -40,6 +40,6 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
     }
 
     public resize(delta: Point) {
-        this.model.size = delta.min;
+        this.model.elementSize = delta.min;
     }
 }

@@ -20,8 +20,8 @@ import {controller, handler, interactor, tool, substrate} from "./decorators/mvc
 export {controller, handler, interactor, tool, substrate};
 import {observe} from "./decorators/observe/observe";
 export {observe};
-import {effect,setSignal,signal,modelSignal,blockSignal,blockDataSignal,blockIdSignal,getSignal,markDirty,initializeEffects,disposeEffect,disposeEffects} from "./decorators/reactivity/reactivity";
-export {effect,setSignal,signal,modelSignal,blockSignal,blockDataSignal,blockIdSignal,getSignal,markDirty,initializeEffects,disposeEffect,disposeEffects};
+import {effect,setSignal,signal,modelSignal,nestedModelSignal,getSignal,markDirty,initializeEffects,disposeEffect} from "./decorators/reactivity/reactivity";
+export {effect,setSignal,signal,modelSignal,nestedModelSignal,getSignal,markDirty,initializeEffects,disposeEffect};
 import {SignalEntry, SignalBox} from "./decorators/reactivity/reactivity.types";
 export {SignalEntry, SignalBox};
 import {solver, checker, mutator} from "./decorators/substrate";

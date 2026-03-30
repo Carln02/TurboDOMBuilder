@@ -8,7 +8,7 @@ import "./square.css";
 export class Square extends TurboElement<SquareView, any, SquareModel> {
     //Expose fields from the model
     @expose("model") color: string;
-    @expose("model") size: number;
+    @expose("model") elementSize: number;
     @expose("model") position: Point;
     @expose("model") rotation: number;
 
@@ -28,16 +28,16 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
     }
 
     public resize(delta: Point) {
-        this.model.size = delta.min;
+        this.model.elementSize = delta.min;
     }
 
     public getBoundingClientRect(): DOMRect {
-        const offset = this.model.centerAnchor ? this.model.size / 2 : 0;
+        const offset = this.model.centerAnchor ? this.model.elementSize / 2 : 0;
         return new TurboRect({
             x: this.model.position.x - offset,
             y: this.model.position.y - offset,
-            width: this.size,
-            height: this.size,
+            width: this.elementSize,
+            height: this.elementSize,
             angleDeg: this.rotation
         });
     }

@@ -11,7 +11,8 @@ class Square extends HTMLElement {
     position = {x: 0, y: 0};
 
     init(position) {
-        position.x -= 100; position.y -= 100; //Center the position (according to the size of the square - 200px)
+        position.x -= 100;
+        position.y -= 100; //Center the position (according to the size of the square - 200px)
         this.position = position; //Store the position
         turbo(this).addClass("square").addToParent(document.body); //Assign CSS class and add to document
         this.update(); //Update position
@@ -27,37 +28,21 @@ customElements.define("test-square", Square);
 
 const squares = [];
 for (let i = 0; i < 5; i++) {
-    const value = 100 * (i + 1);
-    console.log(value);
-    squares.push(element({
-        tag: "test-square",
-        parent: document.body,
-        styles: `top: 300px; left: ${value}px`,
-        classes: "square",
-    }));
+    squares.push(element({tag: "test-square", parent: document.body, classes: "square"}));
 }
-
-console.log(squares);
 
 const reifect = new StatefulReifect({
     states: [OnOff.on, OnOff.off],
-    styles: (state, index, total) => {
-        console.log(state);
-        console.log(total);
-    return `
+    styles: (state, index) => `
         top: ${state === OnOff.on ? 200 : 300}px;
-        left: ${(index + 1) * 100}px;
-        `
-},
-    transition: "transform",
+        left: ${(index + 1) * 100 + index * 10}px;
+    `,
+    transition: "top, left",
     transitionDuration: 0.3,
     transitionTimingFunction: "ease-in-out",
     transitionDelay: (state, index) => index * 0.1
 });
 
 reifect.attachAll(...squares);
-
-TurboButton.create({text: "Animate", parent: document.body, onClick: () => {
-    reifect.toggle()
-        console.log("HIJIJIJI")
-    }});
+reifect.apply(OnOff.off, squares);
+TurboButton.create({text: "Animate", parent: document.body, onClick: () => reifect.toggle(squares)});

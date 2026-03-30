@@ -4,6 +4,7 @@ import {SignalUtils} from "./reactivity.signal";
 import {EffectUtils} from "./reactivity.effect";
 import {TurboModel} from "../../mvc/model/model";
 import {isUndefined} from "../../utils/dataManipulation/misc";
+import {DataKeyType} from "../../mvc/model/model.types";
 
 const utils = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils);
@@ -21,17 +22,16 @@ const effectUtils = new EffectUtils(utils);
  * @template Value
  * @param {Value} [initial] - Initial value stored by the signal.
  * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @param {...PropertyKey[]} keys - The key path at which the signal will be stored in the target.
  * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
  *
  * @example
  * ```ts
- * // Standalone signal
  * const count = signal(0);
- * // e.g., count.get(), count.set(1)
+ * const nested = signal(0, target, "users", "42", "score");
  * ```
  */
-function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
+function signal<Value>(initial?: Value, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
 
 /**
  * @overload
@@ -43,20 +43,18 @@ function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): Sig
  * Returns a {@link SignalBox} wrapping the initial value.
  *
  * @template Value
- * @param {() => Value} [get] - Getter that returns the value.
- * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
+ * @param {() => Value} get - Getter that returns the value.
+ * @param {(value: Value) => void} set - Setter that changes the value and emits the signal.
  * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @param {...PropertyKey[]} keys - The key path at which the signal will be stored in the target.
  * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
  *
  * @example
  * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
+ * const nested = signal(() => target.get("users", "42"), v => target.set(v, "users", "42"), target, "users", "42");
  * ```
  */
-function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
+function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
 
 /**
  * @overload
@@ -93,20 +91,24 @@ function signal<Type extends object, Value>(
         | ClassAccessorDecoratorContext<Type, Value>
 ): any;
 function signal(...args: any): any {
-    //Decorator
+    // Decorator
     if (args.length === 2 && args[1] && typeof args[1] === "object"
         && "kind" in args[1] && "name" in args[1] && "static" in args[1] && "private" in args[1]) {
         return signalUtils.signalDecorator(args[0], args[1]);
     }
-    //Getter setter
+    // Getter + setter: signal(get, set, target?, ...keys)
     if (typeof args[0] === "function" && typeof args[1] === "function") {
+        const [get, set, target, ...keys] = args;
+        const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils.serializePath(keys) : undefined;
         return signalUtils.createBoxFromEntry(
-            utils.createSignalEntry(undefined, args[2], args[3], args[0], args[1])
+            utils.createSignalEntry(undefined, target, key, get, set)
         );
     }
-    //From value
+    // From value: signal(initial?, target?, ...keys)
+    const [initial, target, ...keys] = args;
+    const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils.serializePath(keys) : undefined;
     return signalUtils.createBoxFromEntry(
-        utils.createSignalEntry(args[0], args[1], args[2])
+        utils.createSignalEntry(initial, target, key)
     );
 }
 
@@ -117,34 +119,30 @@ function signal(...args: any): any {
  * @group Decorators
  * @category Signal
  *
- * @description Decorator that binds a reactive signal to a **model field**
- * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
- * Useful to create signals in TurboModel classes.
+ * @description Decorator that binds a reactive signal to a key path in the model's data,
+ * read via `this.get(...keys)` and written via `this.set(value, ...keys)`.
  *
- * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
- * @param {string | number} [blockKey] - Optional blockKey identifier.
+ * @param {...string[]} keys - The key path into the model's data. Defaults to the decorated member name if omitted.
  *
  * @example
  * ```ts
  * class TodoModel extends TurboModel {
  *   @modelSignal() title = "";
+ *   @modelSignal("meta", "author") author = "";
  * }
  * ```
  * Is equivalent to:
  * ```ts
  * class TodoModel extends TurboModel {
- *   @signal public get title() {
- *      return this.getData("title");
- *   }
+ *   @signal get title() { return this.get("title"); }
+ *   set title(value) { this.set(value, "title"); }
  *
- *   public set title(value) {
- *      this.setData("title", value);
- *   }
+ *   @signal get author() { return this.get("meta", "author"); }
+ *   set author(value) { this.set(value, "meta", "author"); }
  * }
- *
  * ```
  */
-function modelSignal(dataKey?: string, blockKey?: string | number) {
+function modelSignal(...keys: DataKeyType[]) {
     return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
@@ -157,30 +155,50 @@ function modelSignal(dataKey?: string, blockKey?: string | number) {
             | ClassSetterDecoratorContext<Type, Value>
             | ClassAccessorDecoratorContext<Type, Value>
     ): any {
-        const key = dataKey ?? String(context.name);
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
         context.addInitializer(function (this: any) {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
-            utils.bindBlockKey(this, context.name, key, blockKey);
+            utils.bindPath(this, context.name, resolvedKeys);
         });
-        return signalUtils.signalDecorator(value, context, function () {return this.getData?.(key, blockKey)},
-            function (value) {this.setData?.(key, value, blockKey);});
-    }
+        return signalUtils.signalDecorator(
+            value,
+            context,
+            function (this: any) {
+                return this.get?.(...resolvedKeys);
+            },
+            function (this: any, value: Value) {
+                this.set?.(value, ...resolvedKeys);
+            }
+        );
+    };
 }
 
 /**
  * @decorator
- * @function blockSignal
+ * @function nestedModelSignal
  * @group Decorators
  * @category Signal
  *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlock(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ * @description Decorator that binds a reactive signal to a nested {@link TurboModel} instance at the given key path.
+ * - Getter returns the nested model instance via `this.getNested(...keys)`.
+ * - Setter assigns the new value to the nested model's root data via `this.getNested(...keys).data = value`.
  *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
+ * @param {...string[]} keys - The key path navigating to the nested model.
+ *
+ * @example
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @nestedModelSignal("users", "42") user = undefined;
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @signal get user() { return this.getNested("users", "42"); }
+ *   set user(value) { this.getNested("users", "42").data = value; }
+ * }
+ * ```
  */
-function blockSignal(blockKey?: string | number, id?: string | number) {
+function nestedModelSignal(...keys: string[]) {
     return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
@@ -193,77 +211,20 @@ function blockSignal(blockKey?: string | number, id?: string | number) {
             | ClassSetterDecoratorContext<Type, Value>
             | ClassAccessorDecoratorContext<Type, Value>
     ): any {
-        const key = blockKey ?? String(context.name);
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
         context.addInitializer(function (this: any) {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
+            utils.bindPath(this, context.name, resolvedKeys);
         });
-        return signalUtils.signalDecorator(value, context, function () {return this.getBlock?.(key)},
-            function (value) {this.setBlock?.(value, id, key)}, true);
-    }
-}
-
-/**
- * @decorator
- * @function blockDataSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-function blockDataSignal(blockKey?: string | number, id?: string | number) {
-    return function <Type extends object, Value>(
-        value:
-            | ((initial: Value) => Value)
-            | ((this: Type) => Value)
-            | ((this: Type, v: Value) => void)
-            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
-        context:
-            | ClassFieldDecoratorContext<Type, Value>
-            | ClassGetterDecoratorContext<Type, Value>
-            | ClassSetterDecoratorContext<Type, Value>
-            | ClassAccessorDecoratorContext<Type, Value>
-    ): any {
-        const key = blockKey ?? String(context.name);
-        context.addInitializer(function (this: any) {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
-        });
-        return signalUtils.signalDecorator(value, context, function () {return this.getBlockData?.(key)},
-            function (value) {this.setBlock?.(value, id, key)}, true);
-    }
-}
-
-/**
- * @decorator
- * @function blockIdSignal
- * @group Decorators
- * @category Signal
- *
- * @description Same idea but binds the block **id**.
- */
-function blockIdSignal(blockKey?: string | number) {
-    return function <Type extends object, Value>(
-        value:
-            | ((initial: Value) => Value)
-            | ((this: Type) => Value)
-            | ((this: Type, v: Value) => void)
-            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
-        context:
-            | ClassFieldDecoratorContext<Type, Value>
-            | ClassGetterDecoratorContext<Type, Value>
-            | ClassSetterDecoratorContext<Type, Value>
-            | ClassAccessorDecoratorContext<Type, Value>
-    ): any {
-        const key = blockKey ?? String(context.name);
-        context.addInitializer(function (this: any) {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this) blockKey = this.defaultBlockKey;
-        });
-        return signalUtils.signalDecorator(value, context, function () {return this.getBlockId?.(key)},
-            function (value) {this.setBlockId?.(value, key)}, true);
+        return signalUtils.signalDecorator(
+            value,
+            context,
+            function (this: any) {
+                return this.nest?.(...resolvedKeys);
+            },
+            function (this: any, value: Value) {
+                this.set?.(value, ...resolvedKeys);
+            }
+        );
     };
 }
 
@@ -330,7 +291,9 @@ function effect(...args: any[]): any {
 
         context.addInitializer?.(function (this: any) {
             const self = this;
-            const fn = function () {value?.call(this)}
+            const fn = function () {
+                value?.call(this)
+            }
             const eff = effectUtils.makeEffect(() => fn.call(self));
             utils.setEffect(self, key, eff);
         });
@@ -389,18 +352,16 @@ function markDirty(target: object, key: PropertyKey): void;
  * @group Decorators
  * @category Signal
  *
- * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
- * fires all of its attached effects.
+ * @description Marks the signal bound to the given key path inside `target` as dirty and fires all attached effects.
  * @param {object} target - The target to which the signal is bound.
- * @param {string | number | symbol} dataKey - The key of the data.
- * @param {string | number} blockKey - The key of the block.
+ * @param {...(string | number | symbol)[]} keys - The key path of the data.
  */
-function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
-function markDirty(target: object, key: any, blockKey?: string | number) {
-    let computedKey: PropertyKey;
-    if (!isUndefined(blockKey)) computedKey = utils.getKeyFromBlockKey(target, key, blockKey);
-    if (isUndefined(computedKey)) computedKey = key;
-    return utils.markDirty(target, computedKey);
+function markDirty(target: object, ...keys: DataKeyType[]): void;
+function markDirty(target: object, ...keys: DataKeyType[]) {
+    const computedKey = keys.length > 1
+        ? utils.getKeyFromPath(target, keys)
+        : keys[0];
+    return utils.markDirty(target, computedKey ?? keys[0]);
 }
 
 /**
@@ -420,29 +381,29 @@ function initializeEffects(target: object) {
  * @group Decorators
  * @category Effect
  *
+ * @description Disposes of all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+function disposeEffect(target: object): void;
+
+/**
+ * @function disposeEffect
+ * @group Decorators
+ * @category Effect
+ *
  * @description Disposes of the effect at the given `key` inside `target`.
  * @param {object} target - The target to which the signal is bound.
  * @param {PropertyKey} key - The key of the signal inside `target`.
  */
-function disposeEffect(target: object, key: PropertyKey) {
-    const data = utils.getReactivityData(target, key);
-    data.effect?.dispose();
-    data.effect = undefined;
-}
+function disposeEffect(target: object, key: PropertyKey): void;
+function disposeEffect(target: object, key?: PropertyKey) {
+    const dispose = (data) => {
+        data.effect?.dispose();
+        data.effect = undefined;
+    };
 
-/**
- * @function disposeEffects
- * @group Decorators
- * @category Effect
- * 
- * @description Disposes of all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-function disposeEffects(target: object) {
-    for (const [, entry] of utils.data(target).propertyKeyMap) {
-        entry.effect?.dispose();
-        entry.effect = undefined;
-    }
+    if (key !== undefined) dispose(utils.getReactivityData(target, key));
+    else for (const [, entry] of utils.data(target).propertyKeyMap) dispose(entry);
 }
 
 export {
@@ -450,12 +411,9 @@ export {
     setSignal,
     signal,
     modelSignal,
-    blockSignal,
-    blockDataSignal,
-    blockIdSignal,
+    nestedModelSignal,
     getSignal,
     markDirty,
     initializeEffects,
-    disposeEffect,
-    disposeEffects
+    disposeEffect
 };

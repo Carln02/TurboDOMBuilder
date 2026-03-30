@@ -323,11 +323,15 @@ class Point {
         return [this.x, this.y];
     }
 
-    public linearInterpolation(start: Point, end: Point): number {
+    public positionOnSegment(start: Point, end: Point): number {
         const shiftedEnd = end.sub(start);
         const shiftedLength2 = shiftedEnd.length2;
         if (shiftedLength2 < 1e-9) return 0;
         return trim((this.sub(start).dot(shiftedEnd)) / shiftedLength2, 1);
+    }
+
+    public static linearInterpolation(start: Point, end: Point, t: number): Point {
+        return start.add(end.sub(start).mul(t));
     }
 }
 

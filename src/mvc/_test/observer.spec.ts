@@ -1,201 +1,224 @@
 import {describe, it, expect} from "vitest";
 import {TurboObserver} from "../model/observer";
-import {DataKeyType} from "../model/model.types";
 
-describe("Observer", () => {
-    describe("TurboObserver — lifecycle", () => {
+function makeInstance(id: string) {
+    return {id, removed: false, remove() { this.removed = true; }};
+}
+
+describe("TurboObserver", () => {
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    describe("lifecycle", () => {
         it("starts uninitialized", () => {
-            const observer = new TurboObserver();
-            expect(observer.isInitialized).toBe(false);
+            expect(new TurboObserver().isInitialized).toBe(false);
         });
 
         it("initialize() fires onInitialize and sets isInitialized", () => {
             let fired = false;
-            const observer = new TurboObserver({
-                onInitialize: () => { fired = true; },
-            });
-
-            expect(observer.isInitialized).toBe(false);
-            observer.initialize();
-            expect(observer.isInitialized).toBe(true);
+            const obs = new TurboObserver({onInitialize: () => { fired = true; }});
+            obs.initialize();
+            expect(obs.isInitialized).toBe(true);
             expect(fired).toBe(true);
         });
 
-        it("initialize() is a no-op if already initialized", () => {
+        it("initialize() is a no-op when already initialized", () => {
             let count = 0;
-            const observer = new TurboObserver({
-                onInitialize: () => count++,
-            });
-
-            observer.initialize();
-            observer.initialize();
+            const obs = new TurboObserver({onInitialize: () => count++});
+            obs.initialize();
+            obs.initialize();
             expect(count).toBe(1);
         });
 
         it("initialize: true in properties initializes immediately", () => {
             let fired = false;
-            const observer = new TurboObserver({
-                onInitialize: () => { fired = true; },
-                initialize: true,
-            });
-            expect(observer.isInitialized).toBe(true);
+            const obs = new TurboObserver({onInitialize: () => { fired = true; }, initialize: true});
+            expect(obs.isInitialized).toBe(true);
             expect(fired).toBe(true);
         });
 
-        it("clear() resets isInitialized and removes all entries", () => {
-            const observer = new TurboObserver<string, object>({
-                onAdded: () => ({}),
-            });
-
-            observer.keyChanged(["key1"], "data1");
-            expect(observer.get("key1" as any)).toBeDefined();
-
-            observer.initialize();
-            observer.clear(false);
-
-            expect(observer.isInitialized).toBe(false);
-            expect(observer.get("key1" as any)).toBeUndefined();
-        });
-
-        it("destroy() clears entries and fires onDestroy", () => {
+        it("destroy() clears and fires onDestroy", () => {
             let destroyed = false;
-            const observer = new TurboObserver({
-                onDestroy: () => { destroyed = true; },
-            });
-
-            observer.destroy(false);
+            const obs = new TurboObserver({onDestroy: () => { destroyed = true; }});
+            obs.destroy(false);
             expect(destroyed).toBe(true);
+            expect(obs.isInitialized).toBe(false);
+        });
+
+        it("clear(true) calls instance.remove() on all stored instances", () => {
+            const inst = makeInstance("a");
+            const obs = new TurboObserver<string, typeof inst>({
+                onAdded: () => inst,
+            });
+            obs.keyChanged(["k"], "v");
+            obs.clear(true);
+            expect(inst.removed).toBe(true);
+        });
+
+        it("clear(false) does not call instance.remove()", () => {
+            const inst = makeInstance("a");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            obs.clear(false);
+            expect(inst.removed).toBe(false);
+            expect(obs.isInitialized).toBe(false);
         });
     });
 
-    describe("TurboObserver — keyChanged", () => {
-        it("keyChanged with no existing instance fires onAdded and stores result", () => {
+    // ── keyChanged ────────────────────────────────────────────────────────────
+
+    describe("keyChanged", () => {
+        it("fires onAdded and stores the returned instance", () => {
             const added: string[] = [];
-            const observer = new TurboObserver<string, {id: string}>({
-                onAdded: (data, _self, ...keys) => {
-                    added.push(keys[0] as string);
-                    return {id: keys[0] as string};
-                },
+            const obs = new TurboObserver<string, {id: string}>({
+                onAdded: (_d, _s, ...keys) => { added.push(keys[0] as string); return {id: keys[0] as string}; },
             });
-
-            observer.keyChanged(["item1"], "data-for-item1");
-
+            obs.keyChanged(["item1"], "data");
             expect(added).toEqual(["item1"]);
-            expect(observer.get("item1" as any)).toEqual({id: "item1"});
+            expect(obs.get("item1" as any)).toEqual({id: "item1"});
         });
 
-        it("keyChanged with existing instance fires onUpdated (also fires after onAdded)", () => {
+        it("fires onUpdated after onAdded on first keyChanged", () => {
             const updated: string[] = [];
-            const observer = new TurboObserver<string, {id: string}>({
-                onAdded: (_data, _self, ...keys) => ({id: keys[0] as string}),
-                onUpdated: (_data, _instance, _self, ...keys) => {
-                    updated.push(keys[0] as string);
-                },
+            const obs = new TurboObserver<string, {id: string}>({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+                onUpdated: (_d, _i, _s, ...keys) => updated.push(keys[0] as string),
             });
+            obs.keyChanged(["item1"], "data");
+            expect(updated).toEqual(["item1"]);
+        });
 
-            // First call: onAdded fires then onUpdated fires (once for initial add)
-            observer.keyChanged(["item1"], "first");
-            // Second call: only onUpdated fires (instance already exists)
-            observer.keyChanged(["item1"], "second");
-
-            // onUpdated is called once on add + once on update = 2 total
+        it("fires only onUpdated on subsequent keyChanged for same key", () => {
+            const added: string[] = [];
+            const updated: string[] = [];
+            const obs = new TurboObserver<string, {id: string}>({
+                onAdded: (_d, _s, ...keys) => { added.push("add"); return {id: keys[0] as string}; },
+                onUpdated: (_d, _i, _s, ...keys) => updated.push("update"),
+            });
+            obs.keyChanged(["k"], "first");
+            obs.keyChanged(["k"], "second");
+            expect(added).toHaveLength(1);
             expect(updated).toHaveLength(2);
-            expect(updated).toEqual(["item1", "item1"]);
         });
 
-        it("keyChanged with deleted=true fires onDeleted", () => {
+        it("fires onDeleted when deleted=true and instance exists", () => {
             const deleted: string[] = [];
-            const observer = new TurboObserver<string, {id: string}>({
-                onAdded: (_data, _self, ...keys) => ({id: keys[0] as string}),
-                onDeleted: (_data, _instance, _self, ...keys) => {
-                    deleted.push(keys[0] as string);
-                },
+            const obs = new TurboObserver<string, {id: string}>({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+                onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
             });
-
-            observer.keyChanged(["item1"], "data");       // add
-            observer.keyChanged(["item1"], "data", true); // delete
-
-            expect(deleted).toHaveLength(1);
-            expect(deleted[0]).toBe("item1");
+            obs.keyChanged(["item1"], "data");
+            obs.keyChanged(["item1"], "data", true);
+            expect(deleted).toEqual(["item1"]);
         });
 
-        it("keyChanged with deleted=true and no custom onDeleted removes the instance by default", () => {
-            const observer = new TurboObserver<string, {id: string}>({
-                onAdded: (_data, _self, ...keys) => ({id: keys[0] as string}),
-                // No custom onDeleted → default behaviour removes the instance
-            });
-
-            observer.keyChanged(["item1"], "data");       // add
-            expect(observer.get("item1" as any)).toBeDefined();
-
-            observer.keyChanged(["item1"], "data", true); // delete via default handler
-            expect(observer.get("item1" as any)).toBeUndefined();
-        });
-
-        it("keyChanged with deleted=true but no existing instance is a no-op", () => {
-            let deletedCalled = false;
-            const observer = new TurboObserver<any, any, DataKeyType>({
-                onDeleted: () => { deletedCalled = true; }
-            });
-
-            observer.keyChanged(["ghost"], "data", true);
-            expect(deletedCalled).toBe(false);
-        });
-
-        it("keyChanged without onAdded returning instance is a no-op after add", () => {
-            const updated: any[] = [];
-            const observer = new TurboObserver<string, object>({
-                // onAdded returns void — nothing stored
-                onUpdated: (_d, _i, _s, ...keys) => updated.push(keys[0]),
-            });
-
-            observer.keyChanged(["item"], "data"); // onAdded returns void -> nothing stored
-            expect(observer.get("item" as any)).toBeUndefined();
-            expect(updated).toHaveLength(0); // onUpdated not called if no instance stored
-        });
-    });
-
-    describe("TurboObserver — remove / detach", () => {
-        it("remove() deletes the instance from the map", () => {
-            const observer = new TurboObserver<string, {id: string}>({
+        it("default onDeleted removes the instance", () => {
+            const obs = new TurboObserver<string, {id: string}>({
                 onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
             });
-
-            observer.keyChanged(["k"], "v");
-            expect(observer.get("k" as any)).toBeDefined();
-
-            observer.remove("k" as any);
-            expect(observer.get("k" as any)).toBeUndefined();
+            obs.keyChanged(["item1"], "data");
+            obs.keyChanged(["item1"], "data", true);
+            expect(obs.get("item1" as any)).toBeUndefined();
         });
 
-        it("detach() removes from map without calling instance.remove()", () => {
-            let removeCalled = false;
-            const observer = new TurboObserver<string, {id: string; remove: () => void}>({
-                onAdded: (_d, _s, ...keys) => ({
-                    id: keys[0] as string,
-                    remove: () => { removeCalled = true; },
-                }),
+        it("deleted=true with no existing instance is a no-op", () => {
+            let called = false;
+            const obs = new TurboObserver<any>({onDeleted: () => { called = true; }});
+            obs.keyChanged(["ghost"], "data", true);
+            expect(called).toBe(false);
+        });
+
+        it("onAdded returning void stores nothing and skips onUpdated", () => {
+            const updated: any[] = [];
+            const obs = new TurboObserver<string, object>({
+                onUpdated: (_d, _i, _s, ...keys) => updated.push(keys[0]),
             });
-
-            observer.keyChanged(["k"], "v");
-            observer.detach("k" as any);
-
-            expect(observer.get("k" as any)).toBeUndefined();
-            expect(removeCalled).toBe(false);
+            obs.keyChanged(["item"], "data");
+            expect(obs.get("item" as any)).toBeUndefined();
+            expect(updated).toHaveLength(0);
         });
-    });
 
-    describe("TurboObserver — nested key paths", () => {
-        it("stores and retrieves instances at nested key paths", () => {
-            const observer = new TurboObserver<string, {label: string}>({
+        it("default onUpdated sets data on instance with .data field", () => {
+            let instanceData: any = null;
+            const obs = new TurboObserver<string, {data: any}>({
+                onAdded: () => ({ data: null }),
+            });
+            obs.keyChanged(["k"], "initial");
+            const inst = obs.get("k" as any);
+            obs.keyChanged(["k"], "updated");
+            expect(inst.data).toBe("updated");
+        });
+
+        it("default onUpdated sets dataId on instance with .dataId field", () => {
+            const obs = new TurboObserver<string, {dataId: any}>({
+                onAdded: () => ({dataId: null}),
+            });
+            obs.keyChanged(["myKey"], "v");
+            const inst = obs.get("myKey" as any);
+            expect(inst.dataId).toBe("myKey");
+        });
+
+        it("works with multi-level key paths", () => {
+            const obs = new TurboObserver<string, {label: string}>({
                 onAdded: (_d, _s, ...keys) => ({label: keys.join(".")}),
             });
+            obs.keyChanged(["group1", "item1"], "data");
+            const inst = obs.get("group1" as any, "item1" as any);
+            expect(inst?.label).toBe("group1.item1");
+        });
 
-            observer.keyChanged(["group1", "item1"], "data");
-
-            const instance = observer.get("group1" as any, "item1" as any);
-            expect(instance).toBeDefined();
-            expect(instance?.label).toBe("group1.item1");
+        it("works with depth-3 key paths", () => {
+            const obs = new TurboObserver<string, {path: string}>({
+                onAdded: (_d, _s, ...keys) => ({path: keys.join("/")}),
+            });
+            obs.keyChanged(["a", "b", "c"], "deep");
+            const inst = obs.get("a" as any, "b" as any, "c" as any);
+            expect(inst?.path).toBe("a/b/c");
         });
     });
-})
+
+    // ── remove / detach ───────────────────────────────────────────────────────
+
+    describe("remove / detach", () => {
+        it("remove() deletes from the map and calls instance.remove()", () => {
+            const inst = makeInstance("x");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            obs.remove("k" as any);
+            expect(obs.get("k" as any)).toBeUndefined();
+            expect(inst.removed).toBe(true);
+        });
+
+        it("detach() removes from the map without calling instance.remove()", () => {
+            const inst = makeInstance("x");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            obs.detach("k" as any);
+            expect(obs.get("k" as any)).toBeUndefined();
+            expect(inst.removed).toBe(false);
+        });
+
+        it("removeValue() removes the first matching instance", () => {
+            const inst = makeInstance("x");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            obs.removeValue(inst);
+            expect(obs.get("k" as any)).toBeUndefined();
+        });
+
+        it("hasValue() returns true when the instance is stored", () => {
+            const inst = makeInstance("x");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            expect(obs.hasValue(inst)).toBe(true);
+        });
+
+        it("hasValue() returns false after removal", () => {
+            const inst = makeInstance("x");
+            const obs = new TurboObserver<string, typeof inst>({onAdded: () => inst});
+            obs.keyChanged(["k"], "v");
+            obs.detach("k" as any);
+            expect(obs.hasValue(inst)).toBe(false);
+        });
+    });
+});

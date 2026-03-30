@@ -23,8 +23,8 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
         this.hitLine = element({tag: "line", namespace: SvgNamespace}) as SVGLineElement;
         turbo(this.hitLine).setAttribute("stroke", "transparent").setAttribute("pointer-events", "stroke");
 
-        this.startHandle = Square.create({size: 20, color: "white", classes: "handle"});
-        this.endHandle = Square.create({size: 20, color: "white", classes: "handle"});
+        this.startHandle = Square.create({elementSize: 20, color: "white", classes: "handle"});
+        this.endHandle = Square.create({elementSize: 20, color: "white", classes: "handle"});
     }
 
     protected setupUILayout() {

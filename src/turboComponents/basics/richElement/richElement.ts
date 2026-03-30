@@ -10,7 +10,6 @@ import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement, ValidTag} from "../../../types/element.types";
-import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 
 /**
  * @class TurboRichElement

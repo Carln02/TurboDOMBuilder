@@ -8492,6 +8492,10 @@
     function isUndefined(value) {
         return typeof value == "undefined";
     }
+    /**
+     * @group Utilities
+     * @category Sorting
+     */
     function alphabeticalSorting(a, b) {
         if (typeof a === "symbol")
             a = String(a);
@@ -8563,6 +8567,10 @@
         }
         return undefined;
     }
+    /**
+     * @group Utilities
+     * @category Prototype
+     */
     function getPrototypeChain(object) {
         const chain = [];
         let constructor = Object.getPrototypeOf(object);
@@ -9440,6 +9448,84 @@
     }
 
     /**
+     * @internal
+     * @class SimpleDelegate
+     * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+     * @description Class representing a set of callbacks that can be maintained and executed together.
+     */
+    class SimpleDelegate {
+        callbacks = new Set();
+        /**
+         * @description Adds a callback to the list.
+         * @param callback - The callback function to add.
+         */
+        add(callback) {
+            this.callbacks.add(callback);
+        }
+        /**
+         * @description Removes a callback from the list.
+         * @param callback - The callback function to remove.
+         * @returns A boolean indicating whether the callback was found and removed.
+         */
+        remove(callback) {
+            return this.callbacks.delete(callback);
+        }
+        /**
+         * @description Checks whether a callback is in the list.
+         * @param callback - The callback function to check for.
+         * @returns A boolean indicating whether the callback was found.
+         */
+        has(callback) {
+            return this.callbacks.has(callback);
+        }
+        /**
+         * @description Invokes all callbacks with the provided arguments.
+         * @param args - The arguments to pass to the callbacks.
+         */
+        fire(...args) {
+            let returnValue;
+            for (const callback of this.callbacks) {
+                try {
+                    const value = callback(...args);
+                    if (!isUndefined(value))
+                        returnValue = value;
+                }
+                catch (error) {
+                    console.error("Error invoking callback:", error);
+                }
+            }
+            return returnValue;
+        }
+        /**
+         * @description Clears added callbacks
+         */
+        clear() {
+            this.callbacks.clear();
+        }
+    }
+    /**
+     * @class Delegate
+     * @group Components
+     * @category Delegate
+     * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
+     * @description Class representing a set of callbacks that can be maintained and executed together.
+     */
+    class Delegate extends SimpleDelegate {
+        /**
+         * @description Delegate fired when a callback is added.
+         */
+        onAdded = new SimpleDelegate();
+        /**
+         * @description Adds a callback to the list.
+         * @param callback - The callback function to add.
+         */
+        add(callback) {
+            super.add(callback);
+            this.onAdded.fire(callback);
+        }
+    }
+
+    /**
      * @class TurboEmitter
      * @group MVC
      * @category Emitter
@@ -9450,10 +9536,15 @@
      */
     class TurboEmitter {
         /**
-         * @description Map containing all callbacks.
+         * @description Map containing all custom callbacks.
          * @protected
          */
         callbacks = new Map();
+        /**
+         * @description Map containing all data callbacks.
+         * @protected
+         */
+        dataCallbacks = new Map();
         /**
          * @description The attached MVC model.
          */
@@ -9462,126 +9553,86 @@
             if (model)
                 this.model = model;
         }
-        get defaultBlockKey() {
-            if (this.model)
-                return this.model.defaultBlockKey;
-            return "__defaultBlockKey__";
-        }
-        /**
-         * @function getBlock
-         * @description Retrieves the callback block by the given blockKey.
-         * @param {number | string} [blockKey] - The key of the block to retrieve.
-         * @protected
-         */
-        getBlock(blockKey) {
-            return this.callbacks.get(blockKey?.toString());
-        }
-        /**
-         * @function getOrGenerateBlock
-         * @description Retrieves or creates a callback map for a given blockKey.
-         * @param {number | string} [blockKey] - The block key.
-         * @returns {Map<string, ((...args: any[]) => void)[]>} - The ensured callback map.
-         * @protected
-         */
-        getOrGenerateBlock(blockKey) {
-            if (!this.callbacks.has(blockKey.toString()))
-                this.callbacks.set(blockKey.toString(), new Map());
-            return this.callbacks.get(blockKey.toString());
-        }
-        /**
-         * @function getKey
-         * @description Gets all callbacks for a given event key within a block.
-         * @param {string} key - The event name.
-         * @param {number | string} [blockKey] - The block in which the event is scoped.
-         * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
-         * @protected
-         */
-        getKey(key, blockKey) {
-            const block = this.getBlock(blockKey);
-            return block ? block.get(key) : [];
-        }
-        /**
-         * @function getOrGenerateKey
-         * @description Ensures and returns the array of callbacks for a given event key within a block.
-         * @param {string} key - The event name.
-         * @param {number | string} [blockKey] - The block in which the event is scoped.
-         * @returns {((...args: any[]) => void)[]} - An array of callbacks for that event.
-         * @protected
-         */
-        getOrGenerateKey(key, blockKey) {
-            const block = this.getOrGenerateBlock(blockKey);
-            if (!block.has(key))
-                block.set(key, []);
-            return block.get(key);
-        }
-        /**
-         * @function addWithBlock
-         * @description Registers a callback for an event key within a specified block -- usually for the corresponding
-         * data block in the model.
-         * @param {string} key - The event name.
-         * @param {number | string} blockKey - The block to register the event in.
-         * @param {(...args: any[]) => void} callback - The callback function to invoke when the event is fired.
-         */
-        addWithBlock(key, blockKey, callback) {
-            this.getOrGenerateKey(key, blockKey).push(callback);
-        }
         /**
          * @function add
-         * @description Registers a callback for an event key in the default block.
-         * @param {string} key - The event name.
-         * @param {(...args: any[]) => void} callback - The callback function.
+         * @description Register a callback for the given event name.
+         * @param {string} event - The event name.
+         * @param {(...args: any[]) => void} callback - The callback to invoke when the event fires.
          */
-        add(key, callback) {
-            this.addWithBlock(key, this.defaultBlockKey, callback);
-        }
-        /**
-         * @function removeWithBlock
-         * @description Removes a specific callback or all callbacks for a key within a block.
-         * @param {string} key - The event name.
-         * @param {number | string} blockKey - The block from which to remove the event.
-         * @param {(...args: any[]) => void} [callback] - The specific callback to remove. If undefined, all callbacks
-         * for the key are removed.
-         */
-        removeWithBlock(key, blockKey, callback) {
-            if (callback == undefined)
-                this.getBlock(blockKey)?.delete(key);
-            else {
-                const callbacks = this.getKey(key, blockKey);
-                const index = callbacks.indexOf(callback);
-                if (index >= 0)
-                    callbacks.splice(index, 1);
-            }
+        add(event, callback) {
+            if (!this.callbacks.has(event))
+                this.callbacks.set(event, new Delegate());
+            this.callbacks.get(event)?.add(callback);
         }
         /**
          * @function remove
-         * @description Removes a specific callback or all callbacks for a key in the default block.
-         * @param {string} key - The event name.
-         * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted, all callbacks are removed.
+         * @description Remove a specific callback from the given event, or all callbacks if omitted.
+         * @param {string} event - The event name.
+         * @param {(...args: any[]) => void} [callback] - The callback to remove. If omitted,
+         * all callbacks for the event are removed.
          */
-        remove(key, callback) {
-            this.removeWithBlock(key, this.defaultBlockKey, callback);
-        }
-        /**
-         * @function fireWithBlock
-         * @description Triggers all callbacks associated with an event key in a specified block.
-         * @param {string} key - The event name.
-         * @param {number | string} blockKey - The block in which the event is scoped.
-         * @param {...any[]} args - Arguments passed to each callback.
-         */
-        fireWithBlock(key, blockKey, ...args) {
-            this.callbacks.get(blockKey.toString())?.get(key)?.forEach((callback) => {
-                if (callback && typeof callback == "function")
-                    callback(...args);
-            });
+        remove(event, callback) {
+            if (!callback)
+                this.callbacks.delete(event);
+            else
+                this.callbacks.get(event)?.remove(callback);
         }
         /**
          * @function fire
-         * @description Triggers all callbacks associated with an event key in the default block.
-         * @param {string} key - The event name.
-         * @param {...any[]} args - Arguments passed to the callback.
+         * @description Trigger all callbacks registered for the given event name.
+         * @param {string} event - The event name.
+         * @param {...any[]} args - Arguments passed to each callback.
          */
-        fire(key, ...args) {
-            this.fireWithBlock(key, this.defaultBlockKey, ...args);
+        fire(event, ...args) {
+            this.callbacks.get(event)?.fire(...args);
+        }
+        /**
+         * @function addKey
+         * @description Register a callback fired when the entry at the given key path changes in the model.
+         * The callback receives the new value as its first argument, followed by the key path as spread arguments.
+         * @param {(value: any, ...keys: KeyType[]) => void} callback - The callback to register.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         */
+        addKey(callback, ...keys) {
+            const flatKey = this.resolveFlatKey(keys);
+            if (!this.dataCallbacks.has(flatKey))
+                this.dataCallbacks.set(flatKey, new Delegate());
+            this.dataCallbacks.get(flatKey)?.add(callback);
+        }
+        /**
+         * @function removeKey
+         * @description Remove a specific callback for the given key path, or all callbacks if omitted.
+         * @param {(value: any, ...keys: KeyType[]) => void} [callback] - The callback to remove. If omitted,
+         * all callbacks for this path are removed.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         */
+        removeKey(callback, ...keys) {
+            const flatKey = this.resolveFlatKey(keys);
+            if (!callback)
+                this.dataCallbacks.delete(flatKey);
+            else
+                this.dataCallbacks.get(flatKey)?.remove(callback);
+        }
+        /**
+         * @function fireKey
+         * @description Trigger all callbacks registered for the given key path.
+         * Called automatically when the model fires a change notification at this path.
+         * @param {any} value - The new value at the key path.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         */
+        fireKey(value, ...keys) {
+            const flatKey = this.resolveFlatKey(keys);
+            this.dataCallbacks.get(flatKey)?.fire(value, ...keys);
+        }
+        /**
+         * @protected
+         * @function resolveFlatKey
+         * @description Convert a key path to a stable flat string key for internal storage lookup. Joins with `"|"`.
+         * @param {KeyType[]} keys - The key path to flatten.
+         * @returns {FlatKeyType}
+         */
+        resolveFlatKey(keys) {
+            return keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
         }
     }
 
@@ -9641,7 +9692,7 @@
             return this._model;
         }
         set model(model) {
-            this.model?.keyChangedCallback.remove(this.emitterFireCallback);
+            this.model?.onKeyChanged.remove(this.emitterFireCallback);
             this._model = this.generateInstance(model);
             this._model.handlers = this._handlers;
             this._model.addHandler = (handler) => this.addHandler(handler);
@@ -9731,11 +9782,11 @@
          * @description The ID of the main data block (if any) attached to the model (if any).
          */
         get dataId() {
-            return this.model?.dataId;
+            return this.model?.id;
         }
         set dataId(value) {
             if (this.model)
-                this.model.dataId = value;
+                this.model.id = value;
         }
         /**
          * @description The numerical index of the main data block (if any) attached to the model (if any).
@@ -9745,13 +9796,13 @@
         }
         set dataIndex(value) {
             if (this.model)
-                this.model.dataId = value.toString();
+                this.model.id = value.toString();
         }
         /**
          * @description The size (number) of the main data block (if any) attached to the model (if any).
          */
         get dataSize() {
-            return this.model?.getSize?.();
+            return this.model?.size;
         }
         /**
          * @function getController
@@ -9886,7 +9937,7 @@
             if (!this._emitter)
                 this.emitter = new TurboEmitter();
             if (properties.data && this.model)
-                this.model.setBlock(properties.data, undefined, undefined, false);
+                this.model.setDataWithoutInitializing(properties.data);
             if (properties.initialize === undefined || properties.initialize)
                 this.initialize();
         }
@@ -10032,8 +10083,8 @@
          * view, model, or emitter) so every piece stays in sync.
          */
         linkPieces() {
-            if (this.model && !this.model.keyChangedCallback.has(this.emitterFireCallback)) {
-                this.model.keyChangedCallback.add(this.emitterFireCallback);
+            if (this.model && !this.model.onKeyChanged.has(this.emitterFireCallback)) {
+                this.model.onKeyChanged.add(this.emitterFireCallback);
             }
             if (this.emitter)
                 this.emitter.model = this.model;
@@ -10099,11 +10150,10 @@
          * @description Callback function wired to the model's `keyChangedCallback` that forwards
          * key/block change notifications into the emitter. It is stored so it can be removed and reattached
          * when the model changes.
-         * @param {string} keyName - The block key name that changed.
-         * @param {any} blockKey - The specific block key that changed.
-         * @param {...any} args - Additional arguments forwarded from the model.
+         * @param value
+         * @param keys
          */
-        emitterFireCallback = (keyName, blockKey, ...args) => this.emitter?.fireWithBlock(keyName, blockKey, ...args);
+        emitterFireCallback = (value, ...keys) => this.emitter?.fireKey(value, ...keys);
         /**
          * @protected
          * @function extractClassEssenceName
@@ -10209,7 +10259,7 @@
         data(target) {
             let obj = this.dataMap.get(target);
             if (!obj) {
-                obj = { propertyKeyMap: new Map(), blockKeyMap: new Map() };
+                obj = { propertyKeyMap: new Map(), pathMap: new Map() };
                 this.dataMap.set(target, obj);
             }
             return obj;
@@ -10243,7 +10293,6 @@
                         if (!Object.is(prev, value))
                             entry.emit();
                     }
-                    //If "write" is passed, setup emit() behavior. Otherwise, reflect to already defined setter.
                     else if (!options.diffOnWrite) {
                         write(value);
                         entry.emit();
@@ -10297,6 +10346,15 @@
         markDirty(target, key) {
             this.getSignal(target, key)?.emit();
         }
+        bindPath(target, propertyKey, keys) {
+            this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
+        }
+        getKeyFromPath(target, keys) {
+            return this.data(target).pathMap.get(this.serializePath(keys));
+        }
+        serializePath(keys) {
+            return keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
+        }
         schedule(effect) {
             if (effect.scheduled)
                 return;
@@ -10305,17 +10363,6 @@
                 effect.scheduled = false;
                 effect.run();
             });
-        }
-        bindBlockKey(target, key, dataKey, blockKey) {
-            blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
-            const map = this.data(target).blockKeyMap;
-            if (!map.has(blockKey))
-                map.set(blockKey, new Map());
-            map.get(blockKey).set(dataKey, key);
-        }
-        getKeyFromBlockKey(target, dataKey, blockKey) {
-            blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
-            return this.data(target).blockKeyMap.get(blockKey)?.get(dataKey);
         }
     }
 
@@ -10498,17 +10545,21 @@
     const signalUtils = new SignalUtils(utils$9);
     const effectUtils = new EffectUtils(utils$9);
     function signal(...args) {
-        //Decorator
+        // Decorator
         if (args.length === 2 && args[1] && typeof args[1] === "object"
             && "kind" in args[1] && "name" in args[1] && "static" in args[1] && "private" in args[1]) {
             return signalUtils.signalDecorator(args[0], args[1]);
         }
-        //Getter setter
+        // Getter + setter: signal(get, set, target?, ...keys)
         if (typeof args[0] === "function" && typeof args[1] === "function") {
-            return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(undefined, args[2], args[3], args[0], args[1]));
+            const [get, set, target, ...keys] = args;
+            const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
+            return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(undefined, target, key, get, set));
         }
-        //From value
-        return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(args[0], args[1], args[2]));
+        // From value: signal(initial?, target?, ...keys)
+        const [initial, target, ...keys] = args;
+        const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
+        return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(initial, target, key));
     }
     function effect(...args) {
         const value = args[0];
@@ -10523,7 +10574,9 @@
                 throw new Error("@effect does not support static methods/getters.");
             context.addInitializer?.(function () {
                 const self = this;
-                const fn = function () { value?.call(this); };
+                const fn = function () {
+                    value?.call(this);
+                };
                 const eff = effectUtils.makeEffect(() => fn.call(self));
                 utils$9.setEffect(self, key, eff);
             });
@@ -10533,14 +10586,6 @@
             eff.run();
             return () => eff.dispose();
         }
-    }
-    function markDirty(target, key, blockKey) {
-        let computedKey;
-        if (!isUndefined(blockKey))
-            computedKey = utils$9.getKeyFromBlockKey(target, key, blockKey);
-        if (isUndefined(computedKey))
-            computedKey = key;
-        return utils$9.markDirty(target, computedKey);
     }
     /**
      * @function initializeEffects
@@ -10632,84 +10677,6 @@
                 else
                     this._weakRefs.delete(weakRef);
             }
-        }
-    }
-
-    /**
-     * @internal
-     * @class SimpleDelegate
-     * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
-     * @description Class representing a set of callbacks that can be maintained and executed together.
-     */
-    class SimpleDelegate {
-        callbacks = new Set();
-        /**
-         * @description Adds a callback to the list.
-         * @param callback - The callback function to add.
-         */
-        add(callback) {
-            this.callbacks.add(callback);
-        }
-        /**
-         * @description Removes a callback from the list.
-         * @param callback - The callback function to remove.
-         * @returns A boolean indicating whether the callback was found and removed.
-         */
-        remove(callback) {
-            return this.callbacks.delete(callback);
-        }
-        /**
-         * @description Checks whether a callback is in the list.
-         * @param callback - The callback function to check for.
-         * @returns A boolean indicating whether the callback was found.
-         */
-        has(callback) {
-            return this.callbacks.has(callback);
-        }
-        /**
-         * @description Invokes all callbacks with the provided arguments.
-         * @param args - The arguments to pass to the callbacks.
-         */
-        fire(...args) {
-            let returnValue;
-            for (const callback of this.callbacks) {
-                try {
-                    const value = callback(...args);
-                    if (!isUndefined(value))
-                        returnValue = value;
-                }
-                catch (error) {
-                    console.error("Error invoking callback:", error);
-                }
-            }
-            return returnValue;
-        }
-        /**
-         * @description Clears added callbacks
-         */
-        clear() {
-            this.callbacks.clear();
-        }
-    }
-    /**
-     * @class Delegate
-     * @group Components
-     * @category Delegate
-     * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
-     * @description Class representing a set of callbacks that can be maintained and executed together.
-     */
-    class Delegate extends SimpleDelegate {
-        /**
-         * @description Delegate fired when a callback is added.
-         */
-        onAdded = new SimpleDelegate();
-        /**
-         * @description Adds a callback to the list.
-         * @param callback - The callback function to add.
-         */
-        add(callback) {
-            super.add(callback);
-            this.onAdded.fire(callback);
         }
     }
 
@@ -10832,315 +10799,429 @@
         return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
+    class TurboNestedMapNode extends Map {
+    }
     /**
      * @class TurboNestedMap
      * @group Components
      * @category TurboNestedMap
      *
-     * @template ValueType - The type of the nested map's values.
-     * @template KeyType - The per-value key type.
-     * @template BlockKeyType - The block-grouping key type.
+     * @description A map of arbitrary nesting depth, addressed via `...keys` paths.
+     *
+     * @template ValueType - The type of stored values.
+     * @template KeyType - The type of keys at each level of the path. Defaults to `string | symbol | number`.
      */
     class TurboNestedMap {
-        nestedMap = new Map();
+        nestedMap = new TurboNestedMapNode();
+        /*
+         *
+         * GET
+         *
+         */
         /**
          * @function get
-         * @description Retrieve the value at the given `key` within the optional `blockKey`.
-         * @param {KeyType} key - Item key.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {ValueType} - The associated value, or `undefined`.
+         * @description Retrieve the value at the given key path.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
          */
-        get(key, blockKey = this.defaultBlockKey) {
-            return this.nestedMap.get(blockKey)?.get(key);
+        get(...keys) {
+            let node = this.nestedMap;
+            for (const key of keys) {
+                if (!(node instanceof TurboNestedMapNode))
+                    return;
+                node = node.get(key);
+            }
+            return node;
         }
         /**
-         * @function set
-         * @description Set the given value at the given `key` and optional `blockKey`.
-         * @param {ValueType} value - The value to set.
-         * @param {KeyType} key - The key to set.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @function getFlat
+         * @description Retrieve the value at the given flat key.
+         * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+         * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
          */
-        set(value, key, blockKey = this.defaultBlockKey) {
-            let block = this.nestedMap.get(blockKey);
-            if (!block) {
-                this.nestedMap.set(blockKey, new Map());
-                block = this.nestedMap.get(blockKey);
-            }
-            block?.set(key, value);
+        getFlat(flatKey) {
+            const keys = this.scopeKey(flatKey);
+            if (keys.length)
+                return this.get(...keys);
         }
         /**
          * @function getKey
-         * @description Find the first (key, blockKey) pair for a given value.
+         * @description Find the key path of the first occurrence of the given value.
          * @param {ValueType} value - The value to locate.
-         * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key, or `undefined` if not found.
+         * @returns {KeyType[] | undefined} The key path, or `undefined` if not found.
          */
         getKey(value) {
-            for (const [blockKey, map] of this.nestedMap.entries()) {
-                for (const [key, entry] of map.entries()) {
-                    if (entry === value)
-                        return { blockKey, key };
-                }
-            }
+            return this.findPaths(this.nestedMap, value, false)[0];
         }
         /**
          * @function getKeys
-         * @description Find all (key, blockKey) pairs for a given value.
+         * @description Find the key paths of all occurrences of the given value.
          * @param {ValueType} value - The value to locate.
-         * @returns {ScopedKey<KeyType, BlockKeyType>[]} - Array of scoped keys.
+         * @returns {KeyType[][]} Array of key paths.
          */
         getKeys(value) {
-            const result = [];
-            for (const [blockKey, map] of this.nestedMap.entries()) {
-                for (const [key, entry] of map.entries()) {
-                    if (entry === value)
-                        result.push({ blockKey, key });
-                }
-            }
-            return result;
+            return this.findPaths(this.nestedMap, value);
         }
         /**
          * @function getFlatKey
-         * @description Return the first `flatKey` (global index or flattened string key) for the provided value.
+         * @description Return the flat key of the first occurrence of the given value.
          * @param {ValueType} value - The value to query.
-         * @returns {string | number} - Flattened key, or undefined when value not found.
+         * @returns {string | number | undefined} The flat key, or `undefined` if not found.
          */
         getFlatKey(value) {
-            const scoped = this.getKey(value);
-            if (!scoped)
+            const path = this.findPaths(this.nestedMap, value, false)[0];
+            if (!path)
+                return undefined;
+            return this.flattenKey(...path);
+        }
+        /*
+         *
+         * SET
+         *
+         */
+        /**
+         * @function set
+         * @description Store a value at the given key path. Intermediate nodes are created automatically.
+         * @param {ValueType} value - The value to store.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         */
+        set(value, ...keys) {
+            if (!keys.length)
                 return;
-            return this.flattenKey(scoped.key, scoped.blockKey);
+            let node = this.nestedMap;
+            for (let i = 0; i < keys.length - 1; i++) {
+                const key = keys[i];
+                if (!node.has(key) || !(node.get(key) instanceof TurboNestedMapNode))
+                    node.set(key, new TurboNestedMapNode());
+                node = node.get(key);
+            }
+            node.set(keys[keys.length - 1], value);
         }
         /**
-         * @function getFromFlatKey
-         * @description Get the value at the given `flatKey`.
-         * @param {number | string} flatKey - Global index or flattened string key (produced by {@link flattenKey}).
-         * @returns {ValueType} - The value, or undefined if not found.
+         * @function setFlat
+         * @description Store a value at the given flat key.
+         * @param {ValueType} value - The value to store.
+         * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
          */
-        getFromFlatKey(flatKey) {
-            const scoped = this.scopeKey(flatKey);
-            if (isUndefined(scoped.blockKey) || isUndefined(scoped.key))
-                return;
-            return this.get(scoped.key, scoped.blockKey);
+        setFlat(value, flatKey) {
+            const keys = this.scopeKey(flatKey);
+            if (keys.length)
+                this.set(value, ...keys);
+        }
+        /*
+         *
+         * HAS
+         *
+         */
+        /**
+         * @function has
+         * @description Check whether an entry exists at the given key path.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         * @returns {boolean}
+         */
+        has(...keys) {
+            if (!keys.length)
+                return false;
+            const parent = this.get(...keys.slice(0, -1));
+            if (!(parent instanceof TurboNestedMapNode))
+                return false;
+            return parent.has(keys[keys.length - 1]);
         }
         /**
-         * @function getEntriesForBlock
-         * @description Return an array of `[key, value]` pairs for the given `blockKey`, alphabetically sorted by the
-         * key values (if compatible).
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {[KeyType, ValueType][]} - Array of pairs for the block.
+         * @function hasFlat
+         * @description Check whether an entry exists at the given flat key.
+         * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+         * @returns {boolean}
          */
-        getEntriesForBlock(blockKey = this.defaultBlockKey) {
-            const block = this.nestedMap.get(blockKey);
-            if (!block)
-                return [];
-            return Array.from(block.entries()).sort((a, b) => alphabeticalSorting(a[0], b[0]));
+        hasFlat(flatKey) {
+            const keys = this.scopeKey(flatKey);
+            return keys.length ? this.has(...keys) : false;
         }
         /**
-         * @function getKeysForBlock
-         * @description Return the keys for a block alphabetically sorted (if compatible).
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {KeyType[]} - Array of keys.
+         * @function hasValue
+         * @description Check whether the given value exists anywhere in the map.
+         * @param {ValueType} value - The value to look for.
+         * @returns {boolean}
          */
-        getKeysForBlock(blockKey = this.defaultBlockKey) {
-            return this.getEntriesForBlock(blockKey).map(entry => entry[0]);
+        hasValue(value) {
+            return !!this.getKey(value);
         }
-        /**
-         * @function getValuesForBlock
-         * @description Return the values for a block alphabetically sorted by their keys (if compatible).
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {ValueType[]} - Array of values.
+        /*
+         *
+         * REMOVE
+         *
          */
-        getValuesForBlock(blockKey = this.defaultBlockKey) {
-            return this.getEntriesForBlock(blockKey).map(entry => entry[1]);
-        }
-        /**
-         * @function getAllKeys
-         * @description Return all keys from all blocks. Blocks are visited in alphabetical order of their blockKey
-         * (if compatible).
-         * @returns {KeyType[]} - Flattened list of all keys.
-         */
-        getAllKeys() {
-            return Array.from(this.nestedMap.keys())
-                .sort(alphabeticalSorting)
-                .flatMap(blockKey => this.getKeysForBlock(blockKey));
-        }
-        /**
-         * @function getAllValues
-         * @description Return all values from all blocks. Blocks are visited in alphabetical order of their blockKey
-         * (if compatible).
-         * @returns {ValueType[]} - Flattened list of all values.
-         */
-        getAllValues() {
-            return Array.from(this.nestedMap.keys())
-                .sort(alphabeticalSorting)
-                .flatMap(blockKey => this.getValuesForBlock(blockKey));
-        }
-        /**
-         * @function hasKey
-         * @description Check whether a value exists at the given `key` inside `blockKey`.
-         * @param {KeyType} key - The targeted key.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {boolean} Whether a value exists.
-         */
-        hasKey(key, blockKey = this.defaultBlockKey) {
-            return this.nestedMap.get(blockKey)?.has(key) ?? false;
-        }
-        /**
-         * @function hasBlock
-         * @description Check whether a block exists at `blockKey`.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {boolean} Whether a block exists.
-         */
-        hasBlock(blockKey) {
-            return this.nestedMap.has(blockKey);
-        }
-        /**
-         * @function getBlockSize
-         * @description Get the number of entries inside the target block.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {number} The size of the block.
-         */
-        getBlockSize(blockKey = this.defaultBlockKey) {
-            return this.nestedMap.get(blockKey)?.size ?? 0;
-        }
-        /**
-         * @function removeKey
-         * @description Remove the entry at the given `key` inside `blockKey`.
-         * @param {KeyType} key - The key to remove.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         */
-        removeKey(key, blockKey = this.defaultBlockKey) {
-            this.nestedMap.get(blockKey)?.delete(key);
-        }
         /**
          * @function remove
-         * @description Remove the first entry with the given value.
+         * @description Remove the entry at the given key path.
+         * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+         */
+        remove(...keys) {
+            if (!keys.length)
+                return;
+            const parent = this.get(...keys.slice(0, -1));
+            if (parent instanceof TurboNestedMapNode)
+                parent.delete(keys[keys.length - 1]);
+        }
+        /**
+         * @function removeValue
+         * @description Remove the first occurrence of the given value.
          * @param {ValueType} value - The value to remove.
          */
-        remove(value) {
-            const pos = this.getKey(value);
-            if (pos)
-                this.removeKey(pos.key, pos.blockKey);
+        removeValue(value) {
+            const path = this.findPaths(this.nestedMap, value, false)[0];
+            if (path)
+                this.remove(...path);
         }
         /**
-         * @function clear
-         * @description Remove all entries and reset internal state.
+         * @function removeValues
+         * @description Remove all occurrences of the given value.
+         * @param {ValueType} value - The value to remove.
          */
-        clear() {
-            for (const [blockKey, map] of this.nestedMap.entries()) {
-                for (const key of map.keys())
-                    this.removeKey(key, blockKey);
-            }
-            this.nestedMap.clear();
+        removeValues(value) {
+            this.findPaths(this.nestedMap, value).forEach(path => this.remove(...path));
         }
+        /*
+         *
+         * ENTRIES
+         *
+         */
+        /**
+         * @function getEntriesAt
+         * @description Return all leaf `[key, value]` pairs under the given path, sorted alphabetically by key.
+         * Pass no keys to get all leaf entries in the map.
+         * @param {...KeyType[]} keys - Path to the subtree root.
+         * @returns {[KeyType, ValueType][]}
+         */
+        getEntriesAt(...keys) {
+            return this.getPathsAt(...keys).map(path => [path[path.length - 1], this.get(...path)]);
+        }
+        /**
+         * @description All leaf `[key, value]` pairs in the nested map, sorted alphabetically by key.
+         */
+        get entries() {
+            return this.getEntriesAt();
+        }
+        /*
+         *
+         * KEYS
+         *
+         */
+        /**
+         * @function getKeysAt
+         * @description Return all leaf keys under the given path, sorted alphabetically.
+         * Pass no keys to get all leaf keys in the map.
+         * @param {...KeyType[]} keys - Path to the parent node.
+         * @returns {KeyType[]}
+         */
+        getKeysAt(...keys) {
+            return this.getEntriesAt(...keys).map(e => e[0]);
+        }
+        /**
+         * @description All leaf keys in the nested map, sorted alphabetically.
+         */
+        get keys() {
+            return this.getKeysAt();
+        }
+        /*
+         *
+         * VALUES
+         *
+         */
+        /**
+         * @function getValuesAt
+         * @description Return all leaf values under the given path, sorted alphabetically by key.
+         * Pass no keys to get all leaf values in the map.
+         * @param {...KeyType[]} keys - Path to the parent node.
+         * @returns {ValueType[]}
+         */
+        getValuesAt(...keys) {
+            return this.getEntriesAt(...keys).map(e => e[1]);
+        }
+        /**
+         * @description All leaf values in the nested map, sorted alphabetically by key.
+         */
+        get values() {
+            return this.getValuesAt();
+        }
+        /*
+         *
+         * PATHS
+         *
+         */
+        /**
+         * @function getPathsAt
+         * @description Return all leaf key paths under the given path.
+         * Pass no keys to get all leaf paths in the map.
+         * @param {...KeyType[]} keys - Path to the subtree root.
+         * @returns {KeyType[][]}
+         */
+        getPathsAt(...keys) {
+            return this.findPaths(this.get(...keys));
+        }
+        /**
+         * @description All leaf key paths in the map.
+         */
+        get paths() {
+            return this.getPathsAt();
+        }
+        /*
+         *
+         * SIZE
+         *
+         */
+        /**
+         * @function getSizeAt
+         * @description Return the number of leaf entries under the given path.
+         * Pass no keys to get the number of all leaf entries.
+         * @param {...KeyType[]} keys - Path to the root.
+         * @returns {number}
+         */
+        getSizeAt(...keys) {
+            return this.getPathsAt(...keys).length;
+        }
+        /**
+         * @description Number of all leaf entries in the nested map.
+         */
+        get size() {
+            return this.getSizeAt();
+        }
+        /*
+         *
+         * SCOPE AND FLAT UTILS
+         *
+         */
         /**
          * @function flattenKey
-         * @description Produce a stable, serialized representation of (key, blockKey). For numeric block keys
-         * the function returns a numeric global index; otherwise it returns a `"blockKey|key"` string.
-         * @param {KeyType} key - Item key.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
-         * @returns {number | string} - The flattened key.
+         * @description Serialize a key path into a single flat key.
+         * - Fully numeric paths produce a numeric global leaf index.
+         * - All other paths produce a `"k0|k1|k2|..."` string.
+         * @param {...KeyType[]} keys - The key path to serialize.
+         * @returns {string | number | undefined} The flat key, or `undefined` if the path is invalid.
          */
-        flattenKey(key, blockKey = this.defaultBlockKey) {
-            const compatibleBlockKey = this.getFlatCompatibleKey(blockKey);
-            const compatibleKey = this.getFlatCompatibleKey(key);
-            if (compatibleBlockKey === undefined)
+        flattenKey(...keys) {
+            if (!keys.length)
                 return;
-            if (typeof compatibleBlockKey === "string")
-                return compatibleBlockKey + "|" + compatibleKey.toString();
-            let globalIndex = 0;
-            for (const bk of Array.from(this.nestedMap.keys()).sort(alphabeticalSorting)) {
-                if (bk === blockKey)
-                    break;
-                globalIndex += this.getEntriesForBlock(bk).length;
+            const compatible = keys.map(k => this.getFlatCompatibleKey(k));
+            if (compatible.some(k => k === undefined))
+                return;
+            if (compatible.every(k => typeof k === "number")) {
+                let index = 0;
+                const allLeafPaths = this.findPaths(this.nestedMap);
+                for (const path of allLeafPaths) {
+                    if (path.length === keys.length && path.every((k, i) => k === keys[i]))
+                        return index;
+                    index++;
+                }
             }
-            return globalIndex + Number(compatibleKey);
+            return compatible.map(k => k.toString()).join("|");
         }
         /**
          * @function scopeKey
-         * @description Reverse {@link flattenKey}`: if given a string in the form `"blockKey|key"`, it returns `{blockKey, key}`.
-         * @param {number | string} flatKey - Flattened key or global index.
-         * @returns {ScopedKey<KeyType, BlockKeyType>} - The scoped key.
+         * @description Convert a flat key back into a key path. Reverses {@link flattenKey}.
+         * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
+         * - A numeric global leaf index becomes the corresponding numeric path.
+         * @param {number | string} flatKey - The flat key to convert.
+         * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
          */
         scopeKey(flatKey) {
             if (typeof flatKey === "string") {
-                const split = flatKey.toString().split("|");
-                if (split.length < 2)
-                    return {};
-                return { blockKey: split[0], key: split[1] };
+                const parts = flatKey.split("|");
+                return parts.length >= 1 ? parts : undefined;
             }
-            const blockKeys = Array.from(this.nestedMap.keys()).sort(alphabeticalSorting);
             if (typeof flatKey === "number") {
+                const allLeafPaths = this.findPaths(this.nestedMap);
                 if (flatKey < 0)
-                    return { blockKey: blockKeys[0] ?? 0, key: 0 };
-                let index = flatKey;
-                for (const blockKey of blockKeys) {
-                    const size = this.getEntriesForBlock(blockKey).length;
-                    if (index < size)
-                        return { blockKey, key: index };
-                    index -= size;
-                }
+                    return allLeafPaths[0];
+                if (flatKey >= allLeafPaths.length)
+                    return allLeafPaths[allLeafPaths.length - 1];
+                return allLeafPaths[flatKey];
             }
-            const lastBlockKey = blockKeys[blockKeys.length - 1];
-            return { blockKey: lastBlockKey, key: this.getEntriesForBlock(lastBlockKey).length };
+            return undefined;
         }
         /**
-         * @property defaultBlockKey
-         * @protected
-         * @description Default block key used when none is supplied. It returns the first blockKey if present,
-         * otherwise returns the sentinel `"__default__"`.
-         * @returns {BlockKeyType}
+         * @function clear
+         * @description Remove all entries from the map.
          */
-        get defaultBlockKey() {
-            const key = Array.from(this.nestedMap.keys())?.[0];
-            if (!isUndefined(key))
-                return key;
-            return "__default__";
+        clear() {
+            this.nestedMap.clear();
+        }
+        /*
+         *
+         * PROTECTED
+         *
+         */
+        findPaths(node, target, allPaths = true, prefix = []) {
+            if (!node || !(node instanceof TurboNestedMapNode))
+                return [];
+            const results = [];
+            const entries = Array.from(node.entries())
+                .sort((a, b) => alphabeticalSorting(a[0], b[0]));
+            for (const [key, value] of entries) {
+                const path = [...prefix, key];
+                if (value instanceof TurboNestedMapNode) {
+                    const nested = this.findPaths(value, target, allPaths, path);
+                    if (!allPaths && target !== undefined && nested.length)
+                        return nested;
+                    else
+                        results.push(...nested);
+                }
+                else {
+                    if (allPaths && target === undefined)
+                        results.push(path);
+                    else if (value === target) {
+                        results.push(path);
+                        if (!allPaths)
+                            return results;
+                    }
+                }
+            }
+            return results;
         }
         getFlatCompatibleKey(key) {
             if (typeof key === "number" || typeof key === "string")
                 return key;
-            return stringify(key);
+            const s = stringify(key);
+            return s !== undefined ? s : undefined;
         }
     }
 
     /**
      * @class TurboObserver
-     * @group Components
-     * @category TurboObserver
+     * @group MVC
+     * @category TurboModel
      *
      * @extends TurboNestedMap
-     * @description Generic observer that keeps a set of component instances organized by
-     * block key and item key. Useful to maintain UI components or other per-entry objects synchronized with a
-     * data source (e.g. a {@link TurboDataBlock} or a {@link TurboModel}).
+     * @description Generic observer that keeps a set of component instances organized by key path.
+     * Useful to maintain UI components or other per-entry objects synchronized with a data source
+     * ({@link TurboModel}).
      *
      * @template DataType - The type of data handled by the observer.
      * @template {object} ComponentType - The instance type created/managed by the observer.
-     * @template {string | number | symbol} KeyType - The per-item key type.
-     * @template {string | number} BlockKeyType - The block-grouping key type.
+     * @template {string | number | symbol} KeyType - The key type used at each level of the path.
      */
     class TurboObserver extends TurboNestedMap {
         _isInitialized = false;
         /**
          * @property onAdded
-         * @description Delegate called when an item appears for which no component instance exists.
-         * Handlers may return a newly-created component instance which will be stored and then receive subsequent
+         * @description Delegate called when a change is reported at a key path for which no component instance exists yet.
+         * Handlers may return a newly-created component instance, which will be stored and passed to subsequent
          * `onUpdated` calls.
          */
         onAdded = new Delegate();
         /**
          * @property onUpdated
-         * @description Delegate called when an item already has an associated instance and its data changes.
+         * @description Delegate called when a change is reported at a key path that already has an associated instance.
          */
         onUpdated = new Delegate();
         /**
          * @property onDeleted
-         * @description Delegate called when an item is removed.
+         * @description Delegate called when a key path is reported as deleted.
          */
         onDeleted = new Delegate();
         /**
          * @property onInitialize
-         * @description Delegate fired when the observer is initialized. Useful to perform initial population steps.
+         * @description Delegate fired once when the observer is initialized. Useful for initial population.
          */
         onInitialize = new Delegate();
         /**
@@ -11151,83 +11232,77 @@
         /**
          * @constructor
          * @description Create a TurboObserver.
-         * By default, the observer wires `onUpdated` to update instance data if the instance
-         * exposes a {@link TurboModel}, or `data` / `dataId` fields. It also wires `onDeleted` and removes the instance
-         * when the associated key is deleted.
-         * @param {TurboObserverProperties<DataType, ComponentType, KeyType, BlockKeyType>} [properties] - Initialization
+         * By default, `onUpdated` updates the data of the mapped instance if it exposes a {@link TurboModel} model,
+         * or `data` / `dataId` fields. `onDeleted` removes the instance from the map and the DOM.
+         * @param {TurboObserverProperties<DataType, ComponentType, KeyType>} [properties] - Initialization
          * options and lifecycle callbacks.
          */
         constructor(properties = {}) {
             super();
-            const self = this;
             if (properties.onAdded)
-                this.onAdded.add((data, id, self, blockKey) => properties.onAdded(data, id, self, blockKey));
-            this.onUpdated.add((data, instance, id, self, blockKey) => {
+                this.onAdded.add((data, self, ...keys) => properties.onAdded(data, self, ...keys));
+            this.onUpdated.add((data, instance, self, ...keys) => {
                 if (properties.onUpdated)
-                    properties.onUpdated(data, instance, id, self, blockKey);
+                    properties.onUpdated(data, instance, self, ...keys);
                 else {
                     if (typeof instance !== "object")
                         return;
                     if ("model" in instance && instance.model instanceof TurboModel)
-                        instance.model.setBlock(data, id);
+                        instance.model.set(data, ...keys);
                     else {
                         if ("data" in instance)
                             instance.data = data;
                         if ("dataId" in instance)
-                            instance.dataId = id.toString();
+                            instance.dataId = keys[keys.length - 1].toString();
                     }
                 }
             });
-            this.onDeleted.add((data, instance, id, self, blockKey) => {
+            this.onDeleted.add((data, instance, self, ...keys) => {
                 if (properties.onDeleted)
-                    properties.onDeleted(data, instance, id, self, blockKey);
+                    properties.onDeleted(data, instance, self, ...keys);
                 else
-                    this.remove(instance);
+                    this.removeValue(instance);
             });
             if (properties.onInitialize)
-                this.onInitialize.add(() => properties.onInitialize(self));
+                this.onInitialize.add((self) => properties.onInitialize(self));
             if (properties.onDestroy)
-                this.onDestroy.add(() => properties.onDestroy(self));
+                this.onDestroy.add((self) => properties.onDestroy(self));
             if (properties.initialize)
                 this.initialize();
         }
         /**
-         * @function removeKey
-         * @description Remove the instance associated with `key` inside `blockKey`.
-         * @param {KeyType} key - The key to remove.
-         * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @function remove
+         * @description Remove the instance at the given key path from the map and call `instance.remove()` if available.
+         * @param {...KeyType[]} keys - Ordered path to the instance.
          */
-        removeKey(key, blockKey = this.defaultBlockKey, removeFromDOM = true) {
-            const instance = this.get(key, blockKey);
-            super.removeKey(key, blockKey);
+        remove(...keys) {
+            const instance = this.get(...keys);
+            super.remove(...keys);
             if (!instance)
                 return;
-            if (removeFromDOM && instance && typeof instance === "object"
+            if (instance && typeof instance === "object"
                 && "remove" in instance && typeof instance.remove == "function")
                 instance?.remove();
         }
         /**
-         * @function remove
-         * @description Remove a given instance.
-         * @param {ComponentType} instance - The instance to remove.
-         * @param {boolean} [removeFromDOM=true] - Whether to call `instance.remove()` when available.
+         * @function detach
+         * @description Remove the instance at the given key path from the map without calling `instance.remove()`,
+         * detaching it from the observer.
+         * @param {...KeyType[]} keys - Ordered path to the instance.
          */
-        remove(instance, removeFromDOM = true) {
-            const pos = this.getKey(instance);
-            if (pos)
-                this.removeKey(pos.key, pos.blockKey ?? this.defaultBlockKey, removeFromDOM);
+        detach(...keys) {
+            super.remove(...keys);
         }
         /**
          * @property isInitialized
-         * @description Whether the observer has been initialized (i.e. {@link initialize} called).
+         * @description Whether the observer has been initialized (i.e. {@link initialize} has been called).
          */
         get isInitialized() {
             return this._isInitialized;
         }
         /**
          * @function initialize
-         * @description Invoke `onInitialize` and mark the observer as initialized.
+         * @description Initialization method that fires `onInitialize`. No-op if already initialized.
          */
         initialize() {
             if (this.isInitialized)
@@ -11237,76 +11312,130 @@
         }
         /**
          * @function clear
-         * @description Remove and destroy all managed instances and reset internal state.
+         * @description Remove all managed instances, reset the observer to an uninitialized state, and optionally
+         * call `instance.remove()` on each instance.
+         * @param {boolean} [removeFromDom=true] - Whether to call `instance.remove()` on each managed instance.
          */
-        clear() {
+        clear(removeFromDom = true) {
+            if (removeFromDom)
+                this.values.forEach(instance => {
+                    if (typeof instance === "object" && "remove" in instance && typeof instance.remove == "function")
+                        instance.remove();
+                });
             super.clear();
             this._isInitialized = false;
         }
         /**
          * @function destroy
-         * @description Clear then fire `onDestroy`.
+         * @description Remove all managed instances, reset the observer to an uninitialized state, optionally
+         * call `instance.remove()` on each instance, and fire `onDestroy`.
+         * @param {boolean} [removeFromDom=true] - Whether to call `instance.remove()` on each managed instance.
          */
-        destroy() {
-            this.clear();
+        destroy(removeFromDom = true) {
+            this.clear(removeFromDom);
             this.onDestroy.fire(this);
         }
         /**
          * @function keyChanged
-         * @description Function to notify the observer of a change at a certain key.
-         * @param {KeyType} key - The changed item key.
-         * @param {DataType} value - The new value for the item.
-         * @param {boolean} [deleted=false] - Whether the item was removed.
-         * @param {BlockKeyType} [blockKey=this.defaultBlockKey] - Block grouping key.
+         * @description Notify the observer of a change at the given key path.
+         * Fires `onDeleted` if `deleted` is `true` and an instance exists, `onAdded` if no instance exists yet
+         * (storing the returned instance if any), and `onUpdated` otherwise.
+         * @param {KeyType[]} keys - The key path that changed.
+         * @param {DataType} value - The new value at that path.
+         * @param {boolean} [deleted=false] - Whether the entry was deleted.
          */
-        keyChanged(key, value, deleted = false, blockKey = this.defaultBlockKey) {
-            const existingInstance = this.get(key, blockKey);
-            if (existingInstance) {
-                if (deleted)
-                    this.onDeleted.fire(value, existingInstance, key, this, blockKey);
-                else
-                    this.onUpdated.fire(value, existingInstance, key, this, blockKey);
+        keyChanged(keys, value, deleted = false) {
+            let instance = this.get(...keys);
+            if (!instance && deleted)
+                return;
+            else if (instance && deleted) {
+                this.onDeleted.fire(value, instance, this, ...keys);
                 return;
             }
-            if (deleted)
-                return;
-            const instance = this.onAdded.fire(value, key, this, blockKey);
-            if (!instance)
-                return;
-            this.set(instance, key, blockKey);
-            this.onUpdated.fire(value, instance, key, this, blockKey);
+            else if (!instance) {
+                instance = this.onAdded.fire(value, this, ...keys);
+                if (!instance)
+                    return;
+                this.set(instance, ...keys);
+            }
+            this.onUpdated.fire(value, instance, this, ...keys);
         }
     }
 
     /**
-     * @class TurboDataBlock
-     * @group Components
-     * @category TurboDataBlock
+     * @class TurboModel
+     * @group MVC
+     * @category TurboModel
      *
-     * @template DataType - The type of the data held in the block.
-     * @template {string | number | symbol} KeyType - The type of the data's keys.
+     * @template DataType - The type of the data held in the model.
+     * @template {DataKeyType} KeyType - The type of the data's keys.
      * @template IdType - The type of the data's ID.
-     * @template ComponentType - For observers. The type of instances that react to changes in the block.
-     * @template DataEntryType - For observers. The type of the data associated with each observer instance.
+     * @template ComponentType - The type of instances managed by attached observers.
+     * @template DataEntryType - The type of data associated with each observer instance.
      *
-     * @description Lightweight wrapper around a plain JS container (object, Array or Map) that exposes a consistent
-     * API for reads/writes, signals, {@link TurboObserver}s and host callbacks.
-     * Use this when you want change notifications and host integration around a simple data block.
+     * @description Wrapper around a plain JS container (object, Array, or Map) that exposes a
+     * consistent API for reads/writes, signals, and {@link TurboObserver}s.
      */
-    let TurboDataBlock = (() => {
+    let TurboModel = (() => {
         let _enabledCallbacks_decorators;
         let _enabledCallbacks_initializers = [];
         let _enabledCallbacks_extraInitializers = [];
-        return class TurboDataBlock {
+        let _bubbleChanges_decorators;
+        let _bubbleChanges_initializers = [];
+        let _bubbleChanges_extraInitializers = [];
+        return class TurboModel {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
                 __esDecorate(this, null, _enabledCallbacks_decorators, { kind: "accessor", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, get: obj => obj.enabledCallbacks, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, _enabledCallbacks_initializers, _enabledCallbacks_extraInitializers);
+                __esDecorate(this, null, _bubbleChanges_decorators, { kind: "accessor", name: "bubbleChanges", static: false, private: false, access: { has: obj => "bubbleChanges" in obj, get: obj => obj.bubbleChanges, set: (obj, value) => { obj.bubbleChanges = value; } }, metadata: _metadata }, _bubbleChanges_initializers, _bubbleChanges_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            _data;
-            id;
             /**
-             * @description The data held by this block. Setting it will clear attached observers and re-initialize the block.
+             * @description Symbol used in {@link nestAll}, {@link makeSignals}, and {@link generateObserver}
+             * to target all entries at a certain level inside the data.
+             */
+            static ALL = Symbol("ALL");
+            /**
+             * @description The default constructor used to create nested {@link TurboModel} instances.
+             */
+            modelConstructor = TurboModel;
+            /**
+             * @description The default constructor used to create {@link TurboObserver} instances via {@link generateObserver}.
+             */
+            observerConstructor = TurboObserver;
+            /**
+             * @description Map of MVC handlers bound to this model.
+             */
+            handlers = new Map();
+            #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
+            /**
+             * @description Whether change callbacks and observer notifications are enabled.
+             */
+            get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
+            set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
+            #bubbleChanges_accessor_storage = (__runInitializers(this, _enabledCallbacks_extraInitializers), __runInitializers(this, _bubbleChanges_initializers, void 0));
+            /**
+             * @description Whether changes bubble up from nested models to their parent.
+             */
+            get bubbleChanges() { return this.#bubbleChanges_accessor_storage; }
+            set bubbleChanges(value) { this.#bubbleChanges_accessor_storage = value; }
+            /**
+             * @description Delegate fired whenever a value changes at a key path. Receives the new value followed
+             * by the key path as spread arguments.
+             */
+            onKeyChanged = (__runInitializers(this, _bubbleChanges_extraInitializers), new Delegate());
+            isInitialized = false;
+            signals = new Map();
+            changeObservers = new TurboWeakSet();
+            nestedModels = new Map();
+            nestListeners = new Set();
+            /**
+             * @description The ID of the data held by this model.
+             */
+            id;
+            _data;
+            /**
+             * @description The data held by this model. Setting it clears the current state and re-initializes the model.
              */
             get data() {
                 return this._data;
@@ -11317,120 +11446,369 @@
                 if (data)
                     this.initialize();
             }
-            #enabledCallbacks_accessor_storage = __runInitializers(this, _enabledCallbacks_initializers, void 0);
-            /**
-             * @description Whether callbacks are enabled.
-             */
-            get enabledCallbacks() { return this.#enabledCallbacks_accessor_storage; }
-            set enabledCallbacks(value) { this.#enabledCallbacks_accessor_storage = value; }
-            isInitialized = (__runInitializers(this, _enabledCallbacks_extraInitializers), false);
-            host;
-            signals = new Map();
-            changeObservers = new TurboWeakSet();
-            /**
-             * Delegate fired when the value changes at a certain key/index.
-             */
-            onKeyChanged = new Delegate();
-            /**
-             * The default class of observers to instantiate.
-             */
-            observerConstructor = TurboObserver;
             /**
              * @constructor
-             * @description Create a new TurboDataBlock.
-             * @param {DataBlockProperties} [properties] - Optional initialization properties.
+             * @description Create a new TurboModel.
+             * @param {TurboModelProperties} [properties] - Optional initialization properties.
              */
             constructor(properties = {}) {
                 this.id = properties.id;
                 this._data = properties.data;
+                if (typeof properties.enabledCallbacks === "boolean")
+                    this.enabledCallbacks = properties.enabledCallbacks;
+                if (typeof properties.bubbleChanges === "boolean")
+                    this.bubbleChanges = properties.bubbleChanges;
+                this.setup();
                 if (properties.initialize)
                     this.initialize();
             }
+            /**
+             * @function setup
+             * @description Called in the constructor. Use for setup that should happen at instantiation,
+             * before `this.initialize()` is called.
+             * @protected
+             */
+            setup() {
+                initializeEffects(this);
+            }
             /*
              *
-             * Basics
+             * GET
              *
              */
             /**
-             * @function get
-             * @description Retrieve the value stored at the given key.
-             * @param {KeyType} key - The key/index to read.
-             * @returns {any} - The stored value, or `undefined` if not present.
+             * @protected
+             * @function getAction
+             * @description Read a single key from a data container. Override this method to support other datatypes.
+             * @param {any} data - The container to read from.
+             * @param {DataKeyType} key - The key to read.
+             * @returns {any} The value at the key, or `undefined` if not found.
              */
-            get(key) {
-                if (this.data instanceof Map)
-                    return this.data.get(key);
-                return this.data?.[key];
+            getAction(data, key) {
+                if (data instanceof Map)
+                    return data.get(key);
+                return data?.[key];
+            }
+            get(...keys) {
+                if (keys.length === 0)
+                    return this.data;
+                let current = this.data;
+                for (const key of keys) {
+                    if (!current || typeof current !== "object")
+                        return undefined;
+                    current = this.getAction(current, key);
+                }
+                return current;
             }
             /**
-             * @function set
-             * @description Set a value at the provided key and notify observers/signals if the value changed.
-             * @param {KeyType} key - The key/index to write.
-             * @param {unknown} value - The value to set.
+             * @function getFlat
+             * @description Retrieve the value at the given flat key.
+             * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+             * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+             * @returns {any} The stored value, or `undefined` if not found.
              */
-            set(key, value) {
-                if (!this.data)
+            getFlat(flatKey, depth) {
+                const keys = this.scopeKey(flatKey, depth);
+                if (!keys?.length)
+                    return undefined;
+                return this.get(...keys);
+            }
+            /**
+             * @function getKey
+             * @description Find the key path of the first occurrence of the given value, searching depth-first.
+             * @param {any} value - The value to locate.
+             * @returns {DataKeyType[]} The key path, or `undefined` if not found.
+             */
+            getKey(value) {
+                const search = (data, path) => {
+                    if (!data || typeof data !== "object")
+                        return undefined;
+                    const keys = data instanceof Map
+                        ? Array.from(data.keys())
+                        : [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
+                    for (const key of keys) {
+                        const entry = this.getAction(data, key);
+                        if (Object.is(entry, value))
+                            return [...path, key];
+                        const nested = search(entry, [...path, key]);
+                        if (nested)
+                            return nested;
+                    }
+                    return undefined;
+                };
+                return search(this.data, []);
+            }
+            /**
+             * @function getFlatKey
+             * @description Return the flat key of the first occurrence of the given value.
+             * @param {any} value - The value to query.
+             * @returns {FlatKeyType | undefined} The flat key, or `undefined` if not found.
+             */
+            getFlatKey(value) {
+                const path = this.getKey(value);
+                if (!path?.length)
+                    return undefined;
+                return this.flattenKey(...path);
+            }
+            /**
+             * @function getKeys
+             * @description Find the key paths of all occurrences of the given value, searching depth-first.
+             * @param {any} value - The value to locate.
+             * @returns {DataKeyType[][]} Array of key paths.
+             */
+            getKeys(value) {
+                const results = [];
+                const search = (data, path) => {
+                    if (!data || typeof data !== "object")
+                        return;
+                    const keys = data instanceof Map
+                        ? Array.from(data.keys())
+                        : [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
+                    for (const key of keys) {
+                        const entry = this.getAction(data, key);
+                        const currentPath = [...path, key];
+                        if (Object.is(entry, value))
+                            results.push(currentPath);
+                        else
+                            search(entry, currentPath);
+                    }
+                };
+                search(this.data, []);
+                return results;
+            }
+            /**
+             * @function getFlatKeys
+             * @description Return the flat keys of all occurrences of the given value.
+             * @param {any} value - The value to query.
+             * @returns {FlatKeyType[]} Array of flat keys.
+             */
+            getFlatKeys(value) {
+                return this.getKeys(value).map(path => this.flattenKey(...path)).filter(k => k !== undefined);
+            }
+            /*
+             *
+             * SET
+             *
+             */
+            /**
+             * @protected
+             * @function setAction
+             * @description Write a single key to a data container. Override this method to support other datatypes.
+             * @param {any} data - The container to write to.
+             * @param {DataKeyType} key - The key to write.
+             * @param {any} value - The value to set.
+             */
+            setAction(data, value, key) {
+                if (data instanceof Map)
+                    data.set(key, value);
+                else
+                    data[key] = value;
+            }
+            /**
+             * @protected
+             * @function internalSet
+             * @description Write a value at a key, propagating the change to a nested model if one exists,
+             * and firing {@link keyChanged} if the value actually changed.
+             * @param {TurboModel} model - The owning model (used for nested model lookup and change notification),
+             * or `undefined` if operating on a non-root container.
+             * @param {any} data - The container to write to.
+             * @param {DataKeyType} key - The key to write.
+             * @param {any} value - The value to set.
+             */
+            internalSet(model, data, value, key) {
+                if (model) {
+                    const nested = model.getNested(key);
+                    if (nested)
+                        nested.data = value;
+                }
+                if (!data)
                     return;
-                const prev = this.get(key);
+                const prev = this.getAction(data, key);
                 if (Object.is(prev, value))
                     return;
-                if (this.data instanceof Map)
-                    this.data.set(key, value);
-                else
-                    this.data[key] = value;
-                this.keyChanged(key, value);
+                this.setAction(data, value, key);
+                if (model)
+                    model.keyChanged([key], value);
+            }
+            set(value, ...keys) {
+                this.routeMutation(keys, (data, key) => this.internalSet(data === this.data ? this : undefined, data, value, key), (model, keys) => model.set(value, ...keys));
             }
             /**
-             * @function add
-             * @description Append or insert a value into an array-backed data block. If the block is not an
-             * array, the call forwards to {@link set}.
-             * @param {unknown} value - The value to insert.
-             * @param {KeyType} [key] - Optional numeric index to insert at. If omitted, the value is pushed.
-             * @returns {KeyType | void} - The index where the value was inserted (for arrays), or void for non-arrays.
+             * @function setFlat
+             * @description Set a value at the given flat key.
+             * @param {unknown} value - The value to set.
+             * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+             * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
              */
-            add(value, key) {
-                if (!this.data || !Array.isArray(this.data))
-                    return this.set(key, value);
-                let index = key;
-                if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
-                    index = this.data.length;
-                    this.data.push(value);
-                }
-                else {
-                    if (index < 0)
+            setFlat(value, flatKey, depth) {
+                const keys = this.scopeKey(flatKey, depth);
+                if (keys?.length)
+                    this.set(value, ...keys);
+            }
+            /*
+             *
+             * ADD
+             *
+             */
+            /**
+             * @protected
+             * @function internalAdd
+             * @description Insert a value into a container via {@link addAction} and fire {@link keyChanged}.
+             * @param {TurboModel} model - The owning model for change notification, or `undefined` for non-root containers.
+             * @param {any} data - The container to insert into.
+             * @param {any} value - The value to insert.
+             * @param {DataKeyType} key - The target index or key.
+             * @returns {DataKeyType} The index or key where the value was stored.
+             */
+            internalAdd(model, data, value, key) {
+                if (!data)
+                    return key;
+                key = this.addAction(model, data, value, key);
+                if (model)
+                    model.keyChanged([key], value);
+                return key;
+            }
+            /**
+             * @protected
+             * @function addAction
+             * @description Perform the raw insertion. Override this method to support other datatypes.
+             * @param {TurboModel} model - The owning model.
+             * @param {any} data - The container to insert into.
+             * @param {any} value - The value to insert.
+             * @param {DataKeyType} key - The target index or key. Clamped to valid array bounds for array containers.
+             * @returns {DataKeyType} The index or key where the value was stored.
+             */
+            addAction(model, data, value, key) {
+                if (Array.isArray(data)) {
+                    let index = key;
+                    if (isUndefined(index) || typeof index !== "number" || index > data.length)
+                        index = data.length;
+                    else if (index < 0)
                         index = 0;
-                    this.data.splice(index, 0, value);
+                    data.splice(index, 0, value);
+                    return index;
                 }
-                return index;
+                this.internalSet(model, data, value, key);
+                return key;
+            }
+            add(value, ...keys) {
+                return this.routeMutation(keys, (data, key) => this.internalAdd(data === this.data ? this : undefined, data, value, key), (nested, keys) => nested.add(value, ...keys));
             }
             /**
-             * @function has
-             * @description Check whether the given key exists in the block.
-             * @param {KeyType} key - The key/index to check.
-             * @returns {boolean} - True, if present.
+             * @function addFlat
+             * @description Insert a value at the position described by the given flat key.
+             * @param {unknown} value - The value to insert.
+             * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+             * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+             * @returns {DataKeyType} The index or key where the value was stored.
              */
-            has(key) {
-                if (this.data instanceof Map)
-                    return this.data.has(key);
-                return this.data?.[key] !== undefined;
+            addFlat(value, flatKey, depth) {
+                const keys = this.scopeKey(flatKey, depth);
+                if (keys?.length)
+                    return this.add(value, ...keys);
+            }
+            /*
+             *
+             * HAS
+             *
+             */
+            /**
+             * @protected
+             * @function hasAction
+             * @description Check whether a key exists in a container. Override this method to support other datatypes.
+             * @param {any} data - The container to check.
+             * @param {DataKeyType} key - The key to check.
+             * @returns {boolean} `true` if the key is present.
+             */
+            hasAction(data, key) {
+                if (data instanceof Map)
+                    return data.has(key);
+                return data?.[key] !== undefined;
+            }
+            has(...keys) {
+                const data = this.get(...keys.slice(0, -1));
+                const key = keys[keys.length - 1];
+                if (!data || key === undefined)
+                    return false;
+                return this.hasAction(data, key);
             }
             /**
-             * @function delete
-             * @description Remove the entry at the given key/index and notify observers.
-             * @param {KeyType} key - The key/index to remove.
+             * @function hasFlat
+             * @description Check whether an entry exists at the given flat key.
+             * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+             * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+             * @returns {boolean}
              */
-            delete(key) {
-                if (!this.data || !this.has(key))
-                    return;
-                if (this.data instanceof Map)
-                    this.data.delete(key);
+            hasFlat(flatKey, depth) {
+                const keys = this.scopeKey(flatKey, depth);
+                if (!keys?.length)
+                    return false;
+                return this.has(...keys);
+            }
+            /*
+             *
+             * DELETE
+             *
+             */
+            /**
+             * @protected
+             * @function deleteAction
+             * @description Remove a single key from a container. Override this method to support other datatypes.
+             * @param {any} data - The container to remove from.
+             * @param {DataKeyType} key - The key to remove.
+             */
+            deleteAction(data, key) {
+                if (data instanceof Map)
+                    data.delete(key);
                 else
-                    delete this.data[key];
-                this.keyChanged(key, undefined, true);
+                    delete data[key];
             }
+            /**
+             * @protected
+             * @function internalDelete
+             * @description Remove a key from a container, clearing any associated nested model, and firing {@link keyChanged}.
+             * No-op if the key does not exist.
+             * @param {TurboModel} model - The owning model for nested model cleanup and change notification,
+             * or `undefined` for non-root containers.
+             * @param {any} data - The container to remove from.
+             * @param {DataKeyType} key - The key to remove.
+             */
+            internalDelete(model, data, key) {
+                if (!data || !this.hasAction(data, key))
+                    return;
+                if (model) {
+                    const nested = model.getNested(key);
+                    if (nested) {
+                        nested.clear();
+                        model.nestedModels.delete(key);
+                    }
+                }
+                this.deleteAction(data, key);
+                if (model)
+                    model.keyChanged([key], undefined, true);
+            }
+            delete(...keys) {
+                return this.routeMutation(keys, (data, key) => this.internalDelete(data === this.data ? this : undefined, data, key), (nested, keys) => nested.delete(...keys));
+            }
+            /**
+             * @function deleteFlat
+             * @description Remove the entry at the given flat key.
+             * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+             * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+             */
+            deleteFlat(flatKey, depth) {
+                const keys = this.scopeKey(flatKey, depth);
+                if (keys?.length)
+                    this.delete(...keys);
+            }
+            /*
+             *
+             * KEYS
+             *
+             */
             /**
              * @property keys
-             * @description Array of all keys currently present in the block.
+             * @description All keys currently present in the model.
              */
             get keys() {
                 if (!this.data || typeof this.data !== "object")
@@ -11446,35 +11824,52 @@
             }
             /**
              * @property values
-             * @description The block's values in an array (in the order implied by {@link keys}).
+             * @description All values in the model, in the order of {@link keys}.
              */
             get values() {
                 return this.keys.map(key => this.get(key));
             }
             /**
              * @property size
-             * @description Number of entries in the block.
+             * @description Number of entries in the model.
              */
             get size() {
                 return this.keys.length;
             }
-            /*
-         *
-         * Iteration
-         *
-         */
             /**
-             * Default iteration → yields [key, value]
+             * @function flatSize
+             * @description Return the total number of entries reachable from this model at the given depth.
+             * @param {number} depth - How many levels deep to count.
+             * @returns {number}
              */
-            *[(_enabledCallbacks_decorators = [auto({ defaultValue: true })], Symbol.iterator)]() {
+            flatSize(depth) {
+                return TurboModel.flattenSize(this.data, depth);
+            }
+            /*
+             *
+             * Iteration
+             *
+             */
+            /**
+             * @description Iterate over `[key, value]` pairs.
+             */
+            *[(_enabledCallbacks_decorators = [auto({ defaultValue: true })], _bubbleChanges_decorators = [auto({ defaultValue: false })], Symbol.iterator)]() {
                 for (const key of this.keys)
                     yield [key, this.get(key)];
             }
+            /**
+             * @function entries
+             * @description Return all `[key, value]` pairs in the model.
+             * @returns {[KeyType, any][]}
+             */
             entries() {
                 return this.keys.map(key => [key, this.get(key)]);
             }
             /**
-             * forEach
+             * @function forEach
+             * @description Execute a callback for each entry in the model.
+             * @param {(value: any, key: KeyType, model: this) => void} callback - Called with the value, key, and model.
+             * @param {any} [thisArg] - Value to use as `this` when calling the callback.
              */
             forEach(callback, thisArg) {
                 for (const key of this.keys)
@@ -11487,33 +11882,40 @@
              */
             /**
              * @function initialize
-             * @description Fire change notifications for every existing key, initializing the block.
-             * @returns {void}
+             * @description Fire change notifications for all existing keys, marking the model as initialized.
+             * No-op if already initialized or if data is empty.
              */
             initialize() {
                 if (!this.data || this.isInitialized)
                     return;
                 this.isInitialized = true;
                 for (const key of this.keys)
-                    this.keyChanged(key);
+                    this.keyChanged([key]);
             }
             /**
              * @function clear
-             * @description Clear the block and its observers.
-             * @param {boolean} [clearData=true] - If true, also clears the stored data. Otherwise, only resets observers/state.
+             * @description Reset the model, clearing nested models, observers, and signals.
+             * @param {boolean} [clearData=true] - Whether to also clear the stored data.
              */
             clear(clearData = true) {
                 if (clearData)
                     this._data = undefined;
+                this.nestedModels.forEach(nested => nested.clear());
+                this.nestedModels.clear();
+                this.signals.clear();
+                this.nestListeners.clear();
                 this.changeObservers?.toArray().forEach(observer => observer.clear());
                 this.isInitialized = false;
             }
             /**
              * @function toJSON
-             * @description Convert the block into a plain object suitable for JSON serialization.
-             * @returns {object} - Plain JSON-serializable representation.
+             * @description Convert the model's data into a JSON-serializable form.
+             * Maps become plain objects. For non-object data types, the raw value is returned.
+             * @returns {object | DataType}
              */
             toJSON() {
+                if (typeof this.data !== "object")
+                    return this.data;
                 if (this.data instanceof Map)
                     return Object.fromEntries(this.data);
                 if (this.data && typeof this.data === "object") {
@@ -11524,61 +11926,87 @@
                 }
                 return {};
             }
-            /*
-             *
-             * Host
-             *
-             */
-            /**
-             * @function link
-             * @description Attach a host object that will receive `onDirty` and `onChange` callbacks when keys change.
-             * @param {DataBlockHost<DataType, KeyType, IdType>} host - The host to attach.
-             */
-            link(host) {
-                this.host = host;
+            makeSignal(...keys) {
+                return this.makeSignals(...keys)[0];
             }
             /**
-             * @function unlink
-             * @description Detach any previously-linked host.
+             * @function makeSignals
+             * @description Return reactive {@link SignalBox} instances for multiple keys at the given path.
+             * Pass {@link TurboModel.ALL} at any level of the path to expand all entries at that level.
+             * @template Type - The type of the signals' values.
+             * @param {...DataKeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
+             * @returns {SignalBox<Type>[]}
              */
-            unlink() {
-                this.host = undefined;
+            makeSignals(...keys) {
+                if (keys.length === 0)
+                    keys = [TurboModel.ALL];
+                const maker = (key, model) => {
+                    if (model.signals.has(key))
+                        return model.signals.get(key);
+                    const sig = signal(() => model.get(key), (value) => model.set(value, key), this, key);
+                    model.signals.set(key, sig);
+                    return sig;
+                };
+                const pathKeys = keys.slice(0, -1);
+                const signalKey = keys[keys.length - 1];
+                const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0], ...pathKeys.slice(1));
+                if (signalKey === TurboModel.ALL)
+                    return models.flatMap(model => model.keys.map(k => maker(k, model)));
+                return models.map(model => maker(signalKey, model));
             }
-            /*
-             *
-             * Signals
-             *
-             */
-            /**
-             * @function makeSignal
-             * @description Create (or return an existing) reactive {@link SignalBox} for the given key.
-             * The returned signal reads from {@link get} and writes via {@link set}.
-             * @template Type - The type of the signal's value.
-             * @param {KeyType} key - The key for which to create the signal.
-             * @returns {SignalBox<Type>} - The created or cached signal.
-             */
-            makeSignal(key) {
-                if (this.signals.has(key))
-                    return this.signals.get(key);
-                const sig = signal(() => this.get(key), (value) => this.set(key, value), this, key);
-                this.signals.set(key, sig);
-                return sig;
+            getSignal(...keys) {
+                return this.getNested(...keys.slice(0, -1)).signals.get(keys[keys.length - 1]);
             }
-            /**
-             * @function getSignal
-             * @description Retrieve an existing {@link SignalBox} for the given key if present.
-             * @param {KeyType} key - The key whose signal to retrieve.
-             * @returns {SignalBox<any>} - The signal or undefined if none was created.
-             */
-            getSignal(key) {
-                return this.signals.get(key);
+            nestAll(...args) {
+                const lastEntry = args[args.length - 1];
+                const properties = lastEntry !== null && typeof lastEntry === "object" ? lastEntry : {};
+                const keys = args.slice(0, lastEntry !== null && typeof lastEntry === "object" ? -1 : undefined);
+                if (keys.length === 0)
+                    keys.push(TurboModel.ALL);
+                turbo(properties).applyDefaults({ bubbleChanges: this.bubbleChanges, enabledCallbacks: this.enabledCallbacks });
+                const createChild = (model, key) => {
+                    if (model.nestedModels.has(key))
+                        return model.nestedModels.get(key);
+                    const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
+                    child.onKeyChanged.add((_value, ...keys) => {
+                        if (!model.enabledCallbacks || !model.bubbleChanges)
+                            return;
+                        model.keyChanged(keys, model.get(key));
+                    });
+                    model.nestedModels.set(key, child);
+                    return child;
+                };
+                let results = [this];
+                for (const entry of keys) {
+                    if (entry === TurboModel.ALL) {
+                        const parents = [...results];
+                        results = parents.flatMap(parent => parent.keys.map(k => createChild(parent, k)));
+                        for (const parent of parents) {
+                            parent.nestListeners.add(child => {
+                                const sibling = [...parent.nestedModels.values()].find((model) => model !== child);
+                                if (!sibling)
+                                    return;
+                                sibling.nestListeners.forEach(listener => child.nestListeners.add(listener));
+                                sibling.changeObservers?.toArray().forEach(obs => child.changeObservers?.add(obs));
+                            });
+                        }
+                    }
+                    else {
+                        results = results.map(parent => createChild(parent, entry));
+                    }
+                }
+                return results;
             }
-            /**
-             * @function makeAllSignals
-             * @description Create signals for every key currently present in the block.
-             */
-            makeAllSignals() {
-                this.keys.forEach(key => this.makeSignal(key));
+            nest(...keysAndProperties) {
+                return this.nestAll(...keysAndProperties)[0];
+            }
+            getNested(...keys) {
+                if (keys.length === 0)
+                    return this;
+                const nested = this.nestedModels.get(keys[0]);
+                if (keys.length > 1 && nested instanceof TurboModel)
+                    return nested.getNested(...keys.slice(1));
+                return nested;
             }
             /*
              *
@@ -11587,24 +12015,36 @@
              */
             /**
              * @function generateObserver
-             * @description Create and register an observer tied to this block.
-             * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Options for observer creation.
-             * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>} - The newly created observer.
+             * @description Create and attach a {@link TurboObserver} to this model.
+             * If a key path is provided, the observer is attached to the nested model(s) at that path instead.
+             * Pass {@link TurboModel.ALL} at any level of the path to process all entries at that level,
+             * allowing a single observer to track multiple subtrees simultaneously.
+             * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+             * @param {...DataKeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
+             * any level to process all entries there.
+             * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
              */
-            generateObserver(properties = {}) {
+            generateObserver(properties = {}, ...keys) {
+                const models = keys.length === 0 ? [this] : this.nestAll(keys[0], ...keys.slice(1));
                 const observer = new (properties.customConstructor
                     ?? this.observerConstructor
                     ?? (TurboObserver))({
                     ...properties,
-                    onDestroy: (self) => this.changeObservers?.delete(self),
+                    onDestroy: (self) => {
+                        models.forEach(model => model.changeObservers?.delete(self));
+                        properties.onDestroy?.(self);
+                    },
                     onInitialize: (self) => {
-                        if (!this.isInitialized)
-                            return;
-                        for (const key of this.keys)
-                            self.keyChanged(key, this.get(key));
+                        for (const model of models) {
+                            if (!model.isInitialized)
+                                continue;
+                            for (const key of model.keys)
+                                self.keyChanged([key], model.get(key));
+                        }
+                        properties.onInitialize?.(self);
                     }
                 });
-                this.changeObservers?.add(observer);
+                models.forEach(model => model.changeObservers?.add(observer));
                 return observer;
             }
             /*
@@ -11615,509 +12055,96 @@
             /**
              * @protected
              * @function keyChanged
-             * @description Internal hook called whenever a key is added/updated/deleted.
-             * @param {KeyType} key - The key that changed.
-             * @param {unknown} [value=this.get(key)] - The new value (or undefined for deletions).
-             * @param {boolean} [deleted=false] - Whether the key was removed.
+             * @description Called internally whenever an entry is added, updated, or deleted.
+             * Emits signals, fires {@link onKeyChanged}, and notifies attached observers.
+             * @param {DataKeyType[]} keys - The key path that changed.
+             * @param {unknown} [value] - The new value. Defaults to the current value at the key.
+             * @param {boolean} [deleted=false] - Whether the entry was removed.
              */
-            keyChanged(key, value = this.get(key), deleted = false) {
+            keyChanged(keys, value = this.get(keys[0]), deleted = false) {
+                const key = keys[0];
+                if (key === undefined)
+                    return;
                 this.signals.get(key)?.emit();
-                this.host?.onDirty?.(key, this);
+                //TODO markDirty(this, ...keys);
                 if (deleted)
                     this.signals.delete(key);
                 if (!this.enabledCallbacks)
                     return;
-                this.onKeyChanged.fire(key, value);
-                this.host?.onChange?.(key, value, this);
-                this.changeObservers?.toArray().forEach(observer => observer.keyChanged(key, value, deleted));
-            }
-        };
-    })();
-
-    /**
-     * @class TurboModel
-     * @group MVC
-     * @category Model
-     *
-     * @template DataType - The type of the data stored in each block.
-     * @template {string | number | symbol} KeyType - The type of the keys used to access data in blocks.
-     * @template {string | number | symbol} IdType - The type of the block IDs.
-     * @template {"array" | "map"} BlocksType - Whether data blocks are stored as an array or a map.
-     * @template {TurboDataBlock<DataType, KeyType, IdType>} BlockType - The structure of each data block.
-     * @description A base class representing a model in MVC, which manages one or more data blocks and handles change
-     * propagation.
-     */
-    let TurboModel = (() => {
-        let _instanceExtraInitializers = [];
-        let _set_enabledCallbacks_decorators;
-        return class TurboModel {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-                _set_enabledCallbacks_decorators = [auto()];
-                __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            }
-            isDataBlocksArray = (__runInitializers(this, _instanceExtraInitializers), false);
-            dataBlocks;
-            changeObservers = new TurboWeakSet();
-            static dataBlockConstructor = TurboDataBlock;
-            observerConstructor = TurboObserver;
-            onSetBlock = new Delegate();
-            /**
-             * @description Map of MVC handlers bound to this model.
-             */
-            handlers;
-            /**
-             * @description Delegate triggered when a key changes.
-             */
-            keyChangedCallback;
-            onDirty(key, block) {
-                markDirty(this, key, this.getBlockKey(block));
-            }
-            onChange(key, value, block) {
-                this.fireBlockCallback(key, this.getBlockKey(block), value);
-            }
-            /**
-             * @constructor
-             * @param {DataType} [data] - Initial data. Not initialized if provided.
-             * @param {BlocksType} [dataBlocksType] - Type of data blocks (array or map).
-             */
-            constructor(data, dataBlocksType) {
-                this.keyChangedCallback = new Delegate();
-                if (dataBlocksType === "array") {
-                    this.isDataBlocksArray = true;
-                    this.dataBlocks = [];
+                if (!deleted && !this.nestedModels.has(key) && this.nestListeners.size > 0) {
+                    const model = this.nest(key);
+                    this.nestListeners.forEach(listener => listener(model, key));
                 }
-                else {
-                    this.isDataBlocksArray = false;
-                    this.dataBlocks = new Map();
-                }
-                this.enabledCallbacks = true;
-                if (data)
-                    this.setBlock(data, undefined, this.defaultBlockKey, false);
-                this.setup();
+                this.onKeyChanged.fire(value, ...keys);
+                this.changeObservers?.toArray().forEach(observer => observer.keyChanged(keys, value, deleted));
+            }
+            static flattenSize(data, depth) {
+                if (!data || depth <= 0 || !Array.isArray(data))
+                    return 1;
+                let total = 0;
+                for (const item of data)
+                    total += this.flattenSize(item, depth - 1);
+                return total;
             }
             /**
-             * @function setup
-             * @description Called in the constructor. Use for setup that should happen at instantiation,
-             * before `this.initialize()` is called.
-             * @protected
+             * @function flattenKey
+             * @description Serialize a key path into a single flat key.
+             * - Fully numeric paths into array-backed data produce a numeric global leaf index.
+             * - All other paths produce a `"k0|k1|k2|..."` string, with symbols encoded as `"@@description"`.
+             * @param {...DataKeyType[]} keys - The key path to serialize.
+             * @returns {FlatKeyType}
              */
-            setup() {
-                initializeEffects(this);
-            }
-            /**
-             * @description The default block.
-             */
-            get block() {
-                return this.getBlock();
-            }
-            set block(value) {
-                this.setBlock(value);
-            }
-            /**
-             * @description The data of the default block.
-             */
-            get data() {
-                return this.getBlockData();
-            }
-            set data(value) {
-                this.setBlock(value);
-            }
-            /**
-             * @description The ID of the default block.
-             */
-            get dataId() {
-                return this.getBlockId();
-            }
-            set dataId(value) {
-                this.setBlockId(value);
-            }
-            /**
-             * @description Whether callbacks are enabled or not.
-             */
-            set enabledCallbacks(value) {
-                this.getAllBlocks().forEach(block => block.enabledCallbacks = value);
-            }
-            /**
-             * @function getBlock
-             * @description Retrieves the data block for the given blockKey.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key to retrieve.
-             * @returns {BlockType | null} The block or null if it doesn't exist.
-             */
-            getBlock(blockKey = this.defaultBlockKey) {
-                if (!this.isValidBlockKey(blockKey))
-                    return;
-                if (this.isDataBlocksArray) {
-                    const index = Number(blockKey);
-                    if (Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length) {
-                        return this.dataBlocks[index];
+            flattenKey(...keys) {
+                const stringFLatKey = () => keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
+                if (keys.some(k => typeof k !== "number"))
+                    return stringFLatKey();
+                let index = 0;
+                let current = this.data;
+                for (let i = 0; i < keys.length; i++) {
+                    if (!Array.isArray(current))
+                        return stringFLatKey();
+                    const key = keys[i];
+                    for (let sibling = 0; sibling < key; sibling++) {
+                        const siblingData = current[sibling];
+                        index += TurboModel.flattenSize(siblingData, keys.length - i - 1);
                     }
+                    current = current[key];
                 }
-                else {
-                    return this.dataBlocks.get(blockKey.toString());
-                }
-            }
-            /**
-             * @function createBlock
-             * @description Creates a data block entry.
-             * @param {DataType} value - The data of the block.
-             * @param {IdType} [id] - The optional ID of the data.
-             * @param initialize
-             * @protected
-             * @return {BlockType} - The created block.
-             */
-            createBlock(value, id, initialize = true) {
-                const block = value instanceof TurboDataBlock
-                    ? value
-                    : new (this.constructor.dataBlockConstructor ?? TurboDataBlock)({ id: id, data: value });
-                block.link(this);
-                if (initialize)
-                    block.initialize();
-                return block;
-            }
-            /**
-             * @function setBlock
-             * @description Creates and sets a data block at the specified key.
-             * @param {DataType} value - The data to set.
-             * @param {IdType} [id] - Optional block ID.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The key of the block.
-             * @param {boolean} [initialize = true] - Whether to initialize the block after setting.
-             */
-            setBlock(value, id, blockKey = this.defaultBlockKey, initialize = true) {
-                if (!this.isValidBlockKey(blockKey))
-                    return;
-                const prev = this.getBlock(blockKey);
-                if (prev && !(value instanceof TurboDataBlock)) {
-                    prev.clear();
-                    prev.data = value;
-                    if (!isUndefined(id))
-                        prev.id = id;
-                    this.onSetBlock.fire(blockKey);
-                    return;
-                }
-                prev?.clear();
-                prev?.unlink();
-                const block = this.createBlock(value, id, false);
-                if (this.isDataBlocksArray) {
-                    const index = Number(blockKey);
-                    if (Number.isInteger(index) && index >= 0) {
-                        this.dataBlocks[index] = block;
-                    }
-                }
-                else {
-                    this.dataBlocks.set(blockKey.toString(), block);
-                }
-                if (initialize)
-                    this.initialize(blockKey);
-                this.onSetBlock.fire(blockKey);
-            }
-            /**
-             * @function hasBlock
-             * @description Check if a block exists at the given key.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key.
-             * @return {boolean} - Whether the block exists or not.
-             */
-            hasBlock(blockKey) {
-                if (this.isDataBlocksArray) {
-                    const index = Number(blockKey);
-                    return Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length;
-                }
-                return this.dataBlocks.has(blockKey.toString());
-            }
-            deleteBlock(blockKey) {
-                const block = this.getBlock(blockKey);
-                if (!block)
-                    return;
-                block.clear();
-                block.unlink();
-                if (this.isDataBlocksArray) {
-                    const index = Number(blockKey);
-                    if (Number.isInteger(index) && index >= 0 && index < this.dataBlocks.length) {
-                        this.dataBlocks.splice(index, 1);
-                    }
-                }
-                else {
-                    this.dataBlocks.delete(blockKey.toString());
-                }
-            }
-            /**
-             * @function addBlock
-             * @description Adds a new block into the structure. Appends or inserts based on key if using array.
-             * @param {DataType} value - The block data.
-             * @param {IdType} [id] - Optional block ID.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey] - Block key (used for insertion in arrays).
-             * @param {boolean} [initialize=true] - Whether to initialize after adding.
-             */
-            addBlock(value, id, blockKey, initialize = true) {
-                if (!this.isDataBlocksArray)
-                    return this.setBlock(value, id, blockKey, initialize);
-                const block = this.createBlock(value, id, false);
-                let index = Number(blockKey);
-                if (!Number.isInteger(index) || index < 0)
-                    index = this.dataBlocks.length;
-                this.dataBlocks.splice(index, 0, block);
-                if (initialize)
-                    this.initialize(index);
                 return index;
             }
-            /**
-             * @function getData
-             * @description Retrieves the value associated with a given key in the specified block.
-             * @param {KeyType} key - The key to retrieve.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block from which to retrieve the
-             * data.
-             * @returns {unknown} The value associated with the key, or null if not found.
-             */
-            getData(key, blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.get(key);
-            }
-            /**
-             * @function getDataAt
-             * @description Retrieves the value associated with a given flat key.
-             * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to retrieve.
-             * @returns {unknown} The value associated with the key, or null if not found.
-             */
-            getDataAt(flatKey) {
-                const scopedKey = this.scopeKey(flatKey);
-                if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
-                    return;
-                return this.getData(scopedKey.key, scopedKey.blockKey);
-            }
-            /**
-             * @function setData
-             * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-             * @param {KeyType} key - The key to update.
-             * @param {unknown} value - The value to assign.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
-             */
-            setData(key, value, blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.set(key, value);
-            }
-            /**
-             * @function setDataAt
-             * @description Sets the value for a given flat key and triggers callbacks (if enabled).
-             * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to update.
-             * @param {unknown} value - The value to assign.
-             */
-            setDataAt(flatKey, value) {
-                const scopedKey = this.scopeKey(flatKey);
-                if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
-                    return;
-                return this.setData(scopedKey.key, value, scopedKey.blockKey);
-            }
-            addData(value, key, blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.add(value, key);
-            }
-            addDataAt(value, flatKey) {
-                const scopedKey = this.scopeKey(flatKey);
-                if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
-                    return;
-                return this.addData(value, scopedKey.key, scopedKey.blockKey);
-            }
-            /**
-             * @function hasData
-             * @description Checks the value for a given key in the specified block and triggers callbacks (if enabled).
-             * @param {KeyType} key - The key to update.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to update.
-             */
-            hasData(key, blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.has(key);
-            }
-            /**
-             * @function hasDataAt
-             * @description Sets the value for a given flat key in the specified block and triggers callbacks (if enabled).
-             * @param {MvcFlatKeyType<BlocksType>} flatKey - The flat key to check.
-             */
-            hasDataAt(flatKey) {
-                const scopedKey = this.scopeKey(flatKey);
-                if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
-                    return false;
-                return this.hasData(scopedKey.key, scopedKey.blockKey);
-            }
-            deleteData(key, blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.delete(key);
-            }
-            deleteDataAt(flatKey) {
-                const scopedKey = this.scopeKey(flatKey);
-                if (isUndefined(scopedKey.key) || isUndefined(scopedKey.blockKey))
-                    return false;
-                return this.deleteData(scopedKey.key, scopedKey.blockKey);
-            }
-            /**
-             * @function getSize
-             * @description Returns the size of the specified block.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block to check.
-             * @returns {number} The size.
-             */
-            getSize(blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.size ?? 0;
-            }
-            toJSON(blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.toJSON();
-            }
-            /**
-             * @function getBlockData
-             * @description Retrieves the data from a specific block.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-             * @returns {DataType} The block's data or  if it doesn't exist.
-             */
-            getBlockData(blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.data;
-            }
-            /**
-             * @function getBlockId
-             * @description Retrieves the ID from a specific block.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-             * @returns {IdType} The block ID or null.
-             */
-            getBlockId(blockKey = this.defaultBlockKey) {
-                return this.getBlock(blockKey)?.id;
-            }
-            /**
-             * @function setBlockId
-             * @description Sets the ID for a specific block.
-             * @param {IdType} value - The new ID.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
-             */
-            setBlockId(value, blockKey = this.defaultBlockKey) {
-                if (!value)
-                    return;
-                const block = this.getBlock(blockKey);
-                if (block)
-                    block.id = value;
-            }
-            /**
-             * @function fireCallback
-             * @description Fires the emitter's change callback for the given key in the default blocks.
-             * @param {string | KeyType} key - The key to fire for.
-             * @param {...any[]} args - Additional arguments.
-             */
-            fireCallback(key, ...args) {
-                this.keyChangedCallback.fire(key, this.defaultBlockKey, ...args);
-            }
-            /**
-             * @function fireBlockCallback
-             * @description Fires the emitter's change callback for the given key in a specific block with custom arguments.
-             * @param {string | KeyType} key - The key to fire for.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultBlockKey] - The block key.
-             * @param {...any[]} args - Additional arguments.
-             */
-            fireBlockCallback(key, blockKey = this.defaultBlockKey, ...args) {
-                if (!this.isValidBlockKey(blockKey))
-                    blockKey = this.getAllBlockKeys()[0];
-                this.keyChangedCallback.fire(key, blockKey, ...args);
-                const value = this.getBlock(blockKey)?.get(key);
-                this.changeObservers.toArray().forEach(observer => observer.keyChanged(key, value, false, blockKey));
-            }
-            /**
-             * @function initialize
-             * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-             */
-            initialize(blockKey = this.defaultBlockKey) {
-                this.getBlock(blockKey)?.initialize();
-            }
-            /**
-             * @function clear
-             * @description Clears the block data at the given key.
-             * @param clearData
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey = this.defaultBlockKey] - The block key.
-             */
-            clear(clearData = true, blockKey = this.defaultBlockKey) {
-                this.getBlock(blockKey)?.clear(clearData);
-            }
-            /**
-             * @description The default block key based on whether the data structure is an array or map.
-             */
-            get defaultBlockKey() {
-                return (this.isDataBlocksArray ? 0 : "__turbo_default_block_key__");
-            }
-            /**
-             * @description The default block key if there's only one block, otherwise null.
-             */
-            get defaultComputationBlockKey() {
-                const size = this.isDataBlocksArray
-                    ? this.dataBlocks.length
-                    : this.dataBlocks.size;
-                return size > 1 ? null : this.defaultBlockKey;
-            }
-            /**
-             * @function isValidBlockKey
-             * @description Checks if the block key is a valid string or number.
-             * @param {MvcBlockKeyType<BlocksType>} blockKey - The block key to validate.
-             * @returns {boolean} True if valid, false otherwise.
-             */
-            isValidBlockKey(blockKey) {
-                return blockKey !== undefined && blockKey !== null
-                    && ((typeof blockKey === "string" && blockKey.length !== 0)
-                        || typeof blockKey === "number");
-            }
-            /**
-             * @function getAllBlockKeys
-             * @description Retrieves all block keys in the model.
-             * @returns {MvcBlockKeyType<BlocksType>[]} Array of block keys.
-             */
-            getAllBlockKeys() {
-                if (this.isDataBlocksArray)
-                    return this.dataBlocks.map((_, index) => index);
-                else
-                    return Array.from(this.dataBlocks.keys());
-            }
-            /**
-             * @function getAllBlockIds
-             * @description Retrieves all block (data) IDs in the model.
-             * @returns {IdType[]} Array of IDs.
-             */
-            getAllBlockIds() {
-                return this.getAllBlocks().map(block => block.id);
-            }
-            /**
-             * @function getAllBlocks
-             * @description Retrieves all blocks or a specific one if blockKey is defined.
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-             * @returns {BlockType[]} Array of blocks.
-             */
-            getAllBlocks(blockKey = this.defaultComputationBlockKey) {
-                const output = [];
-                if (blockKey !== null) {
-                    const block = this.getBlock(blockKey);
-                    if (block)
-                        output.push(block);
+            scopeKey(flatKey, depth) {
+                if (typeof flatKey === "string") {
+                    return flatKey.split("|").map(k => {
+                        if (k.startsWith("@@"))
+                            return Symbol(k.slice(2));
+                        const n = Number(k);
+                        return isNaN(n) || k === "" ? k : n;
+                    });
                 }
-                else {
-                    for (const key of this.getAllBlockKeys()) {
-                        const block = this.getBlock(key);
-                        if (block)
-                            output.push(block);
+                const keys = [];
+                let remaining = flatKey;
+                let current = this.data;
+                for (let i = 0; i < depth; i++) {
+                    if (!Array.isArray(current))
+                        break;
+                    const remainingDepth = depth - i - 1;
+                    for (let j = 0; j < current.length; j++) {
+                        const size = TurboModel.flattenSize(current[j], remainingDepth);
+                        if (remaining < size) {
+                            keys.push(j);
+                            current = current[j];
+                            break;
+                        }
+                        remaining -= size;
                     }
                 }
-                return output;
+                return keys;
             }
-            getBlockKey(block) {
-                for (const blockKey of this.getAllBlockKeys()) {
-                    if (this.getBlock(blockKey) === block)
-                        return blockKey;
-                }
-            }
-            /**
-             * @function getAllKeys
-             * @description Retrieves all keys within the given block(s).
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-             * @returns {KeyType[]} Array of keys.
+            /*
+             *
+             * HANDLER
+             *
              */
-            getAllKeys(blockKey = this.defaultComputationBlockKey) {
-                return this.getAllBlocks(blockKey).flatMap(block => block.keys);
-            }
-            /**
-             * @function getAllValues
-             * @description Retrieves all values across block(s).
-             * @param {MvcBlockKeyType<BlocksType>} [blockKey=this.defaultComputationBlockKey] - The block key.
-             * @returns {unknown[]} Array of values.
-             */
-            getAllValues(blockKey = this.defaultComputationBlockKey) {
-                return this.getAllBlocks(blockKey).flatMap(block => block.values);
-            }
             /**
              * @function getHandler
              * @description Retrieves the attached MVC handler with the given key.
@@ -12139,58 +12166,20 @@
                     return;
                 this.handlers?.set(handler.keyName, handler);
             }
-            generateObserver(properties = {}) {
-                const observer = new (properties.customConstructor
-                    ?? this.observerConstructor
-                    ?? (TurboObserver))({
-                    ...properties,
-                    onDestroy: () => this.changeObservers.delete(observer),
-                    onInitialize: () => {
-                        for (const blockKey of this.getAllBlockKeys()) {
-                            for (const key of this.getAllKeys(blockKey)) {
-                                observer.keyChanged(key, this.getData(key, blockKey), false, blockKey);
-                            }
-                        }
-                    }
-                });
-                this.changeObservers.add(observer);
-                return observer;
+            setDataWithoutInitializing(data) {
+                this.clear(false);
+                this._data = data;
             }
-            flattenKey(key, blockKey = this.defaultBlockKey) {
-                if (Array.isArray(this.dataBlocks)) {
-                    let globalIndex = 0;
-                    for (const bk of this.getAllBlockKeys().sort(alphabeticalSorting)) {
-                        if (bk === blockKey)
-                            break;
-                        globalIndex += this.getSize(bk);
-                    }
-                    return (globalIndex + Number(key));
-                }
-                else {
-                    return (blockKey.toString() + "|" + key.toString());
-                }
-            }
-            scopeKey(flatKey) {
-                if (typeof flatKey === "string") {
-                    const split = flatKey.toString().split("|");
-                    if (split.length < 2)
-                        return {};
-                    return { blockKey: split[0], key: split[1] };
-                }
-                const blockKeys = this.getAllBlockKeys().sort(alphabeticalSorting);
-                if (typeof flatKey === "number") {
-                    if (flatKey < 0)
-                        return { blockKey: 0, key: 0 };
-                    let index = flatKey;
-                    for (const blockKey of blockKeys) {
-                        const size = this.getSize(blockKey);
-                        if (index < size)
-                            return { blockKey, key: index };
-                        index -= size;
-                    }
-                }
-                const lastBlockKey = blockKeys[blockKeys.length - 1];
-                return { blockKey: lastBlockKey, key: this.getSize(lastBlockKey) };
+            routeMutation(keys, rawCallback, nestedCallback) {
+                const firstKey = keys[0];
+                const childKeys = keys.slice(1);
+                const nested = this.getNested(firstKey);
+                if (childKeys.length === 0)
+                    return rawCallback(this.data, firstKey);
+                if (nested)
+                    return nestedCallback(nested, childKeys);
+                const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
+                return rawCallback(parentData, childKeys[childKeys.length - 1]);
             }
         };
     })();
@@ -12387,7 +12376,8 @@
                     try {
                         mvc[property] = value;
                         if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                            mvc["model"].setBlock(properties.data, properties.dataId, undefined, false);
+                            mvc["model"].setDataWithoutInitializing(properties.data);
+                            mvc["model"].id = properties.dataId;
                         }
                     }
                     catch {
@@ -12637,6 +12627,8 @@
             return this;
         };
         TurboSelector.prototype.feedforward = function _feedforward(properties = {}) {
+            if (properties.removeOnPointerRelease === undefined)
+                properties.removeOnPointerRelease = true;
             if (!this.element)
                 return;
             const type = properties?.type ?? "___DEFAULT___";
@@ -13203,9 +13195,10 @@
     const utils$7 = new ListenerUtils();
     /**
      * @decorator
+     * @function behavior
      * @group Decorators
      * @category Listeners
-     * @function behavior
+     *
      * @description Method decorator that registers the decorated method as a tool behavior, to be attached later
      * via {@link attachListenersAndBehaviors}.
      * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
@@ -13236,9 +13229,10 @@
     }
     /**
      * @decorator
+     * @function attachListenersAndBehaviors
      * @group Decorators
      * @category Listeners
-     * @function attachListenersAndBehaviors
+     *
      * @description Attach all previously-decorated listeners and behaviors recorded on the given `context`. It attempts to
      * resolve defaults from the latter, such as the `target`, `toolName`, `options`, and `manager`. This method is called
      * automatically in the TurboElement lifecycle.
@@ -14161,8 +14155,8 @@
                 this[selectedKey] = value;
                 this[selectedClass] = nextClass;
                 if (prevClass && prevClass !== nextClass)
-                    $(element).toggleClass(prevClass, false);
-                $(element).toggleClass(nextClass, !!value);
+                    turbo(element).toggleClass(prevClass, false);
+                turbo(element).toggleClass(nextClass, !!value);
             },
             enumerable: true,
             configurable: true,
@@ -15733,6 +15727,11 @@
         };
     }
 
+    /**
+     * @class TurboQueue
+     * @group Components
+     * @category TurboQueue
+     */
     class TurboQueue {
         items = [];
         head = 0;
@@ -16013,16 +16012,6 @@
          */
         priority;
         /**
-         * @description The default queue template for the substrate, used when starting a new resolving pass.
-         * It defaults to the substrate's object list.
-         */
-        defaultQueue;
-        /**
-         * @description The maximum number of passes allowed per object for this substrate during resolving.
-         * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
-         */
-        maxPasses;
-        /**
          * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
          * Defaults to the children of the element the substrate is attached to.
          */
@@ -16033,6 +16022,16 @@
          * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
          */
         triggerList;
+        /**
+         * @description The default queue template for the substrate, used when starting a new resolving pass.
+         * It defaults to the substrate's object list.
+         */
+        defaultQueue;
+        /**
+         * @description The maximum number of passes allowed per object for this substrate during resolving.
+         * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
+         */
+        maxPasses;
         /**
          * @description Whether the substrate is active. Defaults to true.
          */
@@ -18077,6 +18076,10 @@
         Range["min"] = "min";
         Range["max"] = "max";
     })(Range || (Range = {}));
+    /**
+     * @group Types
+     * @category Enums
+     */
     var Anchor;
     (function (Anchor) {
         Anchor["TopLeft"] = "topLeft";
@@ -18998,91 +19001,6 @@
     }
 
     /**
-     * @class TurboView
-     * @group MVC
-     * @category View
-     *
-     * @template {object} ElementType - The type of the element attached to the view.
-     * @template {TurboModel} ModelType - The model type used in this view.
-     * @template {TurboEmitter} EmitterType - The emitter type used in this view.
-     * @description A base view class for MVC elements, providing structure for initializing and managing UI setup and
-     * event listeners. Designed to be devoid of logic and only handle direct UI changes.
-     */
-    class TurboView {
-        /**
-         * @description The main component this view is attached to.
-         */
-        element;
-        /**
-         * @description The model instance this view is bound to.
-         */
-        model;
-        /**
-         * @description The emitter instance used for event communication.
-         */
-        emitter;
-        /**
-         * @constructor
-         * @param {TurboViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
-         */
-        constructor(properties) {
-            this.element = properties.element;
-            if (properties.model)
-                this.model = properties.model;
-            if (properties.emitter)
-                this.emitter = properties.emitter;
-            this.setup();
-        }
-        /**
-         * @function setup
-         * @description Called in the constructor. Use for setup that should happen at instantiation,
-         * before `this.initialize()` is called.
-         * @protected
-         */
-        setup() { }
-        /**
-         * @function initialize
-         * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
-         */
-        initialize() {
-            this.setupUIElements();
-            this.setupUILayout();
-            this.setupUIListeners();
-            this.setupChangedCallbacks();
-        }
-        /**
-         * @function setupChangedCallbacks
-         * @description Setup method for initializing data/model change listeners and associated UI logic.
-         * @protected
-         */
-        setupChangedCallbacks() {
-            initializeEffects(this);
-        }
-        /**
-         * @function setupUIElements
-         * @description Setup method for initializing and storing sub-elements of the UI.
-         * @protected
-         */
-        setupUIElements() {
-        }
-        /**
-         * @function setupUILayout
-         * @description Setup method for creating the layout structure and injecting sub-elements into the DOM tree.
-         * @protected
-         */
-        setupUILayout() {
-        }
-        /**
-         * @function setupUIListeners
-         * @description Setup method for defining DOM and input event listeners.
-         * @protected
-         */
-        setupUIListeners() {
-            attachListenersAndBehaviors(this);
-        }
-    }
-
-    /**
      * @class TurboInteractor
      * @group MVC
      * @category Interactor
@@ -19133,6 +19051,199 @@
             this.setup();
         }
     }
+
+    /**
+     * @group MVC
+     * @category TurboModel
+     */
+    (() => {
+        let _classSuper = TurboModel;
+        let _instanceExtraInitializers = [];
+        let _set_enabledCallbacks_decorators;
+        return class TurboYModel extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _set_enabledCallbacks_decorators = [auto({ override: true })];
+                __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            observer = (__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+            /**
+             * @inheritDoc
+             */
+            modelConstructor = TurboYModel;
+            /**
+             * @inheritDoc
+             */
+            set enabledCallbacks(value) {
+                if (!this.data || !(this.data instanceof AbstractType))
+                    return;
+                if (value)
+                    this.data.observe(this.observer);
+                else
+                    this.data.unobserve(this.observer);
+            }
+            /*
+             *
+             * Basics
+             *
+             */
+            /**
+             * @inheritDoc
+             */
+            getAction(data, key) {
+                if (data instanceof YMap)
+                    return data.get(key.toString());
+                if (data instanceof YArray)
+                    return data.get(trim(Number(key), data.length));
+                return super.getAction(data, key);
+            }
+            /**
+             * @inheritDoc
+             */
+            setAction(data, value, key) {
+                if (data instanceof YMap)
+                    data.set(key.toString(), value);
+                else if (data instanceof YArray) {
+                    const index = trim(Number(key), data.length + 1);
+                    if (index < data.length)
+                        data.delete(index, 1);
+                    data.insert(index, [value]);
+                }
+                else
+                    super.setAction(data, value, key);
+            }
+            /**
+             * @inheritDoc
+             */
+            addAction(model, data, value, key) {
+                if (data instanceof YArray) {
+                    let index = key;
+                    if (isUndefined(index) || typeof index !== "number" || index > data.length) {
+                        index = data.length;
+                        data.push([value]);
+                    }
+                    else {
+                        if (index < 0)
+                            index = 0;
+                        data.insert(index, [value]);
+                    }
+                    return index;
+                }
+                return super.addAction(model, data, value, key);
+            }
+            /**
+             * @inheritDoc
+             */
+            hasAction(data, key) {
+                if (data instanceof YMap)
+                    return data.has(key.toString());
+                if (data instanceof YArray)
+                    return typeof key === "number" && key >= 0 && key < this.size;
+                return super.hasAction(data, key);
+            }
+            /**
+             * @inheritDoc
+             */
+            deleteAction(data, key) {
+                if (data instanceof YMap)
+                    data.delete(key.toString());
+                else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size)
+                    data.delete(key, 1);
+                else
+                    super.deleteAction(data, key);
+            }
+            /**
+             * @inheritDoc
+             */
+            get keys() {
+                if (this.data instanceof YMap)
+                    return Array.from(this.data.keys());
+                if (this.data instanceof YArray) {
+                    const output = [];
+                    for (let i = 0; i < this.data.length; i++)
+                        output.push(i);
+                    return output;
+                }
+                return super.keys;
+            }
+            /**
+             * @inheritDoc
+             */
+            initialize() {
+                super.initialize();
+                if (this.enabledCallbacks && this.data instanceof AbstractType)
+                    this.data?.observe(this.observer);
+            }
+            /**
+             * @inheritDoc
+             */
+            clear(clearData = true) {
+                if (clearData && this.data instanceof AbstractType)
+                    this.data?.unobserve(this.observer);
+                super.clear(clearData);
+            }
+            /*
+             *
+             * Utilities
+             *
+             */
+            observeChanges(event, transaction) {
+                //TODO
+                !!transaction?.local;
+                transaction?.origin;
+                if (event instanceof YMapEvent) {
+                    event.keysChanged.forEach(key => {
+                        const change = event.changes.keys.get(key);
+                        if (!change)
+                            return;
+                        if (change.action === "delete")
+                            this.keyChanged([key], undefined, true);
+                        else
+                            this.keyChanged([key]);
+                    });
+                }
+                else if (event instanceof YArrayEvent) {
+                    let currentIndex = 0;
+                    for (const delta of event.delta) {
+                        if (delta.retain !== undefined) {
+                            currentIndex += delta.retain;
+                        }
+                        else if (delta.insert) {
+                            const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
+                            const count = insertedItems.length;
+                            this.shiftIndices(currentIndex, count);
+                            for (let i = 0; i < count; i++)
+                                this.keyChanged([currentIndex + i]);
+                            currentIndex += count;
+                        }
+                        else if (delta.delete) {
+                            const count = delta.delete;
+                            for (let i = 0; i < count; i++)
+                                this.keyChanged([currentIndex + i], undefined, true);
+                            this.shiftIndices(currentIndex + count, -count);
+                        }
+                    }
+                }
+            }
+            shiftIndices(fromIndex, offset) {
+                this.changeObservers?.toArray().forEach(observer => {
+                    const pathsToShift = observer.paths
+                        .filter(path => Number(path[0]) >= fromIndex);
+                    const itemsToShift = pathsToShift
+                        .map(path => [Number(path[0]), path, observer.get(...path)]);
+                    itemsToShift.sort((a, b) => a[0] - b[0]);
+                    pathsToShift.forEach(path => observer.detach(...path));
+                    for (const [oldIndex, path, instance] of itemsToShift) {
+                        const newIndex = oldIndex + offset;
+                        if (typeof instance === "object" && "dataId" in instance)
+                            instance.dataId = newIndex;
+                        observer.set(instance, newIndex, ...path.slice(1));
+                    }
+                });
+            }
+        };
+    })();
 
     /**
      * @class TurboTool
@@ -19216,6 +19327,91 @@
             if (this.embeddedTarget)
                 turbo(this).embedTool(this.embeddedTarget, this.manager);
             super.initialize();
+        }
+    }
+
+    /**
+     * @class TurboView
+     * @group MVC
+     * @category View
+     *
+     * @template {object} ElementType - The type of the element attached to the view.
+     * @template {TurboModel} ModelType - The model type used in this view.
+     * @template {TurboEmitter} EmitterType - The emitter type used in this view.
+     * @description A base view class for MVC elements, providing structure for initializing and managing UI setup and
+     * event listeners. Designed to be devoid of logic and only handle direct UI changes.
+     */
+    class TurboView {
+        /**
+         * @description The main component this view is attached to.
+         */
+        element;
+        /**
+         * @description The model instance this view is bound to.
+         */
+        model;
+        /**
+         * @description The emitter instance used for event communication.
+         */
+        emitter;
+        /**
+         * @constructor
+         * @param {TurboViewProperties<ElementType, ModelType, EmitterType>} properties - Properties to initialize the view with.
+         */
+        constructor(properties) {
+            this.element = properties.element;
+            if (properties.model)
+                this.model = properties.model;
+            if (properties.emitter)
+                this.emitter = properties.emitter;
+            this.setup();
+        }
+        /**
+         * @function setup
+         * @description Called in the constructor. Use for setup that should happen at instantiation,
+         * before `this.initialize()` is called.
+         * @protected
+         */
+        setup() { }
+        /**
+         * @function initialize
+         * @description Initializes the view by setting up change callbacks, UI elements, layout, and event listeners.
+         */
+        initialize() {
+            this.setupUIElements();
+            this.setupUILayout();
+            this.setupUIListeners();
+            this.setupChangedCallbacks();
+        }
+        /**
+         * @function setupChangedCallbacks
+         * @description Setup method for initializing data/model change listeners and associated UI logic.
+         * @protected
+         */
+        setupChangedCallbacks() {
+            initializeEffects(this);
+        }
+        /**
+         * @function setupUIElements
+         * @description Setup method for initializing and storing sub-elements of the UI.
+         * @protected
+         */
+        setupUIElements() {
+        }
+        /**
+         * @function setupUILayout
+         * @description Setup method for creating the layout structure and injecting sub-elements into the DOM tree.
+         * @protected
+         */
+        setupUILayout() {
+        }
+        /**
+         * @function setupUIListeners
+         * @description Setup method for defining DOM and input event listeners.
+         * @protected
+         */
+        setupUIListeners() {
+            attachListenersAndBehaviors(this);
         }
     }
 
@@ -21640,217 +21836,10 @@
     }
 
     /**
+     * @class AnchorPoint
      * @group Components
-     * @category TurboYBlock
+     * @category AnchorPoint
      */
-    (() => {
-        let _classSuper = TurboDataBlock;
-        let _instanceExtraInitializers = [];
-        let _set_enabledCallbacks_decorators;
-        return class TurboYBlock extends _classSuper {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _set_enabledCallbacks_decorators = [auto({ override: true })];
-                __esDecorate(this, null, _set_enabledCallbacks_decorators, { kind: "setter", name: "enabledCallbacks", static: false, private: false, access: { has: obj => "enabledCallbacks" in obj, set: (obj, value) => { obj.enabledCallbacks = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-            }
-            observer = (__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
-            set enabledCallbacks(value) {
-                if (!this.data || !(this.data instanceof AbstractType))
-                    return;
-                if (value)
-                    this.data.observe(this.observer);
-                else
-                    this.data.unobserve(this.observer);
-            }
-            /*
-             *
-             * Basics
-             *
-             */
-            /**
-             * @function get
-             * @description Retrieves the value associated with a given key in the specified block.
-             * @param {KeyType} key - The key to retrieve.
-             * @returns {unknown} The value associated with the key, or null if not found.
-             */
-            get(key) {
-                if (!this.data || typeof this.data !== "object")
-                    return;
-                if (this.data instanceof YMap)
-                    return this.data.get(key.toString());
-                if (this.data instanceof YArray)
-                    return this.data.get(trim(Number(key), this.data.length));
-                return super.get(key);
-            }
-            /**
-             * @function set
-             * @description Sets the value for a given key in the specified block and triggers callbacks (if enabled).
-             * @param {KeyType} key - The key to update.
-             * @param {unknown} value - The value to assign.
-             */
-            set(key, value) {
-                if (!this.data || typeof this.data !== "object")
-                    return;
-                if (this.data instanceof YMap)
-                    this.data.set(key.toString(), value);
-                else if (this.data instanceof YArray) {
-                    const index = trim(Number(key), this.data.length + 1);
-                    if (index < this.data.length)
-                        this.data.delete(index, 1);
-                    this.data.insert(index, [value]);
-                }
-                else
-                    super.set(key, value);
-            }
-            add(value, key) {
-                if (this.data instanceof YArray) {
-                    let index = key;
-                    if (isUndefined(index) || typeof index !== "number" || index > this.data.length) {
-                        index = this.data.length;
-                        this.data.push([value]);
-                    }
-                    else {
-                        if (index < 0)
-                            index = 0;
-                        this.data.insert(index, [value]);
-                    }
-                    return index;
-                }
-                else if (this.data instanceof AbstractType)
-                    return this.set(key, value);
-                return super.add(value, key);
-            }
-            has(key) {
-                if (!this.data || typeof this.data !== "object")
-                    return false;
-                if (this.data instanceof YMap)
-                    return this.data.has(key.toString());
-                if (this.data instanceof YArray)
-                    return typeof key === "number" && key >= 0 && key < this.size;
-                return super.has(key);
-            }
-            delete(key) {
-                if (!this.data || typeof this.data !== "object")
-                    return;
-                if (this.data instanceof YMap)
-                    this.data.delete(key.toString());
-                else if (this.data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size)
-                    this.data.delete(key, 1);
-                else
-                    super.delete(key);
-            }
-            /**
-             * @function keys
-             * @description Retrieves all keys within the given block(s).
-             * @returns {KeyType[]} Array of keys.
-             */
-            get keys() {
-                if (this.data instanceof YMap)
-                    return Array.from(this.data.keys());
-                if (this.data instanceof YArray) {
-                    const output = [];
-                    for (let i = 0; i < this.data.length; i++)
-                        output.push(i);
-                    return output;
-                }
-                return super.keys;
-            }
-            /**
-             * @function size
-             * @description Returns the size of the specified block.
-             * @returns {number} The size.
-             */
-            get size() {
-                if (this.data instanceof YMap)
-                    return this.data.size;
-                if (this.data instanceof YArray)
-                    return this.data.length;
-                return 0;
-            }
-            /*
-             *
-             * Utilities
-             *
-             */
-            /**
-             * @function initialize
-             * @description Initializes the block at the given key, and triggers callbacks for all the keys in its data.
-             */
-            initialize() {
-                super.initialize();
-                if (this.enabledCallbacks && this.data instanceof AbstractType)
-                    this.data?.observe(this.observer);
-            }
-            clear(clearData = true) {
-                if (clearData && this.data instanceof AbstractType)
-                    this.data?.unobserve(this.observer);
-                super.clear(clearData);
-            }
-            /*
-             *
-             * Utilities
-             *
-             */
-            observeChanges(event, transaction) {
-                //TODO
-                !!transaction?.local;
-                transaction?.origin;
-                if (event instanceof YMapEvent) {
-                    event.keysChanged.forEach(key => {
-                        const change = event.changes.keys.get(key);
-                        if (!change)
-                            return;
-                        if (change.action === "delete")
-                            this.keyChanged(key, undefined, true);
-                        else
-                            this.keyChanged(key);
-                    });
-                }
-                else if (event instanceof YArrayEvent) {
-                    let currentIndex = 0;
-                    for (const delta of event.delta) {
-                        if (delta.retain !== undefined)
-                            currentIndex += delta.retain;
-                        else if (delta.insert) {
-                            const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
-                            const count = insertedItems.length;
-                            this.shiftIndices(currentIndex, count);
-                            for (let i = 0; i < count; i++)
-                                this.keyChanged((currentIndex + i));
-                            currentIndex += count;
-                        }
-                        else if (delta.delete) {
-                            const count = delta.delete;
-                            for (let i = 0; i < count; i++)
-                                this.keyChanged((currentIndex + i), undefined, true);
-                            this.shiftIndices(currentIndex + count, -count);
-                        }
-                    }
-                }
-            }
-            shiftIndices(fromIndex, offset) {
-                this.changeObservers?.toArray().forEach(observer => {
-                    const itemsToShift = [];
-                    for (const [oldIndexStr, instance] of observer.getEntriesForBlock()) {
-                        const oldIndex = Number(oldIndexStr);
-                        if (oldIndex >= fromIndex)
-                            itemsToShift.push([oldIndex, instance]);
-                    }
-                    itemsToShift.sort((a, b) => a[0] - b[0]);
-                    for (const [oldIndex] of itemsToShift)
-                        observer.removeKey(oldIndex, undefined, false);
-                    for (const [oldIndex, instance] of itemsToShift) {
-                        const newIndex = oldIndex + offset;
-                        if (typeof instance === "object" && "dataId" in instance)
-                            instance.dataId = newIndex;
-                        observer.set(instance, (oldIndex + offset));
-                    }
-                });
-            }
-        };
-    })();
-
     let AnchorPoint = (() => {
         let _instanceExtraInitializers = [];
         let _set_value_decorators;
@@ -21931,6 +21920,10 @@
         };
     })();
 
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function closestPointOnSegment(p, a, b) {
         const ab = b.sub(a);
         const ap = p.sub(a);
@@ -21941,6 +21934,10 @@
         t = Math.max(0, Math.min(1, t));
         return new Point(a.x + ab.x * t, a.y + ab.y * t);
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function intersectSegments(a, b, c, d) {
         const r = b.sub(a);
         const s = d.sub(c);
@@ -21955,6 +21952,10 @@
         return null;
     }
 
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function isPointInConvexPolygon(p, poly) {
         let sign = 0;
         for (let i = 0; i < poly.length; i++) {
@@ -21973,6 +21974,10 @@
         }
         return true;
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function segmentIntersectsPolygon(a, b, poly) {
         for (let i = 0; i < poly.length; i++) {
             const c = poly[i];
@@ -21987,6 +21992,10 @@
             return b;
         return null;
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function projectPolygonOntoAxis(points, axis) {
         const len = Math.hypot(axis.x, axis.y) || 1;
         const ux = axis.x / len, uy = axis.y / len;
@@ -22000,6 +22009,10 @@
         }
         return [min, max];
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function hasSeparatingAxisForPolygons(polyA, polyB) {
         for (let i = 0; i < polyA.length; i++) {
             const p1 = polyA[i];
@@ -22013,15 +22026,27 @@
         }
         return false;
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function polygonsIntersect(a, b) {
         return !hasSeparatingAxisForPolygons(a, b) && !hasSeparatingAxisForPolygons(b, a);
     }
 
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function aabbCorners(r) {
         const x0 = r.x, y0 = r.y;
         const x1 = r.x + r.width, y1 = r.y + r.height;
         return [new Point(x0, y0), new Point(x1, y0), new Point(x1, y1), new Point(x0, y1)];
     }
+    /**
+     * @group Utilities
+     * @category Geometry
+     */
     function closestPointOnAabb(p, r) {
         const x0 = r.x, y0 = r.y;
         const x1 = r.x + r.width, y1 = r.y + r.height;
@@ -22043,6 +22068,11 @@
         return str;
     }
 
+    /**
+     * @class TurboRect
+     * @group Components
+     * @category TurboRect
+     */
     class TurboRect extends DOMRect {
         angleRad = 0;
         anchor;
@@ -23019,9 +23049,9 @@
         let _rotation_decorators;
         let _rotation_initializers = [];
         let _rotation_extraInitializers = [];
-        let _size_decorators;
-        let _size_initializers = [];
-        let _size_extraInitializers = [];
+        let _elementSize_decorators;
+        let _elementSize_initializers = [];
+        let _elementSize_extraInitializers = [];
         let _centerAnchor_decorators;
         let _centerAnchor_initializers = [];
         let _centerAnchor_extraInitializers = [];
@@ -23031,12 +23061,12 @@
                 _color_decorators = [signal];
                 _position_decorators = [signal];
                 _rotation_decorators = [signal];
-                _size_decorators = [signal];
+                _elementSize_decorators = [signal];
                 _centerAnchor_decorators = [signal];
                 __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
                 __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
                 __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
-                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                __esDecorate$1(null, null, _elementSize_decorators, { kind: "field", name: "elementSize", static: false, private: false, access: { has: obj => "elementSize" in obj, get: obj => obj.elementSize, set: (obj, value) => { obj.elementSize = value; } }, metadata: _metadata }, _elementSize_initializers, _elementSize_extraInitializers);
                 __esDecorate$1(null, null, _centerAnchor_decorators, { kind: "field", name: "centerAnchor", static: false, private: false, access: { has: obj => "centerAnchor" in obj, get: obj => obj.centerAnchor, set: (obj, value) => { obj.centerAnchor = value; } }, metadata: _metadata }, _centerAnchor_initializers, _centerAnchor_extraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
@@ -23044,8 +23074,8 @@
             color = __runInitializers$1(this, _color_initializers, randomColor([60, 90], [40, 70]));
             position = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _position_initializers, new Point()));
             rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, 0));
-            size = (__runInitializers$1(this, _rotation_extraInitializers), __runInitializers$1(this, _size_initializers, 100));
-            centerAnchor = (__runInitializers$1(this, _size_extraInitializers), __runInitializers$1(this, _centerAnchor_initializers, true));
+            elementSize = (__runInitializers$1(this, _rotation_extraInitializers), __runInitializers$1(this, _elementSize_initializers, 100));
+            centerAnchor = (__runInitializers$1(this, _elementSize_extraInitializers), __runInitializers$1(this, _centerAnchor_initializers, true));
             constructor() {
                 super(...arguments);
                 __runInitializers$1(this, _centerAnchor_extraInitializers);
@@ -23073,7 +23103,7 @@
             }
             //@effect methods will be called when the values of the signals they use change
             updatePosition() {
-                const offset = this.model.centerAnchor ? this.model.size / 2 : 0;
+                const offset = this.model.centerAnchor ? this.model.elementSize / 2 : 0;
                 turbo(this).setStyle("transform", `
         translate(${this.model.position.x - offset}px, ${this.model.position.y - offset}px)
         rotate(${this.model.rotation}rad)
@@ -23083,7 +23113,7 @@
                 turbo(this).setStyle("backgroundColor", this.model.color);
             }
             updateSize() {
-                turbo(this).setStyles({ width: this.model.size + "px", height: this.model.size + "px" });
+                turbo(this).setStyles({ width: this.model.elementSize + "px", height: this.model.elementSize + "px" });
             }
             constructor() {
                 super(...arguments);
@@ -23105,9 +23135,9 @@
         let _color_decorators;
         let _color_initializers = [];
         let _color_extraInitializers = [];
-        let _size_decorators;
-        let _size_initializers = [];
-        let _size_extraInitializers = [];
+        let _elementSize_decorators;
+        let _elementSize_initializers = [];
+        let _elementSize_extraInitializers = [];
         let _position_decorators;
         let _position_initializers = [];
         let _position_extraInitializers = [];
@@ -23119,11 +23149,11 @@
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _color_decorators = [expose("model")];
-                _size_decorators = [expose("model")];
+                _elementSize_decorators = [expose("model")];
                 _position_decorators = [expose("model")];
                 _rotation_decorators = [expose("model")];
                 __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate$1(null, null, _size_decorators, { kind: "field", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+                __esDecorate$1(null, null, _elementSize_decorators, { kind: "field", name: "elementSize", static: false, private: false, access: { has: obj => "elementSize" in obj, get: obj => obj.elementSize, set: (obj, value) => { obj.elementSize = value; } }, metadata: _metadata }, _elementSize_initializers, _elementSize_extraInitializers);
                 __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
                 __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
                 __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -23132,8 +23162,8 @@
             }
             //Expose fields from the model
             color = __runInitializers$1(this, _color_initializers, void 0);
-            size = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _size_initializers, void 0));
-            position = (__runInitializers$1(this, _size_extraInitializers), __runInitializers$1(this, _position_initializers, void 0));
+            elementSize = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _elementSize_initializers, void 0));
+            position = (__runInitializers$1(this, _elementSize_extraInitializers), __runInitializers$1(this, _position_initializers, void 0));
             rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, void 0));
             static defaultProperties = {
                 view: SquareView,
@@ -23147,15 +23177,15 @@
                 this.model.rotation += angle;
             }
             resize(delta) {
-                this.model.size = delta.min;
+                this.model.elementSize = delta.min;
             }
             getBoundingClientRect() {
-                const offset = this.model.centerAnchor ? this.model.size / 2 : 0;
+                const offset = this.model.centerAnchor ? this.model.elementSize / 2 : 0;
                 return new TurboRect({
                     x: this.model.position.x - offset,
                     y: this.model.position.y - offset,
-                    width: this.size,
-                    height: this.size,
+                    width: this.elementSize,
+                    height: this.elementSize,
                     angleDeg: this.rotation
                 });
             }
@@ -23204,8 +23234,8 @@
                 this.line = element({ tag: "line", namespace: SvgNamespace });
                 this.hitLine = element({ tag: "line", namespace: SvgNamespace });
                 turbo(this.hitLine).setAttribute("stroke", "transparent").setAttribute("pointer-events", "stroke");
-                this.startHandle = Square.create({ size: 20, color: "white", classes: "handle" });
-                this.endHandle = Square.create({ size: 20, color: "white", classes: "handle" });
+                this.startHandle = Square.create({ elementSize: 20, color: "white", classes: "handle" });
+                this.endHandle = Square.create({ elementSize: 20, color: "white", classes: "handle" });
             }
             setupUILayout() {
                 super.setupUILayout();

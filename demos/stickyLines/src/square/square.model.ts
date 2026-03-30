@@ -6,6 +6,6 @@ export class SquareModel extends TurboModel {
     @signal color: string = randomColor([60, 90], [40, 70]);
     @signal position: Point = new Point();
     @signal rotation: number = 0;
-    @signal size: number = 100;
+    @signal elementSize: number = 100;
     @signal centerAnchor: boolean = true;
 }

@@ -1,5 +1,6 @@
 import {Effect, Read, SignalEntry, SignalSubscriber, Write} from "./reactivity.types";
 import {isUndefined} from "../../utils/dataManipulation/misc";
+import {DataKeyType} from "../../mvc/model/model.types";
 
 /**
  * @internal
@@ -10,7 +11,7 @@ type SignalConstructorType = {
 
 type ReactivityData = {
     propertyKeyMap: Map<PropertyKey, ReactivityDataEntry>,
-    blockKeyMap: Map<PropertyKey, Map<PropertyKey, PropertyKey>>
+    pathMap: Map<string, PropertyKey>
 }
 
 type ReactivityDataEntry = {
@@ -39,7 +40,7 @@ export class ReactivityUtils {
     public data(target: object) {
         let obj = this.dataMap.get(target);
         if (!obj) {
-            obj = {propertyKeyMap: new Map(), blockKeyMap: new Map()};
+            obj = {propertyKeyMap: new Map(), pathMap: new Map()};
             this.dataMap.set(target, obj);
         }
         return obj!;
@@ -78,7 +79,6 @@ export class ReactivityUtils {
                     initial = value;
                     if (!Object.is(prev, value)) entry.emit();
                 }
-                //If "write" is passed, setup emit() behavior. Otherwise, reflect to already defined setter.
                 else if (!options.diffOnWrite) {
                     write(value);
                     entry.emit();
@@ -134,6 +134,18 @@ export class ReactivityUtils {
         this.getSignal(target, key)?.emit();
     }
 
+    public bindPath(target: object, propertyKey: PropertyKey, keys: DataKeyType[]) {
+        this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
+    }
+
+    public getKeyFromPath(target: object, keys: DataKeyType[]): PropertyKey {
+        return this.data(target).pathMap.get(this.serializePath(keys));
+    }
+
+    public serializePath(keys: DataKeyType[]): string {
+        return keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
+    }
+
     public schedule(effect: Effect) {
         if (effect.scheduled) return;
         effect.scheduled = true;
@@ -141,17 +153,5 @@ export class ReactivityUtils {
             effect.scheduled = false;
             effect.run();
         });
-    }
-
-    public bindBlockKey(target: object, key: PropertyKey, dataKey: PropertyKey, blockKey?: PropertyKey) {
-        blockKey = blockKey ?? (target as any)?.defaultBlockKey ?? "__default__";
-        const map = this.data(target).blockKeyMap;
-        if (!map.has(blockKey)) map.set(blockKey, new Map());
-        map.get(blockKey).set(dataKey, key);
-    }
-
-    public getKeyFromBlockKey(target: object, dataKey: PropertyKey, blockKey?: PropertyKey) {
-        blockKey = blockKey ?? (target as any)?.defaultBlockKey ?? "__default__";
-        return this.data(target).blockKeyMap.get(blockKey)?.get(dataKey);
     }
 }
