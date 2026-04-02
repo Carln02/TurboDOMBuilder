@@ -1,5 +1,5 @@
 import {StylesType} from "../../../turboFunctions/style/style.types";
-import {PartialRecord} from "../../../types/basic.types";
+import {KeyType, PartialRecord} from "../../../types/basic.types";
 
 /**
  * @group Components
@@ -14,7 +14,7 @@ import {PartialRecord} from "../../../types/basic.types";
  * @returns {Type}
  */
 type ReifectInterpolator<Type, ClassType extends object = Element> =
-    ((index: number, total: number, object: ClassType) => Type);
+    (index: number, total: number, object: ClassType) => Type;
 
 /**
  * @group Components
@@ -30,8 +30,8 @@ type ReifectInterpolator<Type, ClassType extends object = Element> =
  * @param {ClassType} object - The object being interpolated.
  * @returns {Type}
  */
-type StateInterpolator<Type, State extends string | number | symbol, ClassType extends object = Element> =
-    ((state: State, index: number, total: number, object: ClassType) => Type);
+type StateInterpolator<Type, State extends KeyType, ClassType extends object = Element> =
+    (state: State, index: number, total: number, object: ClassType) => Type;
 
 /**
  * @group Components
@@ -53,7 +53,7 @@ type StateSpecificProperty<Type, ClassType extends object = Element> =
  * @template State
  * @template ClassType
  */
-type BasicPropertyConfig<Type, State extends string | number | symbol> = PartialRecord<State, Type> | Type;
+type BasicPropertyConfig<Type, State extends KeyType> = PartialRecord<State, Type> | Type;
 
 /**
  * @group Components
@@ -64,30 +64,34 @@ type BasicPropertyConfig<Type, State extends string | number | symbol> = Partial
  * @template State
  * @template ClassType
  */
-type PropertyConfig<Type, State extends string | number | symbol, ClassType extends object = Element> =
+type PropertyConfig<Type, State extends KeyType, ClassType extends object = Element> =
     | PartialRecord<State, Type | ReifectInterpolator<Type, ClassType>>
     | Type
     | StateInterpolator<Type, State, ClassType>;
+
+type ReifectOnSwitchCallback<State extends KeyType, ClassType extends object = Element> =
+    (state: State, index: number, total: number, object: ClassType) => void;
 
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectObjectData<State extends string | number | symbol, ClassType extends object = Element> = {
+type ReifectObjectData<State extends KeyType, ClassType extends object = Element> = {
     object: WeakRef<ClassType>,
     enabled: ReifectEnabledObject,
     lastState?: State,
     resolvedValues?: ReifectObjectComputedProperties<State, ClassType>,
-    objectIndex?: number,
-    totalObjectCount?: number,
-    onSwitch?: (state: State, index: number, total: number, object: ClassType) => void,
+    index?: number,
+    total?: number,
+    onSwitch?: ReifectOnSwitchCallback<State, ClassType>,
+    disposeEffect?: () => void,
 }
 
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectObjectComputedProperties<State extends string | number | symbol, ClassType extends object = Element> = {
+type ReifectObjectComputedProperties<State extends KeyType, ClassType extends object = Element> = {
     properties: PartialRecord<State, PartialRecord<keyof ClassType, any>>,
     styles: PartialRecord<State, StylesType>,
     classes:PartialRecord<State, string | string[]>,
@@ -103,8 +107,7 @@ type ReifectObjectComputedProperties<State extends string | number | symbol, Cla
  * @group Components
  * @category StatefulReifect
  */
-type StatefulReifectCoreProperties<State extends string | number | symbol, ClassType extends object = Element> = {
-    properties?: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>,
+type StatefulReifectCoreProperties<State extends KeyType, ClassType extends object = Element> = {
     styles?: PropertyConfig<StylesType, State, ClassType>,
     classes?: PropertyConfig<string | string[], State, ClassType>,
     replaceWith?: PropertyConfig<ClassType, State, ClassType>,
@@ -113,24 +116,27 @@ type StatefulReifectCoreProperties<State extends string | number | symbol, Class
     transitionDuration?: PropertyConfig<number, State, ClassType>,
     transitionTimingFunction?: PropertyConfig<string, State, ClassType>,
     transitionDelay?: PropertyConfig<number, State, ClassType>,
+
+    [k: PropertyKey]: PropertyConfig<any, State, ClassType>,
 };
 
 /**
  * @group Components
  * @category StatefulReifect
  */
-type StatefulReifectProperties<State extends string | number | symbol, ClassType extends object = Element> =
+type StatefulReifectProperties<State extends KeyType, ClassType extends object = Element> =
     StatefulReifectCoreProperties<State, ClassType> & {
-    states?: State[],
+    states?: State[] | object,
+    initialState?: State | boolean,
     attachedObjects?: ClassType[],
-    transition?: BasicPropertyConfig<string, State>
+    transition?: PropertyConfig<string, State, ClassType>
 };
 
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectAppliedOptions<State extends string | number | symbol = any, ClassType extends object = Element> = {
+type ReifectAppliedOptions<State extends KeyType = any, ClassType extends object = Element> = {
     attachObjects?: boolean,
     executeForAll?: boolean
     recomputeIndices?: boolean,
@@ -153,4 +159,5 @@ type ReifectEnabledObject = {
 }
 
 export {ReifectObjectData, ReifectInterpolator, StateInterpolator, StateSpecificProperty, BasicPropertyConfig,
-    PropertyConfig, StatefulReifectProperties, StatefulReifectCoreProperties, ReifectAppliedOptions, ReifectEnabledObject};
+    PropertyConfig, StatefulReifectProperties, StatefulReifectCoreProperties, ReifectAppliedOptions,
+    ReifectEnabledObject, ReifectOnSwitchCallback};

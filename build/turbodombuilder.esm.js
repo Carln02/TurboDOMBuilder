@@ -2698,7 +2698,7 @@ class ReactivityUtils {
     data(target) {
         let obj = this.dataMap.get(target);
         if (!obj) {
-            obj = { propertyKeyMap: new Map(), blockKeyMap: new Map() };
+            obj = { propertyKeyMap: new Map(), pathMap: new Map() };
             this.dataMap.set(target, obj);
         }
         return obj;
@@ -2732,7 +2732,6 @@ class ReactivityUtils {
                     if (!Object.is(prev, value))
                         entry.emit();
                 }
-                //If "write" is passed, setup emit() behavior. Otherwise, reflect to already defined setter.
                 else if (!options.diffOnWrite) {
                     write(value);
                     entry.emit();
@@ -2786,6 +2785,15 @@ class ReactivityUtils {
     markDirty(target, key) {
         this.getSignal(target, key)?.emit();
     }
+    bindPath(target, propertyKey, keys) {
+        this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
+    }
+    getKeyFromPath(target, keys) {
+        return this.data(target).pathMap.get(this.serializePath(keys));
+    }
+    serializePath(keys) {
+        return keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
+    }
     schedule(effect) {
         if (effect.scheduled)
             return;
@@ -2794,17 +2802,6 @@ class ReactivityUtils {
             effect.scheduled = false;
             effect.run();
         });
-    }
-    bindBlockKey(target, key, dataKey, blockKey) {
-        blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
-        const map = this.data(target).blockKeyMap;
-        if (!map.has(blockKey))
-            map.set(blockKey, new Map());
-        map.get(blockKey).set(dataKey, key);
-    }
-    getKeyFromBlockKey(target, dataKey, blockKey) {
-        blockKey = blockKey ?? target?.defaultBlockKey ?? "__default__";
-        return this.data(target).blockKeyMap.get(blockKey)?.get(dataKey);
     }
 }
 
@@ -2987,17 +2984,21 @@ const utils$9 = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils$9);
 const effectUtils = new EffectUtils(utils$9);
 function signal(...args) {
-    //Decorator
+    // Decorator
     if (args.length === 2 && args[1] && typeof args[1] === "object"
         && "kind" in args[1] && "name" in args[1] && "static" in args[1] && "private" in args[1]) {
         return signalUtils.signalDecorator(args[0], args[1]);
     }
-    //Getter setter
+    // Getter + setter: signal(get, set, target?, ...keys)
     if (typeof args[0] === "function" && typeof args[1] === "function") {
-        return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(undefined, args[2], args[3], args[0], args[1]));
+        const [get, set, target, ...keys] = args;
+        const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
+        return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(undefined, target, key, get, set));
     }
-    //From value
-    return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(args[0], args[1], args[2]));
+    // From value: signal(initial?, target?, ...keys)
+    const [initial, target, ...keys] = args;
+    const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
+    return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(initial, target, key));
 }
 /**
  * @decorator
@@ -3005,106 +3006,79 @@ function signal(...args) {
  * @group Decorators
  * @category Signal
  *
- * @description Decorator that binds a reactive signal to a **model field**
- * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
- * Useful to create signals in TurboModel classes.
+ * @description Decorator that binds a reactive signal to a key path in the model's data,
+ * read via `this.get(...keys)` and written via `this.set(value, ...keys)`.
  *
- * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
- * @param {string | number} [blockKey] - Optional blockKey identifier.
+ * @param {...string[]} keys - The key path into the model's data. Defaults to the decorated member name if omitted.
  *
  * @example
  * ```ts
  * class TodoModel extends TurboModel {
  *   @modelSignal() title = "";
+ *   @modelSignal("meta", "author") author = "";
  * }
  * ```
  * Is equivalent to:
  * ```ts
  * class TodoModel extends TurboModel {
- *   @signal public get title() {
- *      return this.getData("title");
- *   }
+ *   @signal get title() { return this.get("title"); }
+ *   set title(value) { this.set(value, "title"); }
  *
- *   public set title(value) {
- *      this.setData("title", value);
- *   }
+ *   @signal get author() { return this.get("meta", "author"); }
+ *   set author(value) { this.set(value, "meta", "author"); }
  * }
- *
  * ```
  */
-function modelSignal(dataKey, blockKey) {
+function modelSignal(...keys) {
     return function (value, context) {
-        const key = dataKey ?? String(context.name);
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
         context.addInitializer(function () {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this)
-                blockKey = this.defaultBlockKey;
-            utils$9.bindBlockKey(this, context.name, key, blockKey);
+            utils$9.bindPath(this, context.name, resolvedKeys);
         });
-        return signalUtils.signalDecorator(value, context, function () { return this.getData?.(key, blockKey); }, function (value) { this.setData?.(key, value, blockKey); });
+        return signalUtils.signalDecorator(value, context, function () {
+            return this.get?.(...resolvedKeys);
+        }, function (value) {
+            this.set?.(value, ...resolvedKeys);
+        });
     };
 }
 /**
  * @decorator
- * @function blockSignal
+ * @function nestedModelSignal
  * @group Decorators
  * @category Signal
  *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlock(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ * @description Decorator that binds a reactive signal to a nested {@link TurboModel} instance at the given key path.
+ * - Getter returns the nested model instance via `this.getNested(...keys)`.
+ * - Setter assigns the new value to the nested model's root data via `this.getNested(...keys).data = value`.
  *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
+ * @param {...string[]} keys - The key path navigating to the nested model.
+ *
+ * @example
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @nestedModelSignal("users", "42") user = undefined;
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @signal get user() { return this.getNested("users", "42"); }
+ *   set user(value) { this.getNested("users", "42").data = value; }
+ * }
+ * ```
  */
-function blockSignal(blockKey, id) {
+function nestedModelSignal(...keys) {
     return function (value, context) {
-        const key = blockKey ?? String(context.name);
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
         context.addInitializer(function () {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this)
-                blockKey = this.defaultBlockKey;
+            utils$9.bindPath(this, context.name, resolvedKeys);
         });
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlock?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
-    };
-}
-/**
- * @decorator
- * @function blockDataSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-function blockDataSignal(blockKey, id) {
-    return function (value, context) {
-        const key = blockKey ?? String(context.name);
-        context.addInitializer(function () {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this)
-                blockKey = this.defaultBlockKey;
+        return signalUtils.signalDecorator(value, context, function () {
+            return this.nest?.(...resolvedKeys);
+        }, function (value) {
+            this.set?.(value, ...resolvedKeys);
         });
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockData?.(key); }, function (value) { this.setBlock?.(value, id, key); }, true);
-    };
-}
-/**
- * @decorator
- * @function blockIdSignal
- * @group Decorators
- * @category Signal
- *
- * @description Same idea but binds the block **id**.
- */
-function blockIdSignal(blockKey) {
-    return function (value, context) {
-        const key = blockKey ?? String(context.name);
-        context.addInitializer(function () {
-            if (isUndefined(blockKey) && "defaultBlockKey" in this)
-                blockKey = this.defaultBlockKey;
-        });
-        return signalUtils.signalDecorator(value, context, function () { return this.getBlockId?.(key); }, function (value) { this.setBlockId?.(value, key); }, true);
     };
 }
 function effect(...args) {
@@ -3120,7 +3094,9 @@ function effect(...args) {
             throw new Error("@effect does not support static methods/getters.");
         context.addInitializer?.(function () {
             const self = this;
-            const fn = function () { value?.call(this); };
+            const fn = function () {
+                value?.call(this);
+            };
             const eff = effectUtils.makeEffect(() => fn.call(self));
             utils$9.setEffect(self, key, eff);
         });
@@ -3159,13 +3135,11 @@ function getSignal(target, key) {
 function setSignal(target, key, value) {
     return utils$9.setSignal(target, key, value);
 }
-function markDirty(target, key, blockKey) {
-    let computedKey;
-    if (!isUndefined(blockKey))
-        computedKey = utils$9.getKeyFromBlockKey(target, key, blockKey);
-    if (isUndefined(computedKey))
-        computedKey = key;
-    return utils$9.markDirty(target, computedKey);
+function markDirty(target, ...keys) {
+    const computedKey = keys.length > 1
+        ? utils$9.getKeyFromPath(target, keys)
+        : keys[0];
+    return utils$9.markDirty(target, computedKey ?? keys[0]);
 }
 /**
  * @function initializeEffects
@@ -3179,33 +3153,16 @@ function initializeEffects(target) {
     for (const [, entry] of utils$9.data(target).propertyKeyMap)
         entry.effect?.run();
 }
-/**
- * @function disposeEffect
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of the effect at the given `key` inside `target`.
- * @param {object} target - The target to which the signal is bound.
- * @param {PropertyKey} key - The key of the signal inside `target`.
- */
 function disposeEffect(target, key) {
-    const data = utils$9.getReactivityData(target, key);
-    data.effect?.dispose();
-    data.effect = undefined;
-}
-/**
- * @function disposeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-function disposeEffects(target) {
-    for (const [, entry] of utils$9.data(target).propertyKeyMap) {
-        entry.effect?.dispose();
-        entry.effect = undefined;
-    }
+    const dispose = (data) => {
+        data.effect?.dispose();
+        data.effect = undefined;
+    };
+    if (key !== undefined)
+        dispose(utils$9.getReactivityData(target, key));
+    else
+        for (const [, entry] of utils$9.data(target).propertyKeyMap)
+            dispose(entry);
 }
 
 /**
@@ -4368,6 +4325,8 @@ let TurboModel = (() => {
         deleteAction(data, key) {
             if (data instanceof Map)
                 data.delete(key);
+            else if (Array.isArray(data))
+                data.splice(key, 1);
             else
                 delete data[key];
         }
@@ -4637,6 +4596,7 @@ let TurboModel = (() => {
             const observer = new (properties.customConstructor
                 ?? this.observerConstructor
                 ?? (TurboObserver))({
+                initialize: true,
                 ...properties,
                 onDestroy: (self) => {
                     models.forEach(model => model.changeObservers?.delete(self));
@@ -4787,6 +4747,8 @@ let TurboModel = (() => {
             if (nested)
                 return nestedCallback(nested, childKeys);
             const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
+            if (typeof parentData !== "object")
+                return;
             return rawCallback(parentData, childKeys[childKeys.length - 1]);
         }
     };
@@ -6348,12 +6310,15 @@ class Point {
     arr() {
         return [this.x, this.y];
     }
-    linearInterpolation(start, end) {
+    positionOnSegment(start, end) {
         const shiftedEnd = end.sub(start);
         const shiftedLength2 = shiftedEnd.length2;
         if (shiftedLength2 < 1e-9)
             return 0;
         return trim((this.sub(start).dot(shiftedEnd)) / shiftedLength2, 1);
+    }
+    static linearInterpolation(start, end, t) {
+        return start.add(end.sub(start).mul(t));
     }
 }
 
@@ -9648,9 +9613,7 @@ function callOncePerInstance(value, context) {
  */
 let StatefulReifect = (() => {
     let _instanceExtraInitializers = [];
-    let _states_decorators;
-    let _states_initializers = [];
-    let _states_extraInitializers = [];
+    let _get_states_decorators;
     let _get_enabled_decorators;
     let _set_properties_decorators;
     let _set_styles_decorators;
@@ -9663,7 +9626,10 @@ let StatefulReifect = (() => {
     return class StatefulReifect {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-            _states_decorators = [auto({ defaultValueCallback: function () { return this.getAllStates(); } })];
+            _get_states_decorators = [auto({
+                    defaultValueCallback: function () { return this.getAllStates(); },
+                    preprocessValue: function (value) { return this.normalizeStates(value); }
+                })];
             _get_enabled_decorators = [auto({
                     defaultValueCallback: () => {
                         return { global: true, properties: true, classes: true, styles: true, replaceWith: true, transition: true };
@@ -9702,6 +9668,7 @@ let StatefulReifect = (() => {
                     setIfUndefined: true,
                     preprocessValue: function (value) { return this.normalizePropertyConfig(this.transitionDelay, value); }
                 })];
+            __esDecorate(this, null, _get_states_decorators, { kind: "getter", name: "states", static: false, private: false, access: { has: obj => "states" in obj, get: obj => obj.states }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _get_enabled_decorators, { kind: "getter", name: "enabled", static: false, private: false, access: { has: obj => "enabled" in obj, get: obj => obj.enabled }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_properties_decorators, { kind: "setter", name: "properties", static: false, private: false, access: { has: obj => "properties" in obj, set: (obj, value) => { obj.properties = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_styles_decorators, { kind: "setter", name: "styles", static: false, private: false, access: { has: obj => "styles" in obj, set: (obj, value) => { obj.styles = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -9711,17 +9678,22 @@ let StatefulReifect = (() => {
             __esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_transitionTimingFunction_decorators, { kind: "setter", name: "transitionTimingFunction", static: false, private: false, access: { has: obj => "transitionTimingFunction" in obj, set: (obj, value) => { obj.transitionTimingFunction = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _set_transitionDelay_decorators, { kind: "setter", name: "transitionDelay", static: false, private: false, access: { has: obj => "transitionDelay" in obj, set: (obj, value) => { obj.transitionDelay = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _states_decorators, { kind: "field", name: "states", static: false, private: false, access: { has: obj => "states" in obj, get: obj => obj.states, set: (obj, value) => { obj.states = value; } }, metadata: _metadata }, _states_initializers, _states_extraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         static fields = ["properties", "classes", "styles",
             "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
         timeRegex = (__runInitializers(this, _instanceExtraInitializers), /^(\d+(?:\.\d+)?)(ms|s)?$/i);
         attachedObjects = [];
+        static knownFields = new Set([
+            "states", "attachedObjects", "initialState", "transition",
+            "properties", "classes", "styles", "replaceWith",
+            "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"
+        ]);
         /**
          * @description All possible states.
          */
-        states = __runInitializers(this, _states_initializers, void 0);
+        get states() { return; }
+        set states(states) { }
         get enabled() { return; }
         set enabled(value) {
             const object = value;
@@ -9879,20 +9851,27 @@ let StatefulReifect = (() => {
          * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
          */
         constructor(properties) {
-            __runInitializers(this, _states_extraInitializers);
             if (properties.states)
                 this.states = properties.states;
+            const unknownEntries = [];
             Object.entries(properties).forEach(([key, value]) => {
-                if (key === "attachedObjects" || key === "states")
+                if (key === "attachedObjects" || key === "states" || key === "initialState")
                     return;
-                this[key] = value;
+                if (StatefulReifect.knownFields.has(key))
+                    this[key] = value;
+                else
+                    unknownEntries.push([key, value]);
             });
+            if (unknownEntries.length > 0)
+                this.properties = Object.fromEntries(unknownEntries);
             //Disable transition if undefined
             if (!properties.transition && !properties.transitionProperties && !properties.transitionDuration
                 && !properties.transitionTimingFunction && !properties.transitionDelay)
                 this.enabled.transition = false;
             if (properties.attachedObjects)
                 this.attachAll(...properties.attachedObjects);
+            if (properties.initialState !== undefined)
+                this.apply(properties.initialState);
         }
         /*
          *
@@ -10005,6 +9984,8 @@ let StatefulReifect = (() => {
         detachObject(data) {
             if (!this.attachedObjects.includes(data))
                 return;
+            data.effectDispose?.();
+            data.effectDispose = undefined;
             const object = data.object.deref();
             this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
             if (object)
@@ -10158,25 +10139,22 @@ let StatefulReifect = (() => {
         set transition(value) {
             if (!value)
                 return;
-            const object = typeof value === "string"
-                ? this.processTransitionString(value)
-                : this.processTransitionObject(value);
-            Object.entries(object).forEach(([key, value]) => this[key] = value);
-        }
-        processTransitionObject(transitionObject) {
-            const transitionValues = {};
-            for (const [state, entry] of Object.entries(transitionObject)) {
-                if (!this.states.includes(state))
+            const normalized = this.normalizePropertyConfig(null, value);
+            const fields = ["transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
+            const result = {};
+            for (const state of this.states) {
+                const interpolator = normalized[state];
+                if (!interpolator)
                     continue;
-                if (typeof entry !== "string")
-                    continue;
-                Object.entries(this.processTransitionString(entry)).forEach(([key, value]) => {
-                    if (!transitionValues[key])
-                        transitionValues[key] = {};
-                    transitionValues[key][state] = value;
-                });
+                for (const field of fields) {
+                    if (!result[field])
+                        result[field] = {};
+                    result[field][state] = (index, total, object) => this.processTransitionString(interpolator(index, total, object))[field];
+                }
             }
-            return transitionValues;
+            for (const field of fields)
+                if (result[field])
+                    this[field] = result[field];
         }
         processTransitionString(transitionString) {
             // Normalize commas → spaces, split & filter
@@ -10377,12 +10355,29 @@ let StatefulReifect = (() => {
                 if (!field || value == undefined)
                     continue;
                 try {
+                    if (this.valuesEqual(object[field], value))
+                        continue;
                     object[field] = value;
                 }
                 catch (e) {
                     console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
                 }
             }
+        }
+        valuesEqual(a, b) {
+            if (Object.is(a, b))
+                return true;
+            if (a != null && typeof a.equals === "function")
+                return a.equals(b);
+            if (a != null && b != null && typeof a === "object" && typeof b === "object") {
+                try {
+                    return JSON.stringify(a) === JSON.stringify(b);
+                }
+                catch {
+                    return false;
+                }
+            }
+            return false;
         }
         refreshProperties() {
             if (!this.enabled || !this.enabled.properties)
@@ -10475,22 +10470,29 @@ let StatefulReifect = (() => {
         }
         //Utilities
         processRawProperties(data, override) {
-            if (!data.resolvedValues)
-                data.resolvedValues = {};
-            if (isNull(override))
-                return;
-            const object = data.object.deref();
-            if (!object)
-                return;
-            const index = data.objectIndex ?? 0;
-            const total = data.totalObjectCount ?? 1;
-            for (const field of StatefulReifect.fields) {
-                const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
-                if (!data.resolvedValues[field])
-                    data.resolvedValues[field] = {};
-                for (const state of this.states)
-                    data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
-            }
+            data.effectDispose?.();
+            let firstRun = true;
+            data.effectDispose = effect(() => {
+                if (!data.resolvedValues)
+                    data.resolvedValues = {};
+                if (isNull(override))
+                    return;
+                const object = data.object.deref();
+                if (!object)
+                    return;
+                const index = data.objectIndex ?? 0;
+                const total = data.totalObjectCount ?? 1;
+                for (const field of StatefulReifect.fields) {
+                    const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
+                    if (!data.resolvedValues[field])
+                        data.resolvedValues[field] = {};
+                    for (const state of this.states)
+                        data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
+                }
+                if (!firstRun && data.lastState !== undefined)
+                    this.applyResolvedValues(data, false, false);
+                firstRun = false;
+            });
         }
         generateNewData(object, onSwitch) {
             return {
@@ -10530,6 +10532,13 @@ let StatefulReifect = (() => {
                 transitionTimingFunction: this.transitionTimingFunction,
                 transitionDelay: this.transitionDelay,
             });
+        }
+        normalizeStates(states) {
+            if (Array.isArray(states))
+                return states;
+            const values = Object.values(states);
+            const isNumericEnum = values.some(v => typeof v === "number");
+            return (isNumericEnum ? values.filter(v => typeof v === "number") : values);
         }
         normalizePropertyConfig(currentConfig, newConfig) {
             const out = currentConfig ? { ...currentConfig } : {};
@@ -10582,13 +10591,6 @@ let StatefulReifect = (() => {
         }
     };
 })();
-/**
- * @group Components
- * @category StatefulReifect
- */
-function statefulReifier(properties) {
-    return new StatefulReifect(properties);
-}
 
 class ReifectFunctionsUtils {
     dataMap = new WeakMap;
@@ -12028,7 +12030,7 @@ class TurboInteractor extends TurboController {
 
 /**
  * @group MVC
- * @category TurboYBlock
+ * @category TurboModel
  */
 let TurboYModel = (() => {
     let _classSuper = TurboModel;
@@ -16278,4 +16280,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, nestedModelSignal, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };

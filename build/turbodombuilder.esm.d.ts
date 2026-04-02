@@ -541,7 +541,8 @@ declare class Point {
      * @returns An array with x and y coordinates
      */
     arr(): number[];
-    linearInterpolation(start: Point, end: Point): number;
+    positionOnSegment(start: Point, end: Point): number;
+    static linearInterpolation(start: Point, end: Point, t: number): Point;
 }
 
 /**
@@ -976,7 +977,17 @@ declare class TurboObserver<DataType = any, ComponentType extends object = any, 
     keyChanged(keys: KeyType[], value: DataType, deleted?: boolean): void;
 }
 
+/**
+ * @type DataKeyType
+ * @group MVC
+ * @category TurboModel
+ */
 type DataKeyType = string | number | symbol;
+/**
+ * @type FlatKeyType
+ * @group MVC
+ * @category TurboModel
+ */
 type FlatKeyType = string | number;
 /**
  * @type TurboModelProperties
@@ -4736,17 +4747,16 @@ declare function observe<Type extends object, Value>(value: ((initial: Value) =>
  * @template Value
  * @param {Value} [initial] - Initial value stored by the signal.
  * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @param {...PropertyKey[]} keys - The key path at which the signal will be stored in the target.
  * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
  *
  * @example
  * ```ts
- * // Standalone signal
  * const count = signal(0);
- * // e.g., count.get(), count.set(1)
+ * const nested = signal(0, target, "users", "42", "score");
  * ```
  */
-declare function signal<Value>(initial?: Value, target?: object, key?: PropertyKey): SignalBox<Value>;
+declare function signal<Value>(initial?: Value, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
 /**
  * @overload
  * @function signal
@@ -4757,20 +4767,18 @@ declare function signal<Value>(initial?: Value, target?: object, key?: PropertyK
  * Returns a {@link SignalBox} wrapping the initial value.
  *
  * @template Value
- * @param {() => Value} [get] - Getter that returns the value.
- * @param {(value: Value) => void} [set] - Setter that changes the value and emits the signal.
+ * @param {() => Value} get - Getter that returns the value.
+ * @param {(value: Value) => void} set - Setter that changes the value and emits the signal.
  * @param {object} [target] - The target to which the signal is bound.
- * @param {PropertyKey} [key] - The key at which the signal will be stored in the target.
+ * @param {...PropertyKey[]} keys - The key path at which the signal will be stored in the target.
  * @returns {SignalBox<Value>} A reactive box for reading/updating the value.
  *
  * @example
  * ```ts
- * // Standalone signal
- * const count = signal(0);
- * // e.g., count.get(), count.set(1)
+ * const nested = signal(() => target.get("users", "42"), v => target.set(v, "users", "42"), target, "users", "42");
  * ```
  */
-declare function signal<Value>(get?: () => Value, set?: (value: Value) => void, target?: object, key?: PropertyKey): SignalBox<Value>;
+declare function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
 /**
  * @overload
  * @decorator
@@ -4803,80 +4811,60 @@ declare function signal<Type extends object, Value>(value: ((initial: Value) => 
  * @group Decorators
  * @category Signal
  *
- * @description Decorator that binds a reactive signal to a **model field**
- * retrieved via `this.getData(key, blockKey)` and stored via `this.setData(key, value, blockKey)`.
- * Useful to create signals in TurboModel classes.
+ * @description Decorator that binds a reactive signal to a key path in the model's data,
+ * read via `this.get(...keys)` and written via `this.set(value, ...keys)`.
  *
- * @param {string} dataKey - key to read/write (defaults to decorated member name when falsy).
- * @param {string | number} [blockKey] - Optional blockKey identifier.
+ * @param {...string[]} keys - The key path into the model's data. Defaults to the decorated member name if omitted.
  *
  * @example
  * ```ts
  * class TodoModel extends TurboModel {
  *   @modelSignal() title = "";
+ *   @modelSignal("meta", "author") author = "";
  * }
  * ```
  * Is equivalent to:
  * ```ts
  * class TodoModel extends TurboModel {
- *   @signal public get title() {
- *      return this.getData("title");
- *   }
+ *   @signal get title() { return this.get("title"); }
+ *   set title(value) { this.set(value, "title"); }
  *
- *   public set title(value) {
- *      this.setData("title", value);
- *   }
+ *   @signal get author() { return this.get("meta", "author"); }
+ *   set author(value) { this.set(value, "meta", "author"); }
  * }
- *
  * ```
  */
-declare function modelSignal(dataKey?: string, blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+declare function modelSignal(...keys: DataKeyType[]): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
 /**
  * @decorator
- * @function blockSignal
+ * @function nestedModelSignal
  * @group Decorators
  * @category Signal
  *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlock(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
+ * @description Decorator that binds a reactive signal to a nested {@link TurboModel} instance at the given key path.
+ * - Getter returns the nested model instance via `this.getNested(...keys)`.
+ * - Setter assigns the new value to the nested model's root data via `this.getNested(...keys).data = value`.
  *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
+ * @param {...string[]} keys - The key path navigating to the nested model.
+ *
+ * @example
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @nestedModelSignal("users", "42") user = undefined;
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class AppModel extends TurboModel {
+ *   @signal get user() { return this.getNested("users", "42"); }
+ *   set user(value) { this.getNested("users", "42").data = value; }
+ * }
+ * ```
  */
-declare function blockSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockDataSignal
- * @group Decorators
- * @category Signal
- *
- * @description Binds a signal to an entire data-block of a TurboModel/YModel.
- * - Getter returns `this.getBlockData(blockKey)`
- * - Setter calls `this.setBlock(value, this.getBlockId(blockKey), blockKey)`
- *
- * @param {string|number} [blockKey] the block key, defaults to model.defaultBlockKey
- * @param id
- */
-declare function blockDataSignal(blockKey?: string | number, id?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-}, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
-/**
- * @decorator
- * @function blockIdSignal
- * @group Decorators
- * @category Signal
- *
- * @description Same idea but binds the block **id**.
- */
-declare function blockIdSignal(blockKey?: string | number): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+declare function nestedModelSignal(...keys: string[]): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
@@ -4963,13 +4951,11 @@ declare function markDirty(target: object, key: PropertyKey): void;
  * @group Decorators
  * @category Signal
  *
- * @description Marks the signal bound to the given `key` in the block at `blockKey` inside `target` as dirty and
- * fires all of its attached effects.
+ * @description Marks the signal bound to the given key path inside `target` as dirty and fires all attached effects.
  * @param {object} target - The target to which the signal is bound.
- * @param {string | number | symbol} dataKey - The key of the data.
- * @param {string | number} blockKey - The key of the block.
+ * @param {...(string | number | symbol)[]} keys - The key path of the data.
  */
-declare function markDirty(target: object, dataKey: string | number | symbol, blockKey: string | number): void;
+declare function markDirty(target: object, ...keys: DataKeyType[]): void;
 /**
  * @function initializeEffects
  * @group Decorators
@@ -4984,20 +4970,20 @@ declare function initializeEffects(target: object): void;
  * @group Decorators
  * @category Effect
  *
+ * @description Disposes of all the effects attached to the given `target`.
+ * @param {object} target - The target to which the effects are bound.
+ */
+declare function disposeEffect(target: object): void;
+/**
+ * @function disposeEffect
+ * @group Decorators
+ * @category Effect
+ *
  * @description Disposes of the effect at the given `key` inside `target`.
  * @param {object} target - The target to which the signal is bound.
  * @param {PropertyKey} key - The key of the signal inside `target`.
  */
 declare function disposeEffect(target: object, key: PropertyKey): void;
-/**
- * @function disposeEffects
- * @group Decorators
- * @category Effect
- *
- * @description Disposes of all the effects attached to the given `target`.
- * @param {object} target - The target to which the effects are bound.
- */
-declare function disposeEffects(target: object): void;
 
 /**
  * @decorator
@@ -5438,7 +5424,7 @@ type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataT
 
 /**
  * @group MVC
- * @category TurboYBlock
+ * @category TurboModel
  */
 declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<YType, KeyType, IdType, ComponentType, DataEntryType> {
     private observer;
@@ -5899,6 +5885,7 @@ type ReifectObjectData<State extends string | number | symbol, ClassType extends
     objectIndex?: number;
     totalObjectCount?: number;
     onSwitch?: (state: State, index: number, total: number, object: ClassType) => void;
+    effectDispose?: () => void;
 };
 /**
  * @group Components
@@ -5919,7 +5906,6 @@ type ReifectObjectComputedProperties<State extends string | number | symbol, Cla
  * @category StatefulReifect
  */
 type StatefulReifectCoreProperties<State extends string | number | symbol, ClassType extends object = Element> = {
-    properties?: PropertyConfig<PartialRecord<keyof ClassType, any>, State, ClassType>;
     styles?: PropertyConfig<StylesType, State, ClassType>;
     classes?: PropertyConfig<string | string[], State, ClassType>;
     replaceWith?: PropertyConfig<ClassType, State, ClassType>;
@@ -5927,15 +5913,17 @@ type StatefulReifectCoreProperties<State extends string | number | symbol, Class
     transitionDuration?: PropertyConfig<number, State, ClassType>;
     transitionTimingFunction?: PropertyConfig<string, State, ClassType>;
     transitionDelay?: PropertyConfig<number, State, ClassType>;
+    [k: PropertyKey]: PropertyConfig<any, State, ClassType>;
 };
 /**
  * @group Components
  * @category StatefulReifect
  */
 type StatefulReifectProperties<State extends string | number | symbol, ClassType extends object = Element> = StatefulReifectCoreProperties<State, ClassType> & {
-    states?: State[];
+    states?: State[] | object;
+    initialState?: State | boolean;
     attachedObjects?: ClassType[];
-    transition?: BasicPropertyConfig<string, State>;
+    transition?: PropertyConfig<string, State, ClassType>;
 };
 /**
  * @group Components
@@ -5977,10 +5965,12 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
     protected static readonly fields: readonly ["properties", "classes", "styles", "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
     protected readonly timeRegex: RegExp;
     protected readonly attachedObjects: ReifectObjectData<State, ClassType>[];
+    protected static readonly knownFields: Set<string>;
     /**
      * @description All possible states.
      */
-    states: State[];
+    get states(): State[];
+    set states(states: State[] | object);
     get enabled(): ReifectEnabledObject;
     set enabled(value: boolean | ReifectEnabledObject);
     /**
@@ -6229,8 +6219,7 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @returns {ReifectEnabledObject} - The corresponding enabled state.
      */
     getObjectEnabledState(object: ClassType): ReifectEnabledObject;
-    set transition(value: BasicPropertyConfig<string, State>);
-    protected processTransitionObject(transitionObject: BasicPropertyConfig<string, State>): StatefulReifectCoreProperties<State, ClassType>;
+    set transition(value: PropertyConfig<string, State, ClassType>);
     protected processTransitionString(transitionString: string): StatefulReifectCoreProperties<State, ClassType>;
     /**
      * @function getTransitionString
@@ -6256,6 +6245,7 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
     applyResolvedValues(data: ReifectObjectData<State, ClassType>, skipTransition?: boolean, applyStylesInstantly?: boolean): void;
     refreshResolvedValues(): void;
     applyProperties(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    protected valuesEqual(a: any, b: any): boolean;
     refreshProperties(): void;
     applyReplaceWith(data: ReifectObjectData<State, ClassType>, state?: State): void;
     refreshReplaceWith(): void;
@@ -6274,6 +6264,7 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @returns {StatefulReifect<State, ClassType>} - The new reifect.
      */
     clone(): StatefulReifect<State, ClassType>;
+    protected normalizeStates(states: State[] | object): State[];
     protected normalizePropertyConfig<Type>(currentConfig: PartialRecord<State, ReifectInterpolator<Type, ClassType>>, newConfig: PropertyConfig<Type, State, ClassType>): PartialRecord<State, ReifectInterpolator<Type, ClassType>>;
     private cleanTransitionProperties;
     /**
@@ -6283,11 +6274,6 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      */
     private parseTime;
 }
-/**
- * @group Components
- * @category StatefulReifect
- */
-declare function statefulReifier<State extends string | number | symbol, ClassType extends object = Element>(properties: StatefulReifectProperties<State, ClassType>): StatefulReifect<State, ClassType>;
 
 /**
  * @group Components
@@ -8070,7 +8056,7 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, blockDataSignal, blockIdSignal, blockSignal, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, disposeEffects, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, statefulReifier, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, nestedModelSignal, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
 export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataKeyType, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations

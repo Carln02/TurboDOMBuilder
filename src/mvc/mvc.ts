@@ -12,7 +12,7 @@ import {TurboEmitter} from "./emitter/emitter";
 import {TurboController} from "./controller/controller";
 import {TurboViewProperties} from "./view/view.types";
 import {TurboControllerProperties} from "./controller/controller.types";
-import {DataKeyType} from "./model/model.types";
+import {KeyType} from "../types/basic.types";
 
 /**
  * @class Mvc
@@ -575,7 +575,7 @@ class Mvc<
      * @param value
      * @param keys
      */
-    private emitterFireCallback = (value: any, ...keys: DataKeyType[]) =>
+    private emitterFireCallback = (value: any, ...keys: KeyType[]) =>
         this.emitter?.fireKey(value, ...keys);
 
     /**

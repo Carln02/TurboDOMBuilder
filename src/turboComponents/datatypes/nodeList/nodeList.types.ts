@@ -14,4 +14,7 @@ import {TurboNodeList} from "./nodeList";
 type NodeListType<EntryType extends object = object> = TurboNodeList<EntryType> | HTMLCollection
     | NodeListOf<EntryType & Node> | Set<EntryType> | EntryType[];
 
-export {NodeListType};
+type NodeListSlot<EntryType extends object = object> = TurboNodeList<EntryType> | HTMLCollection
+    | NodeListOf<EntryType & Node> | EntryType;
+
+export {NodeListType, NodeListSlot};

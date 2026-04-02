@@ -2,8 +2,8 @@ import {auto} from "../../decorators/auto/auto";
 import {trim} from "../../utils/computations/misc";
 import {YAbstractType, YArray, YMap, YArrayEvent, YEvent, YMapEvent} from "../../types/yjs.types";
 import {isUndefined} from "../../utils/dataManipulation/misc";
-import {DataKeyType} from "./model.types";
 import {TurboModel} from "./model";
+import {KeyType} from "../../types/basic.types";
 
 /**
  * @group MVC
@@ -11,11 +11,11 @@ import {TurboModel} from "./model";
  */
 class TurboYModel<
     YType extends YMap | YArray = YMap | YArray,
-    KeyType extends string | number | symbol = any,
-    IdType extends string | number | symbol = any,
+    DataKeyType extends KeyType = any,
+    IdType extends KeyType = any,
     ComponentType extends object = any,
     DataEntryType = any
-> extends TurboModel<YType, KeyType, IdType, ComponentType, DataEntryType> {
+> extends TurboModel<YType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
 
     /**
@@ -72,7 +72,7 @@ class TurboYModel<
                 if (index < 0) index = 0;
                 data.insert(index, [value]);
             }
-            return index as KeyType;
+            return index as DataKeyType;
         }
         return super.addAction(model, data, value, key);
     }
@@ -98,11 +98,11 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    public get keys(): KeyType[] {
-        if (this.data instanceof YMap) return Array.from(this.data.keys()) as KeyType[];
+    public get keys(): DataKeyType[] {
+        if (this.data instanceof YMap) return Array.from(this.data.keys()) as DataKeyType[];
         if (this.data instanceof YArray) {
-            const output: KeyType[] = [];
-            for (let i = 0; i < this.data.length; i++) output.push(i as KeyType);
+            const output: DataKeyType[] = [];
+            for (let i = 0; i < this.data.length; i++) output.push(i as DataKeyType);
             return output;
         }
         return super.keys;
@@ -151,11 +151,11 @@ class TurboYModel<
                     const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                     const count = insertedItems.length;
                     this.shiftIndices(currentIndex, count);
-                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as KeyType]);
+                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as DataKeyType]);
                     currentIndex += count;
                 } else if (delta.delete) {
                     const count = delta.delete;
-                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as KeyType], undefined, true);
+                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as DataKeyType], undefined, true);
                     this.shiftIndices(currentIndex + count, -count);
                 }
             }
@@ -167,7 +167,7 @@ class TurboYModel<
             const pathsToShift = observer.paths
                 .filter(path => Number(path[0]) >= fromIndex);
 
-            const itemsToShift: [number, KeyType[], any][] = pathsToShift
+            const itemsToShift: [number, DataKeyType[], any][] = pathsToShift
                 .map(path => [Number(path[0]), path, observer.get(...path)]);
             itemsToShift.sort((a, b) => a[0] - b[0]);
 
@@ -175,7 +175,7 @@ class TurboYModel<
             for (const [oldIndex, path, instance] of itemsToShift) {
                 const newIndex = oldIndex + offset;
                 if (typeof instance === "object" && "dataId" in instance) instance.dataId = newIndex;
-                observer.set(instance, newIndex as KeyType, ...path.slice(1));
+                observer.set(instance, newIndex as DataKeyType, ...path.slice(1));
             }
         });
     }

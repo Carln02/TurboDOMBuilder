@@ -1,6 +1,6 @@
 import {Effect, Read, SignalEntry, SignalSubscriber, Write} from "./reactivity.types";
 import {isUndefined} from "../../utils/dataManipulation/misc";
-import {DataKeyType} from "../../mvc/model/model.types";
+import {KeyType} from "../../types/basic.types";
 
 /**
  * @internal
@@ -134,15 +134,15 @@ export class ReactivityUtils {
         this.getSignal(target, key)?.emit();
     }
 
-    public bindPath(target: object, propertyKey: PropertyKey, keys: DataKeyType[]) {
+    public bindPath(target: object, propertyKey: PropertyKey, keys: KeyType[]) {
         this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
     }
 
-    public getKeyFromPath(target: object, keys: DataKeyType[]): PropertyKey {
+    public getKeyFromPath(target: object, keys: KeyType[]): PropertyKey {
         return this.data(target).pathMap.get(this.serializePath(keys));
     }
 
-    public serializePath(keys: DataKeyType[]): string {
+    public serializePath(keys: KeyType[]): string {
         return keys.map(k => typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
     }
 

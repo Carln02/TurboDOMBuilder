@@ -2,7 +2,8 @@
  * @group Utilities
  * @category Numbers
  */
-function trim(value: number, max: number, min: number = 0): number {
+function trim(value: number, max: number, min: number = 0, fallback: number = 0): number {
+    if (value === undefined || typeof value !== "number") return fallback;
     if (value < min) value = min;
     if (value > max) value = max;
     return value;

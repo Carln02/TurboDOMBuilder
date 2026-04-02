@@ -1,18 +1,5 @@
 import {TurboObserver} from "./observer";
-
-/**
- * @type DataKeyType
- * @group MVC
- * @category TurboModel
- */
-type DataKeyType = string | number | symbol;
-
-/**
- * @type FlatKeyType
- * @group MVC
- * @category TurboModel
- */
-type FlatKeyType = string | number;
+import {KeyType} from "../../types/basic.types";
 
 /**
  * @type TurboModelProperties
@@ -29,7 +16,7 @@ type FlatKeyType = string | number;
  */
 type TurboModelProperties<
     DataType = any,
-    IdType extends DataKeyType = any
+    IdType extends KeyType = any
 > = {
     id?: IdType,
     data?: DataType,
@@ -62,21 +49,21 @@ type TurboModelProperties<
 type TurboObserverProperties<
     DataType = any,
     ComponentType extends object = any,
-    KeyType extends string | number | symbol = string
+    DataKeyType extends KeyType = KeyType
 > = {
-    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType>,
+    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, DataKeyType>,
 
     depth?: number,
     initialize?: boolean,
 
-    onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void,
+    onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => ComponentType | void,
     onUpdated?: (data: DataType, instance: ComponentType,
-                 self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void,
+                 self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void,
     onDeleted?: (data: DataType, instance: ComponentType,
-                 self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void,
+                 self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void,
 
-    onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void,
-    onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void,
+    onInitialize?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void,
+    onDestroy?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void,
 };
 
-export {TurboModelProperties, DataKeyType, FlatKeyType, TurboObserverProperties};
+export {TurboModelProperties, TurboObserverProperties};

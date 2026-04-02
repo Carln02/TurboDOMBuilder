@@ -1,7 +1,8 @@
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboNestedMap} from "../../turboComponents/datatypes/nestedMap/nestedMap";
-import {DataKeyType, TurboObserverProperties} from "./model.types";
+import {TurboObserverProperties} from "./model.types";
 import {TurboModel} from "./model";
+import {KeyType} from "../../types/basic.types";
 
 /**
  * @class TurboObserver
@@ -20,8 +21,8 @@ import {TurboModel} from "./model";
 class TurboObserver<
     DataType = any,
     ComponentType extends object = any,
-    KeyType extends DataKeyType = DataKeyType,
-> extends TurboNestedMap<ComponentType, KeyType> {
+    DataKeyType extends KeyType = KeyType,
+> extends TurboNestedMap<ComponentType, DataKeyType> {
     protected _isInitialized = false;
 
     /**
@@ -31,7 +32,7 @@ class TurboObserver<
      * `onUpdated` calls.
      */
     public readonly onAdded: Delegate<
-        (data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void
+        (data: DataType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => ComponentType | void
     > = new Delegate();
 
     /**
@@ -40,7 +41,7 @@ class TurboObserver<
      */
     public readonly onUpdated: Delegate<
         (data: DataType, instance: ComponentType,
-         self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void
+         self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => void
     > = new Delegate();
 
     /**
@@ -49,20 +50,20 @@ class TurboObserver<
      */
     public readonly onDeleted: Delegate<
         (data: DataType, instance: ComponentType,
-         self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void
+         self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => void
     > = new Delegate();
 
     /**
      * @property onInitialize
      * @description Delegate fired once when the observer is initialized. Useful for initial population.
      */
-    public readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void> = new Delegate();
+    public readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, DataKeyType>) => void> = new Delegate();
 
     /**
      * @property onDestroy
      * @description Delegate fired when the observer is destroyed.
      */
-    public readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void> = new Delegate();
+    public readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, DataKeyType>) => void> = new Delegate();
 
     /**
      * @constructor
@@ -72,7 +73,7 @@ class TurboObserver<
      * @param {TurboObserverProperties<DataType, ComponentType, KeyType>} [properties] - Initialization
      * options and lifecycle callbacks.
      */
-    public constructor(properties: TurboObserverProperties<DataType, ComponentType, KeyType> = {}) {
+    public constructor(properties: TurboObserverProperties<DataType, ComponentType, DataKeyType> = {}) {
         super();
 
         if (properties.onAdded) this.onAdded.add((data, self, ...keys) =>
@@ -106,7 +107,7 @@ class TurboObserver<
      * @description Remove the instance at the given key path from the map and call `instance.remove()` if available.
      * @param {...KeyType[]} keys - Ordered path to the instance.
      */
-    public remove(...keys: KeyType[]): void {
+    public remove(...keys: DataKeyType[]): void {
         const instance = this.get(...keys);
         super.remove(...keys);
         if (!instance) return;
@@ -120,7 +121,7 @@ class TurboObserver<
      * detaching it from the observer.
      * @param {...KeyType[]} keys - Ordered path to the instance.
      */
-    public detach(...keys: KeyType[]): void {
+    public detach(...keys: DataKeyType[]): void {
         super.remove(...keys);
     }
 
@@ -177,7 +178,7 @@ class TurboObserver<
      * @param {DataType} value - The new value at that path.
      * @param {boolean} [deleted=false] - Whether the entry was deleted.
      */
-    public keyChanged(keys: KeyType[], value: DataType, deleted: boolean = false) {
+    public keyChanged(keys: DataKeyType[], value: DataType, deleted: boolean = false) {
         let instance: ComponentType | void = this.get(...keys);
 
         if (!instance && deleted) return;

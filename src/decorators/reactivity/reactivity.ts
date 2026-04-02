@@ -3,8 +3,7 @@ import {SignalBox, SignalEntry} from "./reactivity.types";
 import {SignalUtils} from "./reactivity.signal";
 import {EffectUtils} from "./reactivity.effect";
 import {TurboModel} from "../../mvc/model/model";
-import {isUndefined} from "../../utils/dataManipulation/misc";
-import {DataKeyType} from "../../mvc/model/model.types";
+import {KeyType} from "../../types/basic.types";
 
 const utils = new ReactivityUtils();
 const signalUtils = new SignalUtils(utils);
@@ -31,7 +30,7 @@ const effectUtils = new EffectUtils(utils);
  * const nested = signal(0, target, "users", "42", "score");
  * ```
  */
-function signal<Value>(initial?: Value, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
+function signal<Value>(initial?: Value, target?: object, ...keys: KeyType[]): SignalBox<Value>;
 
 /**
  * @overload
@@ -54,7 +53,7 @@ function signal<Value>(initial?: Value, target?: object, ...keys: DataKeyType[])
  * const nested = signal(() => target.get("users", "42"), v => target.set(v, "users", "42"), target, "users", "42");
  * ```
  */
-function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
+function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: KeyType[]): SignalBox<Value>;
 
 /**
  * @overload

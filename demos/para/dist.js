@@ -1,722 +1,8467 @@
-/**
- * @typedef {Object} AutoOptions
- * @group Decorators
- * @category Augmentation
- *
- * @template Type
- * @description Options for configuring the `@auto` decorator.
- * @property {boolean} [override] - If true, will try to override the defined property in `super`.
- * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
- * current value. Defaults to `true`.
- * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
- * just before it is set. The returned value will be stored.
- * @property {(value: Type) => void} [callBefore] - Optional function to call before preprocessing and setting the value.
- * @property {(value: Type) => void} [callAfter] - Optional function to call after setting the value.
- * @property {boolean} [setIfUndefined] - If true, will fire the setter when the underlying value is `undefined` and
- * the program is trying to access it (maybe through its getter).
- * @property {boolean} [returnDefinedGetterValue] - If true and a custom getter is defined, the return value of this
- * getter will be returned when accessing the property. Otherwise, the underlying saved value will always be returned.
- * Defaults to `false`.
- * @property {boolean} [executeSetterBeforeStoring] - If true, when setting the value, the setter will execute first,
- * and then the value will be stored. In this case, accessing the value in the setter will return the previous value.
- * Defaults to `false`.
- * @property {Type} [defaultValue] - If defined, whenever the underlying value is `undefined` and trying to be
- * accessed, it will be set to `defaultValue` through the setter before getting accessed.
- * @property {() => Type} [defaultValueCallback] - If defined, whenever the underlying value is `undefined` and
- * trying to be accessed, it will be set to the return value of `defaultValueCallback` through the setter before
- * getting accessed.
- * @property {Type} [initialValue] - If defined, on initialization, the property will be set to `initialValue`.
- * @property {() => Type} [initialValueCallback] - If defined, on initialization, the property will be set to the
- * return value of `initialValueCallback`.
- */
-
-/**
- * @typedef {Object} CacheOptions
- * @group Decorators
- * @category Cache
- *
- * @description Options for configuring the `@cache` decorator.
- *
- * Defines when and how cached values should expire, refresh, or invalidate.
- * These options apply equally to cached **methods**, **getters**, and **accessors**.
- *
- * @property {number} [timeout]
- *  Duration in milliseconds after which the cached value automatically expires.
- *  Useful for time-based caching where values should refresh periodically.
- *
- * @property {string | string[]} [onEvent]
- *  One or more event names (space-separated string or array) that, when fired on the instance,
- *  immediately clear the cache.
- *  This allows integration with custom event systems or reactive models.
- *
- * @property {() => boolean | Promise<boolean>} [onCallback]
- *  Function (sync or async) periodically called to decide whether to invalidate the cache.
- *  If it returns `true`, the cache is cleared.
- *
- * @property {number} [onCallbackFrequency]
- *  Frequency in milliseconds at which `onCallback` should be executed.
- *  Ignored if `onCallback` is not provided.
- *
- * @property {string | Function | (string | Function)[]} [onFieldChange]
- *  One or more property names or methods to watch for changes.
- *  Whenever any of these fields or functions change, the cache for the decorated member is cleared.
- *  Can be a string, a function reference, or an array of both.
- *
- * @property {boolean} [clearOnNextFrame]
- *  If `true`, clears the cache automatically on the **next animation frame** (or equivalent microtask fallback).
- *  Useful when the cached value is only valid for the current render/update cycle.
- */
-
-/**
- * @typedef {Object} SignalEntry
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description Type that represents a base signal object.
- * @property {function(): Type} get - Retrieve the signal value.
- * @property {function(value: Type): void} set - Set the signal value.
- * @property {function(updater: (previous: Type) => Type): void} update - Set the value using a pure updater based
- * on the previous value.
- * @property {(fn: SignalSubscriber) => () => void} sub - Subscribe to change notifications. Returns an unsubscribe
- * function.
- * @property {() => void} emit - Force a notification cycle without changing the value (useful after in-place
- * mutation of structural data).
- *
- * @example
- * ```ts
- * const count: SignalEntry<number> = makeSignal(0);
- * const unsub = count.sub(() => console.log("count:", count.get()));
- * count.set(1); // logs "count: 1"
- * count.update(c => c+1); // logs "count: 2"
- * unsub();
- * ```
- */
-
-/**
- * @typedef {Object} SignalBox
- * @group Decorators
- * @category Signal
- *
- * @template Type
- * @description A signal entry that is also usable like its underlying primitive/object.
- *
- * ### Interop Notes
- * - `toJSON()` returns the raw value.
- * - `valueOf()` returns the raw value.
- * - `Symbol.toPrimitive(hint)`:
- *    - `"number"` → numeric coercion from the inner value
- *    - `"string"` or `"default"` → string coercion from the inner value
- * - The `value` getter/setter mirrors `get()`/`set()` for ergonomic usage.
- *
- * @example
- * ```ts
- * const count: SignalBox<number> = signal(0);
- *
- * // Read
- * console.log(count.get()); // 0
- * console.log(count.value); // 0
- * console.log(+count); // 0
- *
- * // Write
- * count.set(5);
- * count.value = 6;
- * count.update(v => v + 1); // 7
- *
- * // JSON / string
- * console.log(`${count}`); // "7"
- * console.log(JSON.stringify(count)); // 7
- *
- * // Reactivity
- * const unsub = count.sub(() => console.log("changed to", count.get()));
- * count.set(8); // triggers subscriber
- * unsub();
- * ```
- */
-
-/**
- * @typedef {Object} TurboControllerProperties
- * @group MVC
- * @category Controller
- *
- * @extends {TurboViewProperties}
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description  Options used to create a new {@link TurboController} attached to an element.
- * @property {ViewType} [view] - The MVC view.
- */
-
-/**
- * @typedef {Object} TurboInteractorProperties
- * @group MVC
- * @category Interactor
- *
- * @extends {TurboControllerProperties}
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description  Options used to create a new {@link TurboInteractor} attached to an element.
- * @property {string} [toolName] - The name of the tool (if any) that the event listeners will listen for.
- * @property {Node} [target] - The target that will listen for the events. Defaults to `this.element`.
- * @property {PartialRecord<DefaultEventNameKey, ListenerOptions>} [listenerOptions] - Custom default options to define
- * for all listeners.
- * @property {TurboEventManager} [manager] - The event manager instance the listeners should register against. Defaults
- * to `TurboEventManager.instance`.
- */
-
-/**
- * @typedef {Object} MakeToolOptions
- * @group Types
- * @category Tool
- *
- * @description Options used to create a new tool attached to an element via {@link makeTool}.
- * @property {() => void} [onActivate] - Function to execute when the tool is activated.
- * @property {() => void} [onDeactivate] - Function to execute when the tool is deactivated.
- * @property {DefaultEventNameEntry} [activationEvent] - Custom activation event to listen to. Defaults to the
- * default click event name.
- * @property {ClickMode} [clickMode] -  Click mode that will hold this tool when activated. Defaults to `ClickMode.left`.
- * @property {(element: Turbo<Element>, manager: TurboEventManager) => void} [customActivation] - Custom activation
- * function. If provided, is called with `(el, manager)` to define when the tool is activated.
- * @property {string} [key] - Optional keyboard key to map to this tool. When pressed, it will be set as the current key tool.
- * @property {TurboEventManager} [manager] - The event manager instance this tool should register against. Defaults
- * to `TurboEventManager.instance`.
- */
-
-/**
- * @typedef {Object} ToolBehaviorCallback
- * @group Types
- * @category Tool
- *
- * @description Function signature for a tool behavior. Returning `true` marks the behavior as handled/consumed,
- * leading to stopping the propagation of the event.
- * @param {Event} event - The original DOM/Turbo event.
- * @param {Node} target - The node the behavior should operate on (the object or its embedded target).
- * @param {ToolBehaviorOptions} [options] - Additional info (embedded context, etc.).
- * @return {boolean} - Whether to stop the propagation.
- */
-
-/**
- * @typedef {Object} ToolBehaviorOptions
- * @group Types
- * @category Tool
- *
- * @description Options object passed to tool behaviors at execution time.
- * @property {boolean} [isEmbedded] - Indicates if the tool is embedded in a target node.
- * @property {Node} [embeddedTarget] - The target of the tool, if it is embedded.
- */
-
-/**
- * @typedef {Object} TurboToolProperties
- * @group MVC
- * @category Tool
- *
- * @extends TurboControllerProperties
- * @extends MakeToolOptions
- *
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Options used to create a new {@link TurboTool} attached to an element.
- * @property {string} [toolName] - The name of the tool.
- * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
- */
-
-/**
- * @typedef {Object} NodeListType
- * @group Components
- * @category TurboNodeList
- *
- * @description Union type representing any value that can be added to or removed from a
- * {@link TurboNodeList}. Accepts a {@link TurboNodeList}, a live DOM {@link HTMLCollection},
- * a {@link NodeListOf}, a {@link Set}, or a plain array.
- *
- * @template {object} EntryType - The type of the nodes held in the collection.
- */
-
-/**
- * @typedef {Object} MakeSubstrateOptions
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects used to configure the creation of substrates. Used in {@link makeSubstrate}.
- * @property {() => void} [onActivate] - Callback function to execute when the substrate is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the substrate is deactivated.
- * @property {number} [priority] - The priority of the substrate. Higher priority substrates (lower number) should
- * be resolved first. Defaults to 10.
- * @property {boolean} [active] - Whether the substrate is active. Defaults to true.
- * @property {TurboSubstrate} [attachedInstance] - The optional TurboSubstrate instance to attach to the substrate.
- */
-
-/**
- * @typedef {Object} SubstrateCallbackProperties
- * @group Types
- * @category Substrate
- *
- * @description Type representing objects passed as context for resolving substrates. Given as first parameter to
- * solvers when executing them via {@link solveSubstrate}.
- * @property {string} [substrate] - The targeted substrate. Defaults to `currentSubstrate`.
- * @property {object} [substrateHost] - The object to which the target substrate is attached.
- * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link solveSubstrate} when processing every object in the substrate's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the substrate.
- * @property {string} [eventType] - The type of the event.
- * @property {Node} [eventTarget] - The target of the event.
- * @property {string} [toolName] - The name of the active tool when the event was fired.
- * @property {ListenerOptions} [eventOptions] - The options of the event.
- * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
- * instantiated event manager.
- */
-
-/**
- * @typedef {Object} SubstrateMutatorProperties
- * @group Types
- * @category Substrate
- *
- * @extends SubstrateCallbackProperties
- * @template Type - The type of the value to mutate.
- * @description Type representing objects passed as context to mutate a value in a substrate. Given as first parameter to
- * mutators when executing them via {@link mutate}.
- * @property {string} [mutation] - The name of the mutator to execute.
- * @property {Type} [value] - The value to mutate.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateChecker
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of checker functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateSolver
- * @group Types
- * @category Substrate
- *
- * @description Type representing the signature of solver functions that substrates expect.
- */
-
-/**
- * @typedef {Object} SubstrateAddCallbackProperties
- * @group Types
- * @category Substrate
- * @template {SubstrateChecker | SubstrateMutator | SubstrateSolver} Type - The type of callback.
- *
- * @description Type representing a configuration object to add a new callback to the given substrate.
- * @property {string} [name] - The name of the callback to add.
- * @property {Type} [callback] - The callback to add.
- * @property {string} [substrate] - The substrate to add the callback to.
- * @property {number} [priority] - The priority of the callback.
- */
-
-/**
- * @typedef {Object} TurboSubstrateProperties
- * @group MVC
- * @category Substrate
- *
- * @extends TurboControllerProperties
- * @extends MakeSubstrateOptions
- *
- * @template {object} ElementType - The type of the element.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {TurboModel} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Options used to create a new {@link TurboSubstrate} attached to an element.
- * @property {string} [substrateName] - The name of the substrate.
- */
-
-/**
- * @typedef {Object} MvcGenerationProperties
- * @group MVC
- * @category MVC
- *
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Type representing a configuration object for an {@link Mvc} instance.
- * @property {MvcInstanceOrConstructor<ViewType, TurboViewProperties>} [view] - The view (or view constructor) to attach.
- * @property {ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType)} [model] - The model
- * (or model constructor) to attach.
- * @property {MvcInstanceOrConstructor<EmitterType, ModelType>} [emitter] - The emitter (or emitter constructor) to
- * attach. If not defined, a default TurboEmitter will be created.
- * @property {MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>} [controllers] - The
- * controller, constructor of controller, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboHandler, ModelType>} [handlers] - The
- * handler, constructor of handler, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>} [interactors] - The
- * interactor, constructor of interactor, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
- * tool, constructor of tool, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
- * substrate, constructor of substrate, or array of the latter, to attach.
- * @property {DataType} [data] - The data to attach to the model.
- * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
- */
-
-/**
- * @typedef {Object} MvcProperties
- * @group MVC
- * @category MVC
- *
- * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Type of the properties object used for instantiating an {@link Mvc} object.
- * @extends MvcGenerationProperties
- * @property {ElementType} [element] - The element to attach to the Mvc instance.
- */
-
-/**
- * @typedef {Object} ElementTagDefinition
- * @group Types
- * @category Element
- * @description Represents an element's definition of its tag and its namespace (both optional).
- *
- * @property {string} [tag="div"] - The HTML tag of the element (e.g., "div", "span", "input"). Defaults to "div."
- * @property {string} [namespace] - The namespace of the element. Defaults to HTML. If "svgManipulation" or "mathML"
- * is provided, the corresponding namespace will be used to create the element. Otherwise, the custom namespace
- * provided will be used.
- */
-
-/**
- * @typedef {Object} TurboElementProperties
- * @group TurboElement
- * @category TurboElement
- *
- * @extends TurboProperties
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Object containing properties for configuring a custom HTML element. Is basically TurboProperties
- * without the tag.
- */
-
-/**
- * @typedef {Object} TurboHeadlessProperties
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
- */
-
-/**
- * @typedef {Object} PreventDefaultOptions
- * @group Types
- * @category Event
- *
- * @description Options for {@link TurboSelector.preventDefault}, which prevents default browser behaviors for
- * selected event types and can optionally stop propagation.
- *
- * @property {string[]} [types] - List of event types to affect. If omitted, defaults to {@link BasicInputEvents}.
- * @property {"capture" | "bubble"} [phase] - Which phase to prevent. Defaults to `"bubble"`.
- * @property {false | "stop" | "immediate"} [stop] - Whether to stop propagation when handling the event:
- * - `false`: do not stop propagation,
- * - `"stop"`: call `stopPropagation`,
- * - `"immediate"`: call `stopImmediatePropagation`.
- * @property {(type: string, e: Event) => boolean} [preventDefaultOn] - Predicate to decide (per event) whether to
- * call `preventDefault`. Return `true` to prevent default for that event.
- * @property {boolean} [clearPreviousListeners] - If true, clears previously installed prevent-default listeners
- * before installing new ones.
- * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
- */
-
-/**
- * @typedef {Object} ListenerProperties
- * @group Components
- * @category Listener
- *
- * @template {Node} TargetType - The type of the event target.
- * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
- * @description Configuration object used to construct a {@link Listener}.
- *
- * @property {string} type - Event type (e.g., `"click"`, `"pointermove"`).
- * @property {CallbackType} callback - Listener callback.
- * @property {TargetType} [target] - Target node.
- * @property {string} [toolName] - Tool name to bind this listener to (if applicable).
- * @property {ListenerOptions} [options] - Options controlling registration and execution behaviors.
- * @property {TurboEventManager} [manager] - Event manager to use. Defaults to {@link TurboEventManager.instance}.
- */
-
-/**
- * @typedef {Object} MatchListenerProperties
- * @group Components
- * @category Listener
- *
- * @template {Node} TargetType - The type of the event target.
- * @template {ListenerCallback<TargetType>} CallbackType - The type of the callback executed by this listener.
- * @extends ListenerProperties
- * @description Properties used for matching listeners (see {@link Listener.match}).
- *
- * @property {string[]} [optionsToSkip] - List of option keys to ignore when matching `options`.
- */
-
-/**
- * @typedef {Object} ListenerOptions
- * @group Components
- * @category Listener
- * @extends AddEventListenerOptions
- * @description Options used for listeners.
- *
- * @property {boolean} [checkSubstrates] - If true, checks substrates before execution. Defaults to true.
- * @property {boolean} [solveSubstrates] - If true, triggers substrate solving after execution. Defaults to true.
- * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
- * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
- */
-
-/**
- * @typedef {Object} StylesRoot
- * @group Types
- * @category Style
- *
- * @description A type that represents entities that can hold a <style> object (Shadow root or HTML head).
- */
-
-/**
- * @typedef {Object} StylesType
- * @group Types
- * @category Style
- *
- * @description A type that represents the types that are accepted as styles entries (mainly by the HTMLElement.setStyles()
- * method). It includes strings, numbers, and records of CSS attributes to strings or numbers.
- */
-
-/**
- * @typedef {Object} TurboIconProperties
- * @group Components
- * @category TurboIcon
- *
- * @description Properties object that extends TurboElementProperties with properties specific to icons.
- * @extends TurboProperties
- *
- * @property {string} icon - The name of the icon.
- * @property {string} [iconColor] - The color of the icon.
- * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
- * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
- *
- * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
- * TurboIcon.config.type (whose default value is "svgManipulation").
- * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
- * TurboIcon.config.directory.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
- * TurboIcon.config.defaultClasses to this instance of Icon.
- */
-
-/**
- * @typedef {Object} TurboIconConfig
- * @group Components
- * @category TurboIcon
- *
- * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
- *
- * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
- * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
- * directory once here to not type it again at every Icon generation.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
- */
-
-/**
- * @typedef {Object} TurboRichElementProperties
- * @group Components
- * @category TurboRichElement
- *
- * @description Properties object for configuring a Button. Extends TurboElementProperties.
- * @extends TurboProperties
- *
- * @property {string} [text] - The text to set to the rich element's main element.
- *
- * @property {Element | Element[]} [leftCustomElements] - Custom elements
- * to be placed on the left side of the button (before the left icon).
- * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
- * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {Element | Element[]} [rightCustomElements] - Custom elements
- * to be placed on the right side of the button (after the right icon).
- *
- * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
- * a string). If not specified, the default text tag specified in the Button class will be used.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
- * to this instance of Button.
- *
- * @template {ValidTag} ElementTag="p"
- */
-
-/**
- * @typedef {Object} TurboRichElementConfig
- * @group Components
- * @category TurboRichElement
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-
-/**
- * @typedef {Object} TurboButtonConfig
- * @group Components
- * @category TurboButton
- *
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-
-/**
- * @typedef {Object} TurboSelectElementProperties
- * @group Components
- * @category TurboDropdown
- *
- * @description Properties for configuring a Dropdown.
- * @extends TurboProperties
- *
- * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
- * string is passed, a Button with the given string as text will be assigned as the selector.
- * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
- *
- * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- *
- * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- *
- * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
- * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
- */
-
-/**
- * @typedef {Object} TurboDropdownConfig
- * @group Components
- * @category TurboDropdown
- *
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-
-/**
- * @typedef {Object} TurboDropdownProperties
- * @group Components
- * @category TurboDropdown
- *
- * @description Properties for configuring a Dropdown.
- * @extends TurboProperties
- *
- * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
- * string is passed, a Button with the given string as text will be assigned as the selector.
- * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
- *
- * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- *
- * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- *
- * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
- * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
- */
-
-/**
- * @typedef {Object} TurboDropdownConfig
- * @group Components
- * @category TurboDropdown
- *
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-
-/**
- * @typedef {Object} ChildHandler
- * @group Types
- * @category Hierarchy
- *
- * @description A type that represents all entities that can hold and manage children (an element or a shadow root).
- */
-
-/**
- * @typedef {Object} ApplyDefaultsOptions
- * @group Types
- * @category Misc
- *
- * @description Options for {@link TurboSelector.applyDefaults}.
- * @property {string[]} [mergeProperties] - Array-like keys to merge. Defaults to {@link ApplyDefaultsMergeProperties}.
- * @property {boolean} [removeDuplicates] - Whether to remove duplicates when merging arrays. Defaults to `true`.
- */
-
-/**
- * @typedef {Object} FontProperties
- * @group Utilities
- * @category Font
- *
- * @description An object representing a local font, or a family of fonts.
- *
- * @property {string} name - The name of the font. The font's filename should also match.
- * @property {string} pathOrDirectory - The path to the local font file, or the path to the local font family's directory.
- * @property {Record<string, string> | Record<number, Record<string, string>>} [weight] - If loading a single font, a
- * record in the form {weight: style}. Defaults to {"normal": "normal"}. If loading a family, a record in the form
- * {weight: {fontSubName: style}}, such that every font file in the family is named in the form fontName-fontSubName.
- * Defaults to an object containing common sub-names and styles for weights from 100 to 900.
- * @property {string} [format] - The format of the font. Defaults to "woff2".
- * @property {string} [extension] - The extension of the font file(s). Defaults to ".ttf".
- */
-
-var Turbo = (function (exports, yjs) {
+(function () {
     'use strict';
+
+    /******************************************************************************
+    Copyright (c) Microsoft Corporation.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+    REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+    INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+    LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+    OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+    PERFORMANCE OF THIS SOFTWARE.
+    ***************************************************************************** */
+    /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+    function __esDecorate$1(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+        function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+        var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+        var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+        var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+        var _, done = false;
+        for (var i = decorators.length - 1; i >= 0; i--) {
+            var context = {};
+            for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+            for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+            context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+            var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+            if (kind === "accessor") {
+                if (result === void 0) continue;
+                if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+                if (_ = accept(result.get)) descriptor.get = _;
+                if (_ = accept(result.set)) descriptor.set = _;
+                if (_ = accept(result.init)) initializers.unshift(_);
+            }
+            else if (_ = accept(result)) {
+                if (kind === "field") initializers.unshift(_);
+                else descriptor[key] = _;
+            }
+        }
+        if (target) Object.defineProperty(target, contextIn.name, descriptor);
+        done = true;
+    }
+    function __runInitializers$1(thisArg, initializers, value) {
+        var useValue = arguments.length > 2;
+        for (var i = 0; i < initializers.length; i++) {
+            value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+        }
+        return useValue ? value : void 0;
+    }
+    typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+        var e = new Error(message);
+        return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+    };
+
+    /**
+     * Utility module to work with key-value stores.
+     *
+     * @module map
+     */
+
+    /**
+     * Creates a new Map instance.
+     *
+     * @function
+     * @return {Map<any, any>}
+     *
+     * @function
+     */
+    const create$5 = () => new Map();
+
+    /**
+     * Copy a Map object into a fresh Map object.
+     *
+     * @function
+     * @template K,V
+     * @param {Map<K,V>} m
+     * @return {Map<K,V>}
+     */
+    const copy = m => {
+      const r = create$5();
+      m.forEach((v, k) => { r.set(k, v); });
+      return r
+    };
+
+    /**
+     * Get map property. Create T if property is undefined and set T on map.
+     *
+     * ```js
+     * const listeners = map.setIfUndefined(events, 'eventName', set.create)
+     * listeners.add(listener)
+     * ```
+     *
+     * @function
+     * @template {Map<any, any>} MAP
+     * @template {MAP extends Map<any,infer V> ? function():V : unknown} CF
+     * @param {MAP} map
+     * @param {MAP extends Map<infer K,any> ? K : unknown} key
+     * @param {CF} createT
+     * @return {ReturnType<CF>}
+     */
+    const setIfUndefined = (map, key, createT) => {
+      let set = map.get(key);
+      if (set === undefined) {
+        map.set(key, set = createT());
+      }
+      return set
+    };
+
+    /**
+     * Creates an Array and populates it with the content of all key-value pairs using the `f(value, key)` function.
+     *
+     * @function
+     * @template K
+     * @template V
+     * @template R
+     * @param {Map<K,V>} m
+     * @param {function(V,K):R} f
+     * @return {Array<R>}
+     */
+    const map = (m, f) => {
+      const res = [];
+      for (const [key, value] of m) {
+        res.push(f(value, key));
+      }
+      return res
+    };
+
+    /**
+     * Tests whether any key-value pairs pass the test implemented by `f(value, key)`.
+     *
+     * @todo should rename to some - similarly to Array.some
+     *
+     * @function
+     * @template K
+     * @template V
+     * @param {Map<K,V>} m
+     * @param {function(V,K):boolean} f
+     * @return {boolean}
+     */
+    const any = (m, f) => {
+      for (const [key, value] of m) {
+        if (f(value, key)) {
+          return true
+        }
+      }
+      return false
+    };
+
+    /**
+     * Utility module to work with sets.
+     *
+     * @module set
+     */
+
+    const create$4 = () => new Set();
+
+    /**
+     * Utility module to work with Arrays.
+     *
+     * @module array
+     */
+
+
+    /**
+     * Return the last element of an array. The element must exist
+     *
+     * @template L
+     * @param {ArrayLike<L>} arr
+     * @return {L}
+     */
+    const last = arr => arr[arr.length - 1];
+
+    /**
+     * Transforms something array-like to an actual Array.
+     *
+     * @function
+     * @template T
+     * @param {ArrayLike<T>|Iterable<T>} arraylike
+     * @return {T}
+     */
+    const from = Array.from;
+
+    const isArray = Array.isArray;
+
+    /**
+     * Observable class prototype.
+     *
+     * @module observable
+     */
+
+
+    /**
+     * Handles named events.
+     * @experimental
+     *
+     * This is basically a (better typed) duplicate of Observable, which will replace Observable in the
+     * next release.
+     *
+     * @template {{[key in keyof EVENTS]: function(...any):void}} EVENTS
+     */
+    class ObservableV2 {
+      constructor () {
+        /**
+         * Some desc.
+         * @type {Map<string, Set<any>>}
+         */
+        this._observers = create$5();
+      }
+
+      /**
+       * @template {keyof EVENTS & string} NAME
+       * @param {NAME} name
+       * @param {EVENTS[NAME]} f
+       */
+      on (name, f) {
+        setIfUndefined(this._observers, /** @type {string} */ (name), create$4).add(f);
+        return f
+      }
+
+      /**
+       * @template {keyof EVENTS & string} NAME
+       * @param {NAME} name
+       * @param {EVENTS[NAME]} f
+       */
+      once (name, f) {
+        /**
+         * @param  {...any} args
+         */
+        const _f = (...args) => {
+          this.off(name, /** @type {any} */ (_f));
+          f(...args);
+        };
+        this.on(name, /** @type {any} */ (_f));
+      }
+
+      /**
+       * @template {keyof EVENTS & string} NAME
+       * @param {NAME} name
+       * @param {EVENTS[NAME]} f
+       */
+      off (name, f) {
+        const observers = this._observers.get(name);
+        if (observers !== undefined) {
+          observers.delete(f);
+          if (observers.size === 0) {
+            this._observers.delete(name);
+          }
+        }
+      }
+
+      /**
+       * Emit a named event. All registered event listeners that listen to the
+       * specified name will receive the event.
+       *
+       * @todo This should catch exceptions
+       *
+       * @template {keyof EVENTS & string} NAME
+       * @param {NAME} name The event name.
+       * @param {Parameters<EVENTS[NAME]>} args The arguments that are applied to the event listener.
+       */
+      emit (name, args) {
+        // copy all listeners to an array first to make sure that no event is emitted to listeners that are subscribed while the event handler is called.
+        return from((this._observers.get(name) || create$5()).values()).forEach(f => f(...args))
+      }
+
+      destroy () {
+        this._observers = create$5();
+      }
+    }
+    /* c8 ignore end */
+
+    /**
+     * Common Math expressions.
+     *
+     * @module math
+     */
+
+    const floor = Math.floor;
+    const abs = Math.abs;
+
+    /**
+     * @function
+     * @param {number} a
+     * @param {number} b
+     * @return {number} The smaller element of a and b
+     */
+    const min = (a, b) => a < b ? a : b;
+
+    /**
+     * @function
+     * @param {number} a
+     * @param {number} b
+     * @return {number} The bigger element of a and b
+     */
+    const max = (a, b) => a > b ? a : b;
+
+    /**
+     * @param {number} n
+     * @return {boolean} Wether n is negative. This function also differentiates between -0 and +0
+     */
+    const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0;
+
+    /* eslint-env browser */
+
+    /**
+     * Binary data constants.
+     *
+     * @module binary
+     */
+
+    /**
+     * n-th bit activated.
+     *
+     * @type {number}
+     */
+    const BIT1 = 1;
+    const BIT2 = 2;
+    const BIT3 = 4;
+    const BIT4 = 8;
+    const BIT6 = 32;
+    const BIT7 = 64;
+    const BIT8 = 128;
+    const BITS5 = 31;
+    const BITS6 = 63;
+    const BITS7 = 127;
+    /**
+     * @type {number}
+     */
+    const BITS31 = 0x7FFFFFFF;
+
+    /**
+     * Utility helpers for working with numbers.
+     *
+     * @module number
+     */
+
+
+    /* c8 ignore next */
+    const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && floor(num) === num);
+
+    /**
+     * @param {string} s
+     * @return {string}
+     */
+    const toLowerCase = s => s.toLowerCase();
+
+    const trimLeftRegex = /^\s*/g;
+
+    /**
+     * @param {string} s
+     * @return {string}
+     */
+    const trimLeft = s => s.replace(trimLeftRegex, '');
+
+    const fromCamelCaseRegex = /([A-Z])/g;
+
+    /**
+     * @param {string} s
+     * @param {string} separator
+     * @return {string}
+     */
+    const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`));
+
+    /**
+     * @param {string} str
+     * @return {Uint8Array}
+     */
+    const _encodeUtf8Polyfill = str => {
+      const encodedString = unescape(encodeURIComponent(str));
+      const len = encodedString.length;
+      const buf = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        buf[i] = /** @type {number} */ (encodedString.codePointAt(i));
+      }
+      return buf
+    };
+
+    /* c8 ignore next */
+    const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
+
+    /**
+     * @param {string} str
+     * @return {Uint8Array}
+     */
+    const _encodeUtf8Native = str => utf8TextEncoder.encode(str);
+
+    /**
+     * @param {string} str
+     * @return {Uint8Array}
+     */
+    /* c8 ignore next */
+    const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill;
+
+    /* c8 ignore next */
+    let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+    /* c8 ignore start */
+    if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
+      // Safari doesn't handle BOM correctly.
+      // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
+      // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
+      // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
+      // Another issue is that from then on no BOM chars are recognized anymore
+      /* c8 ignore next */
+      utf8TextDecoder = null;
+    }
+
+    /**
+     * Efficient schema-less binary encoding with support for variable length encoding.
+     *
+     * Use [lib0/encoding] with [lib0/decoding]. Every encoding function has a corresponding decoding function.
+     *
+     * Encodes numbers in little-endian order (least to most significant byte order)
+     * and is compatible with Golang's binary encoding (https://golang.org/pkg/encoding/binary/)
+     * which is also used in Protocol Buffers.
+     *
+     * ```js
+     * // encoding step
+     * const encoder = encoding.createEncoder()
+     * encoding.writeVarUint(encoder, 256)
+     * encoding.writeVarString(encoder, 'Hello world!')
+     * const buf = encoding.toUint8Array(encoder)
+     * ```
+     *
+     * ```js
+     * // decoding step
+     * const decoder = decoding.createDecoder(buf)
+     * decoding.readVarUint(decoder) // => 256
+     * decoding.readVarString(decoder) // => 'Hello world!'
+     * decoding.hasContent(decoder) // => false - all data is read
+     * ```
+     *
+     * @module encoding
+     */
+
+
+    /**
+     * A BinaryEncoder handles the encoding to an Uint8Array.
+     */
+    class Encoder {
+      constructor () {
+        this.cpos = 0;
+        this.cbuf = new Uint8Array(100);
+        /**
+         * @type {Array<Uint8Array>}
+         */
+        this.bufs = [];
+      }
+    }
+
+    /**
+     * @function
+     * @return {Encoder}
+     */
+    const createEncoder = () => new Encoder();
+
+    /**
+     * The current length of the encoded data.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @return {number}
+     */
+    const length = encoder => {
+      let len = encoder.cpos;
+      for (let i = 0; i < encoder.bufs.length; i++) {
+        len += encoder.bufs[i].length;
+      }
+      return len
+    };
+
+    /**
+     * Transform to Uint8Array.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @return {Uint8Array} The created ArrayBuffer.
+     */
+    const toUint8Array = encoder => {
+      const uint8arr = new Uint8Array(length(encoder));
+      let curPos = 0;
+      for (let i = 0; i < encoder.bufs.length; i++) {
+        const d = encoder.bufs[i];
+        uint8arr.set(d, curPos);
+        curPos += d.length;
+      }
+      uint8arr.set(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos), curPos);
+      return uint8arr
+    };
+
+    /**
+     * Verify that it is possible to write `len` bytes wtihout checking. If
+     * necessary, a new Buffer with the required length is attached.
+     *
+     * @param {Encoder} encoder
+     * @param {number} len
+     */
+    const verifyLen = (encoder, len) => {
+      const bufferLen = encoder.cbuf.length;
+      if (bufferLen - encoder.cpos < len) {
+        encoder.bufs.push(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos));
+        encoder.cbuf = new Uint8Array(max(bufferLen, len) * 2);
+        encoder.cpos = 0;
+      }
+    };
+
+    /**
+     * Write one byte to the encoder.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {number} num The byte that is to be encoded.
+     */
+    const write = (encoder, num) => {
+      const bufferLen = encoder.cbuf.length;
+      if (encoder.cpos === bufferLen) {
+        encoder.bufs.push(encoder.cbuf);
+        encoder.cbuf = new Uint8Array(bufferLen * 2);
+        encoder.cpos = 0;
+      }
+      encoder.cbuf[encoder.cpos++] = num;
+    };
+
+    /**
+     * Write one byte as an unsigned integer.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {number} num The number that is to be encoded.
+     */
+    const writeUint8 = write;
+
+    /**
+     * Write a variable length unsigned integer. Max encodable integer is 2^53.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {number} num The number that is to be encoded.
+     */
+    const writeVarUint = (encoder, num) => {
+      while (num > BITS7) {
+        write(encoder, BIT8 | (BITS7 & num));
+        num = floor(num / 128); // shift >>> 7
+      }
+      write(encoder, BITS7 & num);
+    };
+
+    /**
+     * Write a variable length integer.
+     *
+     * We use the 7th bit instead for signaling that this is a negative number.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {number} num The number that is to be encoded.
+     */
+    const writeVarInt = (encoder, num) => {
+      const isNegative = isNegativeZero(num);
+      if (isNegative) {
+        num = -num;
+      }
+      //             |- whether to continue reading         |- whether is negative     |- number
+      write(encoder, (num > BITS6 ? BIT8 : 0) | (isNegative ? BIT7 : 0) | (BITS6 & num));
+      num = floor(num / 64); // shift >>> 6
+      // We don't need to consider the case of num === 0 so we can use a different
+      // pattern here than above.
+      while (num > 0) {
+        write(encoder, (num > BITS7 ? BIT8 : 0) | (BITS7 & num));
+        num = floor(num / 128); // shift >>> 7
+      }
+    };
+
+    /**
+     * A cache to store strings temporarily
+     */
+    const _strBuffer = new Uint8Array(30000);
+    const _maxStrBSize = _strBuffer.length / 3;
+
+    /**
+     * Write a variable length string.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {String} str The string that is to be encoded.
+     */
+    const _writeVarStringNative = (encoder, str) => {
+      if (str.length < _maxStrBSize) {
+        // We can encode the string into the existing buffer
+        /* c8 ignore next */
+        const written = utf8TextEncoder.encodeInto(str, _strBuffer).written || 0;
+        writeVarUint(encoder, written);
+        for (let i = 0; i < written; i++) {
+          write(encoder, _strBuffer[i]);
+        }
+      } else {
+        writeVarUint8Array(encoder, encodeUtf8(str));
+      }
+    };
+
+    /**
+     * Write a variable length string.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {String} str The string that is to be encoded.
+     */
+    const _writeVarStringPolyfill = (encoder, str) => {
+      const encodedString = unescape(encodeURIComponent(str));
+      const len = encodedString.length;
+      writeVarUint(encoder, len);
+      for (let i = 0; i < len; i++) {
+        write(encoder, /** @type {number} */ (encodedString.codePointAt(i)));
+      }
+    };
+
+    /**
+     * Write a variable length string.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {String} str The string that is to be encoded.
+     */
+    /* c8 ignore next */
+    const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
+
+    /**
+     * Append fixed-length Uint8Array to the encoder.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {Uint8Array} uint8Array
+     */
+    const writeUint8Array = (encoder, uint8Array) => {
+      const bufferLen = encoder.cbuf.length;
+      const cpos = encoder.cpos;
+      const leftCopyLen = min(bufferLen - cpos, uint8Array.length);
+      const rightCopyLen = uint8Array.length - leftCopyLen;
+      encoder.cbuf.set(uint8Array.subarray(0, leftCopyLen), cpos);
+      encoder.cpos += leftCopyLen;
+      if (rightCopyLen > 0) {
+        // Still something to write, write right half..
+        // Append new buffer
+        encoder.bufs.push(encoder.cbuf);
+        // must have at least size of remaining buffer
+        encoder.cbuf = new Uint8Array(max(bufferLen * 2, rightCopyLen));
+        // copy array
+        encoder.cbuf.set(uint8Array.subarray(leftCopyLen));
+        encoder.cpos = rightCopyLen;
+      }
+    };
+
+    /**
+     * Append an Uint8Array to Encoder.
+     *
+     * @function
+     * @param {Encoder} encoder
+     * @param {Uint8Array} uint8Array
+     */
+    const writeVarUint8Array = (encoder, uint8Array) => {
+      writeVarUint(encoder, uint8Array.byteLength);
+      writeUint8Array(encoder, uint8Array);
+    };
+
+    /**
+     * Create an DataView of the next `len` bytes. Use it to write data after
+     * calling this function.
+     *
+     * ```js
+     * // write float32 using DataView
+     * const dv = writeOnDataView(encoder, 4)
+     * dv.setFloat32(0, 1.1)
+     * // read float32 using DataView
+     * const dv = readFromDataView(encoder, 4)
+     * dv.getFloat32(0) // => 1.100000023841858 (leaving it to the reader to find out why this is the correct result)
+     * ```
+     *
+     * @param {Encoder} encoder
+     * @param {number} len
+     * @return {DataView}
+     */
+    const writeOnDataView = (encoder, len) => {
+      verifyLen(encoder, len);
+      const dview = new DataView(encoder.cbuf.buffer, encoder.cpos, len);
+      encoder.cpos += len;
+      return dview
+    };
+
+    /**
+     * @param {Encoder} encoder
+     * @param {number} num
+     */
+    const writeFloat32 = (encoder, num) => writeOnDataView(encoder, 4).setFloat32(0, num, false);
+
+    /**
+     * @param {Encoder} encoder
+     * @param {number} num
+     */
+    const writeFloat64 = (encoder, num) => writeOnDataView(encoder, 8).setFloat64(0, num, false);
+
+    /**
+     * @param {Encoder} encoder
+     * @param {bigint} num
+     */
+    const writeBigInt64 = (encoder, num) => /** @type {any} */ (writeOnDataView(encoder, 8)).setBigInt64(0, num, false);
+
+    const floatTestBed = new DataView(new ArrayBuffer(4));
+    /**
+     * Check if a number can be encoded as a 32 bit float.
+     *
+     * @param {number} num
+     * @return {boolean}
+     */
+    const isFloat32 = num => {
+      floatTestBed.setFloat32(0, num);
+      return floatTestBed.getFloat32(0) === num
+    };
+
+    /**
+     * Encode data with efficient binary format.
+     *
+     * Differences to JSON:
+     * • Transforms data to a binary format (not to a string)
+     * • Encodes undefined, NaN, and ArrayBuffer (these can't be represented in JSON)
+     * • Numbers are efficiently encoded either as a variable length integer, as a
+     *   32 bit float, as a 64 bit float, or as a 64 bit bigint.
+     *
+     * Encoding table:
+     *
+     * | Data Type           | Prefix   | Encoding Method    | Comment |
+     * | ------------------- | -------- | ------------------ | ------- |
+     * | undefined           | 127      |                    | Functions, symbol, and everything that cannot be identified is encoded as undefined |
+     * | null                | 126      |                    | |
+     * | integer             | 125      | writeVarInt        | Only encodes 32 bit signed integers |
+     * | float32             | 124      | writeFloat32       | |
+     * | float64             | 123      | writeFloat64       | |
+     * | bigint              | 122      | writeBigInt64      | |
+     * | boolean (false)     | 121      |                    | True and false are different data types so we save the following byte |
+     * | boolean (true)      | 120      |                    | - 0b01111000 so the last bit determines whether true or false |
+     * | string              | 119      | writeVarString     | |
+     * | object<string,any>  | 118      | custom             | Writes {length} then {length} key-value pairs |
+     * | array<any>          | 117      | custom             | Writes {length} then {length} json values |
+     * | Uint8Array          | 116      | writeVarUint8Array | We use Uint8Array for any kind of binary data |
+     *
+     * Reasons for the decreasing prefix:
+     * We need the first bit for extendability (later we may want to encode the
+     * prefix with writeVarUint). The remaining 7 bits are divided as follows:
+     * [0-30]   the beginning of the data range is used for custom purposes
+     *          (defined by the function that uses this library)
+     * [31-127] the end of the data range is used for data encoding by
+     *          lib0/encoding.js
+     *
+     * @param {Encoder} encoder
+     * @param {undefined|null|number|bigint|boolean|string|Object<string,any>|Array<any>|Uint8Array} data
+     */
+    const writeAny = (encoder, data) => {
+      switch (typeof data) {
+        case 'string':
+          // TYPE 119: STRING
+          write(encoder, 119);
+          writeVarString(encoder, data);
+          break
+        case 'number':
+          if (isInteger(data) && abs(data) <= BITS31) {
+            // TYPE 125: INTEGER
+            write(encoder, 125);
+            writeVarInt(encoder, data);
+          } else if (isFloat32(data)) {
+            // TYPE 124: FLOAT32
+            write(encoder, 124);
+            writeFloat32(encoder, data);
+          } else {
+            // TYPE 123: FLOAT64
+            write(encoder, 123);
+            writeFloat64(encoder, data);
+          }
+          break
+        case 'bigint':
+          // TYPE 122: BigInt
+          write(encoder, 122);
+          writeBigInt64(encoder, data);
+          break
+        case 'object':
+          if (data === null) {
+            // TYPE 126: null
+            write(encoder, 126);
+          } else if (isArray(data)) {
+            // TYPE 117: Array
+            write(encoder, 117);
+            writeVarUint(encoder, data.length);
+            for (let i = 0; i < data.length; i++) {
+              writeAny(encoder, data[i]);
+            }
+          } else if (data instanceof Uint8Array) {
+            // TYPE 116: ArrayBuffer
+            write(encoder, 116);
+            writeVarUint8Array(encoder, data);
+          } else {
+            // TYPE 118: Object
+            write(encoder, 118);
+            const keys = Object.keys(data);
+            writeVarUint(encoder, keys.length);
+            for (let i = 0; i < keys.length; i++) {
+              const key = keys[i];
+              writeVarString(encoder, key);
+              writeAny(encoder, data[key]);
+            }
+          }
+          break
+        case 'boolean':
+          // TYPE 120/121: boolean (true/false)
+          write(encoder, data ? 120 : 121);
+          break
+        default:
+          // TYPE 127: undefined
+          write(encoder, 127);
+      }
+    };
+
+    /**
+     * Now come a few stateful encoder that have their own classes.
+     */
+
+    /**
+     * Basic Run Length Encoder - a basic compression implementation.
+     *
+     * Encodes [1,1,1,7] to [1,3,7,1] (3 times 1, 1 time 7). This encoder might do more harm than good if there are a lot of values that are not repeated.
+     *
+     * It was originally used for image compression. Cool .. article http://csbruce.com/cbm/transactor/pdfs/trans_v7_i06.pdf
+     *
+     * @note T must not be null!
+     *
+     * @template T
+     */
+    class RleEncoder extends Encoder {
+      /**
+       * @param {function(Encoder, T):void} writer
+       */
+      constructor (writer) {
+        super();
+        /**
+         * The writer
+         */
+        this.w = writer;
+        /**
+         * Current state
+         * @type {T|null}
+         */
+        this.s = null;
+        this.count = 0;
+      }
+
+      /**
+       * @param {T} v
+       */
+      write (v) {
+        if (this.s === v) {
+          this.count++;
+        } else {
+          if (this.count > 0) {
+            // flush counter, unless this is the first value (count = 0)
+            writeVarUint(this, this.count - 1); // since count is always > 0, we can decrement by one. non-standard encoding ftw
+          }
+          this.count = 1;
+          // write first value
+          this.w(this, v);
+          this.s = v;
+        }
+      }
+    }
+
+    /**
+     * @param {UintOptRleEncoder} encoder
+     */
+    const flushUintOptRleEncoder = encoder => {
+      if (encoder.count > 0) {
+        // flush counter, unless this is the first value (count = 0)
+        // case 1: just a single value. set sign to positive
+        // case 2: write several values. set sign to negative to indicate that there is a length coming
+        writeVarInt(encoder.encoder, encoder.count === 1 ? encoder.s : -encoder.s);
+        if (encoder.count > 1) {
+          writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+        }
+      }
+    };
+
+    /**
+     * Optimized Rle encoder that does not suffer from the mentioned problem of the basic Rle encoder.
+     *
+     * Internally uses VarInt encoder to write unsigned integers. If the input occurs multiple times, we write
+     * write it as a negative number. The UintOptRleDecoder then understands that it needs to read a count.
+     *
+     * Encodes [1,2,3,3,3] as [1,2,-3,3] (once 1, once 2, three times 3)
+     */
+    class UintOptRleEncoder {
+      constructor () {
+        this.encoder = new Encoder();
+        /**
+         * @type {number}
+         */
+        this.s = 0;
+        this.count = 0;
+      }
+
+      /**
+       * @param {number} v
+       */
+      write (v) {
+        if (this.s === v) {
+          this.count++;
+        } else {
+          flushUintOptRleEncoder(this);
+          this.count = 1;
+          this.s = v;
+        }
+      }
+
+      /**
+       * Flush the encoded state and transform this to a Uint8Array.
+       *
+       * Note that this should only be called once.
+       */
+      toUint8Array () {
+        flushUintOptRleEncoder(this);
+        return toUint8Array(this.encoder)
+      }
+    }
+
+    /**
+     * @param {IntDiffOptRleEncoder} encoder
+     */
+    const flushIntDiffOptRleEncoder = encoder => {
+      if (encoder.count > 0) {
+        //          31 bit making up the diff | wether to write the counter
+        // const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1)
+        const encodedDiff = encoder.diff * 2 + (encoder.count === 1 ? 0 : 1);
+        // flush counter, unless this is the first value (count = 0)
+        // case 1: just a single value. set first bit to positive
+        // case 2: write several values. set first bit to negative to indicate that there is a length coming
+        writeVarInt(encoder.encoder, encodedDiff);
+        if (encoder.count > 1) {
+          writeVarUint(encoder.encoder, encoder.count - 2); // since count is always > 1, we can decrement by one. non-standard encoding ftw
+        }
+      }
+    };
+
+    /**
+     * A combination of the IntDiffEncoder and the UintOptRleEncoder.
+     *
+     * The count approach is similar to the UintDiffOptRleEncoder, but instead of using the negative bitflag, it encodes
+     * in the LSB whether a count is to be read. Therefore this Encoder only supports 31 bit integers!
+     *
+     * Encodes [1, 2, 3, 2] as [3, 1, 6, -1] (more specifically [(1 << 1) | 1, (3 << 0) | 0, -1])
+     *
+     * Internally uses variable length encoding. Contrary to normal UintVar encoding, the first byte contains:
+     * * 1 bit that denotes whether the next value is a count (LSB)
+     * * 1 bit that denotes whether this value is negative (MSB - 1)
+     * * 1 bit that denotes whether to continue reading the variable length integer (MSB)
+     *
+     * Therefore, only five bits remain to encode diff ranges.
+     *
+     * Use this Encoder only when appropriate. In most cases, this is probably a bad idea.
+     */
+    class IntDiffOptRleEncoder {
+      constructor () {
+        this.encoder = new Encoder();
+        /**
+         * @type {number}
+         */
+        this.s = 0;
+        this.count = 0;
+        this.diff = 0;
+      }
+
+      /**
+       * @param {number} v
+       */
+      write (v) {
+        if (this.diff === v - this.s) {
+          this.s = v;
+          this.count++;
+        } else {
+          flushIntDiffOptRleEncoder(this);
+          this.count = 1;
+          this.diff = v - this.s;
+          this.s = v;
+        }
+      }
+
+      /**
+       * Flush the encoded state and transform this to a Uint8Array.
+       *
+       * Note that this should only be called once.
+       */
+      toUint8Array () {
+        flushIntDiffOptRleEncoder(this);
+        return toUint8Array(this.encoder)
+      }
+    }
+
+    /**
+     * Optimized String Encoder.
+     *
+     * Encoding many small strings in a simple Encoder is not very efficient. The function call to decode a string takes some time and creates references that must be eventually deleted.
+     * In practice, when decoding several million small strings, the GC will kick in more and more often to collect orphaned string objects (or maybe there is another reason?).
+     *
+     * This string encoder solves the above problem. All strings are concatenated and written as a single string using a single encoding call.
+     *
+     * The lengths are encoded using a UintOptRleEncoder.
+     */
+    class StringEncoder {
+      constructor () {
+        /**
+         * @type {Array<string>}
+         */
+        this.sarr = [];
+        this.s = '';
+        this.lensE = new UintOptRleEncoder();
+      }
+
+      /**
+       * @param {string} string
+       */
+      write (string) {
+        this.s += string;
+        if (this.s.length > 19) {
+          this.sarr.push(this.s);
+          this.s = '';
+        }
+        this.lensE.write(string.length);
+      }
+
+      toUint8Array () {
+        const encoder = new Encoder();
+        this.sarr.push(this.s);
+        this.s = '';
+        writeVarString(encoder, this.sarr.join(''));
+        writeUint8Array(encoder, this.lensE.toUint8Array());
+        return toUint8Array(encoder)
+      }
+    }
+
+    /**
+     * Error helpers.
+     *
+     * @module error
+     */
+
+    /**
+     * @param {string} s
+     * @return {Error}
+     */
+    /* c8 ignore next */
+    const create$3 = s => new Error(s);
+
+    /**
+     * @throws {Error}
+     * @return {never}
+     */
+    /* c8 ignore next 3 */
+    const methodUnimplemented = () => {
+      throw create$3('Method unimplemented')
+    };
+
+    /**
+     * @throws {Error}
+     * @return {never}
+     */
+    /* c8 ignore next 3 */
+    const unexpectedCase = () => {
+      throw create$3('Unexpected case')
+    };
+
+    /* eslint-env browser */
+
+    const getRandomValues = crypto.getRandomValues.bind(crypto);
+
+    /**
+     * Isomorphic module for true random numbers / buffers / uuids.
+     *
+     * Attention: falls back to Math.random if the browser does not support crypto.
+     *
+     * @module random
+     */
+
+
+    const uint32 = () => getRandomValues(new Uint32Array(1))[0];
+
+    // @ts-ignore
+    const uuidv4Template = [1e7] + -1e3 + -4e3 + -8e3 + -1e11;
+
+    /**
+     * @return {string}
+     */
+    const uuidv4 = () => uuidv4Template.replace(/[018]/g, /** @param {number} c */ c =>
+      (c ^ uint32() & 15 >> c / 4).toString(16)
+    );
+
+    /**
+     * Utility helpers to work with promises.
+     *
+     * @module promise
+     */
+
+
+    /**
+     * @template T
+     * @callback PromiseResolve
+     * @param {T|PromiseLike<T>} [result]
+     */
+
+    /**
+     * @template T
+     * @param {function(PromiseResolve<T>,function(Error):void):any} f
+     * @return {Promise<T>}
+     */
+    const create$2 = f => /** @type {Promise<T>} */ (new Promise(f));
+
+    /**
+     * `Promise.all` wait for all promises in the array to resolve and return the result
+     * @template {unknown[] | []} PS
+     *
+     * @param {PS} ps
+     * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
+     */
+    Promise.all.bind(Promise);
+
+    /**
+     * Often used conditions.
+     *
+     * @module conditions
+     */
+
+    /**
+     * @template T
+     * @param {T|null|undefined} v
+     * @return {T|null}
+     */
+    /* c8 ignore next */
+    const undefinedToNull = v => v === undefined ? null : v;
+
+    /* eslint-env browser */
+
+    /**
+     * Isomorphic variable storage.
+     *
+     * Uses LocalStorage in the browser and falls back to in-memory storage.
+     *
+     * @module storage
+     */
+
+    /* c8 ignore start */
+    class VarStoragePolyfill {
+      constructor () {
+        this.map = new Map();
+      }
+
+      /**
+       * @param {string} key
+       * @param {any} newValue
+       */
+      setItem (key, newValue) {
+        this.map.set(key, newValue);
+      }
+
+      /**
+       * @param {string} key
+       */
+      getItem (key) {
+        return this.map.get(key)
+      }
+    }
+    /* c8 ignore stop */
+
+    /**
+     * @type {any}
+     */
+    let _localStorage = new VarStoragePolyfill();
+    let usePolyfill = true;
+
+    /* c8 ignore start */
+    try {
+      // if the same-origin rule is violated, accessing localStorage might thrown an error
+      if (typeof localStorage !== 'undefined' && localStorage) {
+        _localStorage = localStorage;
+        usePolyfill = false;
+      }
+    } catch (e) { }
+    /* c8 ignore stop */
+
+    /**
+     * This is basically localStorage in browser, or a polyfill in nodejs
+     */
+    /* c8 ignore next */
+    const varStorage = _localStorage;
+
+    /**
+     * Utility functions for working with EcmaScript objects.
+     *
+     * @module object
+     */
+
+
+    /**
+     * Object.assign
+     */
+    const assign = Object.assign;
+
+    /**
+     * @param {Object<string,any>} obj
+     */
+    const keys = Object.keys;
+
+    /**
+     * @template V
+     * @param {{[k:string]:V}} obj
+     * @param {function(V,string):any} f
+     */
+    const forEach = (obj, f) => {
+      for (const key in obj) {
+        f(obj[key], key);
+      }
+    };
+
+    /**
+     * @param {Object<string,any>} obj
+     * @return {number}
+     */
+    const size = obj => keys(obj).length;
+
+    /**
+     * @param {Object|null|undefined} obj
+     */
+    const isEmpty = obj => {
+      // eslint-disable-next-line no-unreachable-loop
+      for (const _k in obj) {
+        return false
+      }
+      return true
+    };
+
+    /**
+     * @template {{ [key:string|number|symbol]: any }} T
+     * @param {T} obj
+     * @param {(v:T[keyof T],k:keyof T)=>boolean} f
+     * @return {boolean}
+     */
+    const every = (obj, f) => {
+      for (const key in obj) {
+        if (!f(obj[key], key)) {
+          return false
+        }
+      }
+      return true
+    };
+
+    /**
+     * Calls `Object.prototype.hasOwnProperty`.
+     *
+     * @param {any} obj
+     * @param {string|number|symbol} key
+     * @return {boolean}
+     */
+    const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+    /**
+     * @param {Object<string,any>} a
+     * @param {Object<string,any>} b
+     * @return {boolean}
+     */
+    const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
+
+    /**
+     * Make an object immutable. This hurts performance and is usually not needed if you perform good
+     * coding practices.
+     */
+    const freeze = Object.freeze;
+
+    /**
+     * Make an object and all its children immutable.
+     * This *really* hurts performance and is usually not needed if you perform good coding practices.
+     *
+     * @template {any} T
+     * @param {T} o
+     * @return {Readonly<T>}
+     */
+    const deepFreeze = (o) => {
+      for (const key in o) {
+        const c = o[key];
+        if (typeof c === 'object' || typeof c === 'function') {
+          deepFreeze(o[key]);
+        }
+      }
+      return freeze(o)
+    };
+
+    /**
+     * Common functions and function call helpers.
+     *
+     * @module function
+     */
+
+
+    /**
+     * Calls all functions in `fs` with args. Only throws after all functions were called.
+     *
+     * @param {Array<function>} fs
+     * @param {Array<any>} args
+     */
+    const callAll = (fs, args, i = 0) => {
+      try {
+        for (; i < fs.length; i++) {
+          fs[i](...args);
+        }
+      } finally {
+        if (i < fs.length) {
+          callAll(fs, args, i + 1);
+        }
+      }
+    };
+
+    /**
+     * @template V
+     * @template {V} OPTS
+     *
+     * @param {V} value
+     * @param {Array<OPTS>} options
+     */
+    // @ts-ignore
+    const isOneOf = (value, options) => options.includes(value);
+
+    /**
+     * Isomorphic module to work access the environment (query params, env variables).
+     *
+     * @module environment
+     */
+
+
+    /* c8 ignore next 2 */
+    // @ts-ignore
+    const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+
+    /**
+     * @type {Map<string,string>}
+     */
+    let params;
+
+    /* c8 ignore start */
+    const computeParams = () => {
+      if (params === undefined) {
+        if (isNode) {
+          params = create$5();
+          const pargs = process.argv;
+          let currParamName = null;
+          for (let i = 0; i < pargs.length; i++) {
+            const parg = pargs[i];
+            if (parg[0] === '-') {
+              if (currParamName !== null) {
+                params.set(currParamName, '');
+              }
+              currParamName = parg;
+            } else {
+              if (currParamName !== null) {
+                params.set(currParamName, parg);
+                currParamName = null;
+              }
+            }
+          }
+          if (currParamName !== null) {
+            params.set(currParamName, '');
+          }
+          // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
+        } else if (typeof location === 'object') {
+          params = create$5(); // eslint-disable-next-line no-undef
+          (location.search || '?').slice(1).split('&').forEach((kv) => {
+            if (kv.length !== 0) {
+              const [key, value] = kv.split('=');
+              params.set(`--${fromCamelCase(key, '-')}`, value);
+              params.set(`-${fromCamelCase(key, '-')}`, value);
+            }
+          });
+        } else {
+          params = create$5();
+        }
+      }
+      return params
+    };
+    /* c8 ignore stop */
+
+    /**
+     * @param {string} name
+     * @return {boolean}
+     */
+    /* c8 ignore next */
+    const hasParam = (name) => computeParams().has(name);
+
+    /**
+     * @param {string} name
+     * @return {string|null}
+     */
+    /* c8 ignore next 4 */
+    const getVariable = (name) =>
+      isNode
+        ? undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
+        : undefinedToNull(varStorage.getItem(name));
+
+    /**
+     * @param {string} name
+     * @return {boolean}
+     */
+    /* c8 ignore next 2 */
+    const hasConf = (name) =>
+      hasParam('--' + name) || getVariable(name) !== null;
+
+    /* c8 ignore next */
+    hasConf('production');
+
+    /* c8 ignore next 2 */
+    const forceColor = isNode &&
+      isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
+
+    /* c8 ignore start */
+    /**
+     * Color is enabled by default if the terminal supports it.
+     *
+     * Explicitly enable color using `--color` parameter
+     * Disable color using `--no-color` parameter or using `NO_COLOR=1` environment variable.
+     * `FORCE_COLOR=1` enables color and takes precedence over all.
+     */
+    const supportsColor = forceColor || (
+      !hasParam('--no-colors') && // @todo deprecate --no-colors
+      !hasConf('no-color') &&
+      (!isNode || process.stdout.isTTY) && (
+        !isNode ||
+        hasParam('--color') ||
+        getVariable('COLORTERM') !== null ||
+        (getVariable('TERM') || '').includes('color')
+      )
+    );
+    /* c8 ignore stop */
+
+    /**
+     * Working with value pairs.
+     *
+     * @module pair
+     */
+
+    /**
+     * @template L,R
+     */
+    class Pair {
+      /**
+       * @param {L} left
+       * @param {R} right
+       */
+      constructor (left, right) {
+        this.left = left;
+        this.right = right;
+      }
+    }
+
+    /**
+     * @template L,R
+     * @param {L} left
+     * @param {R} right
+     * @return {Pair<L,R>}
+     */
+    const create$1 = (left, right) => new Pair(left, right);
+
+    /* eslint-env browser */
+
+
+    /** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null);
+
+    /**
+     * @param {Map<string,string>} m
+     * @return {string}
+     */
+    const mapToStyleString = m => map(m, (value, key) => `${key}:${value};`).join('');
+    /* c8 ignore stop */
+
+    /**
+     * Utility module to work with EcmaScript Symbols.
+     *
+     * @module symbol
+     */
+
+    /**
+     * Return fresh symbol.
+     */
+    const create = Symbol;
+
+    const BOLD = create();
+    const UNBOLD = create();
+    const BLUE = create();
+    const GREY = create();
+    const GREEN = create();
+    const RED = create();
+    const PURPLE = create();
+    const ORANGE = create();
+    const UNCOLOR = create();
+
+    /* c8 ignore start */
+    /**
+     * @param {Array<undefined|string|Symbol|Object|number|function():any>} args
+     * @return {Array<string|object|number|undefined>}
+     */
+    const computeNoColorLoggingArgs = args => {
+      if (args.length === 1 && args[0]?.constructor === Function) {
+        args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+      }
+      const strBuilder = [];
+      const logArgs = [];
+      // try with formatting until we find something unsupported
+      let i = 0;
+      for (; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === undefined) {
+          break
+        } else if (arg.constructor === String || arg.constructor === Number) {
+          strBuilder.push(arg);
+        } else if (arg.constructor === Object) {
+          break
+        }
+      }
+      if (i > 0) {
+        // create logArgs with what we have so far
+        logArgs.push(strBuilder.join(''));
+      }
+      // append the rest
+      for (; i < args.length; i++) {
+        const arg = args[i];
+        if (!(arg instanceof Symbol)) {
+          logArgs.push(arg);
+        }
+      }
+      return logArgs
+    };
+    /* c8 ignore stop */
+
+    /**
+     * Isomorphic logging module with support for colors!
+     *
+     * @module logging
+     */
+
+
+    /**
+     * @type {Object<Symbol,pair.Pair<string,string>>}
+     */
+    const _browserStyleMap = {
+      [BOLD]: create$1('font-weight', 'bold'),
+      [UNBOLD]: create$1('font-weight', 'normal'),
+      [BLUE]: create$1('color', 'blue'),
+      [GREEN]: create$1('color', 'green'),
+      [GREY]: create$1('color', 'grey'),
+      [RED]: create$1('color', 'red'),
+      [PURPLE]: create$1('color', 'purple'),
+      [ORANGE]: create$1('color', 'orange'), // not well supported in chrome when debugging node with inspector - TODO: deprecate
+      [UNCOLOR]: create$1('color', 'black')
+    };
+
+    /**
+     * @param {Array<string|Symbol|Object|number|function():any>} args
+     * @return {Array<string|object|number>}
+     */
+    /* c8 ignore start */
+    const computeBrowserLoggingArgs = (args) => {
+      if (args.length === 1 && args[0]?.constructor === Function) {
+        args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+      }
+      const strBuilder = [];
+      const styles = [];
+      const currentStyle = create$5();
+      /**
+       * @type {Array<string|Object|number>}
+       */
+      let logArgs = [];
+      // try with formatting until we find something unsupported
+      let i = 0;
+      for (; i < args.length; i++) {
+        const arg = args[i];
+        // @ts-ignore
+        const style = _browserStyleMap[arg];
+        if (style !== undefined) {
+          currentStyle.set(style.left, style.right);
+        } else {
+          if (arg === undefined) {
+            break
+          }
+          if (arg.constructor === String || arg.constructor === Number) {
+            const style = mapToStyleString(currentStyle);
+            if (i > 0 || style.length > 0) {
+              strBuilder.push('%c' + arg);
+              styles.push(style);
+            } else {
+              strBuilder.push(arg);
+            }
+          } else {
+            break
+          }
+        }
+      }
+      if (i > 0) {
+        // create logArgs with what we have so far
+        logArgs = styles;
+        logArgs.unshift(strBuilder.join(''));
+      }
+      // append the rest
+      for (; i < args.length; i++) {
+        const arg = args[i];
+        if (!(arg instanceof Symbol)) {
+          logArgs.push(arg);
+        }
+      }
+      return logArgs
+    };
+    /* c8 ignore stop */
+
+    /* c8 ignore start */
+    const computeLoggingArgs = supportsColor
+      ? computeBrowserLoggingArgs
+      : computeNoColorLoggingArgs;
+    /* c8 ignore stop */
+
+    /**
+     * @param {Array<string|Symbol|Object|number>} args
+     */
+    const print = (...args) => {
+      console.log(...computeLoggingArgs(args));
+      /* c8 ignore next */
+      vconsoles.forEach((vc) => vc.print(args));
+    };
+
+    /* c8 ignore start */
+    /**
+     * @param {Array<string|Symbol|Object|number>} args
+     */
+    const warn = (...args) => {
+      console.warn(...computeLoggingArgs(args));
+      args.unshift(ORANGE);
+      vconsoles.forEach((vc) => vc.print(args));
+    };
+
+    const vconsoles = create$4();
+
+    /**
+     * Utility module to create and manipulate Iterators.
+     *
+     * @module iterator
+     */
+
+
+    /**
+     * @template T
+     * @param {function():IteratorResult<T>} next
+     * @return {IterableIterator<T>}
+     */
+    const createIterator = next => ({
+      /**
+       * @return {IterableIterator<T>}
+       */
+      [Symbol.iterator] () {
+        return this
+      },
+      // @ts-ignore
+      next
+    });
+
+    /**
+     * @template T
+     * @param {Iterator<T>} iterator
+     * @param {function(T):boolean} filter
+     */
+    const iteratorFilter = (iterator, filter) => createIterator(() => {
+      let res;
+      do {
+        res = iterator.next();
+      } while (!res.done && !filter(res.value))
+      return res
+    });
+
+    /**
+     * @template T,M
+     * @param {Iterator<T>} iterator
+     * @param {function(T):M} fmap
+     */
+    const iteratorMap = (iterator, fmap) => createIterator(() => {
+      const { done, value } = iterator.next();
+      return { done, value: done ? undefined : fmap(value) }
+    });
+
+    class DeleteItem {
+      /**
+       * @param {number} clock
+       * @param {number} len
+       */
+      constructor (clock, len) {
+        /**
+         * @type {number}
+         */
+        this.clock = clock;
+        /**
+         * @type {number}
+         */
+        this.len = len;
+      }
+    }
+
+    /**
+     * We no longer maintain a DeleteStore. DeleteSet is a temporary object that is created when needed.
+     * - When created in a transaction, it must only be accessed after sorting, and merging
+     *   - This DeleteSet is send to other clients
+     * - We do not create a DeleteSet when we send a sync message. The DeleteSet message is created directly from StructStore
+     * - We read a DeleteSet as part of a sync/update message. In this case the DeleteSet is already sorted and merged.
+     */
+    class DeleteSet {
+      constructor () {
+        /**
+         * @type {Map<number,Array<DeleteItem>>}
+         */
+        this.clients = new Map();
+      }
+    }
+
+    /**
+     * Iterate over all structs that the DeleteSet gc's.
+     *
+     * @param {Transaction} transaction
+     * @param {DeleteSet} ds
+     * @param {function(GC|Item):void} f
+     *
+     * @function
+     */
+    const iterateDeletedStructs = (transaction, ds, f) =>
+      ds.clients.forEach((deletes, clientid) => {
+        const structs = /** @type {Array<GC|Item>} */ (transaction.doc.store.clients.get(clientid));
+        if (structs != null) {
+          const lastStruct = structs[structs.length - 1];
+          const clockState = lastStruct.id.clock + lastStruct.length;
+          for (let i = 0, del = deletes[i]; i < deletes.length && del.clock < clockState; del = deletes[++i]) {
+            iterateStructs(transaction, structs, del.clock, del.len, f);
+          }
+        }
+      });
+
+    /**
+     * @param {Array<DeleteItem>} dis
+     * @param {number} clock
+     * @return {number|null}
+     *
+     * @private
+     * @function
+     */
+    const findIndexDS = (dis, clock) => {
+      let left = 0;
+      let right = dis.length - 1;
+      while (left <= right) {
+        const midindex = floor((left + right) / 2);
+        const mid = dis[midindex];
+        const midclock = mid.clock;
+        if (midclock <= clock) {
+          if (clock < midclock + mid.len) {
+            return midindex
+          }
+          left = midindex + 1;
+        } else {
+          right = midindex - 1;
+        }
+      }
+      return null
+    };
+
+    /**
+     * @param {DeleteSet} ds
+     * @param {ID} id
+     * @return {boolean}
+     *
+     * @private
+     * @function
+     */
+    const isDeleted = (ds, id) => {
+      const dis = ds.clients.get(id.client);
+      return dis !== undefined && findIndexDS(dis, id.clock) !== null
+    };
+
+    /**
+     * @param {DeleteSet} ds
+     *
+     * @private
+     * @function
+     */
+    const sortAndMergeDeleteSet = ds => {
+      ds.clients.forEach(dels => {
+        dels.sort((a, b) => a.clock - b.clock);
+        // merge items without filtering or splicing the array
+        // i is the current pointer
+        // j refers to the current insert position for the pointed item
+        // try to merge dels[i] into dels[j-1] or set dels[j]=dels[i]
+        let i, j;
+        for (i = 1, j = 1; i < dels.length; i++) {
+          const left = dels[j - 1];
+          const right = dels[i];
+          if (left.clock + left.len >= right.clock) {
+            left.len = max(left.len, right.clock + right.len - left.clock);
+          } else {
+            if (j < i) {
+              dels[j] = right;
+            }
+            j++;
+          }
+        }
+        dels.length = j;
+      });
+    };
+
+    /**
+     * @param {DeleteSet} ds
+     * @param {number} client
+     * @param {number} clock
+     * @param {number} length
+     *
+     * @private
+     * @function
+     */
+    const addToDeleteSet = (ds, client, clock, length) => {
+      setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length));
+    };
+
+    /**
+     * @param {DSEncoderV1 | DSEncoderV2} encoder
+     * @param {DeleteSet} ds
+     *
+     * @private
+     * @function
+     */
+    const writeDeleteSet = (encoder, ds) => {
+      writeVarUint(encoder.restEncoder, ds.clients.size);
+
+      // Ensure that the delete set is written in a deterministic order
+      from(ds.clients.entries())
+        .sort((a, b) => b[0] - a[0])
+        .forEach(([client, dsitems]) => {
+          encoder.resetDsCurVal();
+          writeVarUint(encoder.restEncoder, client);
+          const len = dsitems.length;
+          writeVarUint(encoder.restEncoder, len);
+          for (let i = 0; i < len; i++) {
+            const item = dsitems[i];
+            encoder.writeDsClock(item.clock);
+            encoder.writeDsLen(item.len);
+          }
+        });
+    };
+
+    /**
+     * @module Y
+     */
+
+
+    const generateNewClientId = uint32;
+
+    /**
+     * @typedef {Object} DocOpts
+     * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
+     * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
+     * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
+     * @property {string | null} [DocOpts.collectionid] Associate this document with a collection. This only plays a role if your provider has a concept of collection.
+     * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
+     * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
+     * @property {boolean} [DocOpts.shouldLoad] Whether the document should be synced by the provider now. This is toggled to true when you call ydoc.load()
+     */
+
+    /**
+     * @typedef {Object} DocEvents
+     * @property {function(Doc):void} DocEvents.destroy
+     * @property {function(Doc):void} DocEvents.load
+     * @property {function(boolean, Doc):void} DocEvents.sync
+     * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
+     * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+     * @property {function(Doc):void} DocEvents.beforeAllTransactions
+     * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
+     * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
+     * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
+     * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
+     * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+     * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
+     */
+
+    /**
+     * A Yjs instance handles the state of shared data.
+     * @extends ObservableV2<DocEvents>
+     */
+    class Doc extends ObservableV2 {
+      /**
+       * @param {DocOpts} opts configuration
+       */
+      constructor ({ guid = uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
+        super();
+        this.gc = gc;
+        this.gcFilter = gcFilter;
+        this.clientID = generateNewClientId();
+        this.guid = guid;
+        this.collectionid = collectionid;
+        /**
+         * @type {Map<string, AbstractType<YEvent<any>>>}
+         */
+        this.share = new Map();
+        this.store = new StructStore();
+        /**
+         * @type {Transaction | null}
+         */
+        this._transaction = null;
+        /**
+         * @type {Array<Transaction>}
+         */
+        this._transactionCleanups = [];
+        /**
+         * @type {Set<Doc>}
+         */
+        this.subdocs = new Set();
+        /**
+         * If this document is a subdocument - a document integrated into another document - then _item is defined.
+         * @type {Item?}
+         */
+        this._item = null;
+        this.shouldLoad = shouldLoad;
+        this.autoLoad = autoLoad;
+        this.meta = meta;
+        /**
+         * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
+         * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
+         *
+         * @type {boolean}
+         */
+        this.isLoaded = false;
+        /**
+         * This is set to true when the connection provider has successfully synced with a backend.
+         * Note that when using peer-to-peer providers this event may not provide very useful.
+         * Also note that not all providers implement this feature. Provider authors are encouraged to fire
+         * the `sync` event when the doc has been synced (with `true` as a parameter) or if connection is
+         * lost (with false as a parameter).
+         */
+        this.isSynced = false;
+        this.isDestroyed = false;
+        /**
+         * Promise that resolves once the document has been loaded from a persistence provider.
+         */
+        this.whenLoaded = create$2(resolve => {
+          this.on('load', () => {
+            this.isLoaded = true;
+            resolve(this);
+          });
+        });
+        const provideSyncedPromise = () => create$2(resolve => {
+          /**
+           * @param {boolean} isSynced
+           */
+          const eventHandler = (isSynced) => {
+            if (isSynced === undefined || isSynced === true) {
+              this.off('sync', eventHandler);
+              resolve();
+            }
+          };
+          this.on('sync', eventHandler);
+        });
+        this.on('sync', isSynced => {
+          if (isSynced === false && this.isSynced) {
+            this.whenSynced = provideSyncedPromise();
+          }
+          this.isSynced = isSynced === undefined || isSynced === true;
+          if (this.isSynced && !this.isLoaded) {
+            this.emit('load', [this]);
+          }
+        });
+        /**
+         * Promise that resolves once the document has been synced with a backend.
+         * This promise is recreated when the connection is lost.
+         * Note the documentation about the `isSynced` property.
+         */
+        this.whenSynced = provideSyncedPromise();
+      }
+
+      /**
+       * Notify the parent document that you request to load data into this subdocument (if it is a subdocument).
+       *
+       * `load()` might be used in the future to request any provider to load the most current data.
+       *
+       * It is safe to call `load()` multiple times.
+       */
+      load () {
+        const item = this._item;
+        if (item !== null && !this.shouldLoad) {
+          transact(/** @type {any} */ (item.parent).doc, transaction => {
+            transaction.subdocsLoaded.add(this);
+          }, null, true);
+        }
+        this.shouldLoad = true;
+      }
+
+      getSubdocs () {
+        return this.subdocs
+      }
+
+      getSubdocGuids () {
+        return new Set(from(this.subdocs).map(doc => doc.guid))
+      }
+
+      /**
+       * Changes that happen inside of a transaction are bundled. This means that
+       * the observer fires _after_ the transaction is finished and that all changes
+       * that happened inside of the transaction are sent as one message to the
+       * other peers.
+       *
+       * @template T
+       * @param {function(Transaction):T} f The function that should be executed as a transaction
+       * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+       * @return T
+       *
+       * @public
+       */
+      transact (f, origin = null) {
+        return transact(this, f, origin)
+      }
+
+      /**
+       * Define a shared data type.
+       *
+       * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
+       * and do not overwrite each other. I.e.
+       * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
+       *
+       * After this method is called, the type is also available on `ydoc.share.get(name)`.
+       *
+       * *Best Practices:*
+       * Define all types right after the Y.Doc instance is created and store them in a separate object.
+       * Also use the typed methods `getText(name)`, `getArray(name)`, ..
+       *
+       * @template {typeof AbstractType<any>} Type
+       * @example
+       *   const ydoc = new Y.Doc(..)
+       *   const appState = {
+       *     document: ydoc.getText('document')
+       *     comments: ydoc.getArray('comments')
+       *   }
+       *
+       * @param {string} name
+       * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+       * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
+       *
+       * @public
+       */
+      get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
+        const type = setIfUndefined(this.share, name, () => {
+          // @ts-ignore
+          const t = new TypeConstructor();
+          t._integrate(this, null);
+          return t
+        });
+        const Constr = type.constructor;
+        if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
+          if (Constr === AbstractType) {
+            // @ts-ignore
+            const t = new TypeConstructor();
+            t._map = type._map;
+            type._map.forEach(/** @param {Item?} n */ n => {
+              for (; n !== null; n = n.left) {
+                // @ts-ignore
+                n.parent = t;
+              }
+            });
+            t._start = type._start;
+            for (let n = t._start; n !== null; n = n.right) {
+              n.parent = t;
+            }
+            t._length = type._length;
+            this.share.set(name, t);
+            t._integrate(this, null);
+            return /** @type {InstanceType<Type>} */ (t)
+          } else {
+            throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
+          }
+        }
+        return /** @type {InstanceType<Type>} */ (type)
+      }
+
+      /**
+       * @template T
+       * @param {string} [name]
+       * @return {YArray<T>}
+       *
+       * @public
+       */
+      getArray (name = '') {
+        return /** @type {YArray<T>} */ (this.get(name, YArray))
+      }
+
+      /**
+       * @param {string} [name]
+       * @return {YText}
+       *
+       * @public
+       */
+      getText (name = '') {
+        return this.get(name, YText)
+      }
+
+      /**
+       * @template T
+       * @param {string} [name]
+       * @return {YMap<T>}
+       *
+       * @public
+       */
+      getMap (name = '') {
+        return /** @type {YMap<T>} */ (this.get(name, YMap))
+      }
+
+      /**
+       * @param {string} [name]
+       * @return {YXmlElement}
+       *
+       * @public
+       */
+      getXmlElement (name = '') {
+        return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
+      }
+
+      /**
+       * @param {string} [name]
+       * @return {YXmlFragment}
+       *
+       * @public
+       */
+      getXmlFragment (name = '') {
+        return this.get(name, YXmlFragment)
+      }
+
+      /**
+       * Converts the entire document into a js object, recursively traversing each yjs type
+       * Doesn't log types that have not been defined (using ydoc.getType(..)).
+       *
+       * @deprecated Do not use this method and rather call toJSON directly on the shared types.
+       *
+       * @return {Object<string, any>}
+       */
+      toJSON () {
+        /**
+         * @type {Object<string, any>}
+         */
+        const doc = {};
+
+        this.share.forEach((value, key) => {
+          doc[key] = value.toJSON();
+        });
+
+        return doc
+      }
+
+      /**
+       * Emit `destroy` event and unregister all event handlers.
+       */
+      destroy () {
+        this.isDestroyed = true;
+        from(this.subdocs).forEach(subdoc => subdoc.destroy());
+        const item = this._item;
+        if (item !== null) {
+          this._item = null;
+          const content = /** @type {ContentDoc} */ (item.content);
+          content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false });
+          content.doc._item = item;
+          transact(/** @type {any} */ (item).parent.doc, transaction => {
+            const doc = content.doc;
+            if (!item.deleted) {
+              transaction.subdocsAdded.add(doc);
+            }
+            transaction.subdocsRemoved.add(this);
+          }, null, true);
+        }
+        // @ts-ignore
+        this.emit('destroyed', [true]); // DEPRECATED!
+        this.emit('destroy', [this]);
+        super.destroy();
+      }
+    }
+
+    class DSEncoderV1 {
+      constructor () {
+        this.restEncoder = createEncoder();
+      }
+
+      toUint8Array () {
+        return toUint8Array(this.restEncoder)
+      }
+
+      resetDsCurVal () {
+        // nop
+      }
+
+      /**
+       * @param {number} clock
+       */
+      writeDsClock (clock) {
+        writeVarUint(this.restEncoder, clock);
+      }
+
+      /**
+       * @param {number} len
+       */
+      writeDsLen (len) {
+        writeVarUint(this.restEncoder, len);
+      }
+    }
+
+    class UpdateEncoderV1 extends DSEncoderV1 {
+      /**
+       * @param {ID} id
+       */
+      writeLeftID (id) {
+        writeVarUint(this.restEncoder, id.client);
+        writeVarUint(this.restEncoder, id.clock);
+      }
+
+      /**
+       * @param {ID} id
+       */
+      writeRightID (id) {
+        writeVarUint(this.restEncoder, id.client);
+        writeVarUint(this.restEncoder, id.clock);
+      }
+
+      /**
+       * Use writeClient and writeClock instead of writeID if possible.
+       * @param {number} client
+       */
+      writeClient (client) {
+        writeVarUint(this.restEncoder, client);
+      }
+
+      /**
+       * @param {number} info An unsigned 8-bit integer
+       */
+      writeInfo (info) {
+        writeUint8(this.restEncoder, info);
+      }
+
+      /**
+       * @param {string} s
+       */
+      writeString (s) {
+        writeVarString(this.restEncoder, s);
+      }
+
+      /**
+       * @param {boolean} isYKey
+       */
+      writeParentInfo (isYKey) {
+        writeVarUint(this.restEncoder, isYKey ? 1 : 0);
+      }
+
+      /**
+       * @param {number} info An unsigned 8-bit integer
+       */
+      writeTypeRef (info) {
+        writeVarUint(this.restEncoder, info);
+      }
+
+      /**
+       * Write len of a struct - well suited for Opt RLE encoder.
+       *
+       * @param {number} len
+       */
+      writeLen (len) {
+        writeVarUint(this.restEncoder, len);
+      }
+
+      /**
+       * @param {any} any
+       */
+      writeAny (any) {
+        writeAny(this.restEncoder, any);
+      }
+
+      /**
+       * @param {Uint8Array} buf
+       */
+      writeBuf (buf) {
+        writeVarUint8Array(this.restEncoder, buf);
+      }
+
+      /**
+       * @param {any} embed
+       */
+      writeJSON (embed) {
+        writeVarString(this.restEncoder, JSON.stringify(embed));
+      }
+
+      /**
+       * @param {string} key
+       */
+      writeKey (key) {
+        writeVarString(this.restEncoder, key);
+      }
+    }
+
+    class DSEncoderV2 {
+      constructor () {
+        this.restEncoder = createEncoder(); // encodes all the rest / non-optimized
+        this.dsCurrVal = 0;
+      }
+
+      toUint8Array () {
+        return toUint8Array(this.restEncoder)
+      }
+
+      resetDsCurVal () {
+        this.dsCurrVal = 0;
+      }
+
+      /**
+       * @param {number} clock
+       */
+      writeDsClock (clock) {
+        const diff = clock - this.dsCurrVal;
+        this.dsCurrVal = clock;
+        writeVarUint(this.restEncoder, diff);
+      }
+
+      /**
+       * @param {number} len
+       */
+      writeDsLen (len) {
+        if (len === 0) {
+          unexpectedCase();
+        }
+        writeVarUint(this.restEncoder, len - 1);
+        this.dsCurrVal += len;
+      }
+    }
+
+    class UpdateEncoderV2 extends DSEncoderV2 {
+      constructor () {
+        super();
+        /**
+         * @type {Map<string,number>}
+         */
+        this.keyMap = new Map();
+        /**
+         * Refers to the next unique key-identifier to me used.
+         * See writeKey method for more information.
+         *
+         * @type {number}
+         */
+        this.keyClock = 0;
+        this.keyClockEncoder = new IntDiffOptRleEncoder();
+        this.clientEncoder = new UintOptRleEncoder();
+        this.leftClockEncoder = new IntDiffOptRleEncoder();
+        this.rightClockEncoder = new IntDiffOptRleEncoder();
+        this.infoEncoder = new RleEncoder(writeUint8);
+        this.stringEncoder = new StringEncoder();
+        this.parentInfoEncoder = new RleEncoder(writeUint8);
+        this.typeRefEncoder = new UintOptRleEncoder();
+        this.lenEncoder = new UintOptRleEncoder();
+      }
+
+      toUint8Array () {
+        const encoder = createEncoder();
+        writeVarUint(encoder, 0); // this is a feature flag that we might use in the future
+        writeVarUint8Array(encoder, this.keyClockEncoder.toUint8Array());
+        writeVarUint8Array(encoder, this.clientEncoder.toUint8Array());
+        writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array());
+        writeVarUint8Array(encoder, this.rightClockEncoder.toUint8Array());
+        writeVarUint8Array(encoder, toUint8Array(this.infoEncoder));
+        writeVarUint8Array(encoder, this.stringEncoder.toUint8Array());
+        writeVarUint8Array(encoder, toUint8Array(this.parentInfoEncoder));
+        writeVarUint8Array(encoder, this.typeRefEncoder.toUint8Array());
+        writeVarUint8Array(encoder, this.lenEncoder.toUint8Array());
+        // @note The rest encoder is appended! (note the missing var)
+        writeUint8Array(encoder, toUint8Array(this.restEncoder));
+        return toUint8Array(encoder)
+      }
+
+      /**
+       * @param {ID} id
+       */
+      writeLeftID (id) {
+        this.clientEncoder.write(id.client);
+        this.leftClockEncoder.write(id.clock);
+      }
+
+      /**
+       * @param {ID} id
+       */
+      writeRightID (id) {
+        this.clientEncoder.write(id.client);
+        this.rightClockEncoder.write(id.clock);
+      }
+
+      /**
+       * @param {number} client
+       */
+      writeClient (client) {
+        this.clientEncoder.write(client);
+      }
+
+      /**
+       * @param {number} info An unsigned 8-bit integer
+       */
+      writeInfo (info) {
+        this.infoEncoder.write(info);
+      }
+
+      /**
+       * @param {string} s
+       */
+      writeString (s) {
+        this.stringEncoder.write(s);
+      }
+
+      /**
+       * @param {boolean} isYKey
+       */
+      writeParentInfo (isYKey) {
+        this.parentInfoEncoder.write(isYKey ? 1 : 0);
+      }
+
+      /**
+       * @param {number} info An unsigned 8-bit integer
+       */
+      writeTypeRef (info) {
+        this.typeRefEncoder.write(info);
+      }
+
+      /**
+       * Write len of a struct - well suited for Opt RLE encoder.
+       *
+       * @param {number} len
+       */
+      writeLen (len) {
+        this.lenEncoder.write(len);
+      }
+
+      /**
+       * @param {any} any
+       */
+      writeAny (any) {
+        writeAny(this.restEncoder, any);
+      }
+
+      /**
+       * @param {Uint8Array} buf
+       */
+      writeBuf (buf) {
+        writeVarUint8Array(this.restEncoder, buf);
+      }
+
+      /**
+       * This is mainly here for legacy purposes.
+       *
+       * Initial we incoded objects using JSON. Now we use the much faster lib0/any-encoder. This method mainly exists for legacy purposes for the v1 encoder.
+       *
+       * @param {any} embed
+       */
+      writeJSON (embed) {
+        writeAny(this.restEncoder, embed);
+      }
+
+      /**
+       * Property keys are often reused. For example, in y-prosemirror the key `bold` might
+       * occur very often. For a 3d application, the key `position` might occur very often.
+       *
+       * We cache these keys in a Map and refer to them via a unique number.
+       *
+       * @param {string} key
+       */
+      writeKey (key) {
+        const clock = this.keyMap.get(key);
+        if (clock === undefined) {
+          /**
+           * @todo uncomment to introduce this feature finally
+           *
+           * Background. The ContentFormat object was always encoded using writeKey, but the decoder used to use readString.
+           * Furthermore, I forgot to set the keyclock. So everything was working fine.
+           *
+           * However, this feature here is basically useless as it is not being used (it actually only consumes extra memory).
+           *
+           * I don't know yet how to reintroduce this feature..
+           *
+           * Older clients won't be able to read updates when we reintroduce this feature. So this should probably be done using a flag.
+           *
+           */
+          // this.keyMap.set(key, this.keyClock)
+          this.keyClockEncoder.write(this.keyClock++);
+          this.stringEncoder.write(key);
+        } else {
+          this.keyClockEncoder.write(clock);
+        }
+      }
+    }
+
+    /**
+     * @module encoding
+     */
+    /*
+     * We use the first five bits in the info flag for determining the type of the struct.
+     *
+     * 0: GC
+     * 1: Item with Deleted content
+     * 2: Item with JSON content
+     * 3: Item with Binary content
+     * 4: Item with String content
+     * 5: Item with Embed content (for richtext content)
+     * 6: Item with Format content (a formatting marker for richtext content)
+     * 7: Item with Type
+     */
+
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {Array<GC|Item>} structs All structs by `client`
+     * @param {number} client
+     * @param {number} clock write structs starting with `ID(client,clock)`
+     *
+     * @function
+     */
+    const writeStructs = (encoder, structs, client, clock) => {
+      // write first id
+      clock = max(clock, structs[0].id.clock); // make sure the first id exists
+      const startNewStructs = findIndexSS(structs, clock);
+      // write # encoded structs
+      writeVarUint(encoder.restEncoder, structs.length - startNewStructs);
+      encoder.writeClient(client);
+      writeVarUint(encoder.restEncoder, clock);
+      const firstStruct = structs[startNewStructs];
+      // write first struct with an offset
+      firstStruct.write(encoder, clock - firstStruct.id.clock);
+      for (let i = startNewStructs + 1; i < structs.length; i++) {
+        structs[i].write(encoder, 0);
+      }
+    };
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {StructStore} store
+     * @param {Map<number,number>} _sm
+     *
+     * @private
+     * @function
+     */
+    const writeClientsStructs = (encoder, store, _sm) => {
+      // we filter all valid _sm entries into sm
+      const sm = new Map();
+      _sm.forEach((clock, client) => {
+        // only write if new structs are available
+        if (getState(store, client) > clock) {
+          sm.set(client, clock);
+        }
+      });
+      getStateVector(store).forEach((_clock, client) => {
+        if (!_sm.has(client)) {
+          sm.set(client, 0);
+        }
+      });
+      // write # states that were updated
+      writeVarUint(encoder.restEncoder, sm.size);
+      // Write items with higher client ids first
+      // This heavily improves the conflict algorithm.
+      from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+        writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock);
+      });
+    };
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {Transaction} transaction
+     *
+     * @private
+     * @function
+     */
+    const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState);
+
+    /**
+     * General event handler implementation.
+     *
+     * @template ARG0, ARG1
+     *
+     * @private
+     */
+    class EventHandler {
+      constructor () {
+        /**
+         * @type {Array<function(ARG0, ARG1):void>}
+         */
+        this.l = [];
+      }
+    }
+
+    /**
+     * @template ARG0,ARG1
+     * @returns {EventHandler<ARG0,ARG1>}
+     *
+     * @private
+     * @function
+     */
+    const createEventHandler = () => new EventHandler();
+
+    /**
+     * Adds an event listener that is called when
+     * {@link EventHandler#callEventListeners} is called.
+     *
+     * @template ARG0,ARG1
+     * @param {EventHandler<ARG0,ARG1>} eventHandler
+     * @param {function(ARG0,ARG1):void} f The event handler.
+     *
+     * @private
+     * @function
+     */
+    const addEventHandlerListener = (eventHandler, f) =>
+      eventHandler.l.push(f);
+
+    /**
+     * Removes an event listener.
+     *
+     * @template ARG0,ARG1
+     * @param {EventHandler<ARG0,ARG1>} eventHandler
+     * @param {function(ARG0,ARG1):void} f The event handler that was added with
+     *                     {@link EventHandler#addEventListener}
+     *
+     * @private
+     * @function
+     */
+    const removeEventHandlerListener = (eventHandler, f) => {
+      const l = eventHandler.l;
+      const len = l.length;
+      eventHandler.l = l.filter(g => f !== g);
+      if (len === eventHandler.l.length) {
+        console.error('[yjs] Tried to remove event handler that doesn\'t exist.');
+      }
+    };
+
+    /**
+     * Call all event listeners that were added via
+     * {@link EventHandler#addEventListener}.
+     *
+     * @template ARG0,ARG1
+     * @param {EventHandler<ARG0,ARG1>} eventHandler
+     * @param {ARG0} arg0
+     * @param {ARG1} arg1
+     *
+     * @private
+     * @function
+     */
+    const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
+      callAll(eventHandler.l, [arg0, arg1]);
+
+    class ID {
+      /**
+       * @param {number} client client id
+       * @param {number} clock unique per client id, continuous number
+       */
+      constructor (client, clock) {
+        /**
+         * Client id
+         * @type {number}
+         */
+        this.client = client;
+        /**
+         * unique per client id, continuous number
+         * @type {number}
+         */
+        this.clock = clock;
+      }
+    }
+
+    /**
+     * @param {ID | null} a
+     * @param {ID | null} b
+     * @return {boolean}
+     *
+     * @function
+     */
+    const compareIDs = (a, b) => a === b || (a !== null && b !== null && a.client === b.client && a.clock === b.clock);
+
+    /**
+     * @param {number} client
+     * @param {number} clock
+     *
+     * @private
+     * @function
+     */
+    const createID = (client, clock) => new ID(client, clock);
+
+    /**
+     * The top types are mapped from y.share.get(keyname) => type.
+     * `type` does not store any information about the `keyname`.
+     * This function finds the correct `keyname` for `type` and throws otherwise.
+     *
+     * @param {AbstractType<any>} type
+     * @return {string}
+     *
+     * @private
+     * @function
+     */
+    const findRootTypeKey = type => {
+      // @ts-ignore _y must be defined, otherwise unexpected case
+      for (const [key, value] of type.doc.share.entries()) {
+        if (value === type) {
+          return key
+        }
+      }
+      throw unexpectedCase()
+    };
+
+    /**
+     * @param {Item} item
+     * @param {Snapshot|undefined} snapshot
+     *
+     * @protected
+     * @function
+     */
+    const isVisible = (item, snapshot) => snapshot === undefined
+      ? !item.deleted
+      : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !isDeleted(snapshot.ds, item.id);
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Snapshot} snapshot
+     */
+    const splitSnapshotAffectedStructs = (transaction, snapshot) => {
+      const meta = setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, create$4);
+      const store = transaction.doc.store;
+      // check if we already split for this snapshot
+      if (!meta.has(snapshot)) {
+        snapshot.sv.forEach((clock, client) => {
+          if (clock < getState(store, client)) {
+            getItemCleanStart(transaction, createID(client, clock));
+          }
+        });
+        iterateDeletedStructs(transaction, snapshot.ds, _item => {});
+        meta.add(snapshot);
+      }
+    };
+
+    class StructStore {
+      constructor () {
+        /**
+         * @type {Map<number,Array<GC|Item>>}
+         */
+        this.clients = new Map();
+        /**
+         * @type {null | { missing: Map<number, number>, update: Uint8Array }}
+         */
+        this.pendingStructs = null;
+        /**
+         * @type {null | Uint8Array}
+         */
+        this.pendingDs = null;
+      }
+    }
+
+    /**
+     * Return the states as a Map<client,clock>.
+     * Note that clock refers to the next expected clock id.
+     *
+     * @param {StructStore} store
+     * @return {Map<number,number>}
+     *
+     * @public
+     * @function
+     */
+    const getStateVector = store => {
+      const sm = new Map();
+      store.clients.forEach((structs, client) => {
+        const struct = structs[structs.length - 1];
+        sm.set(client, struct.id.clock + struct.length);
+      });
+      return sm
+    };
+
+    /**
+     * @param {StructStore} store
+     * @param {number} client
+     * @return {number}
+     *
+     * @public
+     * @function
+     */
+    const getState = (store, client) => {
+      const structs = store.clients.get(client);
+      if (structs === undefined) {
+        return 0
+      }
+      const lastStruct = structs[structs.length - 1];
+      return lastStruct.id.clock + lastStruct.length
+    };
+
+    /**
+     * @param {StructStore} store
+     * @param {GC|Item} struct
+     *
+     * @private
+     * @function
+     */
+    const addStruct = (store, struct) => {
+      let structs = store.clients.get(struct.id.client);
+      if (structs === undefined) {
+        structs = [];
+        store.clients.set(struct.id.client, structs);
+      } else {
+        const lastStruct = structs[structs.length - 1];
+        if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
+          throw unexpectedCase()
+        }
+      }
+      structs.push(struct);
+    };
+
+    /**
+     * Perform a binary search on a sorted array
+     * @param {Array<Item|GC>} structs
+     * @param {number} clock
+     * @return {number}
+     *
+     * @private
+     * @function
+     */
+    const findIndexSS = (structs, clock) => {
+      let left = 0;
+      let right = structs.length - 1;
+      let mid = structs[right];
+      let midclock = mid.id.clock;
+      if (midclock === clock) {
+        return right
+      }
+      // @todo does it even make sense to pivot the search?
+      // If a good split misses, it might actually increase the time to find the correct item.
+      // Currently, the only advantage is that search with pivoting might find the item on the first try.
+      let midindex = floor((clock / (midclock + mid.length - 1)) * right); // pivoting the search
+      while (left <= right) {
+        mid = structs[midindex];
+        midclock = mid.id.clock;
+        if (midclock <= clock) {
+          if (clock < midclock + mid.length) {
+            return midindex
+          }
+          left = midindex + 1;
+        } else {
+          right = midindex - 1;
+        }
+        midindex = floor((left + right) / 2);
+      }
+      // Always check state before looking for a struct in StructStore
+      // Therefore the case of not finding a struct is unexpected
+      throw unexpectedCase()
+    };
+
+    /**
+     * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+     *
+     * @param {StructStore} store
+     * @param {ID} id
+     * @return {GC|Item}
+     *
+     * @private
+     * @function
+     */
+    const find = (store, id) => {
+      /**
+       * @type {Array<GC|Item>}
+       */
+      // @ts-ignore
+      const structs = store.clients.get(id.client);
+      return structs[findIndexSS(structs, id.clock)]
+    };
+
+    /**
+     * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+     * @private
+     * @function
+     */
+    const getItem = /** @type {function(StructStore,ID):Item} */ (find);
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Array<Item|GC>} structs
+     * @param {number} clock
+     */
+    const findIndexCleanStart = (transaction, structs, clock) => {
+      const index = findIndexSS(structs, clock);
+      const struct = structs[index];
+      if (struct.id.clock < clock && struct instanceof Item) {
+        structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock));
+        return index + 1
+      }
+      return index
+    };
+
+    /**
+     * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+     *
+     * @param {Transaction} transaction
+     * @param {ID} id
+     * @return {Item}
+     *
+     * @private
+     * @function
+     */
+    const getItemCleanStart = (transaction, id) => {
+      const structs = /** @type {Array<Item>} */ (transaction.doc.store.clients.get(id.client));
+      return structs[findIndexCleanStart(transaction, structs, id.clock)]
+    };
+
+    /**
+     * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+     *
+     * @param {Transaction} transaction
+     * @param {StructStore} store
+     * @param {ID} id
+     * @return {Item}
+     *
+     * @private
+     * @function
+     */
+    const getItemCleanEnd = (transaction, store, id) => {
+      /**
+       * @type {Array<Item>}
+       */
+      // @ts-ignore
+      const structs = store.clients.get(id.client);
+      const index = findIndexSS(structs, id.clock);
+      const struct = structs[index];
+      if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
+        structs.splice(index + 1, 0, splitItem(transaction, struct, id.clock - struct.id.clock + 1));
+      }
+      return struct
+    };
+
+    /**
+     * Replace `item` with `newitem` in store
+     * @param {StructStore} store
+     * @param {GC|Item} struct
+     * @param {GC|Item} newStruct
+     *
+     * @private
+     * @function
+     */
+    const replaceStruct = (store, struct, newStruct) => {
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(struct.id.client));
+      structs[findIndexSS(structs, struct.id.clock)] = newStruct;
+    };
+
+    /**
+     * Iterate over a range of structs
+     *
+     * @param {Transaction} transaction
+     * @param {Array<Item|GC>} structs
+     * @param {number} clockStart Inclusive start
+     * @param {number} len
+     * @param {function(GC|Item):void} f
+     *
+     * @function
+     */
+    const iterateStructs = (transaction, structs, clockStart, len, f) => {
+      if (len === 0) {
+        return
+      }
+      const clockEnd = clockStart + len;
+      let index = findIndexCleanStart(transaction, structs, clockStart);
+      let struct;
+      do {
+        struct = structs[index++];
+        if (clockEnd < struct.id.clock + struct.length) {
+          findIndexCleanStart(transaction, structs, clockEnd);
+        }
+        f(struct);
+      } while (index < structs.length && structs[index].id.clock < clockEnd)
+    };
+
+    /**
+     * A transaction is created for every change on the Yjs model. It is possible
+     * to bundle changes on the Yjs model in a single transaction to
+     * minimize the number on messages sent and the number of observer calls.
+     * If possible the user of this library should bundle as many changes as
+     * possible. Here is an example to illustrate the advantages of bundling:
+     *
+     * @example
+     * const ydoc = new Y.Doc()
+     * const map = ydoc.getMap('map')
+     * // Log content when change is triggered
+     * map.observe(() => {
+     *   console.log('change triggered')
+     * })
+     * // Each change on the map type triggers a log message:
+     * map.set('a', 0) // => "change triggered"
+     * map.set('b', 0) // => "change triggered"
+     * // When put in a transaction, it will trigger the log after the transaction:
+     * ydoc.transact(() => {
+     *   map.set('a', 1)
+     *   map.set('b', 1)
+     * }) // => "change triggered"
+     *
+     * @public
+     */
+    class Transaction {
+      /**
+       * @param {Doc} doc
+       * @param {any} origin
+       * @param {boolean} local
+       */
+      constructor (doc, origin, local) {
+        /**
+         * The Yjs instance.
+         * @type {Doc}
+         */
+        this.doc = doc;
+        /**
+         * Describes the set of deleted items by ids
+         * @type {DeleteSet}
+         */
+        this.deleteSet = new DeleteSet();
+        /**
+         * Holds the state before the transaction started.
+         * @type {Map<Number,Number>}
+         */
+        this.beforeState = getStateVector(doc.store);
+        /**
+         * Holds the state after the transaction.
+         * @type {Map<Number,Number>}
+         */
+        this.afterState = new Map();
+        /**
+         * All types that were directly modified (property added or child
+         * inserted/deleted). New types are not included in this Set.
+         * Maps from type to parentSubs (`item.parentSub = null` for YArray)
+         * @type {Map<AbstractType<YEvent<any>>,Set<String|null>>}
+         */
+        this.changed = new Map();
+        /**
+         * Stores the events for the types that observe also child elements.
+         * It is mainly used by `observeDeep`.
+         * @type {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>}
+         */
+        this.changedParentTypes = new Map();
+        /**
+         * @type {Array<AbstractStruct>}
+         */
+        this._mergeStructs = [];
+        /**
+         * @type {any}
+         */
+        this.origin = origin;
+        /**
+         * Stores meta information on the transaction
+         * @type {Map<any,any>}
+         */
+        this.meta = new Map();
+        /**
+         * Whether this change originates from this doc.
+         * @type {boolean}
+         */
+        this.local = local;
+        /**
+         * @type {Set<Doc>}
+         */
+        this.subdocsAdded = new Set();
+        /**
+         * @type {Set<Doc>}
+         */
+        this.subdocsRemoved = new Set();
+        /**
+         * @type {Set<Doc>}
+         */
+        this.subdocsLoaded = new Set();
+        /**
+         * @type {boolean}
+         */
+        this._needFormattingCleanup = false;
+      }
+    }
+
+    /**
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {Transaction} transaction
+     * @return {boolean} Whether data was written.
+     */
+    const writeUpdateMessageFromTransaction = (encoder, transaction) => {
+      if (transaction.deleteSet.clients.size === 0 && !any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+        return false
+      }
+      sortAndMergeDeleteSet(transaction.deleteSet);
+      writeStructsFromTransaction(encoder, transaction);
+      writeDeleteSet(encoder, transaction.deleteSet);
+      return true
+    };
+
+    /**
+     * If `type.parent` was added in current transaction, `type` technically
+     * did not change, it was just added and we should not fire events for `type`.
+     *
+     * @param {Transaction} transaction
+     * @param {AbstractType<YEvent<any>>} type
+     * @param {string|null} parentSub
+     */
+    const addChangedTypeToTransaction = (transaction, type, parentSub) => {
+      const item = type._item;
+      if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
+        setIfUndefined(transaction.changed, type, create$4).add(parentSub);
+      }
+    };
+
+    /**
+     * @param {Array<AbstractStruct>} structs
+     * @param {number} pos
+     * @return {number} # of merged structs
+     */
+    const tryToMergeWithLefts = (structs, pos) => {
+      let right = structs[pos];
+      let left = structs[pos - 1];
+      let i = pos;
+      for (; i > 0; right = left, left = structs[--i - 1]) {
+        if (left.deleted === right.deleted && left.constructor === right.constructor) {
+          if (left.mergeWith(right)) {
+            if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
+              /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left));
+            }
+            continue
+          }
+        }
+        break
+      }
+      const merged = pos - i;
+      if (merged) {
+        // remove all merged structs from the array
+        structs.splice(pos + 1 - merged, merged);
+      }
+      return merged
+    };
+
+    /**
+     * @param {DeleteSet} ds
+     * @param {StructStore} store
+     * @param {function(Item):boolean} gcFilter
+     */
+    const tryGcDeleteSet = (ds, store, gcFilter) => {
+      for (const [client, deleteItems] of ds.clients.entries()) {
+        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+        for (let di = deleteItems.length - 1; di >= 0; di--) {
+          const deleteItem = deleteItems[di];
+          const endDeleteItemClock = deleteItem.clock + deleteItem.len;
+          for (
+            let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
+            si < structs.length && struct.id.clock < endDeleteItemClock;
+            struct = structs[++si]
+          ) {
+            const struct = structs[si];
+            if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
+              break
+            }
+            if (struct instanceof Item && struct.deleted && !struct.keep && gcFilter(struct)) {
+              struct.gc(store, false);
+            }
+          }
+        }
+      }
+    };
+
+    /**
+     * @param {DeleteSet} ds
+     * @param {StructStore} store
+     */
+    const tryMergeDeleteSet = (ds, store) => {
+      // try to merge deleted / gc'd items
+      // merge from right to left for better efficiency and so we don't miss any merge targets
+      ds.clients.forEach((deleteItems, client) => {
+        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+        for (let di = deleteItems.length - 1; di >= 0; di--) {
+          const deleteItem = deleteItems[di];
+          // start with merging the item next to the last deleted item
+          const mostRightIndexToCheck = min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
+          for (
+            let si = mostRightIndexToCheck, struct = structs[si];
+            si > 0 && struct.id.clock >= deleteItem.clock;
+            struct = structs[si]
+          ) {
+            si -= 1 + tryToMergeWithLefts(structs, si);
+          }
+        }
+      });
+    };
+
+    /**
+     * @param {Array<Transaction>} transactionCleanups
+     * @param {number} i
+     */
+    const cleanupTransactions = (transactionCleanups, i) => {
+      if (i < transactionCleanups.length) {
+        const transaction = transactionCleanups[i];
+        const doc = transaction.doc;
+        const store = doc.store;
+        const ds = transaction.deleteSet;
+        const mergeStructs = transaction._mergeStructs;
+        try {
+          sortAndMergeDeleteSet(ds);
+          transaction.afterState = getStateVector(transaction.doc.store);
+          doc.emit('beforeObserverCalls', [transaction, doc]);
+          /**
+           * An array of event callbacks.
+           *
+           * Each callback is called even if the other ones throw errors.
+           *
+           * @type {Array<function():void>}
+           */
+          const fs = [];
+          // observe events on changed types
+          transaction.changed.forEach((subs, itemtype) =>
+            fs.push(() => {
+              if (itemtype._item === null || !itemtype._item.deleted) {
+                itemtype._callObserver(transaction, subs);
+              }
+            })
+          );
+          fs.push(() => {
+            // deep observe events
+            transaction.changedParentTypes.forEach((events, type) => {
+              // We need to think about the possibility that the user transforms the
+              // Y.Doc in the event.
+              if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
+                events = events
+                  .filter(event =>
+                    event.target._item === null || !event.target._item.deleted
+                  );
+                events
+                  .forEach(event => {
+                    event.currentTarget = type;
+                    // path is relative to the current target
+                    event._path = null;
+                  });
+                // sort events by path length so that top-level events are fired first.
+                events
+                  .sort((event1, event2) => event1.path.length - event2.path.length);
+                // We don't need to check for events.length
+                // because we know it has at least one element
+                callEventHandlerListeners(type._dEH, events, transaction);
+              }
+            });
+          });
+          fs.push(() => doc.emit('afterTransaction', [transaction, doc]));
+          callAll(fs, []);
+          if (transaction._needFormattingCleanup) {
+            cleanupYTextAfterTransaction(transaction);
+          }
+        } finally {
+          // Replace deleted items with ItemDeleted / GC.
+          // This is where content is actually remove from the Yjs Doc.
+          if (doc.gc) {
+            tryGcDeleteSet(ds, store, doc.gcFilter);
+          }
+          tryMergeDeleteSet(ds, store);
+
+          // on all affected store.clients props, try to merge
+          transaction.afterState.forEach((clock, client) => {
+            const beforeClock = transaction.beforeState.get(client) || 0;
+            if (beforeClock !== clock) {
+              const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+              // we iterate from right to left so we can safely remove entries
+              const firstChangePos = max(findIndexSS(structs, beforeClock), 1);
+              for (let i = structs.length - 1; i >= firstChangePos;) {
+                i -= 1 + tryToMergeWithLefts(structs, i);
+              }
+            }
+          });
+          // try to merge mergeStructs
+          // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
+          //        but at the moment DS does not handle duplicates
+          for (let i = mergeStructs.length - 1; i >= 0; i--) {
+            const { client, clock } = mergeStructs[i].id;
+            const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
+            const replacedStructPos = findIndexSS(structs, clock);
+            if (replacedStructPos + 1 < structs.length) {
+              if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
+                continue // no need to perform next check, both are already merged
+              }
+            }
+            if (replacedStructPos > 0) {
+              tryToMergeWithLefts(structs, replacedStructPos);
+            }
+          }
+          if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
+            print(ORANGE, BOLD, '[yjs] ', UNBOLD, RED, 'Changed the client-id because another client seems to be using it.');
+            doc.clientID = generateNewClientId();
+          }
+          // @todo Merge all the transactions into one and provide send the data as a single update message
+          doc.emit('afterTransactionCleanup', [transaction, doc]);
+          if (doc._observers.has('update')) {
+            const encoder = new UpdateEncoderV1();
+            const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+            if (hasContent) {
+              doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction]);
+            }
+          }
+          if (doc._observers.has('updateV2')) {
+            const encoder = new UpdateEncoderV2();
+            const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+            if (hasContent) {
+              doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction]);
+            }
+          }
+          const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction;
+          if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
+            subdocsAdded.forEach(subdoc => {
+              subdoc.clientID = doc.clientID;
+              if (subdoc.collectionid == null) {
+                subdoc.collectionid = doc.collectionid;
+              }
+              doc.subdocs.add(subdoc);
+            });
+            subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc));
+            doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction]);
+            subdocsRemoved.forEach(subdoc => subdoc.destroy());
+          }
+
+          if (transactionCleanups.length <= i + 1) {
+            doc._transactionCleanups = [];
+            doc.emit('afterAllTransactions', [doc, transactionCleanups]);
+          } else {
+            cleanupTransactions(transactionCleanups, i + 1);
+          }
+        }
+      }
+    };
+
+    /**
+     * Implements the functionality of `y.transact(()=>{..})`
+     *
+     * @template T
+     * @param {Doc} doc
+     * @param {function(Transaction):T} f
+     * @param {any} [origin=true]
+     * @return {T}
+     *
+     * @function
+     */
+    const transact = (doc, f, origin = null, local = true) => {
+      const transactionCleanups = doc._transactionCleanups;
+      let initialCall = false;
+      /**
+       * @type {any}
+       */
+      let result = null;
+      if (doc._transaction === null) {
+        initialCall = true;
+        doc._transaction = new Transaction(doc, origin, local);
+        transactionCleanups.push(doc._transaction);
+        if (transactionCleanups.length === 1) {
+          doc.emit('beforeAllTransactions', [doc]);
+        }
+        doc.emit('beforeTransaction', [doc._transaction, doc]);
+      }
+      try {
+        result = f(doc._transaction);
+      } finally {
+        if (initialCall) {
+          const finishCleanup = doc._transaction === transactionCleanups[0];
+          doc._transaction = null;
+          if (finishCleanup) {
+            // The first transaction ended, now process observer calls.
+            // Observer call may create new transactions for which we need to call the observers and do cleanup.
+            // We don't want to nest these calls, so we execute these calls one after
+            // another.
+            // Also we need to ensure that all cleanups are called, even if the
+            // observes throw errors.
+            // This file is full of hacky try {} finally {} blocks to ensure that an
+            // event can throw errors and also that the cleanup is called.
+            cleanupTransactions(transactionCleanups, 0);
+          }
+        }
+      }
+      return result
+    };
+
+    const errorComputeChanges = 'You must not compute changes after the event-handler fired.';
+
+    /**
+     * @template {AbstractType<any>} T
+     * YEvent describes the changes on a YType.
+     */
+    class YEvent {
+      /**
+       * @param {T} target The changed type.
+       * @param {Transaction} transaction
+       */
+      constructor (target, transaction) {
+        /**
+         * The type on which this event was created on.
+         * @type {T}
+         */
+        this.target = target;
+        /**
+         * The current target on which the observe callback is called.
+         * @type {AbstractType<any>}
+         */
+        this.currentTarget = target;
+        /**
+         * The transaction that triggered this event.
+         * @type {Transaction}
+         */
+        this.transaction = transaction;
+        /**
+         * @type {Object|null}
+         */
+        this._changes = null;
+        /**
+         * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+         */
+        this._keys = null;
+        /**
+         * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
+         */
+        this._delta = null;
+        /**
+         * @type {Array<string|number>|null}
+         */
+        this._path = null;
+      }
+
+      /**
+       * Computes the path from `y` to the changed type.
+       *
+       * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.
+       *
+       * The following property holds:
+       * @example
+       *   let type = y
+       *   event.path.forEach(dir => {
+       *     type = type.get(dir)
+       *   })
+       *   type === event.target // => true
+       */
+      get path () {
+        return this._path || (this._path = getPathTo(this.currentTarget, this.target))
+      }
+
+      /**
+       * Check if a struct is deleted by this event.
+       *
+       * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
+       *
+       * @param {AbstractStruct} struct
+       * @return {boolean}
+       */
+      deletes (struct) {
+        return isDeleted(this.transaction.deleteSet, struct.id)
+      }
+
+      /**
+       * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+       */
+      get keys () {
+        if (this._keys === null) {
+          if (this.transaction.doc._transactionCleanups.length === 0) {
+            throw create$3(errorComputeChanges)
+          }
+          const keys = new Map();
+          const target = this.target;
+          const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target));
+          changed.forEach(key => {
+            if (key !== null) {
+              const item = /** @type {Item} */ (target._map.get(key));
+              /**
+               * @type {'delete' | 'add' | 'update'}
+               */
+              let action;
+              let oldValue;
+              if (this.adds(item)) {
+                let prev = item.left;
+                while (prev !== null && this.adds(prev)) {
+                  prev = prev.left;
+                }
+                if (this.deletes(item)) {
+                  if (prev !== null && this.deletes(prev)) {
+                    action = 'delete';
+                    oldValue = last(prev.content.getContent());
+                  } else {
+                    return
+                  }
+                } else {
+                  if (prev !== null && this.deletes(prev)) {
+                    action = 'update';
+                    oldValue = last(prev.content.getContent());
+                  } else {
+                    action = 'add';
+                    oldValue = undefined;
+                  }
+                }
+              } else {
+                if (this.deletes(item)) {
+                  action = 'delete';
+                  oldValue = last(/** @type {Item} */ item.content.getContent());
+                } else {
+                  return // nop
+                }
+              }
+              keys.set(key, { action, oldValue });
+            }
+          });
+          this._keys = keys;
+        }
+        return this._keys
+      }
+
+      /**
+       * This is a computed property. Note that this can only be safely computed during the
+       * event call. Computing this property after other changes happened might result in
+       * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+       * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+       *
+       * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
+       */
+      get delta () {
+        return this.changes.delta
+      }
+
+      /**
+       * Check if a struct is added by this event.
+       *
+       * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
+       *
+       * @param {AbstractStruct} struct
+       * @return {boolean}
+       */
+      adds (struct) {
+        return struct.id.clock >= (this.transaction.beforeState.get(struct.id.client) || 0)
+      }
+
+      /**
+       * This is a computed property. Note that this can only be safely computed during the
+       * event call. Computing this property after other changes happened might result in
+       * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+       * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+       *
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+       */
+      get changes () {
+        let changes = this._changes;
+        if (changes === null) {
+          if (this.transaction.doc._transactionCleanups.length === 0) {
+            throw create$3(errorComputeChanges)
+          }
+          const target = this.target;
+          const added = create$4();
+          const deleted = create$4();
+          /**
+           * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
+           */
+          const delta = [];
+          changes = {
+            added,
+            deleted,
+            delta,
+            keys: this.keys
+          };
+          const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target));
+          if (changed.has(null)) {
+            /**
+             * @type {any}
+             */
+            let lastOp = null;
+            const packOp = () => {
+              if (lastOp) {
+                delta.push(lastOp);
+              }
+            };
+            for (let item = target._start; item !== null; item = item.right) {
+              if (item.deleted) {
+                if (this.deletes(item) && !this.adds(item)) {
+                  if (lastOp === null || lastOp.delete === undefined) {
+                    packOp();
+                    lastOp = { delete: 0 };
+                  }
+                  lastOp.delete += item.length;
+                  deleted.add(item);
+                } // else nop
+              } else {
+                if (this.adds(item)) {
+                  if (lastOp === null || lastOp.insert === undefined) {
+                    packOp();
+                    lastOp = { insert: [] };
+                  }
+                  lastOp.insert = lastOp.insert.concat(item.content.getContent());
+                  added.add(item);
+                } else {
+                  if (lastOp === null || lastOp.retain === undefined) {
+                    packOp();
+                    lastOp = { retain: 0 };
+                  }
+                  lastOp.retain += item.length;
+                }
+              }
+            }
+            if (lastOp !== null && lastOp.retain === undefined) {
+              packOp();
+            }
+          }
+          this._changes = changes;
+        }
+        return /** @type {any} */ (changes)
+      }
+    }
+
+    /**
+     * Compute the path from this type to the specified target.
+     *
+     * @example
+     *   // `child` should be accessible via `type.get(path[0]).get(path[1])..`
+     *   const path = type.getPathTo(child)
+     *   // assuming `type instanceof YArray`
+     *   console.log(path) // might look like => [2, 'key1']
+     *   child === type.get(path[0]).get(path[1])
+     *
+     * @param {AbstractType<any>} parent
+     * @param {AbstractType<any>} child target
+     * @return {Array<string|number>} Path to the target
+     *
+     * @private
+     * @function
+     */
+    const getPathTo = (parent, child) => {
+      const path = [];
+      while (child._item !== null && child !== parent) {
+        if (child._item.parentSub !== null) {
+          // parent is map-ish
+          path.unshift(child._item.parentSub);
+        } else {
+          // parent is array-ish
+          let i = 0;
+          let c = /** @type {AbstractType<any>} */ (child._item.parent)._start;
+          while (c !== child._item && c !== null) {
+            if (!c.deleted && c.countable) {
+              i += c.length;
+            }
+            c = c.right;
+          }
+          path.unshift(i);
+        }
+        child = /** @type {AbstractType<any>} */ (child._item.parent);
+      }
+      return path
+    };
+
+    /**
+     * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
+     */
+    const warnPrematureAccess = () => { warn('Invalid access: Add Yjs type to a document before reading data.'); };
+
+    const maxSearchMarker = 80;
+
+    /**
+     * A unique timestamp that identifies each marker.
+     *
+     * Time is relative,.. this is more like an ever-increasing clock.
+     *
+     * @type {number}
+     */
+    let globalSearchMarkerTimestamp = 0;
+
+    class ArraySearchMarker {
+      /**
+       * @param {Item} p
+       * @param {number} index
+       */
+      constructor (p, index) {
+        p.marker = true;
+        this.p = p;
+        this.index = index;
+        this.timestamp = globalSearchMarkerTimestamp++;
+      }
+    }
+
+    /**
+     * @param {ArraySearchMarker} marker
+     */
+    const refreshMarkerTimestamp = marker => { marker.timestamp = globalSearchMarkerTimestamp++; };
+
+    /**
+     * This is rather complex so this function is the only thing that should overwrite a marker
+     *
+     * @param {ArraySearchMarker} marker
+     * @param {Item} p
+     * @param {number} index
+     */
+    const overwriteMarker = (marker, p, index) => {
+      marker.p.marker = false;
+      marker.p = p;
+      p.marker = true;
+      marker.index = index;
+      marker.timestamp = globalSearchMarkerTimestamp++;
+    };
+
+    /**
+     * @param {Array<ArraySearchMarker>} searchMarker
+     * @param {Item} p
+     * @param {number} index
+     */
+    const markPosition = (searchMarker, p, index) => {
+      if (searchMarker.length >= maxSearchMarker) {
+        // override oldest marker (we don't want to create more objects)
+        const marker = searchMarker.reduce((a, b) => a.timestamp < b.timestamp ? a : b);
+        overwriteMarker(marker, p, index);
+        return marker
+      } else {
+        // create new marker
+        const pm = new ArraySearchMarker(p, index);
+        searchMarker.push(pm);
+        return pm
+      }
+    };
+
+    /**
+     * Search marker help us to find positions in the associative array faster.
+     *
+     * They speed up the process of finding a position without much bookkeeping.
+     *
+     * A maximum of `maxSearchMarker` objects are created.
+     *
+     * This function always returns a refreshed marker (updated timestamp)
+     *
+     * @param {AbstractType<any>} yarray
+     * @param {number} index
+     */
+    const findMarker = (yarray, index) => {
+      if (yarray._start === null || index === 0 || yarray._searchMarker === null) {
+        return null
+      }
+      const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => abs(index - a.index) < abs(index - b.index) ? a : b);
+      let p = yarray._start;
+      let pindex = 0;
+      if (marker !== null) {
+        p = marker.p;
+        pindex = marker.index;
+        refreshMarkerTimestamp(marker); // we used it, we might need to use it again
+      }
+      // iterate to right if possible
+      while (p.right !== null && pindex < index) {
+        if (!p.deleted && p.countable) {
+          if (index < pindex + p.length) {
+            break
+          }
+          pindex += p.length;
+        }
+        p = p.right;
+      }
+      // iterate to left if necessary (might be that pindex > index)
+      while (p.left !== null && pindex > index) {
+        p = p.left;
+        if (!p.deleted && p.countable) {
+          pindex -= p.length;
+        }
+      }
+      // we want to make sure that p can't be merged with left, because that would screw up everything
+      // in that cas just return what we have (it is most likely the best marker anyway)
+      // iterate to left until p can't be merged with left
+      while (p.left !== null && p.left.id.client === p.id.client && p.left.id.clock + p.left.length === p.id.clock) {
+        p = p.left;
+        if (!p.deleted && p.countable) {
+          pindex -= p.length;
+        }
+      }
+
+      // @todo remove!
+      // assure position
+      // {
+      //   let start = yarray._start
+      //   let pos = 0
+      //   while (start !== p) {
+      //     if (!start.deleted && start.countable) {
+      //       pos += start.length
+      //     }
+      //     start = /** @type {Item} */ (start.right)
+      //   }
+      //   if (pos !== pindex) {
+      //     debugger
+      //     throw new Error('Gotcha position fail!')
+      //   }
+      // }
+      // if (marker) {
+      //   if (window.lengths == null) {
+      //     window.lengths = []
+      //     window.getLengths = () => window.lengths.sort((a, b) => a - b)
+      //   }
+      //   window.lengths.push(marker.index - pindex)
+      //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
+      // }
+      if (marker !== null && abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
+        // adjust existing marker
+        overwriteMarker(marker, p, pindex);
+        return marker
+      } else {
+        // create new marker
+        return markPosition(yarray._searchMarker, p, pindex)
+      }
+    };
+
+    /**
+     * Update markers when a change happened.
+     *
+     * This should be called before doing a deletion!
+     *
+     * @param {Array<ArraySearchMarker>} searchMarker
+     * @param {number} index
+     * @param {number} len If insertion, len is positive. If deletion, len is negative.
+     */
+    const updateMarkerChanges = (searchMarker, index, len) => {
+      for (let i = searchMarker.length - 1; i >= 0; i--) {
+        const m = searchMarker[i];
+        if (len > 0) {
+          /**
+           * @type {Item|null}
+           */
+          let p = m.p;
+          p.marker = false;
+          // Ideally we just want to do a simple position comparison, but this will only work if
+          // search markers don't point to deleted items for formats.
+          // Iterate marker to prev undeleted countable position so we know what to do when updating a position
+          while (p && (p.deleted || !p.countable)) {
+            p = p.left;
+            if (p && !p.deleted && p.countable) {
+              // adjust position. the loop should break now
+              m.index -= p.length;
+            }
+          }
+          if (p === null || p.marker === true) {
+            // remove search marker if updated position is null or if position is already marked
+            searchMarker.splice(i, 1);
+            continue
+          }
+          m.p = p;
+          p.marker = true;
+        }
+        if (index < m.index || (len > 0 && index === m.index)) { // a simple index <= m.index check would actually suffice
+          m.index = max(index, m.index + len);
+        }
+      }
+    };
+
+    /**
+     * Call event listeners with an event. This will also add an event to all
+     * parents (for `.observeDeep` handlers).
+     *
+     * @template EventType
+     * @param {AbstractType<EventType>} type
+     * @param {Transaction} transaction
+     * @param {EventType} event
+     */
+    const callTypeObservers = (type, transaction, event) => {
+      const changedType = type;
+      const changedParentTypes = transaction.changedParentTypes;
+      while (true) {
+        // @ts-ignore
+        setIfUndefined(changedParentTypes, type, () => []).push(event);
+        if (type._item === null) {
+          break
+        }
+        type = /** @type {AbstractType<any>} */ (type._item.parent);
+      }
+      callEventHandlerListeners(changedType._eH, event, transaction);
+    };
+
+    /**
+     * @template EventType
+     * Abstract Yjs Type class
+     */
+    class AbstractType {
+      constructor () {
+        /**
+         * @type {Item|null}
+         */
+        this._item = null;
+        /**
+         * @type {Map<string,Item>}
+         */
+        this._map = new Map();
+        /**
+         * @type {Item|null}
+         */
+        this._start = null;
+        /**
+         * @type {Doc|null}
+         */
+        this.doc = null;
+        this._length = 0;
+        /**
+         * Event handlers
+         * @type {EventHandler<EventType,Transaction>}
+         */
+        this._eH = createEventHandler();
+        /**
+         * Deep event handlers
+         * @type {EventHandler<Array<YEvent<any>>,Transaction>}
+         */
+        this._dEH = createEventHandler();
+        /**
+         * @type {null | Array<ArraySearchMarker>}
+         */
+        this._searchMarker = null;
+      }
+
+      /**
+       * @return {AbstractType<any>|null}
+       */
+      get parent () {
+        return this._item ? /** @type {AbstractType<any>} */ (this._item.parent) : null
+      }
+
+      /**
+       * Integrate this type into the Yjs instance.
+       *
+       * * Save this struct in the os
+       * * This type is sent to other client
+       * * Observer functions are fired
+       *
+       * @param {Doc} y The Yjs instance
+       * @param {Item|null} item
+       */
+      _integrate (y, item) {
+        this.doc = y;
+        this._item = item;
+      }
+
+      /**
+       * @return {AbstractType<EventType>}
+       */
+      _copy () {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {AbstractType<EventType>}
+       */
+      clone () {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+       */
+      _write (_encoder) { }
+
+      /**
+       * The first non-deleted item
+       */
+      get _first () {
+        let n = this._start;
+        while (n !== null && n.deleted) {
+          n = n.right;
+        }
+        return n
+      }
+
+      /**
+       * Creates YEvent and calls all type observers.
+       * Must be implemented by each type.
+       *
+       * @param {Transaction} transaction
+       * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
+       */
+      _callObserver (transaction, _parentSubs) {
+        if (!transaction.local && this._searchMarker) {
+          this._searchMarker.length = 0;
+        }
+      }
+
+      /**
+       * Observe all events that are created on this type.
+       *
+       * @param {function(EventType, Transaction):void} f Observer function
+       */
+      observe (f) {
+        addEventHandlerListener(this._eH, f);
+      }
+
+      /**
+       * Observe all events that are created by this type and its children.
+       *
+       * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+       */
+      observeDeep (f) {
+        addEventHandlerListener(this._dEH, f);
+      }
+
+      /**
+       * Unregister an observer function.
+       *
+       * @param {function(EventType,Transaction):void} f Observer function
+       */
+      unobserve (f) {
+        removeEventHandlerListener(this._eH, f);
+      }
+
+      /**
+       * Unregister an observer function.
+       *
+       * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+       */
+      unobserveDeep (f) {
+        removeEventHandlerListener(this._dEH, f);
+      }
+
+      /**
+       * @abstract
+       * @return {any}
+       */
+      toJSON () {}
+    }
+
+    /**
+     * @param {AbstractType<any>} type
+     * @param {number} start
+     * @param {number} end
+     * @return {Array<any>}
+     *
+     * @private
+     * @function
+     */
+    const typeListSlice = (type, start, end) => {
+      type.doc ?? warnPrematureAccess();
+      if (start < 0) {
+        start = type._length + start;
+      }
+      if (end < 0) {
+        end = type._length + end;
+      }
+      let len = end - start;
+      const cs = [];
+      let n = type._start;
+      while (n !== null && len > 0) {
+        if (n.countable && !n.deleted) {
+          const c = n.content.getContent();
+          if (c.length <= start) {
+            start -= c.length;
+          } else {
+            for (let i = start; i < c.length && len > 0; i++) {
+              cs.push(c[i]);
+              len--;
+            }
+            start = 0;
+          }
+        }
+        n = n.right;
+      }
+      return cs
+    };
+
+    /**
+     * @param {AbstractType<any>} type
+     * @return {Array<any>}
+     *
+     * @private
+     * @function
+     */
+    const typeListToArray = type => {
+      type.doc ?? warnPrematureAccess();
+      const cs = [];
+      let n = type._start;
+      while (n !== null) {
+        if (n.countable && !n.deleted) {
+          const c = n.content.getContent();
+          for (let i = 0; i < c.length; i++) {
+            cs.push(c[i]);
+          }
+        }
+        n = n.right;
+      }
+      return cs
+    };
+
+    /**
+     * Executes a provided function on once on every element of this YArray.
+     *
+     * @param {AbstractType<any>} type
+     * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
+     *
+     * @private
+     * @function
+     */
+    const typeListForEach = (type, f) => {
+      let index = 0;
+      let n = type._start;
+      type.doc ?? warnPrematureAccess();
+      while (n !== null) {
+        if (n.countable && !n.deleted) {
+          const c = n.content.getContent();
+          for (let i = 0; i < c.length; i++) {
+            f(c[i], index++, type);
+          }
+        }
+        n = n.right;
+      }
+    };
+
+    /**
+     * @template C,R
+     * @param {AbstractType<any>} type
+     * @param {function(C,number,AbstractType<any>):R} f
+     * @return {Array<R>}
+     *
+     * @private
+     * @function
+     */
+    const typeListMap = (type, f) => {
+      /**
+       * @type {Array<any>}
+       */
+      const result = [];
+      typeListForEach(type, (c, i) => {
+        result.push(f(c, i, type));
+      });
+      return result
+    };
+
+    /**
+     * @param {AbstractType<any>} type
+     * @return {IterableIterator<any>}
+     *
+     * @private
+     * @function
+     */
+    const typeListCreateIterator = type => {
+      let n = type._start;
+      /**
+       * @type {Array<any>|null}
+       */
+      let currentContent = null;
+      let currentContentIndex = 0;
+      return {
+        [Symbol.iterator] () {
+          return this
+        },
+        next: () => {
+          // find some content
+          if (currentContent === null) {
+            while (n !== null && n.deleted) {
+              n = n.right;
+            }
+            // check if we reached the end, no need to check currentContent, because it does not exist
+            if (n === null) {
+              return {
+                done: true,
+                value: undefined
+              }
+            }
+            // we found n, so we can set currentContent
+            currentContent = n.content.getContent();
+            currentContentIndex = 0;
+            n = n.right; // we used the content of n, now iterate to next
+          }
+          const value = currentContent[currentContentIndex++];
+          // check if we need to empty currentContent
+          if (currentContent.length <= currentContentIndex) {
+            currentContent = null;
+          }
+          return {
+            done: false,
+            value
+          }
+        }
+      }
+    };
+
+    /**
+     * @param {AbstractType<any>} type
+     * @param {number} index
+     * @return {any}
+     *
+     * @private
+     * @function
+     */
+    const typeListGet = (type, index) => {
+      type.doc ?? warnPrematureAccess();
+      const marker = findMarker(type, index);
+      let n = type._start;
+      if (marker !== null) {
+        n = marker.p;
+        index -= marker.index;
+      }
+      for (; n !== null; n = n.right) {
+        if (!n.deleted && n.countable) {
+          if (index < n.length) {
+            return n.content.getContent()[index]
+          }
+          index -= n.length;
+        }
+      }
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {Item?} referenceItem
+     * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} content
+     *
+     * @private
+     * @function
+     */
+    const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
+      let left = referenceItem;
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      const store = doc.store;
+      const right = referenceItem === null ? parent._start : referenceItem.right;
+      /**
+       * @type {Array<Object|Array<any>|number|null>}
+       */
+      let jsonContent = [];
+      const packJsonContent = () => {
+        if (jsonContent.length > 0) {
+          left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent));
+          left.integrate(transaction, 0);
+          jsonContent = [];
+        }
+      };
+      content.forEach(c => {
+        if (c === null) {
+          jsonContent.push(c);
+        } else {
+          switch (c.constructor) {
+            case Number:
+            case Object:
+            case Boolean:
+            case Array:
+            case String:
+              jsonContent.push(c);
+              break
+            default:
+              packJsonContent();
+              switch (c.constructor) {
+                case Uint8Array:
+                case ArrayBuffer:
+                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))));
+                  left.integrate(transaction, 0);
+                  break
+                case Doc:
+                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)));
+                  left.integrate(transaction, 0);
+                  break
+                default:
+                  if (c instanceof AbstractType) {
+                    left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c));
+                    left.integrate(transaction, 0);
+                  } else {
+                    throw new Error('Unexpected content type in insert operation')
+                  }
+              }
+          }
+        }
+      });
+      packJsonContent();
+    };
+
+    const lengthExceeded = () => create$3('Length exceeded!');
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {number} index
+     * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
+     *
+     * @private
+     * @function
+     */
+    const typeListInsertGenerics = (transaction, parent, index, content) => {
+      if (index > parent._length) {
+        throw lengthExceeded()
+      }
+      if (index === 0) {
+        if (parent._searchMarker) {
+          updateMarkerChanges(parent._searchMarker, index, content.length);
+        }
+        return typeListInsertGenericsAfter(transaction, parent, null, content)
+      }
+      const startIndex = index;
+      const marker = findMarker(parent, index);
+      let n = parent._start;
+      if (marker !== null) {
+        n = marker.p;
+        index -= marker.index;
+        // we need to iterate one to the left so that the algorithm works
+        if (index === 0) {
+          // @todo refactor this as it actually doesn't consider formats
+          n = n.prev; // important! get the left undeleted item so that we can actually decrease index
+          index += (n && n.countable && !n.deleted) ? n.length : 0;
+        }
+      }
+      for (; n !== null; n = n.right) {
+        if (!n.deleted && n.countable) {
+          if (index <= n.length) {
+            if (index < n.length) {
+              // insert in-between
+              getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index));
+            }
+            break
+          }
+          index -= n.length;
+        }
+      }
+      if (parent._searchMarker) {
+        updateMarkerChanges(parent._searchMarker, startIndex, content.length);
+      }
+      return typeListInsertGenericsAfter(transaction, parent, n, content)
+    };
+
+    /**
+     * Pushing content is special as we generally want to push after the last item. So we don't have to update
+     * the search marker.
+     *
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
+     *
+     * @private
+     * @function
+     */
+    const typeListPushGenerics = (transaction, parent, content) => {
+      // Use the marker with the highest index and iterate to the right.
+      const marker = (parent._searchMarker || []).reduce((maxMarker, currMarker) => currMarker.index > maxMarker.index ? currMarker : maxMarker, { index: 0, p: parent._start });
+      let n = marker.p;
+      if (n) {
+        while (n.right) {
+          n = n.right;
+        }
+      }
+      return typeListInsertGenericsAfter(transaction, parent, n, content)
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {number} index
+     * @param {number} length
+     *
+     * @private
+     * @function
+     */
+    const typeListDelete = (transaction, parent, index, length) => {
+      if (length === 0) { return }
+      const startIndex = index;
+      const startLength = length;
+      const marker = findMarker(parent, index);
+      let n = parent._start;
+      if (marker !== null) {
+        n = marker.p;
+        index -= marker.index;
+      }
+      // compute the first item to be deleted
+      for (; n !== null && index > 0; n = n.right) {
+        if (!n.deleted && n.countable) {
+          if (index < n.length) {
+            getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index));
+          }
+          index -= n.length;
+        }
+      }
+      // delete all items until done
+      while (length > 0 && n !== null) {
+        if (!n.deleted) {
+          if (length < n.length) {
+            getItemCleanStart(transaction, createID(n.id.client, n.id.clock + length));
+          }
+          n.delete(transaction);
+          length -= n.length;
+        }
+        n = n.right;
+      }
+      if (length > 0) {
+        throw lengthExceeded()
+      }
+      if (parent._searchMarker) {
+        updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */);
+      }
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {string} key
+     *
+     * @private
+     * @function
+     */
+    const typeMapDelete = (transaction, parent, key) => {
+      const c = parent._map.get(key);
+      if (c !== undefined) {
+        c.delete(transaction);
+      }
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {string} key
+     * @param {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} value
+     *
+     * @private
+     * @function
+     */
+    const typeMapSet = (transaction, parent, key, value) => {
+      const left = parent._map.get(key) || null;
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      let content;
+      if (value == null) {
+        content = new ContentAny([value]);
+      } else {
+        switch (value.constructor) {
+          case Number:
+          case Object:
+          case Boolean:
+          case Array:
+          case String:
+          case Date:
+          case BigInt:
+            content = new ContentAny([value]);
+            break
+          case Uint8Array:
+            content = new ContentBinary(/** @type {Uint8Array} */ (value));
+            break
+          case Doc:
+            content = new ContentDoc(/** @type {Doc} */ (value));
+            break
+          default:
+            if (value instanceof AbstractType) {
+              content = new ContentType(value);
+            } else {
+              throw new Error('Unexpected content type')
+            }
+        }
+      }
+      new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0);
+    };
+
+    /**
+     * @param {AbstractType<any>} parent
+     * @param {string} key
+     * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+     *
+     * @private
+     * @function
+     */
+    const typeMapGet = (parent, key) => {
+      parent.doc ?? warnPrematureAccess();
+      const val = parent._map.get(key);
+      return val !== undefined && !val.deleted ? val.content.getContent()[val.length - 1] : undefined
+    };
+
+    /**
+     * @param {AbstractType<any>} parent
+     * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+     *
+     * @private
+     * @function
+     */
+    const typeMapGetAll = (parent) => {
+      /**
+       * @type {Object<string,any>}
+       */
+      const res = {};
+      parent.doc ?? warnPrematureAccess();
+      parent._map.forEach((value, key) => {
+        if (!value.deleted) {
+          res[key] = value.content.getContent()[value.length - 1];
+        }
+      });
+      return res
+    };
+
+    /**
+     * @param {AbstractType<any>} parent
+     * @param {string} key
+     * @return {boolean}
+     *
+     * @private
+     * @function
+     */
+    const typeMapHas = (parent, key) => {
+      parent.doc ?? warnPrematureAccess();
+      const val = parent._map.get(key);
+      return val !== undefined && !val.deleted
+    };
+
+    /**
+     * @param {AbstractType<any>} parent
+     * @param {Snapshot} snapshot
+     * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+     *
+     * @private
+     * @function
+     */
+    const typeMapGetAllSnapshot = (parent, snapshot) => {
+      /**
+       * @type {Object<string,any>}
+       */
+      const res = {};
+      parent._map.forEach((value, key) => {
+        /**
+         * @type {Item|null}
+         */
+        let v = value;
+        while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+          v = v.left;
+        }
+        if (v !== null && isVisible(v, snapshot)) {
+          res[key] = v.content.getContent()[v.length - 1];
+        }
+      });
+      return res
+    };
+
+    /**
+     * @param {AbstractType<any> & { _map: Map<string, Item> }} type
+     * @return {IterableIterator<Array<any>>}
+     *
+     * @private
+     * @function
+     */
+    const createMapIterator = type => {
+      type.doc ?? warnPrematureAccess();
+      return iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+    };
+
+    /**
+     * @module YArray
+     */
+
+
+    /**
+     * Event that describes the changes on a YArray
+     * @template T
+     * @extends YEvent<YArray<T>>
+     */
+    class YArrayEvent extends YEvent {}
+
+    /**
+     * A shared Array implementation.
+     * @template T
+     * @extends AbstractType<YArrayEvent<T>>
+     * @implements {Iterable<T>}
+     */
+    class YArray extends AbstractType {
+      constructor () {
+        super();
+        /**
+         * @type {Array<any>?}
+         * @private
+         */
+        this._prelimContent = [];
+        /**
+         * @type {Array<ArraySearchMarker>}
+         */
+        this._searchMarker = [];
+      }
+
+      /**
+       * Construct a new YArray containing the specified items.
+       * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
+       * @param {Array<T>} items
+       * @return {YArray<T>}
+       */
+      static from (items) {
+        /**
+         * @type {YArray<T>}
+         */
+        const a = new YArray();
+        a.push(items);
+        return a
+      }
+
+      /**
+       * Integrate this type into the Yjs instance.
+       *
+       * * Save this struct in the os
+       * * This type is sent to other client
+       * * Observer functions are fired
+       *
+       * @param {Doc} y The Yjs instance
+       * @param {Item} item
+       */
+      _integrate (y, item) {
+        super._integrate(y, item);
+        this.insert(0, /** @type {Array<any>} */ (this._prelimContent));
+        this._prelimContent = null;
+      }
+
+      /**
+       * @return {YArray<T>}
+       */
+      _copy () {
+        return new YArray()
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {YArray<T>}
+       */
+      clone () {
+        /**
+         * @type {YArray<T>}
+         */
+        const arr = new YArray();
+        arr.insert(0, this.toArray().map(el =>
+          el instanceof AbstractType ? /** @type {typeof el} */ (el.clone()) : el
+        ));
+        return arr
+      }
+
+      get length () {
+        this.doc ?? warnPrematureAccess();
+        return this._length
+      }
+
+      /**
+       * Creates YArrayEvent and calls observers.
+       *
+       * @param {Transaction} transaction
+       * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+       */
+      _callObserver (transaction, parentSubs) {
+        super._callObserver(transaction, parentSubs);
+        callTypeObservers(this, transaction, new YArrayEvent(this, transaction));
+      }
+
+      /**
+       * Inserts new content at an index.
+       *
+       * Important: This function expects an array of content. Not just a content
+       * object. The reason for this "weirdness" is that inserting several elements
+       * is very efficient when it is done as a single operation.
+       *
+       * @example
+       *  // Insert character 'a' at position 0
+       *  yarray.insert(0, ['a'])
+       *  // Insert numbers 1, 2 at position 1
+       *  yarray.insert(1, [1, 2])
+       *
+       * @param {number} index The index to insert content at.
+       * @param {Array<T>} content The array of content
+       */
+      insert (index, content) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeListInsertGenerics(transaction, this, index, /** @type {any} */ (content));
+          });
+        } else {
+          /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content);
+        }
+      }
+
+      /**
+       * Appends content to this YArray.
+       *
+       * @param {Array<T>} content Array of content to append.
+       *
+       * @todo Use the following implementation in all types.
+       */
+      push (content) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeListPushGenerics(transaction, this, /** @type {any} */ (content));
+          });
+        } else {
+          /** @type {Array<any>} */ (this._prelimContent).push(...content);
+        }
+      }
+
+      /**
+       * Prepends content to this YArray.
+       *
+       * @param {Array<T>} content Array of content to prepend.
+       */
+      unshift (content) {
+        this.insert(0, content);
+      }
+
+      /**
+       * Deletes elements starting from an index.
+       *
+       * @param {number} index Index at which to start deleting elements
+       * @param {number} length The number of elements to remove. Defaults to 1.
+       */
+      delete (index, length = 1) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeListDelete(transaction, this, index, length);
+          });
+        } else {
+          /** @type {Array<any>} */ (this._prelimContent).splice(index, length);
+        }
+      }
+
+      /**
+       * Returns the i-th element from a YArray.
+       *
+       * @param {number} index The index of the element to return from the YArray
+       * @return {T}
+       */
+      get (index) {
+        return typeListGet(this, index)
+      }
+
+      /**
+       * Transforms this YArray to a JavaScript Array.
+       *
+       * @return {Array<T>}
+       */
+      toArray () {
+        return typeListToArray(this)
+      }
+
+      /**
+       * Returns a portion of this YArray into a JavaScript Array selected
+       * from start to end (end not included).
+       *
+       * @param {number} [start]
+       * @param {number} [end]
+       * @return {Array<T>}
+       */
+      slice (start = 0, end = this.length) {
+        return typeListSlice(this, start, end)
+      }
+
+      /**
+       * Transforms this Shared Type to a JSON object.
+       *
+       * @return {Array<any>}
+       */
+      toJSON () {
+        return this.map(c => c instanceof AbstractType ? c.toJSON() : c)
+      }
+
+      /**
+       * Returns an Array with the result of calling a provided function on every
+       * element of this YArray.
+       *
+       * @template M
+       * @param {function(T,number,YArray<T>):M} f Function that produces an element of the new Array
+       * @return {Array<M>} A new array with each element being the result of the
+       *                 callback function
+       */
+      map (f) {
+        return typeListMap(this, /** @type {any} */ (f))
+      }
+
+      /**
+       * Executes a provided function once on every element of this YArray.
+       *
+       * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
+       */
+      forEach (f) {
+        typeListForEach(this, f);
+      }
+
+      /**
+       * @return {IterableIterator<T>}
+       */
+      [Symbol.iterator] () {
+        return typeListCreateIterator(this)
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       */
+      _write (encoder) {
+        encoder.writeTypeRef(YArrayRefID);
+      }
+    }
+
+    /**
+     * @module YMap
+     */
+
+
+    /**
+     * @template T
+     * @extends YEvent<YMap<T>>
+     * Event that describes the changes on a YMap.
+     */
+    class YMapEvent extends YEvent {
+      /**
+       * @param {YMap<T>} ymap The YArray that changed.
+       * @param {Transaction} transaction
+       * @param {Set<any>} subs The keys that changed.
+       */
+      constructor (ymap, transaction, subs) {
+        super(ymap, transaction);
+        this.keysChanged = subs;
+      }
+    }
+
+    /**
+     * @template MapType
+     * A shared Map implementation.
+     *
+     * @extends AbstractType<YMapEvent<MapType>>
+     * @implements {Iterable<[string, MapType]>}
+     */
+    class YMap extends AbstractType {
+      /**
+       *
+       * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+       */
+      constructor (entries) {
+        super();
+        /**
+         * @type {Map<string,any>?}
+         * @private
+         */
+        this._prelimContent = null;
+
+        if (entries === undefined) {
+          this._prelimContent = new Map();
+        } else {
+          this._prelimContent = new Map(entries);
+        }
+      }
+
+      /**
+       * Integrate this type into the Yjs instance.
+       *
+       * * Save this struct in the os
+       * * This type is sent to other client
+       * * Observer functions are fired
+       *
+       * @param {Doc} y The Yjs instance
+       * @param {Item} item
+       */
+      _integrate (y, item) {
+        super._integrate(y, item)
+        ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
+          this.set(key, value);
+        });
+        this._prelimContent = null;
+      }
+
+      /**
+       * @return {YMap<MapType>}
+       */
+      _copy () {
+        return new YMap()
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {YMap<MapType>}
+       */
+      clone () {
+        /**
+         * @type {YMap<MapType>}
+         */
+        const map = new YMap();
+        this.forEach((value, key) => {
+          map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value);
+        });
+        return map
+      }
+
+      /**
+       * Creates YMapEvent and calls observers.
+       *
+       * @param {Transaction} transaction
+       * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+       */
+      _callObserver (transaction, parentSubs) {
+        callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs));
+      }
+
+      /**
+       * Transforms this Shared Type to a JSON object.
+       *
+       * @return {Object<string,any>}
+       */
+      toJSON () {
+        this.doc ?? warnPrematureAccess();
+        /**
+         * @type {Object<string,MapType>}
+         */
+        const map = {};
+        this._map.forEach((item, key) => {
+          if (!item.deleted) {
+            const v = item.content.getContent()[item.length - 1];
+            map[key] = v instanceof AbstractType ? v.toJSON() : v;
+          }
+        });
+        return map
+      }
+
+      /**
+       * Returns the size of the YMap (count of key/value pairs)
+       *
+       * @return {number}
+       */
+      get size () {
+        return [...createMapIterator(this)].length
+      }
+
+      /**
+       * Returns the keys for each element in the YMap Type.
+       *
+       * @return {IterableIterator<string>}
+       */
+      keys () {
+        return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
+      }
+
+      /**
+       * Returns the values for each element in the YMap Type.
+       *
+       * @return {IterableIterator<MapType>}
+       */
+      values () {
+        return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+      }
+
+      /**
+       * Returns an Iterator of [key, value] pairs
+       *
+       * @return {IterableIterator<[string, MapType]>}
+       */
+      entries () {
+        return iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+      }
+
+      /**
+       * Executes a provided function on once on every key-value pair.
+       *
+       * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
+       */
+      forEach (f) {
+        this.doc ?? warnPrematureAccess();
+        this._map.forEach((item, key) => {
+          if (!item.deleted) {
+            f(item.content.getContent()[item.length - 1], key, this);
+          }
+        });
+      }
+
+      /**
+       * Returns an Iterator of [key, value] pairs
+       *
+       * @return {IterableIterator<[string, MapType]>}
+       */
+      [Symbol.iterator] () {
+        return this.entries()
+      }
+
+      /**
+       * Remove a specified element from this YMap.
+       *
+       * @param {string} key The key of the element to remove.
+       */
+      delete (key) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapDelete(transaction, this, key);
+          });
+        } else {
+          /** @type {Map<string, any>} */ (this._prelimContent).delete(key);
+        }
+      }
+
+      /**
+       * Adds or updates an element with a specified key and value.
+       * @template {MapType} VAL
+       *
+       * @param {string} key The key of the element to add to this YMap
+       * @param {VAL} value The value of the element to add
+       * @return {VAL}
+       */
+      set (key, value) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapSet(transaction, this, key, /** @type {any} */ (value));
+          });
+        } else {
+          /** @type {Map<string, any>} */ (this._prelimContent).set(key, value);
+        }
+        return value
+      }
+
+      /**
+       * Returns a specified element from this YMap.
+       *
+       * @param {string} key
+       * @return {MapType|undefined}
+       */
+      get (key) {
+        return /** @type {any} */ (typeMapGet(this, key))
+      }
+
+      /**
+       * Returns a boolean indicating whether the specified key exists or not.
+       *
+       * @param {string} key The key to test.
+       * @return {boolean}
+       */
+      has (key) {
+        return typeMapHas(this, key)
+      }
+
+      /**
+       * Removes all elements from this YMap.
+       */
+      clear () {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            this.forEach(function (_value, key, map) {
+              typeMapDelete(transaction, map, key);
+            });
+          });
+        } else {
+          /** @type {Map<string, any>} */ (this._prelimContent).clear();
+        }
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       */
+      _write (encoder) {
+        encoder.writeTypeRef(YMapRefID);
+      }
+    }
+
+    /**
+     * @module YText
+     */
+
+
+    /**
+     * @param {any} a
+     * @param {any} b
+     * @return {boolean}
+     */
+    const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && equalFlat(a, b));
+
+    class ItemTextListPosition {
+      /**
+       * @param {Item|null} left
+       * @param {Item|null} right
+       * @param {number} index
+       * @param {Map<string,any>} currentAttributes
+       */
+      constructor (left, right, index, currentAttributes) {
+        this.left = left;
+        this.right = right;
+        this.index = index;
+        this.currentAttributes = currentAttributes;
+      }
+
+      /**
+       * Only call this if you know that this.right is defined
+       */
+      forward () {
+        if (this.right === null) {
+          unexpectedCase();
+        }
+        switch (this.right.content.constructor) {
+          case ContentFormat:
+            if (!this.right.deleted) {
+              updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content));
+            }
+            break
+          default:
+            if (!this.right.deleted) {
+              this.index += this.right.length;
+            }
+            break
+        }
+        this.left = this.right;
+        this.right = this.right.right;
+      }
+    }
+
+    /**
+     * @param {Transaction} transaction
+     * @param {ItemTextListPosition} pos
+     * @param {number} count steps to move forward
+     * @return {ItemTextListPosition}
+     *
+     * @private
+     * @function
+     */
+    const findNextPosition = (transaction, pos, count) => {
+      while (pos.right !== null && count > 0) {
+        switch (pos.right.content.constructor) {
+          case ContentFormat:
+            if (!pos.right.deleted) {
+              updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content));
+            }
+            break
+          default:
+            if (!pos.right.deleted) {
+              if (count < pos.right.length) {
+                // split right
+                getItemCleanStart(transaction, createID(pos.right.id.client, pos.right.id.clock + count));
+              }
+              pos.index += pos.right.length;
+              count -= pos.right.length;
+            }
+            break
+        }
+        pos.left = pos.right;
+        pos.right = pos.right.right;
+        // pos.forward() - we don't forward because that would halve the performance because we already do the checks above
+      }
+      return pos
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {number} index
+     * @param {boolean} useSearchMarker
+     * @return {ItemTextListPosition}
+     *
+     * @private
+     * @function
+     */
+    const findPosition = (transaction, parent, index, useSearchMarker) => {
+      const currentAttributes = new Map();
+      const marker = useSearchMarker ? findMarker(parent, index) : null;
+      if (marker) {
+        const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes);
+        return findNextPosition(transaction, pos, index - marker.index)
+      } else {
+        const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes);
+        return findNextPosition(transaction, pos, index)
+      }
+    };
+
+    /**
+     * Negate applied formats
+     *
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {ItemTextListPosition} currPos
+     * @param {Map<string,any>} negatedAttributes
+     *
+     * @private
+     * @function
+     */
+    const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes) => {
+      // check if we really need to remove attributes
+      while (
+        currPos.right !== null && (
+          currPos.right.deleted === true || (
+            currPos.right.content.constructor === ContentFormat &&
+            equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
+          )
+        )
+      ) {
+        if (!currPos.right.deleted) {
+          negatedAttributes.delete(/** @type {ContentFormat} */ (currPos.right.content).key);
+        }
+        currPos.forward();
+      }
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      negatedAttributes.forEach((val, key) => {
+        const left = currPos.left;
+        const right = currPos.right;
+        const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+        nextFormat.integrate(transaction, 0);
+        currPos.right = nextFormat;
+        currPos.forward();
+      });
+    };
+
+    /**
+     * @param {Map<string,any>} currentAttributes
+     * @param {ContentFormat} format
+     *
+     * @private
+     * @function
+     */
+    const updateCurrentAttributes = (currentAttributes, format) => {
+      const { key, value } = format;
+      if (value === null) {
+        currentAttributes.delete(key);
+      } else {
+        currentAttributes.set(key, value);
+      }
+    };
+
+    /**
+     * @param {ItemTextListPosition} currPos
+     * @param {Object<string,any>} attributes
+     *
+     * @private
+     * @function
+     */
+    const minimizeAttributeChanges = (currPos, attributes) => {
+      // go right while attributes[right.key] === right.value (or right is deleted)
+      while (true) {
+        if (currPos.right === null) {
+          break
+        } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) ; else {
+          break
+        }
+        currPos.forward();
+      }
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {ItemTextListPosition} currPos
+     * @param {Object<string,any>} attributes
+     * @return {Map<string,any>}
+     *
+     * @private
+     * @function
+     **/
+    const insertAttributes = (transaction, parent, currPos, attributes) => {
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      const negatedAttributes = new Map();
+      // insert format-start items
+      for (const key in attributes) {
+        const val = attributes[key];
+        const currentVal = currPos.currentAttributes.get(key) ?? null;
+        if (!equalAttrs(currentVal, val)) {
+          // save negated attribute (set null if currentVal undefined)
+          negatedAttributes.set(key, currentVal);
+          const { left, right } = currPos;
+          currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+          currPos.right.integrate(transaction, 0);
+          currPos.forward();
+        }
+      }
+      return negatedAttributes
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {ItemTextListPosition} currPos
+     * @param {string|object|AbstractType<any>} text
+     * @param {Object<string,any>} attributes
+     *
+     * @private
+     * @function
+     **/
+    const insertText = (transaction, parent, currPos, text, attributes) => {
+      currPos.currentAttributes.forEach((_val, key) => {
+        if (attributes[key] === undefined) {
+          attributes[key] = null;
+        }
+      });
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      minimizeAttributeChanges(currPos, attributes);
+      const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
+      // insert content
+      const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof AbstractType ? new ContentType(text) : new ContentEmbed(text));
+      let { left, right, index } = currPos;
+      if (parent._searchMarker) {
+        updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength());
+      }
+      right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content);
+      right.integrate(transaction, 0);
+      currPos.right = right;
+      currPos.index = index;
+      currPos.forward();
+      insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {AbstractType<any>} parent
+     * @param {ItemTextListPosition} currPos
+     * @param {number} length
+     * @param {Object<string,any>} attributes
+     *
+     * @private
+     * @function
+     */
+    const formatText = (transaction, parent, currPos, length, attributes) => {
+      const doc = transaction.doc;
+      const ownClientId = doc.clientID;
+      minimizeAttributeChanges(currPos, attributes);
+      const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
+      // iterate until first non-format or null is found
+      // delete all formats with attributes[format.key] != null
+      // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+      // eslint-disable-next-line no-labels
+      iterationLoop: while (
+        currPos.right !== null &&
+        (length > 0 ||
+          (
+            negatedAttributes.size > 0 &&
+            (currPos.right.deleted || currPos.right.content.constructor === ContentFormat)
+          )
+        )
+      ) {
+        if (!currPos.right.deleted) {
+          switch (currPos.right.content.constructor) {
+            case ContentFormat: {
+              const { key, value } = /** @type {ContentFormat} */ (currPos.right.content);
+              const attr = attributes[key];
+              if (attr !== undefined) {
+                if (equalAttrs(attr, value)) {
+                  negatedAttributes.delete(key);
+                } else {
+                  if (length === 0) {
+                    // no need to further extend negatedAttributes
+                    // eslint-disable-next-line no-labels
+                    break iterationLoop
+                  }
+                  negatedAttributes.set(key, value);
+                }
+                currPos.right.delete(transaction);
+              } else {
+                currPos.currentAttributes.set(key, value);
+              }
+              break
+            }
+            default:
+              if (length < currPos.right.length) {
+                getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
+              }
+              length -= currPos.right.length;
+              break
+          }
+        }
+        currPos.forward();
+      }
+      // Quill just assumes that the editor starts with a newline and that it always
+      // ends with a newline. We only insert that newline when a new newline is
+      // inserted - i.e when length is bigger than type.length
+      if (length > 0) {
+        let newlines = '';
+        for (; length > 0; length--) {
+          newlines += '\n';
+        }
+        currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines));
+        currPos.right.integrate(transaction, 0);
+        currPos.forward();
+      }
+      insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
+    };
+
+    /**
+     * Call this function after string content has been deleted in order to
+     * clean up formatting Items.
+     *
+     * @param {Transaction} transaction
+     * @param {Item} start
+     * @param {Item|null} curr exclusive end, automatically iterates to the next Content Item
+     * @param {Map<string,any>} startAttributes
+     * @param {Map<string,any>} currAttributes
+     * @return {number} The amount of formatting Items deleted.
+     *
+     * @function
+     */
+    const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
+      /**
+       * @type {Item|null}
+       */
+      let end = start;
+      /**
+       * @type {Map<string,ContentFormat>}
+       */
+      const endFormats = create$5();
+      while (end && (!end.countable || end.deleted)) {
+        if (!end.deleted && end.content.constructor === ContentFormat) {
+          const cf = /** @type {ContentFormat} */ (end.content);
+          endFormats.set(cf.key, cf);
+        }
+        end = end.right;
+      }
+      let cleanups = 0;
+      let reachedCurr = false;
+      while (start !== end) {
+        if (curr === start) {
+          reachedCurr = true;
+        }
+        if (!start.deleted) {
+          const content = start.content;
+          switch (content.constructor) {
+            case ContentFormat: {
+              const { key, value } = /** @type {ContentFormat} */ (content);
+              const startAttrValue = startAttributes.get(key) ?? null;
+              if (endFormats.get(key) !== content || startAttrValue === value) {
+                // Either this format is overwritten or it is not necessary because the attribute already existed.
+                start.delete(transaction);
+                cleanups++;
+                if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
+                  if (startAttrValue === null) {
+                    currAttributes.delete(key);
+                  } else {
+                    currAttributes.set(key, startAttrValue);
+                  }
+                }
+              }
+              if (!reachedCurr && !start.deleted) {
+                updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content));
+              }
+              break
+            }
+          }
+        }
+        start = /** @type {Item} */ (start.right);
+      }
+      return cleanups
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {Item | null} item
+     */
+    const cleanupContextlessFormattingGap = (transaction, item) => {
+      // iterate until item.right is null or content
+      while (item && item.right && (item.right.deleted || !item.right.countable)) {
+        item = item.right;
+      }
+      const attrs = new Set();
+      // iterate back until a content item is found
+      while (item && (item.deleted || !item.countable)) {
+        if (!item.deleted && item.content.constructor === ContentFormat) {
+          const key = /** @type {ContentFormat} */ (item.content).key;
+          if (attrs.has(key)) {
+            item.delete(transaction);
+          } else {
+            attrs.add(key);
+          }
+        }
+        item = item.left;
+      }
+    };
+
+    /**
+     * This function is experimental and subject to change / be removed.
+     *
+     * Ideally, we don't need this function at all. Formatting attributes should be cleaned up
+     * automatically after each change. This function iterates twice over the complete YText type
+     * and removes unnecessary formatting attributes. This is also helpful for testing.
+     *
+     * This function won't be exported anymore as soon as there is confidence that the YText type works as intended.
+     *
+     * @param {YText} type
+     * @return {number} How many formatting attributes have been cleaned up.
+     */
+    const cleanupYTextFormatting = type => {
+      let res = 0;
+      transact(/** @type {Doc} */ (type.doc), transaction => {
+        let start = /** @type {Item} */ (type._start);
+        let end = type._start;
+        let startAttributes = create$5();
+        const currentAttributes = copy(startAttributes);
+        while (end) {
+          if (end.deleted === false) {
+            switch (end.content.constructor) {
+              case ContentFormat:
+                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (end.content));
+                break
+              default:
+                res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes);
+                startAttributes = copy(currentAttributes);
+                start = end;
+                break
+            }
+          }
+          end = end.right;
+        }
+      });
+      return res
+    };
+
+    /**
+     * This will be called by the transaction once the event handlers are called to potentially cleanup
+     * formatting attributes.
+     *
+     * @param {Transaction} transaction
+     */
+    const cleanupYTextAfterTransaction = transaction => {
+      /**
+       * @type {Set<YText>}
+       */
+      const needFullCleanup = new Set();
+      // check if another formatting item was inserted
+      const doc = transaction.doc;
+      for (const [client, afterClock] of transaction.afterState.entries()) {
+        const clock = transaction.beforeState.get(client) || 0;
+        if (afterClock === clock) {
+          continue
+        }
+        iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
+          if (
+            !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+          ) {
+            needFullCleanup.add(/** @type {any} */ (item).parent);
+          }
+        });
+      }
+      // cleanup in a new transaction
+      transact(doc, (t) => {
+        iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+          if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+            return
+          }
+          const parent = /** @type {YText} */ (item.parent);
+          if (item.content.constructor === ContentFormat) {
+            needFullCleanup.add(parent);
+          } else {
+            // If no formatting attribute was inserted or deleted, we can make due with contextless
+            // formatting cleanups.
+            // Contextless: it is not necessary to compute currentAttributes for the affected position.
+            cleanupContextlessFormattingGap(t, item);
+          }
+        });
+        // If a formatting item was inserted, we simply clean the whole type.
+        // We need to compute currentAttributes for the current position anyway.
+        for (const yText of needFullCleanup) {
+          cleanupYTextFormatting(yText);
+        }
+      });
+    };
+
+    /**
+     * @param {Transaction} transaction
+     * @param {ItemTextListPosition} currPos
+     * @param {number} length
+     * @return {ItemTextListPosition}
+     *
+     * @private
+     * @function
+     */
+    const deleteText = (transaction, currPos, length) => {
+      const startLength = length;
+      const startAttrs = copy(currPos.currentAttributes);
+      const start = currPos.right;
+      while (length > 0 && currPos.right !== null) {
+        if (currPos.right.deleted === false) {
+          switch (currPos.right.content.constructor) {
+            case ContentType:
+            case ContentEmbed:
+            case ContentString:
+              if (length < currPos.right.length) {
+                getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
+              }
+              length -= currPos.right.length;
+              currPos.right.delete(transaction);
+              break
+          }
+        }
+        currPos.forward();
+      }
+      if (start) {
+        cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes);
+      }
+      const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent);
+      if (parent._searchMarker) {
+        updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length);
+      }
+      return currPos
+    };
+
+    /**
+     * The Quill Delta format represents changes on a text document with
+     * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+     *
+     * @example
+     *   {
+     *     ops: [
+     *       { insert: 'Gandalf', attributes: { bold: true } },
+     *       { insert: ' the ' },
+     *       { insert: 'Grey', attributes: { color: '#cccccc' } }
+     *     ]
+     *   }
+     *
+     */
+
+    /**
+      * Attributes that can be assigned to a selection of text.
+      *
+      * @example
+      *   {
+      *     bold: true,
+      *     font-size: '40px'
+      *   }
+      *
+      * @typedef {Object} TextAttributes
+      */
+
+    /**
+     * @extends YEvent<YText>
+     * Event that describes the changes on a YText type.
+     */
+    class YTextEvent extends YEvent {
+      /**
+       * @param {YText} ytext
+       * @param {Transaction} transaction
+       * @param {Set<any>} subs The keys that changed
+       */
+      constructor (ytext, transaction, subs) {
+        super(ytext, transaction);
+        /**
+         * Whether the children changed.
+         * @type {Boolean}
+         * @private
+         */
+        this.childListChanged = false;
+        /**
+         * Set of all changed attributes.
+         * @type {Set<string>}
+         */
+        this.keysChanged = new Set();
+        subs.forEach((sub) => {
+          if (sub === null) {
+            this.childListChanged = true;
+          } else {
+            this.keysChanged.add(sub);
+          }
+        });
+      }
+
+      /**
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+       */
+      get changes () {
+        if (this._changes === null) {
+          /**
+           * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string|AbstractType<any>|object, delete?:number, retain?:number}>}}
+           */
+          const changes = {
+            keys: this.keys,
+            delta: this.delta,
+            added: new Set(),
+            deleted: new Set()
+          };
+          this._changes = changes;
+        }
+        return /** @type {any} */ (this._changes)
+      }
+
+      /**
+       * Compute the changes in the delta format.
+       * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
+       *
+       * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+       *
+       * @public
+       */
+      get delta () {
+        if (this._delta === null) {
+          const y = /** @type {Doc} */ (this.target.doc);
+          /**
+           * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+           */
+          const delta = [];
+          transact(y, transaction => {
+            const currentAttributes = new Map(); // saves all current attributes for insert
+            const oldAttributes = new Map();
+            let item = this.target._start;
+            /**
+             * @type {string?}
+             */
+            let action = null;
+            /**
+             * @type {Object<string,any>}
+             */
+            const attributes = {}; // counts added or removed new attributes for retain
+            /**
+             * @type {string|object}
+             */
+            let insert = '';
+            let retain = 0;
+            let deleteLen = 0;
+            const addOp = () => {
+              if (action !== null) {
+                /**
+                 * @type {any}
+                 */
+                let op = null;
+                switch (action) {
+                  case 'delete':
+                    if (deleteLen > 0) {
+                      op = { delete: deleteLen };
+                    }
+                    deleteLen = 0;
+                    break
+                  case 'insert':
+                    if (typeof insert === 'object' || insert.length > 0) {
+                      op = { insert };
+                      if (currentAttributes.size > 0) {
+                        op.attributes = {};
+                        currentAttributes.forEach((value, key) => {
+                          if (value !== null) {
+                            op.attributes[key] = value;
+                          }
+                        });
+                      }
+                    }
+                    insert = '';
+                    break
+                  case 'retain':
+                    if (retain > 0) {
+                      op = { retain };
+                      if (!isEmpty(attributes)) {
+                        op.attributes = assign({}, attributes);
+                      }
+                    }
+                    retain = 0;
+                    break
+                }
+                if (op) delta.push(op);
+                action = null;
+              }
+            };
+            while (item !== null) {
+              switch (item.content.constructor) {
+                case ContentType:
+                case ContentEmbed:
+                  if (this.adds(item)) {
+                    if (!this.deletes(item)) {
+                      addOp();
+                      action = 'insert';
+                      insert = item.content.getContent()[0];
+                      addOp();
+                    }
+                  } else if (this.deletes(item)) {
+                    if (action !== 'delete') {
+                      addOp();
+                      action = 'delete';
+                    }
+                    deleteLen += 1;
+                  } else if (!item.deleted) {
+                    if (action !== 'retain') {
+                      addOp();
+                      action = 'retain';
+                    }
+                    retain += 1;
+                  }
+                  break
+                case ContentString:
+                  if (this.adds(item)) {
+                    if (!this.deletes(item)) {
+                      if (action !== 'insert') {
+                        addOp();
+                        action = 'insert';
+                      }
+                      insert += /** @type {ContentString} */ (item.content).str;
+                    }
+                  } else if (this.deletes(item)) {
+                    if (action !== 'delete') {
+                      addOp();
+                      action = 'delete';
+                    }
+                    deleteLen += item.length;
+                  } else if (!item.deleted) {
+                    if (action !== 'retain') {
+                      addOp();
+                      action = 'retain';
+                    }
+                    retain += item.length;
+                  }
+                  break
+                case ContentFormat: {
+                  const { key, value } = /** @type {ContentFormat} */ (item.content);
+                  if (this.adds(item)) {
+                    if (!this.deletes(item)) {
+                      const curVal = currentAttributes.get(key) ?? null;
+                      if (!equalAttrs(curVal, value)) {
+                        if (action === 'retain') {
+                          addOp();
+                        }
+                        if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
+                          delete attributes[key];
+                        } else {
+                          attributes[key] = value;
+                        }
+                      } else if (value !== null) {
+                        item.delete(transaction);
+                      }
+                    }
+                  } else if (this.deletes(item)) {
+                    oldAttributes.set(key, value);
+                    const curVal = currentAttributes.get(key) ?? null;
+                    if (!equalAttrs(curVal, value)) {
+                      if (action === 'retain') {
+                        addOp();
+                      }
+                      attributes[key] = curVal;
+                    }
+                  } else if (!item.deleted) {
+                    oldAttributes.set(key, value);
+                    const attr = attributes[key];
+                    if (attr !== undefined) {
+                      if (!equalAttrs(attr, value)) {
+                        if (action === 'retain') {
+                          addOp();
+                        }
+                        if (value === null) {
+                          delete attributes[key];
+                        } else {
+                          attributes[key] = value;
+                        }
+                      } else if (attr !== null) { // this will be cleaned up automatically by the contextless cleanup function
+                        item.delete(transaction);
+                      }
+                    }
+                  }
+                  if (!item.deleted) {
+                    if (action === 'insert') {
+                      addOp();
+                    }
+                    updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (item.content));
+                  }
+                  break
+                }
+              }
+              item = item.right;
+            }
+            addOp();
+            while (delta.length > 0) {
+              const lastOp = delta[delta.length - 1];
+              if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
+                // retain delta's if they don't assign attributes
+                delta.pop();
+              } else {
+                break
+              }
+            }
+          });
+          this._delta = delta;
+        }
+        return /** @type {any} */ (this._delta)
+      }
+    }
+
+    /**
+     * Type that represents text with formatting information.
+     *
+     * This type replaces y-richtext as this implementation is able to handle
+     * block formats (format information on a paragraph), embeds (complex elements
+     * like pictures and videos), and text formats (**bold**, *italic*).
+     *
+     * @extends AbstractType<YTextEvent>
+     */
+    class YText extends AbstractType {
+      /**
+       * @param {String} [string] The initial value of the YText.
+       */
+      constructor (string) {
+        super();
+        /**
+         * Array of pending operations on this type
+         * @type {Array<function():void>?}
+         */
+        this._pending = string !== undefined ? [() => this.insert(0, string)] : [];
+        /**
+         * @type {Array<ArraySearchMarker>|null}
+         */
+        this._searchMarker = [];
+        /**
+         * Whether this YText contains formatting attributes.
+         * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
+         */
+        this._hasFormatting = false;
+      }
+
+      /**
+       * Number of characters of this text type.
+       *
+       * @type {number}
+       */
+      get length () {
+        this.doc ?? warnPrematureAccess();
+        return this._length
+      }
+
+      /**
+       * @param {Doc} y
+       * @param {Item} item
+       */
+      _integrate (y, item) {
+        super._integrate(y, item);
+        try {
+          /** @type {Array<function>} */ (this._pending).forEach(f => f());
+        } catch (e) {
+          console.error(e);
+        }
+        this._pending = null;
+      }
+
+      _copy () {
+        return new YText()
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {YText}
+       */
+      clone () {
+        const text = new YText();
+        text.applyDelta(this.toDelta());
+        return text
+      }
+
+      /**
+       * Creates YTextEvent and calls observers.
+       *
+       * @param {Transaction} transaction
+       * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+       */
+      _callObserver (transaction, parentSubs) {
+        super._callObserver(transaction, parentSubs);
+        const event = new YTextEvent(this, transaction, parentSubs);
+        callTypeObservers(this, transaction, event);
+        // If a remote change happened, we try to cleanup potential formatting duplicates.
+        if (!transaction.local && this._hasFormatting) {
+          transaction._needFormattingCleanup = true;
+        }
+      }
+
+      /**
+       * Returns the unformatted string representation of this YText type.
+       *
+       * @public
+       */
+      toString () {
+        this.doc ?? warnPrematureAccess();
+        let str = '';
+        /**
+         * @type {Item|null}
+         */
+        let n = this._start;
+        while (n !== null) {
+          if (!n.deleted && n.countable && n.content.constructor === ContentString) {
+            str += /** @type {ContentString} */ (n.content).str;
+          }
+          n = n.right;
+        }
+        return str
+      }
+
+      /**
+       * Returns the unformatted string representation of this YText type.
+       *
+       * @return {string}
+       * @public
+       */
+      toJSON () {
+        return this.toString()
+      }
+
+      /**
+       * Apply a {@link Delta} on this shared YText type.
+       *
+       * @param {Array<any>} delta The changes to apply on this element.
+       * @param {object}  opts
+       * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
+       *
+       *
+       * @public
+       */
+      applyDelta (delta, { sanitize = true } = {}) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            const currPos = new ItemTextListPosition(null, this._start, 0, new Map());
+            for (let i = 0; i < delta.length; i++) {
+              const op = delta[i];
+              if (op.insert !== undefined) {
+                // Quill assumes that the content starts with an empty paragraph.
+                // Yjs/Y.Text assumes that it starts empty. We always hide that
+                // there is a newline at the end of the content.
+                // If we omit this step, clients will see a different number of
+                // paragraphs, but nothing bad will happen.
+                const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert;
+                if (typeof ins !== 'string' || ins.length > 0) {
+                  insertText(transaction, this, currPos, ins, op.attributes || {});
+                }
+              } else if (op.retain !== undefined) {
+                formatText(transaction, this, currPos, op.retain, op.attributes || {});
+              } else if (op.delete !== undefined) {
+                deleteText(transaction, currPos, op.delete);
+              }
+            }
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.applyDelta(delta));
+        }
+      }
+
+      /**
+       * Returns the Delta representation of this YText type.
+       *
+       * @param {Snapshot} [snapshot]
+       * @param {Snapshot} [prevSnapshot]
+       * @param {function('removed' | 'added', ID):any} [computeYChange]
+       * @return {any} The Delta representation of this type.
+       *
+       * @public
+       */
+      toDelta (snapshot, prevSnapshot, computeYChange) {
+        this.doc ?? warnPrematureAccess();
+        /**
+         * @type{Array<any>}
+         */
+        const ops = [];
+        const currentAttributes = new Map();
+        const doc = /** @type {Doc} */ (this.doc);
+        let str = '';
+        let n = this._start;
+        function packStr () {
+          if (str.length > 0) {
+            // pack str with attributes to ops
+            /**
+             * @type {Object<string,any>}
+             */
+            const attributes = {};
+            let addAttributes = false;
+            currentAttributes.forEach((value, key) => {
+              addAttributes = true;
+              attributes[key] = value;
+            });
+            /**
+             * @type {Object<string,any>}
+             */
+            const op = { insert: str };
+            if (addAttributes) {
+              op.attributes = attributes;
+            }
+            ops.push(op);
+            str = '';
+          }
+        }
+        const computeDelta = () => {
+          while (n !== null) {
+            if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
+              switch (n.content.constructor) {
+                case ContentString: {
+                  const cur = currentAttributes.get('ychange');
+                  if (snapshot !== undefined && !isVisible(n, snapshot)) {
+                    if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
+                      packStr();
+                      currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' });
+                    }
+                  } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+                    if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
+                      packStr();
+                      currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' });
+                    }
+                  } else if (cur !== undefined) {
+                    packStr();
+                    currentAttributes.delete('ychange');
+                  }
+                  str += /** @type {ContentString} */ (n.content).str;
+                  break
+                }
+                case ContentType:
+                case ContentEmbed: {
+                  packStr();
+                  /**
+                   * @type {Object<string,any>}
+                   */
+                  const op = {
+                    insert: n.content.getContent()[0]
+                  };
+                  if (currentAttributes.size > 0) {
+                    const attrs = /** @type {Object<string,any>} */ ({});
+                    op.attributes = attrs;
+                    currentAttributes.forEach((value, key) => {
+                      attrs[key] = value;
+                    });
+                  }
+                  ops.push(op);
+                  break
+                }
+                case ContentFormat:
+                  if (isVisible(n, snapshot)) {
+                    packStr();
+                    updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content));
+                  }
+                  break
+              }
+            }
+            n = n.right;
+          }
+          packStr();
+        };
+        if (snapshot || prevSnapshot) {
+          // snapshots are merged again after the transaction, so we need to keep the
+          // transaction alive until we are done
+          transact(doc, transaction => {
+            if (snapshot) {
+              splitSnapshotAffectedStructs(transaction, snapshot);
+            }
+            if (prevSnapshot) {
+              splitSnapshotAffectedStructs(transaction, prevSnapshot);
+            }
+            computeDelta();
+          }, 'cleanup');
+        } else {
+          computeDelta();
+        }
+        return ops
+      }
+
+      /**
+       * Insert text at a given index.
+       *
+       * @param {number} index The index at which to start inserting.
+       * @param {String} text The text to insert at the specified position.
+       * @param {TextAttributes} [attributes] Optionally define some formatting
+       *                                    information to apply on the inserted
+       *                                    Text.
+       * @public
+       */
+      insert (index, text, attributes) {
+        if (text.length <= 0) {
+          return
+        }
+        const y = this.doc;
+        if (y !== null) {
+          transact(y, transaction => {
+            const pos = findPosition(transaction, this, index, !attributes);
+            if (!attributes) {
+              attributes = {};
+              // @ts-ignore
+              pos.currentAttributes.forEach((v, k) => { attributes[k] = v; });
+            }
+            insertText(transaction, this, pos, text, attributes);
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.insert(index, text, attributes));
+        }
+      }
+
+      /**
+       * Inserts an embed at a index.
+       *
+       * @param {number} index The index to insert the embed at.
+       * @param {Object | AbstractType<any>} embed The Object that represents the embed.
+       * @param {TextAttributes} [attributes] Attribute information to apply on the
+       *                                    embed
+       *
+       * @public
+       */
+      insertEmbed (index, embed, attributes) {
+        const y = this.doc;
+        if (y !== null) {
+          transact(y, transaction => {
+            const pos = findPosition(transaction, this, index, !attributes);
+            insertText(transaction, this, pos, embed, attributes || {});
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes || {}));
+        }
+      }
+
+      /**
+       * Deletes text starting from an index.
+       *
+       * @param {number} index Index at which to start deleting.
+       * @param {number} length The number of characters to remove. Defaults to 1.
+       *
+       * @public
+       */
+      delete (index, length) {
+        if (length === 0) {
+          return
+        }
+        const y = this.doc;
+        if (y !== null) {
+          transact(y, transaction => {
+            deleteText(transaction, findPosition(transaction, this, index, true), length);
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length));
+        }
+      }
+
+      /**
+       * Assigns properties to a range of text.
+       *
+       * @param {number} index The position where to start formatting.
+       * @param {number} length The amount of characters to assign properties to.
+       * @param {TextAttributes} attributes Attribute information to apply on the
+       *                                    text.
+       *
+       * @public
+       */
+      format (index, length, attributes) {
+        if (length === 0) {
+          return
+        }
+        const y = this.doc;
+        if (y !== null) {
+          transact(y, transaction => {
+            const pos = findPosition(transaction, this, index, false);
+            if (pos.right === null) {
+              return
+            }
+            formatText(transaction, this, pos, length, attributes);
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes));
+        }
+      }
+
+      /**
+       * Removes an attribute.
+       *
+       * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+       *
+       * @param {String} attributeName The attribute name that is to be removed.
+       *
+       * @public
+       */
+      removeAttribute (attributeName) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapDelete(transaction, this, attributeName);
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.removeAttribute(attributeName));
+        }
+      }
+
+      /**
+       * Sets or updates an attribute.
+       *
+       * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+       *
+       * @param {String} attributeName The attribute name that is to be set.
+       * @param {any} attributeValue The attribute value that is to be set.
+       *
+       * @public
+       */
+      setAttribute (attributeName, attributeValue) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapSet(transaction, this, attributeName, attributeValue);
+          });
+        } else {
+          /** @type {Array<function>} */ (this._pending).push(() => this.setAttribute(attributeName, attributeValue));
+        }
+      }
+
+      /**
+       * Returns an attribute value that belongs to the attribute name.
+       *
+       * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+       *
+       * @param {String} attributeName The attribute name that identifies the
+       *                               queried value.
+       * @return {any} The queried attribute value.
+       *
+       * @public
+       */
+      getAttribute (attributeName) {
+        return /** @type {any} */ (typeMapGet(this, attributeName))
+      }
+
+      /**
+       * Returns all attribute name/value pairs in a JSON Object.
+       *
+       * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+       *
+       * @return {Object<string, any>} A JSON Object that describes the attributes.
+       *
+       * @public
+       */
+      getAttributes () {
+        return typeMapGetAll(this)
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       */
+      _write (encoder) {
+        encoder.writeTypeRef(YTextRefID);
+      }
+    }
+
+    /**
+     * @module YXml
+     */
+
+
+    /**
+     * Define the elements to which a set of CSS queries apply.
+     * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
+     *
+     * @example
+     *   query = '.classSelector'
+     *   query = 'nodeSelector'
+     *   query = '#idSelector'
+     *
+     * @typedef {string} CSS_Selector
+     */
+
+    /**
+     * Dom filter function.
+     *
+     * @callback domFilter
+     * @param {string} nodeName The nodeName of the element
+     * @param {Map} attributes The map of attributes.
+     * @return {boolean} Whether to include the Dom node in the YXmlElement.
+     */
+
+    /**
+     * Represents a subset of the nodes of a YXmlElement / YXmlFragment and a
+     * position within them.
+     *
+     * Can be created with {@link YXmlFragment#createTreeWalker}
+     *
+     * @public
+     * @implements {Iterable<YXmlElement|YXmlText|YXmlElement|YXmlHook>}
+     */
+    class YXmlTreeWalker {
+      /**
+       * @param {YXmlFragment | YXmlElement} root
+       * @param {function(AbstractType<any>):boolean} [f]
+       */
+      constructor (root, f = () => true) {
+        this._filter = f;
+        this._root = root;
+        /**
+         * @type {Item}
+         */
+        this._currentNode = /** @type {Item} */ (root._start);
+        this._firstCall = true;
+        root.doc ?? warnPrematureAccess();
+      }
+
+      [Symbol.iterator] () {
+        return this
+      }
+
+      /**
+       * Get the next node.
+       *
+       * @return {IteratorResult<YXmlElement|YXmlText|YXmlHook>} The next node.
+       *
+       * @public
+       */
+      next () {
+        /**
+         * @type {Item|null}
+         */
+        let n = this._currentNode;
+        let type = n && n.content && /** @type {any} */ (n.content).type;
+        if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
+          do {
+            type = /** @type {any} */ (n.content).type;
+            if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
+              // walk down in the tree
+              n = type._start;
+            } else {
+              // walk right or up in the tree
+              while (n !== null) {
+                /**
+                 * @type {Item | null}
+                 */
+                const nxt = n.next;
+                if (nxt !== null) {
+                  n = nxt;
+                  break
+                } else if (n.parent === this._root) {
+                  n = null;
+                } else {
+                  n = /** @type {AbstractType<any>} */ (n.parent)._item;
+                }
+              }
+            }
+          } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */ (n.content).type)))
+        }
+        this._firstCall = false;
+        if (n === null) {
+          // @ts-ignore
+          return { value: undefined, done: true }
+        }
+        this._currentNode = n;
+        return { value: /** @type {any} */ (n.content).type, done: false }
+      }
+    }
+
+    /**
+     * Represents a list of {@link YXmlElement}.and {@link YXmlText} types.
+     * A YxmlFragment is similar to a {@link YXmlElement}, but it does not have a
+     * nodeName and it does not have attributes. Though it can be bound to a DOM
+     * element - in this case the attributes and the nodeName are not shared.
+     *
+     * @public
+     * @extends AbstractType<YXmlEvent>
+     */
+    class YXmlFragment extends AbstractType {
+      constructor () {
+        super();
+        /**
+         * @type {Array<any>|null}
+         */
+        this._prelimContent = [];
+      }
+
+      /**
+       * @type {YXmlElement|YXmlText|null}
+       */
+      get firstChild () {
+        const first = this._first;
+        return first ? first.content.getContent()[0] : null
+      }
+
+      /**
+       * Integrate this type into the Yjs instance.
+       *
+       * * Save this struct in the os
+       * * This type is sent to other client
+       * * Observer functions are fired
+       *
+       * @param {Doc} y The Yjs instance
+       * @param {Item} item
+       */
+      _integrate (y, item) {
+        super._integrate(y, item);
+        this.insert(0, /** @type {Array<any>} */ (this._prelimContent));
+        this._prelimContent = null;
+      }
+
+      _copy () {
+        return new YXmlFragment()
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {YXmlFragment}
+       */
+      clone () {
+        const el = new YXmlFragment();
+        // @ts-ignore
+        el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
+        return el
+      }
+
+      get length () {
+        this.doc ?? warnPrematureAccess();
+        return this._prelimContent === null ? this._length : this._prelimContent.length
+      }
+
+      /**
+       * Create a subtree of childNodes.
+       *
+       * @example
+       * const walker = elem.createTreeWalker(dom => dom.nodeName === 'div')
+       * for (let node in walker) {
+       *   // `node` is a div node
+       *   nop(node)
+       * }
+       *
+       * @param {function(AbstractType<any>):boolean} filter Function that is called on each child element and
+       *                          returns a Boolean indicating whether the child
+       *                          is to be included in the subtree.
+       * @return {YXmlTreeWalker} A subtree and a position within it.
+       *
+       * @public
+       */
+      createTreeWalker (filter) {
+        return new YXmlTreeWalker(this, filter)
+      }
+
+      /**
+       * Returns the first YXmlElement that matches the query.
+       * Similar to DOM's {@link querySelector}.
+       *
+       * Query support:
+       *   - tagname
+       * TODO:
+       *   - id
+       *   - attribute
+       *
+       * @param {CSS_Selector} query The query on the children.
+       * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
+       *
+       * @public
+       */
+      querySelector (query) {
+        query = query.toUpperCase();
+        // @ts-ignore
+        const iterator = new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query);
+        const next = iterator.next();
+        if (next.done) {
+          return null
+        } else {
+          return next.value
+        }
+      }
+
+      /**
+       * Returns all YXmlElements that match the query.
+       * Similar to Dom's {@link querySelectorAll}.
+       *
+       * @todo Does not yet support all queries. Currently only query by tagName.
+       *
+       * @param {CSS_Selector} query The query on the children
+       * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
+       *
+       * @public
+       */
+      querySelectorAll (query) {
+        query = query.toUpperCase();
+        // @ts-ignore
+        return from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+      }
+
+      /**
+       * Creates YXmlEvent and calls observers.
+       *
+       * @param {Transaction} transaction
+       * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+       */
+      _callObserver (transaction, parentSubs) {
+        callTypeObservers(this, transaction, new YXmlEvent(this, parentSubs, transaction));
+      }
+
+      /**
+       * Get the string representation of all the children of this YXmlFragment.
+       *
+       * @return {string} The string representation of all children.
+       */
+      toString () {
+        return typeListMap(this, xml => xml.toString()).join('')
+      }
+
+      /**
+       * @return {string}
+       */
+      toJSON () {
+        return this.toString()
+      }
+
+      /**
+       * Creates a Dom Element that mirrors this YXmlElement.
+       *
+       * @param {Document} [_document=document] The document object (you must define
+       *                                        this when calling this method in
+       *                                        nodejs)
+       * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
+       *                                             are presented in the DOM
+       * @param {any} [binding] You should not set this property. This is
+       *                               used if DomBinding wants to create a
+       *                               association to the created DOM type.
+       * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+       *
+       * @public
+       */
+      toDOM (_document = document, hooks = {}, binding) {
+        const fragment = _document.createDocumentFragment();
+        if (binding !== undefined) {
+          binding._createAssociation(fragment, this);
+        }
+        typeListForEach(this, xmlType => {
+          fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null);
+        });
+        return fragment
+      }
+
+      /**
+       * Inserts new content at an index.
+       *
+       * @example
+       *  // Insert character 'a' at position 0
+       *  xml.insert(0, [new Y.XmlText('text')])
+       *
+       * @param {number} index The index to insert content at
+       * @param {Array<YXmlElement|YXmlText>} content The array of content
+       */
+      insert (index, content) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeListInsertGenerics(transaction, this, index, content);
+          });
+        } else {
+          // @ts-ignore _prelimContent is defined because this is not yet integrated
+          this._prelimContent.splice(index, 0, ...content);
+        }
+      }
+
+      /**
+       * Inserts new content at an index.
+       *
+       * @example
+       *  // Insert character 'a' at position 0
+       *  xml.insert(0, [new Y.XmlText('text')])
+       *
+       * @param {null|Item|YXmlElement|YXmlText} ref The index to insert content at
+       * @param {Array<YXmlElement|YXmlText>} content The array of content
+       */
+      insertAfter (ref, content) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            const refItem = (ref && ref instanceof AbstractType) ? ref._item : ref;
+            typeListInsertGenericsAfter(transaction, this, refItem, content);
+          });
+        } else {
+          const pc = /** @type {Array<any>} */ (this._prelimContent);
+          const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1;
+          if (index === 0 && ref !== null) {
+            throw create$3('Reference item not found')
+          }
+          pc.splice(index, 0, ...content);
+        }
+      }
+
+      /**
+       * Deletes elements starting from an index.
+       *
+       * @param {number} index Index at which to start deleting elements
+       * @param {number} [length=1] The number of elements to remove. Defaults to 1.
+       */
+      delete (index, length = 1) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeListDelete(transaction, this, index, length);
+          });
+        } else {
+          // @ts-ignore _prelimContent is defined because this is not yet integrated
+          this._prelimContent.splice(index, length);
+        }
+      }
+
+      /**
+       * Transforms this YArray to a JavaScript Array.
+       *
+       * @return {Array<YXmlElement|YXmlText|YXmlHook>}
+       */
+      toArray () {
+        return typeListToArray(this)
+      }
+
+      /**
+       * Appends content to this YArray.
+       *
+       * @param {Array<YXmlElement|YXmlText>} content Array of content to append.
+       */
+      push (content) {
+        this.insert(this.length, content);
+      }
+
+      /**
+       * Prepends content to this YArray.
+       *
+       * @param {Array<YXmlElement|YXmlText>} content Array of content to prepend.
+       */
+      unshift (content) {
+        this.insert(0, content);
+      }
+
+      /**
+       * Returns the i-th element from a YArray.
+       *
+       * @param {number} index The index of the element to return from the YArray
+       * @return {YXmlElement|YXmlText}
+       */
+      get (index) {
+        return typeListGet(this, index)
+      }
+
+      /**
+       * Returns a portion of this YXmlFragment into a JavaScript Array selected
+       * from start to end (end not included).
+       *
+       * @param {number} [start]
+       * @param {number} [end]
+       * @return {Array<YXmlElement|YXmlText>}
+       */
+      slice (start = 0, end = this.length) {
+        return typeListSlice(this, start, end)
+      }
+
+      /**
+       * Executes a provided function on once on every child element.
+       *
+       * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
+       */
+      forEach (f) {
+        typeListForEach(this, f);
+      }
+
+      /**
+       * Transform the properties of this type to binary and write it to an
+       * BinaryEncoder.
+       *
+       * This is called when this Item is sent to a remote peer.
+       *
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+       */
+      _write (encoder) {
+        encoder.writeTypeRef(YXmlFragmentRefID);
+      }
+    }
+
+    /**
+     * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+     */
+
+    /**
+     * An YXmlElement imitates the behavior of a
+     * https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element
+     *
+     * * An YXmlElement has attributes (key value pairs)
+     * * An YXmlElement has childElements that must inherit from YXmlElement
+     *
+     * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
+     */
+    class YXmlElement extends YXmlFragment {
+      constructor (nodeName = 'UNDEFINED') {
+        super();
+        this.nodeName = nodeName;
+        /**
+         * @type {Map<string, any>|null}
+         */
+        this._prelimAttrs = new Map();
+      }
+
+      /**
+       * @type {YXmlElement|YXmlText|null}
+       */
+      get nextSibling () {
+        const n = this._item ? this._item.next : null;
+        return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+      }
+
+      /**
+       * @type {YXmlElement|YXmlText|null}
+       */
+      get prevSibling () {
+        const n = this._item ? this._item.prev : null;
+        return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+      }
+
+      /**
+       * Integrate this type into the Yjs instance.
+       *
+       * * Save this struct in the os
+       * * This type is sent to other client
+       * * Observer functions are fired
+       *
+       * @param {Doc} y The Yjs instance
+       * @param {Item} item
+       */
+      _integrate (y, item) {
+        super._integrate(y, item)
+        ;(/** @type {Map<string, any>} */ (this._prelimAttrs)).forEach((value, key) => {
+          this.setAttribute(key, value);
+        });
+        this._prelimAttrs = null;
+      }
+
+      /**
+       * Creates an Item with the same effect as this Item (without position effect)
+       *
+       * @return {YXmlElement}
+       */
+      _copy () {
+        return new YXmlElement(this.nodeName)
+      }
+
+      /**
+       * Makes a copy of this data type that can be included somewhere else.
+       *
+       * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+       *
+       * @return {YXmlElement<KV>}
+       */
+      clone () {
+        /**
+         * @type {YXmlElement<KV>}
+         */
+        const el = new YXmlElement(this.nodeName);
+        const attrs = this.getAttributes();
+        forEach(attrs, (value, key) => {
+          if (typeof value === 'string') {
+            el.setAttribute(key, value);
+          }
+        });
+        // @ts-ignore
+        el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
+        return el
+      }
+
+      /**
+       * Returns the XML serialization of this YXmlElement.
+       * The attributes are ordered by attribute-name, so you can easily use this
+       * method to compare YXmlElements
+       *
+       * @return {string} The string representation of this type.
+       *
+       * @public
+       */
+      toString () {
+        const attrs = this.getAttributes();
+        const stringBuilder = [];
+        const keys = [];
+        for (const key in attrs) {
+          keys.push(key);
+        }
+        keys.sort();
+        const keysLen = keys.length;
+        for (let i = 0; i < keysLen; i++) {
+          const key = keys[i];
+          stringBuilder.push(key + '="' + attrs[key] + '"');
+        }
+        const nodeName = this.nodeName.toLocaleLowerCase();
+        const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : '';
+        return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
+      }
+
+      /**
+       * Removes an attribute from this YXmlElement.
+       *
+       * @param {string} attributeName The attribute name that is to be removed.
+       *
+       * @public
+       */
+      removeAttribute (attributeName) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapDelete(transaction, this, attributeName);
+          });
+        } else {
+          /** @type {Map<string,any>} */ (this._prelimAttrs).delete(attributeName);
+        }
+      }
+
+      /**
+       * Sets or updates an attribute.
+       *
+       * @template {keyof KV & string} KEY
+       *
+       * @param {KEY} attributeName The attribute name that is to be set.
+       * @param {KV[KEY]} attributeValue The attribute value that is to be set.
+       *
+       * @public
+       */
+      setAttribute (attributeName, attributeValue) {
+        if (this.doc !== null) {
+          transact(this.doc, transaction => {
+            typeMapSet(transaction, this, attributeName, attributeValue);
+          });
+        } else {
+          /** @type {Map<string, any>} */ (this._prelimAttrs).set(attributeName, attributeValue);
+        }
+      }
+
+      /**
+       * Returns an attribute value that belongs to the attribute name.
+       *
+       * @template {keyof KV & string} KEY
+       *
+       * @param {KEY} attributeName The attribute name that identifies the
+       *                               queried value.
+       * @return {KV[KEY]|undefined} The queried attribute value.
+       *
+       * @public
+       */
+      getAttribute (attributeName) {
+        return /** @type {any} */ (typeMapGet(this, attributeName))
+      }
+
+      /**
+       * Returns whether an attribute exists
+       *
+       * @param {string} attributeName The attribute name to check for existence.
+       * @return {boolean} whether the attribute exists.
+       *
+       * @public
+       */
+      hasAttribute (attributeName) {
+        return /** @type {any} */ (typeMapHas(this, attributeName))
+      }
+
+      /**
+       * Returns all attribute name/value pairs in a JSON Object.
+       *
+       * @param {Snapshot} [snapshot]
+       * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
+       *
+       * @public
+       */
+      getAttributes (snapshot) {
+        return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
+      }
+
+      /**
+       * Creates a Dom Element that mirrors this YXmlElement.
+       *
+       * @param {Document} [_document=document] The document object (you must define
+       *                                        this when calling this method in
+       *                                        nodejs)
+       * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
+       *                                             are presented in the DOM
+       * @param {any} [binding] You should not set this property. This is
+       *                               used if DomBinding wants to create a
+       *                               association to the created DOM type.
+       * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+       *
+       * @public
+       */
+      toDOM (_document = document, hooks = {}, binding) {
+        const dom = _document.createElement(this.nodeName);
+        const attrs = this.getAttributes();
+        for (const key in attrs) {
+          const value = attrs[key];
+          if (typeof value === 'string') {
+            dom.setAttribute(key, value);
+          }
+        }
+        typeListForEach(this, yxml => {
+          dom.appendChild(yxml.toDOM(_document, hooks, binding));
+        });
+        if (binding !== undefined) {
+          binding._createAssociation(dom, this);
+        }
+        return dom
+      }
+
+      /**
+       * Transform the properties of this type to binary and write it to an
+       * BinaryEncoder.
+       *
+       * This is called when this Item is sent to a remote peer.
+       *
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+       */
+      _write (encoder) {
+        encoder.writeTypeRef(YXmlElementRefID);
+        encoder.writeKey(this.nodeName);
+      }
+    }
+
+    /**
+     * @extends YEvent<YXmlElement|YXmlText|YXmlFragment>
+     * An Event that describes changes on a YXml Element or Yxml Fragment
+     */
+    class YXmlEvent extends YEvent {
+      /**
+       * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
+       * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
+       *                   child list changed.
+       * @param {Transaction} transaction The transaction instance with which the
+       *                                  change was created.
+       */
+      constructor (target, subs, transaction) {
+        super(target, transaction);
+        /**
+         * Whether the children changed.
+         * @type {Boolean}
+         * @private
+         */
+        this.childListChanged = false;
+        /**
+         * Set of all changed attributes.
+         * @type {Set<string>}
+         */
+        this.attributesChanged = new Set();
+        subs.forEach((sub) => {
+          if (sub === null) {
+            this.childListChanged = true;
+          } else {
+            this.attributesChanged.add(sub);
+          }
+        });
+      }
+    }
+
+    class AbstractStruct {
+      /**
+       * @param {ID} id
+       * @param {number} length
+       */
+      constructor (id, length) {
+        this.id = id;
+        this.length = length;
+      }
+
+      /**
+       * @type {boolean}
+       */
+      get deleted () {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * Merge this struct with the item to the right.
+       * This method is already assuming that `this.id.clock + this.length === this.id.clock`.
+       * Also this method does *not* remove right from StructStore!
+       * @param {AbstractStruct} right
+       * @return {boolean} whether this merged with right
+       */
+      mergeWith (right) {
+        return false
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+       * @param {number} offset
+       * @param {number} encodingRef
+       */
+      write (encoder, offset, encodingRef) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {number} offset
+       */
+      integrate (transaction, offset) {
+        throw methodUnimplemented()
+      }
+    }
+
+    const structGCRefNumber = 0;
+
+    /**
+     * @private
+     */
+    class GC extends AbstractStruct {
+      get deleted () {
+        return true
+      }
+
+      delete () {}
+
+      /**
+       * @param {GC} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        if (this.constructor !== right.constructor) {
+          return false
+        }
+        this.length += right.length;
+        return true
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {number} offset
+       */
+      integrate (transaction, offset) {
+        if (offset > 0) {
+          this.id.clock += offset;
+          this.length -= offset;
+        }
+        addStruct(transaction.doc.store, this);
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeInfo(structGCRefNumber);
+        encoder.writeLen(this.length - offset);
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {StructStore} store
+       * @return {null | number}
+       */
+      getMissing (transaction, store) {
+        return null
+      }
+    }
+
+    class ContentBinary {
+      /**
+       * @param {Uint8Array} content
+       */
+      constructor (content) {
+        this.content = content;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return 1
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return [this.content]
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentBinary}
+       */
+      copy () {
+        return new ContentBinary(this.content)
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentBinary}
+       */
+      splice (offset) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {ContentBinary} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        return false
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {}
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeBuf(this.content);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 3
+      }
+    }
+
+    class ContentDeleted {
+      /**
+       * @param {number} len
+       */
+      constructor (len) {
+        this.len = len;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return this.len
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return []
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return false
+      }
+
+      /**
+       * @return {ContentDeleted}
+       */
+      copy () {
+        return new ContentDeleted(this.len)
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentDeleted}
+       */
+      splice (offset) {
+        const right = new ContentDeleted(this.len - offset);
+        this.len = offset;
+        return right
+      }
+
+      /**
+       * @param {ContentDeleted} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        this.len += right.len;
+        return true
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {
+        addToDeleteSet(transaction.deleteSet, item.id.client, item.id.clock, this.len);
+        item.markDeleted();
+      }
+
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeLen(this.len - offset);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 1
+      }
+    }
+
+    /**
+     * @param {string} guid
+     * @param {Object<string, any>} opts
+     */
+    const createDocFromOpts = (guid, opts) => new Doc({ guid, ...opts, shouldLoad: opts.shouldLoad || opts.autoLoad || false });
+
+    /**
+     * @private
+     */
+    class ContentDoc {
+      /**
+       * @param {Doc} doc
+       */
+      constructor (doc) {
+        if (doc._item) {
+          console.error('This document was already integrated as a sub-document. You should create a second instance instead with the same guid.');
+        }
+        /**
+         * @type {Doc}
+         */
+        this.doc = doc;
+        /**
+         * @type {any}
+         */
+        const opts = {};
+        this.opts = opts;
+        if (!doc.gc) {
+          opts.gc = false;
+        }
+        if (doc.autoLoad) {
+          opts.autoLoad = true;
+        }
+        if (doc.meta !== null) {
+          opts.meta = doc.meta;
+        }
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return 1
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return [this.doc]
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentDoc}
+       */
+      copy () {
+        return new ContentDoc(createDocFromOpts(this.doc.guid, this.opts))
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentDoc}
+       */
+      splice (offset) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {ContentDoc} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        return false
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {
+        // this needs to be reflected in doc.destroy as well
+        this.doc._item = item;
+        transaction.subdocsAdded.add(this.doc);
+        if (this.doc.shouldLoad) {
+          transaction.subdocsLoaded.add(this.doc);
+        }
+      }
+
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {
+        if (transaction.subdocsAdded.has(this.doc)) {
+          transaction.subdocsAdded.delete(this.doc);
+        } else {
+          transaction.subdocsRemoved.add(this.doc);
+        }
+      }
+
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) { }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeString(this.doc.guid);
+        encoder.writeAny(this.opts);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 9
+      }
+    }
+
+    /**
+     * @private
+     */
+    class ContentEmbed {
+      /**
+       * @param {Object} embed
+       */
+      constructor (embed) {
+        this.embed = embed;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return 1
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return [this.embed]
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentEmbed}
+       */
+      copy () {
+        return new ContentEmbed(this.embed)
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentEmbed}
+       */
+      splice (offset) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {ContentEmbed} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        return false
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {}
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeJSON(this.embed);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 5
+      }
+    }
+
+    /**
+     * @private
+     */
+    class ContentFormat {
+      /**
+       * @param {string} key
+       * @param {Object} value
+       */
+      constructor (key, value) {
+        this.key = key;
+        this.value = value;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return 1
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return []
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return false
+      }
+
+      /**
+       * @return {ContentFormat}
+       */
+      copy () {
+        return new ContentFormat(this.key, this.value)
+      }
+
+      /**
+       * @param {number} _offset
+       * @return {ContentFormat}
+       */
+      splice (_offset) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {ContentFormat} _right
+       * @return {boolean}
+       */
+      mergeWith (_right) {
+        return false
+      }
+
+      /**
+       * @param {Transaction} _transaction
+       * @param {Item} item
+       */
+      integrate (_transaction, item) {
+        // @todo searchmarker are currently unsupported for rich text documents
+        const p = /** @type {YText} */ (item.parent);
+        p._searchMarker = null;
+        p._hasFormatting = true;
+      }
+
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeKey(this.key);
+        encoder.writeJSON(this.value);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 6
+      }
+    }
+
+    const isDevMode = getVariable('node_env') === 'development';
+
+    class ContentAny {
+      /**
+       * @param {Array<any>} arr
+       */
+      constructor (arr) {
+        /**
+         * @type {Array<any>}
+         */
+        this.arr = arr;
+        isDevMode && deepFreeze(arr);
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return this.arr.length
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return this.arr
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentAny}
+       */
+      copy () {
+        return new ContentAny(this.arr)
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentAny}
+       */
+      splice (offset) {
+        const right = new ContentAny(this.arr.slice(offset));
+        this.arr = this.arr.slice(0, offset);
+        return right
+      }
+
+      /**
+       * @param {ContentAny} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        this.arr = this.arr.concat(right.arr);
+        return true
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {}
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        const len = this.arr.length;
+        encoder.writeLen(len - offset);
+        for (let i = offset; i < len; i++) {
+          const c = this.arr[i];
+          encoder.writeAny(c);
+        }
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 8
+      }
+    }
+
+    /**
+     * @private
+     */
+    class ContentString {
+      /**
+       * @param {string} str
+       */
+      constructor (str) {
+        /**
+         * @type {string}
+         */
+        this.str = str;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return this.str.length
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return this.str.split('')
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentString}
+       */
+      copy () {
+        return new ContentString(this.str)
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentString}
+       */
+      splice (offset) {
+        const right = new ContentString(this.str.slice(offset));
+        this.str = this.str.slice(0, offset);
+
+        // Prevent encoding invalid documents because of splitting of surrogate pairs: https://github.com/yjs/yjs/issues/248
+        const firstCharCode = this.str.charCodeAt(offset - 1);
+        if (firstCharCode >= 0xD800 && firstCharCode <= 0xDBFF) {
+          // Last character of the left split is the start of a surrogate utf16/ucs2 pair.
+          // We don't support splitting of surrogate pairs because this may lead to invalid documents.
+          // Replace the invalid character with a unicode replacement character (� / U+FFFD)
+          this.str = this.str.slice(0, offset - 1) + '�';
+          // replace right as well
+          right.str = '�' + right.str.slice(1);
+        }
+        return right
+      }
+
+      /**
+       * @param {ContentString} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        this.str += right.str;
+        return true
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {}
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {}
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {}
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        encoder.writeString(offset === 0 ? this.str : this.str.slice(offset));
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 4
+      }
+    }
+
+    const YArrayRefID = 0;
+    const YMapRefID = 1;
+    const YTextRefID = 2;
+    const YXmlElementRefID = 3;
+    const YXmlFragmentRefID = 4;
+
+    /**
+     * @private
+     */
+    class ContentType {
+      /**
+       * @param {AbstractType<any>} type
+       */
+      constructor (type) {
+        /**
+         * @type {AbstractType<any>}
+         */
+        this.type = type;
+      }
+
+      /**
+       * @return {number}
+       */
+      getLength () {
+        return 1
+      }
+
+      /**
+       * @return {Array<any>}
+       */
+      getContent () {
+        return [this.type]
+      }
+
+      /**
+       * @return {boolean}
+       */
+      isCountable () {
+        return true
+      }
+
+      /**
+       * @return {ContentType}
+       */
+      copy () {
+        return new ContentType(this.type._copy())
+      }
+
+      /**
+       * @param {number} offset
+       * @return {ContentType}
+       */
+      splice (offset) {
+        throw methodUnimplemented()
+      }
+
+      /**
+       * @param {ContentType} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        return false
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {Item} item
+       */
+      integrate (transaction, item) {
+        this.type._integrate(transaction.doc, item);
+      }
+
+      /**
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {
+        let item = this.type._start;
+        while (item !== null) {
+          if (!item.deleted) {
+            item.delete(transaction);
+          } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+            // This will be gc'd later and we want to merge it if possible
+            // We try to merge all deleted items after each transaction,
+            // but we have no knowledge about that this needs to be merged
+            // since it is not in transaction.ds. Hence we add it to transaction._mergeStructs
+            transaction._mergeStructs.push(item);
+          }
+          item = item.right;
+        }
+        this.type._map.forEach(item => {
+          if (!item.deleted) {
+            item.delete(transaction);
+          } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+            // same as above
+            transaction._mergeStructs.push(item);
+          }
+        });
+        transaction.changed.delete(this.type);
+      }
+
+      /**
+       * @param {StructStore} store
+       */
+      gc (store) {
+        let item = this.type._start;
+        while (item !== null) {
+          item.gc(store, true);
+          item = item.right;
+        }
+        this.type._start = null;
+        this.type._map.forEach(/** @param {Item | null} item */ (item) => {
+          while (item !== null) {
+            item.gc(store, true);
+            item = item.left;
+          }
+        });
+        this.type._map = new Map();
+      }
+
+      /**
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        this.type._write(encoder);
+      }
+
+      /**
+       * @return {number}
+       */
+      getRef () {
+        return 7
+      }
+    }
+
+    /**
+     * Split leftItem into two items
+     * @param {Transaction} transaction
+     * @param {Item} leftItem
+     * @param {number} diff
+     * @return {Item}
+     *
+     * @function
+     * @private
+     */
+    const splitItem = (transaction, leftItem, diff) => {
+      // create rightItem
+      const { client, clock } = leftItem.id;
+      const rightItem = new Item(
+        createID(client, clock + diff),
+        leftItem,
+        createID(client, clock + diff - 1),
+        leftItem.right,
+        leftItem.rightOrigin,
+        leftItem.parent,
+        leftItem.parentSub,
+        leftItem.content.splice(diff)
+      );
+      if (leftItem.deleted) {
+        rightItem.markDeleted();
+      }
+      if (leftItem.keep) {
+        rightItem.keep = true;
+      }
+      if (leftItem.redone !== null) {
+        rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff);
+      }
+      // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
+      leftItem.right = rightItem;
+      // update right
+      if (rightItem.right !== null) {
+        rightItem.right.left = rightItem;
+      }
+      // right is more specific.
+      transaction._mergeStructs.push(rightItem);
+      // update parent._map
+      if (rightItem.parentSub !== null && rightItem.right === null) {
+        /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem);
+      }
+      leftItem.length = diff;
+      return rightItem
+    };
+
+    /**
+     * Abstract class that represents any content.
+     */
+    class Item extends AbstractStruct {
+      /**
+       * @param {ID} id
+       * @param {Item | null} left
+       * @param {ID | null} origin
+       * @param {Item | null} right
+       * @param {ID | null} rightOrigin
+       * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+       * @param {string | null} parentSub
+       * @param {AbstractContent} content
+       */
+      constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+        super(id, content.getLength());
+        /**
+         * The item that was originally to the left of this item.
+         * @type {ID | null}
+         */
+        this.origin = origin;
+        /**
+         * The item that is currently to the left of this item.
+         * @type {Item | null}
+         */
+        this.left = left;
+        /**
+         * The item that is currently to the right of this item.
+         * @type {Item | null}
+         */
+        this.right = right;
+        /**
+         * The item that was originally to the right of this item.
+         * @type {ID | null}
+         */
+        this.rightOrigin = rightOrigin;
+        /**
+         * @type {AbstractType<any>|ID|null}
+         */
+        this.parent = parent;
+        /**
+         * If the parent refers to this item with some kind of key (e.g. YMap, the
+         * key is specified here. The key is then used to refer to the list in which
+         * to insert this item. If `parentSub = null` type._start is the list in
+         * which to insert to. Otherwise it is `parent._map`.
+         * @type {String | null}
+         */
+        this.parentSub = parentSub;
+        /**
+         * If this type's effect is redone this type refers to the type that undid
+         * this operation.
+         * @type {ID | null}
+         */
+        this.redone = null;
+        /**
+         * @type {AbstractContent}
+         */
+        this.content = content;
+        /**
+         * bit1: keep
+         * bit2: countable
+         * bit3: deleted
+         * bit4: mark - mark node as fast-search-marker
+         * @type {number} byte
+         */
+        this.info = this.content.isCountable() ? BIT2 : 0;
+      }
+
+      /**
+       * This is used to mark the item as an indexed fast-search marker
+       *
+       * @type {boolean}
+       */
+      set marker (isMarked) {
+        if (((this.info & BIT4) > 0) !== isMarked) {
+          this.info ^= BIT4;
+        }
+      }
+
+      get marker () {
+        return (this.info & BIT4) > 0
+      }
+
+      /**
+       * If true, do not garbage collect this Item.
+       */
+      get keep () {
+        return (this.info & BIT1) > 0
+      }
+
+      set keep (doKeep) {
+        if (this.keep !== doKeep) {
+          this.info ^= BIT1;
+        }
+      }
+
+      get countable () {
+        return (this.info & BIT2) > 0
+      }
+
+      /**
+       * Whether this item was deleted or not.
+       * @type {Boolean}
+       */
+      get deleted () {
+        return (this.info & BIT3) > 0
+      }
+
+      set deleted (doDelete) {
+        if (this.deleted !== doDelete) {
+          this.info ^= BIT3;
+        }
+      }
+
+      markDeleted () {
+        this.info |= BIT3;
+      }
+
+      /**
+       * Return the creator clientID of the missing op or define missing items and return null.
+       *
+       * @param {Transaction} transaction
+       * @param {StructStore} store
+       * @return {null | number}
+       */
+      getMissing (transaction, store) {
+        if (this.origin && this.origin.client !== this.id.client && this.origin.clock >= getState(store, this.origin.client)) {
+          return this.origin.client
+        }
+        if (this.rightOrigin && this.rightOrigin.client !== this.id.client && this.rightOrigin.clock >= getState(store, this.rightOrigin.client)) {
+          return this.rightOrigin.client
+        }
+        if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
+          return this.parent.client
+        }
+
+        // We have all missing ids, now find the items
+
+        if (this.origin) {
+          this.left = getItemCleanEnd(transaction, store, this.origin);
+          this.origin = this.left.lastId;
+        }
+        if (this.rightOrigin) {
+          this.right = getItemCleanStart(transaction, this.rightOrigin);
+          this.rightOrigin = this.right.id;
+        }
+        if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
+          this.parent = null;
+        } else if (!this.parent) {
+          // only set parent if this shouldn't be garbage collected
+          if (this.left && this.left.constructor === Item) {
+            this.parent = this.left.parent;
+            this.parentSub = this.left.parentSub;
+          } else if (this.right && this.right.constructor === Item) {
+            this.parent = this.right.parent;
+            this.parentSub = this.right.parentSub;
+          }
+        } else if (this.parent.constructor === ID) {
+          const parentItem = getItem(store, this.parent);
+          if (parentItem.constructor === GC) {
+            this.parent = null;
+          } else {
+            this.parent = /** @type {ContentType} */ (parentItem.content).type;
+          }
+        }
+        return null
+      }
+
+      /**
+       * @param {Transaction} transaction
+       * @param {number} offset
+       */
+      integrate (transaction, offset) {
+        if (offset > 0) {
+          this.id.clock += offset;
+          this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1));
+          this.origin = this.left.lastId;
+          this.content = this.content.splice(offset);
+          this.length -= offset;
+        }
+
+        if (this.parent) {
+          if ((!this.left && (!this.right || this.right.left !== null)) || (this.left && this.left.right !== this.right)) {
+            /**
+             * @type {Item|null}
+             */
+            let left = this.left;
+
+            /**
+             * @type {Item|null}
+             */
+            let o;
+            // set o to the first conflicting item
+            if (left !== null) {
+              o = left.right;
+            } else if (this.parentSub !== null) {
+              o = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+              while (o !== null && o.left !== null) {
+                o = o.left;
+              }
+            } else {
+              o = /** @type {AbstractType<any>} */ (this.parent)._start;
+            }
+            // TODO: use something like DeleteSet here (a tree implementation would be best)
+            // @todo use global set definitions
+            /**
+             * @type {Set<Item>}
+             */
+            const conflictingItems = new Set();
+            /**
+             * @type {Set<Item>}
+             */
+            const itemsBeforeOrigin = new Set();
+            // Let c in conflictingItems, b in itemsBeforeOrigin
+            // ***{origin}bbbb{this}{c,b}{c,b}{o}***
+            // Note that conflictingItems is a subset of itemsBeforeOrigin
+            while (o !== null && o !== this.right) {
+              itemsBeforeOrigin.add(o);
+              conflictingItems.add(o);
+              if (compareIDs(this.origin, o.origin)) {
+                // case 1
+                if (o.id.client < this.id.client) {
+                  left = o;
+                  conflictingItems.clear();
+                } else if (compareIDs(this.rightOrigin, o.rightOrigin)) {
+                  // this and o are conflicting and point to the same integration points. The id decides which item comes first.
+                  // Since this is to the left of o, we can break here
+                  break
+                } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
+              } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
+                // case 2
+                if (!conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
+                  left = o;
+                  conflictingItems.clear();
+                }
+              } else {
+                break
+              }
+              o = o.right;
+            }
+            this.left = left;
+          }
+          // reconnect left/right + update parent map/start if necessary
+          if (this.left !== null) {
+            const right = this.left.right;
+            this.right = right;
+            this.left.right = this;
+          } else {
+            let r;
+            if (this.parentSub !== null) {
+              r = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+              while (r !== null && r.left !== null) {
+                r = r.left;
+              }
+            } else {
+              r = /** @type {AbstractType<any>} */ (this.parent)._start
+              ;/** @type {AbstractType<any>} */ (this.parent)._start = this;
+            }
+            this.right = r;
+          }
+          if (this.right !== null) {
+            this.right.left = this;
+          } else if (this.parentSub !== null) {
+            // set as current parent value if right === null and this is parentSub
+            /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this);
+            if (this.left !== null) {
+              // this is the current attribute value of parent. delete right
+              this.left.delete(transaction);
+            }
+          }
+          // adjust length of parent
+          if (this.parentSub === null && this.countable && !this.deleted) {
+            /** @type {AbstractType<any>} */ (this.parent)._length += this.length;
+          }
+          addStruct(transaction.doc.store, this);
+          this.content.integrate(transaction, this);
+          // add parent to transaction.changed
+          addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub);
+          if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
+            // delete if parent is deleted or if this is not the current attribute value of parent
+            this.delete(transaction);
+          }
+        } else {
+          // parent is not defined. Integrate GC struct instead
+          new GC(this.id, this.length).integrate(transaction, 0);
+        }
+      }
+
+      /**
+       * Returns the next non-deleted item
+       */
+      get next () {
+        let n = this.right;
+        while (n !== null && n.deleted) {
+          n = n.right;
+        }
+        return n
+      }
+
+      /**
+       * Returns the previous non-deleted item
+       */
+      get prev () {
+        let n = this.left;
+        while (n !== null && n.deleted) {
+          n = n.left;
+        }
+        return n
+      }
+
+      /**
+       * Computes the last content address of this Item.
+       */
+      get lastId () {
+        // allocating ids is pretty costly because of the amount of ids created, so we try to reuse whenever possible
+        return this.length === 1 ? this.id : createID(this.id.client, this.id.clock + this.length - 1)
+      }
+
+      /**
+       * Try to merge two items
+       *
+       * @param {Item} right
+       * @return {boolean}
+       */
+      mergeWith (right) {
+        if (
+          this.constructor === right.constructor &&
+          compareIDs(right.origin, this.lastId) &&
+          this.right === right &&
+          compareIDs(this.rightOrigin, right.rightOrigin) &&
+          this.id.client === right.id.client &&
+          this.id.clock + this.length === right.id.clock &&
+          this.deleted === right.deleted &&
+          this.redone === null &&
+          right.redone === null &&
+          this.content.constructor === right.content.constructor &&
+          this.content.mergeWith(right.content)
+        ) {
+          const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker;
+          if (searchMarker) {
+            searchMarker.forEach(marker => {
+              if (marker.p === right) {
+                // right is going to be "forgotten" so we need to update the marker
+                marker.p = this;
+                // adjust marker index
+                if (!this.deleted && this.countable) {
+                  marker.index -= this.length;
+                }
+              }
+            });
+          }
+          if (right.keep) {
+            this.keep = true;
+          }
+          this.right = right.right;
+          if (this.right !== null) {
+            this.right.left = this;
+          }
+          this.length += right.length;
+          return true
+        }
+        return false
+      }
+
+      /**
+       * Mark this Item as deleted.
+       *
+       * @param {Transaction} transaction
+       */
+      delete (transaction) {
+        if (!this.deleted) {
+          const parent = /** @type {AbstractType<any>} */ (this.parent);
+          // adjust the length of parent
+          if (this.countable && this.parentSub === null) {
+            parent._length -= this.length;
+          }
+          this.markDeleted();
+          addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length);
+          addChangedTypeToTransaction(transaction, parent, this.parentSub);
+          this.content.delete(transaction);
+        }
+      }
+
+      /**
+       * @param {StructStore} store
+       * @param {boolean} parentGCd
+       */
+      gc (store, parentGCd) {
+        if (!this.deleted) {
+          throw unexpectedCase()
+        }
+        this.content.gc(store);
+        if (parentGCd) {
+          replaceStruct(store, this, new GC(this.id, this.length));
+        } else {
+          this.content = new ContentDeleted(this.length);
+        }
+      }
+
+      /**
+       * Transform the properties of this type to binary and write it to an
+       * BinaryEncoder.
+       *
+       * This is called when this Item is sent to a remote peer.
+       *
+       * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+       * @param {number} offset
+       */
+      write (encoder, offset) {
+        const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin;
+        const rightOrigin = this.rightOrigin;
+        const parentSub = this.parentSub;
+        const info = (this.content.getRef() & BITS5) |
+          (origin === null ? 0 : BIT8) | // origin is defined
+          (rightOrigin === null ? 0 : BIT7) | // right origin is defined
+          (parentSub === null ? 0 : BIT6); // parentSub is non-null
+        encoder.writeInfo(info);
+        if (origin !== null) {
+          encoder.writeLeftID(origin);
+        }
+        if (rightOrigin !== null) {
+          encoder.writeRightID(rightOrigin);
+        }
+        if (origin === null && rightOrigin === null) {
+          const parent = /** @type {AbstractType<any>} */ (this.parent);
+          if (parent._item !== undefined) {
+            const parentItem = parent._item;
+            if (parentItem === null) {
+              // parent type on y._map
+              // find the correct key
+              const ykey = findRootTypeKey(parent);
+              encoder.writeParentInfo(true); // write parentYKey
+              encoder.writeString(ykey);
+            } else {
+              encoder.writeParentInfo(false); // write parent id
+              encoder.writeLeftID(parentItem.id);
+            }
+          } else if (parent.constructor === String) { // this edge case was added by differential updates
+            encoder.writeParentInfo(true); // write parentYKey
+            encoder.writeString(parent);
+          } else if (parent.constructor === ID) {
+            encoder.writeParentInfo(false); // write parent id
+            encoder.writeLeftID(parent);
+          } else {
+            unexpectedCase();
+          }
+          if (parentSub !== null) {
+            encoder.writeString(parentSub);
+          }
+        }
+        this.content.write(encoder, offset);
+      }
+    }
+
+    /** eslint-env browser */
+
+
+    const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
+      ? globalThis
+      : typeof window !== 'undefined'
+        ? window
+        // @ts-ignore
+        : typeof global !== 'undefined' ? global : {});
+
+    const importIdentifier = '__ $YJS$ __';
+
+    if (glo[importIdentifier] === true) {
+      /**
+       * Dear reader of this message. Please take this seriously.
+       *
+       * If you see this message, make sure that you only import one version of Yjs. In many cases,
+       * your package manager installs two versions of Yjs that are used by different packages within your project.
+       * Another reason for this message is that some parts of your project use the commonjs version of Yjs
+       * and others use the EcmaScript version of Yjs.
+       *
+       * This often leads to issues that are hard to debug. We often need to perform constructor checks,
+       * e.g. `struct instanceof GC`. If you imported different versions of Yjs, it is impossible for us to
+       * do the constructor checks anymore - which might break the CRDT algorithm.
+       *
+       * https://github.com/yjs/yjs/issues/438
+       */
+      console.error('Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438');
+    }
+    glo[importIdentifier] = true;
+
+    /**
+     * @typedef {Object} AutoOptions
+     * @group Decorators
+     * @category Augmentation
+     *
+     * @template Type
+     * @description Options for configuring the `@auto` decorator.
+     * @property {boolean} [override] - If true, will try to override the defined property in `super`.
+     * @property {boolean} [cancelIfUnchanged=true] - If true, cancels the setter if the new value is the same as the
+     * current value. Defaults to `true`.
+     * @property {(value: Type) => Type} [preprocessValue] - Optional callback to execute on the value and preprocess it
+     * just before it is set. The returned value will be stored.
+     * @property {(value: Type) => void} [callBefore] - Optional function to call before preprocessing and setting the value.
+     * @property {(value: Type) => void} [callAfter] - Optional function to call after setting the value.
+     * @property {boolean} [setIfUndefined] - If true, will fire the setter when the underlying value is `undefined` and
+     * the program is trying to access it (maybe through its getter).
+     * @property {boolean} [returnDefinedGetterValue] - If true and a custom getter is defined, the return value of this
+     * getter will be returned when accessing the property. Otherwise, the underlying saved value will always be returned.
+     * Defaults to `false`.
+     * @property {boolean} [executeSetterBeforeStoring] - If true, when setting the value, the setter will execute first,
+     * and then the value will be stored. In this case, accessing the value in the setter will return the previous value.
+     * Defaults to `false`.
+     * @property {Type} [defaultValue] - If defined, whenever the underlying value is `undefined` and trying to be
+     * accessed, it will be set to `defaultValue` through the setter before getting accessed.
+     * @property {() => Type} [defaultValueCallback] - If defined, whenever the underlying value is `undefined` and
+     * trying to be accessed, it will be set to the return value of `defaultValueCallback` through the setter before
+     * getting accessed.
+     * @property {Type} [initialValue] - If defined, on initialization, the property will be set to `initialValue`.
+     * @property {() => Type} [initialValueCallback] - If defined, on initialization, the property will be set to the
+     * return value of `initialValueCallback`.
+     */
+
 
     /**
      * @internal
@@ -776,19 +8521,6 @@ var Turbo = (function (exports, yjs) {
             currentObject = Object.getPrototypeOf(currentObject);
         }
         return undefined;
-    }
-    /**
-     * @group Utilities
-     * @category Prototype
-     */
-    function hasPropertyInChain(object, key) {
-        let currentObject = object;
-        while (currentObject && currentObject !== Object.prototype) {
-            if (Object.prototype.hasOwnProperty.call(currentObject, key))
-                return true;
-            currentObject = Object.getPrototypeOf(currentObject);
-        }
-        return false;
     }
     /**
      * @group Utilities
@@ -1584,22 +9316,6 @@ var Turbo = (function (exports, yjs) {
         "mover", "mpadded", "mphantom", "mprescripts", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub",
         "msubsup", "msup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "semantics",
     ]);
-
-    /**
-     * @group Element Creation
-     * @category Creation Functions
-     *
-     * @description returns a function that generates an HTML element with the provided tag that takes TurboProperties
-     * as input.
-     * @param {keyof ElementTagMap} tag - The tag to generate the function from.
-     * @return The function
-     */
-    function generateTagFunction(tag) {
-        return (properties = {}) => {
-            properties.tag = tag;
-            return element({ ...properties, tag: tag });
-        };
-    }
     /**
      * @group Element Creation
      * @category Creation Functions
@@ -1671,29 +9387,6 @@ var Turbo = (function (exports, yjs) {
     function isMathMLTag(tag) {
         return MathMLTags.has(tag) || tag?.startsWith("math");
     }
-
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates an "a" element with the specified properties.
-     * @param {TurboProperties<"a">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"a">} The created element.
-     */
-    function a(properties = {}) {
-        return element({ ...properties, tag: "a" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "canvas" element with the specified properties.
-     * @param {TurboProperties<"canvas">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"canvas">} The created element.
-     */
-    function canvas(properties = {}) {
-        return element({ ...properties, tag: "canvas" });
-    }
     /**
      * @group Element Creation
      * @category Base Elements
@@ -1704,83 +9397,6 @@ var Turbo = (function (exports, yjs) {
      */
     function div(properties = {}) {
         return element({ ...properties, tag: "div" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "form" element with the specified properties.
-     * @param {TurboProperties<"form">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"form">} The created element.
-     */
-    function form(properties = {}) {
-        return element({ ...properties, tag: "form" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h1" element with the specified properties.
-     * @param {TurboProperties<"h1">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h1">} The created element.
-     */
-    function h1(properties = {}) {
-        return element({ ...properties, tag: "h1" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h2" element with the specified properties.
-     * @param {TurboProperties<"h2">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h2">} The created element.
-     */
-    function h2(properties = {}) {
-        return element({ ...properties, tag: "h2" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h3" element with the specified properties.
-     * @param {TurboProperties<"h3">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h3">} The created element.
-     */
-    function h3(properties = {}) {
-        return element({ ...properties, tag: "h3" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h4" element with the specified properties.
-     * @param {TurboProperties<"h4">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h4">} The created element.
-     */
-    function h4(properties = {}) {
-        return element({ ...properties, tag: "h4" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h5" element with the specified properties.
-     * @param {TurboProperties<"h5">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h5">} The created element.
-     */
-    function h5(properties = {}) {
-        return element({ ...properties, tag: "h5" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "h6" element with the specified properties.
-     * @param {TurboProperties<"h6">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"h6">} The created element.
-     */
-    function h6(properties = {}) {
-        return element({ ...properties, tag: "h6" });
     }
     /**
      * @group Element Creation
@@ -1808,67 +9424,12 @@ var Turbo = (function (exports, yjs) {
      * @group Element Creation
      * @category Base Elements
      *
-     * @description Creates a "link" element with the specified properties.
-     * @param {TurboProperties<"link">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"link">} The created element.
-     */
-    function link(properties = {}) {
-        return element({ ...properties, tag: "link" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "p" element with the specified properties.
-     * @param {TurboProperties<"p">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"p">} The created element.
-     */
-    function p(properties = {}) {
-        return element({ ...properties, tag: "p" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "span" element with the specified properties.
-     * @param {TurboProperties<"span">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"span">} The created element.
-     */
-    function span(properties = {}) {
-        return element({ ...properties, tag: "span" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
      * @description Creates a "style" element with the specified properties.
      * @param {TurboProperties<"style">} [properties] - Object containing properties of the element.
      * @returns {ValidElement<"style">} The created element.
      */
     function style(properties = {}) {
         return element({ ...properties, tag: "style" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "textarea" element with the specified properties.
-     * @param {TurboProperties<"textarea">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"textarea">} The created element.
-     */
-    function textarea(properties = {}) {
-        return element({ ...properties, tag: "textarea" });
-    }
-    /**
-     * @group Element Creation
-     * @category Base Elements
-     *
-     * @description Creates a "video" element with the specified properties.
-     * @param {TurboProperties<"video">} [properties] - Object containing properties of the element.
-     * @returns {ValidElement<"video">} The created element.
-     */
-    function video(properties = {}) {
-        return element({ ...properties, tag: "video" });
     }
 
     /**
@@ -3000,87 +10561,6 @@ var Turbo = (function (exports, yjs) {
         const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
         return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(initial, target, key));
     }
-    /**
-     * @decorator
-     * @function modelSignal
-     * @group Decorators
-     * @category Signal
-     *
-     * @description Decorator that binds a reactive signal to a key path in the model's data,
-     * read via `this.get(...keys)` and written via `this.set(value, ...keys)`.
-     *
-     * @param {...string[]} keys - The key path into the model's data. Defaults to the decorated member name if omitted.
-     *
-     * @example
-     * ```ts
-     * class TodoModel extends TurboModel {
-     *   @modelSignal() title = "";
-     *   @modelSignal("meta", "author") author = "";
-     * }
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * class TodoModel extends TurboModel {
-     *   @signal get title() { return this.get("title"); }
-     *   set title(value) { this.set(value, "title"); }
-     *
-     *   @signal get author() { return this.get("meta", "author"); }
-     *   set author(value) { this.set(value, "meta", "author"); }
-     * }
-     * ```
-     */
-    function modelSignal(...keys) {
-        return function (value, context) {
-            const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
-            context.addInitializer(function () {
-                utils$9.bindPath(this, context.name, resolvedKeys);
-            });
-            return signalUtils.signalDecorator(value, context, function () {
-                return this.get?.(...resolvedKeys);
-            }, function (value) {
-                this.set?.(value, ...resolvedKeys);
-            });
-        };
-    }
-    /**
-     * @decorator
-     * @function nestedModelSignal
-     * @group Decorators
-     * @category Signal
-     *
-     * @description Decorator that binds a reactive signal to a nested {@link TurboModel} instance at the given key path.
-     * - Getter returns the nested model instance via `this.getNested(...keys)`.
-     * - Setter assigns the new value to the nested model's root data via `this.getNested(...keys).data = value`.
-     *
-     * @param {...string[]} keys - The key path navigating to the nested model.
-     *
-     * @example
-     * ```ts
-     * class AppModel extends TurboModel {
-     *   @nestedModelSignal("users", "42") user = undefined;
-     * }
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * class AppModel extends TurboModel {
-     *   @signal get user() { return this.getNested("users", "42"); }
-     *   set user(value) { this.getNested("users", "42").data = value; }
-     * }
-     * ```
-     */
-    function nestedModelSignal(...keys) {
-        return function (value, context) {
-            const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
-            context.addInitializer(function () {
-                utils$9.bindPath(this, context.name, resolvedKeys);
-            });
-            return signalUtils.signalDecorator(value, context, function () {
-                return this.nest?.(...resolvedKeys);
-            }, function (value) {
-                this.set?.(value, ...resolvedKeys);
-            });
-        };
-    }
     function effect(...args) {
         const value = args[0];
         const context = args[1];
@@ -3108,40 +10588,6 @@ var Turbo = (function (exports, yjs) {
         }
     }
     /**
-     * @function getSignal
-     * @group Decorators
-     * @category Signal
-     *
-     * @template Type
-     * @description Retrieve the signal at the given `key` inside `target`.
-     * @param {object} target - The target to which the signal is bound.
-     * @param {PropertyKey} key - The key of the signal inside `target`.
-     * @return {SignalEntry<Type>} - The signal entry.
-     */
-    function getSignal(target, key) {
-        return utils$9.getSignal(target, key);
-    }
-    /**
-     * @function setSignal
-     * @group Decorators
-     * @category Signal
-     *
-     * @template Type
-     * @description Set the value of the signal at the given `key` inside `target`.
-     * @param {object} target - The target to which the signal is bound.
-     * @param {PropertyKey} key - The key of the signal inside `target`.
-     * @param {Type} value - The new value of the signal.
-     */
-    function setSignal(target, key, value) {
-        return utils$9.setSignal(target, key, value);
-    }
-    function markDirty(target, ...keys) {
-        const computedKey = keys.length > 1
-            ? utils$9.getKeyFromPath(target, keys)
-            : keys[0];
-        return utils$9.markDirty(target, computedKey ?? keys[0]);
-    }
-    /**
      * @function initializeEffects
      * @group Decorators
      * @category Effect
@@ -3152,17 +10598,6 @@ var Turbo = (function (exports, yjs) {
     function initializeEffects(target) {
         for (const [, entry] of utils$9.data(target).propertyKeyMap)
             entry.effect?.run();
-    }
-    function disposeEffect(target, key) {
-        const dispose = (data) => {
-            data.effect?.dispose();
-            data.effect = undefined;
-        };
-        if (key !== undefined)
-            dispose(utils$9.getReactivityData(target, key));
-        else
-            for (const [, entry] of utils$9.data(target).propertyKeyMap)
-                dispose(entry);
     }
 
     /**
@@ -4849,9 +12284,7 @@ var Turbo = (function (exports, yjs) {
         ...TurboKeyEventName,
         ...TurboMoveEventName,
         ...TurboDragEventName,
-        ...TurboWheelEventName,
-        selectInput: "turbo-select-input",
-    };
+        ...TurboWheelEventName};
     /**
      * @group Types
      * @category Event Names
@@ -4877,20 +12310,6 @@ var Turbo = (function (exports, yjs) {
         compositionStart: "compositionstart",
         compositionEnd: "compositionend",
     };
-
-    /**
-     * @group Utilities
-     * @category Equity
-     */
-    function areEqual(...entries) {
-        if (entries.length < 2)
-            return true;
-        for (let i = 0; i < entries.length - 1; i++) {
-            if (entries[i] != entries[i + 1])
-                return false;
-        }
-        return true;
-    }
     /**
      * @group Utilities
      * @category Equity
@@ -4903,24 +12322,6 @@ var Turbo = (function (exports, yjs) {
                 return true;
         }
         return false;
-    }
-    /**
-     * @group Utilities
-     * @category Equity
-     */
-    function eachEqualToAny(values, ...entries) {
-        if (entries.length < 1)
-            return true;
-        for (const entry of entries) {
-            let equals = false;
-            for (const value of values) {
-                if (entry == value)
-                    equals = true;
-            }
-            if (!equals)
-                return false;
-        }
-        return true;
     }
 
     class ElementFunctionsUtils {
@@ -5285,12 +12686,12 @@ var Turbo = (function (exports, yjs) {
      * @property {Propagation.stopImmediatePropagation} stopImmediatePropagation - Stop propagation and prevent any
      * additional listeners on the same target from executing.
      */
-    exports.Propagation = void 0;
+    var Propagation;
     (function (Propagation) {
         Propagation["propagate"] = "propagate";
         Propagation["stopPropagation"] = "stopPropagation";
         Propagation["stopImmediatePropagation"] = "stopImmediatePropagation";
-    })(exports.Propagation || (exports.Propagation = {}));
+    })(Propagation || (Propagation = {}));
     /**
      * @group Types
      * @category Event
@@ -5317,18 +12718,18 @@ var Turbo = (function (exports, yjs) {
      * @group Event Handling
      * @category Enums
      */
-    exports.ActionMode = void 0;
+    var ActionMode;
     (function (ActionMode) {
         ActionMode[ActionMode["none"] = 0] = "none";
         ActionMode[ActionMode["click"] = 1] = "click";
         ActionMode[ActionMode["longPress"] = 2] = "longPress";
         ActionMode[ActionMode["drag"] = 3] = "drag";
-    })(exports.ActionMode || (exports.ActionMode = {}));
+    })(ActionMode || (ActionMode = {}));
     /**
      * @group Event Handling
      * @category Enums
      */
-    exports.ClickMode = void 0;
+    var ClickMode;
     (function (ClickMode) {
         ClickMode[ClickMode["none"] = 0] = "none";
         ClickMode[ClickMode["left"] = 1] = "left";
@@ -5336,24 +12737,24 @@ var Turbo = (function (exports, yjs) {
         ClickMode[ClickMode["middle"] = 3] = "middle";
         ClickMode[ClickMode["other"] = 4] = "other";
         ClickMode[ClickMode["key"] = 5] = "key";
-    })(exports.ClickMode || (exports.ClickMode = {}));
+    })(ClickMode || (ClickMode = {}));
     /**
      * @group Event Handling
      * @category Enums
      */
-    exports.InputDevice = void 0;
+    var InputDevice;
     (function (InputDevice) {
         InputDevice[InputDevice["unknown"] = 0] = "unknown";
         InputDevice[InputDevice["mouse"] = 1] = "mouse";
         InputDevice[InputDevice["trackpad"] = 2] = "trackpad";
         InputDevice[InputDevice["touch"] = 3] = "touch";
-    })(exports.InputDevice || (exports.InputDevice = {}));
+    })(InputDevice || (InputDevice = {}));
 
     /**
      * @internal
      */
     function inferKey(name, type, context) {
-        return name ?? (String(context.name).endsWith(type)
+        return (String(context.name).endsWith(type)
             ? String(context.name).slice(0, -type.length)
             : String(context.name));
     }
@@ -5460,90 +12861,6 @@ var Turbo = (function (exports, yjs) {
             generateField(context, "Handler", name);
         };
     }
-    /**
-     * @decorator
-     * @function interactor
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-     * fetched interactor.
-     * @param {string} [name] - The key name of the interactor in the MVC instance (if any). By default, it is inferred
-     * from the name of the field. If the field is named `somethingInteractor`, the key name will be `something`.
-     *
-     * @example
-     * ```ts
-     * @interactor() protected textInteractor: TurboInteractor;
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * protected get textInteractor(): TurboInteractor {
-     *    if (this.mvc instanceof Mvc) return this.mvc.getInteractor("text");
-     *    if (typeof this.getInteractor === "function") return this.getInteractor("text");
-     * }
-     * ```
-     */
-    function interactor(name) {
-        return function (_unused, context) {
-            generateField(context, "Interactor", name);
-        };
-    }
-    /**
-     * @decorator
-     * @function tool
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-     * fetched tool.
-     * @param {string} [name] - The key name of the tool in the MVC instance (if any). By default, it is inferred
-     * from the name of the field. If the field is named `somethingTool`, the key name will be `something`.
-     *
-     * @example
-     * ```ts
-     * @tool() protected textTool: TurboTool;
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * protected get textTool(): TurboTool {
-     *    if (this.mvc instanceof Mvc) return this.mvc.getTool("text");
-     *    if (typeof this.getTool === "function") return this.getTool("text");
-     * }
-     * ```
-     */
-    function tool(name) {
-        return function (_unused, context) {
-            generateField(context, "Tool", name);
-        };
-    }
-    /**
-     * @decorator
-     * @function substrate
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-     * fetched substrate.
-     * @param {string} [name] - The key name of the substrate in the MVC instance (if any). By default, it is inferred
-     * from the name of the field. If the field is named `somethingSubstrate`, the key name will be `something`.
-     *
-     * @example
-     * ```ts
-     * @tool() protected textSubstrate: TurboSubstrate;
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * protected get textSubstrate(): TurboSubstrate {
-     *    if (this.mvc instanceof Mvc) return this.mvc.getSubstrate("text");
-     *    if (typeof this.getSubstrate === "function") return this.getSubstrate("text");
-     * }
-     * ```
-     */
-    function substrate(name) {
-        return function (_unused, context) {
-            generateField(context, "Substrate", name);
-        };
-    }
 
     /**
      * @group Components
@@ -5631,7 +12948,7 @@ var Turbo = (function (exports, yjs) {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _utils_decorators = [handler()];
-                _set_inputDevice_decorators = [auto({ callBefore: function (value) { if (value == exports.InputDevice.trackpad)
+                _set_inputDevice_decorators = [auto({ callBefore: function (value) { if (value == InputDevice.trackpad)
                             this.wasRecentlyTrackpad = true; } })];
                 __esDecorate(this, null, _set_inputDevice_decorators, { kind: "setter", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, null, _utils_decorators, { kind: "field", name: "utils", static: false, private: false, access: { has: obj => "utils" in obj, get: obj => obj.utils, set: (obj, value) => { obj.utils = value; } }, metadata: _metadata }, _utils_initializers, _utils_extraInitializers);
@@ -5648,8 +12965,8 @@ var Turbo = (function (exports, yjs) {
             onToolChange = new Delegate();
             //Input events states
             currentKeys = [];
-            currentAction = exports.ActionMode.none;
-            currentClick = exports.ClickMode.none;
+            currentAction = ActionMode.none;
+            currentClick = ClickMode.none;
             wasRecentlyTrackpad = false;
             //Threshold differentiating a click from a drag
             moveThreshold;
@@ -5681,11 +12998,11 @@ var Turbo = (function (exports, yjs) {
      * @group Event Handling
      * @category Enums
      */
-    exports.ClosestOrigin = void 0;
+    var ClosestOrigin;
     (function (ClosestOrigin) {
         ClosestOrigin["target"] = "target";
         ClosestOrigin["position"] = "position";
-    })(exports.ClosestOrigin || (exports.ClosestOrigin = {}));
+    })(ClosestOrigin || (ClosestOrigin = {}));
 
     /**
      * @class TurboEvent
@@ -5767,8 +13084,8 @@ var Turbo = (function (exports, yjs) {
              * @param strict
              * @param from
              */
-            closest(type, strict = true, from = exports.ClosestOrigin.target) {
-                const elements = from == exports.ClosestOrigin.target ? [this.target]
+            closest(type, strict = true, from = ClosestOrigin.target) {
+                const elements = from == ClosestOrigin.target ? [this.target]
                     : document.elementsFromPoint(this.position.x, this.position.y);
                 const strictElement = strict instanceof Element ? strict : null;
                 const isStrict = strict === true || strictElement !== null;
@@ -5881,40 +13198,6 @@ var Turbo = (function (exports, yjs) {
     }
 
     const utils$7 = new ListenerUtils();
-    /**
-     * @decorator
-     * @function listener
-     * @group Decorators
-     * @category Listeners
-     *
-     * @description Method decorator that registers the decorated method as an event listener, to be attached later
-     * via {@link attachListenersAndBehaviors}.
-     * @param {Partial<Omit<ListenerProperties, "callback">>} [properties={}] - Listener configuration. Values
-     * will be merged with the detected defaults. If `properties.type` is omitted, the name of the method will be used
-     * to derive the event name from {@link DefaultEventName}.
-     *
-     * @example ```ts
-     * class MyElement {
-     *   @listener() click(e: Event) { ... }
-     *   //Equivalent to: turbo(this).on(DefaultEventName.click, (e: Event) => { ... });
-     * }
-     * ```
-     */
-    function listener(properties = {}) {
-        return function (value, context) {
-            //TODO FIX
-            TurboEventManager.instance;
-            let type = properties.type;
-            if (!type) {
-                const kebab = camelToKebabCase(String(context.name));
-                type = Object.values(DefaultEventName).includes("turbo-" + kebab) ? "turbo-" + kebab : kebab;
-            }
-            context.addInitializer(function () {
-                utils$7.addListener(Object.getPrototypeOf(this), { ...properties, type, methodName: context.name, kind: "listener" });
-            });
-            return value;
-        };
-    }
     /**
      * @decorator
      * @function behavior
@@ -6332,24 +13615,24 @@ var Turbo = (function (exports, yjs) {
                 e.preventDefault();
             //Most likely trackpad
             if (Math.abs(e.deltaY) <= 40 || e.deltaX != 0)
-                this.model.inputDevice = exports.InputDevice.trackpad;
+                this.model.inputDevice = InputDevice.trackpad;
             //Set input device to mouse if it wasn't trackpad recently
             if (!this.model.wasRecentlyTrackpad)
-                this.model.inputDevice = exports.InputDevice.mouse;
+                this.model.inputDevice = InputDevice.mouse;
             //Reset trackpad timer
             this.model.utils.clearTimer("recentlyTrackpadTimer");
             //Set timer to clear recently trackpad boolean after a delay
             this.model.utils.setTimer("recentlyTrackpadTimer", () => {
-                if (this.model.inputDevice == exports.InputDevice.trackpad)
+                if (this.model.inputDevice == InputDevice.trackpad)
                     this.model.wasRecentlyTrackpad = false;
             }, 800);
             //Get name of event according to input type
             let eventName;
             //Trackpad pinching (for some reason Ctrl key is marked as pressed in the WheelEvent)
-            if (this.model.inputDevice == exports.InputDevice.trackpad && e.ctrlKey)
+            if (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
                 eventName = TurboEventName.trackpadPinch;
             //Trackpad zooming
-            else if (this.model.inputDevice == exports.InputDevice.trackpad)
+            else if (this.model.inputDevice == InputDevice.trackpad)
                 eventName = TurboEventName.trackpadScroll;
             //Mouse scrolling
             else
@@ -6483,9 +13766,9 @@ var Turbo = (function (exports, yjs) {
                 e.preventDefault();
             //Update input device
             if (isTouch)
-                this.model.inputDevice = exports.InputDevice.touch;
-            else if (this.model.inputDevice === exports.InputDevice.unknown || this.model.inputDevice === exports.InputDevice.touch)
-                this.model.inputDevice = exports.InputDevice.mouse;
+                this.model.inputDevice = InputDevice.touch;
+            else if (this.model.inputDevice === InputDevice.unknown || this.model.inputDevice === InputDevice.touch)
+                this.model.inputDevice = InputDevice.mouse;
             //Initialize origin & previous position using pointerId
             const id = e.pointerId;
             const position = new Point(e.clientX, e.clientY);
@@ -6503,12 +13786,12 @@ var Turbo = (function (exports, yjs) {
                 return;
             // Fire click start
             this.fireClick(this.model.origins.first, TurboEventName.clickStart);
-            this.model.currentAction = exports.ActionMode.click;
+            this.model.currentAction = ActionMode.click;
             // Long-press timer
             this.model.utils.setTimer(TurboEventName.longPress, () => {
-                if (this.model.currentAction !== exports.ActionMode.click)
+                if (this.model.currentAction !== ActionMode.click)
                     return;
-                this.model.currentAction = exports.ActionMode.longPress;
+                this.model.currentAction = ActionMode.longPress;
                 this.fireClick(this.model.origins.first, TurboEventName.longPress);
             }, this.model.longPressDuration);
         }
@@ -6529,15 +13812,15 @@ var Turbo = (function (exports, yjs) {
             // Only update the current pointer’s position (others remain tracked from prior moves)
             this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
             // Clear cached target origin if not dragging
-            if (this.model.currentAction !== exports.ActionMode.drag)
+            if (this.model.currentAction !== ActionMode.drag)
                 this.model.lastTargetOrigin = null;
             //Fire move event if enabled
             if (this.element.moveEventsEnabled)
                 this.fireDrag(this.model.positions, TurboEventName.move);
             //If drag events are enabled and user is interacting
-            if (this.model.currentAction !== exports.ActionMode.none && this.element.dragEventEnabled) {
+            if (this.model.currentAction !== ActionMode.none && this.element.dragEventEnabled) {
                 //Initialize drag
-                if (this.model.currentAction !== exports.ActionMode.drag) {
+                if (this.model.currentAction !== ActionMode.drag) {
                     //Check if any tracked origin moved beyond threshold
                     if (!Array.from(this.model.origins.entries()).some(([key, origin]) => {
                         const p = (key === e.pointerId)
@@ -6549,7 +13832,7 @@ var Turbo = (function (exports, yjs) {
                     //If didn't return --> fire drag start and set action to drag
                     clearCache(this);
                     this.fireDrag(this.model.origins, TurboEventName.dragStart);
-                    this.model.currentAction = exports.ActionMode.drag;
+                    this.model.currentAction = ActionMode.drag;
                 }
                 //Fire drag step
                 this.fireDrag(this.model.positions);
@@ -6573,13 +13856,13 @@ var Turbo = (function (exports, yjs) {
             this.model.positions = new TurboMap();
             this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
             //If action was drag --> fire drag end
-            if (this.model.currentAction === exports.ActionMode.drag && this.element.dragEventEnabled) {
+            if (this.model.currentAction === ActionMode.drag && this.element.dragEventEnabled) {
                 this.fireDrag(this.model.positions, TurboEventName.dragEnd);
             }
             //If click events are enabled
             if (this.element.clickEventEnabled) {
                 //If action is click --> fire click
-                if (this.model.currentAction === exports.ActionMode.click) {
+                if (this.model.currentAction === ActionMode.click) {
                     this.fireClick(this.model.positions.first, TurboEventName.click);
                 }
                 //Fire click end
@@ -6591,8 +13874,8 @@ var Turbo = (function (exports, yjs) {
             this.model.activePointers.delete(e.pointerId);
             //If no more active pointers, reset modes
             if (this.model.activePointers.size === 0) {
-                this.model.currentAction = exports.ActionMode.none;
-                this.model.currentClick = exports.ClickMode.none;
+                this.model.currentAction = ActionMode.none;
+                this.model.currentClick = ClickMode.none;
             }
         }
         pointerCancelFn(e) {
@@ -6602,8 +13885,8 @@ var Turbo = (function (exports, yjs) {
             this.model.previousPositions.delete(e.pointerId);
             this.model.activePointers.delete(e.pointerId);
             if (this.model.activePointers.size === 0) {
-                this.model.currentAction = exports.ActionMode.none;
-                this.model.currentClick = exports.ClickMode.none;
+                this.model.currentAction = ActionMode.none;
+                this.model.currentClick = ClickMode.none;
             }
         }
         lostPointerCaptureFn(_e) {
@@ -6666,7 +13949,7 @@ var Turbo = (function (exports, yjs) {
             if (properties.eventName === TurboKeyEventName.keyPressed)
                 this.element.setToolByKey(properties["keyPressed"]);
             else if (properties.eventName === TurboKeyEventName.keyReleased)
-                this.element.setTool(undefined, exports.ClickMode.key, { select: false });
+                this.element.setTool(undefined, ClickMode.key, { select: false });
             target.dispatchEvent(new eventType(properties));
         };
         getToolHandlingCallback(type, e) {
@@ -6676,7 +13959,7 @@ var Turbo = (function (exports, yjs) {
                 if (!(path[i] instanceof Node))
                     continue;
                 const propagate = turbo(path[i]).executeAction(type, toolName, e, { capture: true }, this.element);
-                if (propagate !== exports.Propagation.propagate) {
+                if (propagate !== Propagation.propagate) {
                     e.stopPropagation();
                     break;
                 }
@@ -6685,7 +13968,7 @@ var Turbo = (function (exports, yjs) {
                 if (!(path[i] instanceof Node))
                     continue;
                 const propagate = turbo(path[i]).executeAction(type, toolName, e, undefined, this.element);
-                if (propagate !== exports.Propagation.propagate) {
+                if (propagate !== Propagation.propagate) {
                     e.stopPropagation();
                     break;
                 }
@@ -6751,19 +14034,19 @@ var Turbo = (function (exports, yjs) {
                 button--;
             switch (button) {
                 case -1:
-                    this.model.currentClick = exports.ClickMode.none;
+                    this.model.currentClick = ClickMode.none;
                     return;
                 case 0:
-                    this.model.currentClick = exports.ClickMode.left;
+                    this.model.currentClick = ClickMode.left;
                     return;
                 case 1:
-                    this.model.currentClick = exports.ClickMode.middle;
+                    this.model.currentClick = ClickMode.middle;
                     return;
                 case 2:
-                    this.model.currentClick = exports.ClickMode.right;
+                    this.model.currentClick = ClickMode.right;
                     return;
                 default:
-                    this.model.currentClick = exports.ClickMode.other;
+                    this.model.currentClick = ClickMode.other;
                     return;
             }
         }
@@ -7418,7 +14701,7 @@ var Turbo = (function (exports, yjs) {
                 if (options.activate == undefined)
                     options.activate = true;
                 if (options.setAsNoAction == undefined)
-                    options.setAsNoAction = type == exports.ClickMode.left;
+                    options.setAsNoAction = type == ClickMode.left;
                 //Get previous tool
                 const previousTool = this.model.currentTools.get(type);
                 if (previousTool) {
@@ -7436,7 +14719,7 @@ var Turbo = (function (exports, yjs) {
                 //Select new tool (and maybe set it as the tool for no click mode)
                 this.model.currentTools.set(type, tool);
                 if (options.setAsNoAction)
-                    this.model.currentTools.set(exports.ClickMode.none, tool);
+                    this.model.currentTools.set(ClickMode.none, tool);
                 //Select and activate the tool
                 this.getSimilarTools(tool).forEach(element => {
                     if (options.activate)
@@ -7455,7 +14738,7 @@ var Turbo = (function (exports, yjs) {
                 const toolName = this.model.mappedKeysToTool.get(key);
                 if (!toolName)
                     return false;
-                this.setTool(this.getToolByName(toolName), exports.ClickMode.key, { select: false });
+                this.setTool(this.getToolByName(toolName), ClickMode.key, { select: false });
                 return true;
             }
             /*
@@ -7733,11 +15016,11 @@ var Turbo = (function (exports, yjs) {
                 });
         }
         //TODO FIX IDK
-        processPropagation(currentPropagation, storedPropagation = exports.Propagation.propagate, defaultPropagation = exports.Propagation.stopPropagation) {
+        processPropagation(currentPropagation, storedPropagation = Propagation.propagate, defaultPropagation = Propagation.stopPropagation) {
             const orderedValues = [
-                exports.Propagation.propagate,
-                exports.Propagation.stopPropagation,
-                exports.Propagation.stopImmediatePropagation
+                Propagation.propagate,
+                Propagation.stopPropagation,
+                Propagation.stopImmediatePropagation
             ];
             if (!orderedValues.includes(currentPropagation))
                 currentPropagation = defaultPropagation;
@@ -7822,7 +15105,7 @@ var Turbo = (function (exports, yjs) {
          */
         TurboSelector.prototype.executeAction = function _executeAction(type, toolName, event, options, manager = TurboEventManager.instance) {
             if (!type)
-                return exports.Propagation.propagate;
+                return Propagation.propagate;
             if (!options)
                 options = {};
             turbo(options).applyDefaults({ checkSubstrates: true, solveSubstrates: true });
@@ -7830,13 +15113,13 @@ var Turbo = (function (exports, yjs) {
             const checkedSubstratesFor = new Set();
             const checkedObjectsToolMap = new Map();
             const firedListeners = new Set();
-            let propagation = exports.Propagation.propagate;
+            let propagation = Propagation.propagate;
             if (this.bypassManagerOn)
                 utils$6.bypassManager(this, manager, this.bypassManagerOn(event));
             const checkSubstrates = (target, tool) => {
                 if (!target)
                     return;
-                if (propagation === exports.Propagation.stopImmediatePropagation)
+                if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 if (!checkedSubstratesFor.has(target)) {
                     checkedSubstratesFor.add(target);
@@ -7851,7 +15134,7 @@ var Turbo = (function (exports, yjs) {
                             eventOptions: options,
                         });
                         if (!check)
-                            propagation = exports.Propagation.stopImmediatePropagation;
+                            propagation = Propagation.stopImmediatePropagation;
                     }
                 }
                 checkSubstrates(target.parentNode, tool);
@@ -7863,7 +15146,7 @@ var Turbo = (function (exports, yjs) {
                 checkSubstrates(target, tool);
                 if (entries.length === 0)
                     return;
-                if (propagation === exports.Propagation.stopImmediatePropagation)
+                if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 for (const entry of entries) {
                     if (firedListeners.has(entry))
@@ -7876,7 +15159,7 @@ var Turbo = (function (exports, yjs) {
                         if (entry.options?.once)
                             boundSet.removeListener(entry);
                     }
-                    if (propagation === exports.Propagation.stopImmediatePropagation)
+                    if (propagation === Propagation.stopImmediatePropagation)
                         return;
                 }
             };
@@ -7888,36 +15171,36 @@ var Turbo = (function (exports, yjs) {
                 checkSubstrates(target, tool);
                 if (!this.hasToolBehavior(type, tool, manager))
                     return;
-                if (propagation === exports.Propagation.stopImmediatePropagation)
+                if (propagation === Propagation.stopImmediatePropagation)
                     return;
                 propagation = turbo(target).applyTool(tool, type, event, manager);
             };
             const main = () => {
                 if (activeTool) {
                     runListeners(this, activeTool);
-                    if (propagation !== exports.Propagation.propagate)
+                    if (propagation !== Propagation.propagate)
                         return;
                 }
                 applyTool(this.element, activeTool);
-                if (propagation !== exports.Propagation.propagate)
+                if (propagation !== Propagation.propagate)
                     return;
                 const embeddedTarget = this.getEmbeddedToolTarget(manager);
                 const objectTools = this.getToolNames(manager);
                 if (embeddedTarget && objectTools.length > 0) {
                     for (const toolName of objectTools) {
                         runListeners(embeddedTarget, toolName);
-                        if (propagation === exports.Propagation.stopImmediatePropagation)
+                        if (propagation === Propagation.stopImmediatePropagation)
                             return;
                     }
-                    if (propagation !== exports.Propagation.propagate)
+                    if (propagation !== Propagation.propagate)
                         return;
                     if (!options.capture)
                         for (const toolName of objectTools) {
                             applyTool(embeddedTarget, toolName);
-                            if (propagation === exports.Propagation.stopImmediatePropagation)
+                            if (propagation === Propagation.stopImmediatePropagation)
                                 return;
                         }
-                    if (propagation !== exports.Propagation.propagate)
+                    if (propagation !== Propagation.propagate)
                         return;
                 }
                 runListeners(this, undefined);
@@ -8305,11 +15588,11 @@ var Turbo = (function (exports, yjs) {
                 return true;
             return ignoredTool.has(type);
         }
-        processPropagation(currentPropagation, storedPropagation = exports.Propagation.propagate, defaultPropagation = exports.Propagation.stopPropagation) {
+        processPropagation(currentPropagation, storedPropagation = Propagation.propagate, defaultPropagation = Propagation.stopPropagation) {
             const orderedValues = [
-                exports.Propagation.propagate,
-                exports.Propagation.stopPropagation,
-                exports.Propagation.stopImmediatePropagation
+                Propagation.propagate,
+                Propagation.stopPropagation,
+                Propagation.stopImmediatePropagation
             ];
             if (!orderedValues.includes(currentPropagation))
                 currentPropagation = defaultPropagation;
@@ -8338,10 +15621,10 @@ var Turbo = (function (exports, yjs) {
             }
             else {
                 options.activationEvent ??= DefaultEventName.click;
-                options.clickMode ??= exports.ClickMode.left;
+                options.clickMode ??= ClickMode.left;
                 this.on(options.activationEvent, () => {
                     options.manager.setTool(this.element, options.clickMode);
-                    return exports.Propagation.stopPropagation;
+                    return Propagation.stopPropagation;
                 }, undefined, options.manager);
             }
             utils$4.saveTool(this, toolName, options.manager);
@@ -8425,14 +15708,14 @@ var Turbo = (function (exports, yjs) {
          *
          */
         TurboSelector.prototype.applyTool = function _applyTool(toolName, type, event, manager = TurboEventManager.instance) {
-            let propagation = exports.Propagation.propagate;
+            let propagation = Propagation.propagate;
             const behaviors = utils$4.getToolBehaviors(toolName, type, manager);
             const options = {};
             options.embeddedTarget = utils$4.getEmbeddedToolTarget(this.element, manager);
             options.isEmbedded = !!options.embeddedTarget;
             for (const behavior of behaviors) {
-                propagation = utils$4.processPropagation(behavior.executeOn(event, this.element, options), propagation, exports.Propagation.propagate);
-                if (propagation === exports.Propagation.stopImmediatePropagation)
+                propagation = utils$4.processPropagation(behavior.executeOn(event, this.element, options), propagation, Propagation.propagate);
+                if (propagation === Propagation.stopImmediatePropagation)
                     break;
             }
             return propagation;
@@ -9162,7 +16445,7 @@ var Turbo = (function (exports, yjs) {
                     substrateData.passes.set(object, passes + 1);
                     for (const solverName of substrateData.sortedSolvers) {
                         const propagation = substrateData.solvers.get(solverName)?.callback({ ...properties, target: object, substrate: data.name });
-                        if (propagation === exports.Propagation.stopImmediatePropagation || propagation === exports.Propagation.stopPropagation)
+                        if (propagation === Propagation.stopImmediatePropagation || propagation === Propagation.stopPropagation)
                             break;
                     }
                 }
@@ -9568,36 +16851,6 @@ var Turbo = (function (exports, yjs) {
         };
         onceRegistry.set(fn, wrapper);
         return wrapper;
-    }
-    /**
-     * @decorator
-     * @function callOncePerInstance
-     * @group Decorators
-     * @category Augmentation
-     *
-     * @description Stage-3 method decorator. It ensures a method in a class is called only once per instance.
-     * Subsequent calls will be canceled and log a warning. Works for instance or static methods.
-     *
-     * @example
-     * ```ts
-     *   class A {
-     *     @callOnce init() { ... }
-     *   }
-     * ```
-     */
-    function callOncePerInstance(value, context) {
-        if (context.kind !== "method")
-            throw new Error(`@callOnce can only be used on methods (got: ${context.kind}).`);
-        const name = String(context.name);
-        const flag = Symbol(`__callOnce__${name}`);
-        return function (...args) {
-            if (this[flag]) {
-                console.warn(`Function ${name} has already been called once on this instance and will not be called again.`);
-                return;
-            }
-            this[flag] = true;
-            return value.apply(this, args);
-        };
     }
 
     /**
@@ -10781,112 +18034,105 @@ var Turbo = (function (exports, yjs) {
             super.apply("default", objects, options);
         }
     }
-    /**
-     * @group Components
-     * @category Reifect
-     */
-    function reifect(properties) {
-        return new Reifect(properties);
-    }
 
     /**
      * @group Types
      * @category Enums
      */
-    exports.Direction = void 0;
+    var Direction;
     (function (Direction) {
         Direction["vertical"] = "vertical";
         Direction["horizontal"] = "horizontal";
-    })(exports.Direction || (exports.Direction = {}));
+    })(Direction || (Direction = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.SideH = void 0;
+    var SideH;
     (function (SideH) {
         SideH["left"] = "left";
         SideH["right"] = "right";
-    })(exports.SideH || (exports.SideH = {}));
+    })(SideH || (SideH = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.SideV = void 0;
+    var SideV;
     (function (SideV) {
         SideV["top"] = "top";
         SideV["bottom"] = "bottom";
-    })(exports.SideV || (exports.SideV = {}));
+    })(SideV || (SideV = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.Side = void 0;
+    var Side;
     (function (Side) {
         Side["top"] = "top";
         Side["bottom"] = "bottom";
         Side["left"] = "left";
         Side["right"] = "right";
-    })(exports.Side || (exports.Side = {}));
+    })(Side || (Side = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.InOut = void 0;
+    var InOut;
     (function (InOut) {
         InOut["in"] = "in";
         InOut["out"] = "out";
-    })(exports.InOut || (exports.InOut = {}));
+    })(InOut || (InOut = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.OnOff = void 0;
+    var OnOff;
     (function (OnOff) {
         OnOff["on"] = "on";
         OnOff["off"] = "off";
-    })(exports.OnOff || (exports.OnOff = {}));
+    })(OnOff || (OnOff = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.Open = void 0;
+    var Open;
     (function (Open) {
         Open["open"] = "open";
         Open["closed"] = "closed";
-    })(exports.Open || (exports.Open = {}));
+    })(Open || (Open = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.Shown = void 0;
+    var Shown;
     (function (Shown) {
         Shown["visible"] = "visible";
         Shown["hidden"] = "hidden";
-    })(exports.Shown || (exports.Shown = {}));
+    })(Shown || (Shown = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.AccessLevel = void 0;
+    var AccessLevel;
     (function (AccessLevel) {
         AccessLevel["public"] = "public";
         AccessLevel["protected"] = "protected";
         AccessLevel["private"] = "private";
-    })(exports.AccessLevel || (exports.AccessLevel = {}));
+    })(AccessLevel || (AccessLevel = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.Range = void 0;
+    var Range;
     (function (Range) {
         Range["min"] = "min";
         Range["max"] = "max";
-    })(exports.Range || (exports.Range = {}));
+    })(Range || (Range = {}));
     /**
      * @group Types
      * @category Enums
      */
-    exports.Anchor = void 0;
+    var Anchor;
     (function (Anchor) {
         Anchor["TopLeft"] = "topLeft";
         Anchor["TopRight"] = "topRight";
@@ -10897,11 +18143,11 @@ var Turbo = (function (exports, yjs) {
         Anchor["Center"] = "center";
         Anchor["CenterLeft"] = "centerLeft";
         Anchor["CenterRight"] = "centerRight";
-    })(exports.Anchor || (exports.Anchor = {}));
+    })(Anchor || (Anchor = {}));
 
     const utils$2 = new ReifectFunctionsUtils();
     const showTransition = new StatefulReifect({
-        states: [exports.Shown.visible, exports.Shown.hidden],
+        states: [Shown.visible, Shown.hidden],
         styles: (state) => `visibility: ${state}`
     });
     function setupReifectFunctions() {
@@ -10960,9 +18206,9 @@ var Turbo = (function (exports, yjs) {
                 if (!this.element)
                     return;
                 const state = this.showTransition.stateOf(this.element);
-                if (state == exports.Shown.visible)
+                if (state == Shown.visible)
                     return true;
-                else if (state == exports.Shown.hidden)
+                else if (state == Shown.hidden)
                     return false;
                 return this.element.style.display != "none"
                     && this.element.style.visibility != "hidden"
@@ -10983,7 +18229,7 @@ var Turbo = (function (exports, yjs) {
                 return this;
             if (!options.executeForAll)
                 options.executeForAll = false;
-            this.showTransition.apply(b ? exports.Shown.visible : exports.Shown.hidden, this.element, options);
+            this.showTransition.apply(b ? Shown.visible : Shown.hidden, this.element, options);
             return this;
         };
         TurboSelector.prototype.attachReifect = function _attachReifect(...reifects) {
@@ -11098,12 +18344,6 @@ var Turbo = (function (exports, yjs) {
         turboSelector.element = el;
         cache$1.set(el, turboSelector);
         return turboSelector;
-    }
-    function tu(tagOrElement) {
-        return turbo(tagOrElement);
-    }
-    function t(tagOrElement) {
-        return turbo(tagOrElement);
     }
     function $(tagOrElement) {
         return turbo(tagOrElement);
@@ -11406,21 +18646,6 @@ var Turbo = (function (exports, yjs) {
                 delete instance[sym];
             }
         }
-    }
-    /**
-     * @function clearCacheEntry
-     * @group Decorators
-     * @category Cache
-     *
-     * @description Clear a specific cache entry for a given method, function, or getter.
-     * @param {any} instance - The instance for which the cache should be cleared.
-     * @param {string | Function} field - The name (or the function itself) of the field to clear.
-     */
-    function clearCacheEntry(instance, field) {
-        const name = typeof field === "function" ? field.name : field;
-        const sym = Object.getOwnPropertySymbols(instance).find((s) => String(s) === `Symbol(__cache__${name})`);
-        if (sym)
-            delete instance[sym];
     }
 
     class DefineDecoratorUtils {
@@ -11788,195 +19013,6 @@ var Turbo = (function (exports, yjs) {
     }
 
     /**
-     * @decorator
-     * @function solver
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 decorator that turns methods into substrate solvers.
-     * @example
-     * ```ts
-     * @solver private constrainPosition(properties: SubstrateSolverProperties) {...}
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * private constrainPosition(properties: SubstrateSolverProperties) {...}
-     *
-     * public initialize() {
-     *   ...
-     *   $(this).addSolver(this.constrainPosition);
-     * }
-     * ```
-     */
-    function solver(properties) {
-        return function (value, context) {
-            if (!properties || typeof properties !== "object")
-                properties = {};
-            if (!properties.name)
-                properties.name = context?.name;
-            context.addInitializer(function () {
-                if (!this["solversMetadata"])
-                    return;
-                for (let i = this["solversMetadata"].length - 1; i >= 0; i--) {
-                    if (this["solversMetadata"][i]?.name === properties.name)
-                        this["solversMetadata"].splice(i, 1);
-                }
-                this["solversMetadata"]?.push(properties);
-            });
-            return value;
-        };
-    }
-    /**
-     * @decorator
-     * @function checker
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 decorator that turns methods into substrate checkers.
-     * @example
-     * ```ts
-     * @checker private constrainPosition(properties: SubstrateSolverProperties) {...}
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * private constrainPosition(properties: SubstrateSolverProperties) {...}
-     *
-     * public initialize() {
-     *   ...
-     *   $(this).addChecker(this.constrainPosition);
-     * }
-     * ```
-     */
-    function checker(properties) {
-        return function (value, context) {
-            if (!properties || typeof properties !== "object")
-                properties = {};
-            if (!properties.name)
-                properties.name = context?.name;
-            context.addInitializer(function () {
-                if (!this["checkersMetadata"])
-                    return;
-                for (let i = this["checkersMetadata"].length - 1; i >= 0; i--) {
-                    if (this["checkersMetadata"][i]?.name === properties.name)
-                        this["checkersMetadata"].splice(i, 1);
-                }
-                this["checkersMetadata"]?.push(properties);
-            });
-            return value;
-        };
-    }
-    /**
-     * @decorator
-     * @function mutator
-     * @group Decorators
-     * @category MVC
-     *
-     * @description Stage-3 decorator that turns methods into substrate mutators.
-     * @example
-     * ```ts
-     * @mutator private constrainPosition(properties: SubstrateSolverProperties) {...}
-     * ```
-     * Is equivalent to:
-     * ```ts
-     * private constrainPosition(properties: SubstrateSolverProperties) {...}
-     *
-     * public initialize() {
-     *   ...
-     *   $(this).addMutator(this.constrainPosition);
-     * }
-     * ```
-     */
-    function mutator(properties) {
-        return function (value, context) {
-            if (!properties || typeof properties !== "object")
-                properties = {};
-            if (!properties.name)
-                properties.name = context?.name;
-            context.addInitializer(function () {
-                if (!this["mutatorsMetadata"])
-                    return;
-                for (let i = this["mutatorsMetadata"].length - 1; i >= 0; i--) {
-                    if (this["mutatorsMetadata"][i]?.name === properties.name)
-                        this["mutatorsMetadata"].splice(i, 1);
-                }
-                this["mutatorsMetadata"]?.push(properties);
-            });
-            return value;
-        };
-    }
-
-    /**
-     * @group Element Creation
-     * @category Flex Elements
-     *
-     * @description Create a flex column element.
-     * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-     * @returns {ValidHTMLElement<Tag>} The created flex element.
-     * @template {HTMLTag} Tag
-     */
-    function flexCol(properties) {
-        const el = element(properties);
-        $(el).setStyles({ display: "flex", flexDirection: "column" }, true);
-        return el;
-    }
-    /**
-     * @group Element Creation
-     * @category Flex Elements
-     *
-     * @description Create a flex column element.
-     * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-     * @returns {ValidHTMLElement<Tag>} The created flex element.
-     * @template {HTMLTag} Tag
-     */
-    function flexColCenter(properties) {
-        const el = flexCol(properties);
-        $(el).setStyles({ justifyContent: "center", alignItems: "center" }, true);
-        return el;
-    }
-    /**
-     * @group Element Creation
-     * @category Flex Elements
-     *
-     * @description Create a flex row element.
-     * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-     * @returns {ValidHTMLElement<Tag>} The created flex element.
-     * @template {HTMLTag} Tag
-     */
-    function flexRow(properties) {
-        const el = element(properties);
-        $(el).setStyles({ display: "flex", flexDirection: "row" }, true);
-        return el;
-    }
-    /**
-     * @group Element Creation
-     * @category Flex Elements
-     *
-     * @description Create a flex row element.
-     * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-     * @returns {ValidHTMLElement<Tag>} The created flex element.
-     * @template {HTMLTag} Tag
-     */
-    function flexRowCenter(properties) {
-        const el = flexRow(properties);
-        $(el).setStyles({ justifyContent: "center", alignItems: "center" }, true);
-        return el;
-    }
-    /**
-     * @group Element Creation
-     * @category Flex Elements
-     *
-     * @description Create a spacer element.
-     * @param {TurboProperties<Tag>} properties - Object containing properties of the element.
-     * @returns {ValidHTMLElement<Tag>} The created spacer element.
-     * @template {HTMLTag} Tag
-     */
-    function spacer(properties) {
-        const el = element(properties);
-        $(el).setStyle("flexGrow", 1, true);
-        return el;
-    }
-
-    /**
      * @class TurboInteractor
      * @group MVC
      * @category Interactor
@@ -12032,7 +19068,7 @@ var Turbo = (function (exports, yjs) {
      * @group MVC
      * @category TurboModel
      */
-    let TurboYModel = (() => {
+    (() => {
         let _classSuper = TurboModel;
         let _instanceExtraInitializers = [];
         let _set_enabledCallbacks_decorators;
@@ -12052,7 +19088,7 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             set enabledCallbacks(value) {
-                if (!this.data || !(this.data instanceof yjs.AbstractType))
+                if (!this.data || !(this.data instanceof AbstractType))
                     return;
                 if (value)
                     this.data.observe(this.observer);
@@ -12068,9 +19104,9 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             getAction(data, key) {
-                if (data instanceof yjs.Map)
+                if (data instanceof YMap)
                     return data.get(key.toString());
-                if (data instanceof yjs.Array)
+                if (data instanceof YArray)
                     return data.get(trim(Number(key), data.length));
                 return super.getAction(data, key);
             }
@@ -12078,9 +19114,9 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             setAction(data, value, key) {
-                if (data instanceof yjs.Map)
+                if (data instanceof YMap)
                     data.set(key.toString(), value);
-                else if (data instanceof yjs.Array) {
+                else if (data instanceof YArray) {
                     const index = trim(Number(key), data.length + 1);
                     if (index < data.length)
                         data.delete(index, 1);
@@ -12093,7 +19129,7 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             addAction(model, data, value, key) {
-                if (data instanceof yjs.Array) {
+                if (data instanceof YArray) {
                     let index = key;
                     if (isUndefined(index) || typeof index !== "number" || index > data.length) {
                         index = data.length;
@@ -12112,9 +19148,9 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             hasAction(data, key) {
-                if (data instanceof yjs.Map)
+                if (data instanceof YMap)
                     return data.has(key.toString());
-                if (data instanceof yjs.Array)
+                if (data instanceof YArray)
                     return typeof key === "number" && key >= 0 && key < this.size;
                 return super.hasAction(data, key);
             }
@@ -12122,9 +19158,9 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             deleteAction(data, key) {
-                if (data instanceof yjs.Map)
+                if (data instanceof YMap)
                     data.delete(key.toString());
-                else if (data instanceof yjs.Array && typeof key === "number" && key >= 0 && key < this.size)
+                else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size)
                     data.delete(key, 1);
                 else
                     super.deleteAction(data, key);
@@ -12133,9 +19169,9 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             get keys() {
-                if (this.data instanceof yjs.Map)
+                if (this.data instanceof YMap)
                     return Array.from(this.data.keys());
-                if (this.data instanceof yjs.Array) {
+                if (this.data instanceof YArray) {
                     const output = [];
                     for (let i = 0; i < this.data.length; i++)
                         output.push(i);
@@ -12148,14 +19184,14 @@ var Turbo = (function (exports, yjs) {
              */
             initialize() {
                 super.initialize();
-                if (this.enabledCallbacks && this.data instanceof yjs.AbstractType)
+                if (this.enabledCallbacks && this.data instanceof AbstractType)
                     this.data?.observe(this.observer);
             }
             /**
              * @inheritDoc
              */
             clear(clearData = true) {
-                if (clearData && this.data instanceof yjs.AbstractType)
+                if (clearData && this.data instanceof AbstractType)
                     this.data?.unobserve(this.observer);
                 super.clear(clearData);
             }
@@ -12168,7 +19204,7 @@ var Turbo = (function (exports, yjs) {
                 //TODO
                 !!transaction?.local;
                 transaction?.origin;
-                if (event instanceof yjs.YMapEvent) {
+                if (event instanceof YMapEvent) {
                     event.keysChanged.forEach(key => {
                         const change = event.changes.keys.get(key);
                         if (!change)
@@ -12179,7 +19215,7 @@ var Turbo = (function (exports, yjs) {
                             this.keyChanged([key]);
                     });
                 }
-                else if (event instanceof yjs.YArrayEvent) {
+                else if (event instanceof YArrayEvent) {
                     let currentIndex = 0;
                     for (const delta of event.delta) {
                         if (delta.retain !== undefined) {
@@ -12257,7 +19293,7 @@ var Turbo = (function (exports, yjs) {
          * @readonly
          * @description Click mode that will hold this tool when activated. Defaults to `ClickMode.left`.
          */
-        clickMode = exports.ClickMode.left;
+        clickMode = ClickMode.left;
         /**
          * @readonly
          * @description Optional keyboard key to map to this tool. When pressed, it will be set as the current key tool.
@@ -12391,7 +19427,7 @@ var Turbo = (function (exports, yjs) {
         }
     }
 
-    function styleInject(css, ref) {
+    function styleInject$1(css, ref) {
       if ( ref === void 0 ) ref = {};
       var insertAt = ref.insertAt;
 
@@ -12419,7 +19455,7 @@ var Turbo = (function (exports, yjs) {
     }
 
     var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-    styleInject(css_248z$3);
+    styleInject$1(css_248z$3);
 
     function defineUIPrototype(constructor) {
         const prototype = constructor.prototype;
@@ -12563,26 +19599,6 @@ var Turbo = (function (exports, yjs) {
         let wrapper = document.createElement("div");
         wrapper.innerHTML = text;
         return wrapper.children[0];
-    }
-    /**
-     * @group Utilities
-     * @category Element
-     */
-    function createProxy(self, proxied) {
-        return new Proxy(self, {
-            get(target, prop, receiver) {
-                if (prop in target)
-                    return Reflect.get(target, prop, receiver);
-                if (prop in proxied)
-                    return Reflect.get(proxied, prop, receiver);
-                return undefined;
-            },
-            set(target, prop, value, receiver) {
-                if (prop in target)
-                    return Reflect.set(target, prop, value, receiver);
-                return Reflect.set(proxied, prop, value, receiver);
-            }
-        });
     }
 
     /**
@@ -13181,7 +20197,7 @@ var Turbo = (function (exports, yjs) {
      * @group Components
      * @category TurboIconToggle
      */
-    let TurboIconToggle = (() => {
+    (() => {
         let _classDecorators = [define("turbo-icon-toggle")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -13226,15 +20242,6 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboIconToggle
-     */
-    function iconToggle(properties) {
-        if (!properties.tag)
-            properties.tag = "turbo-icon-toggle";
-        return icon({ ...properties });
-    }
 
     class TurboInputInputInteractor extends TurboInteractor {
         keyName = "__input__interactor__";
@@ -13518,27 +20525,12 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboInput
-     */
-    function turboInput(properties) {
-        let el = properties.input;
-        let elementTag = properties.inputTag;
-        if (!elementTag)
-            elementTag = "input";
-        if (!el)
-            el = {};
-        if (!properties.tag)
-            properties.tag = "turbo-input";
-        return richElement({ elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined });
-    }
 
     /**
      * @group Components
      * @category TurboNumericalInput
      */
-    let TurboNumericalInput = (() => {
+    (() => {
         let _classDecorators = [define("turbo-numerical-input")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -13578,19 +20570,6 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboNumericalInput
-     */
-    function numericalInput(properties) {
-        if (!properties.inputRegexCheck)
-            properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
-        if (!properties.blurRegexCheck)
-            properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-        if (!properties.tag)
-            properties.tag = "turbo-numerical-input";
-        return turboInput({ ...properties });
-    }
 
     /**
      * @group Event Handling
@@ -13826,7 +20805,7 @@ var Turbo = (function (exports, yjs) {
                     this.initializeSelection();
                     turbo(entry).on(DefaultEventName.click, (e) => {
                         this.onEntryClicked.fire(entry, e);
-                        return exports.Propagation.stopPropagation;
+                        return Propagation.stopPropagation;
                     });
                 });
                 if (!properties.onEnabled)
@@ -14310,26 +21289,16 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboDropdown
-     * @param properties
-     */
-    function selectElement(properties = {}) {
-        if (!properties.tag)
-            properties.tag = "turbo-select-element";
-        return element({ ...properties, text: undefined });
-    }
 
-    var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
-    styleInject(css_248z$2);
+    var css_248z$2$1 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
+    styleInject$1(css_248z$2$1);
 
     //TODO TRY TO SEE IF HIDDEN OVERFLOW ELEMENT CAN CONTAIN ELEMENT THAT OVERFLOWS PAST PARENT
     /**
      * @group Components
      * @category TurboDrawer
      */
-    let TurboDrawer = (() => {
+    (() => {
         let _classDecorators = [define("turbo-drawer")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -14375,7 +21344,7 @@ var Turbo = (function (exports, yjs) {
                                 this.attachSideToIconName = true;
                             return iconSwitch(typeof value === "object" ? value : {
                                 icon: value,
-                                switchReifect: { states: Object.values(exports.Side) },
+                                switchReifect: { states: Object.values(Side) },
                                 defaultState: this.open ? this.getOppositeSide() : this.side,
                                 appendStateToIconName: this.attachSideToIconName,
                             });
@@ -14384,7 +21353,7 @@ var Turbo = (function (exports, yjs) {
                 _set_hideOverflow_decorators = [auto({ defaultValue: false })];
                 _set_attachSideToIconName_decorators = [auto({ defaultValue: false })];
                 _set_rotateIconBasedOnSide_decorators = [auto({ defaultValue: false })];
-                _set_side_decorators = [auto({ defaultValue: exports.Side.bottom, cancelIfUnchanged: false })];
+                _set_side_decorators = [auto({ defaultValue: Side.bottom, cancelIfUnchanged: false })];
                 _set_offset_decorators = [auto({
                         defaultValue: { open: 0, closed: 0 },
                         preprocessValue: (value) => typeof value === "number" ? { open: value, closed: value } : {
@@ -14462,16 +21431,16 @@ var Turbo = (function (exports, yjs) {
                     };
             }
             set side(value) {
-                turbo(this).toggleClass("top-drawer", value == exports.Side.top)
-                    .toggleClass("bottom-drawer", value == exports.Side.bottom)
-                    .toggleClass("left-drawer", value == exports.Side.left)
-                    .toggleClass("right-drawer", value == exports.Side.right);
+                turbo(this).toggleClass("top-drawer", value == Side.top)
+                    .toggleClass("bottom-drawer", value == Side.bottom)
+                    .toggleClass("left-drawer", value == Side.left)
+                    .toggleClass("right-drawer", value == Side.right);
                 this.refresh();
             }
             set offset(value) { }
             get offset() { return; }
             get isVertical() {
-                return this.side == exports.Side.top || this.side == exports.Side.bottom;
+                return this.side == Side.top || this.side == Side.bottom;
             }
             set open(value) {
                 if (value)
@@ -14482,25 +21451,25 @@ var Turbo = (function (exports, yjs) {
             }
             set translation(value) {
                 switch (this.side) {
-                    case exports.Side.top:
+                    case Side.top:
                         if (this.hideOverflow)
                             turbo(this.panelContainer).setStyle("height", value + "px");
                         else
                             turbo(this).setStyle("transform", `translateY(${-value}px)`);
                         break;
-                    case exports.Side.bottom:
+                    case Side.bottom:
                         if (this.hideOverflow)
                             turbo(this.panelContainer).setStyle("height", value + "px");
                         else
                             turbo(this).setStyle("transform", `translateY(${-value}px)`);
                         break;
-                    case exports.Side.left:
+                    case Side.left:
                         if (this.hideOverflow)
                             turbo(this.panelContainer).setStyle("width", value + "px");
                         else
                             turbo(this).setStyle("transform", `translateX(${-value}px)`);
                         break;
-                    case exports.Side.right:
+                    case Side.right:
                         if (this.hideOverflow)
                             turbo(this.panelContainer).setStyle("width", value + "px");
                         else
@@ -14538,41 +21507,41 @@ var Turbo = (function (exports, yjs) {
             setupUIListeners() {
                 turbo(this.thumb).on(DefaultEventName.click, (e) => {
                     this.open = !this.open;
-                    return exports.Propagation.stopPropagation;
+                    return Propagation.stopPropagation;
                 }).on(TurboEventName.dragStart, (e) => {
                     this.dragging = true;
                     this.enableTransition(false);
-                    return exports.Propagation.stopPropagation;
+                    return Propagation.stopPropagation;
                 }).on(TurboEventName.drag, (e) => {
                     if (!this.dragging)
                         return;
                     this.translation += this.isVertical ? e.scaledDeltaPosition.y : e.scaledDeltaPosition.x;
-                    return exports.Propagation.stopPropagation;
+                    return Propagation.stopPropagation;
                 }).on(TurboEventName.dragEnd, (e) => {
                     if (!this.dragging)
                         return;
                     this.dragging = false;
                     const delta = e.positions.first.sub(e.origins.first);
                     switch (this.side) {
-                        case exports.Side.top:
+                        case Side.top:
                             if (this.open && delta.y > 100)
                                 this.open = false;
                             else if (!this.open && delta.y < -100)
                                 this.open = true;
                             break;
-                        case exports.Side.bottom:
+                        case Side.bottom:
                             if (this.open && delta.y < -100)
                                 this.open = false;
                             else if (!this.open && delta.y > 100)
                                 this.open = true;
                             break;
-                        case exports.Side.left:
+                        case Side.left:
                             if (this.open && delta.x > 100)
                                 this.open = false;
                             else if (!this.open && delta.x < -100)
                                 this.open = true;
                             break;
-                        case exports.Side.right:
+                        case Side.right:
                             if (this.open && delta.x < -100)
                                 this.open = false;
                             else if (!this.open && delta.x > 100)
@@ -14586,26 +21555,26 @@ var Turbo = (function (exports, yjs) {
             }
             getOppositeSide(side = this.side) {
                 switch (side) {
-                    case exports.Side.top:
-                        return exports.Side.bottom;
-                    case exports.Side.bottom:
-                        return exports.Side.top;
-                    case exports.Side.left:
-                        return exports.Side.right;
-                    case exports.Side.right:
-                        return exports.Side.left;
+                    case Side.top:
+                        return Side.bottom;
+                    case Side.bottom:
+                        return Side.top;
+                    case Side.left:
+                        return Side.right;
+                    case Side.right:
+                        return Side.left;
                 }
             }
             getAdjacentSide(side = this.side) {
                 switch (side) {
-                    case exports.Side.top:
-                        return exports.Side.right;
-                    case exports.Side.bottom:
-                        return exports.Side.left;
-                    case exports.Side.left:
-                        return exports.Side.top;
-                    case exports.Side.right:
-                        return exports.Side.bottom;
+                    case Side.top:
+                        return Side.right;
+                    case Side.bottom:
+                        return Side.left;
+                    case Side.left:
+                        return Side.top;
+                    case Side.right:
+                        return Side.bottom;
                 }
             }
             refresh() {
@@ -14646,29 +21615,20 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboDrawer
-     */
-    function drawer(properties) {
-        if (!properties.tag)
-            properties.tag = "turbo-drawer";
-        return element({ ...properties, text: undefined });
-    }
 
     /**
      * @group Components
      * @category TurboPopup
      */
-    exports.PopupFallbackMode = void 0;
+    var PopupFallbackMode;
     (function (PopupFallbackMode) {
         PopupFallbackMode["invert"] = "invert";
         PopupFallbackMode["offset"] = "offset";
         PopupFallbackMode["none"] = "none";
-    })(exports.PopupFallbackMode || (exports.PopupFallbackMode = {}));
+    })(PopupFallbackMode || (PopupFallbackMode = {}));
 
-    var css_248z$1 = "#turbo-popup-parent-element{display:block;left:0;position:fixed;top:0;z-index:1000}.turbo-popup{display:block;inset:auto;overflow:auto;position:fixed}";
-    styleInject(css_248z$1);
+    var css_248z$1$1 = "#turbo-popup-parent-element{display:block;left:0;position:fixed;top:0;z-index:1000}.turbo-popup{display:block;inset:auto;overflow:auto;position:fixed}";
+    styleInject$1(css_248z$1$1);
 
     /**
      * @group Components
@@ -14729,8 +21689,8 @@ var Turbo = (function (exports, yjs) {
                         },
                         initialValueCallback: function () {
                             return {
-                                x: Math.abs(this.anchorPosition.x - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
-                                y: Math.abs(this.anchorPosition.y - 50) > 25 ? exports.PopupFallbackMode.invert : exports.PopupFallbackMode.offset,
+                                x: Math.abs(this.anchorPosition.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
+                                y: Math.abs(this.anchorPosition.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
                             };
                         }
                     })];
@@ -14818,8 +21778,8 @@ var Turbo = (function (exports, yjs) {
                 if (!this.anchor)
                     return;
                 turbo(this).setStyles({ maxHeight: "", maxWidth: "" }, true);
-                const left = this.computeAxis(exports.Direction.horizontal);
-                const top = this.computeAxis(exports.Direction.vertical);
+                const left = this.computeAxis(Direction.horizontal);
+                const top = this.computeAxis(Direction.vertical);
                 turbo(this).setStyles({ left: `${left}px`, top: `${top}px` });
                 const maxWidth = Math.max(0, Math.min(window.innerWidth - 2 * this.viewportMargin.x, window.innerWidth - 2 * this.viewportMargin.x - this.computedMargins.x));
                 const maxHeight = Math.max(0, Math.min(window.innerHeight - 2 * this.viewportMargin.y, window.innerHeight - 2 * this.viewportMargin.y - this.computedMargins.y));
@@ -14827,17 +21787,17 @@ var Turbo = (function (exports, yjs) {
                 turbo(this).setStyle("maxHeight", `${maxHeight}px`);
             }
             computeAxis(direction) {
-                const axis = direction === exports.Direction.horizontal ? "x" : "y";
-                const sizeAxis = direction === exports.Direction.horizontal ? "width" : "height";
-                const viewportSize = direction === exports.Direction.horizontal ? window.innerWidth : window.innerHeight;
-                const parentStart = this.anchorRect[direction === exports.Direction.horizontal ? "left" : "top"];
+                const axis = direction === Direction.horizontal ? "x" : "y";
+                const sizeAxis = direction === Direction.horizontal ? "width" : "height";
+                const viewportSize = direction === Direction.horizontal ? window.innerWidth : window.innerHeight;
+                const parentStart = this.anchorRect[direction === Direction.horizontal ? "left" : "top"];
                 const popupSize = this.rect[sizeAxis] + this.computedMargins[axis];
                 const min = this.viewportMargin[axis];
                 const max = viewportSize - this.viewportMargin[axis] - popupSize;
                 const base = parentStart + (this.anchorRect[sizeAxis] * this.anchorPosition[axis] / 100)
                     - (popupSize * this.popupPosition[axis] / 100) + this.offsetFromAnchor[axis];
                 const fitsBase = base >= min && base <= max;
-                if (fitsBase || this.fallbackModes[axis] === exports.PopupFallbackMode.offset) {
+                if (fitsBase || this.fallbackModes[axis] === PopupFallbackMode.offset) {
                     return Math.min(Math.max(base, min), max);
                 }
                 const flipped = parentStart + this.anchorRect[sizeAxis] * (1 - this.anchorPosition[axis] / 100)
@@ -14902,7 +21862,7 @@ var Turbo = (function (exports, yjs) {
                         preprocessValue: function (value) {
                             if (typeof value === "object" && value instanceof Point)
                                 return value;
-                            if (Object.values(exports.Anchor).includes(value))
+                            if (Object.values(Anchor).includes(value))
                                 return AnchorPoint.enumToPoint(value);
                             return this._value;
                         }
@@ -14921,51 +21881,51 @@ var Turbo = (function (exports, yjs) {
             }
             static pointToEnum(value) {
                 if (!value)
-                    return exports.Anchor.Center;
+                    return Anchor.Center;
                 const snapAxis = (n) => n < -50 ? -100 : n > 50 ? 100 : 0;
                 const x = snapAxis(value.x);
                 const y = snapAxis(value.y);
                 if (y === -100) {
                     if (x === -100)
-                        return exports.Anchor.TopLeft;
+                        return Anchor.TopLeft;
                     if (x === 0)
-                        return exports.Anchor.TopMiddle;
-                    return exports.Anchor.TopRight;
+                        return Anchor.TopMiddle;
+                    return Anchor.TopRight;
                 }
                 if (y === 0) {
                     if (x === -100)
-                        return exports.Anchor.CenterLeft;
+                        return Anchor.CenterLeft;
                     if (x === 0)
-                        return exports.Anchor.Center;
-                    return exports.Anchor.CenterRight;
+                        return Anchor.Center;
+                    return Anchor.CenterRight;
                 }
                 if (x === -100)
-                    return exports.Anchor.BottomLeft;
+                    return Anchor.BottomLeft;
                 if (x === 0)
-                    return exports.Anchor.BottomMiddle;
-                return exports.Anchor.BottomRight;
+                    return Anchor.BottomMiddle;
+                return Anchor.BottomRight;
             }
             static enumToPoint(value) {
                 if (!value)
                     return new Point();
                 switch (value) {
-                    case exports.Anchor.TopLeft:
+                    case Anchor.TopLeft:
                         return new Point(-100, -100);
-                    case exports.Anchor.TopMiddle:
+                    case Anchor.TopMiddle:
                         return new Point(0, -100);
-                    case exports.Anchor.TopRight:
+                    case Anchor.TopRight:
                         return new Point(100, -100);
-                    case exports.Anchor.CenterLeft:
+                    case Anchor.CenterLeft:
                         return new Point(-100, 0);
-                    case exports.Anchor.Center:
+                    case Anchor.Center:
                         return new Point(0, 0);
-                    case exports.Anchor.CenterRight:
+                    case Anchor.CenterRight:
                         return new Point(100, 0);
-                    case exports.Anchor.BottomLeft:
+                    case Anchor.BottomLeft:
                         return new Point(-100, 100);
-                    case exports.Anchor.BottomMiddle:
+                    case Anchor.BottomMiddle:
                         return new Point(0, 100);
-                    case exports.Anchor.BottomRight:
+                    case Anchor.BottomRight:
                         return new Point(100, 100);
                 }
             }
@@ -15315,8 +22275,8 @@ var Turbo = (function (exports, yjs) {
         }
     }
 
-    var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-    styleInject(css_248z);
+    var css_248z$4 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+    styleInject$1(css_248z$4);
 
     /**
      * @class TurboDropdown
@@ -15326,7 +22286,7 @@ var Turbo = (function (exports, yjs) {
      * @description Dropdown class for creating Turbo button elements.
      * @extends TurboElement
      */
-    let TurboDropdown = (() => {
+    (() => {
         let _classDecorators = [define("turbo-dropdown")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -15400,7 +22360,7 @@ var Turbo = (function (exports, yjs) {
                     .addClass(this.selectorClasses)
                     .on(DefaultEventName.click, (e) => {
                     this.openPopup(!this.popupOpen);
-                    return exports.Propagation.stopPropagation;
+                    return Propagation.stopPropagation;
                 });
                 if (this.popup instanceof TurboPopup)
                     this.popup.anchor = value;
@@ -15445,22 +22405,12 @@ var Turbo = (function (exports, yjs) {
         });
         return _classThis;
     })();
-    /**
-     * @group Components
-     * @category TurboDropdown
-     * @param properties
-     */
-    function dropdown(properties = {}) {
-        if (!properties.tag)
-            properties.tag = "turbo-dropdown";
-        return element({ ...properties, text: undefined });
-    }
 
     /**
      * @group Components
      * @category TurboMarkingMenu
      */
-    let TurboMarkingMenu = (() => {
+    (() => {
         let _classDecorators = [define("turbo-marking-menu")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -15541,7 +22491,7 @@ var Turbo = (function (exports, yjs) {
      * @template {string} ValueType
      * @template {TurboSelectEntry<ValueType, any>} EntryType
      */
-    let TurboSelectWheel = (() => {
+    (() => {
         let _classDecorators = [define("turbo-select-wheel")];
         let _classDescriptor;
         let _classExtraInitializers = [];
@@ -15643,7 +22593,7 @@ var Turbo = (function (exports, yjs) {
              * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
              */
             openTimeout = 3000;
-            direction = exports.Direction.horizontal;
+            direction = Direction.horizontal;
             scale = { max: 1, min: 0.5 };
             generateCustomStyling;
             dragging;
@@ -15674,7 +22624,7 @@ var Turbo = (function (exports, yjs) {
                         this.dragging = true;
                         this.reifect.enabled.transition = false;
                         this.reloadEntrySizes();
-                        return exports.Propagation.stopImmediatePropagation;
+                        return Propagation.stopImmediatePropagation;
                     })
                         .on("pointerover", () => {
                         clearTimeout(showTimer);
@@ -15707,7 +22657,7 @@ var Turbo = (function (exports, yjs) {
                 this.open = value;
             }
             get isVertical() {
-                return this.direction == exports.Direction.vertical;
+                return this.direction == Direction.vertical;
             }
             set index(value) {
                 this.selector.selectByIndex(this.trimmedIndex);
@@ -15859,9 +22809,6 @@ var Turbo = (function (exports, yjs) {
         return _classThis;
     })();
 
-    class TurboGrid extends TurboElement {
-    }
-
     /**
      * @class TurboProxiedElement
      * @group TurboElement
@@ -15915,599 +22862,482 @@ var Turbo = (function (exports, yjs) {
         defineUIPrototype(TurboProxiedElement);
     })();
 
-    /**
-     * @group Utilities
-     * @category Hash
-     */
-    async function hashString(input) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(input);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-        return Array.from(new Uint8Array(hashBuffer))
-            .map(byte => byte.toString(16).padStart(2, "0"))
-            .join("");
-    }
-    /**
-     * @group Utilities
-     * @category Hash
-     */
-    async function hashBySize(input, chars = 12) {
-        const bytes = Math.ceil((chars * 6) / 8);
-        const enc = new TextEncoder();
-        const digest = await crypto.subtle.digest("SHA-256", enc.encode(input));
-        const slice = new Uint8Array(digest).slice(0, bytes);
-        return (typeof btoa === "function"
-            ? btoa(String.fromCharCode(...slice))
-            : Buffer.from(slice).toString("base64"))
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_")
-            .replace(/=+$/g, "")
-            .slice(0, chars);
+    function styleInject(css, ref) {
+      if ( ref === void 0 ) ref = {};
+      var insertAt = ref.insertAt;
+
+      if (!css || typeof document === 'undefined') { return; }
+
+      var head = document.head || document.getElementsByTagName('head')[0];
+      var style = document.createElement('style');
+      style.type = 'text/css';
+
+      if (insertAt === 'top') {
+        if (head.firstChild) {
+          head.insertBefore(style, head.firstChild);
+        } else {
+          head.appendChild(style);
+        }
+      } else {
+        head.appendChild(style);
+      }
+
+      if (style.styleSheet) {
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
     }
 
-    /**
-     * @function createYDoc
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Creates a new YDoc with a default map and populates it with optional data.
-     * @param {string} [mapKey="content"] - The key of the default map to setup. Defaults to "content".
-     * @param {object} [data] - Optional data to set inside the default map.
-     * @returns {{doc: YDoc, map: YMap}} - An object containing the YDoc and the default YMap.
-     */
-    function createYDoc(mapKey = "content", data) {
-        const doc = new yjs.Doc();
-        const map = doc.getMap(mapKey);
-        if (data)
-            for (const [key, value] of Object.entries(data))
-                map.set(key, value);
-        return { doc, map };
-    }
-    /**
-     * @function createYMap
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Creates a YMap and populates it with key-value pairs from a plain object.
-     * @param {object} data - The initial data to populate the YMap with.
-     * @returns {YMap} A new YMap instance.
-     */
-    function createYMap(data) {
-        const map = new yjs.Map();
-        for (const [key, value] of Object.entries(data))
-            map.set(key, value);
-        return map;
-    }
-    /**
-     * @function createYArray
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @template DataType - The type of the array's content.
-     * @description Creates a YArray and populates it with elements from a plain array.
-     * @param {DataType[]} data - The array of data to populate the YArray with.
-     * @returns {YArray} A new YArray instance.
-     */
-    function createYArray(data) {
-        const array = new yjs.Array();
-        array.push(data);
-        return array;
-    }
-    /**
-     * @function jsonToYjs
-     * @group Utilities
-     * @category Yjs
-     *
-     * @description Attempts to deep-convert a JSON structure into Yjs data.
-     * @param {object} data - The JSON data to convert.
-     * @return {YAbstractType} - The Yjs data.
-     */
-    function jsonToYjs(data) {
-        if (Array.isArray(data)) {
-            const arr = new yjs.Array();
-            arr.push(data.map(jsonToYjs));
-            return arr;
-        }
-        if (data && typeof data === "object") {
-            const map = new yjs.Map();
-            for (const [key, value] of Object.entries(data))
-                map.set(key, jsonToYjs(value));
-            return map;
-        }
-        return data;
-    }
-    /**
-     * @function addInYMap
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @async
-     * @description Adds the provided data in the provided parent in the Yjs document, with a unique ID as its field name.
-     * @param {object} data - The data to append to the Yjs document.
-     * @param {YMap} parentYMap - The YMap to add the data to.
-     * @param {string} [id] - Optional ID to use. If not provided, a unique ID is generated.
-     * @returns {Promise<string>} The ID of the inserted data.
-     */
-    async function addInYMap(data, parentYMap, id) {
-        const generateId = async () => await hashBySize(parentYMap?.doc?.clientID?.toString(32) + randomId());
-        if (!id) {
-            id = await generateId();
-            while (parentYMap?.get(id) !== undefined)
-                id = await generateId();
-        }
-        parentYMap.set(id, data);
-        return id;
-    }
-    /**
-     * @function addInYArray
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Adds the provided data in the provided parent array in the Yjs document.
-     * @param {object} data - The data to append to the Yjs document.
-     * @param {YArray} parentYArray - The YArray to which the data should be appended.
-     * @param {number} [index] - The index to insert the data at. If omitted or invalid, it is appended at the end.
-     * @returns {number} The index where the data was inserted.
-     */
-    function addInYArray(data, parentYArray, index) {
-        if (index == undefined || index > parentYArray.length) {
-            index = parentYArray.length;
-            parentYArray.push([data]);
-        }
-        else {
-            if (index < 0)
-                index = 0;
-            parentYArray.insert(index, [data]);
-        }
-        return index;
-    }
-    /**
-     * @function removeFromYArray
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Removes the first occurrence of the given entry from the YArray.
-     * @param {unknown} entry - The entry to remove.
-     * @param {YArray} parentYArray - The parent YArray.
-     * @returns {boolean} True if removed, false otherwise.
-     */
-    function removeFromYArray(entry, parentYArray) {
-        for (const [index, child] of parentYArray.toArray()) {
-            if (entry != child)
-                continue;
-            parentYArray.delete(index);
-            return true;
-        }
-        return false;
-    }
-    /**
-     * @function deepObserveAny
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
-     * changes.
-     * @param {YAbstractType} data - The Yjs type to observe.
-     * @param {(fieldChanged: string, event: YEvent, target: YAbstractType) => void} callback - The function to call
-     * when a matching field changes.
-     * @param {...string} fieldNames - List of field names to observe.
-     */
-    function deepObserveAny(data, callback, ...fieldNames) {
-        if (!data)
-            return;
-        const fields = new Set(fieldNames);
-        data.observeDeep((events) => {
-            for (const event of events) {
-                const target = event.target;
-                const parentMap = target._item?.parent;
-                const key = target._item?.parentSub;
-                for (const field of fields) {
-                    if ((event instanceof yjs.YMapEvent && event.changes.keys.has(field)) ||
-                        (event instanceof yjs.YArrayEvent && parentMap instanceof yjs.Map && key === field) ||
-                        (event.path?.some(segment => segment === field))) {
-                        callback(field, event, target);
-                        return;
-                    }
-                }
+    var css_248z$2 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
+    styleInject(css_248z$2);
+
+    let Toolbar = (() => {
+        let _classDecorators = [define("demo-toolbar")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboElement;
+        let _instanceExtraInitializers = [];
+        let _color_decorators;
+        let _color_initializers = [];
+        let _color_extraInitializers = [];
+        let _set_entries_decorators;
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _color_decorators = [signal];
+                _set_entries_decorators = [auto()];
+                __esDecorate$1(this, null, _set_entries_decorators, { kind: "setter", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers$1(_classThis, _classExtraInitializers);
+            }
+            color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _color_initializers, "white"));
+            set entries(value) {
+                value.forEach(entry => this.addTool(entry));
+            }
+            initialize() {
+                super.initialize();
+                effect(() => turbo(this).setStyle("backgroundColor", this.color));
+            }
+            addTool(tool) {
+                turbo(this).addChild(tool);
+            }
+            constructor() {
+                super(...arguments);
+                __runInitializers$1(this, _color_extraInitializers);
             }
         });
-    }
-    /**
-     * @function deepObserveAll
-     * @group Utilities
-     * @category Yjs
-     *
-     * @static
-     * @description Observes deeply for changes to all specified fields and invokes callback only when all fields
-     * have changed.
-     * @param {YAbstractType} data - The Yjs type to observe.
-     * @param {(event: YEvent, target: YAbstractType) => void} callback - The function to call when all fields change.
-     * @param {...string} fieldNames - List of field names to observe.
-     */
-    function deepObserveAll(data, callback, ...fieldNames) {
-        if (!data)
-            return;
-        const fields = new Set(fieldNames);
-        data.observeDeep(events => {
-            const changedFields = new Set();
-            for (const event of events) {
-                const target = event.target;
-                const parentMap = target._item?.parent;
-                const key = target._item?.parentSub;
-                for (const field of fields) {
-                    if ((event instanceof yjs.YMapEvent && event.changes.keys.has(field)) ||
-                        (event instanceof yjs.YArrayEvent && parentMap instanceof yjs.Map && key === field) ||
-                        (event.path?.some(segment => segment === field)))
-                        changedFields.add(field);
+        return _classThis;
+    })();
+
+    //Select tool
+    let SelectTool = (() => {
+        let _classSuper = TurboTool;
+        let _instanceExtraInitializers = [];
+        let _drag_decorators;
+        return class SelectTool extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _drag_decorators = [behavior()];
+                __esDecorate$1(this, null, _drag_decorators, { kind: "method", name: "drag", static: false, private: false, access: { has: obj => "drag" in obj, get: obj => obj.drag }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "select"); //Define the tool name
+            //Equivalent to turbo(tool).addToolBehavior("turbo-drag", "select", (e, el) => {...});
+            drag(e, el) {
+                try {
+                    if ("modifiable" in el && !el.modifiable)
+                        return Propagation.propagate;
+                    else if ("move" in el && typeof el.move === "function")
+                        el.move(e.deltaPosition);
+                    else if ("translate" in el && typeof el.translate === "function")
+                        el.translate(e.deltaPosition);
+                    else if ("position" in el && typeof el.position === "object")
+                        el.position = e.deltaPosition.add(el.position);
+                    else
+                        return Propagation.propagate;
+                    return Propagation.stopPropagation;
                 }
-                if (changedFields.size === fields.size) {
-                    callback(event, target);
-                    return;
+                catch (e) {
+                    return Propagation.stopPropagation;
                 }
             }
+        };
+    })();
+
+    //Bucket tool
+    let BucketTool = (() => {
+        let _classSuper = TurboTool;
+        let _instanceExtraInitializers = [];
+        let _click_decorators;
+        return class BucketTool extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _click_decorators = [behavior()];
+                __esDecorate$1(this, null, _click_decorators, { kind: "method", name: "click", static: false, private: false, access: { has: obj => "click" in obj, get: obj => obj.click }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "bucket"); //Define the tool name
+            //Equivalent to turbo(tool).addToolBehavior("click", "bucket", (e, el) => {...});
+            click(e, el) {
+                if ("color" in el && typeof el.color === "string" && !(el instanceof Bucket)) {
+                    el.color = this.element.color;
+                    return Propagation.stopPropagation;
+                }
+            }
+        };
+    })();
+
+    //Custom element for the bucket tool
+    let Bucket = (() => {
+        let _classDecorators = [define("demo-bucket")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboButton;
+        let _instanceExtraInitializers = [];
+        let __color_decorators;
+        let __color_initializers = [];
+        let __color_extraInitializers = [];
+        let _updateBorderColor_decorators;
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __color_decorators = [signal];
+                _updateBorderColor_decorators = [effect];
+                __esDecorate$1(this, null, _updateBorderColor_decorators, { kind: "method", name: "updateBorderColor", static: false, private: false, access: { has: obj => "updateBorderColor" in obj, get: obj => obj.updateBorderColor }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(null, null, __color_decorators, { kind: "field", name: "_color", static: false, private: false, access: { has: obj => "_color" in obj, get: obj => obj._color, set: (obj, value) => { obj._color = value; } }, metadata: _metadata }, __color_initializers, __color_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            _color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, __color_initializers, "#000000")); //Signal to fire @effect callbacks when the value changes
+            colorInput = __runInitializers$1(this, __color_extraInitializers);
+            static defaultProperties = {
+                tools: BucketTool
+            };
+            get color() {
+                return this._color.toString();
+            }
+            //Function that sets up sub-elements. Called on creation.
+            setupUIElements() {
+                super.setupUIElements();
+                this.colorInput = input({ type: "color", style: "visibility: hidden; position: absolute" });
+            }
+            //Function that adds the sub-elements to the document. Called on creation.
+            setupUILayout() {
+                super.setupUILayout();
+                turbo(this).addChild(this.colorInput);
+            }
+            //Function that sets up event listeners. Called on creation.
+            setupUIListeners() {
+                super.setupUIListeners();
+                turbo(this).on(DefaultEventName.click, () => this.colorInput.click());
+                turbo(this.colorInput).on(DefaultEventName.input, () => { this._color = this.colorInput.value; });
+            }
+            updateBorderColor() {
+                turbo(this).setStyle("borderColor", this._color);
+            }
+            static {
+                __runInitializers$1(_classThis, _classExtraInitializers);
+            }
         });
-    }
+        return _classThis;
+    })();
 
-    /**
-     * @group Utilities
-     * @category Event
-     * @param e
-     */
-    function getEventPosition(e) {
-        if (e instanceof TurboEvent)
-            return e.scaledPosition;
-        if (e instanceof PointerEvent)
-            return new Point(e.clientX, e.clientY);
-        return;
-    }
+    var css_248z$1 = "my-canvas{display:block;height:100vh;width:100vw}";
+    styleInject(css_248z$1);
 
-    /**
-     * @group Utilities
-     * @category Color
-     *
-     * @description Computes the luminance of a color
-     * @param {string} color - The color in Hex format
-     * @return The luminance value, or NaN if the color is not valid.
-     */
-    function luminance(color) {
-        if (!color)
-            return NaN;
-        const rgb = parseInt(color.substring(1), 16);
-        const r = ((rgb >> 16) & 0xff) / 255;
-        const g = ((rgb >> 8) & 0xff) / 255;
-        const b = ((rgb >> 0) & 0xff) / 255;
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    }
+    let Canvas = (() => {
+        let _classDecorators = [define("my-canvas")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboElement;
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers$1(_classThis, _classExtraInitializers);
+            }
+        });
+        return _classThis;
+    })();
 
-    /**
-     * @group Utilities
-     * @category Color
-     *
-     * @description Computes the contrast between two colors.
-     * @param {string} color1 - The first color in Hex format
-     * @param {string} color2 - The second color in Hex format
-     * @return The contrast value, or NaN if one of the colors provided is not valid.
-     */
-    function contrast(color1, color2) {
-        if (!color1 || !color2)
-            return NaN;
-        const luminance1 = luminance(color1);
-        const luminance2 = luminance(color2);
-        return (Math.max(luminance1, luminance2) + 0.1) / (Math.min(luminance1, luminance2) + 0.1);
-    }
+    //Model of the square element
+    let SquareModel = (() => {
+        let _classSuper = TurboModel;
+        let _color_decorators;
+        let _color_initializers = [];
+        let _color_extraInitializers = [];
+        let _position_decorators;
+        let _position_initializers = [];
+        let _position_extraInitializers = [];
+        let _rotation_decorators;
+        let _rotation_initializers = [];
+        let _rotation_extraInitializers = [];
+        let _elementSize_decorators;
+        let _elementSize_initializers = [];
+        let _elementSize_extraInitializers = [];
+        let _centerAnchor_decorators;
+        let _centerAnchor_initializers = [];
+        let _centerAnchor_extraInitializers = [];
+        return class SquareModel extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _color_decorators = [signal];
+                _position_decorators = [signal];
+                _rotation_decorators = [signal];
+                _elementSize_decorators = [signal];
+                _centerAnchor_decorators = [signal];
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
+                __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
+                __esDecorate$1(null, null, _elementSize_decorators, { kind: "field", name: "elementSize", static: false, private: false, access: { has: obj => "elementSize" in obj, get: obj => obj.elementSize, set: (obj, value) => { obj.elementSize = value; } }, metadata: _metadata }, _elementSize_initializers, _elementSize_extraInitializers);
+                __esDecorate$1(null, null, _centerAnchor_decorators, { kind: "field", name: "centerAnchor", static: false, private: false, access: { has: obj => "centerAnchor" in obj, get: obj => obj.centerAnchor, set: (obj, value) => { obj.centerAnchor = value; } }, metadata: _metadata }, _centerAnchor_initializers, _centerAnchor_extraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            //Turned simple fields into signals (so changing their values will trigger @effect callbacks)
+            color = __runInitializers$1(this, _color_initializers, randomColor([60, 90], [40, 70]));
+            position = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _position_initializers, new Point()));
+            rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, 0));
+            elementSize = (__runInitializers$1(this, _rotation_extraInitializers), __runInitializers$1(this, _elementSize_initializers, 100));
+            centerAnchor = (__runInitializers$1(this, _elementSize_extraInitializers), __runInitializers$1(this, _centerAnchor_initializers, true));
+            constructor() {
+                super(...arguments);
+                __runInitializers$1(this, _centerAnchor_extraInitializers);
+            }
+        };
+    })();
 
-    /**
-     * @group Utilities
-     * @category Color
-     *
-     * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
-     * (for readability).
-     * @param {string} baseColor - The base color in Hex format.
-     * @param {string} [overlayColor1="#000000"] - The first overlay color to evaluate in Hex format. Defaults to black.
-     * @param {string} [overlayColor2="#FFFFFF"] - The second overlay color to evaluate in Hex format. Defaults to white.
-     */
-    function bestOverlayColor(baseColor, overlayColor1 = "#000000", overlayColor2 = "#FFFFFF") {
-        const contrastLight = contrast(baseColor, overlayColor2);
-        const contrastDark = contrast(overlayColor1, baseColor);
-        return contrastLight > contrastDark ? overlayColor2 : overlayColor1;
-    }
+    //View of the square element
+    let SquareView = (() => {
+        let _classSuper = TurboView;
+        let _instanceExtraInitializers = [];
+        let _updatePosition_decorators;
+        let _updateColor_decorators;
+        let _updateSize_decorators;
+        return class SquareView extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _updatePosition_decorators = [effect];
+                _updateColor_decorators = [effect];
+                _updateSize_decorators = [effect];
+                __esDecorate$1(this, null, _updatePosition_decorators, { kind: "method", name: "updatePosition", static: false, private: false, access: { has: obj => "updatePosition" in obj, get: obj => obj.updatePosition }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateColor_decorators, { kind: "method", name: "updateColor", static: false, private: false, access: { has: obj => "updateColor" in obj, get: obj => obj.updateColor }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _updateSize_decorators, { kind: "method", name: "updateSize", static: false, private: false, access: { has: obj => "updateSize" in obj, get: obj => obj.updateSize }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            //@effect methods will be called when the values of the signals they use change
+            updatePosition() {
+                const offset = this.model.centerAnchor ? this.model.elementSize / 2 : 0;
+                turbo(this).setStyle("transform", `
+        translate(${this.model.position.x - offset}px, ${this.model.position.y - offset}px)
+        rotate(${this.model.rotation}rad)
+        `);
+            }
+            updateColor() {
+                turbo(this).setStyle("backgroundColor", this.model.color);
+            }
+            updateSize() {
+                turbo(this).setStyles({ width: this.model.elementSize + "px", height: this.model.elementSize + "px" });
+            }
+            constructor() {
+                super(...arguments);
+                __runInitializers$1(this, _instanceExtraInitializers);
+            }
+        };
+    })();
 
-    /**
-     * @internal
-     * @description Default font weights, sub-names, and styles when loading a font family.
-     */
-    const defaultFamilyWeights = {
-        900: { "Black": "normal", "BlackItalic": "italic" },
-        800: { "ExtraBold": "normal", "ExtraBoldItalic": "italic" },
-        700: { "Bold": "normal", "BoldItalic": "italic" },
-        600: { "SemiBold": "normal", "SemiBoldItalic": "italic" },
-        500: { "Medium": "normal", "MediumItalic": "italic" },
-        400: { "Regular": "normal", "Italic": "italic" },
-        300: { "Light": "normal", "LightItalic": "italic" },
-        200: { "ExtraLight": "normal", "ExtraLightItalic": "italic" },
-        100: { "Thin": "normal", "ThinItalic": "italic" },
-    };
-    /**
-     * @internal
-     * @param name
-     * @param path
-     * @param format
-     * @param weight
-     * @param style
-     */
-    function createFontFace(name, path, format, weight, style) {
-        return css `
-        @font-face {
-            font-family: "${name}";
-            src: url("${path}") format("${format}"), 
-            url("${path}") format("woff"),
-            url("${path}") format("truetype");
-            font-weight: ${typeof weight == "string" ? "\"" + weight + "\"" : weight};
-            font-style: "${style}";
-        }`;
-    }
-    /**
-     * @group Utilities
-     * @category Font
-     * @description Loads a local font file, or a family of fonts from a directory.
-     * @param {FontProperties} font - The font properties
-     */
-    function loadLocalFont(font) {
-        if (!font.name || !font.pathOrDirectory)
-            console.error("Please specify font name and path/directory");
-        const isFamily = getFileExtension(font.pathOrDirectory).length == 0;
-        if (!font.stylesPerWeights)
-            font.stylesPerWeights = isFamily ? defaultFamilyWeights : { "normal": "normal" };
-        if (!font.format)
-            font.format = "woff2";
-        if (!font.extension)
-            font.extension = ".ttf";
-        if (font.extension[0] != ".")
-            font.extension = "." + font.extension;
-        stylesheet(Object.entries(font.stylesPerWeights).map(([weight, value]) => {
-            const weightNumber = Number.parseInt(weight);
-            const typedWeight = weightNumber ? weightNumber : weight;
-            if (typeof value == "string")
-                return createFontFace(font.name, font.pathOrDirectory, font.format, typedWeight, value);
-            return Object.entries(value).map(([weightName, style]) => createFontFace(font.name, `${font.pathOrDirectory}/${font.name}-${weightName}${font.extension}`, font.format, typedWeight, style)).join("\n");
-        }).join("\n"));
-    }
+    var css_248z = ".demo-square{align-items:center;display:flex;height:100px;justify-content:center;position:absolute;width:100px}";
+    styleInject(css_248z);
 
-    Object.defineProperty(exports, "YAbstractType", {
-        enumerable: true,
-        get: function () { return yjs.AbstractType; }
-    });
-    Object.defineProperty(exports, "YArray", {
-        enumerable: true,
-        get: function () { return yjs.Array; }
-    });
-    Object.defineProperty(exports, "YArrayEvent", {
-        enumerable: true,
-        get: function () { return yjs.YArrayEvent; }
-    });
-    Object.defineProperty(exports, "YDoc", {
-        enumerable: true,
-        get: function () { return yjs.Doc; }
-    });
-    Object.defineProperty(exports, "YEvent", {
-        enumerable: true,
-        get: function () { return yjs.YEvent; }
-    });
-    Object.defineProperty(exports, "YMap", {
-        enumerable: true,
-        get: function () { return yjs.Map; }
-    });
-    Object.defineProperty(exports, "YMapEvent", {
-        enumerable: true,
-        get: function () { return yjs.YMapEvent; }
-    });
-    Object.defineProperty(exports, "YText", {
-        enumerable: true,
-        get: function () { return yjs.Text; }
-    });
-    exports.$ = $;
-    exports.AnchorPoint = AnchorPoint;
-    exports.ApplyDefaultsMergeProperties = ApplyDefaultsMergeProperties;
-    exports.BasicInputEvents = BasicInputEvents;
-    exports.DefaultClickEventName = DefaultClickEventName;
-    exports.DefaultDragEventName = DefaultDragEventName;
-    exports.DefaultEventName = DefaultEventName;
-    exports.DefaultKeyEventName = DefaultKeyEventName;
-    exports.DefaultMoveEventName = DefaultMoveEventName;
-    exports.DefaultWheelEventName = DefaultWheelEventName;
-    exports.Delegate = Delegate;
-    exports.Listener = Listener;
-    exports.ListenerSet = ListenerSet;
-    exports.MathMLNamespace = MathMLNamespace;
-    exports.MathMLTags = MathMLTags;
-    exports.Mvc = Mvc;
-    exports.NonPassiveEvents = NonPassiveEvents;
-    exports.Point = Point;
-    exports.Reifect = Reifect;
-    exports.StatefulReifect = StatefulReifect;
-    exports.SvgNamespace = SvgNamespace;
-    exports.SvgTags = SvgTags;
-    exports.TurboBaseElement = TurboBaseElement;
-    exports.TurboButton = TurboButton;
-    exports.TurboClickEventName = TurboClickEventName;
-    exports.TurboController = TurboController;
-    exports.TurboDragEvent = TurboDragEvent;
-    exports.TurboDragEventName = TurboDragEventName;
-    exports.TurboDrawer = TurboDrawer;
-    exports.TurboDropdown = TurboDropdown;
-    exports.TurboElement = TurboElement;
-    exports.TurboEmitter = TurboEmitter;
-    exports.TurboEvent = TurboEvent;
-    exports.TurboEventManager = TurboEventManager;
-    exports.TurboEventName = TurboEventName;
-    exports.TurboGrid = TurboGrid;
-    exports.TurboHandler = TurboHandler;
-    exports.TurboHeadlessElement = TurboHeadlessElement;
-    exports.TurboIcon = TurboIcon;
-    exports.TurboIconSwitch = TurboIconSwitch;
-    exports.TurboIconToggle = TurboIconToggle;
-    exports.TurboInput = TurboInput;
-    exports.TurboInteractor = TurboInteractor;
-    exports.TurboKeyEvent = TurboKeyEvent;
-    exports.TurboKeyEventName = TurboKeyEventName;
-    exports.TurboMap = TurboMap;
-    exports.TurboMarkingMenu = TurboMarkingMenu;
-    exports.TurboModel = TurboModel;
-    exports.TurboMoveEventName = TurboMoveEventName;
-    exports.TurboNestedMap = TurboNestedMap;
-    exports.TurboNodeList = TurboNodeList;
-    exports.TurboNumericalInput = TurboNumericalInput;
-    exports.TurboObserver = TurboObserver;
-    exports.TurboPopup = TurboPopup;
-    exports.TurboProxiedElement = TurboProxiedElement;
-    exports.TurboQueue = TurboQueue;
-    exports.TurboRect = TurboRect;
-    exports.TurboRichElement = TurboRichElement;
-    exports.TurboSelect = TurboSelect;
-    exports.TurboSelectElement = TurboSelectElement;
-    exports.TurboSelectInputEvent = TurboSelectInputEvent;
-    exports.TurboSelectWheel = TurboSelectWheel;
-    exports.TurboSelector = TurboSelector;
-    exports.TurboSubstrate = TurboSubstrate;
-    exports.TurboTool = TurboTool;
-    exports.TurboView = TurboView;
-    exports.TurboWeakSet = TurboWeakSet;
-    exports.TurboWheelEvent = TurboWheelEvent;
-    exports.TurboWheelEventName = TurboWheelEventName;
-    exports.TurboYModel = TurboYModel;
-    exports.a = a;
-    exports.aabbCorners = aabbCorners;
-    exports.addInYArray = addInYArray;
-    exports.addInYMap = addInYMap;
-    exports.alphabeticalSorting = alphabeticalSorting;
-    exports.areEqual = areEqual;
-    exports.attachListenersAndBehaviors = attachListenersAndBehaviors;
-    exports.auto = auto;
-    exports.behavior = behavior;
-    exports.bestOverlayColor = bestOverlayColor;
-    exports.blindElement = blindElement;
-    exports.button = button;
-    exports.cache = cache;
-    exports.callOnce = callOnce;
-    exports.callOncePerInstance = callOncePerInstance;
-    exports.camelToKebabCase = camelToKebabCase;
-    exports.canvas = canvas;
-    exports.checker = checker;
-    exports.clearCache = clearCache;
-    exports.clearCacheEntry = clearCacheEntry;
-    exports.closestPointOnAabb = closestPointOnAabb;
-    exports.closestPointOnSegment = closestPointOnSegment;
-    exports.contrast = contrast;
-    exports.controller = controller;
-    exports.createProxy = createProxy;
-    exports.createYArray = createYArray;
-    exports.createYDoc = createYDoc;
-    exports.createYMap = createYMap;
-    exports.css = css;
-    exports.deepObserveAll = deepObserveAll;
-    exports.deepObserveAny = deepObserveAny;
-    exports.define = define;
-    exports.disposeEffect = disposeEffect;
-    exports.div = div;
-    exports.drawer = drawer;
-    exports.dropdown = dropdown;
-    exports.eachEqualToAny = eachEqualToAny;
-    exports.effect = effect;
-    exports.element = element;
-    exports.equalToAny = equalToAny;
-    exports.expose = expose;
-    exports.fetchSvg = fetchSvg;
-    exports.flexCol = flexCol;
-    exports.flexColCenter = flexColCenter;
-    exports.flexRow = flexRow;
-    exports.flexRowCenter = flexRowCenter;
-    exports.form = form;
-    exports.generateTagFunction = generateTagFunction;
-    exports.getEventPosition = getEventPosition;
-    exports.getFileExtension = getFileExtension;
-    exports.getFirstDescriptorInChain = getFirstDescriptorInChain;
-    exports.getFirstPrototypeInChainWith = getFirstPrototypeInChainWith;
-    exports.getPrototypeChain = getPrototypeChain;
-    exports.getSignal = getSignal;
-    exports.getSuperDescriptor = getSuperDescriptor;
-    exports.getSuperMethod = getSuperMethod;
-    exports.h1 = h1;
-    exports.h2 = h2;
-    exports.h3 = h3;
-    exports.h4 = h4;
-    exports.h5 = h5;
-    exports.h6 = h6;
-    exports.handler = handler;
-    exports.hasPropertyInChain = hasPropertyInChain;
-    exports.hasSeparatingAxisForPolygons = hasSeparatingAxisForPolygons;
-    exports.hashBySize = hashBySize;
-    exports.hashString = hashString;
-    exports.icon = icon;
-    exports.iconSwitch = iconSwitch;
-    exports.iconToggle = iconToggle;
-    exports.img = img;
-    exports.initializeEffects = initializeEffects;
-    exports.input = input;
-    exports.interactor = interactor;
-    exports.intersectSegments = intersectSegments;
-    exports.isNull = isNull;
-    exports.isPointInConvexPolygon = isPointInConvexPolygon;
-    exports.isUndefined = isUndefined;
-    exports.jsonToYjs = jsonToYjs;
-    exports.kebabToCamelCase = kebabToCamelCase;
-    exports.linearInterpolation = linearInterpolation;
-    exports.link = link;
-    exports.listener = listener;
-    exports.loadLocalFont = loadLocalFont;
-    exports.luminance = luminance;
-    exports.markDirty = markDirty;
-    exports.mod = mod;
-    exports.modelSignal = modelSignal;
-    exports.mutator = mutator;
-    exports.nestedModelSignal = nestedModelSignal;
-    exports.numericalInput = numericalInput;
-    exports.observe = observe;
-    exports.p = p;
-    exports.parse = parse;
-    exports.polygonsIntersect = polygonsIntersect;
-    exports.popup = popup;
-    exports.projectPolygonOntoAxis = projectPolygonOntoAxis;
-    exports.randomColor = randomColor;
-    exports.randomFromRange = randomFromRange;
-    exports.randomId = randomId;
-    exports.randomString = randomString;
-    exports.reifect = reifect;
-    exports.removeFromYArray = removeFromYArray;
-    exports.richElement = richElement;
-    exports.segmentIntersectsPolygon = segmentIntersectsPolygon;
-    exports.selectElement = selectElement;
-    exports.setSignal = setSignal;
-    exports.signal = signal;
-    exports.solver = solver;
-    exports.spacer = spacer;
-    exports.span = span;
-    exports.stringify = stringify;
-    exports.style = style;
-    exports.stylesheet = stylesheet;
-    exports.substrate = substrate;
-    exports.t = t;
-    exports.textToElement = textToElement;
-    exports.textarea = textarea;
-    exports.tool = tool;
-    exports.trim = trim;
-    exports.tu = tu;
-    exports.turbo = turbo;
-    exports.turboInput = turboInput;
-    exports.turbofy = turbofy;
-    exports.video = video;
+    //Custom square element, defined as a custom element
+    let Square = (() => {
+        let _classDecorators = [define("demo-square")];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = TurboElement;
+        let _color_decorators;
+        let _color_initializers = [];
+        let _color_extraInitializers = [];
+        let _elementSize_decorators;
+        let _elementSize_initializers = [];
+        let _elementSize_extraInitializers = [];
+        let _position_decorators;
+        let _position_initializers = [];
+        let _position_extraInitializers = [];
+        let _rotation_decorators;
+        let _rotation_initializers = [];
+        let _rotation_extraInitializers = [];
+        (class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _color_decorators = [expose("model")];
+                _elementSize_decorators = [expose("model")];
+                _position_decorators = [expose("model")];
+                _rotation_decorators = [expose("model")];
+                __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+                __esDecorate$1(null, null, _elementSize_decorators, { kind: "field", name: "elementSize", static: false, private: false, access: { has: obj => "elementSize" in obj, get: obj => obj.elementSize, set: (obj, value) => { obj.elementSize = value; } }, metadata: _metadata }, _elementSize_initializers, _elementSize_extraInitializers);
+                __esDecorate$1(null, null, _position_decorators, { kind: "field", name: "position", static: false, private: false, access: { has: obj => "position" in obj, get: obj => obj.position, set: (obj, value) => { obj.position = value; } }, metadata: _metadata }, _position_initializers, _position_extraInitializers);
+                __esDecorate$1(null, null, _rotation_decorators, { kind: "field", name: "rotation", static: false, private: false, access: { has: obj => "rotation" in obj, get: obj => obj.rotation, set: (obj, value) => { obj.rotation = value; } }, metadata: _metadata }, _rotation_initializers, _rotation_extraInitializers);
+                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                _classThis = _classDescriptor.value;
+                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            modifiable = true;
+            //Expose fields from the model
+            color = __runInitializers$1(this, _color_initializers, void 0);
+            elementSize = (__runInitializers$1(this, _color_extraInitializers), __runInitializers$1(this, _elementSize_initializers, void 0));
+            position = (__runInitializers$1(this, _elementSize_extraInitializers), __runInitializers$1(this, _position_initializers, void 0));
+            rotation = (__runInitializers$1(this, _position_extraInitializers), __runInitializers$1(this, _rotation_initializers, void 0));
+            static defaultProperties = {
+                view: SquareView,
+                model: SquareModel,
+            };
+            defaultFeedforwardProperties = (__runInitializers$1(this, _rotation_extraInitializers), { style: "opacity: 0.4" });
+            move(delta) {
+                this.model.position = delta.add(this.model.position);
+            }
+            rotate(angle) {
+                this.model.rotation += angle;
+            }
+            resize(delta) {
+                this.model.elementSize = delta.min;
+            }
+            getBoundingClientRect() {
+                const offset = this.model.centerAnchor ? this.model.elementSize / 2 : 0;
+                return new TurboRect({
+                    x: this.model.position.x - offset,
+                    y: this.model.position.y - offset,
+                    width: this.elementSize,
+                    height: this.elementSize,
+                    angleDeg: this.rotation
+                });
+            }
+            static {
+                __runInitializers$1(_classThis, _classExtraInitializers);
+            }
+        });
+        return _classThis;
+    })();
 
-    return exports;
+    let SquareList = (() => {
+        let _classSuper = TurboBaseElement;
+        let _instanceExtraInitializers = [];
+        let _count_decorators;
+        let _count_initializers = [];
+        let _count_extraInitializers = [];
+        let _updateSquareCount_decorators;
+        return class SquareList extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _count_decorators = [signal];
+                _updateSquareCount_decorators = [effect];
+                __esDecorate$1(this, null, _updateSquareCount_decorators, { kind: "method", name: "updateSquareCount", static: false, private: false, access: { has: obj => "updateSquareCount" in obj, get: obj => obj.updateSquareCount }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(null, null, _count_decorators, { kind: "field", name: "count", static: false, private: false, access: { has: obj => "count" in obj, get: obj => obj.count, set: (obj, value) => { obj.count = value; } }, metadata: _metadata }, _count_initializers, _count_extraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            count = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _count_initializers, 10));
+            squares = (__runInitializers$1(this, _count_extraInitializers), []);
+            reifect = new Reifect({
+                properties: (id, total) => {
+                    return {
+                        position: Point.linearInterpolation(this.startSquare.position, this.endSquare.position, id / total),
+                    };
+                }
+            });
+            get startSquare() {
+                return this.squares[0];
+            }
+            get endSquare() {
+                return this.squares[this.squares.length - 1];
+            }
+            get canvas() {
+                return document.querySelector("my-canvas");
+            }
+            updateSquareCount() {
+                // this.reifect.detach(...this.squares);
+                if (this.count < this.squares.length) {
+                    for (let i = this.squares.length; i >= this.count; i--)
+                        this.squares[i].remove();
+                    this.squares.splice(this.count, this.squares.length - this.count);
+                }
+                else if (this.count > this.squares.length) {
+                    for (let i = this.squares.length; i < this.count; i++)
+                        this.squares[i] =
+                            Square.create({ parent: this.canvas });
+                }
+                this.startSquare.modifiable = true;
+                this.endSquare.modifiable = true;
+                for (let i = 1; i < this.squares.length - 1; i++)
+                    this.squares[i].modifiable = false;
+                this.reifect.attachAll(...this.squares);
+            }
+        };
+    })();
 
-})({}, yjs);
+    //Add square tool
+    let AddSquareListTool = (() => {
+        let _classSuper = TurboTool;
+        let _instanceExtraInitializers = [];
+        let _dragStart_decorators;
+        let _drag_decorators;
+        let _dragEnd_decorators;
+        return class AddSquareListTool extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _dragStart_decorators = [behavior()];
+                _drag_decorators = [behavior()];
+                _dragEnd_decorators = [behavior()];
+                __esDecorate$1(this, null, _dragStart_decorators, { kind: "method", name: "dragStart", static: false, private: false, access: { has: obj => "dragStart" in obj, get: obj => obj.dragStart }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _drag_decorators, { kind: "method", name: "drag", static: false, private: false, access: { has: obj => "drag" in obj, get: obj => obj.drag }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate$1(this, null, _dragEnd_decorators, { kind: "method", name: "dragEnd", static: false, private: false, access: { has: obj => "dragEnd" in obj, get: obj => obj.dragEnd }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            toolName = (__runInitializers$1(this, _instanceExtraInitializers), "addSquareList"); //Define the tool name
+            currentSquareList;
+            dragStart(e, target) {
+                if (target instanceof Canvas) {
+                    this.currentSquareList = new SquareList();
+                    this.currentSquareList.initialize();
+                    this.currentSquareList.startSquare.position = e.scaledPosition;
+                    this.currentSquareList.endSquare.position = e.scaledPosition;
+                    return Propagation.stopPropagation;
+                }
+            }
+            drag(e) {
+                if (this.currentSquareList) {
+                    this.currentSquareList.endSquare.position = e.scaledPosition;
+                    return Propagation.stopPropagation;
+                }
+            }
+            dragEnd() {
+                this.currentSquareList = undefined;
+            }
+        };
+    })();
+
+    Canvas.create({ parent: document.body });
+    Toolbar.create({
+        parent: document.body,
+        entries: [
+            button({ text: "Select", tools: SelectTool, classes: "demo-button" }),
+            // button({text: "Add Square", tools: AddSquareTool, classes: "demo-button"}),
+            button({ text: "Add SquareList", tools: AddSquareListTool, classes: "demo-button" }),
+            Bucket.create({ text: "Bucket", classes: "demo-button" }),
+        ]
+    });
+
+})();

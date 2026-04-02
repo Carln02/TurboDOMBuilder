@@ -1,5 +1,5 @@
 import {initializeEffects, signal} from "../../decorators/reactivity/reactivity";
-import {DataKeyType, FlatKeyType, TurboModelProperties, TurboObserverProperties} from "./model.types";
+import {TurboModelProperties, TurboObserverProperties} from "./model.types";
 import {SignalBox} from "../../decorators/reactivity/reactivity.types";
 import {auto} from "../../decorators/auto/auto";
 import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
@@ -8,6 +8,7 @@ import {TurboObserver} from "./observer";
 import {isUndefined} from "../../utils/dataManipulation/misc";
 import {turbo} from "../../turboFunctions/turboFunctions";
 import {TurboHandler} from "../handler/handler";
+import {FlatKeyType, KeyType} from "../../types/basic.types";
 
 /**
  * @class TurboModel
@@ -15,8 +16,8 @@ import {TurboHandler} from "../handler/handler";
  * @category TurboModel
  *
  * @template DataType - The type of the data held in the model.
- * @template {DataKeyType} KeyType - The type of the data's keys.
- * @template IdType - The type of the data's ID.
+ * @template {KeyType} KeyType - The type of the data's keys.
+ * @template {KeyType} IdType - The type of the data's ID.
  * @template ComponentType - The type of instances managed by attached observers.
  * @template DataEntryType - The type of data associated with each observer instance.
  *
@@ -25,8 +26,8 @@ import {TurboHandler} from "../handler/handler";
  */
 class TurboModel<
     DataType = any,
-    KeyType extends DataKeyType = any,
-    IdType extends DataKeyType = any,
+    DataKeyType extends KeyType = any,
+    IdType extends KeyType = any,
     ComponentType extends object = any,
     DataEntryType = any
 > {
@@ -65,14 +66,14 @@ class TurboModel<
      * @description Delegate fired whenever a value changes at a key path. Receives the new value followed
      * by the key path as spread arguments.
      */
-    public readonly onKeyChanged = new Delegate<(value: any, ...keys: DataKeyType[]) => void>();
+    public readonly onKeyChanged = new Delegate<(value: any, ...keys: KeyType[]) => void>();
 
     protected isInitialized: boolean = false;
 
-    private readonly signals: Map<KeyType, SignalBox<unknown>> = new Map();
+    private readonly signals: Map<DataKeyType, SignalBox<unknown>> = new Map();
 
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, KeyType>> = new TurboWeakSet();
-    protected readonly nestedModels: Map<KeyType, TurboModel> = new Map();
+    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>> = new TurboWeakSet();
+    protected readonly nestedModels: Map<DataKeyType, TurboModel> = new Map();
     protected readonly nestListeners: Set<(model: TurboModel, key: DataKeyType) => void> = new Set();
 
     /**
@@ -130,10 +131,10 @@ class TurboModel<
      * @function getAction
      * @description Read a single key from a data container. Override this method to support other datatypes.
      * @param {any} data - The container to read from.
-     * @param {DataKeyType} key - The key to read.
+     * @param {KeyType} key - The key to read.
      * @returns {any} The value at the key, or `undefined` if not found.
      */
-    protected getAction(data: any, key: DataKeyType) {
+    protected getAction(data: any, key: KeyType) {
         if (data instanceof Map) return data.get(key);
         return data?.[key as any];
     }
@@ -144,16 +145,16 @@ class TurboModel<
      * @param {KeyType} key - The key to read.
      * @returns {any} The stored value, or `undefined` if not found.
      */
-    public get(key: KeyType): any;
+    public get(key: DataKeyType): any;
 
     /**
      * @function get
      * @description Retrieve the value at the given key path. Pass no keys to get the root data.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @returns {any} The stored value, or `undefined` if not found.
      */
-    public get(...keys: DataKeyType[]): any;
-    public get(...keys: DataKeyType[]): any {
+    public get(...keys: KeyType[]): any;
+    public get(...keys: KeyType[]): any {
         if (keys.length === 0) return this.data;
         let current: any = this.data;
         for (const key of keys) {
@@ -180,12 +181,12 @@ class TurboModel<
      * @function getKey
      * @description Find the key path of the first occurrence of the given value, searching depth-first.
      * @param {any} value - The value to locate.
-     * @returns {DataKeyType[]} The key path, or `undefined` if not found.
+     * @returns {KeyType[]} The key path, or `undefined` if not found.
      */
-    public getKey(value: any): DataKeyType[] {
-        const search = (data: any, path: DataKeyType[]): DataKeyType[] => {
+    public getKey(value: any): KeyType[] {
+        const search = (data: any, path: KeyType[]): KeyType[] => {
             if (!data || typeof data !== "object") return undefined;
-            const keys: DataKeyType[] = data instanceof Map
+            const keys: KeyType[] = data instanceof Map
                 ? Array.from(data.keys())
                 : [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
             for (const key of keys) {
@@ -205,7 +206,7 @@ class TurboModel<
      * @param {any} value - The value to query.
      * @returns {FlatKeyType | undefined} The flat key, or `undefined` if not found.
      */
-    public getFlatKey(value: any): FlatKeyType | undefined {
+    public getFlatKey(value: any): FlatKeyType {
         const path = this.getKey(value);
         if (!path?.length) return undefined;
         return this.flattenKey(...path);
@@ -215,13 +216,13 @@ class TurboModel<
      * @function getKeys
      * @description Find the key paths of all occurrences of the given value, searching depth-first.
      * @param {any} value - The value to locate.
-     * @returns {DataKeyType[][]} Array of key paths.
+     * @returns {KeyType[][]} Array of key paths.
      */
-    public getKeys(value: any): DataKeyType[][] {
-        const results: DataKeyType[][] = [];
-        const search = (data: any, path: DataKeyType[]) => {
+    public getKeys(value: any): KeyType[][] {
+        const results: KeyType[][] = [];
+        const search = (data: any, path: KeyType[]) => {
             if (!data || typeof data !== "object") return;
-            const keys: DataKeyType[] = data instanceof Map
+            const keys: KeyType[] = data instanceof Map
                 ? Array.from(data.keys())
                 : [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
             for (const key of keys) {
@@ -256,10 +257,10 @@ class TurboModel<
      * @function setAction
      * @description Write a single key to a data container. Override this method to support other datatypes.
      * @param {any} data - The container to write to.
-     * @param {DataKeyType} key - The key to write.
+     * @param {KeyType} key - The key to write.
      * @param {any} value - The value to set.
      */
-    protected setAction(data: any, value: any, key: DataKeyType) {
+    protected setAction(data: any, value: any, key: KeyType) {
         if (data instanceof Map) data.set(key, value);
         else (data as any)[key] = value;
     }
@@ -272,10 +273,10 @@ class TurboModel<
      * @param {TurboModel} model - The owning model (used for nested model lookup and change notification),
      * or `undefined` if operating on a non-root container.
      * @param {any} data - The container to write to.
-     * @param {DataKeyType} key - The key to write.
+     * @param {KeyType} key - The key to write.
      * @param {any} value - The value to set.
      */
-    protected internalSet(model: TurboModel, data: any, value: any, key: DataKeyType) {
+    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType) {
         if (model) {
             const nested = model.getNested(key);
             if (nested) nested.data = value;
@@ -294,7 +295,7 @@ class TurboModel<
      * @param {KeyType} key - The key to write.
      * @param {unknown} value - The value to set.
      */
-    public set(value: unknown, key: KeyType): void;
+    public set(value: unknown, key: DataKeyType): void;
 
     /**
      * @function set
@@ -302,8 +303,8 @@ class TurboModel<
      * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @param {unknown} value - The value to set.
      */
-    public set(value: unknown, ...keys: DataKeyType[]): void;
-    public set(value: unknown, ...keys: DataKeyType[]): void {
+    public set(value: unknown, ...keys: KeyType[]): void;
+    public set(value: unknown, ...keys: KeyType[]): void {
         this.routeMutation(
             keys,
             (data, key) => this.internalSet(data === this.data ? this : undefined, data, value, key),
@@ -336,10 +337,10 @@ class TurboModel<
      * @param {TurboModel} model - The owning model for change notification, or `undefined` for non-root containers.
      * @param {any} data - The container to insert into.
      * @param {any} value - The value to insert.
-     * @param {DataKeyType} key - The target index or key.
-     * @returns {DataKeyType} The index or key where the value was stored.
+     * @param {KeyType} key - The target index or key.
+     * @returns {KeyType} The index or key where the value was stored.
      */
-    protected internalAdd(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType {
+    protected internalAdd(model: TurboModel, data: any, value: any, key: KeyType): KeyType {
         if (!data) return key;
         key = this.addAction(model, data, value, key);
         if (model) model.keyChanged([key], value);
@@ -353,10 +354,10 @@ class TurboModel<
      * @param {TurboModel} model - The owning model.
      * @param {any} data - The container to insert into.
      * @param {any} value - The value to insert.
-     * @param {DataKeyType} key - The target index or key. Clamped to valid array bounds for array containers.
-     * @returns {DataKeyType} The index or key where the value was stored.
+     * @param {KeyType} key - The target index or key. Clamped to valid array bounds for array containers.
+     * @returns {KeyType} The index or key where the value was stored.
      */
-    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType {
+    protected addAction(model: TurboModel, data: any, value: any, key: KeyType): KeyType {
         if (Array.isArray(data)) {
             let index = key as number;
             if (isUndefined(index) || typeof index !== "number" || index > data.length) index = data.length;
@@ -374,7 +375,7 @@ class TurboModel<
      * @param {unknown} value - The value to insert.
      * @returns {KeyType} The index where the value was stored.
      */
-    public add(value: unknown): KeyType;
+    public add(value: unknown): DataKeyType;
 
     /**
      * @function add
@@ -384,18 +385,18 @@ class TurboModel<
      * @param {KeyType} [key] - The index to insert at. If omitted, the value is pushed to the end.
      * @returns {KeyType} The index where the value was stored.
      */
-    public add(value: unknown, key?: KeyType): KeyType;
+    public add(value: unknown, key?: DataKeyType): DataKeyType;
 
     /**
      * @function add
      * @description Insert a value at the given key path. For array-backed nodes, the last key is the insertion index.
      * For non-array models, forwards to {@link set}.
      * @param {unknown} value - The value to insert.
-     * @param {...DataKeyType[]} keys - Key path to the target node, with the last key as the insertion index.
-     * @returns {DataKeyType} The index or key where the value was stored.
+     * @param {...KeyType[]} keys - Key path to the target node, with the last key as the insertion index.
+     * @returns {KeyType} The index or key where the value was stored.
      */
-    public add(value: unknown, ...keys: DataKeyType[]): DataKeyType;
-    public add(value: unknown, ...keys: DataKeyType[]): DataKeyType {
+    public add(value: unknown, ...keys: KeyType[]): KeyType;
+    public add(value: unknown, ...keys: KeyType[]): KeyType {
         return this.routeMutation(
             keys,
             (data, key) => this.internalAdd(data === this.data ? this : undefined, data, value, key),
@@ -409,9 +410,9 @@ class TurboModel<
      * @param {unknown} value - The value to insert.
      * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
      * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     * @returns {DataKeyType} The index or key where the value was stored.
+     * @returns {KeyType} The index or key where the value was stored.
      */
-    public addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): DataKeyType {
+    public addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): KeyType {
         const keys = this.scopeKey(flatKey as any, depth);
         if (keys?.length) return this.add(value, ...keys);
     }
@@ -427,10 +428,10 @@ class TurboModel<
      * @function hasAction
      * @description Check whether a key exists in a container. Override this method to support other datatypes.
      * @param {any} data - The container to check.
-     * @param {DataKeyType} key - The key to check.
+     * @param {KeyType} key - The key to check.
      * @returns {boolean} `true` if the key is present.
      */
-    protected hasAction(data: any, key: DataKeyType): boolean {
+    protected hasAction(data: any, key: KeyType): boolean {
         if (data instanceof Map) return data.has(key);
         return data?.[key as any] !== undefined;
     }
@@ -441,16 +442,16 @@ class TurboModel<
      * @param {KeyType} key - The key to check.
      * @returns {boolean} `true` if the entry exists.
      */
-    public has(key: KeyType): boolean;
+    public has(key: DataKeyType): boolean;
 
     /**
      * @function has
      * @description Check whether the given key path exists in the model.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @returns {boolean} `true` if the entry exists.
      */
-    public has(...keys: DataKeyType[]): boolean;
-    public has(...keys: DataKeyType[]): boolean {
+    public has(...keys: KeyType[]): boolean;
+    public has(...keys: KeyType[]): boolean {
         const data = this.get(...keys.slice(0, -1));
         const key = keys[keys.length - 1];
         if (!data || key === undefined) return false;
@@ -481,9 +482,9 @@ class TurboModel<
      * @function deleteAction
      * @description Remove a single key from a container. Override this method to support other datatypes.
      * @param {any} data - The container to remove from.
-     * @param {DataKeyType} key - The key to remove.
+     * @param {KeyType} key - The key to remove.
      */
-    protected deleteAction(data: any, key: DataKeyType) {
+    protected deleteAction(data: any, key: KeyType) {
         if (data instanceof Map) data.delete(key);
         else if (Array.isArray(data)) data.splice(key as number, 1);
         else delete (data as any)[key];
@@ -497,9 +498,9 @@ class TurboModel<
      * @param {TurboModel} model - The owning model for nested model cleanup and change notification,
      * or `undefined` for non-root containers.
      * @param {any} data - The container to remove from.
-     * @param {DataKeyType} key - The key to remove.
+     * @param {KeyType} key - The key to remove.
      */
-    protected internalDelete(model: TurboModel, data: any, key: DataKeyType) {
+    protected internalDelete(model: TurboModel, data: any, key: KeyType) {
         if (!data || !this.hasAction(data, key)) return;
         if (model) {
             const nested = model.getNested(key);
@@ -517,15 +518,15 @@ class TurboModel<
      * @description Remove the entry at the given key and notify observers.
      * @param {KeyType} key - The key to remove.
      */
-    public delete(key: KeyType): void;
+    public delete(key: DataKeyType): void;
 
     /**
      * @function delete
      * @description Remove the entry at the given key path and notify observers.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    public delete(...keys: DataKeyType[]): void;
-    public delete(...keys: DataKeyType[]): void {
+    public delete(...keys: KeyType[]): void;
+    public delete(...keys: KeyType[]): void {
         return this.routeMutation(
             keys,
             (data, key) => this.internalDelete(data === this.data ? this : undefined, data, key),
@@ -554,16 +555,16 @@ class TurboModel<
      * @property keys
      * @description All keys currently present in the model.
      */
-    public get keys(): KeyType[] {
+    public get keys(): DataKeyType[] {
         if (!this.data || typeof this.data !== "object") return [];
 
-        if (Array.isArray(this.data)) return Array.from({length: this.data.length}, (_, i) => i) as KeyType[];
+        if (Array.isArray(this.data)) return Array.from({length: this.data.length}, (_, i) => i) as DataKeyType[];
         if (this.data instanceof Map) return Array.from(this.data.keys());
 
         return [
             ...Object.keys(this.data),
             ...Object.getOwnPropertySymbols(this.data)
-        ] as KeyType[];
+        ] as DataKeyType[];
     }
 
     /**
@@ -601,7 +602,7 @@ class TurboModel<
     /**
      * @description Iterate over `[key, value]` pairs.
      */
-    public* [Symbol.iterator](): IterableIterator<[KeyType, any]> {
+    public* [Symbol.iterator](): IterableIterator<[DataKeyType, any]> {
         for (const key of this.keys) yield [key, this.get(key)];
     }
 
@@ -610,7 +611,7 @@ class TurboModel<
      * @description Return all `[key, value]` pairs in the model.
      * @returns {[KeyType, any][]}
      */
-    public entries(): [KeyType, any][] {
+    public entries(): [DataKeyType, any][] {
         return this.keys.map(key => [key, this.get(key)]);
     }
 
@@ -621,7 +622,7 @@ class TurboModel<
      * @param {any} [thisArg] - Value to use as `this` when calling the callback.
      */
     public forEach(
-        callback: (value: any, key: KeyType, model: this) => void,
+        callback: (value: any, key: DataKeyType, model: this) => void,
         thisArg?: any
     ): void {
         for (const key of this.keys) callback.call(thisArg, this.get(key), key, this);
@@ -690,7 +691,7 @@ class TurboModel<
      * @param {KeyType} key - The key to create a signal for.
      * @returns {SignalBox<Type>}
      */
-    public makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
+    public makeSignal<Type = any>(key: DataKeyType): SignalBox<Type>;
 
     /**
      * @function makeSignal
@@ -698,11 +699,11 @@ class TurboModel<
      * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
      * The signal reads via {@link get} and writes via {@link set}.
      * @template Type - The type of the signal's value.
-     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
+     * @param {...KeyType[]} keys - Key path, with the last key as the signal target.
      * @returns {SignalBox<Type>}
      */
-    public makeSignal<Type = any>(...keys: DataKeyType[]): SignalBox<Type>;
-    public makeSignal<Type = any>(...keys: DataKeyType[]): SignalBox<Type> {
+    public makeSignal<Type = any>(...keys: KeyType[]): SignalBox<Type>;
+    public makeSignal<Type = any>(...keys: KeyType[]): SignalBox<Type> {
         return this.makeSignals<Type>(...keys)[0];
     }
 
@@ -711,12 +712,12 @@ class TurboModel<
      * @description Return reactive {@link SignalBox} instances for multiple keys at the given path.
      * Pass {@link TurboModel.ALL} at any level of the path to expand all entries at that level.
      * @template Type - The type of the signals' values.
-     * @param {...DataKeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
+     * @param {...KeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
      * @returns {SignalBox<Type>[]}
      */
-    public makeSignals<Type = any>(...keys: DataKeyType[]): SignalBox<Type>[] {
+    public makeSignals<Type = any>(...keys: KeyType[]): SignalBox<Type>[] {
         if (keys.length === 0) keys = [TurboModel.ALL];
-        const maker = (key: DataKeyType, model: TurboModel) => {
+        const maker = (key: KeyType, model: TurboModel) => {
             if (model.signals.has(key)) return model.signals.get(key);
             const sig = signal(() => model.get(key), (value) => model.set(value, key), this, key);
             model.signals.set(key, sig);
@@ -724,8 +725,8 @@ class TurboModel<
         };
 
         const pathKeys = keys.slice(0, -1);
-        const signalKey = keys[keys.length - 1] as KeyType;
-        const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0] as KeyType, ...pathKeys.slice(1));
+        const signalKey = keys[keys.length - 1] as DataKeyType;
+        const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0], ...pathKeys.slice(1));
         if (signalKey === TurboModel.ALL) return models.flatMap(model => model.keys.map(k => maker(k, model)));
         return models.map(model => maker(signalKey, model));
     }
@@ -736,17 +737,17 @@ class TurboModel<
      * @param {KeyType} key - The key whose signal to retrieve.
      * @returns {SignalBox<any>}
      */
-    public getSignal(key: KeyType): SignalBox<any>;
+    public getSignal(key: DataKeyType): SignalBox<any>;
 
     /**
      * @function getSignal
      * @description Retrieve an existing {@link SignalBox} for the given key path, or `undefined` if none exists.
      * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
-     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
+     * @param {...KeyType[]} keys - Key path, with the last key as the signal target.
      * @returns {SignalBox<any>}
      */
-    public getSignal(...keys: DataKeyType[]): SignalBox<any>;
-    public getSignal(...keys: DataKeyType[]): SignalBox<any> {
+    public getSignal(...keys: KeyType[]): SignalBox<any>;
+    public getSignal(...keys: KeyType[]): SignalBox<any> {
         return this.getNested(...keys.slice(0, -1)).signals.get(keys[keys.length - 1]);
     }
 
@@ -760,11 +761,11 @@ class TurboModel<
      * @function nestAll
      * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path.
      * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
-     * @param {...DataKeyType[]} keys - Key path to the subtree to expand.
+     * @param {...KeyType[]} keys - Key path to the subtree to expand.
      * @returns {TurboModel[]} Array of nested models.
      */
-    public nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...keys: DataKeyType[]
+    public nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...keys: KeyType[]
     ): TurboModel<NestedDataType, NestedKeyType>[];
 
     /**
@@ -772,27 +773,27 @@ class TurboModel<
      * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path,
      * with custom initialization properties for the nested models.
      * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
-     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @param {...[...KeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
      * @returns {TurboModel[]} Array of nested models.
      */
-    public nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...keysAndProperties: [...DataKeyType[], TurboModelProperties]
+    public nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...keysAndProperties: [...KeyType[], TurboModelProperties]
     ): TurboModel<NestedDataType, NestedKeyType>[];
-    public nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...args: (DataKeyType | TurboModelProperties)[]
+    public nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...args: (KeyType | TurboModelProperties)[]
     ): TurboModel<NestedDataType, NestedKeyType>[] {
         const lastEntry = args[args.length - 1];
         const properties: any = lastEntry !== null && typeof lastEntry === "object" ? lastEntry : {};
-        const keys = args.slice(0, lastEntry !== null && typeof lastEntry === "object" ? -1 : undefined) as DataKeyType[];
+        const keys = args.slice(0, lastEntry !== null && typeof lastEntry === "object" ? -1 : undefined) as KeyType[];
         if (keys.length === 0) keys.push(TurboModel.ALL);
 
         turbo(properties).applyDefaults({bubbleChanges: this.bubbleChanges, enabledCallbacks: this.enabledCallbacks});
 
-        const createChild = (model: TurboModel, key: DataKeyType): TurboModel => {
+        const createChild = (model: TurboModel, key: KeyType): TurboModel => {
             if (model.nestedModels.has(key)) return model.nestedModels.get(key);
 
             const child = new this.modelConstructor({...properties, data: model.get(key), initialize: true});
-            child.onKeyChanged.add((_value, ...keys: DataKeyType[]) => {
+            child.onKeyChanged.add((_value, ...keys: KeyType[]) => {
                 if (!model.enabledCallbacks || !model.bubbleChanges) return;
                 model.keyChanged(keys, model.get(key));
             });
@@ -829,32 +830,32 @@ class TurboModel<
      * @param {KeyType} key - The key of the nested model.
      * @returns {TurboModel}
      */
-    public nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        key: KeyType
+    public nest<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        key: DataKeyType
     ): TurboModel<NestedDataType, NestedKeyType>;
 
     /**
      * @function nest
      * @description Create or retrieve a single nested {@link TurboModel} at the given key path.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @returns {TurboModel}
      */
-    public nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...keys: DataKeyType[]
+    public nest<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...keys: KeyType[]
     ): TurboModel<NestedDataType, NestedKeyType>;
 
     /**
      * @function nest
      * @description Create or retrieve a single nested {@link TurboModel} at the given key path,
      * with custom initialization properties.
-     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @param {...[...KeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
      * @returns {TurboModel}
      */
-    public nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...keysAndProperties: [...DataKeyType[], TurboModelProperties]
+    public nest<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...keysAndProperties: [...KeyType[], TurboModelProperties]
     ): TurboModel<NestedDataType, NestedKeyType>;
-    public nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(
-        ...keysAndProperties: (DataKeyType | TurboModelProperties)[]
+    public nest<NestedDataType = any, NestedKeyType extends KeyType = any>(
+        ...keysAndProperties: (KeyType | TurboModelProperties)[]
     ): TurboModel<NestedDataType, NestedKeyType> {
         return this.nestAll(...keysAndProperties as any)[0];
     }
@@ -872,16 +873,16 @@ class TurboModel<
      * @param {KeyType} key - The key of the nested model.
      * @returns {TurboModel | undefined}
      */
-    public getNested(key: KeyType): TurboModel;
+    public getNested(key: DataKeyType): TurboModel;
 
     /**
      * @function getNested
      * @description Retrieve an already-created nested model at the given key path, or `undefined` if none exists.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @returns {TurboModel | undefined}
      */
-    public getNested(...keys: DataKeyType[]): TurboModel;
-    public getNested(...keys: DataKeyType[]): TurboModel {
+    public getNested(...keys: KeyType[]): TurboModel;
+    public getNested(...keys: KeyType[]): TurboModel {
         if (keys.length === 0) return this;
         const nested = this.nestedModels.get(keys[0] as any);
         if (keys.length > 1 && nested instanceof TurboModel) return nested.getNested(...keys.slice(1));
@@ -901,19 +902,19 @@ class TurboModel<
      * Pass {@link TurboModel.ALL} at any level of the path to process all entries at that level,
      * allowing a single observer to track multiple subtrees simultaneously.
      * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
-     * @param {...DataKeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
+     * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
      * any level to process all entries there.
      * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
      */
     public generateObserver(
-        properties: TurboObserverProperties<DataEntryType, ComponentType, KeyType> = {},
-        ...keys: DataKeyType[]
-    ): TurboObserver<DataEntryType, ComponentType, KeyType> {
-        const models = keys.length === 0 ? [this] : this.nestAll(keys[0] as KeyType, ...keys.slice(1));
+        properties: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType> = {},
+        ...keys: KeyType[]
+    ): TurboObserver<DataEntryType, ComponentType, DataKeyType> {
+        const models = keys.length === 0 ? [this] : this.nestAll(keys[0] as DataKeyType, ...keys.slice(1));
         const observer = new (
             properties.customConstructor
             ?? this.observerConstructor
-            ?? TurboObserver<DataEntryType, ComponentType, KeyType>
+            ?? TurboObserver<DataEntryType, ComponentType, DataKeyType>
         )({
             initialize: true,
             ...properties,
@@ -928,7 +929,7 @@ class TurboModel<
                 }
                 properties.onInitialize?.(self);
             }
-        }) as TurboObserver<DataEntryType, ComponentType, KeyType>;
+        }) as TurboObserver<DataEntryType, ComponentType, DataKeyType>;
 
         models.forEach(model => model.changeObservers?.add(observer));
         return observer;
@@ -945,12 +946,12 @@ class TurboModel<
      * @function keyChanged
      * @description Called internally whenever an entry is added, updated, or deleted.
      * Emits signals, fires {@link onKeyChanged}, and notifies attached observers.
-     * @param {DataKeyType[]} keys - The key path that changed.
+     * @param {KeyType[]} keys - The key path that changed.
      * @param {unknown} [value] - The new value. Defaults to the current value at the key.
      * @param {boolean} [deleted=false] - Whether the entry was removed.
      */
-    protected keyChanged(keys: DataKeyType[], value: unknown = this.get(keys[0]), deleted: boolean = false) {
-        const key = keys[0] as KeyType;
+    protected keyChanged(keys: KeyType[], value: unknown = this.get(keys[0] as any), deleted: boolean = false) {
+        const key = keys[0] as DataKeyType;
         if (key === undefined) return;
 
         this.signals.get(key)?.emit();
@@ -981,10 +982,10 @@ class TurboModel<
      * @description Serialize a key path into a single flat key.
      * - Fully numeric paths into array-backed data produce a numeric global leaf index.
      * - All other paths produce a `"k0|k1|k2|..."` string, with symbols encoded as `"@@description"`.
-     * @param {...DataKeyType[]} keys - The key path to serialize.
+     * @param {...KeyType[]} keys - The key path to serialize.
      * @returns {FlatKeyType}
      */
-    public flattenKey(...keys: DataKeyType[]): FlatKeyType {
+    public flattenKey(...keys: KeyType[]): FlatKeyType {
         const stringFLatKey = () => keys.map(k =>
             typeof k === "symbol" ? `@@${k.description ?? ""}` : String(k)).join("|");
 
@@ -1012,9 +1013,9 @@ class TurboModel<
      * @description Convert a flat string key back into a key path. Reverses the string form of {@link flattenKey}.
      * Segments starting with `"@@"` are decoded back to symbols.
      * @param {string} flatKey - The flat string key to convert.
-     * @returns {DataKeyType[]}
+     * @returns {KeyType[]}
      */
-    public scopeKey(flatKey: string): DataKeyType[];
+    public scopeKey(flatKey: string): KeyType[];
 
     /**
      * @function scopeKey
@@ -1022,10 +1023,10 @@ class TurboModel<
      * Reverses the numeric form of {@link flattenKey}.
      * @param {number} flatKey - The numeric index to convert.
      * @param {number} depth - The depth of the key path to reconstruct.
-     * @returns {DataKeyType[]}
+     * @returns {KeyType[]}
      */
-    public scopeKey(flatKey: number, depth: number): DataKeyType[];
-    public scopeKey(flatKey: FlatKeyType, depth?: number): DataKeyType[] {
+    public scopeKey(flatKey: number, depth: number): KeyType[];
+    public scopeKey(flatKey: FlatKeyType, depth?: number): KeyType[] {
         if (typeof flatKey === "string") {
             return flatKey.split("|").map(k => {
                 if (k.startsWith("@@")) return Symbol(k.slice(2));
@@ -1090,11 +1091,11 @@ class TurboModel<
     }
 
     private routeMutation<Type = any>(
-        keys: DataKeyType[],
-        rawCallback: (data: any, key: DataKeyType) => Type,
-        nestedCallback: (model: TurboModel, keys: DataKeyType[]) => Type
+        keys: KeyType[],
+        rawCallback: (data: any, key: KeyType) => Type,
+        nestedCallback: (model: TurboModel, keys: KeyType[]) => Type
     ): Type {
-        const firstKey = keys[0] as KeyType;
+        const firstKey = keys[0] as DataKeyType;
         const childKeys = keys.slice(1);
         const nested = this.getNested(firstKey);
 

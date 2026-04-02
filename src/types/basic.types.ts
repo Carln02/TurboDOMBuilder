@@ -1,4 +1,18 @@
 /**
+ * @type KeyType
+ * @group Types
+ * @category Basics
+ */
+type KeyType = string | number | symbol;
+
+/**
+ * @type FlatKeyType
+ * @group Types
+ * @category Basics
+ */
+type FlatKeyType = string | number;
+
+/**
  * @group Types
  * @category Basics
  */
@@ -28,4 +42,4 @@ type Coordinate<Type = number> = {
  */
 type PartialRecord<Property extends keyof any, Value> = { [P in Property]?: Value };
 
-export {PartialRecord, FlexRect, Coordinate};
+export {KeyType, FlatKeyType, PartialRecord, FlexRect, Coordinate};

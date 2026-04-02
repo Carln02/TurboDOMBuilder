@@ -10446,8 +10446,48 @@
       }
   }
 
+  class EffectUtils {
+      utils;
+      constructor(utils) {
+          this.utils = utils;
+      }
+      makeEffect(callback) {
+          const utils = this.utils;
+          return {
+              callback,
+              dependencies: new Set(),
+              cleanups: [],
+              scheduled: false,
+              run() {
+                  for (const c of this.cleanups)
+                      c();
+                  this.cleanups = [];
+                  this.dependencies = new Set();
+                  utils.activeEffect = this;
+                  try {
+                      this.callback();
+                  }
+                  finally {
+                      utils.activeEffect = null;
+                  }
+                  for (const dep of this.dependencies) {
+                      const unsub = dep.sub(() => utils.schedule(this));
+                      this.cleanups.push(unsub);
+                  }
+              },
+              dispose() {
+                  for (const c of this.cleanups)
+                      c();
+                  this.cleanups = [];
+                  this.dependencies.clear();
+              }
+          };
+      }
+  }
+
   const utils$9 = new ReactivityUtils();
   const signalUtils = new SignalUtils(utils$9);
+  const effectUtils = new EffectUtils(utils$9);
   function signal(...args) {
       // Decorator
       if (args.length === 2 && args[1] && typeof args[1] === "object"
@@ -10464,6 +10504,32 @@
       const [initial, target, ...keys] = args;
       const key = keys.length === 1 ? keys[0] : keys.length > 1 ? utils$9.serializePath(keys) : undefined;
       return signalUtils.createBoxFromEntry(utils$9.createSignalEntry(initial, target, key));
+  }
+  function effect(...args) {
+      const value = args[0];
+      const context = args[1];
+      if (context && typeof context === "object" && "kind" in context
+          && "name" in context && "static" in context && "private" in context) {
+          const { kind, name, static: isStatic } = context;
+          const key = String(name);
+          if (kind !== "method" && kind !== "getter" && !(kind === "field" && typeof value === "function"))
+              throw new Error("@effect can only decorate zero-arg instance methods or getters.");
+          if (isStatic)
+              throw new Error("@effect does not support static methods/getters.");
+          context.addInitializer?.(function () {
+              const self = this;
+              const fn = function () {
+                  value?.call(this);
+              };
+              const eff = effectUtils.makeEffect(() => fn.call(self));
+              utils$9.setEffect(self, key, eff);
+          });
+      }
+      else if (typeof value === "function") {
+          const eff = effectUtils.makeEffect(value);
+          eff.run();
+          return () => eff.dispose();
+      }
   }
   /**
    * @function initializeEffects
@@ -13437,12 +13503,15 @@
       arr() {
           return [this.x, this.y];
       }
-      linearInterpolation(start, end) {
+      positionOnSegment(start, end) {
           const shiftedEnd = end.sub(start);
           const shiftedLength2 = shiftedEnd.length2;
           if (shiftedLength2 < 1e-9)
               return 0;
           return trim((this.sub(start).dot(shiftedEnd)) / shiftedLength2, 1);
+      }
+      static linearInterpolation(start, end, t) {
+          return start.add(end.sub(start).mul(t));
       }
   }
 
@@ -17042,6 +17111,8 @@
           detachObject(data) {
               if (!this.attachedObjects.includes(data))
                   return;
+              data.effectDispose?.();
+              data.effectDispose = undefined;
               const object = data.object.deref();
               this.attachedObjects.splice(this.attachedObjects.indexOf(data), 1);
               if (object)
@@ -17414,12 +17485,29 @@
                   if (!field || value == undefined)
                       continue;
                   try {
+                      if (this.valuesEqual(object[field], value))
+                          continue;
                       object[field] = value;
                   }
                   catch (e) {
                       console.error(`Unable to set property ${field} to ${value}: ${e.message}`);
                   }
               }
+          }
+          valuesEqual(a, b) {
+              if (Object.is(a, b))
+                  return true;
+              if (a != null && typeof a.equals === "function")
+                  return a.equals(b);
+              if (a != null && b != null && typeof a === "object" && typeof b === "object") {
+                  try {
+                      return JSON.stringify(a) === JSON.stringify(b);
+                  }
+                  catch {
+                      return false;
+                  }
+              }
+              return false;
           }
           refreshProperties() {
               if (!this.enabled || !this.enabled.properties)
@@ -17512,22 +17600,29 @@
           }
           //Utilities
           processRawProperties(data, override) {
-              if (!data.resolvedValues)
-                  data.resolvedValues = {};
-              if (isNull(override))
-                  return;
-              const object = data.object.deref();
-              if (!object)
-                  return;
-              const index = data.objectIndex ?? 0;
-              const total = data.totalObjectCount ?? 1;
-              for (const field of StatefulReifect.fields) {
-                  const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
-                  if (!data.resolvedValues[field])
-                      data.resolvedValues[field] = {};
-                  for (const state of this.states)
-                      data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
-              }
+              data.effectDispose?.();
+              let firstRun = true;
+              data.effectDispose = effect(() => {
+                  if (!data.resolvedValues)
+                      data.resolvedValues = {};
+                  if (isNull(override))
+                      return;
+                  const object = data.object.deref();
+                  if (!object)
+                      return;
+                  const index = data.objectIndex ?? 0;
+                  const total = data.totalObjectCount ?? 1;
+                  for (const field of StatefulReifect.fields) {
+                      const rawValue = this.normalizePropertyConfig(this[field], override?.[field]);
+                      if (!data.resolvedValues[field])
+                          data.resolvedValues[field] = {};
+                      for (const state of this.states)
+                          data.resolvedValues[field][state] = rawValue[state]?.(index, total, object);
+                  }
+                  if (!firstRun && data.lastState !== undefined)
+                      this.applyResolvedValues(data, false, false);
+                  firstRun = false;
+              });
           }
           generateNewData(object, onSwitch) {
               return {
@@ -22167,7 +22262,6 @@
       transitionDelay: (state, index) => index * 0.1
   });
 
-  reifect.attachAll(...squares);
   reifect.apply(OnOff.off, squares);
   TurboButton.create({text: "Animate", parent: document.body, onClick: () => reifect.toggle(squares)});
 
