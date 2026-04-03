@@ -10,6 +10,24 @@ function areEqual<Type = any>(...entries: Type[]): boolean {
     return true;
 }
 
+function areSimilar<Type = any>(...entries: Type[]): boolean {
+    if (entries.length < 2) return true;
+    for (let i = 0; i < entries.length - 1; i++) {
+        const e1 = entries[i];
+        const e2 = entries[i + 1];
+        if (e1 === e2) continue;
+        if (typeof e1 !== "object" || typeof e2 !== "object") return false;
+        if (Object.is(e1, e2)) continue;
+        if (e1 != null && "equals" in e1 && typeof e1.equals === "function" && e1.equals(e2)) continue;
+        if (e1 != null && e2 != null) {
+            let cont = false;
+            try { if (JSON.stringify(e1) === JSON.stringify(e2)) cont = true; } catch { }
+            if (!cont) return false;
+        }
+    }
+    return true;
+}
+
 /**
  * @group Utilities
  * @category Equity
@@ -38,4 +56,4 @@ function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]): boolean
     return true;
 }
 
-export {areEqual, equalToAny, eachEqualToAny};
+export {areEqual, equalToAny, eachEqualToAny, areSimilar};

@@ -27,13 +27,10 @@ export class TurboEventManagerWheelController extends TurboController<TurboEvent
         }, 800);
 
         //Get name of event according to input type
-        let eventName: TurboEventNameEntry;
-        //Trackpad pinching (for some reason Ctrl key is marked as pressed in the WheelEvent)
-        if (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey) eventName = TurboEventName.trackpadPinch;
-        //Trackpad zooming
-        else if (this.model.inputDevice == InputDevice.trackpad) eventName = TurboEventName.trackpadScroll;
-        //Mouse scrolling
-        else eventName = TurboEventName.mouseWheel;
+        //Pinching (for trackpad, Ctrl key is marked as pressed in the WheelEvent)
+        const eventName: TurboEventNameEntry = (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
+            ? TurboEventName.pinch
+            : TurboEventName.scroll;
 
         this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta: new Point(e.deltaX, e.deltaY), eventName: eventName});
     };

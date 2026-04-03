@@ -141,7 +141,7 @@ function signal(...args: any): any {
  * }
  * ```
  */
-function modelSignal(...keys: DataKeyType[]) {
+function modelSignal(...keys: KeyType[]) {
     return function <Type extends object, Value>(
         value:
             | ((initial: Value) => Value)
@@ -355,8 +355,8 @@ function markDirty(target: object, key: PropertyKey): void;
  * @param {object} target - The target to which the signal is bound.
  * @param {...(string | number | symbol)[]} keys - The key path of the data.
  */
-function markDirty(target: object, ...keys: DataKeyType[]): void;
-function markDirty(target: object, ...keys: DataKeyType[]) {
+function markDirty(target: object, ...keys: KeyType[]): void;
+function markDirty(target: object, ...keys: KeyType[]) {
     const computedKey = keys.length > 1
         ? utils.getKeyFromPath(target, keys)
         : keys[0];

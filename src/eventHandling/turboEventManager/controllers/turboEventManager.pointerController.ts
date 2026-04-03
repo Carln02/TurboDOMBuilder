@@ -6,6 +6,7 @@ import {Point} from "../../../turboComponents/datatypes/point/point";
 import {TurboMap} from "../../../turboComponents/datatypes/map/map";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboDragEvent} from "../../events/turboDragEvent";
+import {TurboWheelEvent} from "../../events/turboWheelEvent";
 import {clearCache} from "../../../decorators/cache/cache";
 import {TurboEventName, TurboEventNameEntry} from "../../../types/eventNaming.types";
 
@@ -85,6 +86,30 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
 
         // Clear cached target origin if not dragging
         if (this.model.currentAction !== ActionMode.drag) this.model.lastTargetOrigin = null;
+
+        //Fire touch scroll/pinch events
+        if (isTouch && this.element.wheelEventsEnabled) {
+            const currentPos = new Point(e.clientX, e.clientY);
+            const prevPos = this.model.previousPositions.get(e.pointerId);
+
+            if (this.model.activePointers.size === 1 && prevPos) {
+                const delta = currentPos.sub(prevPos);
+                this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta, eventName: TurboEventName.scroll});
+            } else if (this.model.activePointers.size === 2 && prevPos) {
+                const otherId = [...this.model.activePointers].find(id => id !== e.pointerId);
+                const otherPos = this.model.previousPositions.get(otherId);
+                if (otherPos) {
+                    const prevCenter = Point.midPoint(prevPos, otherPos);
+                    const currentCenter = Point.midPoint(currentPos, otherPos);
+                    const scrollDelta = currentCenter.sub(prevCenter);
+                    const pinchDelta = Point.dist(currentPos, otherPos) - Point.dist(prevPos, otherPos);
+                    if (scrollDelta.x !== 0 || scrollDelta.y !== 0)
+                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta: scrollDelta, eventName: TurboEventName.scroll});
+                    if (pinchDelta !== 0)
+                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch});
+                }
+            }
+        }
 
         //Fire move event if enabled
         if (this.element.moveEventsEnabled) this.fireDrag(this.model.positions, TurboEventName.move);

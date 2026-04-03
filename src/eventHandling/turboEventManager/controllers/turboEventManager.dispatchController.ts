@@ -26,6 +26,7 @@ export class TurboEventManagerDispatchController extends TurboController<TurboEv
         properties.keys = this.model.currentKeys;
         properties.toolName = this.element.getCurrentToolName(this.model.currentClick) as string;
         properties.clickMode = this.model.currentClick;
+        properties.inputDevice = this.model.inputDevice;
         properties.eventManager = this.element;
         properties.eventInitDict = {bubbles: true, cancelable: true, composed: true};
 

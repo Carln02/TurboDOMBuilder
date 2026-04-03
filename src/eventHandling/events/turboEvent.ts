@@ -1,4 +1,4 @@
-import {ClickMode} from "../turboEventManager/turboEventManager.types";
+import {ClickMode, InputDevice} from "../turboEventManager/turboEventManager.types";
 import {ClosestOrigin, TurboEventProperties} from "./turboEvent.types";
 import {cache} from "../../decorators/cache/cache";
 import {TurboEventManager} from "../turboEventManager/turboEventManager";
@@ -34,6 +34,11 @@ class TurboEvent extends Event {
     public readonly clickMode: ClickMode;
 
     /**
+     * @description The input device that fired this event
+     */
+    public readonly inputDevice: InputDevice;
+
+    /**
      * @description The keys pressed when the event was fired
      */
     public readonly keys: string[];
@@ -64,6 +69,7 @@ class TurboEvent extends Event {
         this.scalePosition = properties.scalePosition ?? ((position: Point) => position);
 
         this.clickMode = properties.clickMode ?? TurboEventManager.instance.currentClick;
+        this.inputDevice = properties.inputDevice ?? InputDevice.unknown;
         this.keys = properties.keys ?? TurboEventManager.instance.currentKeys;
 
         this.eventName = properties.eventName;

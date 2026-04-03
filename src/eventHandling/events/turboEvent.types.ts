@@ -1,4 +1,4 @@
-import {ClickMode} from "../turboEventManager/turboEventManager.types";
+import {ClickMode, InputDevice} from "../turboEventManager/turboEventManager.types";
 import {Point} from "../../turboComponents/datatypes/point/point";
 import {TurboMap} from "../../turboComponents/datatypes/map/map";
 import {TurboEventManager} from "../turboEventManager/turboEventManager";
@@ -19,6 +19,7 @@ enum ClosestOrigin {
  */
 type TurboRawEventProperties = {
     clickMode?: ClickMode,
+    inputDevice?: InputDevice,
     keys?: string[],
     eventName?: TurboEventNameEntry,
     eventManager?: TurboEventManager,

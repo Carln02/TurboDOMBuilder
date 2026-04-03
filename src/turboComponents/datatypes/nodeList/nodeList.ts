@@ -193,6 +193,18 @@ class TurboNodeList<Type extends object = object> {
 
     /**
      * @function addAt
+     * @description Adds one or more entries at the given resolved size index. The index refers to the position
+     * among resolved unique entries, not slots. Arrays and {@link Set}s are expanded inline.
+     * @param {number} index - The resolved entry index to insert at.
+     * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    public addAt(index: number, ...entries: (NodeListType<Type> | Type)[]): this {
+        return this.addAtSlot(this.sizeIndexToSlotIndex(index), ...entries);
+    }
+
+    /**
+     * @function addAtSlot
      * @description Adds one or more entries at the given slot index. Subsequent entries are inserted
      * consecutively after the previous one. Arrays and {@link Set}s are expanded inline, each item
      * occupying the next slot index.
@@ -200,7 +212,7 @@ class TurboNodeList<Type extends object = object> {
      * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
      * @returns {this} Itself, allowing for method chaining.
      */
-    public addAt(index: number, ...entries: (NodeListType<Type> | Type)[]): this {
+    public addAtSlot(index: number, ...entries: (NodeListType<Type> | Type)[]): this {
         entries.forEach(entry => index = this.addEntry(entry, index));
         return this;
     }
@@ -219,20 +231,71 @@ class TurboNodeList<Type extends object = object> {
     }
 
     /**
-     * @function removeAt
+     * @function removeAtSlot
      * @description Removes one or more slots starting at the given slot index. Each slot removed may
      * correspond to an individual entry, a DOM list, or a nested {@link TurboNodeList}.
      * @param {number} index - The slot index to start removing from.
      * @param {number} [count=1] - The number of consecutive slots to remove.
      * @returns {this} Itself, allowing for method chaining.
      */
-    public removeAt(index: number, count: number = 1): this {
+    public removeAtSlot(index: number, count: number = 1): this {
         const toRemove = this.slots.slice(index, index + count)
             .map(s => s.deref()).filter(Boolean);
         for (const slot of toRemove) this.removeEntry(slot);
         return this;
     }
 
+    /**
+     * @function move
+     * @description Moves an existing entry to the given resolved size index. If the entry is a member of a
+     * nested {@link TurboNodeList}, it is moved within that sub-list. If it belongs to a DOM list, it is
+     * repositioned in the DOM accordingly.
+     * @param {Type} entry - The entry to move.
+     * @param {number} index - The resolved entry index to move the entry to.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    public move(entry: Type, index: number): this {
+        const currentSlotIndex = this.slots.findIndex(s => s.deref() === entry);
+        if (currentSlotIndex > -1) return this.moveToSlot(entry, this.sizeIndexToSlotIndex(index));
+
+        const container = this.findContainingSlot(entry);
+        if (!container) return this;
+
+        if (this.isTurboNodeList(container)) {
+            container.move(entry, index);
+            return this;
+        }
+
+        if (this.isDomList(container)) {
+            if (!(entry instanceof Node)) return this;
+            const parent = (entry as unknown as Node).parentNode;
+            if (!parent) return this;
+            const siblings = Array.from(container as any).filter(n => n !== entry) as Node[];
+            const ref = siblings[Math.max(0, Math.min(index, siblings.length))] ?? null;
+            parent.insertBefore(entry as unknown as Node, ref);
+            return this;
+        }
+    }
+
+    /**
+     * @function moveToSlot
+     * @description Moves an existing entry to the given slot index.
+     * @param {Type} entry - The entry to move.
+     * @param {number} index - The slot index to move the entry to.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    public moveToSlot(entry: Type, index: number): this {
+        if (!entry || !this.has(entry)) return this;
+        const currentSlotIndex = this.slots.findIndex(s => s.deref() === entry);
+        if (currentSlotIndex === -1) return this;
+
+        index = trim(index, this.slots.length, 0, this.slots.length);
+        if (currentSlotIndex === index) return this;
+
+        this.slots.splice(currentSlotIndex, 1);
+        this.slots.splice(index > currentSlotIndex ? index - 1 : index, 0, new WeakRef(entry));
+        return this;
+    }
 
     /**
      * @function has
@@ -407,6 +470,39 @@ class TurboNodeList<Type extends object = object> {
 
         observer.observe(parent, {childList: true, subtree: true});
         this.domListObservers.set(domList, observer);
+    }
+
+    protected sizeIndexToSlotIndex(sizeIndex: number): number {
+        const size = this.size;
+        sizeIndex = trim(sizeIndex, size, 0, size);
+        let count = 0;
+        for (let i = 0; i < this.slots.length; i++) {
+            if (count === sizeIndex) return i;
+            for (const _ of this.resolveSlot(this.slots[i])) {
+                count++;
+                if (count === sizeIndex) return i + 1;
+            }
+        }
+        return this.slots.length;
+    }
+
+    /**
+     * @function findContainingSlot
+     * @protected
+     * @description Finds the slot that directly contains or resolves to the given entry.
+     * Returns the slot itself if the entry is a direct slot, the nested {@link TurboNodeList}
+     * that contains it, or the DOM list that contains it.
+     * @param {Type} entry - The entry to locate.
+     * @returns {NodeListSlot<Type> | undefined} The containing slot, or undefined if not found.
+     */
+    protected findContainingSlot(entry: Type): NodeListSlot<Type> {
+        for (const slot of this.slots) {
+            const obj = slot.deref();
+            if (!obj) continue;
+            if (obj === entry) return obj;
+            if (this.isTurboNodeList(obj) && obj.has(entry)) return obj;
+            else if (this.isDomList(obj) && Array.from(obj as any).includes(entry)) return obj;
+        }
     }
 }
 

@@ -82,10 +82,8 @@ const DefaultDragEventName = {
  * @category Event Names
  */
 const TurboWheelEventName = {
-    trackpadScroll: "turbo-trackpad-scroll",
-    trackpadPinch: "turbo-trackpad-pinch",
-
-    mouseWheel: "turbo-mouse-wheel"
+    scroll: "turbo-scroll",
+    pinch: "turbo-pinch",
 } as const;
 
 /**
@@ -93,10 +91,8 @@ const TurboWheelEventName = {
  * @category Event Names
  */
 const DefaultWheelEventName = {
-    trackpadScroll: "wheel",
-    trackpadPinch: "wheel",
-
-    mouseWheel: "wheel"
+    scroll: "wheel",
+    pinch: "wheel",
 } as const;
 
 /**
