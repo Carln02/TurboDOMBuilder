@@ -1,6 +1,6 @@
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
-import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {TurboIcon} from "./icon";
 
@@ -36,27 +36,7 @@ type TurboIconProperties<
     icon: string;
     iconColor?: string;
     onLoaded?: (svg: SVGElement) => void;
-
-    unsetDefaultClasses?: boolean;
 };
-
-/**
- * @type {TurboIconConfig}
- * @group Components
- * @category TurboIcon
- *
- * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
- *
- * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
- * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
- * directory once here to not type it again at every Icon generation.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
- */
-type TurboIconConfig = TurboElementConfig & {
-    defaultType?: string,
-    defaultDirectory?: string,
-    customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>
-}
 
 declare module "../../../types/element.types" {
     interface TurboElementTagNameMap {
@@ -64,4 +44,4 @@ declare module "../../../types/element.types" {
     }
 }
 
-export {TurboIconProperties, TurboIconConfig};
+export {TurboIconProperties};

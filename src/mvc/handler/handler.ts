@@ -1,5 +1,6 @@
 import {initializeEffects} from "../../decorators/reactivity/reactivity";
 import {TurboModel} from "../model/model";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboHandler
@@ -40,4 +41,6 @@ class TurboHandler<ModelType extends TurboModel = TurboModel> {
     }
 }
 
+addRegistryCategory(TurboHandler);
+define(TurboHandler);
 export {TurboHandler};

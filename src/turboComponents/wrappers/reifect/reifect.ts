@@ -98,82 +98,6 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"default"
         super.replaceWith = value;
     }
 
-    /**
-     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-     * could take:
-     * - A string of space-separated CSS properties.
-     * - An array of CSS properties.
-     * - An interpolation function that would return a string of space-separated CSS properties or an array of
-     * CSS properties.
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    public get transitionProperties(): StatelessPropertyConfig<string | string[], ClassType> {
-        return super.transitionProperties?.["default"];
-    }
-
-    public set transitionProperties(value: StatelessPropertyConfig<string | string[], ClassType>) {
-        super.transitionProperties = value;
-    }
-
-    /**
-     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - An interpolation function that would return a duration (number in seconds).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    public get transitionDuration(): StatelessPropertyConfig<number, ClassType> {
-        return super.transitionDuration?.["default"];
-    }
-
-    public set transitionDuration(value: StatelessPropertyConfig<number, ClassType>) {
-        super.transitionDuration = value;
-    }
-
-    /**
-     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-     * It could take:
-     * - A string representing the timing function to apply.
-     * - An interpolation function that would return a timing function (string).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    public get transitionTimingFunction(): StatelessPropertyConfig<string, ClassType> {
-        return super.transitionTimingFunction?.["default"];
-    }
-
-    public set transitionTimingFunction(value: StatelessPropertyConfig<string, ClassType>) {
-        super.transitionTimingFunction = value;
-    }
-
-    /**
-     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - An interpolation function that would return a delay (number in seconds).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    public get transitionDelay(): StatelessPropertyConfig<number, ClassType> {
-        return super.transitionDelay?.["default"];
-    }
-
-    public set transitionDelay(value: StatelessPropertyConfig<number, ClassType>) {
-        super.transitionDelay = value;
-    }
-
     public initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"default", ClassType>) {
         super.initialize("default", objects, options);
     }
@@ -183,12 +107,4 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"default"
     }
 }
 
-/**
- * @group Components
- * @category Reifect
- */
-function reifect<ClassType extends object = Node>(properties: StatelessReifectProperties<ClassType>): Reifect<ClassType> {
-    return new Reifect<ClassType>(properties);
-}
-
-export {Reifect, reifect};
+export {Reifect};

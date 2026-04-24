@@ -3,6 +3,7 @@ import {initializeEffects} from "../../decorators/reactivity/reactivity";
 import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 import {TurboControllerProperties} from "./controller.types";
 
 /**
@@ -96,4 +97,6 @@ class TurboController<
     }
 }
 
+addRegistryCategory(TurboController);
+define(TurboController);
 export {TurboController};

@@ -1,5 +1,5 @@
 import {
-    $, drawer, div, button, h4, p, Side
+    $, drawer, div, h4, p, Side, TurboButton
 } from "../../../../../build/turbodombuilder.esm";
 import {box} from "../../demoBox/demoBox";
 import "./drawer.css";
@@ -36,10 +36,10 @@ function drawerTest1_Basics() {
     });
 
     box("TurboDrawer — Basics")
-        .addSubBox("Left", dLeft, button({text: "Toggle", onClick: () => (dLeft.open = !dLeft.open)}))
-        .addSubBox("Right", dRight, button({text: "Toggle", onClick: () => (dRight.open = !dRight.open)}))
-        .addSubBox("Top", dTop, button({text: "Toggle", onClick: () => (dTop.open = !dTop.open)}))
-        .addSubBox("Bottom", dBottom, button({text: "Toggle", onClick: () => (dBottom.open = !dBottom.open)}));
+        .addSubBox("Left", dLeft, TurboButton.create({text: "Toggle", onClick: () => (dLeft.open = !dLeft.open)}))
+        .addSubBox("Right", dRight, TurboButton.create({text: "Toggle", onClick: () => (dRight.open = !dRight.open)}))
+        .addSubBox("Top", dTop, TurboButton.create({text: "Toggle", onClick: () => (dTop.open = !dTop.open)}))
+        .addSubBox("Bottom", dBottom, TurboButton.create({text: "Toggle", onClick: () => (dBottom.open = !dBottom.open)}));
 }
 
 function drawerTest2_OverflowVsTransform() {
@@ -59,12 +59,12 @@ function drawerTest2_OverflowVsTransform() {
 
     box("TurboDrawer — hideOverflow vs transform")
         .addSubBox("hideOverflow = true", overflow,
-            button({text: "Open", onClick: () => (overflow.open = true)}),
-            button({text: "Close", onClick: () => (overflow.open = false)}),
+            TurboButton.create({text: "Open", onClick: () => (overflow.open = true)}),
+            TurboButton.create({text: "Close", onClick: () => (overflow.open = false)}),
         )
         .addSubBox("hideOverflow = false", transform,
-            button({text: "Open", onClick: () => (transform.open = true)}),
-            button({text: "Close", onClick: () => (transform.open = false)}),
+            TurboButton.create({text: "Open", onClick: () => (transform.open = true)}),
+            TurboButton.create({text: "Close", onClick: () => (transform.open = false)}),
         );
 }
 
@@ -86,8 +86,8 @@ function drawerTest3_Offsets() {
     });
 
     box("TurboDrawer — offset")
-        .addSubBox("Single number", fixed, button({text: "Toggle", onClick: () => (fixed.open = !fixed.open)}))
-        .addSubBox("Per-state", perState, button({text: "Toggle", onClick: () => (perState.open = !perState.open)}));
+        .addSubBox("Single number", fixed, TurboButton.create({text: "Toggle", onClick: () => (fixed.open = !fixed.open)}))
+        .addSubBox("Per-state", perState, TurboButton.create({text: "Toggle", onClick: () => (perState.open = !perState.open)}));
 }
 
 function drawerTest4_IconBehavior() {
@@ -107,8 +107,8 @@ function drawerTest4_IconBehavior() {
 
     box("TurboDrawer — icon modes")
         .addSubBox("Append side to icon name", byName,
-            button({text: "Toggle", onClick: () => (byName.open = !byName.open)}),
-            button({
+            TurboButton.create({text: "Toggle", onClick: () => (byName.open = !byName.open)}),
+            TurboButton.create({
                 text: "Cycle side",
                 onClick: () => {
                     const order = [Side.left, Side.top, Side.right, Side.bottom];
@@ -118,8 +118,8 @@ function drawerTest4_IconBehavior() {
             }),
         )
         .addSubBox("Rotate icon based on side", byRotate,
-            button({text: "Toggle", onClick: () => (byRotate.open = !byRotate.open)}),
-            button({
+            TurboButton.create({text: "Toggle", onClick: () => (byRotate.open = !byRotate.open)}),
+            TurboButton.create({
                 text: "Cycle side",
                 onClick: () => {
                     const order = [Side.left, Side.top, Side.right, Side.bottom];
@@ -140,11 +140,11 @@ function drawerTest5_LiveSideChanges() {
 
     box("TurboDrawer — live side changes")
         .addSubBox("Drawer", d,
-            button({text: "Open/Close", onClick: () => (d.open = !d.open)}),
-            button({text: "Side: Left", onClick: () => (d.side = Side.left)}),
-            button({text: "Side: Right", onClick: () => (d.side = Side.right)}),
-            button({text: "Side: Top", onClick: () => (d.side = Side.top)}),
-            button({text: "Side: Bottom", onClick: () => (d.side = Side.bottom)}),
+            TurboButton.create({text: "Open/Close", onClick: () => (d.open = !d.open)}),
+            TurboButton.create({text: "Side: Left", onClick: () => (d.side = Side.left)}),
+            TurboButton.create({text: "Side: Right", onClick: () => (d.side = Side.right)}),
+            TurboButton.create({text: "Side: Top", onClick: () => (d.side = Side.top)}),
+            TurboButton.create({text: "Side: Bottom", onClick: () => (d.side = Side.bottom)}),
         );
 }
 
@@ -159,7 +159,7 @@ function drawerTest6_ResizeObserver() {
     let lines = 1;
     box("TurboDrawer — content resize")
         .addSubBox("Resize on content change", d,
-            button({
+            TurboButton.create({
                 text: "Add line",
                 onClick: () => {
                     lines += 1;
@@ -167,14 +167,14 @@ function drawerTest6_ResizeObserver() {
                     // drawer.refresh() is not needed; ResizeObserver should adjust translation
                 },
             }),
-            button({
+            TurboButton.create({
                 text: "Remove last line",
                 onClick: () => {
                     const last = d.panel.lastElementChild;
                     if (last) last.remove();
                 },
             }),
-            button({text: "Open/Close", onClick: () => (d.open = !d.open)}),
+            TurboButton.create({text: "Open/Close", onClick: () => (d.open = !d.open)}),
         );
 }
 
@@ -202,8 +202,8 @@ function drawerTest7_Nested() {
     box("TurboDrawer — nested")
         .addSubBox("Outer + Inner",
             outer,
-            button({text: "Toggle outer", onClick: () => (outer.open = !outer.open)}),
-            button({text: "Toggle inner", onClick: () => (inner.open = !inner.open)}),
+            TurboButton.create({text: "Toggle outer", onClick: () => (outer.open = !outer.open)}),
+            TurboButton.create({text: "Toggle inner", onClick: () => (inner.open = !inner.open)}),
         );
 }
 
@@ -218,7 +218,7 @@ function drawerTest8_RaceProps() {
 
     box("TurboDrawer — stress/race")
         .addSubBox("Racer", racer,
-            button({
+            TurboButton.create({
                 text: "Go!",
                 onClick: () => {
                     const sides = [Side.left, Side.top, Side.right, Side.bottom];

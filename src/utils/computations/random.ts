@@ -26,16 +26,6 @@ function randomFromRange(n1: number, n2: number) {
  * @group Utilities
  * @category Random
  */
-function randomColor(saturation: number | [number, number] = [50, 70], lightness: number | [number, number] = [70, 85]): string {
-    if (typeof saturation != "number" && saturation.length >= 2) saturation = randomFromRange(saturation[0], saturation[1]);
-    if (typeof lightness != "number" && lightness.length >= 2) lightness = randomFromRange(lightness[0], lightness[1]);
-    return "hsl(" + Math.random() * 360 + " " + saturation + " " + lightness + ")";
-}
-
-/**
- * @group Utilities
- * @category Random
- */
 function randomString(length: number = 12): string {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -44,4 +34,4 @@ function randomString(length: number = 12): string {
     return result;
 }
 
-export {randomString, randomColor, randomFromRange, randomId};
+export {randomString, randomFromRange, randomId};

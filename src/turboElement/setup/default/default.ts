@@ -1,5 +1,4 @@
 import {turbo} from "../../../turboFunctions/turboFunctions";
-import {Mvc} from "../../../mvc/mvc";
 import {initializeEffects} from "../../../decorators/reactivity/reactivity";
 import {CloneElementOptions, FeedforwardProperties} from "../../../turboFunctions/element/element.types";
 
@@ -19,7 +18,7 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
             }
 
             const prevClass = this[selectedClass];
-            const nextClass = this.getPropertiesValue?.(null, "defaultSelectedClass", "selected") ?? "selected";
+            const nextClass = this["defaultSelectedClasses"] ?? "selected";
 
             this[selectedKey] = value;
             this[selectedClass] = nextClass;
@@ -28,21 +27,6 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
         },
         enumerable: true,
         configurable: true,
-    });
-
-    Object.defineProperty(prototype, "getPropertiesValue", {
-        value: function <Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type {
-            if (propertiesValue !== undefined && propertiesValue !== null) return propertiesValue;
-            let constructor = this.constructor;
-            while (constructor) {
-                const configValue: Type = constructor.config?.[configFieldName];
-                if (configValue !== undefined && configValue !== null) return configValue;
-                constructor = Object.getPrototypeOf(constructor);
-            }
-            return defaultValue;
-        },
-        configurable: true,
-        enumerable: false,
     });
 
     Object.defineProperty(prototype, "destroy", {
@@ -66,8 +50,9 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
             this.setupUIElements?.();
             this.setupUILayout?.();
             this.setupUIListeners?.();
+            this.setupFields?.();
             this.setupChangedCallbacks?.();
-            if (this.mvc && this.mvc instanceof Mvc) this.mvc.initialize();
+            turbo(this).initializeMvc();
             initializeEffects(this);
         },
         configurable: true,

@@ -1,4 +1,4 @@
-import {define, TurboElement, Point, expose, auto, turbo, p} from "../../../../build/turbodombuilder.esm";
+import {define, TurboElement, Point, expose, auto, turbo, p, Color} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {SquareView} from "./square.view";
 import "./square.css";
@@ -7,7 +7,7 @@ import "./square.css";
 @define("demo-square")
 export class Square extends TurboElement<SquareView, any, SquareModel> {
     //Expose fields from the model
-    @expose("model") color: string;
+    @expose("model") color: Color;
     @expose("model") elementSize: number;
     @expose("model") position: Point;
     @expose("model") rotation: number;

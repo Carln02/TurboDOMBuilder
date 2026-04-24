@@ -1,10 +1,10 @@
-import {TurboSelectProperties} from "../../basics/select/select.types";
 import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {InOut} from "../../../types/enums.types";
+import {TurboMarkingMenu} from "./markingMenu";
 
 /**
  * @group Components
@@ -26,6 +26,13 @@ type TurboMarkingMenuProperties<
     semiMajor?: number,
     semiMinor?: number,
     minDragDistance?: number
+}
+
+
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-marking-menu": TurboMarkingMenu
+    }
 }
 
 export {TurboMarkingMenuProperties};

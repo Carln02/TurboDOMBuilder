@@ -1,6 +1,5 @@
 import {ReifectInterpolator} from "../statefulReifect/statefulReifect.types";
 import {StylesType} from "../../../turboFunctions/style/style.types";
-import {PartialRecord} from "../../../types/basic.types";
 
 /**
  * @group Components
@@ -19,15 +18,10 @@ type StatelessPropertyConfig<Type, ClassType extends object = Element> = Type | 
  * @category Reifect
  */
 type StatelessReifectCoreProperties<ClassType extends object = Element> = {
-    properties?: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>,
     styles?: StatelessPropertyConfig<StylesType, ClassType>,
     classes?: StatelessPropertyConfig<string | string[], ClassType>,
     replaceWith?: StatelessPropertyConfig<ClassType, ClassType>,
-
-    transitionProperties?: StatelessPropertyConfig<string | string[], ClassType>,
-    transitionDuration?: StatelessPropertyConfig<number, ClassType>,
-    transitionTimingFunction?: StatelessPropertyConfig<string, ClassType>,
-    transitionDelay?: StatelessPropertyConfig<number, ClassType>,
+    [k: PropertyKey]: StatelessPropertyConfig<any, ClassType>,
 };
 
 /**

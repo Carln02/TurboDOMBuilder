@@ -27,17 +27,6 @@ type TurboElementProperties<
     EmitterType extends TurboEmitter = TurboEmitter
 > = TurboProxiedProperties<"div", ViewType, DataType, ModelType, EmitterType>;
 
-/**
- * @group TurboElement
- * @category TurboElement
- */
-type TurboElementConfig = {
-    shadowDOM?: boolean,
-    defaultSelectedClass?: string | string[]
-    defaultClasses?: string | string[],
-    [key: string]: any
-};
-
 declare module "./turboElement" {
     interface TurboElement {
         readonly tagName: string;
@@ -54,4 +43,4 @@ declare module "./turboElement" {
     interface TurboElement extends TurboElementUiInterface {}
 }
 
-export {TurboElementProperties, TurboElementConfig};
+export {TurboElementProperties};

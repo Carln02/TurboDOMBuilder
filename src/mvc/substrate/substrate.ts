@@ -12,6 +12,7 @@ import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboController} from "../controller/controller";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboSubstrate
@@ -352,4 +353,6 @@ class TurboSubstrate<
     }
 }
 
+addRegistryCategory(TurboSubstrate);
+define(TurboSubstrate);
 export {TurboSubstrate};

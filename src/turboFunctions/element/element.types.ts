@@ -1,6 +1,9 @@
-import {MvcGenerationProperties} from "../../mvc/mvc.types";
-import {Mvc} from "../../mvc/mvc";
-import {ElementTagDefinition, HTMLElementMutableFields, ValidElement, ValidTag} from "../../types/element.types";
+import {
+    ElementTagDefinition,
+    HTMLElementMutableFields,
+    ValidElement,
+    ValidTag
+} from "../../types/element.types";
 import {TurboElementProperties} from "../../turboElement/turboElement.types";
 
 /**
@@ -64,27 +67,26 @@ type FeedforwardProperties = TurboElementProperties & {
  * @property {string} [text] - The text content of the element (if any).
  * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
  */
-type TurboProperties<
-    Tag extends ValidTag = "div",
-> = HTMLElementMutableFields<Tag> & ElementTagDefinition & {
-    id?: string;
-    classes?: string | string[];
+type TurboProperties<Tag extends ValidTag = "div"> = ElementTagDefinition<Tag> &
+    Omit<HTMLElementMutableFields<Tag>, "tag" | "namespace"> & {
+        id?: string;
+        classes?: string | string[];
 
-    style?: string;
-    stylesheet?: string;
-    shadowDOM?: boolean;
+        style?: string;
+        stylesheet?: string;
+        shadowDOM?: boolean;
 
-    parent?: Element;
-    children?: Element | Element[];
-    text?: string;
+        parent?: Element;
+        children?: Element | Element[];
+        text?: string;
 
-    listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean | any)>,
-    onClick?: (e: Event, el: ValidElement<Tag>) => boolean | any,
-    onDrag?: (e: Event, el: ValidElement<Tag>) => boolean | any,
+        listeners?: Record<string, ((e: Event, el: ValidElement<Tag>) => boolean | any)>,
+        onClick?: (e: Event, el: ValidElement<Tag>) => boolean | any,
+        onDrag?: (e: Event, el: ValidElement<Tag>) => boolean | any,
 
-    out?: string | Node;
-    [key: string]: any;
-};
+        out?: string | Node;
+        [key: string]: any;
+    };
 
 declare module "../turboSelector" {
     interface TurboSelector<Type extends object = Node> {
@@ -100,15 +102,6 @@ declare module "../turboSelector" {
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
 
         clone(options?: CloneElementOptions): Type;
-
-        /**
-         * @function setMvc
-         * @description Sets MVC properties for a certain object. If no `mvc` field exists on the object, a new
-         * {@link Mvc} object will be created with the given properties.
-         * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
-         * @return {Mvc} - The created or retrieved {@link Mvc} object.
-         */
-        setMvc(properties: MvcGenerationProperties): Mvc;
 
         /**
          * @description Destroys the element by removing it from the document and removing all its bound listeners.

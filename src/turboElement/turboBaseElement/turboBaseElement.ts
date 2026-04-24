@@ -1,4 +1,7 @@
 import {defineDefaultProperties} from "../setup/default/default";
+import {turbo} from "../../turboFunctions/turboFunctions";
+import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
+import {addRegistryCategory} from "../../decorators/define/define";
 
 /**
  * @class TurboBaseElement
@@ -13,18 +16,21 @@ import {defineDefaultProperties} from "../setup/default/default";
  */
 class TurboBaseElement {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    public static readonly config: any = {};
+    public static defaultProperties: object = {};
 
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    public static configure(value: typeof this.config) {
-        Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined) this.config[key] = val;
-        });
+    public static create<Type extends new (...args: any[]) => TurboBaseElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        return (this as any).customCreate.call(this, properties);
+    }
+
+    protected static customCreate(properties: object): object {
+        const prototypeChain = getPrototypeChain(this);
+        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
+        const obj = new this();
+        turbo(obj).setProperties(properties);
+        return obj;
     }
 }
 
@@ -32,4 +38,5 @@ class TurboBaseElement {
     defineDefaultProperties(TurboBaseElement);
 })();
 
+addRegistryCategory(TurboBaseElement);
 export {TurboBaseElement};

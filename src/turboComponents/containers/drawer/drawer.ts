@@ -1,6 +1,6 @@
 import {TurboDrawerProperties} from "./drawer.types";
 import "./drawer.css";
-import {iconSwitch, TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
+import {TurboIconSwitch} from "../../basics/icon/iconSwitch/iconSwitch";
 import {Reifect} from "../../wrappers/reifect/reifect";
 import {TurboIconSwitchProperties} from "../../basics/icon/iconSwitch/iconSwitch.types";
 import {define} from "../../../decorators/define/define";
@@ -24,13 +24,14 @@ import {Propagation} from "../../../turboFunctions/event/event.types";
  * @group Components
  * @category TurboDrawer
  */
-@define("turbo-drawer")
 class TurboDrawer<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EMitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EMitterType> {
+     public declare readonly properties: TurboDrawerProperties;
+
     private _panelContainer: HTMLElement;
     public get panelContainer(): HTMLElement {return this._panelContainer}
 
@@ -66,7 +67,7 @@ class TurboDrawer<
         preprocessValue: function (value: string | Element | TurboIconSwitchProperties<Side> | TurboIconSwitch<Side>) {
             if (value instanceof Element) return value;
             if (typeof value === "string" && !this.attachSideToIconName && !this.rotateIconBasedOnSide) this.attachSideToIconName = true;
-            return iconSwitch(typeof value === "object" ? value : {
+            return TurboIconSwitch.create(typeof value === "object" ? value : {
                 icon: value,
                 switchReifect: {states: Object.values(Side)},
                 defaultState: this.open ? this.getOppositeSide() : this.side,
@@ -156,7 +157,7 @@ class TurboDrawer<
                 transitionTimingFunction: "ease-out",
             })
         },
-        callAfter: function () {this.transition.attachAll(this, this.panelContainer)},
+        callAfter: function () {this.transition.attach(this, this.panelContainer)},
     }) public transition: Reifect;
 
     public get translation(): number {return}
@@ -304,8 +305,9 @@ function drawer<
     EmitterType extends TurboEmitter = TurboEmitter
 >(properties: TurboDrawerProperties<ViewType, DataType, ModelType, EmitterType>):
     TurboDrawer<ViewType, DataType, ModelType, EmitterType> {
-    if (!properties.tag) properties.tag = "turbo-drawer";
-    return element({...properties, text: undefined}) as any;
+    // if (!properties.tag) properties.tag = "turbo-drawer";
+    return TurboDrawer.create(properties) as any;
 }
 
+define(TurboDrawer);
 export {TurboDrawer, drawer};

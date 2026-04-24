@@ -4,6 +4,7 @@ import {TurboModel} from "../../../mvc/model/model";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement} from "../../../types/element.types";
+import {TurboInput} from "./input";
 
 /**
  * @group Components
@@ -28,5 +29,12 @@ type TurboInputProperties<
 
     selectTextOnFocus?: boolean,
 };
+
+
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-inout": TurboInput
+    }
+}
 
 export {TurboInputProperties};

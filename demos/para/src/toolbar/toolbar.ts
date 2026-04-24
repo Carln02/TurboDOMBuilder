@@ -1,9 +1,10 @@
-import {define, TurboElement, turbo, effect, signal, element, auto} from "../../../../build/turbodombuilder.esm";
+import {define, TurboElement, turbo, effect, signal, auto} from "../../../../build/turbodombuilder.esm";
 import "./toolbar.css";
 import {ToolbarProperties} from "./toolbar.types";
 
-@define("demo-toolbar")
 export class Toolbar extends TurboElement {
+    public declare readonly properties: ToolbarProperties;
+
     @signal public color: string = "white";
 
     @auto() public set entries(value: HTMLElement[]) {
@@ -19,3 +20,5 @@ export class Toolbar extends TurboElement {
         turbo(this).addChild(tool);
     }
 }
+
+define(Toolbar, "demo-toolbar");

@@ -1,4 +1,4 @@
-import {TurboTool, TurboEvent, Propagation, behavior, DefaultEventName} from "../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboEvent, Propagation, behavior, define} from "../../../../build/turbodombuilder.esm";
 import {Square} from "../square/square";
 import {Canvas} from "../canvas/canvas";
 
@@ -15,3 +15,5 @@ export class AddSquareTool extends TurboTool {
         }
     }
 }
+
+define(AddSquareTool);

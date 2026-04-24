@@ -2,6 +2,7 @@ import {TurboInputProperties} from "../input.types";
 import {TurboView} from "../../../../mvc/view/view";
 import {TurboModel} from "../../../../mvc/model/model";
 import {TurboEmitter} from "../../../../mvc/emitter/emitter";
+import {TurboNumericalInput} from "./numericalInput";
 
 /**
  * @group Components
@@ -19,5 +20,11 @@ type TurboNumericalInputProperties<
     min?: number,
     max?: number,
 };
+
+declare module "../../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-numerical-inout": TurboNumericalInput
+    }
+}
 
 export {TurboNumericalInputProperties};

@@ -62,41 +62,83 @@ type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> =
  * is provided, the corresponding namespace will be used to create the element. Otherwise, the custom namespace
  * provided will be used.
  */
-type ElementTagDefinition = {
-    tag?: string;
+type ElementTagDefinition<Tag extends ValidTag = "div"> = {
+    tag?: Tag;
     namespace?: string;
 };
 
-export interface TurboElementTagNameMap {
+interface TurboElementTagNameMap {
+}
+
+interface TurboElementPropertiesMap {
 }
 
 declare global {
     //Document interfaces
-    interface Document extends Node {}
-    interface DocumentFragment extends Node {}
-    interface HTMLDocument extends Document {}
-    interface XMLDocument extends Document {}
+    interface Document extends Node {
+    }
+
+    interface DocumentFragment extends Node {
+    }
+
+    interface HTMLDocument extends Document {
+    }
+
+    interface XMLDocument extends Document {
+    }
 
     //CharacterData interfaces
-    interface CharacterData extends Node {}
-    interface Text extends CharacterData {}
-    interface Comment extends CharacterData {}
-    interface CDATASection extends CharacterData {}
+    interface CharacterData extends Node {
+    }
+
+    interface Text extends CharacterData {
+    }
+
+    interface Comment extends CharacterData {
+    }
+
+    interface CDATASection extends CharacterData {
+    }
 
     //Element interfaces
-    interface Element extends Node {}
-    interface ShadowRoot extends Element {}
+    interface Element extends Node {
+    }
+
+    interface ShadowRoot extends Element {
+    }
 
     //Other interfaces
-    interface ChildNode extends Node {}
-    interface ParentNode extends Node {}
-    interface ProcessingInstruction extends Node {}
-    interface DocumentType extends Node {}
+    interface ChildNode extends Node {
+    }
+
+    interface ParentNode extends Node {
+    }
+
+    interface ProcessingInstruction extends Node {
+    }
+
+    interface DocumentType extends Node {
+    }
 
     //Deprecated interfaces
-    interface EntityReference extends Node {}
-    interface Entity extends Node {}
-    interface Notation extends Node {}
+    interface EntityReference extends Node {
+    }
+
+    interface Entity extends Node {
+    }
+
+    interface Notation extends Node {
+    }
 }
 
-export {ElementTagMap, ValidTag, ValidElement, ValidNode, HTMLElementNonFunctions, HTMLElementMutableFields, ElementTagDefinition};
+export {
+    ElementTagMap,
+    ValidTag,
+    ValidElement,
+    ValidNode,
+    HTMLElementNonFunctions,
+    HTMLElementMutableFields,
+    ElementTagDefinition,
+    TurboElementTagNameMap,
+    TurboElementPropertiesMap,
+};

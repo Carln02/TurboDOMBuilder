@@ -21,7 +21,7 @@ describe("TurboModel", () => {
 
         it("constructs with no arguments", () => {
             const m = new TurboModel();
-            expect(m.data).toBeUndefined();
+            expect(m.data).toEqual({});
             expect(m.size).toBe(0);
         });
 

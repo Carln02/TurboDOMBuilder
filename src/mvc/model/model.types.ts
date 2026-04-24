@@ -1,5 +1,11 @@
 import {TurboObserver} from "./observer";
 import {KeyType} from "../../types/basic.types";
+import {TurboModel} from "./model";
+
+type TurboModelProxy<
+    DataType extends object = any,
+    IdType extends KeyType = any
+> = DataType & {readonly $model: TurboModel<DataType, KeyType, IdType>};
 
 /**
  * @type TurboModelProperties
@@ -23,6 +29,7 @@ type TurboModelProperties<
     initialize?: boolean,
     enabledCallbacks?: boolean,
     bubbleChanges?: boolean,
+    makeSignals?: boolean,
 };
 
 /**
@@ -66,4 +73,4 @@ type TurboObserverProperties<
     onDestroy?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void,
 };
 
-export {TurboModelProperties, TurboObserverProperties};
+export {TurboModelProperties, TurboObserverProperties, TurboModelProxy};

@@ -1,4 +1,4 @@
-import {StatefulReifect, statefulReifier} from "../../wrappers/statefulReifect/statefulReifect";
+import {StatefulReifect} from "../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../wrappers/statefulReifect/statefulReifect.types";
 import {TurboView} from "../../../mvc/view/view";
 import {define} from "../../../decorators/define/define";
@@ -8,12 +8,12 @@ import {$} from "../../../turboFunctions/turboFunctions";
 import {TurboElement} from "../../../turboElement/turboElement";
 import {InOut} from "../../../types/enums.types";
 import {Point} from "../../datatypes/point/point";
+import {TurboMarkingMenuProperties} from "./markingMenu.types";
 
 /**
  * @group Components
  * @category TurboMarkingMenu
  */
-@define("turbo-marking-menu")
 class TurboMarkingMenu<
     ValueType = string,
     SecondaryValueType = string,
@@ -22,6 +22,7 @@ class TurboMarkingMenu<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel
 > extends TurboElement<ViewType, DataType, ModelType> {
+     public declare readonly properties: TurboMarkingMenuProperties;
     private readonly transition: StatefulReifect<InOut>;
     private currentOrigin: Point;
 
@@ -216,4 +217,5 @@ class TurboMarkingMenu<
     // }
 }
 
+define(TurboMarkingMenu);
 export {TurboMarkingMenu};

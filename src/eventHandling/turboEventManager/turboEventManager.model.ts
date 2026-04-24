@@ -13,12 +13,19 @@ import {Point} from "../../turboComponents/datatypes/point/point";
 import {TurboMap} from "../../turboComponents/datatypes/map/map";
 import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
+import {signal} from "../../decorators/reactivity/reactivity";
 
 export class TurboEventManagerModel extends TurboModel {
     @handler() public utils: TurboEventManagerUtilsHandler;
 
-    public readonly state: TurboEventManagerStateProperties = {};
-    public readonly lockState: TurboEventManagerLockStateProperties = {};
+    public readonly state: TurboEventManagerStateProperties = TurboModel.from({
+        enabled: true,
+        preventDefaultMouse: false,
+        preventDefaultTouch: false,
+        preventDefaultWheel: false
+    });
+
+    public lockState: TurboEventManagerLockStateProperties = TurboModel.from();
 
     //Delegate fired when the input device changes
     public readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>
@@ -30,18 +37,18 @@ export class TurboEventManagerModel extends TurboModel {
     public readonly onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void> = new Delegate();
 
     //Input events states
-    public readonly currentKeys: string[] = [];
-    public currentAction: ActionMode = ActionMode.none;
-    public currentClick: ClickMode = ClickMode.none;
-    public wasRecentlyTrackpad: boolean = false;
+    public readonly currentKeys: string[] = TurboModel.from([]);
+    @signal public currentAction: ActionMode = ActionMode.none;
+    @signal public currentClick: ClickMode = ClickMode.none;
+    @signal public wasRecentlyTrackpad: boolean = false;
 
     //Threshold differentiating a click from a drag
-    public moveThreshold: number;
+    @signal public moveThreshold: number = 10;
     //Duration to reach long press
-    public longPressDuration: number;
+    @signal public longPressDuration: number = 500;
 
-    public authorizeEventScaling: boolean | (() => boolean);
-    public scaleEventPosition: (position: Point) => Point;
+    @signal public authorizeEventScaling: boolean | (() => boolean);
+    @signal public scaleEventPosition: (position: Point) => Point;
 
     public activePointers = new Set<number>();
 
@@ -63,7 +70,11 @@ export class TurboEventManagerModel extends TurboModel {
     //Tools currently held by the user (one - or none - per each click button/mode)
     public readonly currentTools: Map<ClickMode, Node> = new Map();
 
-    @auto({callBefore: function (value) {if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true}})
+    @auto({
+        callBefore: function (value) {
+            if (value == InputDevice.trackpad) this.wasRecentlyTrackpad = true
+        }
+    })
     public set inputDevice(value: InputDevice) {
         this.onInputDeviceChange.fire(value);
     }

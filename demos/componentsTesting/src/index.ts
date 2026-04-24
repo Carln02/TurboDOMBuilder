@@ -1,4 +1,4 @@
-import {TurboIcon, h1, TurboEventManager} from "../../../build/turbodombuilder.esm";
+import {TurboIcon, h1, TurboEventManager, turbo} from "../../../build/turbodombuilder.esm";
 import {setupIconTests} from "./cases/icon/icon";
 import {setupRichElementTests} from "./cases/richElement/richElement";
 import {setupInputTests} from "./cases/input/input";
@@ -8,8 +8,7 @@ import {setupPopupTests} from "./cases/popup/popup";
 import {setupDropdownTests} from "./cases/dropdown/dropdown";
 import {setupSelectWheelTests} from "./cases/selectWheel/selectWheel";
 
-TurboIcon.config.defaultDirectory = "assets";
-TurboIcon.config.defaultClasses = "icon";
+turbo(TurboIcon.defaultProperties).applyDefaults({directory: "assets", defaultClasses: "icon"});
 TurboEventManager.instance.preventDefaultWheel = false;
 
 h1({text: "TurboIcon", parent: document.body});

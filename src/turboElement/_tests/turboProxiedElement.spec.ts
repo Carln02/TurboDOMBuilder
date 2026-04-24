@@ -7,7 +7,7 @@ class TE extends TurboProxiedElement<"div"> {
 
 describe("TurboProxiedElement: selected toggling", () => {
     it("adds/removes the default selected class on the wrapped element", () => {
-        const p = new TE({tag: "div"});
+        const p = TE.create({tag: "div"});
 
         p.selected = true;
         expect(p.element.classList.contains("selected")).toBe(true);
@@ -20,7 +20,7 @@ describe("TurboProxiedElement: selected toggling", () => {
         const host = div({id: "h"});
         document.body.appendChild(host);
 
-        const p = new (class extends TurboProxiedElement<"div"> {})({tag: "div"});
+        const p = (class extends TurboProxiedElement<"div"> {}).create({tag: "div"});
         document.body.appendChild(p.element);
 
         p.selected = true;

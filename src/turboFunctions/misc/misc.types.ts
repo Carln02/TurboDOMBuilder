@@ -30,6 +30,18 @@ declare module "../turboSelector" {
          */
         execute(callback: ((el: this) => void)): this;
 
+        apply(properties: Partial<this["element"]> & Record<string, any>): this;
+
+        removeFields(keys: (keyof this["element"] | string)[]): this;
+
+        getDefaults(defaults: (keyof this["element"] | string)[]): Partial<this["element"]> & Record<string, any>;
+
+        getIntersection(other: Partial<this["element"]> & Record<string, any>): Partial<this["element"]> & Record<string, any>;
+
+        getDifference(other: Partial<this["element"]> & Record<string, any>): Partial<this["element"]> & Record<string, any>;
+
+        extract(keys: (keyof this["element"] | string)[]): Partial<this["element"]> & Record<string, any>;
+
         /**
          * @function applyDefaults
          * @description Apply default properties to the underlying object, with optional smart merging for

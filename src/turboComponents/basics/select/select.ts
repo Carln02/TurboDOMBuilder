@@ -4,13 +4,14 @@ import {trim} from "../../../utils/computations/misc";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboBaseElement} from "../../../turboElement/turboBaseElement/turboBaseElement";
 import {auto} from "../../../decorators/auto/auto";
-import {richElement, TurboRichElement} from "../richElement/richElement";
+import {TurboRichElement} from "../richElement/richElement";
 import {isNull, isUndefined} from "../../../utils/dataManipulation/misc";
 import {input} from "../../../elementCreation/basicElements";
 import {Delegate} from "../../datatypes/delegate/delegate";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {stringify} from "../../../utils/dataManipulation/string";
 import {Propagation} from "../../../turboFunctions/event/event.types";
+import {define} from "../../../decorators/define/define";
 
 /**
  * @class TurboSelect
@@ -26,19 +27,65 @@ class TurboSelect<
     SecondaryValueType = string,
     EntryType extends object = HTMLElement,
 > extends TurboBaseElement {
-    public static readonly config: TurboSelectConfig = {defaultSelectedEntriesClasses: "selected"};
+    public declare readonly properties: TurboSelectProperties<ValueType, SecondaryValueType, EntryType>;
+
+    public static defaultProperties: TurboSelectProperties = {
+        selectedEntriesClasses: "selected",
+        onEnabled: (b, entry) => {
+            if (!(entry instanceof HTMLElement)) return;
+            turbo(entry).setStyle("visibility", b ? "" : "hidden");
+        }
+    };
 
     private _inputField: HTMLInputElement;
     private _entries: EntryType[] = [];
     private readonly _entriesData: WeakMap<EntryType, EntryData> = new WeakMap();
 
     private parentObserver: MutationObserver;
-    public readonly onSelectDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
-    public readonly onEnabledDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
+    private readonly _onSelect: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
+    public get onSelect(): Delegate<(b: boolean, entry: EntryType, index: number) => void> {
+        return this._onSelect;
+    }
 
-    public readonly onEntryAdded: Delegate<(entry: EntryType, index: number) => void> = new Delegate();
-    public readonly onEntryRemoved: Delegate<(entry: EntryType) => void> = new Delegate();
-    public readonly onEntryClicked: Delegate<(entry: EntryType, e: Event) => void> = new Delegate();
+    public set onSelect(value: (b: boolean, entry: EntryType, index: number) => void) {
+        if (value) this._onSelect.add(value);
+    }
+
+    private readonly _onEnabled: Delegate<(b: boolean, entry: EntryType, index: number) => void> = new Delegate();
+    public get onEnabled(): Delegate<(b: boolean, entry: EntryType, index: number) => void> {
+        return this._onEnabled;
+    }
+
+    public set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void) {
+        if (value) this._onEnabled.add(value);
+    }
+
+    private readonly _onEntryAdded: Delegate<(entry: EntryType, index: number) => void> = new Delegate();
+    public get onEntryAdded(): Delegate<(entry: EntryType, index: number) => void> {
+        return this._onEntryAdded;
+    }
+
+    public set onEntryAdded(value: (entry: EntryType, index: number) => void) {
+        if (value) this.onEntryAdded.add(value);
+    }
+
+    private readonly _onEntryRemoved: Delegate<(entry: EntryType) => void> = new Delegate();
+    public get onEntryRemoved(): Delegate<(entry: EntryType) => void> {
+        return this._onEntryRemoved;
+    }
+
+    public set onEntryRemoved(value: (entry: EntryType) => void) {
+        if (value) this.onEntryRemoved.add(value);
+    }
+
+    private readonly _onEntryClicked: Delegate<(entry: EntryType, e: Event) => void> = new Delegate();
+    public get onEntryClicked(): Delegate<(entry: EntryType, e: Event) => void> {
+        return this._onEntryClicked;
+    }
+
+    public set onEntryClicked(value: (entry: EntryType, e: Event) => void) {
+        if (value) this.onEntryClicked.add(value);
+    }
 
     /**
      * The dropdown's entries.
@@ -117,7 +164,7 @@ class TurboSelect<
     @auto({defaultValue: () => ""}) public getSecondaryValue: (entry: EntryType) => SecondaryValueType;
 
     @auto({
-        defaultValue: (value: ValueType) => richElement({text: stringify(value)})
+        defaultValue: (value: ValueType) => TurboRichElement.create({text: stringify(value)})
     }) public createEntry: (value: ValueType) => EntryType;
 
     /**
@@ -144,37 +191,45 @@ class TurboSelect<
         this.forceSelection = !value;
     }
 
-    @auto({defaultValueCallback: function () {return !this.multiSelection}}) public forceSelection: boolean;
+    @auto({defaultValueCallback: function () {return !this.multiSelection}})
+    public forceSelection: boolean;
 
-    public set onSelect(value: (b: boolean, entry: EntryType, index: number) => void) {
-        if (value) this.onSelectDelegate.add(value);
-    }
-
-    public set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void) {
-        if (value) this.onEnabledDelegate.add(value);
-    }
-
+    //TODO FIX
     @auto({
-        callBefore: function () {this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses))},
-        callAfter: function () {this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses))},
-        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectedEntryClasses")},
+        callBefore: function () {
+            this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses))
+        },
+        callAfter: function () {
+            this.selectedEntries?.forEach(entry => turbo(entry).addClass(this.selectedEntryClasses))
+        },
     }) public selectedEntriesClasses: string | string[];
 
     @auto({
-        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultEntriesClasses")},
-        callBefore: function (value: string) {this.entries.forEach(entry => turbo(entry).removeClass(value))},
-        callAfter: function (value: string) {this.entries.forEach(entry => turbo(entry).addClass(value))}
+        callBefore: function (value: string) {
+            this.entries.forEach(entry => turbo(entry).removeClass(value))
+        },
+        callAfter: function (value: string) {
+            this.entries.forEach(entry => turbo(entry).addClass(value))
+        }
     }) public entriesClasses: string | string[];
+
+
+    public static create<Type extends new (...args: any[]) => TurboBaseElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        const props = properties as TurboSelectProperties;
+        const selectedValues = props.selectedValues || [];
+        props.selectedValues = undefined;
+
+        const obj = super.create.call(this, props);
+        obj.selectedValues = selectedValues;
+        return obj;
+    }
 
     /**
      * @description Dropdown constructor
-     * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    public constructor(properties: TurboSelectProperties<ValueType, SecondaryValueType, EntryType> = {}) {
+    public constructor() {
         super();
-        const selectedValues = properties.selectedValues || [];
-        properties.selectedValues = undefined;
-
         this.onEntryClicked.add((entry) => this.select(entry, !this.isSelected(entry)));
         this.onEntryAdded.add((entry) => {
             this.initializeSelection();
@@ -182,26 +237,6 @@ class TurboSelect<
                 this.onEntryClicked.fire(entry, e);
                 return Propagation.stopPropagation;
             });
-        });
-
-        if (!properties.onEnabled) properties.onEnabled = (b, entry) => {
-            if (!(entry instanceof HTMLElement)) return;
-            turbo(entry).setStyle("visibility", b ? "" : "hidden");
-        };
-
-        for (const property of Object.keys(properties)) {
-
-            try {
-                if (this[property] instanceof Delegate) this[property].add(properties[property]);
-                else this[property] = properties[property]
-            } catch {}
-        }
-
-        if (!this.forceSelection) this.deselectAll();
-        this.entries.forEach(entry => {
-            if (selectedValues.includes(this.getValue(entry))) {
-                this.select(entry)
-            }
         });
     }
 
@@ -253,7 +288,8 @@ class TurboSelect<
                 const isEntry = this.entries.find(entry => entry === value);
                 if (isEntry) entry = isEntry;
             }
-        } catch {}
+        } catch {
+        }
         return entry;
     }
 
@@ -274,7 +310,8 @@ class TurboSelect<
                 const isEntry = this.entries.find(entry => entry === value);
                 if (isEntry) entry = isEntry;
             }
-        } catch {}
+        } catch {
+        }
         if (!entry) return this;
 
         const wasSelected = this.isSelected(entry);
@@ -288,7 +325,7 @@ class TurboSelect<
         this.initializeSelection();
         this.refreshInputField();
 
-        this.onSelectDelegate.fire(selected, entry, this.getIndex(entry));
+        this.onSelect.fire(selected, entry, this.getIndex(entry));
         (this.parent ?? document).dispatchEvent(new TurboSelectInputEvent<ValueType, SecondaryValueType, EntryType>({
             toggledEntry: entry,
             values: this.selectedValues
@@ -361,7 +398,7 @@ class TurboSelect<
             const entry = this.getEntry(value);
             if (!entry) return;
             this.getEntryData(entry).enabled = b;
-            this.onEnabledDelegate.fire(b, entry, this.getIndex(entry));
+            this.onEnabled.fire(b, entry, this.getIndex(entry));
         });
     }
 
@@ -371,6 +408,13 @@ class TurboSelect<
 
     public get selectedEntry(): EntryType {
         return this.selectedEntries[0];
+    }
+
+    public set selectedValues(values: ValueType[]) {
+        if (!this.forceSelection) this.deselectAll();
+        this.entries.forEach(entry => {
+            if (values.includes(this.getValue(entry))) this.select(entry)
+        });
     }
 
     /**
@@ -483,4 +527,5 @@ class TurboSelect<
     }
 }
 
+define(TurboSelect);
 export {TurboSelect};

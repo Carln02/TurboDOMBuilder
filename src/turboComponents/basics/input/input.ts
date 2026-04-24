@@ -1,12 +1,11 @@
-import {richElement, TurboRichElement} from "../richElement/richElement";
+import {TurboRichElement} from "../richElement/richElement";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {element} from "../../../elementCreation/element";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {div} from "../../../elementCreation/basicElements";
-import {TurboRichElementConfig} from "../richElement/richElement.types";
 import {TurboInputProperties} from "./input.types";
 import {randomId} from "../../../utils/computations/random";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
@@ -14,12 +13,12 @@ import {TurboInputInputInteractor} from "./input.inputInteractor";
 import {Delegate} from "../../datatypes/delegate/delegate";
 import {ValidElement} from "../../../types/element.types";
 import {expose} from "../../../decorators/expose";
+import {TurboElement} from "../../../turboElement/turboElement";
 
 /**
  * @group Components
  * @category TurboInput
  */
-@define("turbo-input")
 class TurboInput<
     InputTag extends "input" | "textarea" = "input",
     ValueType extends string | number = string,
@@ -28,10 +27,20 @@ class TurboInput<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter,
 > extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
-    public static config: TurboRichElementConfig = {
-        ...TurboRichElement.config,
-        defaultElementTag: "input"
+     public declare readonly properties: TurboInputProperties;
+    public static defaultProperties: TurboInputProperties = {
+        elementTag: "input",
+        interactors: TurboInputInputInteractor
     };
+
+    public static create<Type extends new (...args: any[]) => TurboElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        let el: object = properties.input;
+        let elementTag: any = properties.inputTag;
+        if (!elementTag) elementTag = "input";
+        if (!el) el = {};
+        return super.create.call(this, {elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined});
+    }
 
     protected labelElement: HTMLLabelElement;
     public content: HTMLElement;
@@ -102,8 +111,7 @@ class TurboInput<
 
     public initialize() {
         super.initialize();
-        this.mvc.generate({interactors: [TurboInputInputInteractor]});
-        this.mvc.getInteractor("__input__interactor__").target = this.content;
+        turbo(this).getInteractor("__input__interactor__").target = this.content;
     }
 
     protected setupUIElements() {
@@ -120,7 +128,7 @@ class TurboInput<
 
     protected setupChangedCallbacks() {
         super.setupChangedCallbacks();
-        this.mvc.emitter.add("processValue", () => this.processInputValue());
+        this.emitter.add("processValue", () => this.processInputValue());
     }
 
     public get value(): ValueType {
@@ -140,7 +148,7 @@ class TurboInput<
             if (!re.test(strValue)) strValue = this.lastValidForBlur;
         }
         this.element.value = strValue;
-        this.mvc.emitter.fire("valueSet");
+        this.emitter.fire("valueSet");
     }
 
     protected processInputValue(value: string = this.element.value) {
@@ -180,26 +188,27 @@ class TurboInput<
     }
 }
 
-/**
- * @group Components
- * @category TurboInput
- */
-function turboInput<
-    InputTag extends "input" | "textarea" = "input",
-    ValueType extends string | number = string,
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter,
->(
-    properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>
-): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType> {
-    let el: object = properties.input;
-    let elementTag: any = properties.inputTag;
-    if (!elementTag) elementTag = "input";
-    if (!el) el = {};
-    if (!properties.tag) properties.tag = "turbo-input";
-    return richElement({elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined}) as any;
-}
+// /**
+//  * @group Components
+//  * @category TurboInput
+//  */
+// function turboInput<
+//     InputTag extends "input" | "textarea" = "input",
+//     ValueType extends string | number = string,
+//     ViewType extends TurboView = TurboView<any, any>,
+//     DataType extends object = object,
+//     ModelType extends TurboModel<DataType> = TurboModel,
+//     EmitterType extends TurboEmitter = TurboEmitter,
+// >(
+//     properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>
+// ): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType> {
+//     let el: object = properties.input;
+//     let elementTag: any = properties.inputTag;
+//     if (!elementTag) elementTag = "input";
+//     if (!el) el = {};
+//     if (!properties.tag) properties.tag = "turbo-input";
+//     return richElement({elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined}) as any;
+// }
 
-export {TurboInput, turboInput};
+define(TurboInput);
+export {TurboInput};

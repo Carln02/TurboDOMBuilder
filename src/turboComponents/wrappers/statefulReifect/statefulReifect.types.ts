@@ -95,12 +95,7 @@ type ReifectObjectComputedProperties<State extends KeyType, ClassType extends ob
     properties: PartialRecord<State, PartialRecord<keyof ClassType, any>>,
     styles: PartialRecord<State, StylesType>,
     classes:PartialRecord<State, string | string[]>,
-    replaceWith: PartialRecord<State, ClassType>,
-
-    transitionProperties: PartialRecord<State, string[]>,
-    transitionDuration: PartialRecord<State, number>,
-    transitionTimingFunction: PartialRecord<State, string>,
-    transitionDelay: PartialRecord<State, number>,
+    replaceWith: PartialRecord<State, ClassType>
 };
 
 /**
@@ -111,12 +106,6 @@ type StatefulReifectCoreProperties<State extends KeyType, ClassType extends obje
     styles?: PropertyConfig<StylesType, State, ClassType>,
     classes?: PropertyConfig<string | string[], State, ClassType>,
     replaceWith?: PropertyConfig<ClassType, State, ClassType>,
-
-    transitionProperties?: PropertyConfig<string | string[], State, ClassType>,
-    transitionDuration?: PropertyConfig<number, State, ClassType>,
-    transitionTimingFunction?: PropertyConfig<string, State, ClassType>,
-    transitionDelay?: PropertyConfig<number, State, ClassType>,
-
     [k: PropertyKey]: PropertyConfig<any, State, ClassType>,
 };
 
@@ -128,8 +117,7 @@ type StatefulReifectProperties<State extends KeyType, ClassType extends object =
     StatefulReifectCoreProperties<State, ClassType> & {
     states?: State[] | object,
     initialState?: State | boolean,
-    attachedObjects?: ClassType[],
-    transition?: PropertyConfig<string, State, ClassType>
+    attachedObjects?: ClassType[]
 };
 
 /**
@@ -154,8 +142,7 @@ type ReifectEnabledObject = {
     properties?: boolean,
     styles?: boolean,
     classes?: boolean,
-    replaceWith?: boolean,
-    transition?: boolean,
+    replaceWith?: boolean
 }
 
 export {ReifectObjectData, ReifectInterpolator, StateInterpolator, StateSpecificProperty, BasicPropertyConfig,

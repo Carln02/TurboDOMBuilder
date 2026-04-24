@@ -2,6 +2,7 @@ import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboInput} from "./input";
 import {$} from "../../../turboFunctions/turboFunctions";
 
+//TODO
 export class TurboInputInputInteractor extends TurboInteractor<TurboInput> {
     public keyName = "__input__interactor__";
 

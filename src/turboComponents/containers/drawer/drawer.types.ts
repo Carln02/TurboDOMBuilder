@@ -8,6 +8,7 @@ import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {Open, Side} from "../../../types/enums.types";
 import {PartialRecord} from "../../../types/basic.types";
+import {TurboDrawer} from "./drawer";
 
 /**
  * @group Components
@@ -32,6 +33,12 @@ type TurboDrawerProperties<
 
     open?: boolean,
     transition?: Reifect<HTMLElement>
+}
+
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-drawer": TurboDrawer
+    }
 }
 
 export {TurboDrawerProperties};

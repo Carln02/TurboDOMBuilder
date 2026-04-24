@@ -1,4 +1,4 @@
-import {TurboIcon, icon, iconToggle, button, randomColor} from "../../../../../build/turbodombuilder.esm";
+import {TurboIcon, TurboButton, Color, TurboIconToggle} from "../../../../../build/turbodombuilder.esm";
 import {box} from "../../demoBox/demoBox";
 import "./icon.css";
 
@@ -6,45 +6,45 @@ const onLoadedLog = (prefix: string) =>
     (el: Element) => console.log(`[${prefix}] loaded`, el);
 
 function iconTest1() {
-    const icon4 = icon({icon: "share", type: "svg", iconColor: "#e91e63"});
+    const icon4 = TurboIcon.create({icon: "share", type: "svg", iconColor: "#e91e63"});
     box("TurboIcon — Basics")
-        .addSubBox("SVG", icon({icon: "link", type: "svg", onLoaded: onLoadedLog("svg")}))
-        .addSubBox("Explicit ext (jpg) > type(svg)", icon({
+        .addSubBox("SVG", TurboIcon.create({icon: "link", type: "svg", onLoaded: onLoadedLog("svg")}))
+        .addSubBox("Explicit ext (jpg) > type(svg)", TurboIcon.create({
             icon: "share.jpg",
             type: "svg",
             onLoaded: onLoadedLog("explicit-ext overrides type")
         }))
-        .addSubBox("PNG", icon({icon: "photo", type: "png", onLoaded: onLoadedLog("png")}))
+        .addSubBox("PNG", TurboIcon.create({icon: "photo", type: "png", onLoaded: onLoadedLog("png")}))
         .addSubBox("SVG + iconColor", icon4)
-        .addContent(button({
-            text: "Toggle color", onClick: () => icon4.iconColor = randomColor()
+        .addContent(TurboButton.create({
+            text: "Toggle color", onClick: () => icon4.iconColor = Color.random().toString()
         }));
 }
 
 function iconTest2() {
     box("TurboIcon — directory")
-        .addSubBox('dir: "assets"', icon({directory: "assets", icon: "share", type: "svg"}))
-        .addSubBox('dir: "assets/"', icon({directory: "assets/", icon: "share", type: "svg"}))
-        .addSubBox('dir: "" + path in icon', icon({directory: "", icon: "assets/share", type: "svg"}));
+        .addSubBox('dir: "assets"', TurboIcon.create({directory: "assets", icon: "share", type: "svg"}))
+        .addSubBox('dir: "assets/"', TurboIcon.create({directory: "assets/", icon: "share", type: "svg"}))
+        .addSubBox('dir: "" + path in icon', TurboIcon.create({directory: "", icon: "assets/share", type: "svg"}));
 }
 
 function iconTest3() {
-    const dyn = icon({icon: "share", type: "svg", onLoaded: onLoadedLog("dynamic")});
+    const dyn = TurboIcon.create({icon: "share", type: "svg", onLoaded: onLoadedLog("dynamic")});
     box("TurboIcon — dynamic updates")
         .addSubBox("start", dyn)
-        .addContent(button({text: "icon=link", onClick: () => dyn.icon = "link"}))
-        .addContent(button({text: "type=jpg", onClick: () => dyn.type = "jpg"}))
-        .addContent(button({text: "type=svg", onClick: () => dyn.type = "svg"}))
-        .addContent(button({text: "dir=assets/icons", onClick: () => dyn.directory = "assets/icons"}));
+        .addContent(TurboButton.create({text: "icon=link", onClick: () => dyn.icon = "link"}))
+        .addContent(TurboButton.create({text: "type=jpg", onClick: () => dyn.type = "jpg"}))
+        .addContent(TurboButton.create({text: "type=svg", onClick: () => dyn.type = "svg"}))
+        .addContent(TurboButton.create({text: "dir=assets/icons", onClick: () => dyn.directory = "assets/icons"}));
 }
 
 function iconTest4() {
     const names = ["share", "link", "chevron-top", "chevron-left"];
-    const racer = icon({icon: "share", type: "svg", onLoaded: onLoadedLog("race")});
+    const racer = TurboIcon.create({icon: "share", type: "svg", onLoaded: onLoadedLog("race")});
 
     box("TurboIcon — async race")
         .addSubBox("racer", racer)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Start race",
             onClick: () => {
                 let i = 0;
@@ -59,10 +59,10 @@ function iconTest4() {
 }
 
 function iconTest5() {
-    const badType = icon({icon: "share", type: "tiff"});
+    const badType = TurboIcon.create({icon: "share", type: "tiff"});
     box("TurboIcon — errors")
-        .addSubBox("missing svg (expect console error)", icon({icon: "i-do-not-exist", type: "svg"}))
-        .addContent(button({
+        .addSubBox("missing svg (expect console error)", TurboIcon.create({icon: "i-do-not-exist", type: "svg"}))
+        .addContent(TurboButton.create({
             text: "Create bad type",
             onClick: () => {
                 try {
@@ -75,7 +75,7 @@ function iconTest5() {
 }
 
 function iconTest6() {
-    TurboIcon.config.customLoaders["data"] = () => {
+    TurboIcon.customLoaders["data"] = () => {
         const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         el.setAttribute("viewBox", "0 0 24 24");
         el.innerHTML = `<circle cx="12" cy="12" r="8"></circle>`;
@@ -85,14 +85,14 @@ function iconTest6() {
     };
 
     box("TurboIcon — custom loader")
-        .addSubBox('type="data"', icon({icon: "ignored-payload", type: "data", iconColor: "tomato"}));
+        .addSubBox('type="data"', TurboIcon.create({icon: "ignored-payload", type: "data", iconColor: "tomato"}));
 }
 
 function iconTest7() {
-    const reUser = icon({icon: "photo", type: "jpg"});
+    const reUser = TurboIcon.create({icon: "photo", type: "jpg"});
     box("TurboIcon — image reuse")
         .addSubBox("re-user", reUser)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "flip jpg/png/jpg",
             onClick: (e, el) => {
                 reUser.type = reUser.type === "jpg" ? "png" : "jpg";
@@ -103,7 +103,7 @@ function iconTest7() {
 
 function iconTest8() {
     box("TurboIconToggle")
-        .addSubBox("click me", iconToggle({
+        .addSubBox("click me", TurboIconToggle.create({
             icon: "link",
             toggleOnClick: true, onToggle: (v) => console.log("toggle:", v)
         }));

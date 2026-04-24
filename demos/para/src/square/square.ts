@@ -1,15 +1,14 @@
-import {define, TurboElement, Point, expose, TurboRect} from "../../../../build/turbodombuilder.esm";
+import {define, TurboElement, Point, expose, TurboRect, Color} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {SquareView} from "./square.view";
 import "./square.css";
 
 //Custom square element, defined as a custom element
-@define("demo-square")
 export class Square extends TurboElement<SquareView, any, SquareModel> {
     public modifiable: boolean = true;
 
     //Expose fields from the model
-    @expose("model") color: string;
+    @expose("model", true) color: Color;
     @expose("model") elementSize: number;
     @expose("model") position: Point;
     @expose("model") rotation: number;
@@ -44,3 +43,5 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
         });
     }
 }
+
+define(Square, "demo-square");

@@ -1,10 +1,10 @@
-import {define, signal, turbo, DefaultEventName, TurboButton, effect, input, element, TurboRichElementProperties} from "../../../../../build/turbodombuilder.esm";
+import {define, signal, turbo, DefaultEventName, TurboButton, effect, input, Color} from "../../../../../build/turbodombuilder.esm";
 import {BucketTool} from "./bucket.tool";
+import {define} from "../../../../../src";
 
 //Custom element for the bucket tool
-@define("demo-bucket")
 export class Bucket extends TurboButton {
-    @signal private _color: string = "#000000"; //Signal to fire @effect callbacks when the value changes
+    @signal private _color: Color = new Color(); //Signal to fire @effect callbacks when the value changes
 
     private colorInput: HTMLInputElement;
 
@@ -12,8 +12,8 @@ export class Bucket extends TurboButton {
         tools: BucketTool
     };
 
-    public get color(): string {
-        return this._color.toString();
+    public get color(): Color {
+        return this._color;
     }
 
     //Function that sets up sub-elements. Called on creation.
@@ -32,10 +32,12 @@ export class Bucket extends TurboButton {
     protected setupUIListeners() {
         super.setupUIListeners();
         turbo(this).on(DefaultEventName.click, () => this.colorInput.click());
-        turbo(this.colorInput).on(DefaultEventName.input, () => {this._color = this.colorInput.value});
+        turbo(this.colorInput).on(DefaultEventName.input, () => {this._color = Color.from(this.colorInput.value)});
     }
 
     @effect private updateBorderColor() {
-        turbo(this).setStyle("borderColor", this._color);
+        turbo(this).setStyle("borderColor", this._color.toString());
     }
 }
+
+define(Bucket, "demo-bucket");

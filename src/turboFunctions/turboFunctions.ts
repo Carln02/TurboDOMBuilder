@@ -12,6 +12,7 @@ import {callOnce} from "../decorators/callOnce";
 import {setupReifectFunctions} from "./reifect/reifect";
 import {element} from "../elementCreation/element";
 import {ValidElement, ValidTag} from "../types/element.types";
+import {setupMvcFunctions} from "./mvc/mvc";
 
 const cache: WeakMap<object, TurboSelector<object>> = new WeakMap();
 
@@ -59,11 +60,13 @@ function turbo(tagOrElement?: object | string): Turbo {
     let el: object;
 
     if (!tagOrElement) tagOrElement = "div" as any;
-    if (typeof tagOrElement === "string") el = element({tag: tagOrElement});
+    if (typeof tagOrElement === "string") el = element({tag: tagOrElement as any});
     else if (typeof tagOrElement === "object") {
         if (tagOrElement instanceof TurboSelector) return tagOrElement;
         if (tagOrElement instanceof Node) el = tagOrElement;
-        else if (tagOrElement["element"] && typeof tagOrElement["element"] === "object") el = tagOrElement["element"];
+        else if (tagOrElement["element"] && typeof tagOrElement["element"] === "object") {
+            el = tagOrElement["element"];
+        }
         else el = tagOrElement;
     }
 
@@ -209,6 +212,7 @@ function $(tagOrElement?: object | string): Turbo {
  */
 const turbofy = callOnce(function (options: TurbofyOptions = {}) {
     if (!options.excludeHierarchyFunctions) setupHierarchyFunctions();
+    if (!options.excludeMvcFunctions) setupMvcFunctions();
     if (!options.excludeMiscFunctions) setupMiscFunctions();
     if (!options.excludeClassFunctions) setupClassFunctions();
     if (!options.excludeElementFunctions) setupElementFunctions();

@@ -41,7 +41,7 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    protected getAction(data: any, key: DataKeyType): any {
+    protected getAction(data: any, key: KeyType): any {
         if (data instanceof YMap) return data.get(key.toString());
         if (data instanceof YArray) return data.get(trim(Number(key), data.length));
         return super.getAction(data, key);
@@ -50,7 +50,7 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    protected setAction(data: any, value: any, key: DataKeyType) {
+    protected setAction(data: any, value: any, key: KeyType) {
         if (data instanceof YMap) data.set(key.toString(), value);
         else if (data instanceof YArray) {
             const index = trim(Number(key), data.length + 1);
@@ -62,7 +62,7 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType {
+    protected addAction(model: TurboModel, data: any, value: any, key: KeyType): KeyType {
         if (data instanceof YArray) {
             let index = key as number;
             if (isUndefined(index) || typeof index !== "number" || index > data.length) {
@@ -80,7 +80,7 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    protected hasAction(data: any, key: DataKeyType): boolean {
+    protected hasAction(data: any, key: KeyType): boolean {
         if (data instanceof YMap) return data.has(key.toString());
         if (data instanceof YArray) return typeof key === "number" && key >= 0 && key < this.size;
         return super.hasAction(data, key);
@@ -89,7 +89,7 @@ class TurboYModel<
     /**
      * @inheritDoc
      */
-    protected deleteAction(data: any, key: DataKeyType) {
+    protected deleteAction(data: any, key: KeyType) {
         if (data instanceof YMap) data.delete(key.toString());
         else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size) data.delete(key, 1);
         else super.deleteAction(data, key);

@@ -1,5 +1,5 @@
 import {initializeEffects, signal} from "../../decorators/reactivity/reactivity";
-import {TurboModelProperties, TurboObserverProperties} from "./model.types";
+import {TurboModelProperties, TurboModelProxy, TurboObserverProperties} from "./model.types";
 import {SignalBox} from "../../decorators/reactivity/reactivity.types";
 import {auto} from "../../decorators/auto/auto";
 import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
@@ -9,6 +9,7 @@ import {isUndefined} from "../../utils/dataManipulation/misc";
 import {turbo} from "../../turboFunctions/turboFunctions";
 import {TurboHandler} from "../handler/handler";
 import {FlatKeyType, KeyType} from "../../types/basic.types";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboModel
@@ -36,6 +37,26 @@ class TurboModel<
      * to target all entries at a certain level inside the data.
      */
     public static readonly ALL = Symbol("ALL");
+
+    public static from<
+        DataType extends object = any,
+        IdType extends KeyType = any
+    >(data: DataType = {} as any, id?: IdType): TurboModelProxy<DataType, IdType> {
+        const model = new TurboModel({data, id});
+        model.makeSignals(TurboModel.ALL);
+        const proxy = new Proxy(data, {
+            get(target, key) {
+                if (key === "$model") return model;
+                return model.get(key as any);
+            },
+            set(target, key, value) {
+                if (!model.has(key)) model.makeSignal(key);
+                model.set(value, key as any);
+                return true;
+            }
+        });
+        return proxy as TurboModelProxy<DataType, IdType>;
+    }
 
     /**
      * @description The default constructor used to create nested {@link TurboModel} instances.
@@ -103,11 +124,12 @@ class TurboModel<
      */
     public constructor(properties: TurboModelProperties = {}) {
         this.id = properties.id;
-        this._data = properties.data;
+        this._data = properties.data ?? {};
         if (typeof properties.enabledCallbacks === "boolean") this.enabledCallbacks = properties.enabledCallbacks;
         if (typeof properties.bubbleChanges === "boolean") this.bubbleChanges = properties.bubbleChanges;
         this.setup();
         if (properties.initialize) this.initialize();
+        if (properties.makeSignals) this.makeSignals(TurboModel.ALL);
     }
 
     /**
@@ -1107,4 +1129,6 @@ class TurboModel<
     }
 }
 
+addRegistryCategory(TurboModel);
+define(TurboModel);
 export {TurboModel};

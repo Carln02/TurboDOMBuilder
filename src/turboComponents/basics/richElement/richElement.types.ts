@@ -2,11 +2,10 @@ import {TurboIcon} from "../icon/icon";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
-import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {TurboRichElement} from "./richElement";
 import {ValidElement, ValidTag} from "../../../types/element.types";
-import {HTMLTag} from "../../../types/htmlElement.types";
 
 /**
  * @type {TurboRichElementProperties}
@@ -36,7 +35,7 @@ import {HTMLTag} from "../../../types/htmlElement.types";
  * @template {ValidTag} ElementTag="p"
  */
 type TurboRichElementProperties<
-    ElementTag extends ValidTag = "div",
+    ElementTag extends ValidTag = any,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
@@ -54,24 +53,10 @@ type TurboRichElementProperties<
     rightCustomElements?: Element | Element[],
 };
 
-/**
- * @type {TurboRichElementConfig}
- * @group Components
- * @category TurboRichElement
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-type TurboRichElementConfig = TurboElementConfig & {
-    defaultElementTag?: HTMLTag
-}
-
 declare module "../../../types/element.types" {
     interface TurboElementTagNameMap {
         "turbo-rich-element": TurboRichElement
     }
 }
 
-export {TurboRichElementProperties, TurboRichElementConfig};
+export {TurboRichElementProperties};

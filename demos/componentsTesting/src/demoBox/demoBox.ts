@@ -1,4 +1,16 @@
-import {TurboElement, $, auto, define, div, h4, effect, span, signal, randomColor, element} from "../../../../build/turbodombuilder.esm";
+import {
+    TurboElement,
+    $,
+    auto,
+    define,
+    div,
+    h4,
+    effect,
+    span,
+    signal,
+    element,
+    Color
+} from "../../../../build/turbodombuilder.esm";
 import "./demoBox.css";
 
 @define("demo-box")
@@ -8,7 +20,11 @@ export class DemoBox extends TurboElement {
 
     @signal public label: string;
 
-    @auto({defaultValue: [], callBefore: function () {this.content?.forEach(el => el.remove())}})
+    @auto({
+        defaultValue: [], callBefore: function () {
+            this.content?.forEach(el => el.remove())
+        }
+    })
     public set content(value: Element[]) {
         if (!this.contentBox) return;
         value.forEach(el => $(this.contentBox).addChild(el));
@@ -30,7 +46,7 @@ export class DemoBox extends TurboElement {
 
     public initialize() {
         super.initialize();
-        $(this).setStyle("backgroundColor", randomColor());
+        $(this).setStyle("backgroundColor", Color.random().toString());
     }
 
     protected setupUIElements() {
@@ -45,14 +61,11 @@ export class DemoBox extends TurboElement {
         this.content?.forEach(el => $(this.contentBox).addChild(el));
     }
 
-    protected setupChangedCallbacks() {
-        super.setupChangedCallbacks();
-        effect(() => {
-            if (this.labelElement) this.labelElement.textContent = this.label
-        });
+    @effect updateLabel() {
+        if (this.labelElement) this.labelElement.textContent = this.label
     }
 }
 
 export function box(label: string, ...content: Element[]): DemoBox {
-    return element({parent: document.body, tag: "demo-box", label, content: content}) as DemoBox;
+    return DemoBox.create({parent: document.body, label, content: content});
 }

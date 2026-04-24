@@ -1,10 +1,10 @@
-import {button, div, popup, $, PopupFallbackMode, TurboPopupProperties} from "../../../../../build/turbodombuilder.esm";
+import {div, $, PopupFallbackMode, TurboPopupProperties, TurboPopup, TurboButton} from "../../../../../build/turbodombuilder.esm";
 import {box} from "../../demoBox/demoBox";
 import "./popup.css";
 
 function makeTrigger(label: string = "Trigger", popupProperties: TurboPopupProperties = {}) {
-    const trg = button({text: label});
-    const tip = popup({
+    const trg = TurboButton.create({text: label});
+    const tip = TurboPopup.create({
         ...popupProperties,
         anchor: trg,
         children: [
@@ -75,7 +75,7 @@ function testViewportMarginsAndMaxSize() {
     });
 
     b.addSubBox("Margin=16/24, tall content", trigger);
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Shorten (20 rows)",
         onClick: () => {
             popup.innerHTML = "";
@@ -83,7 +83,7 @@ function testViewportMarginsAndMaxSize() {
             if ($(popup).isShown) popup["recomputePosition"]?.();
         }
     }));
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Make taller (120 rows)",
         onClick: () => {
             popup.innerHTML = "";
@@ -104,7 +104,7 @@ function testDynamicUpdates() {
     });
 
     b.addSubBox("Start below", trigger);
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Flip vertical (above/below)",
         onClick: () => {
             const isBelow = popup.anchorPosition.y === 100;
@@ -114,28 +114,28 @@ function testDynamicUpdates() {
             if ($(popup).isShown) popup["recomputePosition"]?.();
         }
     }));
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Fallback = invert",
         onClick: () => {
             popup.fallbackModes = {x: PopupFallbackMode.invert, y: PopupFallbackMode.invert};
             if ($(popup).isShown) popup["recomputePosition"]?.();
         }
     }));
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Fallback = offset",
         onClick: () => {
             popup.fallbackModes = {x: PopupFallbackMode.offset, y: PopupFallbackMode.offset};
             if ($(popup).isShown) popup["recomputePosition"]?.();
         }
     }));
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "vmargin = 32",
         onClick: () => {
             popup.viewportMargin = 32;
             if ($(popup).isShown) popup["recomputePosition"]?.();
         }
     }));
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "vmargin = 0",
         onClick: () => {
             popup.viewportMargin = 0;
@@ -166,12 +166,12 @@ function testScrollScenario() {
     b.addSubBox("Open after scrolling", region);
 
     // little helper buttons
-    b.addContent(button({
+    b.addContent(TurboButton.create({
         text: "Scroll to trigger",
         onClick: () => trigger.scrollIntoView({behavior: "smooth", block: "center"})
     }));
-    b.addContent(button({text: "Open popup", onClick: () => popup.show(true)}));
-    b.addContent(button({text: "Close popup", onClick: () => popup.show(false)}));
+    b.addContent(TurboButton.create({text: "Open popup", onClick: () => popup.show(true)}));
+    b.addContent(TurboButton.create({text: "Close popup", onClick: () => popup.show(false)}));
 }
 
 export function setupPopupTests() {

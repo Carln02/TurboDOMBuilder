@@ -6,7 +6,7 @@ import {ClickMode} from "../turboEventManager.types";
 
 describe("TurboEventManager: tools & locks", () => {
     it("addTool / setTool selects & activates; onToolChange fires", () => {
-        const mgr = new TurboEventManager();
+        const mgr = TurboEventManager.create();
 
         const toolEl = div({parent: document.body});
         const sel = $(toolEl);
@@ -35,7 +35,7 @@ describe("TurboEventManager: tools & locks", () => {
     });
 
     it("key mapping: setToolByKey picks the mapped tool; key release clears key mode", () => {
-        const mgr = new TurboEventManager();
+        const mgr = TurboEventManager.create();
         const toolEl = div({parent: document.body});
         $(toolEl).makeTool("pan", {key: "p", manager: mgr});
 
@@ -45,7 +45,7 @@ describe("TurboEventManager: tools & locks", () => {
     });
 
     it("lock/unlock affects getters", () => {
-        const mgr = new TurboEventManager({ enabled: true, preventDefaultMouse: true });
+        const mgr = TurboEventManager.create({ enabled: true, preventDefaultMouse: true });
 
         expect(mgr.enabled).toBe(true);
         mgr.lock(document.body, { enabled: false, preventDefaultMouse: false });

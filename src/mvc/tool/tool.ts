@@ -7,6 +7,7 @@ import {DefaultEventName, DefaultEventNameEntry} from "../../types/eventNaming.t
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboModel} from "../model/model";
 import {TurboController} from "../controller/controller";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboTool
@@ -105,4 +106,6 @@ class TurboTool<
     }
 }
 
+addRegistryCategory(TurboTool);
+define(TurboTool);
 export {TurboTool};

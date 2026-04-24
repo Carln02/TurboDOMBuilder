@@ -13,9 +13,6 @@ declare module "../turboSelector" {
          */
         readonly reifects: Set<StatefulReifect>;
 
-        readonly onTransitionStart: Delegate<() => void>;
-        readonly onTransitionEnd: Delegate<() => void>;
-
         /**
          * @description The transition used by the element's show() and isShown methods. Directly modifying its
          * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
@@ -101,11 +98,11 @@ declare module "../turboSelector" {
         reloadReifects(): this;
 
         /**
-         * @function reloadTransitions
+         * @function reloadReifectsChainableStyles
          * @description Reloads all transitions attached to this object. Doesn't recompute values.
          * @returns {this} - Itself, allowing for method chaining.
          */
-        reloadTransitions(): this;
+        reloadReifectsChainableStyles(applyInstantly?: boolean): this;
 
         /**
          * @function reifectEnabledState

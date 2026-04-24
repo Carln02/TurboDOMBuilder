@@ -1,4 +1,4 @@
-import {PopupFallbackMode, TurboPopupConfig, TurboPopupProperties} from "./popup.types";
+import {PopupFallbackMode, TurboPopupProperties} from "./popup.types";
 import "./popup.css";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/view/view";
@@ -7,7 +7,6 @@ import {TurboElement} from "../../../turboElement/turboElement";
 import {cache} from "../../../decorators/cache/cache";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {element} from "../../../elementCreation/element";
 import {div} from "../../../elementCreation/basicElements";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {Point} from "../../datatypes/point/point";
@@ -19,70 +18,44 @@ import {Coordinate} from "../../../types/basic.types";
  * @group Components
  * @category TurboPopup
  */
-@define("turbo-popup")
 class TurboPopup<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    public static readonly config: TurboPopupConfig = {
-        ...TurboElement.config,
-        defaultPopupPosition: {x: 0, y: -100},
-        defaultAnchorPosition: {x: 0, y: 100},
-        defaultViewportMargin: 4,
-        defaultOffsetFromAnchor: {x: 0, y: 4}
-    };
+     public declare readonly properties: TurboPopupProperties;
+    public static defaultProperties: TurboPopupProperties = {
+        popupPosition: {x: 0, y: -100},
+        anchorPosition: {x: 0, y: 100},
+        viewportMargin: 4,
+        offsetFromAnchor: {x: 0, y: 4},
+        fallbackModes: {x: PopupFallbackMode.offset, y: PopupFallbackMode.invert}
+    }
 
     @auto({defaultValue: div({parent: document.body, id: "turbo-popup-parent-element"})})
     protected static parentElement: HTMLElement;
 
-    @auto({defaultValue: document.body}) public anchor: Element;
+    public anchor: Element = document.body;
 
-    @auto({
-        initialValueCallback: function () {
-            return this.getPropertiesValue(undefined, "defaultPopupAnchor", {x: 50, y: 0})
-        },
-        preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)
-    }) public set popupPosition(value: Coordinate) {}
-
+    @auto({preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)})
+    public set popupPosition(value: Coordinate) {}
     public get popupPosition(): Point {return}
 
-    @auto({
-        initialValueCallback: function () {
-            return this.getPropertiesValue(undefined, "defaultAnchorPosition", {x: 50, y: 100})
-        },
-        preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)
-    }) public set anchorPosition(value: Coordinate) {}
-
+    @auto({preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)})
+    public set anchorPosition(value: Coordinate) {}
     public get anchorPosition(): Point {return}
 
-    @auto({
-        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultViewportMargin", 0)},
-        preprocessValue: (value: Coordinate | number) => new Point(value)
-    }) public set viewportMargin(value: Coordinate | number) {}
-
+    @auto({preprocessValue: (value: Coordinate | number) => new Point(value)})
+    public set viewportMargin(value: Coordinate | number) {}
     public get viewportMargin(): Point {return}
 
-    @auto({
-        initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultOffsetFromAnchor", 0)},
-        preprocessValue: (value: Coordinate | number) => new Point(value)
-    }) public set offsetFromAnchor(value: Coordinate | number) {}
-
+    @auto({preprocessValue: (value: Coordinate | number) => new Point(value)})
+    public set offsetFromAnchor(value: Coordinate | number) {}
     public get offsetFromAnchor(): Point {return}
 
-    @auto({
-        preprocessValue: (value) => {
-            return typeof value !== "object" ? {x: value, y: value} : value
-        },
-        initialValueCallback: function () {
-            return {
-                x: Math.abs(this.anchorPosition.x - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-                y: Math.abs(this.anchorPosition.y - 50) > 25 ? PopupFallbackMode.invert : PopupFallbackMode.offset,
-            }
-        }
-    }) public set fallbackModes(value: PopupFallbackMode | Coordinate<PopupFallbackMode>) {}
-
+    @auto({preprocessValue: (value) => typeof value !== "object" ? {x: value, y: value} : value})
+    public set fallbackModes(value: PopupFallbackMode | Coordinate<PopupFallbackMode>) {}
     public get fallbackModes(): Coordinate<PopupFallbackMode> {return}
 
     @cache({clearOnNextFrame: true}) protected get rect(): DOMRect {
@@ -198,18 +171,5 @@ class TurboPopup<
     }
 }
 
-/**
- * @group Components
- * @category TurboPopup
- */
-function popup<
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType> = {}):
-    TurboPopup<ViewType, DataType, ModelType, EmitterType> {
-    return element({...properties, text: undefined, tag: "turbo-popup"} as any) as any;
-}
-
-export {TurboPopup, popup};
+define(TurboPopup);
+export {TurboPopup};

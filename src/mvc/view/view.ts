@@ -3,6 +3,7 @@ import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboViewProperties} from "./view.types";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboView
@@ -100,4 +101,6 @@ class TurboView<
     }
 }
 
+addRegistryCategory(TurboView);
+define(TurboView);
 export {TurboView};

@@ -1,14 +1,18 @@
-import {Mvc} from "../mvc/mvc";
 import {TurboEmitter} from "../mvc/emitter/emitter";
 import {TurboModel} from "../mvc/model/model";
 import {TurboView} from "../mvc/view/view";
 import {defineDefaultProperties} from "./setup/default/default";
 import {defineMvcAccessors} from "./setup/mvc/mvc";
 import {defineUIPrototype} from "./setup/ui/ui";
-import {TurboElementConfig, TurboElementProperties} from "./turboElement.types";
+import {TurboElementProperties} from "./turboElement.types";
 import {Delegate} from "../turboComponents/datatypes/delegate/delegate";
 import {element} from "../elementCreation/element";
 import {turbo} from "../turboFunctions/turboFunctions";
+import {getPrototypeChain} from "../utils/dataManipulation/prototype";
+import {isUndefined} from "../utils/dataManipulation/misc";
+import {kebabToCamelCase} from "../utils/dataManipulation/string";
+import {parse} from "@ungap/structured-clone/json";
+import {addRegistryCategory} from "../decorators/define/define";
 
 /**
  * @class TurboElement
@@ -29,34 +33,24 @@ class TurboElement<
     EmitterType extends TurboEmitter = TurboEmitter<any>
 > extends HTMLElement {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    public static readonly config: TurboElementConfig = {
-        shadowDOM: false,
-        defaultSelectedClass: "selected"
+    public static defaultProperties: TurboElementProperties = {
+        defaultSelectedClasses: "selected"
     };
 
-    public static defaultProperties: TurboElementProperties = {};
-
-    public static create<
-        Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>,
-        ViewType extends TurboView = TurboView<any, any>,
-        DataType extends object = object,
-        ModelType extends TurboModel = TurboModel,
-        EmitterType extends TurboEmitter = TurboEmitter<any>
-    >(
-        this: new(...args: any[]) => Type,
-        properties: TurboElementProperties = {}
-    ): Type {
-        turbo(properties).applyDefaults(this["defaultProperties"] ?? {});
-        return element({...properties}) as Type;
+    public static create<Type extends new (...args: any[]) => TurboElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        return (this as any).customCreate.call(this, properties);
     }
 
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType> = new Mvc({element: this});
+    protected static customCreate(properties: object): object {
+        const prototypeChain = getPrototypeChain(this);
+        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
+        return element({...properties});
+    }
+
+    public declare readonly properties: TurboElementProperties;
 
     /**
      * @description Delegate fired when the element is attached to DOM.
@@ -72,16 +66,6 @@ class TurboElement<
      * @description Delegate fired when the element is adopted by a new parent in the DOM.
      */
     public readonly onAdopt: Delegate<() => void> = new Delegate<() => void>();
-
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    public static configure(value: typeof this.config) {
-        Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined) (this.config as any)[key] = val;
-        });
-    }
 
     /**
      * @function setupChangedCallbacks
@@ -123,7 +107,21 @@ class TurboElement<
      * @description function called when the element is attached to the DOM.
      */
     public connectedCallback() {
-        if (!this.initialized) this.initialize();
+        if (!this.initialized) {
+            const prototypeChain = getPrototypeChain(this);
+            const defaults = {};
+            for (const proto of prototypeChain) turbo(defaults).applyDefaults(proto.constructor?.["defaultProperties"]);
+            const toApply = {};
+            for (const [key, value] of Object.entries(defaults)) if (isUndefined(this[key])) toApply[key] = value;
+            turbo(this).setProperties(toApply);
+
+            for (const attribute of this.constructor["observedAttributes"] ?? []) {
+                if (!this.hasAttribute(attribute)) continue;
+                const property = kebabToCamelCase(attribute);
+                const current = this.getAttribute(attribute);
+                this[property] = parse(current);
+            }
+        }
         this.onAttach.fire();
     }
 
@@ -150,4 +148,5 @@ class TurboElement<
     defineUIPrototype(TurboElement);
 })();
 
+addRegistryCategory(TurboElement);
 export {TurboElement};

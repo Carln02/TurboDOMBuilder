@@ -1,10 +1,11 @@
 import {TurboSelectProperties} from "../../basics/select/select.types";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
-import {TurboElementConfig, TurboElementProperties} from "../../../turboElement/turboElement.types";
+import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {HTMLTag} from "../../../types/htmlElement.types";
-import {TurboSelectElementConfig} from "../../basics/selectElement/selectElement.types";
+import {TurboSelectElementProperties} from "../../basics/selectElement/selectElement.types";
+import {TurboDropdown} from "./dropdown";
 
 /**
  * @type {TurboDropdownProperties}
@@ -27,10 +28,6 @@ import {TurboSelectElementConfig} from "../../basics/selectElement/selectElement
  * classes set in TurboConfig.Dropdown.
  * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
  * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
  */
 type TurboDropdownProperties<
     ValueType = string,
@@ -40,43 +37,19 @@ type TurboDropdownProperties<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel<DataType>,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType>
-    & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
+> = TurboSelectElementProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
-
     selectorTag?: HTMLTag;
-
     selectorClasses?: string | string[];
     popupClasses?: string | string[];
-
-    customEntriesClasses?: string | string[];
-    customSelectedEntriesClasses?: string | string[];
 };
 
-/**
- * @type {TurboDropdownConfig}
- * @group Components
- * @category TurboDropdown
- *
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-type TurboDropdownConfig = TurboSelectElementConfig & {
-    defaultSelectorTag?: HTMLTag;
 
-    defaultSelectorClasses?: string | string[];
-    defaultPopupClasses?: string | string[];
-    defaultEntriesClasses?: string | string[];
-    defaultSelectedEntriesClasses?: string | string[];
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-dropdown": TurboDropdown
+    }
 }
 
-export {TurboDropdownProperties, TurboDropdownConfig};
+export {TurboDropdownProperties};

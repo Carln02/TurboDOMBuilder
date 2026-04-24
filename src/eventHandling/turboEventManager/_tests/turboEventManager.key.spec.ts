@@ -6,7 +6,7 @@ import {TurboKeyEventName} from "../../../types/eventNaming.types";
 
 describe("Key controller → TurboKeyEvent dispatch + mapping", () => {
     it("keydown → keyPressed; keyup → keyReleased; key mapping toggles ClickMode.key tool", () => {
-        const mgr = new TurboEventManager();
+        const mgr = TurboEventManager.create();
         const keyCtl = (mgr as any).keyController;
 
         const pressed = vi.fn();

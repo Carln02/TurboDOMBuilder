@@ -4,7 +4,7 @@ import {TurboEventName} from "../../../types/eventNaming.types";
 
 describe("Wheel controller → TurboWheelEvent dispatch", () => {
     it("emits scroll for small delta; still scroll after timeout (mouse also emits scroll)", () => {
-        const mgr = new TurboEventManager();
+        const mgr = TurboEventManager.create();
         const wheelCtl = (mgr as any).wheelController;
 
         const scrollSpy = vi.fn();
@@ -29,7 +29,7 @@ describe("Wheel controller → TurboWheelEvent dispatch", () => {
     });
 
     it("emits pinch when ctrlKey is true on trackpad", () => {
-        const mgr = new TurboEventManager();
+        const mgr = TurboEventManager.create();
         const wheelCtl = (mgr as any).wheelController;
 
         const pinchSpy = vi.fn();

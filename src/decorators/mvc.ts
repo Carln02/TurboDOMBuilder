@@ -1,4 +1,5 @@
-import {Mvc} from "../mvc/mvc";
+import {turbo} from "../turboFunctions/turboFunctions";
+import {TurboEventManager} from "../eventHandling/turboEventManager/turboEventManager";
 
 type FieldType = "Controller" | "Handler" | "Interactor" | "Tool" | "Substrate";
 
@@ -47,10 +48,8 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
                 }
 
                 if (!functionName) return;
-                if (this.mvc && this.mvc instanceof Mvc) value = this.mvc[functionName](keyName);
-                else if (this[functionName] && typeof this[functionName] === "function") value = this[functionName](keyName);
+                value = turbo(this)[functionName]?.(keyName);
                 if (!value) throw new Error(`${type} "${keyName}" not found on ${this?.constructor?.name}.`);
-
                 this[cacheKey] = value;
                 return value;
             },

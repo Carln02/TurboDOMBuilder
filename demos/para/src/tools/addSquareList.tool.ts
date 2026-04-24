@@ -1,4 +1,4 @@
-import {TurboTool, TurboEvent, Propagation, behavior} from "../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboEvent, Propagation, behavior, define, getAllRegistered} from "../../../../build/turbodombuilder.esm";
 import {Canvas} from "../canvas/canvas";
 import {SquareList} from "../squareList/squareList";
 
@@ -13,6 +13,7 @@ export class AddSquareListTool extends TurboTool {
             (this.currentSquareList as any).initialize();
             this.currentSquareList.startSquare.position = e.scaledPosition;
             this.currentSquareList.endSquare.position = e.scaledPosition;
+            console.log(getAllRegistered().map(entry => entry.name));
             return Propagation.stopPropagation;
         }
     }
@@ -28,3 +29,5 @@ export class AddSquareListTool extends TurboTool {
         this.currentSquareList = undefined;
     }
 }
+
+define(AddSquareListTool);

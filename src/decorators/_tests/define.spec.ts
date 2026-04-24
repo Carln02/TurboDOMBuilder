@@ -4,10 +4,10 @@ import {observe} from "../observe/observe";
 
 describe("@define", () => {
     it("registers the element and exposes observedAttributes (inferred name)", () => {
-        @define()
         class SampleEl extends HTMLElement {
             @observe fooBar = 10;
         }
+        define(SampleEl);
 
         const C = customElements.get("sample-el")!;
         expect(C).toBe(SampleEl);

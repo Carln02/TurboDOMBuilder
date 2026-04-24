@@ -1,9 +1,9 @@
 import {TurboView} from "../../mvc/view/view";
 import {TurboModel} from "../../mvc/model/model";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
-import {MvcProperties} from "../../mvc/mvc.types";
 import {TurboElementMvcInterface} from "../setup/mvc/mvc.types";
 import {TurboElementDefaultInterface} from "../setup/default/default.types";
+import {MvcProperties} from "../../turboFunctions/mvc/mvc.types";
 
 /**
  * @type {TurboHeadlessProperties}

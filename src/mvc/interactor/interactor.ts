@@ -5,6 +5,7 @@ import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboModel} from "../model/model";
 import {TurboController} from "../controller/controller";
+import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
  * @class TurboInteractor
@@ -71,4 +72,6 @@ class TurboInteractor<
     }
 }
 
+addRegistryCategory(TurboInteractor);
+define(TurboInteractor);
 export {TurboInteractor};

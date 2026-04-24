@@ -31,7 +31,7 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
 
         //Prevent default actions (especially useful for touch events on iOS and iPadOS)
         if (this.element.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.element.preventDefaultTouch && isTouch) e.preventDefault();
+        if (isTouch && (this.element.preventDefaultTouch || this.element.wheelEventsEnabled)) e.preventDefault();
 
         //Update input device
         if (isTouch) this.model.inputDevice = InputDevice.touch;
@@ -53,7 +53,7 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         this.model.utils.setClickMode(isTouch ? this.model.activePointers.size : e.button, isTouch);
 
         //Return if click events are disabled
-        if (!this.element.clickEventEnabled) return;
+        if (!this.element.clickEventsEnabled) return;
 
         // Fire click start
         this.fireClick(this.model.origins.first, TurboEventName.clickStart);
@@ -69,14 +69,16 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
 
     protected pointerMoveFn(e: PointerEvent) {
         if (!this.element.enabled) return;
-        if (!this.element.moveEventsEnabled && !this.element.dragEventEnabled) return;
 
         //Check if is touch
         const isTouch = e.pointerType === "touch";
 
+        if (!this.element.moveEventsEnabled && !this.element.dragEventsEnabled
+            && !(isTouch && this.element.wheelEventsEnabled)) return;
+
         //Prevent default actions
         if (this.element.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.element.preventDefaultTouch && isTouch) e.preventDefault();
+        if (isTouch && (this.element.preventDefaultTouch || this.element.wheelEventsEnabled)) e.preventDefault();
 
         //New positions map
         this.model.positions = new TurboMap<number, Point>();
@@ -115,7 +117,7 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         if (this.element.moveEventsEnabled) this.fireDrag(this.model.positions, TurboEventName.move);
 
         //If drag events are enabled and user is interacting
-        if (this.model.currentAction !== ActionMode.none && this.element.dragEventEnabled) {
+        if (this.model.currentAction !== ActionMode.none && this.element.dragEventsEnabled) {
             //Initialize drag
             if (this.model.currentAction !== ActionMode.drag) {
                 //Check if any tracked origin moved beyond threshold
@@ -124,7 +126,10 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
                         ? this.model.positions.get(key)
                         : this.model.previousPositions.get(key);
                     return p && Point.dist(p, origin) > this.model.moveThreshold;
-                })) return;
+                })) {
+                    this.model.previousPositions.set(e.pointerId, this.model.positions.get(e.pointerId)!);
+                    return;
+                }
                 //If didn't return --> fire drag start and set action to drag
                 clearCache(this);
                 this.fireDrag(this.model.origins, TurboEventName.dragStart);
@@ -147,7 +152,7 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
 
         //Prevent default actions
         if (this.element.preventDefaultMouse && !isTouch) e.preventDefault();
-        if (this.element.preventDefaultTouch && isTouch) e.preventDefault();
+        if (isTouch && (this.element.preventDefaultTouch || this.element.wheelEventsEnabled)) e.preventDefault();
 
         //Clear any timer set
         this.model.utils.clearTimer(TurboEventName.longPress);
@@ -157,12 +162,12 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
 
         //If action was drag --> fire drag end
-        if (this.model.currentAction === ActionMode.drag && this.element.dragEventEnabled) {
+        if (this.model.currentAction === ActionMode.drag && this.element.dragEventsEnabled) {
             this.fireDrag(this.model.positions, TurboEventName.dragEnd);
         }
 
         //If click events are enabled
-        if (this.element.clickEventEnabled) {
+        if (this.element.clickEventsEnabled) {
             //If action is click --> fire click
             if (this.model.currentAction === ActionMode.click) {
                 this.fireClick(this.model.positions.first, TurboEventName.click);

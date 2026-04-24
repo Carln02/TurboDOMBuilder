@@ -8,6 +8,7 @@ import {ReifectFunctionsUtils} from "./reifect.utils";
 import "./reifect.types";
 import {Reifect} from "../../turboComponents/wrappers/reifect/reifect";
 import {Shown} from "../../types/enums.types";
+import {turbo} from "../turboFunctions";
 
 const utils = new ReifectFunctionsUtils();
 
@@ -24,22 +25,6 @@ export function setupReifectFunctions() {
         get: function () {
             if (!this.element) return new Set();
             return new Set(utils.data(this.element).reifects?.toArray());
-        },
-        configurable: false,
-        enumerable: true
-    });
-
-    Object.defineProperty(TurboSelector.prototype, "onTransitionStart", {
-        get: function () {
-            return utils.data(this.element).onTransitionStart;
-        },
-        configurable: false,
-        enumerable: true
-    });
-
-    Object.defineProperty(TurboSelector.prototype, "onTransitionEnd", {
-        get: function () {
-            return utils.data(this.element).onTransitionEnd;
         },
         configurable: false,
         enumerable: true
@@ -149,15 +134,30 @@ export function setupReifectFunctions() {
 
     TurboSelector.prototype.reloadReifects = function _reloadReifects(this: TurboSelector): TurboSelector {
         if (!this.element) return this;
-        this.setStyle("transition", "", true);
         this.reifects.forEach(reifect => reifect.reloadFor(this.element));
         return this;
     };
 
-    TurboSelector.prototype.reloadTransitions = function _reloadTransitions(this: TurboSelector): TurboSelector {
+    TurboSelector.prototype.reloadReifectsChainableStyles = function _reloadChainableStyles(
+        this: TurboSelector,
+        applyInstantly: boolean = true
+    ): TurboSelector {
         if (!this.element) return this;
-        this.setStyle("transition", "", true);
-        this.reifects.forEach(reifect => reifect.reloadTransitionFor(this.element));
+        const contributions: Partial<Record<string, string[]>> = {};
+        this.reifects.forEach((reifect: StatefulReifect) => {
+            const chainable = reifect.getChainableStyles(this.element);
+            for (const [key, value] of Object.entries(chainable)) {
+                if (!value) continue;
+                if (!contributions[key]) contributions[key] = [];
+                contributions[key].push(value);
+            }
+        });
+
+        for (const [key, values] of Object.entries(contributions)) {
+            const separator = key === "transform" ? " " : ", ";
+            turbo(this.element).setStyle(key as any, values.join(separator), applyInstantly);
+        }
+
         return this;
     };
 
@@ -173,11 +173,9 @@ export function setupReifectFunctions() {
         this: TurboSelector, value: boolean | ReifectEnabledObject, reifect?: StatefulReifect
     ): TurboSelector {
         if (!this.element) return this;
-        if (reifect) {
-            reifect.enable(value, this.element);
-            return this;
-        }
-        const enabled = utils.data(this.element).enabled;
+        const enabled = reifect ? reifect.getData(this.element)?.enabled
+            : utils.data(this.element).enabled;
+        if (!enabled) return this;
         if (typeof value === "boolean") enabled.global = value;
         else if (typeof value === "object") Object.entries(value)
             .forEach(([key, value]) => enabled[key] = value);

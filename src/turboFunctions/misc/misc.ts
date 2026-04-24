@@ -14,6 +14,86 @@ export function setupMiscFunctions() {
         return this;
     };
 
+    TurboSelector.prototype.apply = function apply(
+        this: TurboSelector,
+        properties: Record<string, any>
+    ): TurboSelector {
+        if (!this.element || typeof this.element !== "object") return this;
+        if (!properties || typeof properties !== "object") return this;
+        for (const [key, value] of Object.entries(properties)) {
+            try { this.element[key] = value; } catch {}
+        }
+        return this;
+    };
+
+    TurboSelector.prototype.removeFields = function removeFields(
+        this: TurboSelector,
+        keys: string[]
+    ): TurboSelector {
+        if (!this.element || typeof this.element !== "object") return this;
+        if (!keys || !Array.isArray(keys)) return this;
+        for (const key of keys) {
+            try { delete this.element[key]; } catch {
+                try { this.element[key] = undefined; } catch {}
+            }
+        }
+        return this;
+    };
+
+    TurboSelector.prototype.getDefaults = function getDefaults(
+        this: TurboSelector,
+        defaults: string[]
+    ): Record<string, any> {
+        if (!this.element || typeof this.element !== "object") return {};
+        if (!defaults || typeof defaults !== "object") return {};
+        const result: Record<string, any> = {};
+        for (const key of defaults) {
+            if (!isUndefined(this.element[key])) result[key] = this.element[key];
+        }
+        return result;
+    };
+
+    TurboSelector.prototype.getIntersection = function getIntersection(
+        this: TurboSelector,
+        other: Record<string, any>
+    ): Record<string, any> {
+        if (!this.element || typeof this.element !== "object") return {};
+        if (!other || typeof other !== "object") return {};
+        const result: Record<string, any> = {};
+        for (const key of Object.keys(other)) {
+            if (!isUndefined(this.element[key])) result[key] = this.element[key];
+        }
+        return result;
+    };
+
+    TurboSelector.prototype.getDifference = function getDifference(
+        this: TurboSelector,
+        other: Record<string, any>
+    ): Record<string, any> {
+        if (!this.element || typeof this.element !== "object") return {};
+        if (!other || typeof other !== "object") return {};
+        const result: Record<string, any> = {};
+        for (const key of Object.keys(this.element)) {
+            if (isUndefined(other[key])) result[key] = this.element[key];
+        }
+        return result;
+    };
+
+    TurboSelector.prototype.extract = function extract(
+        this: TurboSelector,
+        keys: string[]
+    ): Record<string, any> {
+        if (!this.element || typeof this.element !== "object") return {};
+        if (!keys || !Array.isArray(keys)) return {};
+        const result: Record<string, any> = {};
+        for (const key of keys) {
+            if (isUndefined(this.element[key])) continue;
+            result[key] = this.element[key];
+            this.element[key] = undefined;
+        }
+        return result;
+    };
+
     TurboSelector.prototype.applyDefaults = function applyDefaults(
         this: TurboSelector,
         defaults: Record<string, any>,

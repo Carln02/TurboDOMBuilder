@@ -1,5 +1,4 @@
-import {icon, TurboIcon} from "../icon";
-import {TurboIconSwitchProperties} from "./iconSwitch.types";
+import {TurboIcon} from "../icon";
 import {StatefulReifect} from "../../../wrappers/statefulReifect/statefulReifect";
 import {StatefulReifectProperties} from "../../../wrappers/statefulReifect/statefulReifect.types";
 import {define} from "../../../../decorators/define/define";
@@ -7,14 +6,13 @@ import {TurboView} from "../../../../mvc/view/view";
 import {TurboModel} from "../../../../mvc/model/model";
 import {auto} from "../../../../decorators/auto/auto";
 import {TurboEmitter} from "../../../../mvc/emitter/emitter";
-import {TurboIconConfig} from "../icon.types";
 import {OnOff} from "../../../../types/enums.types";
+import {TurboIconSwitchProperties} from "./iconSwitch.types";
 
 /**
  * @group Components
  * @category TurboIconSwitch
  */
-@define("turbo-icon-switch")
 class TurboIconSwitch<
     State extends string | number | symbol = OnOff,
     ViewType extends TurboView = TurboView<any, any>,
@@ -22,7 +20,7 @@ class TurboIconSwitch<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    public config: TurboIconConfig = {...TurboIcon.config};
+     public declare readonly properties: TurboIconSwitchProperties<any>;
 
     public get switchReifect(): StatefulReifect<State, TurboIcon> {return}
 
@@ -56,20 +54,5 @@ class TurboIconSwitch<
     }
 }
 
-/**
- * @group Components
- * @category TurboIconSwitch
- */
-function iconSwitch<
-    State extends string | number | symbol = OnOff,
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>):
-    TurboIconSwitch<State, ViewType, DataType, ModelType, EmitterType> {
-    if (!properties.tag) properties.tag = "turbo-icon-switch";
-    return icon({...properties}) as any;
-}
-
-export {TurboIconSwitch, iconSwitch};
+define(TurboIconSwitch);
+export {TurboIconSwitch};

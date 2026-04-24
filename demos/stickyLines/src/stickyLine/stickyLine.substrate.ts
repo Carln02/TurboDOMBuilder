@@ -5,8 +5,7 @@ import {
     Point,
     DefaultEventName,
     turbo,
-    closestPointOnSegment,
-    TurboNodeList
+    closestPointOnSegment
 } from "../../../../build/turbodombuilder.esm";
 import {StickyLine} from "./stickyLine";
 import {StickyLineView} from "./stickyLine.view";
@@ -47,7 +46,7 @@ export class StickyLineSubstrate extends TurboSubstrate<StickyLine, StickyLineVi
             && !manipulatingStickyLine && !(target instanceof StickyLine);
 
         if (!manipulatingStickyLine || !this.objectData.has(target))
-            this.objectData.set(target, closestPointOnSegment(center, start, end)?.linearInterpolation(start, end));
+            this.objectData.set(target, closestPointOnSegment(center, start, end)?.positionOnSegment(start, end));
         const data = this.objectData.get(target);
         if (!data) return;
 

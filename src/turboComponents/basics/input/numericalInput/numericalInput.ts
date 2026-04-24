@@ -1,23 +1,26 @@
-import {turboInput, TurboInput} from "../input";
-import {TurboInputProperties} from "../input.types";
+import {TurboInput} from "../input";
 import {define} from "../../../../decorators/define/define";
 import {TurboView} from "../../../../mvc/view/view";
 import {TurboModel} from "../../../../mvc/model/model";
 import {TurboEmitter} from "../../../../mvc/emitter/emitter";
-import {element} from "../../../../elementCreation/element";
 import {TurboNumericalInputProperties} from "./numericalInput.types";
 
 /**
  * @group Components
  * @category TurboNumericalInput
  */
-@define("turbo-numerical-input")
 class TurboNumericalInput<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
+     public declare readonly properties: TurboNumericalInputProperties;
+    public static defaultProperties: TurboNumericalInputProperties = {
+        inputRegexCheck: /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/,
+        blurRegexCheck: /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/,
+    }
+
     public multiplier: number = 1;
     public decimalPlaces: number;
 
@@ -45,23 +48,6 @@ class TurboNumericalInput<
     }
 }
 
-/**
- * @group Components
- * @category TurboNumericalInput
- */
-function numericalInput<
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter,
->(
-    properties: TurboNumericalInputProperties<ViewType, DataType, ModelType, EmitterType>
-): TurboNumericalInput<ViewType, DataType, ModelType, EmitterType> {
-    if (!properties.inputRegexCheck) properties.inputRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/;
-    if (!properties.blurRegexCheck) properties.blurRegexCheck = /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/;
-    if (!properties.tag) properties.tag = "turbo-numerical-input";
-    return turboInput({...properties}) as any;
-}
-
-export {TurboNumericalInput, numericalInput};
+define(TurboNumericalInput);
+export {TurboNumericalInput};
 

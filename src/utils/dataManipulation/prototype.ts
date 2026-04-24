@@ -76,7 +76,7 @@ function getSuperDescriptor(object: object, key: PropertyKey): PropertyDescripto
  */
 function getPrototypeChain(object: object) {
     const chain: any[] = [];
-    let constructor = Object.getPrototypeOf(object);
+    let constructor = typeof object === "function" ? object : Object.getPrototypeOf(object);
     while (constructor && constructor !== Function.prototype) {
         chain.push(constructor);
         constructor = Object.getPrototypeOf(constructor);

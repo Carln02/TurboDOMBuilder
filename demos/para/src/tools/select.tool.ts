@@ -1,4 +1,4 @@
-import {TurboTool, TurboDragEvent, Coordinate, Propagation, behavior} from "../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboDragEvent, Coordinate, Propagation, behavior, define} from "../../../../build/turbodombuilder.esm";
 
 //Select tool
 export class SelectTool extends TurboTool {
@@ -16,3 +16,5 @@ export class SelectTool extends TurboTool {
         } catch (e) {return Propagation.stopPropagation}
     }
 }
+
+define(SelectTool);

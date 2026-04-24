@@ -1,13 +1,13 @@
-import {$, button, div, dropdown, richElement, span, TurboDropdown, PopupFallbackMode, TurboPopup} from "../../../../../build/turbodombuilder.esm";
+import {$, div, span, TurboDropdown, PopupFallbackMode, TurboPopup, TurboButton, TurboRichElement} from "../../../../../build/turbodombuilder.esm";
 import {box} from "../../demoBox/demoBox";
 
-TurboDropdown.config.defaultPopupClasses = "select-parent";
+TurboDropdown.defaultProperties.popupClasses = "select-parent";
 
 function ddTest1() {
-    const dd = dropdown({values: ["Alpha", "Beta", "Gamma", "Delta"]});
+    const dd = TurboDropdown.create({values: ["Alpha", "Beta", "Gamma", "Delta"]});
     box("TurboDropdown — Basics")
         .addSubBox("click selector to open", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Log selected",
             onClick: () => {
                 console.log("[dd1] selected:", dd.selectedValue, dd.selectedValues)
@@ -16,7 +16,7 @@ function ddTest1() {
 }
 
 function ddTest2() {
-    const dd = dropdown({
+    const dd = TurboDropdown.create({
         values: ["Small", "Medium", "Large", "XL"],
         selectorTag: "h5" as any,
         selectorClasses: ["btn", "btn--ghost"],
@@ -25,11 +25,11 @@ function ddTest2() {
 
     box("TurboDropdown — custom selector / popup")
         .addSubBox("custom tag & classes", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Open",
             onClick: () => (dd as any).popup.show(true)
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Close",
             onClick: () => (dd as any).popup.show(false)
         }));
@@ -37,31 +37,31 @@ function ddTest2() {
 
 function ddTest3() {
     const entries = [
-        richElement({text: "Home", leftIcon: "link"}),
-        richElement({text: "Profile", leftIcon: "chevron-left"}),
-        richElement({text: "Settings", leftIcon: "chevron-top"}),
-        richElement({text: "Logout", leftIcon: "share"}),
+        TurboRichElement.create({text: "Home", leftIcon: "link"}),
+        TurboRichElement.create({text: "Profile", leftIcon: "chevron-left"}),
+        TurboRichElement.create({text: "Settings", leftIcon: "chevron-top"}),
+        TurboRichElement.create({text: "Logout", leftIcon: "share"}),
     ];
 
     box("TurboDropdown — element entries")
-        .addSubBox("rich entries", dropdown<string, string, HTMLElement>({entries}))
+        .addSubBox("rich entries", TurboDropdown.create({entries}))
         .addContent(span({text: "Selected: "}))
         .addContent(span({text: "(watch selector text update on click)"}));
 }
 
 function ddTest4() {
-    const dd = dropdown<string>({values: ["One", "Two"]});
+    const dd = TurboDropdown.create({values: ["One", "Two"]});
 
     box("TurboDropdown — dynamic entries")
         .addSubBox("start", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Add entry: Three",
             onClick: () => {
-                const entry = richElement({text: "Three", leftIcon: "chevron-left"});
+                const entry = TurboRichElement.create({text: "Three", leftIcon: "chevron-left"});
                 (dd.select as any).addEntry(entry);
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Remove last entry",
             onClick: () => {
                 const list = dd.select.entries;
@@ -70,14 +70,14 @@ function ddTest4() {
                 //TODO MAKE A REMOVE ENTRY FN
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Log values",
             onClick: () => console.log("[dd4] values:", dd.select.values)
         }));
 }
 
 function ddTest5() {
-    const dd = dropdown<string>({values: ["Red", "Green", "Blue", "Yellow"]});
+    const dd = TurboDropdown.create({values: ["Red", "Green", "Blue", "Yellow"]});
 
     // Configure the underlying select for multi
     dd.select.multiSelection = true;
@@ -85,22 +85,22 @@ function ddTest5() {
 
     box("TurboDropdown — multi selection")
         .addSubBox("click multiple entries", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Select All",
             onClick: () => dd.select.selectedEntries = dd.select.entries
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Clear",
             onClick: () => dd.select.deselectAll()
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Log selected",
             onClick: () => console.log("[dd5] selected:", dd.selectedValues)
         }));
 }
 
 function ddTest6() {
-    const dd = dropdown<string>({
+    const dd = TurboDropdown.create({
         values: ["Top", "Middle", "Bottom", "Custom"]
     });
 
@@ -108,42 +108,42 @@ function ddTest6() {
 
     box("TurboDropdown — popup anchors & fallback")
         .addSubBox("dropdown", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "ParentAnchor: top (50,0)", onClick: () => {
                 p.anchorPosition = {x: 50, y: 0};
                 p.show(true);
                 return true;
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "ParentAnchor: bottom (50,100)", onClick: () => {
                 p.anchorPosition = {x: 50, y: 100};
                 p.show(true);
                 return true;
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "PopupAnchor: top (50,0)", onClick: () => {
                 p.popupPosition = {x: 50, y: 0};
                 p.show(true);
                 return true;
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "PopupAnchor: bottom (50,100)", onClick: () => {
                 p.popupPosition = {x: 50, y: 100};
                 p.show(true);
                 return true;
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Fallback: invert", onClick: () => {
                 p.fallbackModes = PopupFallbackMode.invert;
                 p.show(true);
                 return true;
             }
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Fallback: offset", onClick: () => {
                 p.fallbackModes = PopupFallbackMode.offset;
                 p.show(true);
@@ -153,27 +153,27 @@ function ddTest6() {
 }
 
 function ddTest7() {
-    const dd = dropdown<string>({values: ["A", "B", "C", "D"]});
+    const dd = TurboDropdown.create({values: ["A", "B", "C", "D"]});
 
     box("TurboDropdown — programmatic")
         .addSubBox("start", dd)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Open",
             onClick: () => (dd as any).popup.show(true)
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Close",
             onClick: () => (dd as any).popup.show(false)
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Select 'C'",
             onClick: () => dd.select.select("C")
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Replace values",
             onClick: () => dd.values = ["Epsilon", "Zeta", "Eta"]
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Log selected",
             onClick: () => console.log("[dd7] value:", dd.selectedValue)
         }));
@@ -187,10 +187,10 @@ function ddTestTabs() {
     ];
 
     const entries = tabs.map(t =>
-        richElement({text: t.label, leftIcon: "chevron-left"})
+        TurboRichElement.create({text: t.label, leftIcon: "chevron-left"})
     );
 
-    const dd = dropdown<string, string, HTMLElement>({entries});
+    const dd = TurboDropdown.create({entries});
 
     const contentWrap = div({
         classes: "tab-content",

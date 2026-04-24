@@ -3,6 +3,7 @@ import {TurboModel} from "../../../mvc/model/model";
 import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {Coordinate} from "../../../types/basic.types";
+import {TurboPopup} from "./popup";
 
 /**
  * @group Components
@@ -26,24 +27,16 @@ type TurboPopupProperties<
  * @group Components
  * @category TurboPopup
  */
-type TurboPopupConfig = {
-    defaultClasses?: string | string[],
-
-    defaultPopupPosition?: Coordinate,
-    defaultAnchorPosition?: Coordinate,
-
-    defaultViewportMargin?: number | Coordinate,
-    defaultOffsetFromAnchor?: number | Coordinate,
-}
-
-/**
- * @group Components
- * @category TurboPopup
- */
 enum PopupFallbackMode {
     invert = "invert",
     offset = "offset",
     none = "none"
 }
 
-export {TurboPopupProperties, TurboPopupConfig, PopupFallbackMode};
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-popup": TurboPopup
+    }
+}
+
+export {TurboPopupProperties, PopupFallbackMode};

@@ -18,10 +18,13 @@ function areSimilar<Type = any>(...entries: Type[]): boolean {
         if (e1 === e2) continue;
         if (typeof e1 !== "object" || typeof e2 !== "object") return false;
         if (Object.is(e1, e2)) continue;
-        if (e1 != null && "equals" in e1 && typeof e1.equals === "function" && e1.equals(e2)) continue;
+        if (e1 !== null && "equals" in e1 && typeof e1.equals === "function") {
+            const value = e1.equals(e2);
+            if (typeof value === "boolean") return value;
+        }
         if (e1 != null && e2 != null) {
             let cont = false;
-            try { if (JSON.stringify(e1) === JSON.stringify(e2)) cont = true; } catch { }
+            try {if (JSON.stringify(e1) === JSON.stringify(e2) && e1.toString() === e2.toString()) cont = true; } catch { }
             if (!cont) return false;
         }
     }

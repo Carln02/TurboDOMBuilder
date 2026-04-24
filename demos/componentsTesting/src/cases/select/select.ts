@@ -1,6 +1,6 @@
 import {
-    $, richElement, div, span, button,
-    TurboSelect
+    $, div, TurboButton,
+    TurboSelect, TurboRichElement
 } from "../../../../../build/turbodombuilder.esm";
 import { box } from "../../demoBox/demoBox";
 import "./select.css";
@@ -34,11 +34,11 @@ function selectTest2() {
 
     const b = box("TurboSelect — Multi selection");
     b.addSubBox("multi", host)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Select One & Three (prog)",
             onClick: () => sel.selectedEntries = sel.findAll("One", "Three")
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Deselect all",
             onClick: () => sel.deselectAll()
         }));
@@ -58,8 +58,8 @@ function selectTest3() {
 
     const b = box("TurboSelect — forceSelection=false");
     b.addSubBox("host", host)
-        .addContent(button({ text: "selectByIndex(2)", onClick: () => sel.selectByIndex(2) }))
-        .addContent(button({ text: "Deselect all", onClick: () => sel.deselectAll() }));
+        .addContent(TurboButton.create({ text: "selectByIndex(2)", onClick: () => sel.selectByIndex(2) }))
+        .addContent(TurboButton.create({ text: "Deselect all", onClick: () => sel.deselectAll() }));
 }
 
 /* 4) Custom mapping: getValue / getSecondaryValue / createEntry */
@@ -78,7 +78,7 @@ function selectTest4() {
 
     // createEntry maps number -> custom element w/ data attributes
     sel.createEntry = (num: number) => {
-        const e = richElement({ text: `Item ${num}` }) as HTMLElement;
+        const e = TurboRichElement.create({ text: `Item ${num}` }) as HTMLElement;
         e.dataset.value = String(num);
         e.dataset.code = `code-${num}`;
         return e;
@@ -94,8 +94,8 @@ function selectTest4() {
 
     const b = box("TurboSelect — custom mapping");
     b.addSubBox("host", host)
-        .addContent(button({ text: "Select value 40", onClick: () => sel.select(40) }))
-        .addContent(button({ text: "Select by secondary (code-50)", onClick: () => {
+        .addContent(TurboButton.create({ text: "Select value 40", onClick: () => sel.select(40) }))
+        .addContent(TurboButton.create({ text: "Select by secondary (code-50)", onClick: () => {
                 const entry = sel.findBySecondaryValue("code-50");
                 if (entry) sel.select(entry);
             }}));
@@ -107,17 +107,17 @@ function selectTest5() {
     const sel = new TurboSelect<string>({parent: host});
 
     // Start with two
-    $(host).addChild([richElement({text: "Live-1"}), richElement({text: "Live-2"})]);
+    $(host).addChild([TurboRichElement.create({text: "Live-1"}), TurboRichElement.create({text: "Live-2"})]);
     // (select will auto-wire via MutationObserver; clicking an entry selects it)
     sel.onSelect = () => logSelection("DOM-observed", sel);
 
     const b = box("TurboSelect — DOM observation");
     b.addSubBox("host", host)
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Add node",
-            onClick: () => $(host).addChild(richElement({text: "Live-" + Math.floor(Math.random() * 100)}))
+            onClick: () => $(host).addChild(TurboRichElement.create({text: "Live-" + Math.floor(Math.random() * 100)}))
         }))
-        .addContent(button({
+        .addContent(TurboButton.create({
             text: "Remove last node",
             onClick: () => {
                 const kids = host.children;
@@ -140,10 +140,10 @@ function selectTest6() {
     const [r, g, bEl] = sel.entries;
     const boxEl = box("TurboSelect — enable/disable");
     boxEl.addSubBox("host", host)
-        .addContent(button({ text: "Disable Green", onClick: () => sel.enable(false, g as any) }))
-        .addContent(button({ text: "Enable Green", onClick: () => sel.enable(true, g as any) }))
-        .addContent(button({ text: "Disable all", onClick: () => sel.enable(false) }))
-        .addContent(button({ text: "Enable all", onClick: () => sel.enable(true) }));
+        .addContent(TurboButton.create({ text: "Disable Green", onClick: () => sel.enable(false, g as any) }))
+        .addContent(TurboButton.create({ text: "Enable Green", onClick: () => sel.enable(true, g as any) }))
+        .addContent(TurboButton.create({ text: "Disable all", onClick: () => sel.enable(false) }))
+        .addContent(TurboButton.create({ text: "Enable all", onClick: () => sel.enable(true) }));
 }
 
 /* 7) Hidden input sync */
@@ -160,8 +160,8 @@ function selectTest7() {
 
     const b = box("TurboSelect — hidden input sync");
     b.addSubBox("host", host)
-        .addContent(button({ text: "Select Dog", onClick: () => sel.select("Dog") }))
-        .addContent(button({ text: "Select Bird", onClick: () => sel.select("Bird") }));
+        .addContent(TurboButton.create({ text: "Select Dog", onClick: () => sel.select("Dog") }))
+        .addContent(TurboButton.create({ text: "Select Bird", onClick: () => sel.select("Bird") }));
 }
 
 /* 8) Programmatic APIs & finders */
@@ -172,10 +172,10 @@ function selectTest8() {
 
     const b = box("TurboSelect — API surface");
     b.addSubBox("host", host)
-        .addContent(button({ text: "select('Y')", onClick: () => sel.select("Y") }))
-        .addContent(button({ text: "selectByIndex(0)", onClick: () => sel.selectByIndex(0) }))
-        .addContent(button({ text: "find('Z') & select", onClick: () => sel.select(sel.find("Z")) }))
-        .addContent(button({ text: "Log enabled values", onClick: () => console.log("enabled:", sel.enabledValues) }));
+        .addContent(TurboButton.create({ text: "select('Y')", onClick: () => sel.select("Y") }))
+        .addContent(TurboButton.create({ text: "selectByIndex(0)", onClick: () => sel.selectByIndex(0) }))
+        .addContent(TurboButton.create({ text: "find('Z') & select", onClick: () => sel.select(sel.find("Z")) }))
+        .addContent(TurboButton.create({ text: "Log enabled values", onClick: () => console.log("enabled:", sel.enabledValues) }));
 }
 
 /* 9) Tabbed menu (using TurboSelect as the tab controller) */
@@ -184,7 +184,7 @@ function selectTestTabs() {
 
     const tabSelect = new TurboSelect<string, string, Entry>({
         createEntry: (label: string) => {
-            const e = richElement({text: label});
+            const e = TurboRichElement.create({text: label});
             e.dataset.key = label.toLowerCase();
             return e;
         },

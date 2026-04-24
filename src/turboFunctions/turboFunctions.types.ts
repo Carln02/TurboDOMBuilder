@@ -10,6 +10,7 @@ type Turbo<Type extends object = Node> = TurboSelector<Type> & Type;
  */
 type TurbofyOptions = {
     excludeHierarchyFunctions?: boolean,
+    excludeMvcFunctions?: boolean,
     excludeStyleFunctions?: boolean,
     excludeClassFunctions?: boolean,
     excludeElementFunctions?: boolean,

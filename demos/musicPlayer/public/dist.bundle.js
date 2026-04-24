@@ -9387,7 +9387,7 @@ const utils$1 = new DefineDecoratorUtils();
  * @decorator
  * @function define
  * @group Decorators
- * @category Attributes & DOM
+ * @category Registry, Attributes & DOM
  *
  * @description Stage-3 **class** decorator factory. It:
  * - Registers the element with customElements (name inferred if omitted).
@@ -9589,7 +9589,7 @@ const utils = new ObserveUtils();
  * @decorator
  * @function observe
  * @group Decorators
- * @category Attributes & DOM
+ * @category Registry, Attributes & DOM
  *
  * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
  * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.

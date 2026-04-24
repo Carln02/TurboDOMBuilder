@@ -158,16 +158,38 @@ function modelSignal(...keys: KeyType[]) {
         context.addInitializer(function (this: any) {
             utils.bindPath(this, context.name, resolvedKeys);
         });
-        return signalUtils.signalDecorator(
+
+        let defaultValue: Value = undefined;
+        let hasDefault = false;
+
+        const decorated = signalUtils.signalDecorator(
             value,
             context,
             function (this: any) {
-                return this.get?.(...resolvedKeys);
+                const v = this.get?.(...resolvedKeys);
+                if (v !== undefined) return v;
+                if (hasDefault) {
+                    this.set?.(defaultValue, ...resolvedKeys);
+                    return defaultValue;
+                }
+                return undefined;
             },
-            function (this: any, value: Value) {
-                this.set?.(value, ...resolvedKeys);
+            function (this: any, v: Value) {
+                this.set?.(v, ...resolvedKeys);
             }
         );
+
+        if (context.kind === "field") {
+            return function (this: any, initialFieldValue: Value) {
+                if (initialFieldValue !== undefined) {
+                    defaultValue = initialFieldValue;
+                    hasDefault = true;
+                }
+                return decorated?.call(this, initialFieldValue);
+            };
+        }
+
+        return decorated;
     };
 }
 

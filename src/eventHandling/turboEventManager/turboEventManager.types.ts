@@ -1,4 +1,6 @@
 import {Point} from "../../turboComponents/datatypes/point/point";
+import {TurboHeadlessProperties} from "../../turboElement/turboHeadlessElement/turboHeadlessElement.types";
+import {TurboEventManagerModel} from "./turboEventManager.model";
 
 /**
  * @group Event Handling
@@ -15,22 +17,25 @@ type TurboEventManagerStateProperties = {
  * @group Event Handling
  * @category TurboEventManager
  */
-type DisabledTurboEventTypes = {
-    disableKeyEvents?: boolean,
-    disableWheelEvents?: boolean,
-    disableMouseEvents?: boolean,
-    disableTouchEvents?: boolean,
+type EnabledTurboEventTypes = {
+    keyEventsEnabled?: boolean,
+    wheelEventsEnabled?: boolean,
+    mouseEventsEnabled?: boolean,
+    touchEventsEnabled?: boolean,
 
-    disableClickEvents?: boolean,
-    disableDragEvents?: boolean,
-    disableMoveEvent?: boolean,
+    clickEventsEnabled?: boolean,
+    dragEventsEnabled?: boolean,
+    moveEventsEnabled?: boolean,
 }
 
 /**
  * @group Event Handling
  * @category TurboEventManager
  */
-type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
+type TurboEventManagerProperties<
+    ModelType extends TurboEventManagerModel = TurboEventManagerModel
+> = TurboHeadlessProperties<any, any, ModelType>
+    & TurboEventManagerStateProperties & EnabledTurboEventTypes & {
     moveThreshold?: number,
     longPressDuration?: number,
 
@@ -99,7 +104,7 @@ enum InputDevice {
 
 export {
     TurboEventManagerProperties,
-    DisabledTurboEventTypes,
+    EnabledTurboEventTypes,
     TurboEventManagerStateProperties,
     TurboEventManagerLockStateProperties,
     ActionMode,

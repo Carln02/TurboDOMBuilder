@@ -11,7 +11,7 @@ import {ValidElement} from "../types/element.types";
  * @returns {ValidElement<"a">} The created element.
  */
 function a(properties: TurboProperties<"a"> = {}): ValidElement<"a"> {
-    return element({...properties, tag: "a"}) as ValidElement<"a">;
+    return element({...properties, tag: "a"});
 }
 
 /**
@@ -23,7 +23,7 @@ function a(properties: TurboProperties<"a"> = {}): ValidElement<"a"> {
  * @returns {ValidElement<"canvas">} The created element.
  */
 function canvas(properties: TurboProperties<"canvas"> = {}): ValidElement<"canvas"> {
-    return element({...properties, tag: "canvas"}) as ValidElement<"canvas">;
+    return element({...properties, tag: "canvas"});
 }
 
 
@@ -36,7 +36,7 @@ function canvas(properties: TurboProperties<"canvas"> = {}): ValidElement<"canva
  * @returns {ValidElement<"div">} The created element.
  */
 function div(properties: TurboProperties = {}): ValidElement<"div"> {
-    return element({...properties, tag: "div"}) as ValidElement<"div">;
+    return element({...properties, tag: "div"});
 }
 
 /**
@@ -48,7 +48,7 @@ function div(properties: TurboProperties = {}): ValidElement<"div"> {
  * @returns {ValidElement<"form">} The created element.
  */
 function form(properties: TurboProperties<"form"> = {}): ValidElement<"form"> {
-    return element({...properties, tag: "form"}) as ValidElement<"form">;
+    return element({...properties, tag: "form"});
 }
 
 /**
@@ -60,7 +60,7 @@ function form(properties: TurboProperties<"form"> = {}): ValidElement<"form"> {
  * @returns {ValidElement<"h1">} The created element.
  */
 function h1(properties: TurboProperties<"h1"> = {}): ValidElement<"h1"> {
-    return element({...properties, tag: "h1"}) as ValidElement<"h1">;
+    return element({...properties, tag: "h1"});
 }
 
 /**
@@ -72,7 +72,7 @@ function h1(properties: TurboProperties<"h1"> = {}): ValidElement<"h1"> {
  * @returns {ValidElement<"h2">} The created element.
  */
 function h2(properties: TurboProperties<"h2"> = {}): ValidElement<"h2"> {
-    return element({...properties, tag: "h2"}) as ValidElement<"h2">;
+    return element({...properties, tag: "h2"});
 }
 
 /**
@@ -84,7 +84,7 @@ function h2(properties: TurboProperties<"h2"> = {}): ValidElement<"h2"> {
  * @returns {ValidElement<"h3">} The created element.
  */
 function h3(properties: TurboProperties<"h3"> = {}): ValidElement<"h3"> {
-    return element({...properties, tag: "h3"}) as ValidElement<"h3">;
+    return element({...properties, tag: "h3"});
 }
 
 /**
@@ -96,7 +96,7 @@ function h3(properties: TurboProperties<"h3"> = {}): ValidElement<"h3"> {
  * @returns {ValidElement<"h4">} The created element.
  */
 function h4(properties: TurboProperties<"h4"> = {}): ValidElement<"h4"> {
-    return element({...properties, tag: "h4"}) as ValidElement<"h4">;
+    return element({...properties, tag: "h4"});
 }
 
 /**
@@ -108,7 +108,7 @@ function h4(properties: TurboProperties<"h4"> = {}): ValidElement<"h4"> {
  * @returns {ValidElement<"h5">} The created element.
  */
 function h5(properties: TurboProperties<"h5"> = {}): ValidElement<"h5"> {
-    return element({...properties, tag: "h5"}) as ValidElement<"h5">;
+    return element({...properties, tag: "h5"});
 }
 
 /**
@@ -132,7 +132,7 @@ function h6(properties: TurboProperties<"h6"> = {}): ValidElement<"h6"> {
  * @returns {ValidElement<"img">} The created element.
  */
 function img(properties: TurboProperties<"img"> = {}): ValidElement<"img"> {
-    return element({...properties, tag: "img"}) as ValidElement<"img">;
+    return element({...properties, tag: "img"});
 }
 
 /**
@@ -144,7 +144,7 @@ function img(properties: TurboProperties<"img"> = {}): ValidElement<"img"> {
  * @returns {ValidElement<"input">} The created element.
  */
 function input(properties: TurboProperties<"input"> = {}): ValidElement<"input"> {
-    return element({...properties, tag: "input"}) as ValidElement<"input">;
+    return element({...properties, tag: "input"});
 }
 
 /**
@@ -156,7 +156,7 @@ function input(properties: TurboProperties<"input"> = {}): ValidElement<"input">
  * @returns {ValidElement<"link">} The created element.
  */
 function link(properties: TurboProperties<"link"> = {}): ValidElement<"link"> {
-    return element({...properties, tag: "link"}) as ValidElement<"link">;
+    return element({...properties, tag: "link"});
 }
 
 /**
@@ -168,7 +168,7 @@ function link(properties: TurboProperties<"link"> = {}): ValidElement<"link"> {
  * @returns {ValidElement<"p">} The created element.
  */
 function p(properties: TurboProperties<"p"> = {}): ValidElement<"p"> {
-    return element({...properties, tag: "p"}) as ValidElement<"p">;
+    return element({...properties, tag: "p"});
 }
 
 /**
@@ -180,7 +180,7 @@ function p(properties: TurboProperties<"p"> = {}): ValidElement<"p"> {
  * @returns {ValidElement<"span">} The created element.
  */
 function span(properties: TurboProperties<"span"> = {}): ValidElement<"span"> {
-    return element({...properties, tag: "span"}) as ValidElement<"span">;
+    return element({...properties, tag: "span"});
 }
 
 /**
@@ -192,7 +192,7 @@ function span(properties: TurboProperties<"span"> = {}): ValidElement<"span"> {
  * @returns {ValidElement<"style">} The created element.
  */
 function style(properties: TurboProperties<"style"> = {}): ValidElement<"style"> {
-    return element({...properties, tag: "style"}) as ValidElement<"style">;
+    return element({...properties, tag: "style"});
 }
 
 /**
@@ -204,7 +204,7 @@ function style(properties: TurboProperties<"style"> = {}): ValidElement<"style">
  * @returns {ValidElement<"textarea">} The created element.
  */
 function textarea(properties: TurboProperties<"textarea"> = {}): ValidElement<"textarea"> {
-    return element({...properties, tag: "textarea"}) as ValidElement<"textarea">;
+    return element({...properties, tag: "textarea"});
 }
 
 /**
@@ -216,7 +216,19 @@ function textarea(properties: TurboProperties<"textarea"> = {}): ValidElement<"t
  * @returns {ValidElement<"video">} The created element.
  */
 function video(properties: TurboProperties<"video"> = {}): ValidElement<"video"> {
-    return element({...properties, tag: "video"}) as ValidElement<"video">;
+    return element({...properties, tag: "video"});
+}
+
+/**
+ * @group Element Creation
+ * @category Base Elements
+ *
+ * @description Creates a "button" element with the specified properties.
+ * @param {TurboProperties<"button">} [properties] - Object containing properties of the element.
+ * @returns {ValidElement<"button">} The created element.
+ */
+function button(properties: TurboProperties<"button"> = {}): ValidElement<"button"> {
+    return element({...properties, tag: "button"});
 }
 
 export {
@@ -237,5 +249,6 @@ export {
     span,
     style,
     textarea,
-    video
+    video,
+    button
 };

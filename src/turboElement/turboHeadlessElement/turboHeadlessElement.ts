@@ -1,11 +1,12 @@
-import {Mvc} from "../../mvc/mvc";
 import {TurboHeadlessProperties} from "./turboHeadlessElement.types";
 import {TurboView} from "../../mvc/view/view";
 import {TurboModel} from "../../mvc/model/model";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineDefaultProperties} from "../setup/default/default";
-import {callOnce} from "../../decorators/callOnce";
+import {turbo} from "../../turboFunctions/turboFunctions";
+import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
+import {addRegistryCategory} from "../../decorators/define/define";
 
 /**
  * @class TurboHeadlessElement
@@ -25,29 +26,24 @@ class TurboHeadlessElement<
     EmitterType extends TurboEmitter = TurboEmitter<any>
 > {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    public static readonly config: any = {};
+    public static defaultProperties: TurboHeadlessProperties = {};
 
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    public static configure(value: typeof this.config) {
-        Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined) this.config[key] = val;
-        });
+    public static create<Type extends new (...args: any[]) => TurboHeadlessElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        return (this as any).customCreate.call(this, properties);
     }
 
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
-
-    public constructor(properties: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> = {}) {
-        this.mvc = new Mvc({...properties, element: this});
+    protected static customCreate(properties: object): object {
+        const prototypeChain = getPrototypeChain(this);
+        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
+        const obj = new this();
+        turbo(obj).setProperties(properties);
+        return obj;
     }
+
+    public declare readonly properties: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
 }
 
 (() => {
@@ -55,4 +51,5 @@ class TurboHeadlessElement<
     defineMvcAccessors(TurboHeadlessElement);
 })();
 
+addRegistryCategory(TurboHeadlessElement);
 export {TurboHeadlessElement};

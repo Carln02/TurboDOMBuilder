@@ -1,10 +1,10 @@
-import {icon, TurboIcon} from "../icon/icon";
-import {TurboRichElementConfig, TurboRichElementProperties} from "./richElement.types";
+import {TurboIcon} from "../icon/icon";
+import {TurboRichElementProperties} from "./richElement.types";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {define} from "../../../decorators/define/define";
 import {TurboElement} from "../../../turboElement/turboElement";
-import {$, turbo} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {auto} from "../../../decorators/auto/auto";
 import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
@@ -21,7 +21,6 @@ import {ValidElement, ValidTag} from "../../../types/element.types";
  * @extends TurboElement
  * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
-@define("turbo-rich-element")
 class TurboRichElement<
     ElementTag extends ValidTag = any,
     ViewType extends TurboView = TurboView<any, any>,
@@ -29,10 +28,23 @@ class TurboRichElement<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    public static config: TurboRichElementConfig = {
-        ...TurboElement.config,
-        defaultElementTag: "h4"
+     public declare readonly properties: TurboRichElementProperties;
+    public static defaultProperties: TurboRichElementProperties = {
+        elementTag: "h4"
     };
+
+    public static create<Type extends new (...args: any[]) => TurboElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        const props = properties as TurboRichElementProperties;
+        if (props.text && !props.element) {
+            props.element = props.text;
+            props.text = undefined;
+        }
+        if (props.elementTag && typeof props.element === "object" && !(props.element instanceof Element)) {
+            props.element.tag = props.elementTag;
+        }
+        return super.create.call(this, props);
+    }
 
     public readonly childrenOrder = ["leftCustomElements", "leftIcon",
         "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"] as const;
@@ -52,13 +64,12 @@ class TurboRichElement<
             if (el && el instanceof Element) nextSiblingIndex++;
             else if (el && Array.isArray(el)) nextSiblingIndex += el.length;
         }
-        $(this).addChild(element, nextSiblingIndex);
+        turbo(this).addChild(element, nextSiblingIndex);
     }
 
     /**
      * @description The tag of the text element in the button
      */
-    @auto({initialValueCallback: function () {return this.getPropertiesValue(undefined, "defaultElementTag", "h4")}})
     public elementTag: ElementTag;
 
     /**
@@ -66,7 +77,7 @@ class TurboRichElement<
      */
     @auto({executeSetterBeforeStoring: true})
     public set leftCustomElements(value: Element | Element[]) {
-        $(this).remChild(this.leftCustomElements);
+        turbo(this).remChild(this.leftCustomElements);
         this.addAtPosition(value, "leftCustomElements");
     }
 
@@ -81,10 +92,10 @@ class TurboRichElement<
                     this.leftIcon.icon = value;
                     return this.leftIcon;
                 }
-                value = icon({icon: value});
+                value = TurboIcon.create({icon: value});
             }
-            $(this).remChild(this.leftIcon);
-            this.addAtPosition(value as TurboIcon, "leftIcon");
+            turbo(this).remChild(this.leftIcon);
+            this.addAtPosition(value, "leftIcon");
             return value;
         }
     })
@@ -105,7 +116,7 @@ class TurboRichElement<
                 }
                 value = element({text: value}) as HTMLElement;
             }
-            $(this).remChild(this.prefixEntry);
+            turbo(this).remChild(this.prefixEntry);
             this.addAtPosition(value as HTMLElement, "prefixEntry");
             return value;
         }
@@ -130,7 +141,7 @@ class TurboRichElement<
                 if (!value.tag) value.tag = this.elementTag;
                 value = element(value);
             }
-            $(this).remChild(this.element);
+            turbo(this).remChild(this.element);
             this.addAtPosition(value, "element");
             return value;
         }
@@ -167,7 +178,7 @@ class TurboRichElement<
                 }
                 value = element({text: value}) as HTMLElement;
             }
-            $(this).remChild(this.suffixEntry);
+            turbo(this).remChild(this.suffixEntry);
             this.addAtPosition(value, "suffixEntry");
             return value;
         }
@@ -187,9 +198,9 @@ class TurboRichElement<
                     this.rightIcon.icon = value;
                     return this.rightIcon;
                 }
-                value = icon({icon: value});
+                value = TurboIcon.create({icon: value});
             }
-            $(this).remChild(this.rightIcon);
+            turbo(this).remChild(this.rightIcon);
             this.addAtPosition(value, "rightIcon");
             return value;
         }
@@ -203,51 +214,10 @@ class TurboRichElement<
      */
     @auto({executeSetterBeforeStoring: true})
     public set rightCustomElements(value: Element | Element[]) {
-        $(this).remChild(this.rightCustomElements);
+        turbo(this).remChild(this.rightCustomElements);
         this.addAtPosition(value, "rightCustomElements");
     }
-
-    public static create<
-        Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>,
-        ViewType extends TurboView = TurboView<any, any>,
-        DataType extends object = object,
-        ModelType extends TurboModel<DataType> = TurboModel,
-        EmitterType extends TurboEmitter = TurboEmitter,
-        ElementTag extends ValidTag = any
-    >(
-        this: new(...args: any[]) => Type,
-        properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>
-    ): Type {
-        if (properties.text && !properties.element) {
-            properties.element = properties.text;
-            properties.text = undefined;
-        }
-        if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
-            properties.element.tag = properties.elementTag;
-        }
-        return super.create.call(this, properties);
-    }
 }
 
-/**
- * @group Components
- * @category TurboRichElement
- * @param properties
- */
-function richElement<
-    ElementTag extends ValidTag = any,
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>):
-    TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
-    if (properties.text && !properties.element) properties.element = properties.text;
-    if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
-        properties.element.tag = properties.elementTag;
-    }
-    if (!properties.tag) properties.tag = "turbo-rich-element";
-    return element({...properties, text: undefined}) as any;
-}
-
-export {TurboRichElement, richElement};
+define(TurboRichElement);
+export {TurboRichElement};

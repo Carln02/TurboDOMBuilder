@@ -12,7 +12,6 @@ import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {binaryInsert} from "../../utils/computations/arrays";
 import {randomString} from "../../utils/computations/random";
 import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
-import {TurboSubstrate} from "../../mvc/substrate/substrate";
 
 const utils = new SubstrateFunctionsUtils();
 
@@ -31,7 +30,7 @@ export function setupSubstrateFunctions() {
         return this;
     }
 
-    Object.defineProperty(TurboSelector.prototype, "substrates", {
+    Object.defineProperty(TurboSelector.prototype, "substratesNames", {
         get: function () {
             return utils.getSubstrates(this.element)
         },

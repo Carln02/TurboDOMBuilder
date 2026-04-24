@@ -4,7 +4,6 @@ import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
 import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 import {TurboSubstrate} from "../../mvc/substrate/substrate";
-import {NodeListType} from "../../turboComponents/datatypes/nodeList/nodeList.types";
 import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 
 /**
@@ -127,7 +126,7 @@ declare module "../turboSelector" {
         /**
          * @description Array of all the substrates attached to this element.
          */
-        readonly substrates: string[];
+        readonly substratesNames: string[];
 
         /**
          * @function makeSubstrate

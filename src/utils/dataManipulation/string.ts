@@ -55,7 +55,7 @@ function parse(str: string): any {
             return false;
     }
 
-    if (!isNaN(Number(str))) return Number(str);
+    if (str !== "" && !isNaN(Number(str))) return Number(str);
     if (/^\d+n$/.test(str)) return BigInt(str.slice(0, -1));
 
     if (str.startsWith("function") || str.startsWith("(")) {

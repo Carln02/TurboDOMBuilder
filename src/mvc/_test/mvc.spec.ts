@@ -1,7 +1,6 @@
 import {describe, it, expect} from "vitest";
 import {TurboView} from "../view/view";
 import {TurboHandler} from "../handler/handler";
-import {Mvc} from "../mvc";
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboController} from "../controller/controller";
 import {TurboModel} from "../model/model";

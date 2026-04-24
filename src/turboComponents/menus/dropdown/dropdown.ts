@@ -1,22 +1,19 @@
-import {button, TurboButton} from "../../basics/button/button";
-import {TurboDropdownConfig, TurboDropdownProperties} from "./dropdown.types";
+import {TurboButton} from "../../basics/button/button";
 import "./dropdown.css";
 import {TurboSelect} from "../../basics/select/select";
-import {popup, TurboPopup} from "../../containers/popup/popup";
+import {TurboPopup} from "../../containers/popup/popup";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {turbo} from "../../../turboFunctions/turboFunctions";
-import {TurboElement} from "../../../turboElement/turboElement";
 import {auto} from "../../../decorators/auto/auto";
-import {expose} from "../../../decorators/expose";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {element} from "../../../elementCreation/element";
 import {HTMLTag} from "../../../types/htmlElement.types";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {stringify} from "../../../utils/dataManipulation/string";
 import {Propagation} from "../../../turboFunctions/event/event.types";
 import {TurboSelectElement} from "../../basics/selectElement/selectElement";
+import {TurboDropdownProperties} from "./dropdown.types";
 
 /**
  * @class TurboDropdown
@@ -26,7 +23,6 @@ import {TurboSelectElement} from "../../basics/selectElement/selectElement";
  * @description Dropdown class for creating Turbo button elements.
  * @extends TurboElement
  */
-@define("turbo-dropdown")
 class TurboDropdown<
     ValueType = string,
     SecondaryValueType = string,
@@ -37,25 +33,25 @@ class TurboDropdown<
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
     //TODO MOVE DEFAULT CLICK TO MAIN CONFIG
-    public static readonly config: TurboDropdownConfig = {...TurboElement.config, defaultSelectorTag: "h4"};
+     public declare readonly properties: TurboDropdownProperties;
+    public static defaultProperties: TurboDropdownProperties = {
+        selectorTag: "h4",
+    };
 
-    public readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType> = new TurboSelect({
+    public readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType> = TurboSelect.create({
         onEntryClicked: () => this.openPopup(false)
-    });
+    }) as any;
 
     private popupOpen: boolean = false;
 
-    @auto({defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectorTag")}})
     public selectorTag: HTMLTag;
 
     @auto({
-        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultSelectorClasses")},
         callBefore: function () {turbo(this.selector).removeClass(this.selectorClasses)},
         callAfter: function () {turbo(this.selector).addClass(this.selectorClasses)}
     }) public selectorClasses: string | string[];
 
     @auto({
-        defaultValueCallback: function () {return this.getPropertiesValue(undefined, "defaultPopupClasses")},
         callBefore: function () {turbo(this.popup).removeClass(this.popupClasses)},
         callAfter: function () {turbo(this.popup).addClass(this.popupClasses)}
     }) public popupClasses: string | string[];
@@ -69,7 +65,7 @@ class TurboDropdown<
             if (value instanceof HTMLElement) return value;
             const text = typeof value === "string" ? value : stringify(this.select.getValue(this.entries[0]));
             if (this.selector instanceof TurboButton) this.selector.text = text;
-            else return button({text, elementTag: this.selectorTag});
+            else return TurboButton.create({text, elementTag: this.selectorTag});
         }
     }) public set selector(value: string | HTMLElement) {
         if (!(value instanceof HTMLElement)) return;
@@ -89,7 +85,7 @@ class TurboDropdown<
     /**
      * The dropdown's popup element.
      */
-    @auto({defaultValueCallback: () => popup()}) public set popup(value: HTMLElement) {
+    @auto({defaultValueCallback: () => TurboPopup.create()}) public set popup(value: HTMLElement) {
         if (value instanceof TurboPopup) value.anchor = this.selector;
         turbo(value).addClass(this.popupClasses);
         this.select.parent = value;
@@ -111,23 +107,5 @@ class TurboDropdown<
     }
 }
 
-/**
- * @group Components
- * @category TurboDropdown
- * @param properties
- */
-function dropdown<
-    ValueType = string,
-    SecondaryValueType = string,
-    EntryType extends HTMLElement = HTMLElement,
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(properties: TurboDropdownProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> = {}):
-    TurboDropdown<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
-    if (!properties.tag) properties.tag = "turbo-dropdown";
-    return element({...properties, text: undefined}) as any;
-}
-
-export {TurboDropdown, dropdown};
+define(TurboDropdown);
+export {TurboDropdown};

@@ -5,7 +5,7 @@ import {
     TurboEventManagerProperties,
     TurboEventManagerStateProperties
 } from "./turboEventManager.types";
-import {$} from "../../turboFunctions/turboFunctions";
+import {$, turbo} from "../../turboFunctions/turboFunctions";
 import {auto} from "../../decorators/auto/auto";
 import {TurboEventManagerModel} from "./turboEventManager.model";
 import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
@@ -14,7 +14,6 @@ import {TurboEventManagerPointerController} from "./controllers/turboEventManage
 import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
 import {controller} from "../../decorators/mvc";
-import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
 import {isUndefined} from "../../utils/dataManipulation/misc";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {Point} from "../../turboComponents/datatypes/point/point";
@@ -32,6 +31,9 @@ import {
     TurboMoveEventName,
     TurboWheelEventName
 } from "../../types/eventNaming.types";
+import {expose} from "../../decorators/expose";
+import {TurboBaseElement} from "../../turboElement/turboBaseElement/turboBaseElement";
+import {define} from "../../decorators/define/define";
 
 //TODO Create merged events maybe --> fire event x when "mousedown" | "touchstart" | "mousemove" etc.
 //ToDO Create "interaction" event --> when element interacted with
@@ -44,21 +46,11 @@ import {
  * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
  * easier management of input.
  */
-class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
-
-    /*
-     *
-     *
-     * Static stuff
-     *
-     *
-     */
-
+class TurboEventManager<ToolType extends string = string> extends TurboBaseElement {
     protected static managers: TurboEventManager[] = [];
 
     public static get instance(): TurboEventManager {
-        if (TurboEventManager.managers.length > 0) return TurboEventManager.managers[0];
-        else return new TurboEventManager();
+        return TurboEventManager.managers.length > 0 ? TurboEventManager.managers[0] : TurboEventManager.create();
     }
 
     public static get allManagers(): TurboEventManager[] {
@@ -69,148 +61,70 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.managers = managers;
     }
 
-    /*
-     *
-     *
-     * Controllers & handlers
-     *
-     *
-     */
+    public get model(): TurboEventManagerModel {
+        return turbo(this).model;
+    }
+
+    public declare readonly properties: TurboEventManagerProperties;
+
+    public static defaultProperties: TurboEventManagerProperties = {
+        model: TurboEventManagerModel,
+        controllers: [
+            TurboEventManagerKeyController,
+            TurboEventManagerWheelController,
+            TurboEventManagerPointerController,
+            TurboEventManagerDispatchController
+        ],
+        handlers: TurboEventManagerUtilsHandler,
+
+        keyEventsEnabled: true,
+        wheelEventsEnabled: true,
+        mouseEventsEnabled: true,
+        touchEventsEnabled: true,
+        clickEventsEnabled: true,
+        dragEventsEnabled: true,
+        moveEventsEnabled: true,
+    };
 
     @controller() protected keyController: TurboEventManagerKeyController;
     @controller() protected wheelController: TurboEventManagerWheelController;
     @controller() protected pointerController: TurboEventManagerPointerController;
     @controller() protected dispatchController: TurboEventManagerDispatchController;
 
-    /*
-     *
-     *
-     * Constructor
-     *
-     *
-     */
-
-    public constructor(properties: TurboEventManagerProperties = {}) {
-        super();
-        this.mvc.generate({
-            model: TurboEventManagerModel,
-            controllers: [
-                TurboEventManagerKeyController,
-                TurboEventManagerWheelController,
-                TurboEventManagerPointerController,
-                TurboEventManagerDispatchController
-            ],
-            handlers: [TurboEventManagerUtilsHandler]
-        });
-
-        TurboEventManager.managers.push(this);
-
-        this.model.authorizeEventScaling = properties.authorizeEventScaling;
-        this.model.scaleEventPosition = properties.scaleEventPosition;
-
-         this.model.state.enabled = properties.enabled ?? true;
-         this.model.state.preventDefaultMouse = properties.preventDefaultMouse ?? false;
-         this.model.state.preventDefaultTouch = properties.preventDefaultTouch ?? false;
-         this.model.state.preventDefaultWheel = properties.preventDefaultWheel ?? false;
-         this.unlock();
-
-        this.model.moveThreshold = properties.moveThreshold || 10;
-        this.model.longPressDuration = properties.longPressDuration || 500;
-
-        if (!properties.disableKeyEvents) this.keyEventsEnabled = true;
-        if (!properties.disableWheelEvents) this.wheelEventsEnabled = true;
-        if (!properties.disableMouseEvents) this.mouseEventsEnabled = true;
-        if (!properties.disableTouchEvents) this.touchEventsEnabled = true;
-        if (!properties.disableDragEvents) this.dragEventEnabled = true;
-        if (!properties.disableClickEvents) this.clickEventEnabled = true;
-        if (!properties.disableMoveEvent) this.moveEventsEnabled = true;
-
-        document.addEventListener("pointerdown", this.pointerController.pointerDown, {passive: false});
-        document.addEventListener("pointermove", this.pointerController.pointerMove, {passive: false});
-        document.addEventListener("pointerup", this.pointerController.pointerUp, {passive: false});
-        document.addEventListener("pointercancel", this.pointerController.pointerCancel, {passive: false});
-
-        //TODO
-        this.dispatchController.setupCustomDispatcher("pointerdown");
-    }
-
-    /*
-     *
-     *
-     * Getters and setters
-     *
-     *
-     *
-     */
-
     /**
      * @description The currently identified input device. It is not 100% accurate, especially when differentiating
      * between mouse and trackpad.
      */
-    public get inputDevice() {
-        return this.model.inputDevice;
-    }
-
-    //Delegate fired when the input device changes
-    public get onInputDeviceChange(): Delegate<(device: InputDevice) => void> {
-        return this.model.onInputDeviceChange;
-    }
-
-    public get currentClick(): ClickMode {
-        return this.model.currentClick;
-    }
-
-    public get currentKeys(): string[] {
-        return this.model.currentKeys;
-    }
+    @expose("model", false) public inputDevice: InputDevice;
+    @expose("model", false) public onInputDeviceChange: Delegate<(device: InputDevice) => void>;
+    @expose("model", false) public currentClick: ClickMode;
+    @expose("model", false) public currentKeys: string[];
 
     /**
      * @description Delegate fired when a tool is changed on a certain click button/mode
      */
-    public get onToolChange(): Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void> {
-        return this.model.onToolChange;
+    @expose("model", false) public onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
+
+    @expose("model") public authorizeEventScaling: boolean | (() => boolean);
+    @expose("model") public scaleEventPosition: (position: Point) => Point;
+    @expose("model") public moveThreshold: number;
+    @expose("model") public longPressDuration: number;
+
+    public constructor() {
+        super();
+        TurboEventManager.managers.push(this);
     }
 
-    public get authorizeEventScaling(): boolean | (() => boolean) {
-        return this.model.authorizeEventScaling;
+    public initialize() {
+        super.initialize();
+        this.unlock();
+        document.addEventListener("pointerdown", this.pointerController.pointerDown, {passive: false});
+        document.addEventListener("pointermove", this.pointerController.pointerMove, {passive: false});
+        document.addEventListener("pointerup", this.pointerController.pointerUp, {passive: false});
+        document.addEventListener("pointercancel", this.pointerController.pointerCancel, {passive: false});
+        //TODO
+        this.dispatchController.setupCustomDispatcher("pointerdown");
     }
-
-    public set authorizeEventScaling(value: boolean | (() => boolean)) {
-        this.model.authorizeEventScaling = value;
-    }
-
-    public get scaleEventPosition(): (position: Point) => Point {
-        return this.model.scaleEventPosition;
-    }
-
-    public set scaleEventPosition(value: (position: Point) => Point) {
-        this.model.scaleEventPosition = value;
-    }
-
-    public get moveThreshold(): number {
-        return this.model.moveThreshold;
-    }
-
-    public set moveThreshold(value: number) {
-        this.model.moveThreshold = value;
-    }
-
-    public get longPressDuration(): number {
-        return this.model.longPressDuration;
-    }
-
-    public set longPressDuration(value: number) {
-        this.model.longPressDuration = value;
-    }
-
-    /*
-     *
-     *
-     * Enabling events setters
-     *
-     *
-     *
-     */
 
     @auto() public set keyEventsEnabled(value: boolean) {
         if (value) {
@@ -263,11 +177,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         // }
     }
 
-    @auto() public set clickEventEnabled(value: boolean) {
+    @auto() public set clickEventsEnabled(value: boolean) {
         this.applyAndHookEvents(TurboClickEventName, DefaultClickEventName, value);
     }
 
-    @auto() public set dragEventEnabled(value: boolean) {
+    @auto() public set dragEventsEnabled(value: boolean) {
         this.applyAndHookEvents(TurboDragEventName, DefaultDragEventName, value);
     }
 
@@ -295,18 +209,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      * @description Resets the lock state to the default values.
      */
     public unlock() {
-        const s = this.model.state;
-        const l = this.model.lockState;
-
-        l.enabled = s.enabled;
-        l.preventDefaultMouse = s.preventDefaultMouse;
-        l.preventDefaultTouch = s.preventDefaultTouch;
-        l.preventDefaultWheel = s.preventDefaultWheel;
-        l.lockOrigin = document.body;
+        this.model.lockState = {lockOrigin: document.body};
     }
 
     public get enabled() {
-        return this.model.state.enabled && this.model.lockState.enabled;
+        return this.model.state.enabled && (this.model.lockState.enabled ?? true);
     }
 
     public set enabled(value: boolean) {
@@ -314,7 +221,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     public get preventDefaultWheel() {
-        return this.model.state.preventDefaultWheel && this.model.lockState.preventDefaultWheel;
+        return this.model.state.preventDefaultWheel && (this.model.lockState.preventDefaultWheel ?? false);
     }
 
     public set preventDefaultWheel(value: boolean) {
@@ -322,7 +229,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     public get preventDefaultMouse() {
-        return this.model.state.preventDefaultMouse && this.model.lockState.preventDefaultMouse;
+        return this.model.state.preventDefaultMouse && (this.model.lockState.preventDefaultMouse ?? false);
     }
 
     public set preventDefaultMouse(value: boolean) {
@@ -330,7 +237,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
     }
 
     public get preventDefaultTouch() {
-        return this.model.state.preventDefaultTouch && this.model.lockState.preventDefaultTouch;
+        return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? false);
     }
 
     public set preventDefaultTouch(value: boolean) {
@@ -449,11 +356,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
      */
     public setTool(tool: Node, type: ClickMode, options: SetToolOptions = {}) {
         if (!isUndefined(tool) && !$(tool).isTool(this)) return;
-
-        //Initialize undefined options
-        if (options.select == undefined) options.select = true;
-        if (options.activate == undefined) options.activate = true;
-        if (options.setAsNoAction == undefined) options.setAsNoAction = type == ClickMode.left;
+        turbo(options).applyDefaults({select: true, activate: true, setAsNoAction: type == ClickMode.left});
 
         //Get previous tool
         const previousTool = this.model.currentTools.get(type);
@@ -519,11 +422,12 @@ class TurboEventManager<ToolType extends string = string> extends TurboHeadlessE
         this.wheelEventsEnabled = false;
         this.mouseEventsEnabled = false;
         this.touchEventsEnabled = false;
-        this.dragEventEnabled = false;
-        this.clickEventEnabled = false;
+        this.dragEventsEnabled = false;
+        this.clickEventsEnabled = false;
         this.onToolChange.clear();
         return this;
     }
 }
 
+define(TurboEventManager);
 export {TurboEventManager};

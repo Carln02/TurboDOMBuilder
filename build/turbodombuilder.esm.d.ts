@@ -230,47 +230,240 @@ declare function callOnce<Type extends (...args: any[]) => any>(fn: Type): Type;
 declare function callOncePerInstance<Type extends object>(value: (this: Type, ...args: any[]) => any, context: ClassMethodDecoratorContext<Type>): any;
 
 /**
- * @type DefineOptions
+ * @type {DefineOptions}
  * @group Decorators
- * @category Attributes & DOM
+ * @category Registry, Attributes & DOM
  *
- * @description Options object type for the `@define` decorator.
- * @property {boolean} [injectAttributeBridge] - If true, injects an `attributeChangedCallback` into the
- * class (if it's missing). It defaults to `true`.
+ * @description Options object for the {@link define} decorator and imperative function.
+ * @property {boolean} [injectAttributeBridge=true] - Whether to inject an `attributeChangedCallback`
+ * into the class prototype if one is not already present. When enabled, HTML attribute changes are
+ * automatically mirrored to their associated `@observe`-decorated fields, and vice versa.
  */
 type DefineOptions = {
     injectAttributeBridge?: boolean;
+};
+/**
+ * @enum {string} RegistryCategory
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Categorizes registered classes by their base type in the TurboDom registry.
+ * Categories are ordered from most to least specific within each group, which determines
+ * how {@link inferCategory} resolves ambiguous inheritance chains.
+ *
+ * **TurboDom elements** (most to least specific):
+ * - `TurboProxiedElement`, `TurboElement`, `TurboBaseElement`, `TurboHeadlessElement`
+ *
+ * **Native DOM elements** (most to least specific):
+ * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
+ *
+ * **MVC pieces:**
+ * - `TurboController`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
+ *   `TurboView`, `TurboEmitter`, `TurboModel`
+ *
+ * **Fallback:**
+ * - `Other` — for classes that do not match any recognized base type.
+ */
+declare enum RegistryCategory {
+    TurboElement = "TurboElement",
+    TurboBaseElement = "TurboBaseElement",
+    TurboHeadlessElement = "TurboHeadlessElement",
+    TurboProxiedElement = "TurboProxiedElement",
+    HTMLElement = "HTMLElement",
+    SVGElement = "SVGElement",
+    MathMLElement = "MathMLElement",
+    Element = "Element",
+    Node = "Node",
+    TurboModel = "TurboModel",
+    TurboView = "TurboView",
+    TurboEmitter = "TurboEmitter",
+    TurboController = "TurboController",
+    TurboHandler = "TurboHandler",
+    TurboInteractor = "TurboInteractor",
+    TurboTool = "TurboTool",
+    TurboSubstrate = "TurboSubstrate",
+    Other = "Other"
+}
+/**
+ * @type {RegistryEntry}
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Represents a single entry in the TurboDom class registry, as stored and returned
+ * by {@link findRegistered} and related query functions.
+ * @property {new (...args: any[]) => any} constructor - The registered class constructor.
+ * @property {RegistryCategory} category - The category the class was registered under,
+ * either explicitly provided or inferred from its inheritance chain.
+ * @property {string} name - The registered name of the class, used as the registry key.
+ * Typically the class name as passed to {@link define}.
+ * @property {string} [tag] - The custom element tag name associated with this class.
+ * Only present for classes registered as custom HTML elements via {@link define}.
+ */
+type RegistryEntry = {
+    constructor: new (...args: any[]) => any;
+    category: RegistryCategory | string;
+    tag?: string;
+    name: string;
 };
 
 /**
  * @decorator
  * @function define
  * @group Decorators
- * @category Attributes & DOM
+ * @category Registry, Attributes & DOM
  *
- * @description Stage-3 **class** decorator factory. It:
- * - Registers the element with customElements (name inferred if omitted).
- * - Adds the defined (or inferred) customElement name as a class to all instances of this class (and the class's children).
- * - Publishes a *live* `observedAttributes` getter that lists all attributes associated with `@observed` fields in
- *   this class and its ancestors.
- * - Sets up an `attributeChangedCallback()` function to mirror changes from attributes to their associated
- * `@observed` fields.
+ * @description Stage-3 **class** decorator factory that registers a class in the TurboDom registry
+ * and, if the class extends a DOM element, also registers it as a custom HTML element. Specifically, it:
+ * - Registers the class in the registry by {@link RegistryCategory}, inferring the category
+ *   from the class's inheritance chain.
+ * - If the class extends a DOM `Element`:
+ *   - Registers it with the browser's `customElements` registry under the provided or inferred tag name.
+ *   - Stores the tag name on the class as a static `tagName` property.
+ *   - Adds the tag name as a CSS class to all instances (enabling CSS targeting by class hierarchy).
+ *   - Wraps the static `create()` method to automatically inject the tag name into creation properties.
+ *   - Publishes a live `observedAttributes` getter aggregating all `@observe`-decorated fields
+ *     across the entire class hierarchy.
+ *   - Optionally injects an `attributeChangedCallback` that mirrors HTML attribute changes to
+ *     their corresponding `@observe`-decorated fields, and vice versa.
  *
- * @param {string} [elementName] - The name of the custom HTML element. It is inferred if omitted.
- * @param {DefineOptions} [options] - Custom {@link DefineOptions} options object.
+ * @param {string} className - The class name, used as the registry key and to infer the tag name.
+ * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
+ * `className` if omitted (e.g. `"MyEl"` → `"my-el"`).
+ * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
  *
  * @example
  * ```ts
- * @define() // name will be "my-el" (kebab case of class name).
- * class MyEl extends HTMLElement { ... }
+ * @define("MyEl")           // tag inferred as "my-el"
+ * class MyEl extends TurboElement { ... }
  *
- * @define("my-el") // explicit name
- * class MyEl extends HTMLElement { ... }
- * ````
+ * @define("MyEl", "my-el") // explicit tag name
+ * class MyEl extends TurboElement { ... }
+ *
+ * @define("MyModel")        // non-element: only registered in TurboDom registry
+ * class MyModel extends TurboModel { ... }
+ * ```
  */
-declare function define(elementName?: string, options?: DefineOptions): <T extends {
-    new (...args: any[]): HTMLElement;
-}>(Base: T, context: ClassDecoratorContext<T>) => T;
+declare function define(className: string, elementName?: string, options?: DefineOptions): any;
+/**
+ * @function define
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Imperative equivalent of the `@define` decorator. Applies identical registration
+ * and setup logic without requiring decorator syntax — useful for dynamically registering classes
+ * at runtime, or in build environments where class decorators cause unwanted output transformations.
+ *
+ * When the class extends a DOM `Element`, it:
+ * - Registers it with the browser's `customElements` registry.
+ * - Stores the tag name as a static `tagName` property.
+ * - Adds the tag name as a CSS class to all instances.
+ * - Wraps the static `create()` method to automatically inject the tag.
+ * - Publishes a live `observedAttributes` getter across the class hierarchy.
+ * - Optionally injects an `attributeChangedCallback` attribute bridge.
+ *
+ * For all classes (element or not), it registers the class in the registry by {@link RegistryCategory}.
+ *
+ * @param {Type} Base - The class to register.
+ * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
+ * `className` if omitted.
+ * @param {string} [className] - The class name, used as the registry key. Inferred from
+ * `Base.name` if omitted.
+ * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
+ * @returns {Type} The class, unchanged, after all setup has been applied.
+ *
+ * @example
+ * ```ts
+ * class MyEl extends TurboElement { ... }
+ * define(MyEl);                    // className → "MyEl", tag → "my-el"
+ * define(MyEl, "my-el");           // explicit tag, className inferred
+ * define(MyEl, "my-el", "MyEl");   // both explicit
+ *
+ * class MyModel extends TurboModel { ... }
+ * define(MyModel, undefined, "MyModel"); // non-element, registry only
+ * ```
+ */
+declare function define<Type extends new (...args: any[]) => any>(Base: Type, elementName?: string, className?: string, options?: DefineOptions): Type;
+/**
+ * @function findRegistered
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Finds a registered entry by name, optionally scoped to a specific category.
+ * If no category is provided, searches across all categories and returns the first match.
+ * @param {string} name - The registered name to search for.
+ * @param {RegistryCategory} [category] - The category to scope the search to. Searches all categories if omitted.
+ * @returns {RegistryEntry} The matching registry entry, or `undefined` if not found.
+ */
+declare function findRegistered(name: string, category?: RegistryCategory): RegistryEntry;
+/**
+ * @function getRegisteredByCategories
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries across one or more specified categories.
+ * @param {...RegistryCategory[]} categories - The categories to retrieve entries from.
+ * @returns {RegistryEntry[]} An array of all registry entries in the specified categories.
+ */
+declare function getRegisteredByCategories(...categories: RegistryCategory[]): RegistryEntry[];
+/**
+ * @function getAllRegistered
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries across every category in the registry.
+ * @returns {RegistryEntry[]} An array of all registry entries.
+ */
+declare function getAllRegistered(): RegistryEntry[];
+/**
+ * @function getRegisteredMvc
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries belonging to MVC-related categories:
+ * `TurboController`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
+ * `TurboSubstrate`, `TurboTool`, and `TurboView`.
+ * @returns {RegistryEntry[]} An array of all MVC registry entries.
+ */
+declare function getRegisteredMvc(): RegistryEntry[];
+/**
+ * @function getRegisteredElements
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries belonging to element-related categories:
+ * `TurboElement`, `TurboProxiedElement`, `Element`, `HTMLElement`, `SVGElement`, and `MathMLElement`.
+ * @returns {RegistryEntry[]} An array of all element registry entries.
+ */
+declare function getRegisteredElements(): RegistryEntry[];
+/**
+ * @function addRegistryCategory
+ * @group Decorators
+ * @category Registry
+ *
+ * @description Associates a class constructor with a {@link RegistryCategory} in the TurboDom registry's
+ * category inference map. When {@link define} is called on a subclass, it walks the prototype chain and
+ * uses this map to determine the appropriate category without requiring direct imports of the base classes
+ * (which would cause circular dependencies).
+ *
+ * This should be called once per base class, after its definition, by the TurboDom internals.
+ * User-defined subclasses do not need to call this — category inference propagates automatically
+ * through the prototype chain.
+ *
+ * @param {new (...args: any[]) => object} type - The base class constructor to associate with a category.
+ * @param {RegistryCategory} [category] - The category to associate with the class. Defaults to the
+ * class name if omitted, which is useful when the class name matches a {@link RegistryCategory} value.
+ *
+ * @example
+ * ```ts
+ * // At the bottom of turboModel.ts, after class definition:
+ * addRegistryCategory(TurboModel, RegistryCategory.TurboModel);
+ *
+ * // Later, when a subclass is defined:
+ * class MyModel extends TurboModel { ... }
+ * define(MyModel, "MyModel"); // infers RegistryCategory.TurboModel automatically
+ * ```
+ */
+declare function addRegistryCategory(type: new (...args: any[]) => object, category?: RegistryCategory): void;
 
 /**
  * @decorator
@@ -280,8 +473,6 @@ declare function define(elementName?: string, options?: DefineOptions): <T exten
  *
  * @description Stage-3 decorator that augments fields, accessors, and methods to expose fields and methods
  * from inner instances.
- * @param {string} rootKey - The property key of the instance to expose from.
- * @param {boolean} [exposeSetter=true] - Whether to expose a setter for the property. Defaults to true.
  *
  * @example
  * ```ts
@@ -293,19 +484,46 @@ declare function define(elementName?: string, options?: DefineOptions): <T exten
  * protected model: TurboModel;
  *
  * public get color(): string {
- *    return this.model.color;
+ *     return this.model.color;
  * }
  *
  * public set color(value: string) {
- *    this.model.color = value;
+ *     this.model.color = value;
  * }
  * ```
  */
-declare function expose(rootKey: string, exposeSetter?: boolean): <Type extends object, Value>(value: ((initial: Value) => Value) | {
-    get?: (this: Type) => Value;
-    set?: (this: Type, value: Value) => void;
-} | ((this: Type, ...args: any[]) => any), context: ClassFieldDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value> | ClassMethodDecoratorContext<Type>) => any;
+declare function expose(rootKey: string, exposeSetter?: boolean): any;
+/**
+ * @function expose
+ * @group Decorators
+ * @category Augmentation
+ *
+ * @description Imperatively exposes a specific field from an inner instance onto a host object.
+ * @param {object} host - The host object to define the exposed property on.
+ * @param {string} rootKey - The property key of the inner instance to expose from.
+ * @param {string} key - The property key to expose.
+ * @param {boolean} [exposeSetter=true] - Whether to expose a setter for the property. Defaults to true.
+ *
+ * @example
+ * ```ts
+ * expose(this, "model", "color");
+ * expose(this, "model", "readonlyProp", false);
+ * ```
+ */
+declare function expose(host: object, rootKey: string, key: string, exposeSetter?: boolean): void;
 
+/**
+ * @type KeyType
+ * @group Types
+ * @category Basics
+ */
+type KeyType = string | number | symbol;
+/**
+ * @type FlatKeyType
+ * @group Types
+ * @category Basics
+ */
+type FlatKeyType = string | number;
 /**
  * @group Types
  * @category Basics
@@ -543,94 +761,6 @@ declare class Point {
     arr(): number[];
     positionOnSegment(start: Point, end: Point): number;
     static linearInterpolation(start: Point, end: Point, t: number): Point;
-}
-
-/**
- * @group Event Handling
- * @category TurboEventManager
- */
-type TurboEventManagerStateProperties = {
-    enabled?: boolean;
-    preventDefaultWheel?: boolean;
-    preventDefaultMouse?: boolean;
-    preventDefaultTouch?: boolean;
-};
-/**
- * @group Event Handling
- * @category TurboEventManager
- */
-type DisabledTurboEventTypes = {
-    disableKeyEvents?: boolean;
-    disableWheelEvents?: boolean;
-    disableMouseEvents?: boolean;
-    disableTouchEvents?: boolean;
-    disableClickEvents?: boolean;
-    disableDragEvents?: boolean;
-    disableMoveEvent?: boolean;
-};
-/**
- * @group Event Handling
- * @category TurboEventManager
- */
-type TurboEventManagerProperties = TurboEventManagerStateProperties & DisabledTurboEventTypes & {
-    moveThreshold?: number;
-    longPressDuration?: number;
-    authorizeEventScaling?: boolean | (() => boolean);
-    scaleEventPosition?: (position: Point) => Point;
-};
-/**
- * @group Event Handling
- * @category TurboEventManager
- */
-type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
-    lockOrigin?: Node;
-};
-/**
- * @group Event Handling
- * @category TurboEventManager
- *
- * @description Object representing options passed to the ToolManager's setTool() function.
- * @property select - Indicate whether to visually select the tool on all toolbars, defaults to true
- * @property activate - Indicate whether to fire activation on the tool when setting it, defaults to true
- * @property setAsNoAction - Indicate whether the tool will also be set as the tool for ClickMode == none, defaults
- * to true if the click mode is left.
- */
-type SetToolOptions = {
-    select?: boolean;
-    activate?: boolean;
-    setAsNoAction?: boolean;
-};
-/**
- * @group Event Handling
- * @category Enums
- */
-declare enum ActionMode {
-    none = 0,
-    click = 1,
-    longPress = 2,
-    drag = 3
-}
-/**
- * @group Event Handling
- * @category Enums
- */
-declare enum ClickMode {
-    none = 0,
-    left = 1,
-    right = 2,
-    middle = 3,
-    other = 4,
-    key = 5
-}
-/**
- * @group Event Handling
- * @category Enums
- */
-declare enum InputDevice {
-    unknown = 0,
-    mouse = 1,
-    trackpad = 2,
-    touch = 3
 }
 
 /**
@@ -890,7 +1020,7 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
  * @template {object} ComponentType - The instance type created/managed by the observer.
  * @template {string | number | symbol} KeyType - The key type used at each level of the path.
  */
-declare class TurboObserver<DataType = any, ComponentType extends object = any, KeyType extends DataKeyType = DataKeyType> extends TurboNestedMap<ComponentType, KeyType> {
+declare class TurboObserver<DataType = any, ComponentType extends object = any, DataKeyType extends KeyType = KeyType> extends TurboNestedMap<ComponentType, DataKeyType> {
     protected _isInitialized: boolean;
     /**
      * @property onAdded
@@ -898,27 +1028,27 @@ declare class TurboObserver<DataType = any, ComponentType extends object = any, 
      * Handlers may return a newly-created component instance, which will be stored and passed to subsequent
      * `onUpdated` calls.
      */
-    readonly onAdded: Delegate<(data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void>;
+    readonly onAdded: Delegate<(data: DataType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => ComponentType | void>;
     /**
      * @property onUpdated
      * @description Delegate called when a change is reported at a key path that already has an associated instance.
      */
-    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void>;
+    readonly onUpdated: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => void>;
     /**
      * @property onDeleted
      * @description Delegate called when a key path is reported as deleted.
      */
-    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void>;
+    readonly onDeleted: Delegate<(data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: DataKeyType[]) => void>;
     /**
      * @property onInitialize
      * @description Delegate fired once when the observer is initialized. Useful for initial population.
      */
-    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void>;
+    readonly onInitialize: Delegate<(self: TurboObserver<DataType, ComponentType, DataKeyType>) => void>;
     /**
      * @property onDestroy
      * @description Delegate fired when the observer is destroyed.
      */
-    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, KeyType>) => void>;
+    readonly onDestroy: Delegate<(self: TurboObserver<DataType, ComponentType, DataKeyType>) => void>;
     /**
      * @constructor
      * @description Create a TurboObserver.
@@ -927,20 +1057,20 @@ declare class TurboObserver<DataType = any, ComponentType extends object = any, 
      * @param {TurboObserverProperties<DataType, ComponentType, KeyType>} [properties] - Initialization
      * options and lifecycle callbacks.
      */
-    constructor(properties?: TurboObserverProperties<DataType, ComponentType, KeyType>);
+    constructor(properties?: TurboObserverProperties<DataType, ComponentType, DataKeyType>);
     /**
      * @function remove
      * @description Remove the instance at the given key path from the map and call `instance.remove()` if available.
      * @param {...KeyType[]} keys - Ordered path to the instance.
      */
-    remove(...keys: KeyType[]): void;
+    remove(...keys: DataKeyType[]): void;
     /**
      * @function detach
      * @description Remove the instance at the given key path from the map without calling `instance.remove()`,
      * detaching it from the observer.
      * @param {...KeyType[]} keys - Ordered path to the instance.
      */
-    detach(...keys: KeyType[]): void;
+    detach(...keys: DataKeyType[]): void;
     /**
      * @property isInitialized
      * @description Whether the observer has been initialized (i.e. {@link initialize} has been called).
@@ -974,21 +1104,12 @@ declare class TurboObserver<DataType = any, ComponentType extends object = any, 
      * @param {DataType} value - The new value at that path.
      * @param {boolean} [deleted=false] - Whether the entry was deleted.
      */
-    keyChanged(keys: KeyType[], value: DataType, deleted?: boolean): void;
+    keyChanged(keys: DataKeyType[], value: DataType, deleted?: boolean): void;
 }
 
-/**
- * @type DataKeyType
- * @group MVC
- * @category TurboModel
- */
-type DataKeyType = string | number | symbol;
-/**
- * @type FlatKeyType
- * @group MVC
- * @category TurboModel
- */
-type FlatKeyType = string | number;
+type TurboModelProxy<DataType extends object = any, IdType extends KeyType = any> = DataType & {
+    readonly $model: TurboModel<DataType, KeyType, IdType>;
+};
 /**
  * @type TurboModelProperties
  * @group MVC
@@ -1002,12 +1123,13 @@ type FlatKeyType = string | number;
  * @property {boolean} [initialize] - If true, {@link TurboModel.initialize} is called immediately after
  * construction.
  */
-type TurboModelProperties<DataType = any, IdType extends DataKeyType = any> = {
+type TurboModelProperties<DataType = any, IdType extends KeyType = any> = {
     id?: IdType;
     data?: DataType;
     initialize?: boolean;
     enabledCallbacks?: boolean;
     bubbleChanges?: boolean;
+    makeSignals?: boolean;
 };
 /**
  * @type TurboObserverProperties
@@ -1030,15 +1152,15 @@ type TurboModelProperties<DataType = any, IdType extends DataKeyType = any> = {
  * @property {(self) => void} [onInitialize] - Called when the observer is initialized.
  * @property {(self) => void} [onDestroy] - Called when the observer is destroyed.
  */
-type TurboObserverProperties<DataType = any, ComponentType extends object = any, KeyType extends string | number | symbol = string> = {
-    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, KeyType>;
+type TurboObserverProperties<DataType = any, ComponentType extends object = any, DataKeyType extends KeyType = KeyType> = {
+    customConstructor?: new (...args: any[]) => TurboObserver<DataType, ComponentType, DataKeyType>;
     depth?: number;
     initialize?: boolean;
-    onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => ComponentType | void;
-    onUpdated?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void;
-    onDeleted?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, KeyType>, ...keys: KeyType[]) => void;
-    onInitialize?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void;
-    onDestroy?: (self: TurboObserver<DataType, ComponentType, KeyType>) => void;
+    onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => ComponentType | void;
+    onUpdated?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void;
+    onDeleted?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void;
+    onInitialize?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void;
+    onDestroy?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void;
 };
 
 type SignalSubscriber = () => void;
@@ -1140,534 +1262,6 @@ declare class TurboWeakSet<Type extends object = object> {
 }
 
 /**
- * @class TurboModel
- * @group MVC
- * @category TurboModel
- *
- * @template DataType - The type of the data held in the model.
- * @template {DataKeyType} KeyType - The type of the data's keys.
- * @template IdType - The type of the data's ID.
- * @template ComponentType - The type of instances managed by attached observers.
- * @template DataEntryType - The type of data associated with each observer instance.
- *
- * @description Wrapper around a plain JS container (object, Array, or Map) that exposes a
- * consistent API for reads/writes, signals, and {@link TurboObserver}s.
- */
-declare class TurboModel<DataType = any, KeyType extends DataKeyType = any, IdType extends DataKeyType = any, ComponentType extends object = any, DataEntryType = any> {
-    /**
-     * @description Symbol used in {@link nestAll}, {@link makeSignals}, and {@link generateObserver}
-     * to target all entries at a certain level inside the data.
-     */
-    static readonly ALL: unique symbol;
-    /**
-     * @description The default constructor used to create nested {@link TurboModel} instances.
-     */
-    modelConstructor: new (...args: any[]) => TurboModel;
-    /**
-     * @description The default constructor used to create {@link TurboObserver} instances via {@link generateObserver}.
-     */
-    observerConstructor: new (...args: any[]) => TurboObserver;
-    /**
-     * @description Map of MVC handlers bound to this model.
-     */
-    handlers: Map<string, TurboHandler>;
-    /**
-     * @description Whether change callbacks and observer notifications are enabled.
-     */
-    accessor enabledCallbacks: boolean;
-    /**
-     * @description Whether changes bubble up from nested models to their parent.
-     */
-    accessor bubbleChanges: boolean;
-    /**
-     * @description Delegate fired whenever a value changes at a key path. Receives the new value followed
-     * by the key path as spread arguments.
-     */
-    readonly onKeyChanged: Delegate<(value: any, ...keys: DataKeyType[]) => void>;
-    protected isInitialized: boolean;
-    private readonly signals;
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, KeyType>>;
-    protected readonly nestedModels: Map<KeyType, TurboModel>;
-    protected readonly nestListeners: Set<(model: TurboModel, key: DataKeyType) => void>;
-    /**
-     * @description The ID of the data held by this model.
-     */
-    id: IdType;
-    private _data;
-    /**
-     * @description The data held by this model. Setting it clears the current state and re-initializes the model.
-     */
-    get data(): DataType;
-    set data(data: DataType);
-    /**
-     * @constructor
-     * @description Create a new TurboModel.
-     * @param {TurboModelProperties} [properties] - Optional initialization properties.
-     */
-    constructor(properties?: TurboModelProperties);
-    /**
-     * @function setup
-     * @description Called in the constructor. Use for setup that should happen at instantiation,
-     * before `this.initialize()` is called.
-     * @protected
-     */
-    protected setup(): void;
-    /**
-     * @protected
-     * @function getAction
-     * @description Read a single key from a data container. Override this method to support other datatypes.
-     * @param {any} data - The container to read from.
-     * @param {DataKeyType} key - The key to read.
-     * @returns {any} The value at the key, or `undefined` if not found.
-     */
-    protected getAction(data: any, key: DataKeyType): any;
-    /**
-     * @function get
-     * @description Retrieve the value at the given key.
-     * @param {KeyType} key - The key to read.
-     * @returns {any} The stored value, or `undefined` if not found.
-     */
-    get(key: KeyType): any;
-    /**
-     * @function get
-     * @description Retrieve the value at the given key path. Pass no keys to get the root data.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
-     * @returns {any} The stored value, or `undefined` if not found.
-     */
-    get(...keys: DataKeyType[]): any;
-    /**
-     * @function getFlat
-     * @description Retrieve the value at the given flat key.
-     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
-     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     * @returns {any} The stored value, or `undefined` if not found.
-     */
-    getFlat(flatKey: FlatKeyType, depth?: number): any;
-    /**
-     * @function getKey
-     * @description Find the key path of the first occurrence of the given value, searching depth-first.
-     * @param {any} value - The value to locate.
-     * @returns {DataKeyType[]} The key path, or `undefined` if not found.
-     */
-    getKey(value: any): DataKeyType[];
-    /**
-     * @function getFlatKey
-     * @description Return the flat key of the first occurrence of the given value.
-     * @param {any} value - The value to query.
-     * @returns {FlatKeyType | undefined} The flat key, or `undefined` if not found.
-     */
-    getFlatKey(value: any): FlatKeyType | undefined;
-    /**
-     * @function getKeys
-     * @description Find the key paths of all occurrences of the given value, searching depth-first.
-     * @param {any} value - The value to locate.
-     * @returns {DataKeyType[][]} Array of key paths.
-     */
-    getKeys(value: any): DataKeyType[][];
-    /**
-     * @function getFlatKeys
-     * @description Return the flat keys of all occurrences of the given value.
-     * @param {any} value - The value to query.
-     * @returns {FlatKeyType[]} Array of flat keys.
-     */
-    getFlatKeys(value: any): FlatKeyType[];
-    /**
-     * @protected
-     * @function setAction
-     * @description Write a single key to a data container. Override this method to support other datatypes.
-     * @param {any} data - The container to write to.
-     * @param {DataKeyType} key - The key to write.
-     * @param {any} value - The value to set.
-     */
-    protected setAction(data: any, value: any, key: DataKeyType): void;
-    /**
-     * @protected
-     * @function internalSet
-     * @description Write a value at a key, propagating the change to a nested model if one exists,
-     * and firing {@link keyChanged} if the value actually changed.
-     * @param {TurboModel} model - The owning model (used for nested model lookup and change notification),
-     * or `undefined` if operating on a non-root container.
-     * @param {any} data - The container to write to.
-     * @param {DataKeyType} key - The key to write.
-     * @param {any} value - The value to set.
-     */
-    protected internalSet(model: TurboModel, data: any, value: any, key: DataKeyType): void;
-    /**
-     * @function set
-     * @description Set a value at the given key and notify observers and signals if the value changed.
-     * @param {KeyType} key - The key to write.
-     * @param {unknown} value - The value to set.
-     */
-    set(value: unknown, key: KeyType): void;
-    /**
-     * @function set
-     * @description Set a value at the given key path and notify observers and signals if the value changed.
-     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
-     * @param {unknown} value - The value to set.
-     */
-    set(value: unknown, ...keys: DataKeyType[]): void;
-    /**
-     * @function setFlat
-     * @description Set a value at the given flat key.
-     * @param {unknown} value - The value to set.
-     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
-     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     */
-    setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): void;
-    /**
-     * @protected
-     * @function internalAdd
-     * @description Insert a value into a container via {@link addAction} and fire {@link keyChanged}.
-     * @param {TurboModel} model - The owning model for change notification, or `undefined` for non-root containers.
-     * @param {any} data - The container to insert into.
-     * @param {any} value - The value to insert.
-     * @param {DataKeyType} key - The target index or key.
-     * @returns {DataKeyType} The index or key where the value was stored.
-     */
-    protected internalAdd(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
-    /**
-     * @protected
-     * @function addAction
-     * @description Perform the raw insertion. Override this method to support other datatypes.
-     * @param {TurboModel} model - The owning model.
-     * @param {any} data - The container to insert into.
-     * @param {any} value - The value to insert.
-     * @param {DataKeyType} key - The target index or key. Clamped to valid array bounds for array containers.
-     * @returns {DataKeyType} The index or key where the value was stored.
-     */
-    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
-    /**
-     * @function add
-     * @description Push a value to the end of an array-backed model. For non-array models, forwards to {@link set}.
-     * @param {unknown} value - The value to insert.
-     * @returns {KeyType} The index where the value was stored.
-     */
-    add(value: unknown): KeyType;
-    /**
-     * @function add
-     * @description Insert a value into an array-backed model at the given index, or push it if no index is given.
-     * For non-array models, forwards to {@link set}.
-     * @param {unknown} value - The value to insert.
-     * @param {KeyType} [key] - The index to insert at. If omitted, the value is pushed to the end.
-     * @returns {KeyType} The index where the value was stored.
-     */
-    add(value: unknown, key?: KeyType): KeyType;
-    /**
-     * @function add
-     * @description Insert a value at the given key path. For array-backed nodes, the last key is the insertion index.
-     * For non-array models, forwards to {@link set}.
-     * @param {unknown} value - The value to insert.
-     * @param {...DataKeyType[]} keys - Key path to the target node, with the last key as the insertion index.
-     * @returns {DataKeyType} The index or key where the value was stored.
-     */
-    add(value: unknown, ...keys: DataKeyType[]): DataKeyType;
-    /**
-     * @function addFlat
-     * @description Insert a value at the position described by the given flat key.
-     * @param {unknown} value - The value to insert.
-     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
-     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     * @returns {DataKeyType} The index or key where the value was stored.
-     */
-    addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): DataKeyType;
-    /**
-     * @protected
-     * @function hasAction
-     * @description Check whether a key exists in a container. Override this method to support other datatypes.
-     * @param {any} data - The container to check.
-     * @param {DataKeyType} key - The key to check.
-     * @returns {boolean} `true` if the key is present.
-     */
-    protected hasAction(data: any, key: DataKeyType): boolean;
-    /**
-     * @function has
-     * @description Check whether the given key exists in the model.
-     * @param {KeyType} key - The key to check.
-     * @returns {boolean} `true` if the entry exists.
-     */
-    has(key: KeyType): boolean;
-    /**
-     * @function has
-     * @description Check whether the given key path exists in the model.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
-     * @returns {boolean} `true` if the entry exists.
-     */
-    has(...keys: DataKeyType[]): boolean;
-    /**
-     * @function hasFlat
-     * @description Check whether an entry exists at the given flat key.
-     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
-     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     * @returns {boolean}
-     */
-    hasFlat(flatKey: FlatKeyType, depth?: number): boolean;
-    /**
-     * @protected
-     * @function deleteAction
-     * @description Remove a single key from a container. Override this method to support other datatypes.
-     * @param {any} data - The container to remove from.
-     * @param {DataKeyType} key - The key to remove.
-     */
-    protected deleteAction(data: any, key: DataKeyType): void;
-    /**
-     * @protected
-     * @function internalDelete
-     * @description Remove a key from a container, clearing any associated nested model, and firing {@link keyChanged}.
-     * No-op if the key does not exist.
-     * @param {TurboModel} model - The owning model for nested model cleanup and change notification,
-     * or `undefined` for non-root containers.
-     * @param {any} data - The container to remove from.
-     * @param {DataKeyType} key - The key to remove.
-     */
-    protected internalDelete(model: TurboModel, data: any, key: DataKeyType): void;
-    /**
-     * @function delete
-     * @description Remove the entry at the given key and notify observers.
-     * @param {KeyType} key - The key to remove.
-     */
-    delete(key: KeyType): void;
-    /**
-     * @function delete
-     * @description Remove the entry at the given key path and notify observers.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
-     */
-    delete(...keys: DataKeyType[]): void;
-    /**
-     * @function deleteFlat
-     * @description Remove the entry at the given flat key.
-     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
-     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
-     */
-    deleteFlat(flatKey: FlatKeyType, depth?: number): void;
-    /**
-     * @property keys
-     * @description All keys currently present in the model.
-     */
-    get keys(): KeyType[];
-    /**
-     * @property values
-     * @description All values in the model, in the order of {@link keys}.
-     */
-    get values(): any[];
-    /**
-     * @property size
-     * @description Number of entries in the model.
-     */
-    get size(): number;
-    /**
-     * @function flatSize
-     * @description Return the total number of entries reachable from this model at the given depth.
-     * @param {number} depth - How many levels deep to count.
-     * @returns {number}
-     */
-    flatSize(depth: number): number;
-    /**
-     * @description Iterate over `[key, value]` pairs.
-     */
-    [Symbol.iterator](): IterableIterator<[KeyType, any]>;
-    /**
-     * @function entries
-     * @description Return all `[key, value]` pairs in the model.
-     * @returns {[KeyType, any][]}
-     */
-    entries(): [KeyType, any][];
-    /**
-     * @function forEach
-     * @description Execute a callback for each entry in the model.
-     * @param {(value: any, key: KeyType, model: this) => void} callback - Called with the value, key, and model.
-     * @param {any} [thisArg] - Value to use as `this` when calling the callback.
-     */
-    forEach(callback: (value: any, key: KeyType, model: this) => void, thisArg?: any): void;
-    /**
-     * @function initialize
-     * @description Fire change notifications for all existing keys, marking the model as initialized.
-     * No-op if already initialized or if data is empty.
-     */
-    initialize(): void;
-    /**
-     * @function clear
-     * @description Reset the model, clearing nested models, observers, and signals.
-     * @param {boolean} [clearData=true] - Whether to also clear the stored data.
-     */
-    clear(clearData?: boolean): void;
-    /**
-     * @function toJSON
-     * @description Convert the model's data into a JSON-serializable form.
-     * Maps become plain objects. For non-object data types, the raw value is returned.
-     * @returns {object | DataType}
-     */
-    toJSON(): object | DataType;
-    /**
-     * @function makeSignal
-     * @description Return an existing reactive {@link SignalBox} for the given key, or create one if absent.
-     * The signal reads via {@link get} and writes via {@link set}.
-     * @template Type - The type of the signal's value.
-     * @param {KeyType} key - The key to create a signal for.
-     * @returns {SignalBox<Type>}
-     */
-    makeSignal<Type = any>(key: KeyType): SignalBox<Type>;
-    /**
-     * @function makeSignal
-     * @description Return an existing reactive {@link SignalBox} for the given key path, or create one if absent.
-     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
-     * The signal reads via {@link get} and writes via {@link set}.
-     * @template Type - The type of the signal's value.
-     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
-     * @returns {SignalBox<Type>}
-     */
-    makeSignal<Type = any>(...keys: DataKeyType[]): SignalBox<Type>;
-    /**
-     * @function makeSignals
-     * @description Return reactive {@link SignalBox} instances for multiple keys at the given path.
-     * Pass {@link TurboModel.ALL} at any level of the path to expand all entries at that level.
-     * @template Type - The type of the signals' values.
-     * @param {...DataKeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
-     * @returns {SignalBox<Type>[]}
-     */
-    makeSignals<Type = any>(...keys: DataKeyType[]): SignalBox<Type>[];
-    /**
-     * @function getSignal
-     * @description Retrieve an existing {@link SignalBox} for the given key, or `undefined` if none exists.
-     * @param {KeyType} key - The key whose signal to retrieve.
-     * @returns {SignalBox<any>}
-     */
-    getSignal(key: KeyType): SignalBox<any>;
-    /**
-     * @function getSignal
-     * @description Retrieve an existing {@link SignalBox} for the given key path, or `undefined` if none exists.
-     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
-     * @param {...DataKeyType[]} keys - Key path, with the last key as the signal target.
-     * @returns {SignalBox<any>}
-     */
-    getSignal(...keys: DataKeyType[]): SignalBox<any>;
-    /**
-     * @function nestAll
-     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path.
-     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
-     * @param {...DataKeyType[]} keys - Key path to the subtree to expand.
-     * @returns {TurboModel[]} Array of nested models.
-     */
-    nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keys: DataKeyType[]): TurboModel<NestedDataType, NestedKeyType>[];
-    /**
-     * @function nestAll
-     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path,
-     * with custom initialization properties for the nested models.
-     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
-     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
-     * @returns {TurboModel[]} Array of nested models.
-     */
-    nestAll<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keysAndProperties: [...DataKeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>[];
-    /**
-     * @function nest
-     * @description Create or retrieve a single nested {@link TurboModel} at the given key.
-     * @param {KeyType} key - The key of the nested model.
-     * @returns {TurboModel}
-     */
-    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(key: KeyType): TurboModel<NestedDataType, NestedKeyType>;
-    /**
-     * @function nest
-     * @description Create or retrieve a single nested {@link TurboModel} at the given key path.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
-     * @returns {TurboModel}
-     */
-    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keys: DataKeyType[]): TurboModel<NestedDataType, NestedKeyType>;
-    /**
-     * @function nest
-     * @description Create or retrieve a single nested {@link TurboModel} at the given key path,
-     * with custom initialization properties.
-     * @param {...[...DataKeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
-     * @returns {TurboModel}
-     */
-    nest<NestedDataType = any, NestedKeyType extends DataKeyType = any>(...keysAndProperties: [...DataKeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>;
-    /**
-     * @function getNested
-     * @description Return `this`.
-     * @returns {TurboModel}
-     */
-    getNested(): TurboModel;
-    /**
-     * @function getNested
-     * @description Retrieve an already-created nested model at the given key, or `undefined` if none exists.
-     * @param {KeyType} key - The key of the nested model.
-     * @returns {TurboModel | undefined}
-     */
-    getNested(key: KeyType): TurboModel;
-    /**
-     * @function getNested
-     * @description Retrieve an already-created nested model at the given key path, or `undefined` if none exists.
-     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
-     * @returns {TurboModel | undefined}
-     */
-    getNested(...keys: DataKeyType[]): TurboModel;
-    /**
-     * @function generateObserver
-     * @description Create and attach a {@link TurboObserver} to this model.
-     * If a key path is provided, the observer is attached to the nested model(s) at that path instead.
-     * Pass {@link TurboModel.ALL} at any level of the path to process all entries at that level,
-     * allowing a single observer to track multiple subtrees simultaneously.
-     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
-     * @param {...DataKeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
-     * any level to process all entries there.
-     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
-     */
-    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, KeyType>, ...keys: DataKeyType[]): TurboObserver<DataEntryType, ComponentType, KeyType>;
-    /**
-     * @protected
-     * @function keyChanged
-     * @description Called internally whenever an entry is added, updated, or deleted.
-     * Emits signals, fires {@link onKeyChanged}, and notifies attached observers.
-     * @param {DataKeyType[]} keys - The key path that changed.
-     * @param {unknown} [value] - The new value. Defaults to the current value at the key.
-     * @param {boolean} [deleted=false] - Whether the entry was removed.
-     */
-    protected keyChanged(keys: DataKeyType[], value?: unknown, deleted?: boolean): void;
-    private static flattenSize;
-    /**
-     * @function flattenKey
-     * @description Serialize a key path into a single flat key.
-     * - Fully numeric paths into array-backed data produce a numeric global leaf index.
-     * - All other paths produce a `"k0|k1|k2|..."` string, with symbols encoded as `"@@description"`.
-     * @param {...DataKeyType[]} keys - The key path to serialize.
-     * @returns {FlatKeyType}
-     */
-    flattenKey(...keys: DataKeyType[]): FlatKeyType;
-    /**
-     * @function scopeKey
-     * @description Convert a flat string key back into a key path. Reverses the string form of {@link flattenKey}.
-     * Segments starting with `"@@"` are decoded back to symbols.
-     * @param {string} flatKey - The flat string key to convert.
-     * @returns {DataKeyType[]}
-     */
-    scopeKey(flatKey: string): DataKeyType[];
-    /**
-     * @function scopeKey
-     * @description Convert a numeric global index back into a numeric key path.
-     * Reverses the numeric form of {@link flattenKey}.
-     * @param {number} flatKey - The numeric index to convert.
-     * @param {number} depth - The depth of the key path to reconstruct.
-     * @returns {DataKeyType[]}
-     */
-    scopeKey(flatKey: number, depth: number): DataKeyType[];
-    /**
-     * @function getHandler
-     * @description Retrieves the attached MVC handler with the given key.
-     * By default, unless manually defined in the handler, if the element's class name is MyElement
-     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
-     * @param {string} key - The handler's key.
-     * @return {TurboHandler} - The handler.
-     */
-    getHandler(key: string): TurboHandler;
-    /**
-     * @function addHandler
-     * @description Registers a TurboHandler for the given key.
-     * @param {TurboHandler} handler - The handler instance to register.
-     */
-    addHandler(handler: TurboHandler): void;
-    setDataWithoutInitializing(data: DataType): void;
-    private routeMutation;
-}
-
-/**
  * @class TurboHandler
  * @group MVC
  * @category Handler
@@ -1698,62 +1292,533 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
     protected setup(): void;
 }
 
-declare class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManagerModel> {
-    keyName: string;
-    setClickMode(button: number, isTouch?: boolean): ClickMode;
-    applyEventNames(eventNames: Record<string, string>): void;
-    setTimer(timerName: string, callback: () => void, duration: number): void;
-    clearTimer(timerName: string): void;
-    selectTool(element: Node, value: boolean): void;
-    activateTool(element: Node, toolName: string, value: boolean): void;
-}
-
 /**
- * @group Components
- * @category TurboMap
+ * @class TurboModel
+ * @group MVC
+ * @category TurboModel
+ *
+ * @template DataType - The type of the data held in the model.
+ * @template {KeyType} KeyType - The type of the data's keys.
+ * @template {KeyType} IdType - The type of the data's ID.
+ * @template ComponentType - The type of instances managed by attached observers.
+ * @template DataEntryType - The type of data associated with each observer instance.
+ *
+ * @description Wrapper around a plain JS container (object, Array, or Map) that exposes a
+ * consistent API for reads/writes, signals, and {@link TurboObserver}s.
  */
-declare class TurboMap<KeyType, ValueType> extends Map<KeyType, ValueType> {
-    enforceImmutability: boolean;
-    set(key: KeyType, value: ValueType): any;
-    get(key: KeyType): ValueType;
-    get first(): ValueType | null;
-    get last(): ValueType | null;
-    keysArray(): KeyType[];
-    valuesArray(): ValueType[];
-    private copy;
-    mapKeys<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<C, ValueType>;
-    mapValues<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<KeyType, C>;
-    filter(callback: (key: KeyType, value: ValueType) => boolean): TurboMap<KeyType, ValueType>;
-    merge(map: Map<KeyType, ValueType>): TurboMap<KeyType, ValueType>;
-}
-
-declare class TurboEventManagerModel extends TurboModel {
-    utils: TurboEventManagerUtilsHandler;
-    readonly state: TurboEventManagerStateProperties;
-    readonly lockState: TurboEventManagerLockStateProperties;
-    readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>;
+declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> {
     /**
-     * @description Delegate fired when a tool is changed on a certain click button/mode
+     * @description Symbol used in {@link nestAll}, {@link makeSignals}, and {@link generateObserver}
+     * to target all entries at a certain level inside the data.
      */
-    readonly onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
-    readonly currentKeys: string[];
-    currentAction: ActionMode;
-    currentClick: ClickMode;
-    wasRecentlyTrackpad: boolean;
-    moveThreshold: number;
-    longPressDuration: number;
-    authorizeEventScaling: boolean | (() => boolean);
-    scaleEventPosition: (position: Point) => Point;
-    activePointers: Set<number>;
-    readonly origins: TurboMap<number, Point>;
-    readonly previousPositions: TurboMap<number, Point>;
-    positions: TurboMap<number, Point>;
-    lastTargetOrigin: Node;
-    readonly timerMap: TurboMap<string, NodeJS.Timeout>;
-    readonly tools: Map<string, TurboWeakSet<Node>>;
-    readonly mappedKeysToTool: Map<string, string>;
-    readonly currentTools: Map<ClickMode, Node>;
-    set inputDevice(value: InputDevice);
+    static readonly ALL: unique symbol;
+    static from<DataType extends object = any, IdType extends KeyType = any>(data?: DataType, id?: IdType): TurboModelProxy<DataType, IdType>;
+    /**
+     * @description The default constructor used to create nested {@link TurboModel} instances.
+     */
+    modelConstructor: new (...args: any[]) => TurboModel;
+    /**
+     * @description The default constructor used to create {@link TurboObserver} instances via {@link generateObserver}.
+     */
+    observerConstructor: new (...args: any[]) => TurboObserver;
+    /**
+     * @description Map of MVC handlers bound to this model.
+     */
+    handlers: Map<string, TurboHandler>;
+    /**
+     * @description Whether change callbacks and observer notifications are enabled.
+     */
+    accessor enabledCallbacks: boolean;
+    /**
+     * @description Whether changes bubble up from nested models to their parent.
+     */
+    accessor bubbleChanges: boolean;
+    /**
+     * @description Delegate fired whenever a value changes at a key path. Receives the new value followed
+     * by the key path as spread arguments.
+     */
+    readonly onKeyChanged: Delegate<(value: any, ...keys: KeyType[]) => void>;
+    protected isInitialized: boolean;
+    private readonly signals;
+    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>>;
+    protected readonly nestedModels: Map<DataKeyType, TurboModel>;
+    protected readonly nestListeners: Set<(model: TurboModel, key: DataKeyType) => void>;
+    /**
+     * @description The ID of the data held by this model.
+     */
+    id: IdType;
+    private _data;
+    /**
+     * @description The data held by this model. Setting it clears the current state and re-initializes the model.
+     */
+    get data(): DataType;
+    set data(data: DataType);
+    /**
+     * @constructor
+     * @description Create a new TurboModel.
+     * @param {TurboModelProperties} [properties] - Optional initialization properties.
+     */
+    constructor(properties?: TurboModelProperties);
+    /**
+     * @function setup
+     * @description Called in the constructor. Use for setup that should happen at instantiation,
+     * before `this.initialize()` is called.
+     * @protected
+     */
+    protected setup(): void;
+    /**
+     * @protected
+     * @function getAction
+     * @description Read a single key from a data container. Override this method to support other datatypes.
+     * @param {any} data - The container to read from.
+     * @param {KeyType} key - The key to read.
+     * @returns {any} The value at the key, or `undefined` if not found.
+     */
+    protected getAction(data: any, key: KeyType): any;
+    /**
+     * @function get
+     * @description Retrieve the value at the given key.
+     * @param {KeyType} key - The key to read.
+     * @returns {any} The stored value, or `undefined` if not found.
+     */
+    get(key: DataKeyType): any;
+    /**
+     * @function get
+     * @description Retrieve the value at the given key path. Pass no keys to get the root data.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {any} The stored value, or `undefined` if not found.
+     */
+    get(...keys: KeyType[]): any;
+    /**
+     * @function getFlat
+     * @description Retrieve the value at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {any} The stored value, or `undefined` if not found.
+     */
+    getFlat(flatKey: FlatKeyType, depth?: number): any;
+    /**
+     * @function getKey
+     * @description Find the key path of the first occurrence of the given value, searching depth-first.
+     * @param {any} value - The value to locate.
+     * @returns {KeyType[]} The key path, or `undefined` if not found.
+     */
+    getKey(value: any): KeyType[];
+    /**
+     * @function getFlatKey
+     * @description Return the flat key of the first occurrence of the given value.
+     * @param {any} value - The value to query.
+     * @returns {FlatKeyType | undefined} The flat key, or `undefined` if not found.
+     */
+    getFlatKey(value: any): FlatKeyType;
+    /**
+     * @function getKeys
+     * @description Find the key paths of all occurrences of the given value, searching depth-first.
+     * @param {any} value - The value to locate.
+     * @returns {KeyType[][]} Array of key paths.
+     */
+    getKeys(value: any): KeyType[][];
+    /**
+     * @function getFlatKeys
+     * @description Return the flat keys of all occurrences of the given value.
+     * @param {any} value - The value to query.
+     * @returns {FlatKeyType[]} Array of flat keys.
+     */
+    getFlatKeys(value: any): FlatKeyType[];
+    /**
+     * @protected
+     * @function setAction
+     * @description Write a single key to a data container. Override this method to support other datatypes.
+     * @param {any} data - The container to write to.
+     * @param {KeyType} key - The key to write.
+     * @param {any} value - The value to set.
+     */
+    protected setAction(data: any, value: any, key: KeyType): void;
+    /**
+     * @protected
+     * @function internalSet
+     * @description Write a value at a key, propagating the change to a nested model if one exists,
+     * and firing {@link keyChanged} if the value actually changed.
+     * @param {TurboModel} model - The owning model (used for nested model lookup and change notification),
+     * or `undefined` if operating on a non-root container.
+     * @param {any} data - The container to write to.
+     * @param {KeyType} key - The key to write.
+     * @param {any} value - The value to set.
+     */
+    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType): void;
+    /**
+     * @function set
+     * @description Set a value at the given key and notify observers and signals if the value changed.
+     * @param {KeyType} key - The key to write.
+     * @param {unknown} value - The value to set.
+     */
+    set(value: unknown, key: DataKeyType): void;
+    /**
+     * @function set
+     * @description Set a value at the given key path and notify observers and signals if the value changed.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {unknown} value - The value to set.
+     */
+    set(value: unknown, ...keys: KeyType[]): void;
+    /**
+     * @function setFlat
+     * @description Set a value at the given flat key.
+     * @param {unknown} value - The value to set.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     */
+    setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): void;
+    /**
+     * @protected
+     * @function internalAdd
+     * @description Insert a value into a container via {@link addAction} and fire {@link keyChanged}.
+     * @param {TurboModel} model - The owning model for change notification, or `undefined` for non-root containers.
+     * @param {any} data - The container to insert into.
+     * @param {any} value - The value to insert.
+     * @param {KeyType} key - The target index or key.
+     * @returns {KeyType} The index or key where the value was stored.
+     */
+    protected internalAdd(model: TurboModel, data: any, value: any, key: KeyType): KeyType;
+    /**
+     * @protected
+     * @function addAction
+     * @description Perform the raw insertion. Override this method to support other datatypes.
+     * @param {TurboModel} model - The owning model.
+     * @param {any} data - The container to insert into.
+     * @param {any} value - The value to insert.
+     * @param {KeyType} key - The target index or key. Clamped to valid array bounds for array containers.
+     * @returns {KeyType} The index or key where the value was stored.
+     */
+    protected addAction(model: TurboModel, data: any, value: any, key: KeyType): KeyType;
+    /**
+     * @function add
+     * @description Push a value to the end of an array-backed model. For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @returns {KeyType} The index where the value was stored.
+     */
+    add(value: unknown): DataKeyType;
+    /**
+     * @function add
+     * @description Insert a value into an array-backed model at the given index, or push it if no index is given.
+     * For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @param {KeyType} [key] - The index to insert at. If omitted, the value is pushed to the end.
+     * @returns {KeyType} The index where the value was stored.
+     */
+    add(value: unknown, key?: DataKeyType): DataKeyType;
+    /**
+     * @function add
+     * @description Insert a value at the given key path. For array-backed nodes, the last key is the insertion index.
+     * For non-array models, forwards to {@link set}.
+     * @param {unknown} value - The value to insert.
+     * @param {...KeyType[]} keys - Key path to the target node, with the last key as the insertion index.
+     * @returns {KeyType} The index or key where the value was stored.
+     */
+    add(value: unknown, ...keys: KeyType[]): KeyType;
+    /**
+     * @function addFlat
+     * @description Insert a value at the position described by the given flat key.
+     * @param {unknown} value - The value to insert.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {KeyType} The index or key where the value was stored.
+     */
+    addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): KeyType;
+    /**
+     * @protected
+     * @function hasAction
+     * @description Check whether a key exists in a container. Override this method to support other datatypes.
+     * @param {any} data - The container to check.
+     * @param {KeyType} key - The key to check.
+     * @returns {boolean} `true` if the key is present.
+     */
+    protected hasAction(data: any, key: KeyType): boolean;
+    /**
+     * @function has
+     * @description Check whether the given key exists in the model.
+     * @param {KeyType} key - The key to check.
+     * @returns {boolean} `true` if the entry exists.
+     */
+    has(key: DataKeyType): boolean;
+    /**
+     * @function has
+     * @description Check whether the given key path exists in the model.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {boolean} `true` if the entry exists.
+     */
+    has(...keys: KeyType[]): boolean;
+    /**
+     * @function hasFlat
+     * @description Check whether an entry exists at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     * @returns {boolean}
+     */
+    hasFlat(flatKey: FlatKeyType, depth?: number): boolean;
+    /**
+     * @protected
+     * @function deleteAction
+     * @description Remove a single key from a container. Override this method to support other datatypes.
+     * @param {any} data - The container to remove from.
+     * @param {KeyType} key - The key to remove.
+     */
+    protected deleteAction(data: any, key: KeyType): void;
+    /**
+     * @protected
+     * @function internalDelete
+     * @description Remove a key from a container, clearing any associated nested model, and firing {@link keyChanged}.
+     * No-op if the key does not exist.
+     * @param {TurboModel} model - The owning model for nested model cleanup and change notification,
+     * or `undefined` for non-root containers.
+     * @param {any} data - The container to remove from.
+     * @param {KeyType} key - The key to remove.
+     */
+    protected internalDelete(model: TurboModel, data: any, key: KeyType): void;
+    /**
+     * @function delete
+     * @description Remove the entry at the given key and notify observers.
+     * @param {KeyType} key - The key to remove.
+     */
+    delete(key: DataKeyType): void;
+    /**
+     * @function delete
+     * @description Remove the entry at the given key path and notify observers.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     */
+    delete(...keys: KeyType[]): void;
+    /**
+     * @function deleteFlat
+     * @description Remove the entry at the given flat key.
+     * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
+     */
+    deleteFlat(flatKey: FlatKeyType, depth?: number): void;
+    /**
+     * @property keys
+     * @description All keys currently present in the model.
+     */
+    get keys(): DataKeyType[];
+    /**
+     * @property values
+     * @description All values in the model, in the order of {@link keys}.
+     */
+    get values(): any[];
+    /**
+     * @property size
+     * @description Number of entries in the model.
+     */
+    get size(): number;
+    /**
+     * @function flatSize
+     * @description Return the total number of entries reachable from this model at the given depth.
+     * @param {number} depth - How many levels deep to count.
+     * @returns {number}
+     */
+    flatSize(depth: number): number;
+    /**
+     * @description Iterate over `[key, value]` pairs.
+     */
+    [Symbol.iterator](): IterableIterator<[DataKeyType, any]>;
+    /**
+     * @function entries
+     * @description Return all `[key, value]` pairs in the model.
+     * @returns {[KeyType, any][]}
+     */
+    entries(): [DataKeyType, any][];
+    /**
+     * @function forEach
+     * @description Execute a callback for each entry in the model.
+     * @param {(value: any, key: KeyType, model: this) => void} callback - Called with the value, key, and model.
+     * @param {any} [thisArg] - Value to use as `this` when calling the callback.
+     */
+    forEach(callback: (value: any, key: DataKeyType, model: this) => void, thisArg?: any): void;
+    /**
+     * @function initialize
+     * @description Fire change notifications for all existing keys, marking the model as initialized.
+     * No-op if already initialized or if data is empty.
+     */
+    initialize(): void;
+    /**
+     * @function clear
+     * @description Reset the model, clearing nested models, observers, and signals.
+     * @param {boolean} [clearData=true] - Whether to also clear the stored data.
+     */
+    clear(clearData?: boolean): void;
+    /**
+     * @function toJSON
+     * @description Convert the model's data into a JSON-serializable form.
+     * Maps become plain objects. For non-object data types, the raw value is returned.
+     * @returns {object | DataType}
+     */
+    toJSON(): object | DataType;
+    /**
+     * @function makeSignal
+     * @description Return an existing reactive {@link SignalBox} for the given key, or create one if absent.
+     * The signal reads via {@link get} and writes via {@link set}.
+     * @template Type - The type of the signal's value.
+     * @param {KeyType} key - The key to create a signal for.
+     * @returns {SignalBox<Type>}
+     */
+    makeSignal<Type = any>(key: DataKeyType): SignalBox<Type>;
+    /**
+     * @function makeSignal
+     * @description Return an existing reactive {@link SignalBox} for the given key path, or create one if absent.
+     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
+     * The signal reads via {@link get} and writes via {@link set}.
+     * @template Type - The type of the signal's value.
+     * @param {...KeyType[]} keys - Key path, with the last key as the signal target.
+     * @returns {SignalBox<Type>}
+     */
+    makeSignal<Type = any>(...keys: KeyType[]): SignalBox<Type>;
+    /**
+     * @function makeSignals
+     * @description Return reactive {@link SignalBox} instances for multiple keys at the given path.
+     * Pass {@link TurboModel.ALL} at any level of the path to expand all entries at that level.
+     * @template Type - The type of the signals' values.
+     * @param {...KeyType[]} keys - Key path to the signal targets. Use `ALL` at any level to target all entries there.
+     * @returns {SignalBox<Type>[]}
+     */
+    makeSignals<Type = any>(...keys: KeyType[]): SignalBox<Type>[];
+    /**
+     * @function getSignal
+     * @description Retrieve an existing {@link SignalBox} for the given key, or `undefined` if none exists.
+     * @param {KeyType} key - The key whose signal to retrieve.
+     * @returns {SignalBox<any>}
+     */
+    getSignal(key: DataKeyType): SignalBox<any>;
+    /**
+     * @function getSignal
+     * @description Retrieve an existing {@link SignalBox} for the given key path, or `undefined` if none exists.
+     * The last key in the path is the signal's target; preceding keys navigate to the parent nested model.
+     * @param {...KeyType[]} keys - Key path, with the last key as the signal target.
+     * @returns {SignalBox<any>}
+     */
+    getSignal(...keys: KeyType[]): SignalBox<any>;
+    /**
+     * @function nestAll
+     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path.
+     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
+     * @param {...KeyType[]} keys - Key path to the subtree to expand.
+     * @returns {TurboModel[]} Array of nested models.
+     */
+    nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(...keys: KeyType[]): TurboModel<NestedDataType, NestedKeyType>[];
+    /**
+     * @function nestAll
+     * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path,
+     * with custom initialization properties for the nested models.
+     * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
+     * @param {...[...KeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @returns {TurboModel[]} Array of nested models.
+     */
+    nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(...keysAndProperties: [...KeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>[];
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key.
+     * @param {KeyType} key - The key of the nested model.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends KeyType = any>(key: DataKeyType): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key path.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends KeyType = any>(...keys: KeyType[]): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function nest
+     * @description Create or retrieve a single nested {@link TurboModel} at the given key path,
+     * with custom initialization properties.
+     * @param {...[...KeyType[], TurboModelProperties]} keysAndProperties - Key path followed by optional properties.
+     * @returns {TurboModel}
+     */
+    nest<NestedDataType = any, NestedKeyType extends KeyType = any>(...keysAndProperties: [...KeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>;
+    /**
+     * @function getNested
+     * @description Return `this`.
+     * @returns {TurboModel}
+     */
+    getNested(): TurboModel;
+    /**
+     * @function getNested
+     * @description Retrieve an already-created nested model at the given key, or `undefined` if none exists.
+     * @param {KeyType} key - The key of the nested model.
+     * @returns {TurboModel | undefined}
+     */
+    getNested(key: DataKeyType): TurboModel;
+    /**
+     * @function getNested
+     * @description Retrieve an already-created nested model at the given key path, or `undefined` if none exists.
+     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @returns {TurboModel | undefined}
+     */
+    getNested(...keys: KeyType[]): TurboModel;
+    /**
+     * @function generateObserver
+     * @description Create and attach a {@link TurboObserver} to this model.
+     * If a key path is provided, the observer is attached to the nested model(s) at that path instead.
+     * Pass {@link TurboModel.ALL} at any level of the path to process all entries at that level,
+     * allowing a single observer to track multiple subtrees simultaneously.
+     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+     * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe. Use `ALL` at
+     * any level to process all entries there.
+     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+     */
+    generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType>, ...keys: KeyType[]): TurboObserver<DataEntryType, ComponentType, DataKeyType>;
+    /**
+     * @protected
+     * @function keyChanged
+     * @description Called internally whenever an entry is added, updated, or deleted.
+     * Emits signals, fires {@link onKeyChanged}, and notifies attached observers.
+     * @param {KeyType[]} keys - The key path that changed.
+     * @param {unknown} [value] - The new value. Defaults to the current value at the key.
+     * @param {boolean} [deleted=false] - Whether the entry was removed.
+     */
+    protected keyChanged(keys: KeyType[], value?: unknown, deleted?: boolean): void;
+    private static flattenSize;
+    /**
+     * @function flattenKey
+     * @description Serialize a key path into a single flat key.
+     * - Fully numeric paths into array-backed data produce a numeric global leaf index.
+     * - All other paths produce a `"k0|k1|k2|..."` string, with symbols encoded as `"@@description"`.
+     * @param {...KeyType[]} keys - The key path to serialize.
+     * @returns {FlatKeyType}
+     */
+    flattenKey(...keys: KeyType[]): FlatKeyType;
+    /**
+     * @function scopeKey
+     * @description Convert a flat string key back into a key path. Reverses the string form of {@link flattenKey}.
+     * Segments starting with `"@@"` are decoded back to symbols.
+     * @param {string} flatKey - The flat string key to convert.
+     * @returns {KeyType[]}
+     */
+    scopeKey(flatKey: string): KeyType[];
+    /**
+     * @function scopeKey
+     * @description Convert a numeric global index back into a numeric key path.
+     * Reverses the numeric form of {@link flattenKey}.
+     * @param {number} flatKey - The numeric index to convert.
+     * @param {number} depth - The depth of the key path to reconstruct.
+     * @returns {KeyType[]}
+     */
+    scopeKey(flatKey: number, depth: number): KeyType[];
+    /**
+     * @function getHandler
+     * @description Retrieves the attached MVC handler with the given key.
+     * By default, unless manually defined in the handler, if the element's class name is MyElement
+     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
+     * @param {string} key - The handler's key.
+     * @return {TurboHandler} - The handler.
+     */
+    getHandler(key: string): TurboHandler;
+    /**
+     * @function addHandler
+     * @description Registers a TurboHandler for the given key.
+     * @param {TurboHandler} handler - The handler instance to register.
+     */
+    addHandler(handler: TurboHandler): void;
+    setDataWithoutInitializing(data: DataType): void;
+    private routeMutation;
 }
 
 /**
@@ -1761,11 +1826,12 @@ declare class TurboEventManagerModel extends TurboModel {
  * @group MVC
  * @category Emitter
  *
- * @template {TurboModel} ModelType -The element's MVC model type.
+ * @template {TurboModel} ModelType - The element's MVC model type.
+ * @template {KeyType} DataKeyType - The key type of the MVC's model.
  * @description The base MVC emitter class. Its role is basically an event bus. It allows the different parts of the
  * MVC structure to fire events or listen to some, with various methods.
  */
-declare class TurboEmitter<ModelType extends TurboModel = TurboModel, KeyType extends DataKeyType = DataKeyType> {
+declare class TurboEmitter<ModelType extends TurboModel = TurboModel, DataKeyType extends KeyType = KeyType> {
     /**
      * @description Map containing all custom callbacks.
      * @protected
@@ -1775,7 +1841,7 @@ declare class TurboEmitter<ModelType extends TurboModel = TurboModel, KeyType ex
      * @description Map containing all data callbacks.
      * @protected
      */
-    protected readonly dataCallbacks: Map<FlatKeyType, Delegate<(value: any, ...keys: KeyType[]) => void>>;
+    protected readonly dataCallbacks: Map<FlatKeyType, Delegate<(value: any, ...keys: DataKeyType[]) => void>>;
     /**
      * @description The attached MVC model.
      */
@@ -1807,34 +1873,34 @@ declare class TurboEmitter<ModelType extends TurboModel = TurboModel, KeyType ex
      * @function addKey
      * @description Register a callback fired when the entry at the given key path changes in the model.
      * The callback receives the new value as its first argument, followed by the key path as spread arguments.
-     * @param {(value: any, ...keys: KeyType[]) => void} callback - The callback to register.
-     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {(value: any, ...keys: DataKeyType[]) => void} callback - The callback to register.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    addKey(callback: (value: any, ...keys: KeyType[]) => void, ...keys: KeyType[]): void;
+    addKey(callback: (value: any, ...keys: DataKeyType[]) => void, ...keys: DataKeyType[]): void;
     /**
      * @function removeKey
      * @description Remove a specific callback for the given key path, or all callbacks if omitted.
-     * @param {(value: any, ...keys: KeyType[]) => void} [callback] - The callback to remove. If omitted,
+     * @param {(value: any, ...keys: DataKeyType[]) => void} [callback] - The callback to remove. If omitted,
      * all callbacks for this path are removed.
-     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    removeKey(callback: (value: any, ...keys: KeyType[]) => void, ...keys: KeyType[]): void;
+    removeKey(callback: (value: any, ...keys: DataKeyType[]) => void, ...keys: DataKeyType[]): void;
     /**
      * @function fireKey
      * @description Trigger all callbacks registered for the given key path.
      * Called automatically when the model fires a change notification at this path.
      * @param {any} value - The new value at the key path.
-     * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
+     * @param {...DataKeyType[]} keys - Ordered path from outermost to innermost key.
      */
-    fireKey(value: any, ...keys: KeyType[]): void;
+    fireKey(value: any, ...keys: DataKeyType[]): void;
     /**
      * @protected
      * @function resolveFlatKey
      * @description Convert a key path to a stable flat string key for internal storage lookup. Joins with `"|"`.
-     * @param {KeyType[]} keys - The key path to flatten.
+     * @param {DataKeyType[]} keys - The key path to flatten.
      * @returns {FlatKeyType}
      */
-    protected resolveFlatKey(keys: KeyType[]): FlatKeyType;
+    protected resolveFlatKey(keys: DataKeyType[]): FlatKeyType;
 }
 
 /**
@@ -2011,6 +2077,64 @@ declare class TurboController<ElementType extends object = object, ViewType exte
     protected setupChangedCallbacks(): void;
 }
 
+declare class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManagerModel> {
+    keyName: string;
+    setClickMode(button: number, isTouch?: boolean): ClickMode;
+    applyEventNames(eventNames: Record<string, string>): void;
+    setTimer(timerName: string, callback: () => void, duration: number): void;
+    clearTimer(timerName: string): void;
+    selectTool(element: Node, value: boolean): void;
+    activateTool(element: Node, toolName: string, value: boolean): void;
+}
+
+/**
+ * @group Components
+ * @category TurboMap
+ */
+declare class TurboMap<KeyType, ValueType> extends Map<KeyType, ValueType> {
+    enforceImmutability: boolean;
+    set(key: KeyType, value: ValueType): any;
+    get(key: KeyType): ValueType;
+    get first(): ValueType | null;
+    get last(): ValueType | null;
+    keysArray(): KeyType[];
+    valuesArray(): ValueType[];
+    private copy;
+    mapKeys<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<C, ValueType>;
+    mapValues<C>(callback: (key: KeyType, value: ValueType) => C): TurboMap<KeyType, C>;
+    filter(callback: (key: KeyType, value: ValueType) => boolean): TurboMap<KeyType, ValueType>;
+    merge(map: Map<KeyType, ValueType>): TurboMap<KeyType, ValueType>;
+}
+
+declare class TurboEventManagerModel extends TurboModel {
+    utils: TurboEventManagerUtilsHandler;
+    readonly state: TurboEventManagerStateProperties;
+    lockState: TurboEventManagerLockStateProperties;
+    readonly onInputDeviceChange: Delegate<(device: InputDevice) => void>;
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    readonly onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
+    readonly currentKeys: string[];
+    currentAction: ActionMode;
+    currentClick: ClickMode;
+    wasRecentlyTrackpad: boolean;
+    moveThreshold: number;
+    longPressDuration: number;
+    authorizeEventScaling: boolean | (() => boolean);
+    scaleEventPosition: (position: Point) => Point;
+    activePointers: Set<number>;
+    readonly origins: TurboMap<number, Point>;
+    readonly previousPositions: TurboMap<number, Point>;
+    positions: TurboMap<number, Point>;
+    lastTargetOrigin: Node;
+    readonly timerMap: TurboMap<string, NodeJS.Timeout>;
+    readonly tools: Map<string, TurboWeakSet<Node>>;
+    readonly mappedKeysToTool: Map<string, string>;
+    readonly currentTools: Map<ClickMode, Node>;
+    set inputDevice(value: InputDevice);
+}
+
 declare class TurboEventManagerKeyController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
     keyDown: (e: KeyboardEvent) => void;
@@ -2126,18 +2250,16 @@ declare const DefaultDragEventName: {
  * @category Event Names
  */
 declare const TurboWheelEventName: {
-    readonly trackpadScroll: "turbo-trackpad-scroll";
-    readonly trackpadPinch: "turbo-trackpad-pinch";
-    readonly mouseWheel: "turbo-mouse-wheel";
+    readonly scroll: "turbo-scroll";
+    readonly pinch: "turbo-pinch";
 };
 /**
  * @group Types
  * @category Event Names
  */
 declare const DefaultWheelEventName: {
-    readonly trackpadScroll: "wheel";
-    readonly trackpadPinch: "wheel";
-    readonly mouseWheel: "wheel";
+    readonly scroll: "wheel";
+    readonly pinch: "wheel";
 };
 /**
  * @group Types
@@ -2145,9 +2267,8 @@ declare const DefaultWheelEventName: {
  */
 declare const TurboEventName: {
     readonly selectInput: "turbo-select-input";
-    readonly trackpadScroll: "turbo-trackpad-scroll";
-    readonly trackpadPinch: "turbo-trackpad-pinch";
-    readonly mouseWheel: "turbo-mouse-wheel";
+    readonly scroll: "turbo-scroll";
+    readonly pinch: "turbo-pinch";
     readonly drag: "turbo-drag";
     readonly dragStart: "turbo-drag-start";
     readonly dragEnd: "turbo-drag-end";
@@ -2178,9 +2299,7 @@ declare const DefaultEventName: {
     resize: string;
     compositionStart: string;
     compositionEnd: string;
-    trackpadScroll: "wheel";
-    trackpadPinch: "wheel";
-    mouseWheel: "wheel";
+    pinch: "wheel";
     drag: "turbo-drag";
     dragStart: "turbo-drag-start";
     dragEnd: "turbo-drag-end";
@@ -2227,6 +2346,7 @@ declare enum ClosestOrigin {
  */
 type TurboRawEventProperties = {
     clickMode?: ClickMode;
+    inputDevice?: InputDevice;
     keys?: string[];
     eventName?: TurboEventNameEntry;
     eventManager?: TurboEventManager;
@@ -2290,6 +2410,10 @@ declare class TurboEvent extends Event {
      * @description The click mode of the fired event
      */
     readonly clickMode: ClickMode;
+    /**
+     * @description The input device that fired this event
+     */
+    readonly inputDevice: InputDevice;
     /**
      * @description The keys pressed when the event was fired
      */
@@ -2355,6 +2479,152 @@ declare class TurboEventManagerDispatchController extends TurboController<TurboE
     private getToolHandlingCallback;
     setupCustomDispatcher(type: string): void;
     removeCustomDispatcher(type: string): void;
+}
+
+/**
+ * @class TurboBaseElement
+ * @group TurboElement
+ * @category TurboBaseElement
+ *
+ * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ */
+declare class TurboBaseElement {
+    /**
+     * @description Default properties assigned to a new instance.
+     */
+    static defaultProperties: object;
+    static create<Type extends new (...args: any[]) => TurboBaseElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: object): object;
+}
+
+/**
+ * @class TurboEventManager
+ * @group Event Handling
+ * @category TurboEventManager
+ *
+ * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
+ * easier management of input.
+ */
+declare class TurboEventManager<ToolType extends string = string> extends TurboBaseElement {
+    protected static managers: TurboEventManager[];
+    static get instance(): TurboEventManager;
+    static get allManagers(): TurboEventManager[];
+    static set allManagers(managers: TurboEventManager[]);
+    get model(): TurboEventManagerModel;
+    readonly properties: TurboEventManagerProperties;
+    static defaultProperties: TurboEventManagerProperties;
+    protected keyController: TurboEventManagerKeyController;
+    protected wheelController: TurboEventManagerWheelController;
+    protected pointerController: TurboEventManagerPointerController;
+    protected dispatchController: TurboEventManagerDispatchController;
+    /**
+     * @description The currently identified input device. It is not 100% accurate, especially when differentiating
+     * between mouse and trackpad.
+     */
+    inputDevice: InputDevice;
+    onInputDeviceChange: Delegate<(device: InputDevice) => void>;
+    currentClick: ClickMode;
+    currentKeys: string[];
+    /**
+     * @description Delegate fired when a tool is changed on a certain click button/mode
+     */
+    onToolChange: Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
+    authorizeEventScaling: boolean | (() => boolean);
+    scaleEventPosition: (position: Point) => Point;
+    moveThreshold: number;
+    longPressDuration: number;
+    constructor();
+    initialize(): void;
+    set keyEventsEnabled(value: boolean);
+    set wheelEventsEnabled(value: boolean);
+    set moveEventsEnabled(value: boolean);
+    set mouseEventsEnabled(value: boolean);
+    set touchEventsEnabled(value: boolean);
+    set clickEventsEnabled(value: boolean);
+    set dragEventsEnabled(value: boolean);
+    /**
+     * @description Sets the lock state for the event manager.
+     * @param origin - The element that initiated the lock state.
+     * @param value - The state properties to set.
+     */
+    lock(origin: Node, value: TurboEventManagerStateProperties): void;
+    /**
+     * @description Resets the lock state to the default values.
+     */
+    unlock(): void;
+    get enabled(): boolean;
+    set enabled(value: boolean);
+    get preventDefaultWheel(): boolean;
+    set preventDefaultWheel(value: boolean);
+    get preventDefaultMouse(): boolean;
+    set preventDefaultMouse(value: boolean);
+    get preventDefaultTouch(): boolean;
+    set preventDefaultTouch(value: boolean);
+    /**
+     * @description All attached tools in an array
+     */
+    get toolsArray(): Node[];
+    getCurrentTool(mode?: ClickMode): Node;
+    /**
+     * @description Returns the instances of the tool currently held by the provided click mode
+     * @param mode
+     */
+    getCurrentTools(mode?: ClickMode): Node[];
+    /**
+     * @description Returns the name of the tool currently held by the provided click mode
+     * @param mode
+     */
+    getCurrentToolName(mode?: ClickMode): ToolType;
+    getToolName(tool: Node): ToolType;
+    getSimilarTools(tool: Node): Node[];
+    /**
+     * @description Returns the tool with the given name (or undefined)
+     * @param name
+     */
+    getToolsByName(name: ToolType): Node[];
+    /**
+     * @description Returns the first tool with the given name (or undefined)
+     * @param name
+     * @param predicate
+     */
+    getToolByName(name: ToolType, predicate?: (tool: Node) => boolean): Node;
+    /**
+     * @description Returns the tools associated with the given key
+     * @param key
+     */
+    getToolsByKey(key: string): Node[];
+    /**
+     * @description Returns the first tool associated with the given key
+     * @param key
+     * @param predicate
+     */
+    getToolByKey(key: string, predicate?: (tool: Element) => boolean): Node;
+    /**
+     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
+     * @param toolName
+     * @param tool
+     * @param key
+     */
+    addTool(toolName: ToolType, tool: Node, key?: string): void;
+    /**
+     * @description Sets the provided tool as a current tool associated with the provided type
+     * @param tool
+     * @param type
+     * @param options
+     */
+    setTool(tool: Node, type: ClickMode, options?: SetToolOptions): void;
+    /**
+     * @description Sets tool associated with the provided key as the current tool for the key mode
+     * @param key
+     */
+    setToolByKey(key: string): boolean;
+    setupCustomDispatcher(type: string): void;
+    protected applyAndHookEvents(turboEventNames: Record<string, string>, defaultEventNames: Record<string, string>, applyTurboEvents: boolean): void;
+    destroy(): this;
 }
 
 /**
@@ -2592,6 +2862,7 @@ declare class TurboQueue<Type = any> {
  * @template {object} EntryType - The type of the nodes held in the collection.
  */
 type NodeListType<EntryType extends object = object> = TurboNodeList<EntryType> | HTMLCollection | NodeListOf<EntryType & Node> | Set<EntryType> | EntryType[];
+type NodeListSlot<EntryType extends object = object> = TurboNodeList<EntryType> | HTMLCollection | NodeListOf<EntryType & Node> | EntryType;
 
 /**
  * @class TurboNodeList
@@ -2605,15 +2876,25 @@ type NodeListType<EntryType extends object = object> = TurboNodeList<EntryType> 
  * @template {object} Type - The type of the nodes held in the list.
  */
 declare class TurboNodeList<Type extends object = object> {
-    private customNodes;
+    private slots;
     private ignoredMap;
-    private domLists;
-    private subNodeLists;
+    private domListObservers;
+    private subNodeListHandlers;
+    /**
+     * @description Delegate fired whenever an entry is added to or removed from the list, including entries
+     * from nested {@link TurboNodeList}s, {@link HTMLCollection}s, and {@link NodeListOf} instances.
+     */
+    onChanged: Delegate<(entry: Type, state: "added" | "removed") => void>;
     /**
      * @constructor
-     * @param {NodeListType<Type>} value - The initial value to populate the list with.
+     * @param {...(Type | NodeListType<Type>)[]} [values] - Optional initial value(s) to populate the list with.
      */
-    constructor(value?: NodeListType<Type>);
+    constructor(...values: (Type | NodeListType<Type>)[]);
+    /**
+     * @description Whether to observe added {@link HTMLCollection}s and {@link NodeListOf} instances for DOM
+     * mutations, automatically firing {@link onChanged} when nodes are added or removed from the DOM.
+     */
+    set observeDomLists(value: boolean);
     /**
      * @description A {@link Set} snapshot of all entries in this list, without duplicates.
      */
@@ -2624,41 +2905,191 @@ declare class TurboNodeList<Type extends object = object> {
      */
     get array(): Type[];
     /**
-     * @description The number of entries in this list, ignoring duplicates.
+     * @description The number of resolved unique entries in this list. For the number of slots, see
+     * {@link slotCount}.
      */
     get size(): number;
+    /**
+     * @description The number of slots in this list. Individual entries, {@link HTMLCollection}s,
+     * {@link NodeListOf} instances, and nested {@link TurboNodeList}s each count as one slot, regardless
+     * of how many entries they contain. For the number of resolved entries, see {@link size}.
+     */
+    get slotCount(): number;
+    /**
+     * @function isTurboNodeList
+     * @protected
+     * @description Type guard — returns true if the given value is a {@link TurboNodeList}.
+     * @param {any} entry - The value to check.
+     * @returns {boolean} Whether the value is a {@link TurboNodeList}.
+     */
+    protected isTurboNodeList(entry: any): entry is TurboNodeList<Type>;
+    /**
+     * @function isDomList
+     * @protected
+     * @description Type guard — returns true if the given value is an {@link HTMLCollection} or
+     * {@link NodeListOf}.
+     * @param {any} entry - The value to check.
+     * @returns {boolean} Whether the value is a DOM list.
+     */
+    protected isDomList(entry: any): entry is HTMLCollection | NodeListOf<Type & Node>;
+    /**
+     * @function isSet
+     * @protected
+     * @description Type guard — returns true if the given value is a {@link Set} or an array.
+     * @param {any} entry - The value to check.
+     * @returns {boolean} Whether the value is a Set or array.
+     */
+    protected isSet(entry: any): entry is Set<Type> | Type[];
+    /**
+     * @function isEntry
+     * @protected
+     * @description Type guard — returns true if the given value is an individual node entry (i.e. not a
+     * {@link TurboNodeList}, DOM list, Set, array, or {@link WeakRef}).
+     * @param {any} entry - The value to check.
+     * @returns {boolean} Whether the value is an individual entry.
+     */
+    protected isEntry(entry: any): entry is Type;
+    /**
+     * @description Iterates over all resolved unique entries in slot order, skipping ignored and duplicate
+     * entries.
+     */
     [Symbol.iterator](): IterableIterator<Type>;
     /**
+     * @function resolveSlot
+     * @description Resolves a slot {@link WeakRef} into its constituent entries. Yields all entries from
+     * sub-lists and DOM lists, or the single entry for individual node slots. Yields nothing if the
+     * referent has been garbage collected.
+     * @param {WeakRef<NodeListSlot<Type>>} slot - The slot to resolve.
+     */
+    protected resolveSlot(slot: WeakRef<NodeListSlot<Type>>): IterableIterator<Type>;
+    forEach(callback: (value: Type, set: this) => void, thisArg?: any): this;
+    /**
      * @function add
-     * @description Adds one or more entries to the list. Entries may be individual nodes, arrays, sets,
-     * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+     * @description Adds one or more entries to the end of the list. Entries may be individual nodes,
+     * arrays, {@link Set}s, {@link HTMLCollection}s, {@link NodeListOf} instances, or nested
+     * {@link TurboNodeList}s.
      * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
      * @returns {this} Itself, allowing for method chaining.
      */
     add(...entries: (NodeListType<Type> | Type)[]): this;
     /**
+     * @function addAt
+     * @description Adds one or more entries at the given resolved size index. The index refers to the position
+     * among resolved unique entries, not slots. Arrays and {@link Set}s are expanded inline.
+     * @param {number} index - The resolved entry index to insert at.
+     * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addAt(index: number, ...entries: (NodeListType<Type> | Type)[]): this;
+    /**
+     * @function addAtSlot
+     * @description Adds one or more entries at the given slot index. Subsequent entries are inserted
+     * consecutively after the previous one. Arrays and {@link Set}s are expanded inline, each item
+     * occupying the next slot index.
+     * @param {number} index - The slot index to insert at.
+     * @param {...(NodeListType<Type> | Type)[]} entries - The entries to add.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    addAtSlot(index: number, ...entries: (NodeListType<Type> | Type)[]): this;
+    /**
      * @function remove
-     * @description Removes one or more entries from the list. Entries may be individual nodes, arrays, sets,
-     * {@link HTMLCollection}s, {@link NodeListOf} instances, or nested {@link TurboNodeList}s.
+     * @description Removes one or more entries from the list. Entries may be individual nodes, arrays,
+     * {@link Set}s, {@link HTMLCollection}s, {@link NodeListOf} instances, or nested
+     * {@link TurboNodeList}s.
      * @param {...(NodeListType<Type> | Type)[]} entries - The entries to remove.
      * @returns {this} Itself, allowing for method chaining.
      */
     remove(...entries: (NodeListType<Type> | Type)[]): this;
     /**
+     * @function removeAtSlot
+     * @description Removes one or more slots starting at the given slot index. Each slot removed may
+     * correspond to an individual entry, a DOM list, or a nested {@link TurboNodeList}.
+     * @param {number} index - The slot index to start removing from.
+     * @param {number} [count=1] - The number of consecutive slots to remove.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    removeAtSlot(index: number, count?: number): this;
+    /**
+     * @function move
+     * @description Moves an existing entry to the given resolved size index. If the entry is a member of a
+     * nested {@link TurboNodeList}, it is moved within that sub-list. If it belongs to a DOM list, it is
+     * repositioned in the DOM accordingly.
+     * @param {Type} entry - The entry to move.
+     * @param {number} index - The resolved entry index to move the entry to.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    move(entry: Type, index: number): this;
+    /**
+     * @function moveToSlot
+     * @description Moves an existing entry to the given slot index.
+     * @param {Type} entry - The entry to move.
+     * @param {number} index - The slot index to move the entry to.
+     * @returns {this} Itself, allowing for method chaining.
+     */
+    moveToSlot(entry: Type, index: number): this;
+    /**
      * @function has
-     * @description Checks whether the given entry (or entries) is present in the list.
-     * @param {Type | NodeListType<Type>} entry - The entry (or entries) to check.
-     * @returns {boolean} Whether the entry (or entries) is present in the list.
+     * @description Checks whether the given entry or entries are present in the list.
+     * - For {@link TurboNodeList}s and DOM lists, checks if they belong to this list.
+     * - For arrays and {@link Set}s, returns true only if every item is present.
+     * @param {Type | NodeListType<Type>} entry - The entry or entries to check.
+     * @returns {boolean} Whether the entry or entries are present in the list.
      */
     has(entry: Type | NodeListType<Type>): boolean;
     /**
      * @function clear
-     * @description Clears all entries from the list.
+     * @description Clears all entries from the list, firing {@link onChanged} for every resolved entry.
      * @returns {this} Itself, allowing for method chaining.
      */
     clear(): this;
-    protected addEntry(entry: Type | NodeListType<Type>): void;
+    /**
+     * @function addEntry
+     * @description Core insertion method. Inserts a single entry, DOM list, sub-list, or expands an
+     * array/Set inline. Skips already-present entries and duplicate slots. Registers sub-list handlers
+     * and DOM observers as needed.
+     * @param {Type | NodeListType<Type>} entry - The entry to add.
+     * @param {number} [index] - The slot index to insert at. Defaults to the end of the slot array.
+     * @returns {number} The next available slot index after this insertion, for consecutive chaining.
+     */
+    protected addEntry(entry: Type | NodeListType<Type>, index?: number): number;
+    /**
+     * @function removeEntry
+     * @description Core removal method. Removes a single entry, DOM list, sub-list, or expands an
+     * array/Set inline. Marks removed individual entries in {@link ignoredMap}. Disconnects observers
+     * and unregisters sub-list handlers as needed.
+     * @param {Type | NodeListType<Type>} entry - The entry to remove.
+     */
     protected removeEntry(entry: Type | NodeListType<Type>): void;
+    /**
+     * @function insertOrRemoveSlot
+     * @description Low-level slot mutation. On `"added"`, clamps the index and splices a new
+     * {@link WeakRef} into {@link slots}. On `"removed"`, finds the slot by identity and splices it out.
+     * Fires {@link onChanged} for all resolved entries of the slot.
+     * @param {NodeListSlot<Type>} slot - The slot value to insert or remove.
+     * @param {"added" | "removed"} state - Whether to insert or remove the slot.
+     * @param {number} [index] - Slot index for insertion. Ignored on removal.
+     * @returns {number} The next available slot index after the operation, for consecutive chaining.
+     */
+    protected insertOrRemoveSlot(slot: NodeListSlot<Type>, state: "added" | "removed", index?: number): number;
+    /**
+     * @function attachObserver
+     * @description Attaches a {@link MutationObserver} to the parent of the first node in the given DOM
+     * list, firing {@link onChanged} when nodes matching the list are added to or removed from the DOM.
+     * Does nothing if an observer is already attached for this list, or if no parent node is found.
+     * @param {HTMLCollection | NodeListOf<Type & Node>} domList - The DOM list to observe.
+     */
+    protected attachObserver(domList: HTMLCollection | NodeListOf<Type & Node>): void;
+    protected sizeIndexToSlotIndex(sizeIndex: number): number;
+    /**
+     * @function findContainingSlot
+     * @protected
+     * @description Finds the slot that directly contains or resolves to the given entry.
+     * Returns the slot itself if the entry is a direct slot, the nested {@link TurboNodeList}
+     * that contains it, or the DOM list that contains it.
+     * @param {Type} entry - The entry to locate.
+     * @returns {NodeListSlot<Type> | undefined} The containing slot, or undefined if not found.
+     */
+    protected findContainingSlot(entry: Type): NodeListSlot<Type>;
 }
 
 /**
@@ -2989,395 +3420,9 @@ declare class TurboSubstrate<ElementType extends object = object, ViewType exten
 }
 
 /**
- * @group MVC
- * @category MVC
- *
- * @type {MvcInstanceOrConstructor}
- * @template Type
- * @template PropertiesType
- * @description Type representing the constructor of a certain `Type` (which takes a single parameter), or an
- * instance of `Type`.
- */
-type MvcInstanceOrConstructor<Type, PropertiesType = any> = Type | (new (properties: PropertiesType) => Type);
-/**
- * @group MVC
- * @category MVC
- *
- * @type {MvcManyInstancesOrConstructors}
- * @template Type
- * @template PropertiesType
- * @description Type representing a single entry or an array of {@link MvcInstanceOrConstructor}.
- */
-type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrConstructor<Type, PropertiesType> | MvcInstanceOrConstructor<Type, PropertiesType>[];
-/**
- * @type {MvcGenerationProperties}
- * @group MVC
- * @category MVC
- *
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Type representing a configuration object for an {@link Mvc} instance.
- * @property {MvcInstanceOrConstructor<ViewType, TurboViewProperties>} [view] - The view (or view constructor) to attach.
- * @property {ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType)} [model] - The model
- * (or model constructor) to attach.
- * @property {MvcInstanceOrConstructor<EmitterType, ModelType>} [emitter] - The emitter (or emitter constructor) to
- * attach. If not defined, a default TurboEmitter will be created.
- * @property {MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>} [controllers] - The
- * controller, constructor of controller, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboHandler, ModelType>} [handlers] - The
- * handler, constructor of handler, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>} [interactors] - The
- * interactor, constructor of interactor, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
- * tool, constructor of tool, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
- * substrate, constructor of substrate, or array of the latter, to attach.
- * @property {DataType} [data] - The data to attach to the model.
- * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
- */
-type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
-    view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>;
-    model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType);
-    emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>;
-    controllers?: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>;
-    handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>;
-    interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>;
-    tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>;
-    substrates?: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>;
-    data?: DataType;
-    initialize?: boolean;
-};
-/**
- * @type {MvcProperties}
- * @group MVC
- * @category MVC
- *
- * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
- * @template {TurboView} ViewType - The element's view type, if any.
- * @template {object} DataType - The element's data type, if any.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- *
- * @description Type of the properties object used for instantiating an {@link Mvc} object.
- * @extends MvcGenerationProperties
- * @property {ElementType} [element] - The element to attach to the Mvc instance.
- */
-type MvcProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
-    element?: ElementType;
-};
-
-/**
- * @class Mvc
- * @group MVC
- * @category MVC
- *
- * @description MVC -- Model-View-Component -- handler. Generates and manages an MVC structure for a certain object.
- * @template {object} ElementType - The type of the object that will be turned into MVC.
- * @template {TurboView} ViewType - The element's view type.
- * @template {object} DataType - The element's data type.
- * @template {TurboModel<DataType>} ModelType - The element's model type.
- * @template {TurboEmitter} EmitterType - The element's emitter type.
- * */
-declare class Mvc<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
-    /**
-     * @description The element/root of the MVC structure.
-     */
-    readonly element: ElementType;
-    private _view;
-    private _model;
-    private _emitter;
-    private readonly _controllers;
-    private readonly _handlers;
-    private readonly _interactors;
-    private readonly _tools;
-    private readonly _substrates;
-    /**
-     * @constructor
-     * @description Create a new MVC manager for a specific element.
-     * @param {MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>} properties - Generation options.
-     */
-    constructor(properties: MvcProperties<ElementType, ViewType, DataType, ModelType, EmitterType>);
-    /**
-     * @description The view (if any) of the current MVC structure. Setting it will update the view and link it
-     * with the existing pieces.
-     */
-    get view(): ViewType;
-    set view(value: ViewType | (new (properties: TurboViewProperties) => ViewType));
-    /**
-     * @description The model (if any) of the current MVC structure. Setting it will update the model and link it
-     * with the existing pieces.
-     */
-    get model(): ModelType;
-    set model(model: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType));
-    /**
-     * @description The emitter (if any) of the current MVC structure. Setting it will update the emitter and link it
-     * with the existing pieces.
-     */
-    get emitter(): EmitterType;
-    set emitter(emitter: EmitterType | (new (properties: ModelType) => EmitterType));
-    /**
-     * @description The controllers (if any) of the current MVC structure. Setting it will not override the existing
-     * controllers, but only add the new values and link them with the existing pieces.
-     */
-    get controllers(): TurboController[];
-    set controllers(value: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>);
-    /**
-     * @description The handlers (if any) of the current MVC structure. Setting it will not override the existing
-     * handlers, but only add the new values and link them with the existing pieces.
-     */
-    get handlers(): TurboHandler[];
-    set handlers(value: MvcManyInstancesOrConstructors<TurboHandler>);
-    /**
-     * @description The interactors (if any) of the current MVC structure. Setting it will not override the existing
-     * interactors, but only add the new values and link them with the existing pieces.
-     */
-    get interactors(): TurboInteractor[];
-    set interactors(value: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>);
-    /**
-     * @description The tools (if any) of the current MVC structure. Setting it will not override the existing
-     * tools, but only add the new values and link them with the existing pieces.
-     */
-    get tools(): TurboTool[];
-    set tools(value: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>);
-    /**
-     * @description The substrates (if any) of the current MVC structure. Setting it will not override the existing
-     * substrates, but only add the new values and link them with the existing pieces.
-     */
-    get substrates(): TurboSubstrate[];
-    set substrates(value: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>);
-    /**
-     * @description The main data block (if any) attached to the model (if any).
-     */
-    get data(): DataType;
-    set data(data: DataType);
-    /**
-     * @description The ID of the main data block (if any) attached to the model (if any).
-     */
-    get dataId(): string;
-    set dataId(value: string);
-    /**
-     * @description The numerical index of the main data block (if any) attached to the model (if any).
-     */
-    get dataIndex(): number;
-    set dataIndex(value: number);
-    /**
-     * @description The size (number) of the main data block (if any) attached to the model (if any).
-     */
-    get dataSize(): number;
-    /**
-     * @function getController
-     * @description Retrieves the attached MVC controller with the given key.
-     * By default, unless manually defined in the controller, if the element's class name is MyElement
-     * and the controller's class name is MyElementSomethingController, the key would be "something".
-     * @param {string} key - The controller's key.
-     * @return {TurboController} - The controller.
-     */
-    getController(key: string): TurboController;
-    /**
-     * @function addController
-     * @description Adds the given controller to the MVC structure.
-     * @param {TurboController} controller - The controller to add.
-     */
-    addController(controller: TurboController): void;
-    /**
-     * @function getHandler
-     * @description Retrieves the attached MVC handler with the given key.
-     * By default, unless manually defined in the handler, if the element's class name is MyElement
-     * and the handler's class name is MyElementSomethingHandler, the key would be "something".
-     * @param {string} key - The handler's key.
-     * @return {TurboHandler} - The handler.
-     */
-    getHandler(key: string): TurboHandler;
-    /**
-     * @function addHandler
-     * @description Adds the given handler to the MVC structure.
-     * @param {TurboHandler} handler - The handler to add.
-     */
-    addHandler(handler: TurboHandler): void;
-    /**
-     * @function getInteractor
-     * @description Retrieves the attached MVC interactor with the given key.
-     * By default, unless manually defined in the interactor, if the element's class name is MyElement
-     * and the interactor's class name is MyElementSomethingInteractor, the key would be "something".
-     * @param {string} key - The interactor's key.
-     * @return {TurboInteractor} - The interactor.
-     */
-    getInteractor(key: string): TurboInteractor;
-    /**
-     * @function addInteractor
-     * @description Adds the given interactor to the MVC structure.
-     * @param {TurboInteractor} interactor - The interactor to add.
-     */
-    addInteractor(interactor: TurboInteractor): void;
-    /**
-     * @function getTool
-     * @description Retrieves the attached MVC Tool with the given key.
-     * By default, unless manually defined in the tool, if the element's class name is MyElement
-     * and the tool's class name is MyElementSomethingTool, the key would be "something".
-     * @param {string} key - The tool's key.
-     * @return {TurboTool} - The tool.
-     */
-    getTool(key: string): TurboTool;
-    /**
-     * @function addTool
-     * @description Adds the given tool to the MVC structure.
-     * @param {TurboTool} tool - The tool to add.
-     */
-    addTool(tool: TurboTool): void;
-    /**
-     * @function getSubstrate
-     * @description Retrieves the attached MVC Substrate with the given key.
-     * By default, unless manually defined in the substrate, if the element's class name is MyElement
-     * and the substrate's class name is MyElementSomethingSubstrate, the key would be "something".
-     * @param {string} key - The substrate's key.
-     * @return {TurboSubstrate} - The substrate.
-     */
-    getSubstrate(key: string): TurboSubstrate;
-    /**
-     * @function addSubstrate
-     * @description Adds the given substrate to the MVC structure.
-     * @param {TurboSubstrate} substrate - The substrate to add.
-     */
-    addSubstrate(substrate: TurboSubstrate): void;
-    /**
-     * @function generate
-     * @description Generates the MVC structure based on the provided properties.
-     * If no model or model constructor is defined, no model will be generated. The same applies for the view.
-     * If not defined, a default emitter will be created.
-     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} properties - The properties to use
-     * to generate the MVC structure.
-     */
-    generate(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): void;
-    /**
-     * @function initialize
-     * @description Initializes the MVC parts: the view, the controllers, the interactors, the tools, the substrates,
-     * and the model (in this order). The model is initialized last to allow for the view and controllers to set up
-     * their change callbacks.
-     */
-    initialize(): void;
-    /**
-     * @function getDifference
-     * @description Compute the structural difference between the current MVC configuration
-     * and another configuration description.
-     * The comparison is constructor-based (not instance-based):
-     * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
-     * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
-     *   the result contains constructors that exist in the current MVC but not in the provided
-     *   configuration.
-     *
-     * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}]
-     *  The configuration to compare against (typically the same shape used by {@link generate}).
-     * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
-     *  A partial configuration of constructors describing missing pieces relative to `properties`.
-     */
-    getDifference(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>;
-    /**
-     * @protected
-     * @function updateController
-     * @description Internal helper used when a controller is added or when pieces are re-linked.
-     * It wires the controller to the current `emitter`, `model` and `view`.
-     * @param {TurboController} controller - Controller instance to update.
-     */
-    protected updateController(controller: TurboController): void;
-    /**
-     * @protected
-     * @function updateHandler
-     * @description Internal helper to wire a handler to the current model. Called when handlers
-     * are added or when the MVC pieces are re-linked.
-     * @param {TurboHandler} handler - Handler instance to update.
-     */
-    protected updateHandler(handler: TurboHandler): void;
-    /**
-     * @protected
-     * @function updateInteractor
-     * @description Internal helper to wire an interactor to the current `model`, `view`, and `emitter`.
-     * Called when interactors are added or when the MVC pieces are re-linked.
-     * @param {TurboInteractor} interactor - Interactor instance to update.
-     */
-    protected updateInteractor(interactor: TurboInteractor): void;
-    /**
-     * @protected
-     * @function updateTool
-     * @description Internal helper to wire a tool to the current `emitter`, `model`, and `view`.
-     * Called when tools are added or when the MVC pieces are re-linked.
-     * @param {TurboTool} tool - Tool instance to update.
-     */
-    protected updateTool(tool: TurboTool): void;
-    /**
-     * @protected
-     * @function updateSubstrate
-     * @description Internal helper to wire a substrate to the current `model`, `view`, and `emitter`.
-     * Called when substrates are added or when the MVC pieces are re-linked.
-     * @param {TurboSubstrate} substrate - Substrate instance to update.
-     */
-    protected updateSubstrate(substrate: TurboSubstrate): void;
-    /**
-     * @protected
-     * @function linkPieces
-     * @description Ensure all MVC pieces are mutually linked.
-     * Use this after modifying any of the MVC collections (controllers, handlers, interactors, tools, substrates,
-     * view, model, or emitter) so every piece stays in sync.
-     */
-    protected linkPieces(): void;
-    /**
-     * @private
-     * @function generateInstance
-     * @description Create a single instance from either a constructor or an already-instantiated object.
-     * If a constructor is provided and `properties` are passed, the constructor is invoked with those properties.
-     * When `shallowCopyProperties` is true, a shallow cloned copy of `properties` is passed to the constructor.
-     * @template Type, PropertiesType
-     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor or instance to generate.
-     * @param {PropertiesType} [properties] - Optional properties passed to the constructor if `data` is a class.
-     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` before passing them.
-     * @returns {Type|undefined} - The created instance or the object passed in.
-     */
-    private generateInstance;
-    /**
-     * @private
-     * @function generateInstances
-     * @description Normalize a value that can be a constructor, instance, or array of constructors/instances
-     * into an array of instantiated objects. Uses {@link generateInstance} internally for each entry.
-     * @template Type, PropertiesType
-     * @param {MvcManyInstancesOrConstructors<Type, PropertiesType>} data - Constructor(s) or instance(s).
-     * @param {PropertiesType} [properties] - Optional properties forwarded to constructors.
-     * @param {boolean} [shallowCopyProperties=true] - Whether to shallow-clone `properties` for each instantiation.
-     * @returns {Type[]} - Array of instantiated objects (possibly empty).
-     */
-    private generateInstances;
-    /**
-     * @private
-     * @field emitterFireCallback
-     * @description Callback function wired to the model's `keyChangedCallback` that forwards
-     * key/block change notifications into the emitter. It is stored so it can be removed and reattached
-     * when the model changes.
-     * @param value
-     * @param keys
-     */
-    private emitterFireCallback;
-    /**
-     * @protected
-     * @function extractClassEssenceName
-     * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
-     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
-     * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
-     *
-     * This is used to auto-generate `keyName` values for controllers, handlers, interactors, tools and substrates
-     * when they are not provided explicitly.
-     *
-     * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-     * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
-     * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
-     */
-    protected extractClassEssenceName(constructor: new (...args: any[]) => any, type: string): string;
-}
-
-/**
  * @internal
  */
-interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> {
+interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
     /**
      * @description The view (if any) of the element.
      */
@@ -3386,6 +3431,10 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      * @description The model (if any) of the element.
      */
     model: ModelType;
+    /**
+     * @description The emitter (if any) of the element.
+     */
+    emitter: EmitterType;
     /**
      * @description The main data block (if any) attached to the element, taken from its model (if any).
      */
@@ -3402,6 +3451,27 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      * @description The size (number) of the main data block (if any) of the element, taken from its model (if any).
      */
     readonly dataSize: number;
+    /**
+     * @description The controllers (if any) attached to the element's MVC structure.
+     */
+    controllers: TurboController[];
+    /**
+     * @description The handlers (if any) attached to the element's model.
+     * Returns an empty array if no model is set.
+     */
+    handlers: TurboHandler[];
+    /**
+     * @description The interactors (if any) attached to the element's MVC structure.
+     */
+    interactors: TurboInteractor[];
+    /**
+     * @description The tools (if any) attached to the element's MVC structure.
+     */
+    tools: TurboTool[];
+    /**
+     * @description The substrates (if any) attached to the element's MVC structure.
+     */
+    substrates: TurboSubstrate[];
 }
 
 /**
@@ -3887,11 +3957,13 @@ type HTMLElementMutableFields<Tag extends ValidTag = ValidTag> = Omit<Partial<Pi
  * is provided, the corresponding namespace will be used to create the element. Otherwise, the custom namespace
  * provided will be used.
  */
-type ElementTagDefinition = {
-    tag?: string;
+type ElementTagDefinition<Tag extends ValidTag = "div"> = {
+    tag?: Tag;
     namespace?: string;
 };
 interface TurboElementTagNameMap {
+}
+interface TurboElementPropertiesMap {
 }
 declare global {
     interface Document extends Node {
@@ -3988,7 +4060,7 @@ type FeedforwardProperties = TurboElementProperties & {
  * @property {string} [text] - The text content of the element (if any).
  * @property {boolean} [shadowDOM] - If true, indicate that the element will be created under a shadow root.
  */
-type TurboProperties<Tag extends ValidTag = "div"> = HTMLElementMutableFields<Tag> & ElementTagDefinition & {
+type TurboProperties<Tag extends ValidTag = "div"> = ElementTagDefinition<Tag> & Omit<HTMLElementMutableFields<Tag>, "tag" | "namespace"> & {
     id?: string;
     classes?: string | string[];
     style?: string;
@@ -4018,14 +4090,20 @@ interface TurboElementUiInterface {
      * it will accordingly add/remove the CSS classes from the element.
      */
     unsetDefaultClasses: boolean;
+    shadowDOM: boolean;
+    defaultSelectedClasses: string | string[];
+    defaultClasses: string | string[];
 }
 
 /**
  * @group TurboElement
  * @category TurboProxiedElement
  */
-type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
+type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProperties<Tag> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
     unsetDefaultClasses?: boolean;
+    shadowDOM?: boolean;
+    defaultSelectedClasses?: string | string[];
+    defaultClasses?: string | string[];
 };
 /**
  * @type {TurboElementProperties}
@@ -4042,16 +4120,6 @@ type TurboProxiedProperties<Tag extends ValidTag = "div", ViewType extends Turbo
  * without the tag.
  */
 type TurboElementProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboProxiedProperties<"div", ViewType, DataType, ModelType, EmitterType>;
-/**
- * @group TurboElement
- * @category TurboElement
- */
-type TurboElementConfig = {
-    shadowDOM?: boolean;
-    defaultSelectedClass?: string | string[];
-    defaultClasses?: string | string[];
-    [key: string]: any;
-};
 
 /**
  * @internal
@@ -4061,17 +4129,7 @@ interface TurboElementDefaultInterface {
      * @description Whether the element is selected or not.
      */
     selected: boolean;
-    /**
-     * @function getPropertiesValue
-     * @description Returns the value with some fallback mechanisms on the static config field and a default value.
-     * @param {Type} propertiesValue - The actual value; could be null.
-     * @param {string} [configFieldName] - The field name of the associated value in the static config. Will be returned
-     * if the actual value is null.
-     * @param {Type} [defaultValue] - The default fallback value. Will be returned if both the actual and
-     * config values are null.
-     * @protected
-     */
-    getPropertiesValue<Type>(propertiesValue: Type, configFieldName?: string, defaultValue?: Type): Type;
+    readonly properties: object;
     /**
      * @function destroy
      * @description Destroys the node by removing it from the document and removing all its bound listeners.
@@ -4097,6 +4155,86 @@ interface TurboElementDefaultInterface {
 }
 
 /**
+ * @group MVC
+ * @category MVC
+ *
+ * @type {MvcInstanceOrConstructor}
+ * @template Type
+ * @template PropertiesType
+ * @description Type representing the constructor of a certain `Type` (which takes a single parameter), or an
+ * instance of `Type`.
+ */
+type MvcInstanceOrConstructor<Type, PropertiesType = any> = Type | (new (properties: PropertiesType) => Type);
+/**
+ * @group MVC
+ * @category MVC
+ *
+ * @type {MvcManyInstancesOrConstructors}
+ * @template Type
+ * @template PropertiesType
+ * @description Type representing a single entry or an array of {@link MvcInstanceOrConstructor}.
+ */
+type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrConstructor<Type, PropertiesType> | MvcInstanceOrConstructor<Type, PropertiesType>[];
+/**
+ * @type {MvcGenerationProperties}
+ * @group MVC
+ * @category MVC
+ *
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {object} DataType - The element's data type, if any.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Type representing a configuration object for an {@link Mvc} instance.
+ * @property {MvcInstanceOrConstructor<ViewType, TurboViewProperties>} [view] - The view (or view constructor) to attach.
+ * @property {ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType)} [model] - The model
+ * (or model constructor) to attach.
+ * @property {MvcInstanceOrConstructor<EmitterType, ModelType>} [emitter] - The emitter (or emitter constructor) to
+ * attach. If not defined, a default TurboEmitter will be created.
+ * @property {MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>} [controllers] - The
+ * controller, constructor of controller, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboHandler, ModelType>} [handlers] - The
+ * handler, constructor of handler, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>} [interactors] - The
+ * interactor, constructor of interactor, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
+ * tool, constructor of tool, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
+ * substrate, constructor of substrate, or array of the latter, to attach.
+ * @property {DataType} [data] - The data to attach to the model.
+ * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
+ */
+type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+    view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>;
+    model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType);
+    emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>;
+    controllers?: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>;
+    handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>;
+    interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>;
+    tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>;
+    substrates?: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>;
+    data?: DataType;
+    initialize?: boolean;
+};
+/**
+ * @type {MvcProperties}
+ * @group MVC
+ * @category MVC
+ *
+ * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
+ * @template {TurboView} ViewType - The element's view type, if any.
+ * @template {object} DataType - The element's data type, if any.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
+ *
+ * @description Type of the properties object used for instantiating an {@link Mvc} object.
+ * @extends MvcGenerationProperties
+ * @property {ElementType} [element] - The element to attach to the Mvc instance.
+ */
+type MvcProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
+    element?: ElementType;
+};
+/**
  * @type {TurboHeadlessProperties}
  * @group TurboElement
  * @category TurboHeadlessElement
@@ -4111,160 +4249,92 @@ type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType ex
     out?: string | Node;
     [key: string]: any;
 };
-
 /**
- * @class TurboHeadlessElement
- * @group TurboElement
- * @category TurboHeadlessElement
- *
- * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ * @group Event Handling
+ * @category TurboEventManager
  */
-declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
-    /**
-     * @description Static configuration object.
-     */
-    static readonly config: any;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
-    constructor(properties?: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>);
-}
-
+type TurboEventManagerStateProperties = {
+    enabled?: boolean;
+    preventDefaultWheel?: boolean;
+    preventDefaultMouse?: boolean;
+    preventDefaultTouch?: boolean;
+};
 /**
- * @class TurboEventManager
+ * @group Event Handling
+ * @category TurboEventManager
+ */
+type EnabledTurboEventTypes = {
+    keyEventsEnabled?: boolean;
+    wheelEventsEnabled?: boolean;
+    mouseEventsEnabled?: boolean;
+    touchEventsEnabled?: boolean;
+    clickEventsEnabled?: boolean;
+    dragEventsEnabled?: boolean;
+    moveEventsEnabled?: boolean;
+};
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
+type TurboEventManagerProperties<ModelType extends TurboEventManagerModel = TurboEventManagerModel> = TurboHeadlessProperties<any, any, ModelType> & TurboEventManagerStateProperties & EnabledTurboEventTypes & {
+    moveThreshold?: number;
+    longPressDuration?: number;
+    authorizeEventScaling?: boolean | (() => boolean);
+    scaleEventPosition?: (position: Point) => Point;
+};
+/**
+ * @group Event Handling
+ * @category TurboEventManager
+ */
+type TurboEventManagerLockStateProperties = TurboEventManagerStateProperties & {
+    lockOrigin?: Node;
+};
+/**
  * @group Event Handling
  * @category TurboEventManager
  *
- * @description Class that manages default mouse, trackpad, and touch events, and accordingly fires custom events for
- * easier management of input.
+ * @description Object representing options passed to the ToolManager's setTool() function.
+ * @property select - Indicate whether to visually select the tool on all toolbars, defaults to true
+ * @property activate - Indicate whether to fire activation on the tool when setting it, defaults to true
+ * @property setAsNoAction - Indicate whether the tool will also be set as the tool for ClickMode == none, defaults
+ * to true if the click mode is left.
  */
-declare class TurboEventManager<ToolType extends string = string> extends TurboHeadlessElement<any, any, TurboEventManagerModel> {
-    protected static managers: TurboEventManager[];
-    static get instance(): TurboEventManager;
-    static get allManagers(): TurboEventManager[];
-    static set allManagers(managers: TurboEventManager[]);
-    protected keyController: TurboEventManagerKeyController;
-    protected wheelController: TurboEventManagerWheelController;
-    protected pointerController: TurboEventManagerPointerController;
-    protected dispatchController: TurboEventManagerDispatchController;
-    constructor(properties?: TurboEventManagerProperties);
-    /**
-     * @description The currently identified input device. It is not 100% accurate, especially when differentiating
-     * between mouse and trackpad.
-     */
-    get inputDevice(): InputDevice;
-    get onInputDeviceChange(): Delegate<(device: InputDevice) => void>;
-    get currentClick(): ClickMode;
-    get currentKeys(): string[];
-    /**
-     * @description Delegate fired when a tool is changed on a certain click button/mode
-     */
-    get onToolChange(): Delegate<(oldTool: Node, newTool: Node, type: ClickMode) => void>;
-    get authorizeEventScaling(): boolean | (() => boolean);
-    set authorizeEventScaling(value: boolean | (() => boolean));
-    get scaleEventPosition(): (position: Point) => Point;
-    set scaleEventPosition(value: (position: Point) => Point);
-    get moveThreshold(): number;
-    set moveThreshold(value: number);
-    get longPressDuration(): number;
-    set longPressDuration(value: number);
-    set keyEventsEnabled(value: boolean);
-    set wheelEventsEnabled(value: boolean);
-    set moveEventsEnabled(value: boolean);
-    set mouseEventsEnabled(value: boolean);
-    set touchEventsEnabled(value: boolean);
-    set clickEventEnabled(value: boolean);
-    set dragEventEnabled(value: boolean);
-    /**
-     * @description Sets the lock state for the event manager.
-     * @param origin - The element that initiated the lock state.
-     * @param value - The state properties to set.
-     */
-    lock(origin: Node, value: TurboEventManagerStateProperties): void;
-    /**
-     * @description Resets the lock state to the default values.
-     */
-    unlock(): void;
-    get enabled(): boolean;
-    set enabled(value: boolean);
-    get preventDefaultWheel(): boolean;
-    set preventDefaultWheel(value: boolean);
-    get preventDefaultMouse(): boolean;
-    set preventDefaultMouse(value: boolean);
-    get preventDefaultTouch(): boolean;
-    set preventDefaultTouch(value: boolean);
-    /**
-     * @description All attached tools in an array
-     */
-    get toolsArray(): Node[];
-    getCurrentTool(mode?: ClickMode): Node;
-    /**
-     * @description Returns the instances of the tool currently held by the provided click mode
-     * @param mode
-     */
-    getCurrentTools(mode?: ClickMode): Node[];
-    /**
-     * @description Returns the name of the tool currently held by the provided click mode
-     * @param mode
-     */
-    getCurrentToolName(mode?: ClickMode): ToolType;
-    getToolName(tool: Node): ToolType;
-    getSimilarTools(tool: Node): Node[];
-    /**
-     * @description Returns the tool with the given name (or undefined)
-     * @param name
-     */
-    getToolsByName(name: ToolType): Node[];
-    /**
-     * @description Returns the first tool with the given name (or undefined)
-     * @param name
-     * @param predicate
-     */
-    getToolByName(name: ToolType, predicate?: (tool: Node) => boolean): Node;
-    /**
-     * @description Returns the tools associated with the given key
-     * @param key
-     */
-    getToolsByKey(key: string): Node[];
-    /**
-     * @description Returns the first tool associated with the given key
-     * @param key
-     * @param predicate
-     */
-    getToolByKey(key: string, predicate?: (tool: Element) => boolean): Node;
-    /**
-     * @description Adds a tool to the tools map, identified by its name. Optionally, provide a key to bind the tool to.
-     * @param toolName
-     * @param tool
-     * @param key
-     */
-    addTool(toolName: ToolType, tool: Node, key?: string): void;
-    /**
-     * @description Sets the provided tool as a current tool associated with the provided type
-     * @param tool
-     * @param type
-     * @param options
-     */
-    setTool(tool: Node, type: ClickMode, options?: SetToolOptions): void;
-    /**
-     * @description Sets tool associated with the provided key as the current tool for the key mode
-     * @param key
-     */
-    setToolByKey(key: string): boolean;
-    setupCustomDispatcher(type: string): void;
-    protected applyAndHookEvents(turboEventNames: Record<string, string>, defaultEventNames: Record<string, string>, applyTurboEvents: boolean): void;
-    destroy(): this;
+type SetToolOptions = {
+    select?: boolean;
+    activate?: boolean;
+    setAsNoAction?: boolean;
+};
+/**
+ * @group Event Handling
+ * @category Enums
+ */
+declare enum ActionMode {
+    none = 0,
+    click = 1,
+    longPress = 2,
+    drag = 3
+}
+/**
+ * @group Event Handling
+ * @category Enums
+ */
+declare enum ClickMode {
+    none = 0,
+    left = 1,
+    right = 2,
+    middle = 3,
+    other = 4,
+    key = 5
+}
+/**
+ * @group Event Handling
+ * @category Enums
+ */
+declare enum InputDevice {
+    unknown = 0,
+    mouse = 1,
+    trackpad = 2,
+    touch = 3
 }
 
 /**
@@ -4710,7 +4780,7 @@ declare global {
  * @decorator
  * @function observe
  * @group Decorators
- * @category Attributes & DOM
+ * @category Registry, Attributes & DOM
  *
  * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
  * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
@@ -4734,6 +4804,39 @@ declare function observe<Type extends object, Value>(value: ((initial: Value) =>
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
+/**
+ * @function observe
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Imperatively applies the same attribute-reflection logic as the `@observe` decorator,
+ * without requiring decorator syntax. Useful for dynamically observing properties at runtime,
+ * or in environments where decorators are not available.
+ *
+ * It:
+ * - Reflects the property value to its corresponding HTML attribute (in kebab-case) whenever the
+ *   property changes.
+ * - Records the attribute name into the class's `observedAttributes` so the browser fires
+ *   `attributeChangedCallback` when the attribute changes in HTML.
+ *
+ * @param {object} host - The object or prototype to apply the observation to.
+ * @param {string} key - The property key to observe.
+ *
+ * @example
+ * ```ts
+ * class MyEl extends HTMLElement {
+ *     fieldName: string = "hello";
+ * }
+ * observe(MyEl.prototype, "fieldName");
+ * define(MyEl); // name inferred as "my-el"
+ * ```
+ *
+ * Leads to:
+ * ```html
+ * <my-el field-name="hello"></my-el>
+ * ```
+ */
+declare function observe(host: object, key: string): void;
 
 /**
  * @overload
@@ -4756,7 +4859,7 @@ declare function observe<Type extends object, Value>(value: ((initial: Value) =>
  * const nested = signal(0, target, "users", "42", "score");
  * ```
  */
-declare function signal<Value>(initial?: Value, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
+declare function signal<Value>(initial?: Value, target?: object, ...keys: KeyType[]): SignalBox<Value>;
 /**
  * @overload
  * @function signal
@@ -4778,7 +4881,7 @@ declare function signal<Value>(initial?: Value, target?: object, ...keys: DataKe
  * const nested = signal(() => target.get("users", "42"), v => target.set(v, "users", "42"), target, "users", "42");
  * ```
  */
-declare function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: DataKeyType[]): SignalBox<Value>;
+declare function signal<Value>(get: () => Value, set: (value: Value) => void, target?: object, ...keys: KeyType[]): SignalBox<Value>;
 /**
  * @overload
  * @decorator
@@ -4834,7 +4937,7 @@ declare function signal<Type extends object, Value>(value: ((initial: Value) => 
  * }
  * ```
  */
-declare function modelSignal(...keys: DataKeyType[]): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
+declare function modelSignal(...keys: KeyType[]): <Type extends object, Value>(value: ((initial: Value) => Value) | ((this: Type) => Value) | ((this: Type, v: Value) => void) | {
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>) => any;
@@ -4955,7 +5058,7 @@ declare function markDirty(target: object, key: PropertyKey): void;
  * @param {object} target - The target to which the signal is bound.
  * @param {...(string | number | symbol)[]} keys - The key path of the data.
  */
-declare function markDirty(target: object, ...keys: DataKeyType[]): void;
+declare function markDirty(target: object, ...keys: KeyType[]): void;
 /**
  * @function initializeEffects
  * @group Decorators
@@ -5214,6 +5317,15 @@ declare function textarea(properties?: TurboProperties<"textarea">): ValidElemen
  * @returns {ValidElement<"video">} The created element.
  */
 declare function video(properties?: TurboProperties<"video">): ValidElement<"video">;
+/**
+ * @group Element Creation
+ * @category Base Elements
+ *
+ * @description Creates a "button" element with the specified properties.
+ * @param {TurboProperties<"button">} [properties] - Object containing properties of the element.
+ * @returns {ValidElement<"button">} The created element.
+ */
+declare function button(properties?: TurboProperties<"button">): ValidElement<"button">;
 
 /**
  * @group Element Creation
@@ -5426,7 +5538,7 @@ type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataT
  * @group MVC
  * @category TurboModel
  */
-declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, KeyType extends string | number | symbol = any, IdType extends string | number | symbol = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<YType, KeyType, IdType, ComponentType, DataEntryType> {
+declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<YType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private observer;
     /**
      * @inheritDoc
@@ -5439,27 +5551,27 @@ declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, KeyType e
     /**
      * @inheritDoc
      */
-    protected getAction(data: any, key: DataKeyType): any;
+    protected getAction(data: any, key: KeyType): any;
     /**
      * @inheritDoc
      */
-    protected setAction(data: any, value: any, key: DataKeyType): void;
+    protected setAction(data: any, value: any, key: KeyType): void;
     /**
      * @inheritDoc
      */
-    protected addAction(model: TurboModel, data: any, value: any, key: DataKeyType): DataKeyType;
+    protected addAction(model: TurboModel, data: any, value: any, key: KeyType): KeyType;
     /**
      * @inheritDoc
      */
-    protected hasAction(data: any, key: DataKeyType): boolean;
+    protected hasAction(data: any, key: KeyType): boolean;
     /**
      * @inheritDoc
      */
-    protected deleteAction(data: any, key: DataKeyType): void;
+    protected deleteAction(data: any, key: KeyType): void;
     /**
      * @inheritDoc
      */
-    get keys(): KeyType[];
+    get keys(): DataKeyType[];
     /**
      * @inheritDoc
      */
@@ -5471,52 +5583,6 @@ declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, KeyType e
     protected observeChanges(event: YEvent, transaction: any): void;
     private shiftIndices;
 }
-
-/**
- * @type {TurboIconProperties}
- * @group Components
- * @category TurboIcon
- *
- * @description Properties object that extends TurboElementProperties with properties specific to icons.
- * @extends TurboProperties
- *
- * @property {string} icon - The name of the icon.
- * @property {string} [iconColor] - The color of the icon.
- * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
- * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
- *
- * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
- * TurboIcon.config.type (whose default value is "svgManipulation").
- * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
- * TurboIcon.config.directory.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
- * TurboIcon.config.defaultClasses to this instance of Icon.
- */
-type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    type?: string;
-    directory?: string;
-    icon: string;
-    iconColor?: string;
-    onLoaded?: (svg: SVGElement) => void;
-    unsetDefaultClasses?: boolean;
-};
-/**
- * @type {TurboIconConfig}
- * @group Components
- * @category TurboIcon
- *
- * @description Configuration object for the Icon class. Set it via TurboConfig.Icon.
- *
- * @property {string} [type] - The default type to assign to newly created Icons. Defaults to "svgManipulation".
- * @property {string} [[path]] - The default path to the directory containing the icons in the project. Specify the
- * directory once here to not type it again at every Icon generation.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created icons.
- */
-type TurboIconConfig = TurboElementConfig & {
-    defaultType?: string;
-    defaultDirectory?: string;
-    customLoaders?: Record<string, (path: string) => (Element | Promise<Element>)>;
-};
 
 /**
  * @class TurboElement
@@ -5532,16 +5598,12 @@ type TurboIconConfig = TurboElementConfig & {
  * */
 declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends HTMLElement {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    static readonly config: TurboElementConfig;
     static defaultProperties: TurboElementProperties;
-    static create<Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>>(this: new (...args: any[]) => Type, properties?: TurboElementProperties): Type;
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
+    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: object): object;
+    readonly properties: TurboElementProperties;
     /**
      * @description Delegate fired when the element is attached to DOM.
      */
@@ -5554,11 +5616,6 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
      * @description Delegate fired when the element is adopted by a new parent in the DOM.
      */
     readonly onAdopt: Delegate<() => void>;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
     /**
      * @function setupChangedCallbacks
      * @description Setup method intended to initialize change listeners and callbacks. Called on `initialize()`.
@@ -5604,6 +5661,212 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
 }
 
 /**
+ * @class Color
+ * @group Utilities
+ * @category Color
+ *
+ * @description Unified color class. Parses any CSS color string (hex, rgb/rgba, hsl/hsla), stores the color
+ * internally as RGBA, and provides conversions, interpolation, luminance, and contrast utilities.
+ * All channels are kept in sync: setting any of r/g/b/a/h/s/l/hex updates the rest automatically.
+ */
+declare class Color {
+    private syncing;
+    set r(value: number);
+    set g(value: number);
+    set b(value: number);
+    set a(value: number);
+    set h(value: number);
+    set s(value: number);
+    set l(value: number);
+    set hex(value: string);
+    /**
+     * @constructor
+     * @param {number} r - Red channel (0–255).
+     * @param {number} g - Green channel (0–255).
+     * @param {number} b - Blue channel (0–255).
+     * @param {number} [a=1] - Alpha channel (0–1).
+     */
+    constructor(r?: number, g?: number, b?: number, a?: number);
+    /**
+     * @description Returns the color as a CSS `rgb()` string (alpha ignored).
+     * @returns {string} - e.g. `"rgb(255 136 0)"`.
+     */
+    get rgb(): string;
+    /**
+     * @description Returns the color as a CSS `rgb()` string with alpha.
+     * @returns {string} - e.g. `"rgb(255 136 0 / 0.5)"`.
+     */
+    get rgba(): string;
+    /**
+     * @description Returns the color as a CSS `hsl()` string (alpha ignored).
+     * @returns {string} - e.g. `"hsl(32 100% 50%)"`.
+     */
+    get hsl(): string;
+    /**
+     * @description Returns the color as a CSS `hsl()` string with alpha.
+     * @returns {string} - e.g. `"hsl(32 100% 50% / 0.5)"`.
+     */
+    get hsla(): string;
+    /**
+     * @description Returns `rgb()` for opaque colors and `rgb()` with alpha for semi-transparent ones.
+     */
+    toString(): string;
+    private syncFromRgb;
+    private syncFromHsl;
+    private syncFromHex;
+    private syncHex;
+    /**
+     * @description Creates a Color from a CSS color string or an existing Color instance.
+     * Supports hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`), `rgb()`/`rgba()`, and `hsl()`/`hsla()`.
+     * Returns `Color(0, 0, 0)` if the string cannot be parsed.
+     * @param {string | Color} color - The CSS color string or Color instance to parse.
+     * @returns {Color}
+     */
+    static from(color: string | Color): Color;
+    /**
+     * @description Creates a Color from a hex string (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`).
+     * @param {string} hex - The hex color string.
+     * @returns {Color | null} - Null if the string is not a valid hex color.
+     */
+    static fromHexString(hex: string): Color;
+    /**
+     * @description Creates a Color from HSL components.
+     * @param {number} h - Hue, 0–360.
+     * @param {number} s - Saturation, 0–100.
+     * @param {number} l - Lightness, 0–100.
+     * @param {number} [a=1] - Alpha, 0–1.
+     * @returns {Color}
+     */
+    static fromHsl(h: number, s: number, l: number, a?: number): Color;
+    /**
+     * @description Creates a Color from a CSS `hsl()`/`hsla()` string.
+     * Handles both comma-separated (CSS Level 3) and space-separated (CSS Level 4) syntax,
+     * with or without `%` signs and `deg` units, and optional alpha via `/` or as a fourth argument.
+     * @param {string} color - The HSL color string.
+     * @returns {Color | null} - Null if parsing fails.
+     */
+    static fromHslString(color: string): Color;
+    /**
+     * @description Creates a Color from a CSS `rgb()`/`rgba()` string.
+     * Handles both comma-separated (CSS Level 3) and space-separated (CSS Level 4) syntax,
+     * and optional alpha via `/` or as a fourth argument.
+     * @param {string} color - The RGB color string.
+     * @returns {Color | null} - Null if parsing fails.
+     */
+    static fromRgbString(color: string): Color;
+    /**
+     * @description The WCAG 2.1 relative luminance of the color (0 = black, 1 = white).
+     * @returns {number}
+     */
+    get luminance(): number;
+    /**
+     * @description Computes the WCAG 2.1 contrast ratio between this color and another.
+     * @param {Color | string} other - The color to compare against.
+     * @returns {number} - Contrast ratio, 1–21.
+     */
+    contrast(other: Color | string): number;
+    /**
+     * @description Returns whichever of the two candidate colors has better contrast against this color.
+     * Defaults to black and white if candidates are not provided.
+     * @param {Color | string} [dark="#000000"] - The dark candidate.
+     * @param {Color | string} [light="#ffffff"] - The light candidate.
+     * @returns {Color}
+     */
+    bestOverlay(dark?: Color | string, light?: Color | string): Color;
+    /**
+     * @description Linearly interpolates between this color and another in RGB space.
+     * Works regardless of the original format of the input color.
+     * @param {Color | string} other - The target color.
+     * @param {number} t - Interpolation factor (0 = this, 1 = other).
+     * @returns {Color}
+     */
+    interpolate(other: Color | string, t: number): Color;
+    /**
+     * @description Checks whether this color is equal to another color or CSS color string,
+     * comparing all four channels within an optional tolerance.
+     * @param {Color | string} other - The color to compare against.
+     * @param {number} [tolerance=0] - Maximum allowed difference per channel.
+     * @returns {boolean}
+     */
+    equals(other: Color | string, tolerance?: number): boolean;
+    /**
+     * @description Linearly interpolates between two colors in RGB space.
+     * Accepts any mix of `Color` instances and CSS color strings of any supported format.
+     * @param {Color | string} color1 - The start color.
+     * @param {Color | string} color2 - The end color.
+     * @param {number} t - Interpolation factor (0 = color1, 1 = color2).
+     * @returns {Color}
+     */
+    static interpolate(color1: Color | string, color2: Color | string, t: number): Color;
+    /**
+     * @description Interpolates along a multi-stop gradient.
+     * `t = 0` returns the first color, `t = 1` returns the last color.
+     * @param {(Color | string)[]} colors - Two or more color stops.
+     * @param {number} t - Gradient position (0–1).
+     * @returns {Color}
+     */
+    static gradient(colors: (Color | string)[], t: number): Color;
+    /**
+     * @description Computes the WCAG 2.1 contrast ratio between two colors.
+     * @param {Color | string} color1
+     * @param {Color | string} color2
+     * @returns {number}
+     */
+    static contrast(color1: Color | string, color2: Color | string): number;
+    /**
+     * @description Computes the WCAG 2.1 relative luminance of a color.
+     * @param {Color | string} color
+     * @returns {number}
+     */
+    static luminance(color: Color | string): number;
+    /**
+     * @description Returns whichever of the two candidates has better contrast against the base color.
+     * @param {Color | string} base
+     * @param {Color | string} [dark="#000000"]
+     * @param {Color | string} [light="#ffffff"]
+     * @returns {Color}
+     */
+    static bestOverlay(base: Color | string, dark?: Color | string, light?: Color | string): Color;
+    /**
+     * @group Utilities
+     * @category Random
+     */
+    static random(saturation?: number | [number, number], lightness?: number | [number, number]): Color;
+    private static rgbToHsl;
+    private static hslToRgb;
+    private static toHexStr;
+    private static extractNumbers;
+}
+
+/**
+ * @type {TurboIconProperties}
+ * @group Components
+ * @category TurboIcon
+ *
+ * @description Properties object that extends TurboElementProperties with properties specific to icons.
+ * @extends TurboProperties
+ *
+ * @property {string} icon - The name of the icon.
+ * @property {string} [iconColor] - The color of the icon.
+ * @property {((svgManipulation: SVGElement) => {})} [onLoaded] - Custom function that takes an SVG element to execute on the
+ * SVG icon (if it is one) once it is loaded. This property will be disregarded if the icon is not of type SVG.
+ *
+ * @property {string} [type] - Custom type of the icon, overrides the default type assigned to
+ * TurboIcon.config.type (whose default value is "svgManipulation").
+ * @property {string} [directory] - Custom directory to the icon, overrides the default directory assigned to
+ * TurboIcon.config.directory.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in
+ * TurboIcon.config.defaultClasses to this instance of Icon.
+ */
+type TurboIconProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    type?: string;
+    directory?: string;
+    icon: string;
+    iconColor?: string;
+    onLoaded?: (svg: SVGElement) => void;
+};
+
+/**
  * @class TurboIcon
  * @group Components
  * @category TurboIcon
@@ -5612,7 +5875,9 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
  * @extends TurboElement
  */
 declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboIconConfig;
+    readonly properties: TurboIconProperties;
+    static readonly customLoaders: Record<string, (path: string) => (Element | Promise<Element>)>;
+    static defaultProperties: Partial<TurboIconProperties>;
     private static imageTypes;
     private _element;
     private _loadToken;
@@ -5637,7 +5902,8 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
     /**
      * @description The assigned color to the icon (if any)
      */
-    set iconColor(value: string);
+    get iconColor(): Color;
+    set iconColor(value: Color | string);
     /**
      * @description The child element of the icon element (an HTML image or an SVG element).
      */
@@ -5645,18 +5911,51 @@ declare class TurboIcon<ViewType extends TurboView = TurboView<any, any>, DataTy
     get element(): Element;
     protected loadSvg(path: string): Promise<SVGElement>;
     protected loadImg(path: string): HTMLImageElement;
-    protected updateColor(value?: string): void;
+    protected updateColor(value?: Color): void;
     protected generateIcon(): void;
     private getLoader;
     private setupLoadedElement;
     private clear;
 }
+
 /**
+ * @type {TurboRichElementProperties}
  * @group Components
- * @category TurboIcon
- * @param properties
+ * @category TurboRichElement
+ *
+ * @description Properties object for configuring a Button. Extends TurboElementProperties.
+ * @extends TurboProperties
+ *
+ * @property {string} [text] - The text to set to the rich element's main element.
+ *
+ * @property {Element | Element[]} [leftCustomElements] - Custom elements
+ * to be placed on the left side of the button (before the left icon).
+ * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
+ * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
+ * string (icon name/path) or an Icon instance.
+ * @property {Element | Element[]} [rightCustomElements] - Custom elements
+ * to be placed on the right side of the button (after the right icon).
+ *
+ * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
+ * a string). If not specified, the default text tag specified in the Button class will be used.
+ * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
+ * to this instance of Button.
+ *
+ * @template {ValidTag} ElementTag="p"
  */
-declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>): TurboIcon<ViewType, DataType, ModelType, EmitterType>;
+type TurboRichElementProperties<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    elementTag?: ElementTag;
+    text?: string;
+    leftCustomElements?: Element | Element[];
+    leftIcon?: string | TurboIcon;
+    prefixEntry?: string | HTMLElement;
+    element?: string | TurboProperties<ElementTag> | ValidElement<ElementTag>;
+    suffixEntry?: string | HTMLElement;
+    rightIcon?: string | TurboIcon;
+    rightCustomElements?: Element | Element[];
+};
 
 /**
  * @class TurboRichElement
@@ -5669,7 +5968,9 @@ declare function icon<ViewType extends TurboView = TurboView<any, any>, DataType
  * @template {ValidTag} ElementTag - The tag of the main element to create the rich element from.
  */
 declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    static config: TurboRichElementConfig;
+    readonly properties: TurboRichElementProperties;
+    static defaultProperties: TurboRichElementProperties;
+    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
     readonly childrenOrder: readonly ["leftCustomElements", "leftIcon", "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"];
     /**
      * @description Adds a given element or elements to the button at a specified position.
@@ -5725,78 +6026,7 @@ declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType exten
      * @description The custom element(s) on the right. Can be set to new element(s) by a simple assignment.
      */
     set rightCustomElements(value: Element | Element[]);
-    static create<Type extends TurboElement<ViewType, DataType, ModelType, EmitterType>, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter, ElementTag extends ValidTag = any>(this: new (...args: any[]) => Type, properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>): Type;
 }
-/**
- * @group Components
- * @category TurboRichElement
- * @param properties
- */
-declare function richElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>): TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType>;
-
-/**
- * @type {TurboRichElementProperties}
- * @group Components
- * @category TurboRichElement
- *
- * @description Properties object for configuring a Button. Extends TurboElementProperties.
- * @extends TurboProperties
- *
- * @property {string} [text] - The text to set to the rich element's main element.
- *
- * @property {Element | Element[]} [leftCustomElements] - Custom elements
- * to be placed on the left side of the button (before the left icon).
- * @property {string | TurboIcon} [leftIcon] - An icon to be placed on the left side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {string | TurboProperties<ElementTag> | ValidElement<ElementTag>} [buttonText] - The text content of the button.
- * @property {string | TurboIcon} [rightIcon] - An icon to be placed on the right side of the button text. Can be a
- * string (icon name/path) or an Icon instance.
- * @property {Element | Element[]} [rightCustomElements] - Custom elements
- * to be placed on the right side of the button (after the right icon).
- *
- * @property {ValidTag} [customTextTag] - The HTML tag to be used for the buttonText element (if the latter is passed as
- * a string). If not specified, the default text tag specified in the Button class will be used.
- * @property {boolean} [unsetDefaultClasses] - Set to true to not add the default classes specified in TurboConfig.Button
- * to this instance of Button.
- *
- * @template {ValidTag} ElementTag="p"
- */
-type TurboRichElementProperties<ElementTag extends ValidTag = "div", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    elementTag?: ElementTag;
-    text?: string;
-    leftCustomElements?: Element | Element[];
-    leftIcon?: string | TurboIcon;
-    prefixEntry?: string | HTMLElement;
-    element?: string | TurboProperties<ElementTag> | ValidElement<ElementTag>;
-    suffixEntry?: string | HTMLElement;
-    rightIcon?: string | TurboIcon;
-    rightCustomElements?: Element | Element[];
-};
-/**
- * @type {TurboRichElementConfig}
- * @group Components
- * @category TurboRichElement
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {HTMLTag} [defaultElementTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-type TurboRichElementConfig = TurboElementConfig & {
-    defaultElementTag?: HTMLTag;
-};
-/**
- * @type {TurboButtonConfig}
- * @group Components
- * @category TurboButton
- *
- * @description Configuration object for the Button class. Set it via TurboConfig.Button.
- *
- * @property {ValidTag} [defaultElementTag] - The default HTML tag for the creation of the text
- * element in the button.
- * @property {string | string[]} [defaultClasses] - The default classes to assign to newly created buttons.
- */
-type TurboButtonConfig = TurboRichElementConfig;
 
 /**
  * @class TurboButton
@@ -5806,15 +6036,8 @@ type TurboButtonConfig = TurboRichElementConfig;
  * @description Button class for creating Turbo button elements.
  * @extends TurboElement
  */
-declare class TurboButton<ElementTag extends ValidTag = "p", ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboButtonConfig;
+declare class TurboButton<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<ElementTag, ViewType, DataType, ModelType, EmitterType> {
 }
-/**
- * @group Components
- * @category TurboButton
- * @param properties
- */
-declare function button<ElementTag extends ValidTag = "p", ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>): TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -5828,7 +6051,7 @@ declare function button<ElementTag extends ValidTag = "p", ViewType extends Turb
  * @param {ClassType} object - The object being interpolated.
  * @returns {Type}
  */
-type ReifectInterpolator<Type, ClassType extends object = Element> = ((index: number, total: number, object: ClassType) => Type);
+type ReifectInterpolator<Type, ClassType extends object = Element> = (index: number, total: number, object: ClassType) => Type;
 /**
  * @group Components
  * @category StatefulReifect
@@ -5843,7 +6066,7 @@ type ReifectInterpolator<Type, ClassType extends object = Element> = ((index: nu
  * @param {ClassType} object - The object being interpolated.
  * @returns {Type}
  */
-type StateInterpolator<Type, State extends string | number | symbol, ClassType extends object = Element> = ((state: State, index: number, total: number, object: ClassType) => Type);
+type StateInterpolator<Type, State extends KeyType, ClassType extends object = Element> = (state: State, index: number, total: number, object: ClassType) => Type;
 /**
  * @group Components
  * @category StatefulReifect
@@ -5862,7 +6085,7 @@ type StateSpecificProperty<Type, ClassType extends object = Element> = Type | Re
  * @template State
  * @template ClassType
  */
-type BasicPropertyConfig<Type, State extends string | number | symbol> = PartialRecord<State, Type> | Type;
+type BasicPropertyConfig<Type, State extends KeyType> = PartialRecord<State, Type> | Type;
 /**
  * @group Components
  * @category StatefulReifect
@@ -5872,64 +6095,56 @@ type BasicPropertyConfig<Type, State extends string | number | symbol> = Partial
  * @template State
  * @template ClassType
  */
-type PropertyConfig<Type, State extends string | number | symbol, ClassType extends object = Element> = PartialRecord<State, Type | ReifectInterpolator<Type, ClassType>> | Type | StateInterpolator<Type, State, ClassType>;
+type PropertyConfig<Type, State extends KeyType, ClassType extends object = Element> = PartialRecord<State, Type | ReifectInterpolator<Type, ClassType>> | Type | StateInterpolator<Type, State, ClassType>;
+type ReifectOnSwitchCallback<State extends KeyType, ClassType extends object = Element> = (state: State, index: number, total: number, object: ClassType) => void;
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectObjectData<State extends string | number | symbol, ClassType extends object = Element> = {
+type ReifectObjectData<State extends KeyType, ClassType extends object = Element> = {
     object: WeakRef<ClassType>;
     enabled: ReifectEnabledObject;
     lastState?: State;
     resolvedValues?: ReifectObjectComputedProperties<State, ClassType>;
-    objectIndex?: number;
-    totalObjectCount?: number;
-    onSwitch?: (state: State, index: number, total: number, object: ClassType) => void;
-    effectDispose?: () => void;
+    index?: number;
+    total?: number;
+    onSwitch?: ReifectOnSwitchCallback<State, ClassType>;
+    disposeEffect?: () => void;
 };
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectObjectComputedProperties<State extends string | number | symbol, ClassType extends object = Element> = {
+type ReifectObjectComputedProperties<State extends KeyType, ClassType extends object = Element> = {
     properties: PartialRecord<State, PartialRecord<keyof ClassType, any>>;
     styles: PartialRecord<State, StylesType>;
     classes: PartialRecord<State, string | string[]>;
     replaceWith: PartialRecord<State, ClassType>;
-    transitionProperties: PartialRecord<State, string[]>;
-    transitionDuration: PartialRecord<State, number>;
-    transitionTimingFunction: PartialRecord<State, string>;
-    transitionDelay: PartialRecord<State, number>;
 };
 /**
  * @group Components
  * @category StatefulReifect
  */
-type StatefulReifectCoreProperties<State extends string | number | symbol, ClassType extends object = Element> = {
+type StatefulReifectCoreProperties<State extends KeyType, ClassType extends object = Element> = {
     styles?: PropertyConfig<StylesType, State, ClassType>;
     classes?: PropertyConfig<string | string[], State, ClassType>;
     replaceWith?: PropertyConfig<ClassType, State, ClassType>;
-    transitionProperties?: PropertyConfig<string | string[], State, ClassType>;
-    transitionDuration?: PropertyConfig<number, State, ClassType>;
-    transitionTimingFunction?: PropertyConfig<string, State, ClassType>;
-    transitionDelay?: PropertyConfig<number, State, ClassType>;
     [k: PropertyKey]: PropertyConfig<any, State, ClassType>;
 };
 /**
  * @group Components
  * @category StatefulReifect
  */
-type StatefulReifectProperties<State extends string | number | symbol, ClassType extends object = Element> = StatefulReifectCoreProperties<State, ClassType> & {
+type StatefulReifectProperties<State extends KeyType, ClassType extends object = Element> = StatefulReifectCoreProperties<State, ClassType> & {
     states?: State[] | object;
     initialState?: State | boolean;
     attachedObjects?: ClassType[];
-    transition?: PropertyConfig<string, State, ClassType>;
 };
 /**
  * @group Components
  * @category StatefulReifect
  */
-type ReifectAppliedOptions<State extends string | number | symbol = any, ClassType extends object = Element> = {
+type ReifectAppliedOptions<State extends KeyType = any, ClassType extends object = Element> = {
     attachObjects?: boolean;
     executeForAll?: boolean;
     recomputeIndices?: boolean;
@@ -5947,7 +6162,6 @@ type ReifectEnabledObject = {
     styles?: boolean;
     classes?: boolean;
     replaceWith?: boolean;
-    transition?: boolean;
 };
 
 /**
@@ -5962,17 +6176,22 @@ type ReifectEnabledObject = {
  * @template {object} ClassType - The object type this reifier will be applied to.
  */
 declare class StatefulReifect<State extends string | number | symbol = any, ClassType extends object = object> {
-    protected static readonly fields: readonly ["properties", "classes", "styles", "replaceWith", "transitionProperties", "transitionDuration", "transitionTimingFunction", "transitionDelay"];
-    protected readonly timeRegex: RegExp;
-    protected readonly attachedObjects: ReifectObjectData<State, ClassType>[];
+    protected static readonly fields: readonly ["properties", "classes", "styles", "replaceWith"];
     protected static readonly knownFields: Set<string>;
+    protected static readonly chainableStyleFields: Set<string>;
+    protected readonly timeRegex: RegExp;
+    protected readonly attachedObjectsData: WeakMap<ClassType, ReifectObjectData<State, ClassType>>;
+    protected readonly attachedObjects: TurboNodeList<ClassType>;
     /**
      * @description All possible states.
      */
     get states(): State[];
     set states(states: State[] | object);
-    get enabled(): ReifectEnabledObject;
-    set enabled(value: boolean | ReifectEnabledObject);
+    set propertiesEnabled(value: boolean);
+    set classesEnabled(value: boolean);
+    set stylesEnabled(value: boolean);
+    set replacedWithEnabled(value: boolean);
+    set enabled(value: boolean);
     /**
      * @description The properties to be assigned to the objects. It could take:
      * - A record of `{key: value}` pairs.
@@ -6040,83 +6259,17 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
     set replaceWith(value: PropertyConfig<ClassType, State, ClassType>);
     get replaceWith(): PartialRecord<State, ReifectInterpolator<ClassType, ClassType>>;
     /**
-     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-     * could take:
-     * - A string of space-separated CSS properties.
-     * - An array of CSS properties.
-     * - A record of `{state: space-separated CSS properties string, array of CSS properties, or an interpolation
-     * function that would return any of the latter}`.
-     * - An interpolation function that would return a string of space-separated CSS properties or an array of
-     * CSS properties based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    set transitionProperties(value: PropertyConfig<string | string[], State, ClassType>);
-    get transitionProperties(): PartialRecord<State, ReifectInterpolator<string | string[], ClassType>>;
-    /**
-     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: duration (number in seconds) or an interpolation function that would return a duration
-     * (number in seconds)}`.
-     * - An interpolation function that would return a duration (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    set transitionDuration(value: PropertyConfig<number, State, ClassType>);
-    get transitionDuration(): PartialRecord<State, ReifectInterpolator<number, ClassType>>;
-    /**
-     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-     * It could take:
-     * - A string representing the timing function to apply.
-     * - A record of `{state: timing function (string) or an interpolation function that would return a timing
-     * function (string)}`.
-     * - An interpolation function that would return a timing function (string) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    set transitionTimingFunction(value: PropertyConfig<string, State, ClassType>);
-    get transitionTimingFunction(): PartialRecord<State, ReifectInterpolator<string, ClassType>>;
-    /**
-     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - A record of `{state: delay (number in seconds) or an interpolation function that would return a delay
-     * (number in seconds)}`.
-     * - An interpolation function that would return a delay (number in seconds) based on the state value.
-     *
-     * The interpolation function would take as arguments:
-     * - `state: State`: the state being applied to the object(s). Only passed to the callback function if it is
-     * defined for the whole field (and not for a specific state).
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    set transitionDelay(value: PropertyConfig<number, State, ClassType>);
-    get transitionDelay(): PartialRecord<State, ReifectInterpolator<number, ClassType>>;
-    /**
      * @description Creates an instance of StatefulReifier.
      * @param {StatefulReifectProperties<State, ClassType>} properties - The configuration properties.
      */
     constructor(properties: StatefulReifectProperties<State, ClassType>);
+    attach(object: ClassType): this;
+    attach(object: ClassType, index: number): this;
     /**
      * @function attach
      * @description Attaches an object to the reifier.
      * @param {ClassType} object - The object to attach.
-     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * @param {ReifectOnSwitchCallback<State, ClassType>} [onSwitch] - Optional
      * callback fired when the reifier is applied to the object. The callback takes as parameters:
      * - `state: State`: The state being applied to the object.
      * - `index: number`: the index of the object in the applied list.
@@ -6126,23 +6279,12 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * attached list.
      * @returns {this} - The reifier itself, for method chaining.
      */
-    attach(object: ClassType, onSwitch?: (state: State, index: number, total: number, object: ClassType) => void, index?: number): this;
-    /**
-     * @function attachAll
-     * @description Attaches multiple objects to the reifier.
-     * @param {...ClassType[]} objects - The objects to attach.
-     * @returns {this} - The reifier itself, for method chaining.
-     */
-    attachAll(...objects: ClassType[]): this;
-    /**
-     * @function attachAllAt
-     * @description Attaches multiple objects to the reifier at a specified index.
-     * @param {number} index - The index to specify the position at which to insert the objects in the reifier's
-     * attached list.
-     * @param {...ClassType[]} objects - The objects to attach.
-     * @returns {this} - The reifier itself, for method chaining.
-     */
-    attachAllAt(index: number, ...objects: ClassType[]): this;
+    attach(object: ClassType, onSwitch: ReifectOnSwitchCallback<State, ClassType>, index?: number): this;
+    attach(...objects: ClassType[]): this;
+    attach(...objectsAndIndex: [...ClassType[], number]): this;
+    attach(...objectsAndOnSwitch: [...ClassType[], ReifectOnSwitchCallback<State, ClassType>]): this;
+    attach(...objectsAndOptions: [...ClassType[], ReifectOnSwitchCallback<State, ClassType>, number]): this;
+    detach(object: ClassType): this;
     /**
      * @function detach
      * @description Detaches one or more objects from the reifier.
@@ -6158,7 +6300,7 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @param {ClassType} object - The object to attach
      * @param {number} [index] - Optional index to specify the position at which to insert the object in the reifier's
      * attached list.
-     * @param {(state: State, index: number, total: number, object: ClassType) => void} [onSwitch] - Optional
+     * @param {ReifectOnSwitchCallback<State, ClassType>} [onSwitch] - Optional
      * callback fired when the reifier is applied to the object. The callback takes as parameters:
      * - `state: State`: The state being applied to the object.
      * - `index: number`: the index of the object in the applied list.
@@ -6166,14 +6308,14 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * - `object: ClassType`: the object itself.
      * @returns {ReifectObjectData<State, ClassType>} - The created data entry.
      */
-    protected attachObject(object: ClassType, index?: number, onSwitch?: (state: State, index: number, total: number, object: ClassType) => void): ReifectObjectData<State, ClassType>;
+    protected attachObject(object: ClassType, onSwitch?: ReifectOnSwitchCallback<State, ClassType>, index?: number): ReifectObjectData<State, ClassType>;
     /**
      * @protected
      * @function detachObject
      * @description Function used to remove a data entry from the attached objects list.
-     * @param {ReifectObjectData<State, ClassType>} data - The data entry to remove.
+     * @param object
      */
-    protected detachObject(data: ReifectObjectData<State, ClassType>): void;
+    protected detachObject(object: ClassType): void;
     /**
      * @function getData
      * @description Retrieve the data entry of a given object.
@@ -6195,7 +6337,6 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @returns {State | undefined} - The current state of the reifect or undefined if not determinable.
      */
     stateOf(object: ClassType): State;
-    getAllStates(): State[];
     /**
      * @protected
      * @function parseState
@@ -6205,30 +6346,12 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      */
     protected parseState(value: State | boolean): State;
     /**
-     * @function enable
-     * @description Sets/updates the `enabled` value corresponding to the provided object for this reifier.
-     * @param {ClassType} object - The object to set the state of.
-     * @param {boolean | ReifectEnabledObject} value - The value to set/update with. Setting it to a boolean will
-     * accordingly update the value of `enabled.global`.
-     */
-    enable(value: boolean | ReifectEnabledObject, object?: ClassType): boolean | ReifectEnabledObject;
-    /**
      * @function getObjectEnabledState
      * @description Returns the `enabled` value corresponding to the provided object for this reifier.
      * @param {ClassType} object - The object to get the state of.
      * @returns {ReifectEnabledObject} - The corresponding enabled state.
      */
     getObjectEnabledState(object: ClassType): ReifectEnabledObject;
-    set transition(value: PropertyConfig<string, State, ClassType>);
-    protected processTransitionString(transitionString: string): StatefulReifectCoreProperties<State, ClassType>;
-    /**
-     * @function getTransitionString
-     * @description Gets the CSS transition string for the specified direction.
-     * @param {ReifectObjectData<State, ClassType>} data - The target element's transition data entry.
-     * @param state
-     * @returns {string} The CSS transition string.
-     */
-    private getTransitionString;
     initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
     apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
     toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
@@ -6240,23 +6363,22 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @returns {this} Itself for method chaining.
      */
     reloadFor(object: ClassType): this;
-    reloadTransitionFor(object: ClassType): this;
-    getEnabledObjectsData(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ReifectObjectData<State, ClassType>[];
-    applyResolvedValues(data: ReifectObjectData<State, ClassType>, skipTransition?: boolean, applyStylesInstantly?: boolean): void;
-    refreshResolvedValues(): void;
-    applyProperties(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    protected valuesEqual(a: any, b: any): boolean;
+    getEnabledObjects(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ClassType[];
+    applyAll(object: ClassType, applyStylesInstantly?: boolean): void;
+    refreshAll(): void;
+    applyProperties(object: ClassType, state?: State): void;
     refreshProperties(): void;
-    applyReplaceWith(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    applyReplaceWith(object: ClassType, state?: State): void;
     refreshReplaceWith(): void;
-    applyClasses(data: ReifectObjectData<State, ClassType>, state?: State): void;
+    applyClasses(object: ClassType, state?: State): void;
     refreshClasses(): void;
-    applyStyles(data: ReifectObjectData<State, ClassType>, state?: State, applyStylesInstantly?: boolean): void;
+    applyStyles(object: ClassType, state?: State, applyStylesInstantly?: boolean): void;
     refreshStyles(): void;
-    applyTransition(data: ReifectObjectData<State, ClassType>, state?: State): void;
-    refreshTransition(): void;
+    getChainableStyles(object: ClassType): Partial<Record<string, string>>;
+    protected applyField(object: ClassType, field: string, callback: (object: ClassType, data: ReifectObjectData<State, ClassType>, state: State) => void, state?: State): void;
+    protected parseStylesValue(styles: StylesType): PartialRecord<string, string>;
     protected filterEnabledObjects(data: ReifectObjectData<State, ClassType>): boolean;
-    protected processRawProperties(data: ReifectObjectData<State, ClassType>, override?: StatefulReifectCoreProperties<State, ClassType>): void;
+    protected processRawProperties(object: ClassType, override?: StatefulReifectCoreProperties<State, ClassType>): void;
     private generateNewData;
     private initializeOptions;
     /**
@@ -6266,24 +6388,7 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
     clone(): StatefulReifect<State, ClassType>;
     protected normalizeStates(states: State[] | object): State[];
     protected normalizePropertyConfig<Type>(currentConfig: PartialRecord<State, ReifectInterpolator<Type, ClassType>>, newConfig: PropertyConfig<Type, State, ClassType>): PartialRecord<State, ReifectInterpolator<Type, ClassType>>;
-    private cleanTransitionProperties;
-    /**
-     * @description Processes string durations like "200ms" or "0.3s", or even "100".
-     * @param value
-     * @private
-     */
-    private parseTime;
 }
-
-/**
- * @group Components
- * @category TurboIconSwitch
- */
-type TurboIconSwitchProperties<State extends string | number | symbol, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
-    switchReifect?: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>;
-    defaultState?: State;
-    appendStateToIconName?: boolean;
-};
 
 /**
  * @group Types
@@ -6388,19 +6493,24 @@ declare enum Anchor {
  * @group Components
  * @category TurboIconSwitch
  */
+type TurboIconSwitchProperties<State extends string | number | symbol, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboIconProperties<ViewType, DataType, ModelType, EmitterType> & {
+    switchReifect?: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>;
+    defaultState?: State;
+    appendStateToIconName?: boolean;
+};
+
+/**
+ * @group Components
+ * @category TurboIconSwitch
+ */
 declare class TurboIconSwitch<State extends string | number | symbol = OnOff, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    config: TurboIconConfig;
+    readonly properties: TurboIconSwitchProperties<any>;
     get switchReifect(): StatefulReifect<State, TurboIcon>;
     set switchReifect(value: StatefulReifect<State, TurboIcon> | StatefulReifectProperties<State, TurboIcon>);
     set defaultState(value: State);
     set appendStateToIconName(value: boolean);
     initialize(): void;
 }
-/**
- * @group Components
- * @category TurboIconSwitch
- */
-declare function iconSwitch<State extends string | number | symbol = OnOff, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboIconSwitchProperties<State, ViewType, DataType, ModelType, EmitterType>): TurboIconSwitch<State, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -6418,7 +6528,7 @@ type TurboIconToggleProperties<ViewType extends TurboView = TurboView, DataType 
  * @category TurboIconToggle
  */
 declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    config: TurboIconConfig;
+    readonly properties: TurboIconToggleProperties;
     stopPropagationOnClick: boolean;
     onToggle: (value: boolean, el: TurboIconToggle) => void;
     private clickListener;
@@ -6426,11 +6536,6 @@ declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, 
     set toggleOnClick(value: boolean);
     toggle(): void;
 }
-/**
- * @group Components
- * @category TurboIconToggle
- */
-declare function iconToggle<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboIconToggleProperties<ViewType, DataType, ModelType, EmitterType>): TurboIconToggle<ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -6452,7 +6557,9 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
  * @category TurboInput
  */
 declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
-    static config: TurboRichElementConfig;
+    readonly properties: TurboInputProperties;
+    static defaultProperties: TurboInputProperties;
+    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
     protected labelElement: HTMLLabelElement;
     content: HTMLElement;
     defaultId: string;
@@ -6485,11 +6592,6 @@ declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueT
     protected processInputValue(value?: string): void;
     private sanitizeByRegex;
 }
-/**
- * @group Components
- * @category TurboInput
- */
-declare function turboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -6507,6 +6609,8 @@ type TurboNumericalInputProperties<ViewType extends TurboView = TurboView, DataT
  * @category TurboNumericalInput
  */
 declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
+    readonly properties: TurboNumericalInputProperties;
+    static defaultProperties: TurboNumericalInputProperties;
     multiplier: number;
     decimalPlaces: number;
     min: number;
@@ -6514,11 +6618,6 @@ declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, an
     get value(): number;
     set value(value: string | number);
 }
-/**
- * @group Components
- * @category TurboNumericalInput
- */
-declare function numericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties: TurboNumericalInputProperties<ViewType, DataType, ModelType, EmitterType>): TurboNumericalInput<ViewType, DataType, ModelType, EmitterType>;
 
 type EntryData = {
     enabled?: boolean;
@@ -6565,29 +6664,6 @@ type TurboSelectInputEventProperties<ValueType = string, SecondaryValueType = st
 };
 
 /**
- * @class TurboBaseElement
- * @group TurboElement
- * @category TurboBaseElement
- *
- * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
- * @template {TurboView} ViewType - The element's view type, if initializing MVC.
- * @template {object} DataType - The element's data type, if initializing MVC.
- * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
- * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
- */
-declare class TurboBaseElement {
-    /**
-     * @description Static configuration object.
-     */
-    static readonly config: any;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
-}
-
-/**
  * @class TurboSelect
  * @group Components
  * @category TurboSelect
@@ -6597,16 +6673,27 @@ declare class TurboBaseElement {
  * @extends TurboElement
  */
 declare class TurboSelect<ValueType = string, SecondaryValueType = string, EntryType extends object = HTMLElement> extends TurboBaseElement {
-    static readonly config: TurboSelectConfig;
+    readonly properties: TurboSelectProperties<ValueType, SecondaryValueType, EntryType>;
+    static defaultProperties: TurboSelectProperties;
     private _inputField;
     private _entries;
     private readonly _entriesData;
     private parentObserver;
-    readonly onSelectDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void>;
-    readonly onEnabledDelegate: Delegate<(b: boolean, entry: EntryType, index: number) => void>;
-    readonly onEntryAdded: Delegate<(entry: EntryType, index: number) => void>;
-    readonly onEntryRemoved: Delegate<(entry: EntryType) => void>;
-    readonly onEntryClicked: Delegate<(entry: EntryType, e: Event) => void>;
+    private readonly _onSelect;
+    get onSelect(): Delegate<(b: boolean, entry: EntryType, index: number) => void>;
+    set onSelect(value: (b: boolean, entry: EntryType, index: number) => void);
+    private readonly _onEnabled;
+    get onEnabled(): Delegate<(b: boolean, entry: EntryType, index: number) => void>;
+    set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void);
+    private readonly _onEntryAdded;
+    get onEntryAdded(): Delegate<(entry: EntryType, index: number) => void>;
+    set onEntryAdded(value: (entry: EntryType, index: number) => void);
+    private readonly _onEntryRemoved;
+    get onEntryRemoved(): Delegate<(entry: EntryType) => void>;
+    set onEntryRemoved(value: (entry: EntryType) => void);
+    private readonly _onEntryClicked;
+    get onEntryClicked(): Delegate<(entry: EntryType, e: Event) => void>;
+    set onEntryClicked(value: (entry: EntryType, e: Event) => void);
     /**
      * The dropdown's entries.
      */
@@ -6631,15 +6718,13 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     get inputField(): HTMLInputElement;
     set multiSelection(value: boolean);
     forceSelection: boolean;
-    set onSelect(value: (b: boolean, entry: EntryType, index: number) => void);
-    set onEnabled(value: (b: boolean, entry: EntryType, index: number) => void);
     selectedEntriesClasses: string | string[];
     entriesClasses: string | string[];
+    static create<Type extends new (...args: any[]) => TurboBaseElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
     /**
      * @description Dropdown constructor
-     * @param {TurboDropdownProperties} properties - Properties for configuring the dropdown.
      */
-    constructor(properties?: TurboSelectProperties<ValueType, SecondaryValueType, EntryType>);
+    constructor();
     protected getEntryData(entry: EntryType): EntryData;
     protected clearEntryData(entry: EntryType): void;
     addEntry(entry: EntryType, index?: number): void;
@@ -6676,6 +6761,7 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
      * @description The dropdown's currently selected entries
      */
     get selectedEntry(): EntryType;
+    set selectedValues(values: ValueType[]);
     /**
      * @description The dropdown's currently selected values
      */
@@ -6710,46 +6796,12 @@ declare class TurboSelectInputEvent<ValueType = string, SecondaryValueType = str
  * @description Properties for configuring a Dropdown.
  * @extends TurboProperties
  *
- * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
- * string is passed, a Button with the given string as text will be assigned as the selector.
- * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
- *
- * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
- *
- * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
- * default tag set in TurboConfig.Dropdown.
- *
- * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
- * classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [entriesClasses] - CSS class(es) for dropdown entries.
+ * @property {string | string[]} [selectedEntriesClasses] - CSS class(es) for selected entries.
  */
 type TurboSelectElementProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
-    customEntriesClasses?: string | string[];
-    customSelectedEntriesClasses?: string | string[];
-};
-/**
- * @type {TurboDropdownConfig}
- * @group Components
- * @category TurboDropdown
- *
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-type TurboSelectElementConfig = TurboElementConfig & {
-    defaultEntriesTag?: ValidTag;
+    entriesClasses?: string | string[];
+    selectedEntriesClasses?: string | string[];
 };
 
 /**
@@ -6761,7 +6813,8 @@ type TurboSelectElementConfig = TurboElementConfig & {
  * @extends TurboElement
  */
 declare class TurboSelectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboSelectElementConfig;
+    readonly properties: TurboSelectElementProperties;
+    static defaultProperties: TurboSelectElementProperties;
     readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
     entriesTag: ValidTag;
     get entries(): EntryType[];
@@ -6785,12 +6838,6 @@ declare class TurboSelectElement<ValueType = string, SecondaryValueType = string
     accessor stringSelectedValue: string;
     initialize(): void;
 }
-/**
- * @group Components
- * @category TurboDropdown
- * @param properties
- */
-declare function selectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboSelectElementProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>): TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @group Components
@@ -6808,14 +6855,10 @@ type StatelessPropertyConfig<Type, ClassType extends object = Element> = Type | 
  * @category Reifect
  */
 type StatelessReifectCoreProperties<ClassType extends object = Element> = {
-    properties?: StatelessPropertyConfig<PartialRecord<keyof ClassType, any>, ClassType>;
     styles?: StatelessPropertyConfig<StylesType, ClassType>;
     classes?: StatelessPropertyConfig<string | string[], ClassType>;
     replaceWith?: StatelessPropertyConfig<ClassType, ClassType>;
-    transitionProperties?: StatelessPropertyConfig<string | string[], ClassType>;
-    transitionDuration?: StatelessPropertyConfig<number, ClassType>;
-    transitionTimingFunction?: StatelessPropertyConfig<string, ClassType>;
-    transitionDelay?: StatelessPropertyConfig<number, ClassType>;
+    [k: PropertyKey]: StatelessPropertyConfig<any, ClassType>;
 };
 /**
  * @group Components
@@ -6890,66 +6933,9 @@ declare class Reifect<ClassType extends object = Node> extends StatefulReifect<"
      */
     get replaceWith(): StatelessPropertyConfig<ClassType, ClassType>;
     set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>);
-    /**
-     * @description The property(ies) to apply a CSS transition on, on the attached objects. Defaults to "all". It
-     * could take:
-     * - A string of space-separated CSS properties.
-     * - An array of CSS properties.
-     * - An interpolation function that would return a string of space-separated CSS properties or an array of
-     * CSS properties.
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionProperties(): StatelessPropertyConfig<string | string[], ClassType>;
-    set transitionProperties(value: StatelessPropertyConfig<string | string[], ClassType>);
-    /**
-     * @description The duration of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - An interpolation function that would return a duration (number in seconds).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionDuration(): StatelessPropertyConfig<number, ClassType>;
-    set transitionDuration(value: StatelessPropertyConfig<number, ClassType>);
-    /**
-     * @description The timing function of the CSS transition to apply on the attached objects. Defaults to "linear."
-     * It could take:
-     * - A string representing the timing function to apply.
-     * - An interpolation function that would return a timing function (string).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionTimingFunction(): StatelessPropertyConfig<string, ClassType>;
-    set transitionTimingFunction(value: StatelessPropertyConfig<string, ClassType>);
-    /**
-     * @description The delay of the CSS transition to apply on the attached objects. Defaults to 0. It could take:
-     * - A numerical value (in seconds).
-     * - An interpolation function that would return a delay (number in seconds).
-     *
-     * The interpolation function would take as arguments:
-     * - `index: number`: the index of the object in the applied list.
-     * - `total: number`: the total number of objects in the applied list.
-     * - `object: ClassType`: the object itself.
-     */
-    get transitionDelay(): StatelessPropertyConfig<number, ClassType>;
-    set transitionDelay(value: StatelessPropertyConfig<number, ClassType>);
     initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"default", ClassType>): void;
     apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"default", ClassType>): void;
 }
-/**
- * @group Components
- * @category Reifect
- */
-declare function reifect<ClassType extends object = Node>(properties: StatelessReifectProperties<ClassType>): Reifect<ClassType>;
 
 /**
  * @group Components
@@ -6973,6 +6959,7 @@ type TurboDrawerProperties<ViewType extends TurboView = TurboView, DataType exte
  * @category TurboDrawer
  */
 declare class TurboDrawer<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EMitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EMitterType> {
+    readonly properties: TurboDrawerProperties;
     private _panelContainer;
     get panelContainer(): HTMLElement;
     private dragging;
@@ -7026,17 +7013,6 @@ type TurboPopupProperties<ViewType extends TurboView = TurboView, DataType exten
  * @group Components
  * @category TurboPopup
  */
-type TurboPopupConfig = {
-    defaultClasses?: string | string[];
-    defaultPopupPosition?: Coordinate;
-    defaultAnchorPosition?: Coordinate;
-    defaultViewportMargin?: number | Coordinate;
-    defaultOffsetFromAnchor?: number | Coordinate;
-};
-/**
- * @group Components
- * @category TurboPopup
- */
 declare enum PopupFallbackMode {
     invert = "invert",
     offset = "offset",
@@ -7048,7 +7024,8 @@ declare enum PopupFallbackMode {
  * @category TurboPopup
  */
 declare class TurboPopup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboPopupConfig;
+    readonly properties: TurboPopupProperties;
+    static defaultProperties: TurboPopupProperties;
     protected static parentElement: HTMLElement;
     anchor: Element;
     set popupPosition(value: Coordinate);
@@ -7072,11 +7049,6 @@ declare class TurboPopup<ViewType extends TurboView = TurboView<any, any>, DataT
     private computeAxis;
     show(b: boolean): this;
 }
-/**
- * @group Components
- * @category TurboPopup
- */
-declare function popup<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboPopupProperties<ViewType, DataType, ModelType, EmitterType>): TurboPopup<ViewType, DataType, ModelType, EmitterType>;
 
 /**
  * @class AnchorPoint
@@ -7180,42 +7152,13 @@ declare class TurboRect extends DOMRect {
  * classes set in TurboConfig.Dropdown.
  * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
  * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customEntriesClasses] - Custom CSS class(es) for dropdown entries.  Overrides the
- * default classes set in TurboConfig.Dropdown.
- * @property {string | string[]} [customSelectedEntriesClasses] - Custom CSS class(es) for selected entries.  Overrides
- * the default classes set in TurboConfig.Dropdown.
  */
-type TurboDropdownProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
+type TurboDropdownProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboSelectElementProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> & {
     selector?: string | HTMLElement;
     popup?: HTMLElement;
     selectorTag?: HTMLTag;
     selectorClasses?: string | string[];
     popupClasses?: string | string[];
-    customEntriesClasses?: string | string[];
-    customSelectedEntriesClasses?: string | string[];
-};
-/**
- * @type {TurboDropdownConfig}
- * @group Components
- * @category TurboDropdown
- *
- * @description Configuration object for the Dropdown class. Set it via TurboConfig.Dropdown.
- *
- * @property {ValidTag} [defaultSelectorTag] - The default HTML tag for the creation of the text
- * element in generic selectors (which are Buttons).
- *
- * @property {string | string[]} [defaultSelectorClasses] - The default classes to assign to the selector.
- * @property {string | string[]} [defaultPopupClasses] - The default classes to assign to the popup element.
- * @property {string | string[]} [defaultEntriesClasses] - The default classes to assign to the dropdown entries.
- * @property {string | string[]} [defaultSelectedEntriesClasses] - The default classes to assign to the selected
- * dropdown entries.
- */
-type TurboDropdownConfig = TurboSelectElementConfig & {
-    defaultSelectorTag?: HTMLTag;
-    defaultSelectorClasses?: string | string[];
-    defaultPopupClasses?: string | string[];
-    defaultEntriesClasses?: string | string[];
-    defaultSelectedEntriesClasses?: string | string[];
 };
 
 /**
@@ -7227,7 +7170,8 @@ type TurboDropdownConfig = TurboSelectElementConfig & {
  * @extends TurboElement
  */
 declare class TurboDropdown<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
-    static readonly config: TurboDropdownConfig;
+    readonly properties: TurboDropdownProperties;
+    static defaultProperties: TurboDropdownProperties;
     readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
     private popupOpen;
     selectorTag: HTMLTag;
@@ -7245,26 +7189,6 @@ declare class TurboDropdown<ValueType = string, SecondaryValueType = string, Ent
     initialize(): void;
     private openPopup;
 }
-/**
- * @group Components
- * @category TurboDropdown
- * @param properties
- */
-declare function dropdown<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboDropdownProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>): TurboDropdown<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
-
-/**
- * @group Components
- * @category TurboMarkingMenu
- */
-declare class TurboMarkingMenu<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel> extends TurboElement<ViewType, DataType, ModelType> {
-    private readonly transition;
-    private currentOrigin;
-    minDragDistance: number;
-    semiMajor: number;
-    semiMinor: number;
-    startAngle: number;
-    endAngle: number;
-}
 
 /**
  * @group Components
@@ -7278,6 +7202,21 @@ type TurboMarkingMenuProperties<ValueType = string, SecondaryValueType = string,
     semiMinor?: number;
     minDragDistance?: number;
 };
+
+/**
+ * @group Components
+ * @category TurboMarkingMenu
+ */
+declare class TurboMarkingMenu<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel> extends TurboElement<ViewType, DataType, ModelType> {
+    readonly properties: TurboMarkingMenuProperties;
+    private readonly transition;
+    private currentOrigin;
+    minDragDistance: number;
+    semiMajor: number;
+    semiMinor: number;
+    startAngle: number;
+    endAngle: number;
+}
 
 /**
  * @group Components
@@ -7316,6 +7255,7 @@ type TurboSelectWheelStylingProperties = {
  * @template {TurboSelectEntry<ValueType, any>} EntryType
  */
 declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    readonly properties: TurboSelectWheelProperties;
     selector: TurboSelect<ValueType, SecondaryValueType, EntryType>;
     accessor entries: EntryType[];
     accessor values: ValueType[];
@@ -7366,7 +7306,75 @@ declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, 
     protected setOpenTimer(): void;
 }
 
+/**
+ * @type {TurboDropdownProperties}
+ * @group Components
+ * @category TurboDropdown
+ *
+ * @description Properties for configuring a Dropdown.
+ * @extends TurboProperties
+ *
+ * @property {(string | HTMLElement)} [selector] - Element or descriptor used as the dropdown selector. If a
+ * string is passed, a Button with the given string as text will be assigned as the selector.
+ * @property {HTMLElement} [popup] - The element used as a container for the dropdown entries.
+ *
+ * @property {boolean} [multiSelection=false] - Enables selection of multiple dropdown entries.
+ *
+ * @property {ValidTag} [selectorTag] - Custom HTML tag for the selector's text. Overrides the
+ * default tag set in TurboConfig.Dropdown.
+ *
+ * @property {string | string[]} [selectorClasses] - Custom CSS class(es) for the selector. Overrides the default
+ * classes set in TurboConfig.Dropdown.
+ * @property {string | string[]} [popupClasses] - Custom CSS class(es) for the popup container. Overrides the
+ * default classes set in TurboConfig.Dropdown.
+ */
+type TurboButtonPopupProperties<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboRichElementProperties<ElementTag, ViewType, DataType, ModelType, EmitterType> & {
+    popup?: HTMLElement;
+    popupClasses?: string | string[];
+};
+
+/**
+ * @class TurboButtonPopup
+ * @group Components
+ * @category TurboButton
+ *
+ * @description Button class for creating Turbo button elements.
+ * @extends TurboElement
+ */
+declare class TurboButtonPopup<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboButton<ElementTag, ViewType, DataType, ModelType, EmitterType> {
+    readonly properties: TurboButtonPopupProperties;
+    private popupOpen;
+    popupClasses: string | string[];
+    /**
+     * The dropdown's popup element.
+     */
+    set popup(value: HTMLElement);
+    protected setupUIListeners(): void;
+    private openPopup;
+}
+
 declare class TurboGrid<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+}
+
+/**
+ * @class TurboHeadlessElement
+ * @group TurboElement
+ * @category TurboHeadlessElement
+ *
+ * @description TurboHeadlessElement class, similar to TurboElement but without extending HTMLElement.
+ * @template {TurboView} ViewType - The element's view type, if initializing MVC.
+ * @template {object} DataType - The element's data type, if initializing MVC.
+ * @template {TurboModel<DataType>} ModelType - The element's model type, if initializing MVC.
+ * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
+ */
+declare class TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
+    /**
+     * @description Default properties assigned to a new instance.
+     */
+    static defaultProperties: TurboHeadlessProperties;
+    static create<Type extends new (...args: any[]) => TurboHeadlessElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: object): object;
+    readonly properties: TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType>;
 }
 
 /**
@@ -7382,24 +7390,16 @@ declare class TurboGrid<ViewType extends TurboView = TurboView<any, any>, DataTy
  */
 declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    static readonly config: any;
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    static configure(value: typeof this.config): void;
+    static defaultProperties: TurboElementProperties;
+    static create<Type extends new (...args: any[]) => TurboProxiedElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: object): object;
+    readonly properties: TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>;
     /**
      * @description The HTML (or other) element wrapped inside this instance.
      */
-    readonly element: ValidElement<ElementTag>;
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType>;
-    constructor(properties?: TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>);
+    get element(): ValidElement<ElementTag>;
     protected setupChangedCallbacks(): void;
     protected setupUIElements(): void;
     protected setupUILayout(): void;
@@ -7461,6 +7461,7 @@ type Turbo<Type extends object = Node> = TurboSelector<Type> & Type;
  */
 type TurbofyOptions = {
     excludeHierarchyFunctions?: boolean;
+    excludeMvcFunctions?: boolean;
     excludeStyleFunctions?: boolean;
     excludeClassFunctions?: boolean;
     excludeElementFunctions?: boolean;
@@ -7628,6 +7629,7 @@ declare const turbofy: (options?: TurbofyOptions) => void;
  * @category Equity
  */
 declare function areEqual<Type = any>(...entries: Type[]): boolean;
+declare function areSimilar<Type = any>(...entries: Type[]): boolean;
 /**
  * @group Utilities
  * @category Equity
@@ -7669,7 +7671,7 @@ declare function linearInterpolation(x: number, x1: number, x2: number, y1: numb
  * @group Utilities
  * @category Numbers
  */
-declare function trim(value: number, max: number, min?: number): number;
+declare function trim(value: number, max: number, min?: number, fallback?: number): number;
 /**
  * @group Utilities
  * @category Numbers
@@ -7686,11 +7688,6 @@ declare function randomId(length?: number): string;
  * @category Random
  */
 declare function randomFromRange(n1: number, n2: number): number;
-/**
- * @group Utilities
- * @category Random
- */
-declare function randomColor(saturation?: number | [number, number], lightness?: number | [number, number]): string;
 /**
  * @group Utilities
  * @category Random
@@ -7986,39 +7983,6 @@ declare function intersectSegments(a: Point, b: Point, c: Point, d: Point): Poin
 
 /**
  * @group Utilities
- * @category Color
- *
- * @description Evaluates the best color out of two provided options to put on top of a base color in terms of contrast
- * (for readability).
- * @param {string} baseColor - The base color in Hex format.
- * @param {string} [overlayColor1="#000000"] - The first overlay color to evaluate in Hex format. Defaults to black.
- * @param {string} [overlayColor2="#FFFFFF"] - The second overlay color to evaluate in Hex format. Defaults to white.
- */
-declare function bestOverlayColor(baseColor: string, overlayColor1?: string, overlayColor2?: string): string;
-
-/**
- * @group Utilities
- * @category Color
- *
- * @description Computes the contrast between two colors.
- * @param {string} color1 - The first color in Hex format
- * @param {string} color2 - The second color in Hex format
- * @return The contrast value, or NaN if one of the colors provided is not valid.
- */
-declare function contrast(color1?: string, color2?: string): number;
-
-/**
- * @group Utilities
- * @category Color
- *
- * @description Computes the luminance of a color
- * @param {string} color - The color in Hex format
- * @return The luminance value, or NaN if the color is not valid.
- */
-declare function luminance(color?: string): number;
-
-/**
- * @group Utilities
  * @category CSS
  * @description Constructs a single CSS string from a template literal containing CSS rules.
  */
@@ -8056,8 +8020,8 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, Mvc, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, alphabeticalSorting, areEqual, attachListenersAndBehaviors, auto, behavior, bestOverlayColor, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, contrast, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, dropdown, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, icon, iconSwitch, iconToggle, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, luminance, markDirty, mod, modelSignal, mutator, nestedModelSignal, numericalInput, observe, p, parse, polygonsIntersect, popup, projectPolygonOntoAxis, randomColor, randomFromRange, randomId, randomString, reifect, removeFromYArray, richElement, segmentIntersectsPolygon, selectElement, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turboInput, turbofy, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DataKeyType, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, DisabledTurboEventTypes, ElementTagDefinition, ElementTagMap, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonConfig, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownConfig, TurboDropdownProperties, TurboElementConfig, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconConfig, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupConfig, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementConfig, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
 interface TurboSelector {
@@ -8236,7 +8200,7 @@ interface TurboSelector {
         /**
          * @description Array of all the substrates attached to this element.
          */
-        readonly substrates: string[];
+        readonly substratesNames: string[];
         /**
          * @function makeSubstrate
          * @description Creates a new substrate attached to this element. Useful to maintain certain constraints or
@@ -8559,14 +8523,6 @@ interface TurboSelector<Type extends object = Node> {
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
         clone(options?: CloneElementOptions): Type;
         /**
-         * @function setMvc
-         * @description Sets MVC properties for a certain object. If no `mvc` field exists on the object, a new
-         * {@link Mvc} object will be created with the given properties.
-         * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
-         * @return {Mvc} - The created or retrieved {@link Mvc} object.
-         */
-        setMvc(properties: MvcGenerationProperties): Mvc;
-        /**
          * @description Destroys the element by removing it from the document and removing all its bound listeners.
          * @returns {this} Itself, allowing for method chaining.
          */
@@ -8612,6 +8568,200 @@ interface TurboElement extends TurboElementDefaultInterface {
 interface TurboElement<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel> extends TurboElementMvcInterface<ViewType, DataType, ModelType> {
     }
 interface TurboElement extends TurboElementUiInterface {
+    }
+interface TurboSelector<Type extends object = Node> {
+        /**
+         * @description The model of the element's MVC structure.
+         */
+        model: any;
+        /**
+         * @description The view of the element's MVC structure.
+         */
+        view: any;
+        /**
+         * @description The emitter of the element's MVC structure.
+         */
+        emitter: any;
+        /**
+         * @description The main data block attached to the element's model.
+         */
+        data: any;
+        /**
+         * @description The ID of the main data block of the element's model.
+         */
+        dataId: string;
+        /**
+         * @description The numerical index of the main data block of the element's model.
+         */
+        dataIndex: number;
+        /**
+         * @description The size (number) of the main data block of the element's model.
+         */
+        readonly dataSize: number;
+        /**
+         * @description The controllers of the element's MVC structure.
+         */
+        controllers: TurboController[];
+        /**
+         * @description The handlers attached to the element's model.
+         * Returns an empty array if no model is set.
+         */
+        handlers: TurboHandler[];
+        /**
+         * @description The interactors of the element's MVC structure.
+         */
+        interactors: TurboInteractor[];
+        /**
+         * @description The tools of the element's MVC structure.
+         */
+        tools: TurboTool[];
+        /**
+         * @description The substrates of the element's MVC structure.
+         */
+        substrates: TurboSubstrate[];
+        /**
+         * @function setMvc
+         * @description Configures the MVC structure for the element. Sets the provided MVC pieces (model, view,
+         * emitter, controllers, handlers, interactors, tools, substrates) on the element, initializes a default
+         * emitter if none is provided, and initializes all MVC pieces unless explicitly disabled.
+         * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        setMvc(properties: MvcGenerationProperties): this;
+        /**
+         * @function initializeMvc
+         * @description Initializes all MVC pieces attached to the element, in the following order: view,
+         * controllers, interactors, tools, substrates, and model. The model is initialized last to allow
+         * the view and controllers to set up their change callbacks first.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        initializeMvc(): this;
+        /**
+         * @function getMvcDifference
+         * @template {TurboView} ViewType - The element's view type.
+         * @template {object} DataType - The element's data type.
+         * @template {TurboModel<DataType>} ModelType - The element's model type.
+         * @template {TurboEmitter} EmitterType - The element's emitter type.
+         * @description Computes the structural difference between the element's current MVC configuration
+         * and a provided configuration description. The comparison is constructor-based (not instance-based):
+         * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
+         * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+         *   the result contains constructors present in the current MVC but absent from the provided configuration.
+         * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}] -
+         *  The configuration to compare against.
+         * @returns {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>}
+         *  A partial configuration of constructors describing pieces present in the current MVC
+         *  but not in the provided configuration.
+         */
+        getMvcDifference<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>>(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>;
+        /**
+         * @function getController
+         * @description Retrieves the attached MVC controller with the given key.
+         * @param {string} key - The controller's key.
+         * @returns {TurboController} - The controller.
+         */
+        getController(key: string): TurboController;
+        /**
+         * @function addController
+         * @description Adds the given controller to the element's MVC structure.
+         * @param {TurboController} controller - The controller to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addController(controller: TurboController): this;
+        /**
+         * @function removeController
+         * @description Removes the given controller from the element's MVC structure and unlinks it.
+         * @param {string | TurboController} keyOrInstance - The controller's key or instance to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeController(keyOrInstance: string | TurboController): this;
+        /**
+         * @function getHandler
+         * @description Retrieves the attached MVC handler with the given key.
+         * Returns undefined if no model is set.
+         * @param {string} key - The handler's key.
+         * @returns {TurboHandler} - The handler.
+         */
+        getHandler(key: string): TurboHandler;
+        /**
+         * @function addHandler
+         * @description Adds the given handler to the element's model.
+         * If no model is set, this operation is a no-op.
+         * @param {TurboHandler} handler - The handler to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addHandler(handler: TurboHandler): this;
+        /**
+         * @function removeHandler
+         * @description Removes the given handler from the element's model and unlinks it.
+         * If no model is set, this operation is a no-op.
+         * @param {string | TurboHandler} keyOrInstance - The handler's key or instance to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeHandler(keyOrInstance: string | TurboHandler): this;
+        /**
+         * @function getInteractor
+         * @description Retrieves the attached MVC interactor with the given key.
+         * @param {string} key - The interactor's key.
+         * @returns {TurboInteractor} - The interactor.
+         */
+        getInteractor(key: string): TurboInteractor;
+        /**
+         * @function addInteractor
+         * @description Adds the given interactor to the element's MVC structure.
+         * @param {TurboInteractor} interactor - The interactor to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addInteractor(interactor: TurboInteractor): this;
+        /**
+         * @function removeInteractor
+         * @description Removes the given interactor from the element's MVC structure and unlinks it.
+         * @param {string | TurboInteractor} keyOrInstance - The interactor's key or instance to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeInteractor(keyOrInstance: string | TurboInteractor): this;
+        /**
+         * @function getTool
+         * @description Retrieves the attached MVC tool with the given key.
+         * @param {string} key - The tool's key.
+         * @returns {TurboTool} - The tool.
+         */
+        getTool(key: string): TurboTool;
+        /**
+         * @function addTool
+         * @description Adds the given tool to the element's MVC structure.
+         * @param {TurboTool} tool - The tool to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addTool(tool: TurboTool): this;
+        /**
+         * @function removeTool
+         * @description Removes the given tool from the element's MVC structure and unlinks it.
+         * @param {string | TurboTool} keyOrInstance - The tool's key or instance to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeTool(keyOrInstance: string | TurboTool): this;
+        /**
+         * @function getSubstrate
+         * @description Retrieves the attached MVC substrate with the given key.
+         * @param {string} key - The substrate's key.
+         * @returns {TurboSubstrate} - The substrate.
+         */
+        getSubstrate(key: string): TurboSubstrate;
+        /**
+         * @function addSubstrate
+         * @description Adds the given substrate to the element's MVC structure.
+         * @param {TurboSubstrate} substrate - The substrate to add.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        addSubstrate(substrate: TurboSubstrate): this;
+        /**
+         * @function removeSubstrate
+         * @description Removes the given substrate from the element's MVC structure and unlinks it.
+         * @param {string | TurboSubstrate} keyOrInstance - The substrate's key or instance to remove.
+         * @returns {this} Itself, allowing for method chaining.
+         */
+        removeSubstrate(keyOrInstance: string | TurboSubstrate): this;
     }
 interface TurboHeadlessElement extends TurboElementDefaultInterface {
     }
@@ -8789,19 +8939,46 @@ interface TurboSelector {
         setStyles(styles: StylesType, instant?: boolean): this;
     }
 interface TurboElementTagNameMap {
+        "turbo-button": TurboButton;
+    }
+interface TurboElementTagNameMap {
         "turbo-icon": TurboIcon;
     }
 interface TurboElementTagNameMap {
         "turbo-rich-element": TurboRichElement;
     }
 interface TurboElementTagNameMap {
-        "turbo-button": TurboButton;
-    }
-interface TurboElementTagNameMap {
         "turbo-icon-switch": TurboIconSwitch;
     }
 interface TurboElementTagNameMap {
         "turbo-icon-toggle": TurboIconToggle;
+    }
+interface TurboElementTagNameMap {
+        "turbo-inout": TurboInput;
+    }
+interface TurboElementTagNameMap {
+        "turbo-numerical-inout": TurboNumericalInput;
+    }
+interface TurboElementTagNameMap {
+        "turbo-select-element": TurboSelectElement;
+    }
+interface TurboElementTagNameMap {
+        "turbo-drawer": TurboDrawer;
+    }
+interface TurboElementTagNameMap {
+        "turbo-popup": TurboPopup;
+    }
+interface TurboElementTagNameMap {
+        "turbo-dropdown": TurboDropdown;
+    }
+interface TurboElementTagNameMap {
+        "turbo-marking-menu": TurboMarkingMenu;
+    }
+interface TurboElementTagNameMap {
+        "turbo-select-wheel": TurboSelectWheel;
+    }
+interface TurboElementTagNameMap {
+        "turbo-button-popup": TurboButtonPopup;
     }
 interface TurboSelector {
         /**
@@ -9006,6 +9183,12 @@ interface TurboSelector {
          * @returns {this} Itself, allowing for method chaining.
          */
         execute(callback: ((el: this) => void)): this;
+        apply(properties: Partial<this["element"]> & Record<string, any>): this;
+        removeFields(keys: (keyof this["element"] | string)[]): this;
+        getDefaults(defaults: (keyof this["element"] | string)[]): Partial<this["element"]> & Record<string, any>;
+        getIntersection(other: Partial<this["element"]> & Record<string, any>): Partial<this["element"]> & Record<string, any>;
+        getDifference(other: Partial<this["element"]> & Record<string, any>): Partial<this["element"]> & Record<string, any>;
+        extract(keys: (keyof this["element"] | string)[]): Partial<this["element"]> & Record<string, any>;
         /**
          * @function applyDefaults
          * @description Apply default properties to the underlying object, with optional smart merging for
@@ -9034,8 +9217,6 @@ interface TurboSelector {
          * @description Readonly shallow set of the reifects attached to this object.
          */
         readonly reifects: Set<StatefulReifect>;
-        readonly onTransitionStart: Delegate<() => void>;
-        readonly onTransitionEnd: Delegate<() => void>;
         /**
          * @description The transition used by the element's show() and isShown methods. Directly modifying its
          * value will modify all elements' default showTransition. Unless this is the desired outcome, set it to a
@@ -9106,11 +9287,11 @@ interface TurboSelector {
          */
         reloadReifects(): this;
         /**
-         * @function reloadTransitions
+         * @function reloadReifectsChainableStyles
          * @description Reloads all transitions attached to this object. Doesn't recompute values.
          * @returns {this} - Itself, allowing for method chaining.
          */
-        reloadTransitions(): this;
+        reloadReifectsChainableStyles(applyInstantly?: boolean): this;
         /**
          * @function reifectEnabledState
          * @description Get the reifect enabled state of this object. If a reifect is provided, the enabled state of

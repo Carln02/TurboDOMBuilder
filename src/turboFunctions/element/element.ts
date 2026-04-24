@@ -2,9 +2,7 @@ import "./element.types";
 import {TurboSelector} from "../turboSelector";
 import {CloneElementOptions, FeedforwardProperties, TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
-import {Mvc} from "../../mvc/mvc";
 import {TurboModel} from "../../mvc/model/model";
-import {MvcGenerationProperties} from "../../mvc/mvc.types";
 import {ValidElement, ValidTag} from "../../types/element.types";
 import {DefaultEventName} from "../../types/eventNaming.types";
 import {stringify} from "../../utils/dataManipulation/string";
@@ -13,6 +11,7 @@ import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
 import {equalToAny} from "../../utils/computations/equity";
 import {ElementFunctionsUtils} from "./element.utils";
 import {TurboElementProperties} from "../../turboElement/turboElement.types";
+import {MvcFields} from "../mvc/mvc";
 
 const utils = new ElementFunctionsUtils();
 
@@ -28,51 +27,43 @@ export function setupElementFunctions() {
     TurboSelector.prototype.setProperties = function _setProperties<Tag extends ValidTag>
     (this: TurboSelector<ValidElement<Tag>>, properties: TurboProperties<Tag> = {} as TurboProperties<Tag>,
      setOnlyBaseProperties: boolean = false): TurboSelector<ValidElement<Tag>> {
-        if (!this) return this;
+        if (!this.element) return this;
+        const props = {...properties};
+        const isElement = this.element instanceof Element;
+        turbo(properties).removeFields(["tag", "namespace"]);
+        const {out, shadowDOM, initialize, parent, model, data, dataId} =
+            turbo(props).extract(["out", "shadowDOM", "initialize", "parent", "model", "data", "dataId"]);
+        let mvcUpdated = false;
 
-        if (properties.out) {
-            if (typeof properties.out == "string") this["__outName"] = properties.out;
-            else Object.assign(properties.out, this);
+        if (out) {
+            if (typeof out == "string") this["__outName"] = out;
+            else Object.assign(out, this);
+        }
+        if (!!shadowDOM) {
+            if ("shadowDOM" in this.element) this["shadowDOM"] = shadowDOM;
+            else if (isElement) this.element.attachShadow({mode: "open"});
         }
 
-        if (!this.element.shadowRoot) {
-            let shadowDOM = !!properties.shadowDOM;
-            if ("getPropertiesValue" in this.element && typeof this.element.getPropertiesValue === "function")
-                shadowDOM = this.element.getPropertiesValue(properties.shadowDOM, "shadowDOM");
-            if (shadowDOM) try {
-                this.element.attachShadow({mode: "open"})
-            } catch {
-            }
-        }
-
-        const mvc = this.element?.["mvc"] instanceof Mvc ? this.element["mvc"]
-            : "model" in this.element && "view" in this.element ? this.element : undefined;
-
-        if (!setOnlyBaseProperties && mvc) {
-            for (const property of ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"]) {
-                const value = properties[property];
-                if (value === undefined) continue;
-                try {
-                    mvc[property] = value;
-                    if (property === "model" && properties.data && mvc["model"] instanceof TurboModel) {
-                        mvc["model"].setDataWithoutInitializing(properties.data);
-                        mvc["model"].id = properties.dataId;
-                    }
-                } catch {
+        if (!isElement || (isElement && !setOnlyBaseProperties)) {
+            if (model) {
+                this.model = model;
+                if (data && this.model) {
+                    this.model.setDataWithoutInitializing(data);
+                    this.model.id = dataId;
                 }
+                mvcUpdated = true;
+            }
+
+            const mvc = turbo(props).extract(MvcFields);
+            for (const [key, value] of Object.entries(mvc)) {
+                try {this[key] = value; mvcUpdated = true;} catch {}
             }
         }
 
-        for (const property of Object.keys(properties)) {
-            const value = properties[property];
+        if (isElement) for (const property of Object.keys(props)) {
+            const value = props[property];
             if (value === undefined) continue;
-
             switch (property) {
-                case "tag":
-                case "namespace":
-                case "shadowDOM":
-                    break;
-
                 case "text":
                     if (this.element instanceof HTMLElement) this.element.innerText = value;
                     break;
@@ -102,45 +93,20 @@ export function setupElementFunctions() {
                 case "children":
                     this.addChild(value);
                     break;
-                case "parent":
-                    break;
-
-                case "data":
-                case "dataId":
-                case "initialize":
-                    if (mvc) break;
-
-                case "model":
-                case "view":
-                case "emitter":
-                case "controllers":
-                case "handlers":
-                case "interactors":
-                case "tools":
-                case "substrates":
-                    break;
-
                 default:
                     if (setOnlyBaseProperties) break;
-                    try {
-                        this.element[property] = value
-                    } catch (e) {
-                        try {
-                            this.setAttribute(property, stringify(value))
-                        } catch (e) {
-                            console.error(e)
-                        }
+                    try {this.element[property] = value} catch {
+                        try {this.setAttribute(property, stringify(value))} catch (e) {console.error(e)}
                     }
                     break;
             }
-        }
+        } else this.apply(props as any);
 
-        if (properties.parent) this.addToParent(properties.parent);
+        if (parent) this.addToParent(parent);
 
-        if (properties.initialize === undefined || properties.initialize) {
-            if (this.element && "initialize" in this.element && typeof this.element.initialize === "function") {
-                if (!this.element["initialized"]) this.element.initialize();
-            } else if (mvc && "initialize" in mvc && typeof mvc.initialize === "function") mvc.initialize();
+        if (initialize === undefined || initialize) {
+            if ("initialize" in this.element && typeof this.element.initialize === "function") this.element.initialize();
+            else if (mvcUpdated) this.initializeMvc();
         }
 
         return this;
@@ -188,7 +154,8 @@ export function setupElementFunctions() {
                     }
                     return value;
                 }
-            } catch {}
+            } catch {
+            }
         };
 
         const constructor = originElement.constructor as any;
@@ -196,13 +163,14 @@ export function setupElementFunctions() {
         const mvc = originElement["mvc"];
         let properties = {};
 
-        if (mvc && mvc instanceof Mvc) {
-            const defaultProperties: any = {};
-            for (let i = 0; i < prototypeChain.length; i++) {
-                turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
-            }
-            properties = mvc.getDifference(defaultProperties);
-        }
+        //TODO FIX
+        // if (mvc && mvc instanceof Mvc) {
+        //     const defaultProperties: any = {};
+        //     for (let i = 0; i < prototypeChain.length; i++) {
+        //         turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
+        //     }
+        //     properties = mvc.getDifference(defaultProperties);
+        // }
 
         //TODO maybe clone the data
         if (originElement["model"] && originElement["data"]) properties["data"] = originElement["data"];
@@ -231,20 +199,14 @@ export function setupElementFunctions() {
             const value = originElement[key];
             if (!shouldCopy(key, value, prototype)) continue;
             let newValue = copyField(key, value);
-            if (newValue !== undefined) try {clone[key] = newValue} catch {}
+            if (newValue !== undefined) try {
+                clone[key] = newValue
+            } catch {
+            }
         }
 
         return clone;
     };
-
-    TurboSelector.prototype.setMvc = function _setMvc(this: TurboSelector, properties: MvcGenerationProperties): Mvc {
-        if (!this.element) return undefined;
-        if ("mvc" in this.element && this.element.mvc instanceof Mvc) {
-            this.element.mvc.generate(properties);
-            return this.element.mvc;
-        }
-        return new Mvc({...properties, element: this.element});
-    }
 
     /**
      * @description Destroys the node by removing it from the document and removing all its bound listeners.
@@ -315,7 +277,12 @@ export function setupElementFunctions() {
             else saved = this.clone(properties?.cloneOptions);
         }
         turbo(saved).setProperties(this.defaultFeedforwardProperties ?? {})
-            .setProperties({...properties, cloneOptions: undefined, type: undefined, removeOnPointerRelease: undefined});
+            .setProperties({
+                ...properties,
+                cloneOptions: undefined,
+                type: undefined,
+                removeOnPointerRelease: undefined
+            });
         feedforwardElements.set(type, saved);
 
         if (properties.removeOnPointerRelease) turbo(document.body).on(DefaultEventName.clickEnd, () => {

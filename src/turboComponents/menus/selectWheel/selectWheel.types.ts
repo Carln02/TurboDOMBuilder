@@ -6,6 +6,7 @@ import {TurboElementProperties} from "../../../turboElement/turboElement.types";
 import {Direction, Range} from "../../../types/enums.types";
 import {PartialRecord} from "../../../types/basic.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
+import {TurboSelectWheel} from "./selectWheel";
 
 /**
  * @group Components
@@ -45,5 +46,12 @@ type TurboSelectWheelStylingProperties = {
     size: Record<Range, number>,
     defaultComputedStyles: PartialRecord<keyof CSSStyleDeclaration, string | number>
 };
+
+
+declare module "../../../types/element.types" {
+    interface TurboElementTagNameMap {
+        "turbo-select-wheel": TurboSelectWheel
+    }
+}
 
 export {TurboSelectWheelProperties, TurboSelectWheelStylingProperties};

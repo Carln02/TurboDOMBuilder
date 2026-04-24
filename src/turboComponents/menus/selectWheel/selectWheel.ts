@@ -14,7 +14,6 @@ import {DefaultEventName} from "../../../types/eventNaming.types";
 import {Point} from "../../datatypes/point/point";
 import {PartialRecord} from "../../../types/basic.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {element} from "../../../elementCreation/element";
 import {expose} from "../../../decorators/expose";
 import {TurboSelect} from "../../basics/select/select";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
@@ -30,7 +29,6 @@ import {Propagation} from "../../../turboFunctions/event/event.types";
  * @template {string} ValueType
  * @template {TurboSelectEntry<ValueType, any>} EntryType
  */
-@define("turbo-select-wheel")
 class TurboSelectWheel<
     ValueType = string,
     SecondaryValueType = string,
@@ -40,6 +38,7 @@ class TurboSelectWheel<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+     public declare readonly properties: TurboSelectWheelProperties;
     public selector: TurboSelect<ValueType, SecondaryValueType, EntryType>;
 
     @expose("selector") public accessor entries: EntryType[];
@@ -70,11 +69,11 @@ class TurboSelectWheel<
 
 
     public initialize(): void {
-        this.selector = new TurboSelect();
+        this.selector = TurboSelect.create() as any;
         this.selector.multiSelection = false;
         this.selector.forceSelection = true;
 
-        this.selector.onSelectDelegate.add((b) => {
+        this.selector.onSelect.add((b) => {
             if (!b) return;
             this.open = true;
             if (!this.alwaysOpen) this.setOpenTimer();
@@ -144,7 +143,7 @@ class TurboSelectWheel<
     }) public get reifect(): Reifect {return}
 
     public set reifect(value: Reifect | StatelessReifectProperties) {
-        this.reifect.attachAll(...this.entries);
+        this.reifect.attach(...this.entries);
     }
 
     private readonly closeOnClick = () => this.open = false;
@@ -187,7 +186,7 @@ class TurboSelectWheel<
         if (value > max) value = max;
 
         this._currentPosition = value;
-        const elements = this.reifect.getEnabledObjectsData();
+        const elements = this.reifect.getEnabledObjects();
         if (elements.length === 0) return;
 
         elements.forEach((el, index) =>
@@ -227,7 +226,7 @@ class TurboSelectWheel<
         this.positionPerEntry.length = 0;
         this.totalSize = 0;
 
-        this.reifect.getEnabledObjectsData().forEach(entry => {
+        this.reifect.getEnabledObjects().forEach(entry => {
             const object = entry.object.deref();
             const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
             this.sizePerEntry.push(size);
@@ -317,20 +316,6 @@ class TurboSelectWheel<
         this.openTimer = setTimeout(() => this.open = false, this.openTimeout);
     }
 }
-//
-// function selectWheel<
-//     ValueType = string,
-//     SecondaryValueType = string,
-//     EntryType extends HTMLElement = HTMLElement,
-//     ViewType extends TurboView = TurboView<any, any>,
-//     DataType extends object = object,
-//     ModelType extends TurboModel<DataType> = TurboModel,
-//     EmitterType extends TurboEmitter = TurboEmitter
-// >(
-//     properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>
-// ): TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
-//     turbo(properties).applyDefaults({tag: "turbo-select-wheel"});
-//     return element({...properties}) as TurboSelectWheel<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
-// }
 
+define(TurboSelectWheel);
 export {TurboSelectWheel};

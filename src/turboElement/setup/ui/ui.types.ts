@@ -13,6 +13,12 @@ interface TurboElementUiInterface {
      * it will accordingly add/remove the CSS classes from the element.
      */
     unsetDefaultClasses: boolean;
+
+    shadowDOM: boolean;
+
+    defaultSelectedClasses: string | string[];
+
+    defaultClasses: string | string[];
 }
 
 export {TurboElementUiInterface};

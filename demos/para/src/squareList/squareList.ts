@@ -3,7 +3,9 @@ import {
     effect,
     Reifect,
     Point,
-    TurboBaseElement
+    TurboBaseElement,
+    Color,
+    define
 } from "../../../../build/turbodombuilder.esm";
 import {Square} from "../square/square";
 
@@ -13,11 +15,10 @@ export class SquareList extends TurboBaseElement {
     private squares: Square[] = [];
 
     private reifect: Reifect = new Reifect<Square>({
-        properties: (id, total) => {
-            return {
-                position: Point.linearInterpolation(this.startSquare.position, this.endSquare.position, id / total),
-            }
-        }
+        position: (id, total) =>
+            Point.linearInterpolation(this.startSquare.position, this.endSquare.position, (id + 1) / (total + 1)),
+        color: (id, total) =>
+            Color.interpolate(this.startSquare.color, this.endSquare.color, (id + 1) / (total + 1))
     });
 
     public get startSquare(): Square {
@@ -33,10 +34,10 @@ export class SquareList extends TurboBaseElement {
     }
 
     @effect private updateSquareCount() {
-        // this.reifect.detach(...this.squares);
         if (this.count < this.squares.length) {
-            for (let i = this.squares.length; i >= this.count; i--) this.squares[i].remove();
-            this.squares.splice(this.count, this.squares.length - this.count);
+            const removed = this.squares.splice(this.count);
+            this.reifect.detach(...removed);
+            for (const square of removed) square.remove();
         } else if (this.count > this.squares.length) {
             for (let i = this.squares.length; i < this.count; i++) this.squares[i] =
                 Square.create({parent: this.canvas});
@@ -44,7 +45,11 @@ export class SquareList extends TurboBaseElement {
 
         this.startSquare.modifiable = true;
         this.endSquare.modifiable = true;
-        for (let i = 1; i < this.squares.length - 1; i++) this.squares[i].modifiable = false;
-        this.reifect.attachAll(...this.squares);
+        const middleSquares = this.squares.slice(1, -1);
+        for (const square of middleSquares) square.modifiable = false;
+        this.reifect.attach(...middleSquares);
+        this.reifect.apply();
     }
 }
+
+define(SquareList);

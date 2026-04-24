@@ -1,5 +1,4 @@
-import {TurboIconProperties, TurboIconConfig} from "./icon.types";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {turbo} from "../../../turboFunctions/turboFunctions";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
@@ -9,11 +8,12 @@ import {auto} from "../../../decorators/auto/auto";
 import {img} from "../../../elementCreation/basicElements";
 import {equalToAny} from "../../../utils/computations/equity";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {element} from "../../../elementCreation/element";
 import {cache} from "../../../decorators/cache/cache";
 import {isUndefined} from "../../../utils/dataManipulation/misc";
 import {getFileExtension} from "../../../utils/dataManipulation/string";
 import {fetchSvg} from "../../../utils/dataManipulation/svg";
+import {Color} from "../../datatypes/color/color";
+import {TurboIconProperties} from "./icon.types";
 
 /**
  * @class TurboIcon
@@ -23,21 +23,19 @@ import {fetchSvg} from "../../../utils/dataManipulation/svg";
  * @description Icon class for creating icon elements.
  * @extends TurboElement
  */
-@define("turbo-icon")
 class TurboIcon<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    public static readonly config: TurboIconConfig = {
-        ...TurboElement.config,
-        defaultType: "svg",
-        customLoaders: {}
+     public declare readonly properties: TurboIconProperties;
+    public static readonly customLoaders: Record<string, (path: string) => (Element | Promise<Element>)> = {};
+    public static defaultProperties: Partial<TurboIconProperties> = {
+        type: "svg"
     };
 
-    private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp",
-        "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
+    private static imageTypes = ["png", "jpg", "jpeg", "gif", "webp", "PNG", "JPG", "JPEG", "GIF", "WEBP"] as const;
 
     private _element: Element;
     private _loadToken = 0;
@@ -48,7 +46,6 @@ class TurboIcon<
      * @description The type of the icon.
      */
     @observe @auto({
-        initialValueCallback: function() {return this.getPropertiesValue(this.type, "defaultType", "svg")},
         preprocessValue: function (value: string) {
             if (!value || value.length == 0) return this.type;
             if (value[0] == ".") value = value.substring(1);
@@ -61,7 +58,6 @@ class TurboIcon<
      * @description The user-provided (or statically configured) directory to the icon's file.
      */
     @observe @auto({
-        initialValueCallback: function() {return this.getPropertiesValue(undefined, "defaultDirectory", "")},
         preprocessValue: function (value: string) {
             if (isUndefined(value)) return this.directory;
             if (value.length > 0 && !value.endsWith("/")) value += "/";
@@ -77,7 +73,7 @@ class TurboIcon<
         let extension = getFileExtension(this.icon);
         const icon = this.icon?.replace(extension, "");
         if (extension.length === 0 && this.type?.length > 0) extension = "." + this.type;
-        return this.directory + icon + extension;
+        return (this.directory ?? "") + icon + extension;
     }
 
     /**
@@ -93,8 +89,9 @@ class TurboIcon<
     /**
      * @description The assigned color to the icon (if any)
      */
-    @observe @auto() public set iconColor(value: string) {
-        this.updateColor(value);
+    @observe @auto() public get iconColor(): Color {return}
+    @observe @auto() public set iconColor(value: Color | string) {
+        this.updateColor(Color.from(value));
     }
 
     /**
@@ -119,8 +116,8 @@ class TurboIcon<
         return img({src: path, alt: this.icon});
     }
 
-    protected updateColor(value: string = this.iconColor) {
-        if (value && this.element instanceof SVGElement) this.element.style.fill = value;
+    protected updateColor(value: Color = this.iconColor) {
+        if (value && this.element instanceof SVGElement) this.element.style.fill = value.toString();
     }
 
     protected generateIcon() {
@@ -136,6 +133,7 @@ class TurboIcon<
 
         this.clear();
         if (!this.icon || this.icon.length === 0) return;
+        if (!type) return;
 
         const token = ++this._loadToken;
         const element = this.getLoader(type)(path);
@@ -150,7 +148,7 @@ class TurboIcon<
     private getLoader(type: string): (path: string) => Element | Promise<Element> {
         if (!type) return;
 
-        const customLoader = (this.constructor as any).config.customLoaders[type];
+        const customLoader = (this.constructor as any).customLoaders?.[type];
         if (customLoader) return customLoader;
 
         if (equalToAny(type, "svg", "SVG")) return this.loadSvg.bind(this);
@@ -162,44 +160,17 @@ class TurboIcon<
         if (this.element || !element) return;
         if (element.parentElement) element = element.cloneNode(true) as Element;
 
-        $(this).addChild(element);
+        turbo(this).addChild(element);
         this.updateColor();
         this.onLoaded?.(element);
         this.element = element;
     }
 
     private clear() {
-        $(this.element).destroy();
+        turbo(this.element).destroy();
         this.element = null;
     }
-
-    // public static create<
-    //     ViewType extends TurboView = TurboView<any, any>,
-    //     DataType extends object = object,
-    //     ModelType extends TurboModel<DataType> = TurboModel,
-    //     EmitterType extends TurboEmitter = TurboEmitter
-    // >(
-    //     properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>
-    // ): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    //     return super.create(properties);
-    // }
 }
 
-/**
- * @group Components
- * @category TurboIcon
- * @param properties
- */
-function icon<
-    ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
-    ModelType extends TurboModel<DataType> = TurboModel,
-    EmitterType extends TurboEmitter = TurboEmitter
->(
-    properties: TurboIconProperties<ViewType, DataType, ModelType, EmitterType>
-): TurboIcon<ViewType, DataType, ModelType, EmitterType> {
-    if (!properties.tag) properties.tag = "turbo-icon";
-    return element({...properties}) as any;
-}
-
-export {TurboIcon, icon};
+define(TurboIcon);
+export {TurboIcon};

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
+    "outDir": "./dist-temp",
     "declaration": true,
     "declarationDir": "./build/types",
     "moduleResolution": "node",

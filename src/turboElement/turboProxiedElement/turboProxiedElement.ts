@@ -1,4 +1,3 @@
-import {Mvc} from "../../mvc/mvc";
 import {TurboProxiedProperties} from "./turboProxiedElement.types";
 import {blindElement} from "../../elementCreation/element";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
@@ -8,6 +7,12 @@ import {defineDefaultProperties} from "../setup/default/default";
 import {defineMvcAccessors} from "../setup/mvc/mvc";
 import {defineUIPrototype} from "../setup/ui/ui";
 import {ValidElement, ValidTag} from "../../types/element.types";
+import {TurboElementProperties} from "../turboElement.types";
+import {turbo} from "../../turboFunctions/turboFunctions";
+import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
+import {addRegistryCategory} from "../../decorators/define/define";
+
+const elementSymbol = Symbol("___element___");
 
 /**
  * @class TurboProxiedElement
@@ -28,34 +33,32 @@ class TurboProxiedElement<
     EmitterType extends TurboEmitter = TurboEmitter<any>
 > {
     /**
-     * @description Static configuration object.
+     * @description Default properties assigned to a new instance.
      */
-    public static readonly config: any = {shadowDOM: false, defaultSelectedClass: "selected"};
+    public static defaultProperties: TurboElementProperties = {
+        defaultSelectedClasses: "selected"
+    };
 
-    /**
-     * @description Update the class's static configurations. Will only overwrite the set properties.
-     * @property {typeof this.config} value - The object containing the new configurations.
-     */
-    public static configure(value: typeof this.config) {
-        Object.entries(value).forEach(([key, val]) => {
-            if (val !== undefined) this.config[key] = val;
-        });
+    public static create<Type extends new (...args: any[]) => TurboProxiedElement>
+    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        return (this as any).customCreate.call(this, properties);
     }
+
+    protected static customCreate(properties: object): object {
+        const prototypeChain = getPrototypeChain(this);
+        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
+        const obj = new this();
+        obj[elementSymbol] = blindElement(properties);
+        return obj;
+    }
+
+    public declare readonly properties: TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>;
 
     /**
      * @description The HTML (or other) element wrapped inside this instance.
      */
-    public readonly element: ValidElement<ElementTag>;
-
-    /**
-     * @description The MVC handler of the element. If initialized, turns the element into an MVC structure.
-     * @protected
-     */
-    protected mvc: Mvc<this, ViewType, DataType, ModelType, EmitterType> = new Mvc({element: this});
-
-    public constructor(properties: TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType> =
-                       {} as TurboProxiedProperties<ElementTag, ViewType, DataType, ModelType, EmitterType>) {
-        this.element = blindElement(properties as any);
+    public get element(): ValidElement<ElementTag> {
+        return this[elementSymbol];
     }
 
     protected setupChangedCallbacks(): void {
@@ -77,4 +80,5 @@ class TurboProxiedElement<
     defineUIPrototype(TurboProxiedElement);
 })();
 
+addRegistryCategory(TurboProxiedElement);
 export {TurboProxiedElement};

@@ -18,8 +18,11 @@ type TurboProxiedProperties<
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = Omit<TurboProperties<Tag>, "model" | "view"> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
+> = TurboProperties<Tag> & TurboHeadlessProperties<ViewType, DataType, ModelType, EmitterType> & {
     unsetDefaultClasses?: boolean,
+    shadowDOM?: boolean,
+    defaultSelectedClasses?: string | string[]
+    defaultClasses?: string | string[],
 };
 
 declare module "./turboProxiedElement" {
