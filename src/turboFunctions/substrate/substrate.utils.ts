@@ -213,6 +213,11 @@ export class SubstrateFunctionsUtils {
         if (properties.eventTarget) substrateData.queue.remove(properties.eventTarget);
         else object = substrateData.queue.pop();
 
+        const onObjectAdded = (entry: object, state: "added" | "removed") => {
+            if (state === "added") substrateData.queue.push(entry);
+        };
+        substrateData.objectList.onChanged.add(onObjectAdded);
+
         while (object) {
             const passes = substrateData.passes.get(object) ?? 0;
             if (passes < substrateData.maxPasses) {
@@ -226,5 +231,7 @@ export class SubstrateFunctionsUtils {
 
             object = substrateData.queue.pop();
         }
+
+        substrateData.objectList.onChanged.remove(onObjectAdded);
     }
 }

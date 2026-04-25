@@ -13,7 +13,7 @@ const logSelection = (label: string, sel: TurboSelect<any, any, any>) => {
 /* 1) Basics: values[] -> single select, forceSelection default */
 function selectTest1() {
     const host = div({classes: "select-parent"});
-    const sel = new TurboSelect<string>({ values: ["Alpha", "Beta", "Gamma"], parent: host });
+    const sel = TurboSelect.create({ values: ["Alpha", "Beta", "Gamma"], parent: host });
     sel.onSelect = () => logSelection("basic", sel);
 
     const b = box("TurboSelect — Basics");
@@ -22,7 +22,7 @@ function selectTest1() {
 
 /* 2) Preselected via constructor + multiSelection */
 function selectTest2() {
-    const sel = new TurboSelect<string>({
+    const sel = TurboSelect.create({
         values: ["One", "Two", "Three", "Four"],
         selectedValues: ["Two", "Four"],
         multiSelection: true,
@@ -46,7 +46,7 @@ function selectTest2() {
 
 /* 3) forceSelection = false (allow empty) + programmatic selectByIndex */
 function selectTest3() {
-    const sel = new TurboSelect<string>({
+    const sel = TurboSelect.create({
         values: ["A", "B", "C"],
         multiSelection: false,
     });
@@ -66,15 +66,15 @@ function selectTest3() {
 function selectTest4() {
     type Entry = HTMLElement;
 
-    const sel = new TurboSelect<number, string, Entry>({
+    const sel = TurboSelect.create({
         values: [10, 20, 30],
     });
 
     // Secondary value (e.g., label code)
-    sel.getSecondaryValue = (el) => el?.dataset?.code ?? "";
+    sel.getSecondaryValue = (el: any) => el?.dataset?.code ?? "";
 
     // getValue reads number from data-value
-    sel.getValue = (el) => Number(el?.dataset?.value ?? NaN);
+    sel.getValue = (el: any) => Number(el?.dataset?.value ?? NaN);
 
     // createEntry maps number -> custom element w/ data attributes
     sel.createEntry = (num: number) => {
@@ -104,7 +104,7 @@ function selectTest4() {
 /* 5) Parent DOM observation: add/remove entries dynamically */
 function selectTest5() {
     const host = div({classes: "select-parent"}); // container the select will watch
-    const sel = new TurboSelect<string>({parent: host});
+    const sel = TurboSelect.create({parent: host});
 
     // Start with two
     $(host).addChild([TurboRichElement.create({text: "Live-1"}), TurboRichElement.create({text: "Live-2"})]);
@@ -128,7 +128,7 @@ function selectTest5() {
 
 /* 6) Enable/Disable + callbacks */
 function selectTest6() {
-    const sel = new TurboSelect<string>({ values: ["Red", "Green", "Blue"] });
+    const sel = TurboSelect.create({ values: ["Red", "Green", "Blue"] });
     const host = div({classes: "select-parent"});
     sel.parent = host;
 
@@ -148,7 +148,7 @@ function selectTest6() {
 
 /* 7) Hidden input sync */
 function selectTest7() {
-    const sel = new TurboSelect<string>({ values: ["Cat", "Dog", "Bird"] });
+    const sel = TurboSelect.create({ values: ["Cat", "Dog", "Bird"] });
     const host = div({classes: "select-parent"});
     sel.parent = host;
     sel.inputName = "pet"; // creates a hidden input next to host’s children
@@ -166,7 +166,7 @@ function selectTest7() {
 
 /* 8) Programmatic APIs & finders */
 function selectTest8() {
-    const sel = new TurboSelect<string>({ values: ["X", "Y", "Z"] });
+    const sel = TurboSelect.create({ values: ["X", "Y", "Z"] });
     const host = div({classes: "select-parent"});
     sel.parent = host;
 
@@ -182,7 +182,7 @@ function selectTest8() {
 function selectTestTabs() {
     type Entry = HTMLElement;
 
-    const tabSelect = new TurboSelect<string, string, Entry>({
+    const tabSelect = TurboSelect.create<typeof TurboSelect<any, any, HTMLElement>>({
         createEntry: (label: string) => {
             const e = TurboRichElement.create({text: label});
             e.dataset.key = label.toLowerCase();
@@ -217,7 +217,7 @@ function selectTestTabs() {
     tabSelect.parent = tabBar;
     $(tabPanels).addChild([panels.home, panels.profile, panels.settings]);
     // initialize visibility
-    tabSelect.onSelect?.(true, tabSelect.selectedEntry, tabSelect.getIndex(tabSelect.selectedEntry));
+    tabSelect.onSelect?.fire(true, tabSelect.selectedEntry, tabSelect.getIndex(tabSelect.selectedEntry));
 
     const b = box("TurboSelect — Tabbed menu");
     b.addSubBox("Tabs", tabBar);

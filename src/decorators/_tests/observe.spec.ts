@@ -8,6 +8,8 @@ describe("@observe", () => {
         @define("obs-x")
         class X extends TurboElement {
             @observe fooBar = 10;
+
+
         }
 
         expect((X as any).observedAttributes).toEqual(["foo-bar"]);

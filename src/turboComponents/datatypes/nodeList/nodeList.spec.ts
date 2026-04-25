@@ -222,7 +222,7 @@ describe("TurboNodeList", () => {
             const a = makeEntry("a");
             const b = makeEntry("b");
             list.add(a, b);
-            list.removeAt(0);
+            list.removeAtSlot(0);
             expect(list.has(a)).toBe(false);
             expect(list.has(b)).toBe(true);
         });
@@ -233,7 +233,7 @@ describe("TurboNodeList", () => {
             const b = makeEntry("b");
             const c = makeEntry("c");
             list.add(a, b, c);
-            list.removeAt(0, 2);
+            list.removeAtSlot(0, 2);
             expect(list.has(a)).toBe(false);
             expect(list.has(b)).toBe(false);
             expect(list.has(c)).toBe(true);
@@ -243,7 +243,7 @@ describe("TurboNodeList", () => {
             const list = new TurboNodeList();
             const a = makeEntry("a");
             list.add(a);
-            expect(list.removeAt(0)).toBe(list);
+            expect(list.removeAtSlot(0)).toBe(list);
         });
     });
 
@@ -626,7 +626,7 @@ describe("TurboNodeList", () => {
 
             const list = new TurboNodeList<Element>();
             list.add(collection);
-            list.removeAt(0);
+            list.removeAtSlot(0);
 
             expect(list.has(collection)).toBe(false);
             expect(list.slotCount).toBe(0);

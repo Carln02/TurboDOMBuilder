@@ -98,7 +98,6 @@ describe("Substrate functions – extras", () => {
             objectList.add(c);
         });
         turbo(host).addSolver({callback: solver, substrate: "main"});
-
         turbo(host).solveSubstrate();
 
         expect(new Set(seen)).toEqual(new Set([a, b, c]));

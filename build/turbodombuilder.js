@@ -1411,6 +1411,8 @@ var Turbo = (function (exports, yjs) {
             if (!properties || typeof properties !== "object")
                 return this;
             for (const [key, value] of Object.entries(properties)) {
+                if (value === undefined)
+                    continue;
                 try {
                     this.element[key] = value;
                 }
@@ -3619,7 +3621,7 @@ var Turbo = (function (exports, yjs) {
             const p = constructor.prototype;
             if (p instanceof SVGElement)
                 return exports.RegistryCategory.SVGElement;
-            if (p instanceof MathMLElement)
+            if (typeof MathMLElement !== "undefined" && p instanceof MathMLElement)
                 return exports.RegistryCategory.MathMLElement;
             if (p instanceof HTMLElement)
                 return exports.RegistryCategory.HTMLElement;
@@ -7712,19 +7714,19 @@ var Turbo = (function (exports, yjs) {
                 this.model.state.enabled = value;
             }
             get preventDefaultWheel() {
-                return this.model.state.preventDefaultWheel && (this.model.lockState.preventDefaultWheel ?? false);
+                return this.model.state.preventDefaultWheel && (this.model.lockState.preventDefaultWheel ?? true);
             }
             set preventDefaultWheel(value) {
                 this.model.state.preventDefaultWheel = value;
             }
             get preventDefaultMouse() {
-                return this.model.state.preventDefaultMouse && (this.model.lockState.preventDefaultMouse ?? false);
+                return this.model.state.preventDefaultMouse && (this.model.lockState.preventDefaultMouse ?? true);
             }
             set preventDefaultMouse(value) {
                 this.model.state.preventDefaultMouse = value;
             }
             get preventDefaultTouch() {
-                return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? false);
+                return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? true);
             }
             set preventDefaultTouch(value) {
                 this.model.state.preventDefaultTouch = value;
@@ -9921,6 +9923,11 @@ var Turbo = (function (exports, yjs) {
                 substrateData.queue.remove(properties.eventTarget);
             else
                 object = substrateData.queue.pop();
+            const onObjectAdded = (entry, state) => {
+                if (state === "added")
+                    substrateData.queue.push(entry);
+            };
+            substrateData.objectList.onChanged.add(onObjectAdded);
             while (object) {
                 const passes = substrateData.passes.get(object) ?? 0;
                 if (passes < substrateData.maxPasses) {
@@ -9933,6 +9940,7 @@ var Turbo = (function (exports, yjs) {
                 }
                 object = substrateData.queue.pop();
             }
+            substrateData.objectList.onChanged.remove(onObjectAdded);
         }
     }
 

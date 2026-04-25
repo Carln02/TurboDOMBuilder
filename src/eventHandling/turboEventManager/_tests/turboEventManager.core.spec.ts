@@ -20,7 +20,7 @@ describe("TurboEventManager: tools & locks", () => {
         const fired = vi.fn();
         mgr.onToolChange.add?.(fired);
 
-        mgr.setTool(toolEl, ClickMode.left, { select: true, activate: true });
+        mgr.setTool(toolEl, ClickMode.left, {select: true, activate: true});
         expect(mgr.getCurrentToolName(ClickMode.left)).toBe("brush");
 
         expect(onAct).toHaveBeenCalledTimes(1);
@@ -29,7 +29,7 @@ describe("TurboEventManager: tools & locks", () => {
 
         const tool2 = div({parent: document.body});
         $(tool2).makeTool("eraser", {manager: mgr});
-        mgr.setTool(tool2, ClickMode.left, { select: true, activate: true });
+        mgr.setTool(tool2, ClickMode.left, {select: true, activate: true});
         expect(onDeact).toHaveBeenCalledTimes(1);
         expect(mgr.getCurrentToolName(ClickMode.left)).toBe("eraser");
     });
@@ -45,13 +45,11 @@ describe("TurboEventManager: tools & locks", () => {
     });
 
     it("lock/unlock affects getters", () => {
-        const mgr = TurboEventManager.create({ enabled: true, preventDefaultMouse: true });
-
+        const mgr = TurboEventManager.create({enabled: true, preventDefaultMouse: true});
         expect(mgr.enabled).toBe(true);
-        mgr.lock(document.body, { enabled: false, preventDefaultMouse: false });
+        mgr.lock(document.body, {enabled: false, preventDefaultMouse: false});
         expect(mgr.enabled).toBe(false);
         expect(mgr.preventDefaultMouse).toBe(false);
-
         mgr.unlock();
         expect(mgr.enabled).toBe(true);
         expect(mgr.preventDefaultMouse).toBe(true);

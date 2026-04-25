@@ -1,4 +1,4 @@
-import {TurboTool, TurboEvent, behavior} from "../../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboEvent, Propagation, behavior, Color, define} from "../../../../../build/turbodombuilder.esm";
 import {Bucket} from "./bucket";
 
 //Bucket tool
@@ -7,9 +7,11 @@ export class BucketTool extends TurboTool<Bucket> {
 
     //Equivalent to turbo(tool).addToolBehavior("click", "bucket", (e, el) => {...});
     @behavior() public click(e: TurboEvent, el: Element) {
-        if ("color" in el && typeof el.color === "string" && !(el instanceof Bucket)) {
+        if ("color" in el && el.color instanceof Color && !(el instanceof Bucket)) {
             el.color = this.element.color;
-            return true;
+            return Propagation.stopPropagation;
         }
     }
 }
+
+define(BucketTool);

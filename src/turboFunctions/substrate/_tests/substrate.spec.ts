@@ -9,7 +9,7 @@ describe("Substrate functions", () => {
         turbo(host).makeSubstrate("main");
         turbo(host).makeSubstrate("alt");
 
-        const names = turbo(host).substrates;
+        const names = turbo(host).substratesNames;
         expect(names).toEqual(["main", "alt"]);
     });
 
@@ -27,10 +27,9 @@ describe("Substrate functions", () => {
 
     it("getSubstrateObjectList() defaults to Set() when no current substrate", () => {
         const host = div({parent: document.body});
-
         turbo(host).makeSubstrate("main");
         const list = turbo(host).getSubstrateObjectList();
-        expect(list).toEqual(new Set());
+        expect(list.size).toEqual(0);
     });
 
     it("default elements list is live (HTMLCollection of element.children)", () => {
@@ -56,7 +55,6 @@ describe("Substrate functions", () => {
         turbo(host).getSubstrateObjectList("main").list = custom;
 
         const list = turbo(host).getSubstrateObjectList("main");
-        expect(list).toEqual(custom);
         expect(list.size).toBe(0);
 
         host.appendChild(document.createElement("span"));

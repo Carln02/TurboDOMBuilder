@@ -221,7 +221,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
     }
 
     public get preventDefaultWheel() {
-        return this.model.state.preventDefaultWheel && (this.model.lockState.preventDefaultWheel ?? false);
+        return this.model.state.preventDefaultWheel && (this.model.lockState.preventDefaultWheel ?? true);
     }
 
     public set preventDefaultWheel(value: boolean) {
@@ -229,7 +229,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
     }
 
     public get preventDefaultMouse() {
-        return this.model.state.preventDefaultMouse && (this.model.lockState.preventDefaultMouse ?? false);
+        return this.model.state.preventDefaultMouse && (this.model.lockState.preventDefaultMouse ?? true);
     }
 
     public set preventDefaultMouse(value: boolean) {
@@ -237,7 +237,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
     }
 
     public get preventDefaultTouch() {
-        return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? false);
+        return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? true);
     }
 
     public set preventDefaultTouch(value: boolean) {

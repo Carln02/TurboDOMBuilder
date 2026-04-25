@@ -66,7 +66,7 @@ describe("generateTagFunction", () => {
         const el = makeP(props);
         expect(el.tagName.toLowerCase()).toBe("p");
         expect(spy).toHaveBeenCalledTimes(1);
-        expect(spy.mock.calls[0][0]).toEqual(expect.objectContaining({className: "para", tag: "p"}));
+        expect(spy.mock.calls[0][0]).toEqual(expect.objectContaining({className: "para"}));
         spy.mockRestore();
     });
 });

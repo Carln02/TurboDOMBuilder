@@ -1,6 +1,5 @@
 import {define, signal, turbo, DefaultEventName, TurboButton, effect, input, Color} from "../../../../../build/turbodombuilder.esm";
 import {BucketTool} from "./bucket.tool";
-import {define} from "../../../../../src";
 
 //Custom element for the bucket tool
 export class Bucket extends TurboButton {

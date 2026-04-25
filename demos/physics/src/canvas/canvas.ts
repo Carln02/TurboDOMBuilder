@@ -4,9 +4,9 @@ import "./canvas.css";
 import {CanvasSubstrate} from "./canvas.mainSubstrate";
 import {CanvasSpacerSubstrate} from "./canvas.spacerSubstrate";
 
-@define("my-canvas")
 export class Canvas extends TurboElement {
     public static defaultProperties = {
         substrates: [CanvasPusherSubstrate, CanvasSubstrate, CanvasSpacerSubstrate],
     }
 }
+define(Canvas, "my-canvas");

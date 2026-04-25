@@ -21,6 +21,7 @@ export function setupMiscFunctions() {
         if (!this.element || typeof this.element !== "object") return this;
         if (!properties || typeof properties !== "object") return this;
         for (const [key, value] of Object.entries(properties)) {
+            if (value === undefined) continue;
             try { this.element[key] = value; } catch {}
         }
         return this;

@@ -14,7 +14,7 @@ export class SquareView extends TurboView<Square, SquareModel> {
     }
 
     @effect private updateColor() {
-        turbo(this).setStyle("backgroundColor", this.model.color);
+        turbo(this).setStyle("backgroundColor", this.model.color.toString());
     }
 
     @effect private updateSize() {
