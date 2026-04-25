@@ -152,7 +152,6 @@ function applyDefine<T extends { new(...args: any[]): HTMLElement }>(
         utils.prototype(prototype).setupAttributeChangedCallback = true;
 
         const wrapper = function (name: string, oldValue?: string, newValue?: string) {
-            console.log("IHOIHOHI")
             getSuperMethod(this, "attributeChangedCallback", wrapper)?.call(this, name, oldValue, newValue);
             if (newValue === oldValue) return;
             if (utils.data(this).attributeBridgePass) return;

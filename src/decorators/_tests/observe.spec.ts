@@ -5,16 +5,14 @@ import {TurboElement} from "../../turboElement/turboElement";
 
 describe("@observe", () => {
     it("reflects a field to an attribute + publishes observedAttributes", () => {
-        @define("obs-x")
         class X extends TurboElement {
             @observe fooBar = 10;
-
-
         }
+        define(X, "obs-x")
 
         expect((X as any).observedAttributes).toEqual(["foo-bar"]);
 
-        const el = new X();
+        const el = X.create();
         document.body.appendChild(el);
 
         expect(el.getAttribute("foo-bar")).toBe("10");
@@ -25,15 +23,16 @@ describe("@observe", () => {
     });
 
     it("wraps accessors and reflects both ways", () => {
-        @define("obs-y")
         class Y extends HTMLElement {
             #v = "";
             @observe public get userName() { return this.#v; }
             @observe public set userName(v) { this.#v = v; }
         }
+        define(Y, "obs-y")
 
         const el = new Y();
         el.userName = "Alice";
+        console.log(el.userName)
         expect(el.getAttribute("user-name")).toBe("Alice");
 
         el.setAttribute("user-name", "Bob");
