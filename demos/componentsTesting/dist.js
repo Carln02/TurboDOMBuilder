@@ -18976,15 +18976,31 @@
       });
   }
   const utils = new ObserveUtils();
-  function observe(...args) {
-      if (typeof args[0] === "object" && typeof args[1] === "string") {
-          const [host, key] = args;
-          const descriptor = getFirstDescriptorInChain(host, key) ?? {};
-          const { read, write } = makeReadWrite(Symbol(`__observed_${key}`), camelToKebabCase(key), descriptor.get, descriptor.set);
-          applyDescriptor(host, key, read, write, descriptor?.enumerable ?? true);
-          return;
-      }
-      const [value, context] = args;
+  /**
+   * @decorator
+   * @function observe
+   * @group Decorators
+   * @category Attributes & DOM
+   *
+   * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
+   * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
+   * It also records the attribute name into the class's `observedAttributed` to listen for changes on the HTML.
+   *
+   * @example
+   * ```ts
+   * @define()
+   * class MyClass extends HTMLElement {
+   *    @observe fieldName: string = "hello";
+   * }
+   * ```
+   *
+   * Leads to:
+   * ```html
+   * <my-class field-name="hello"></my-class>
+   * ```
+   *
+   */
+  function observe(value, context) {
       const { kind, name, static: isStatic } = context;
       const key = String(name);
       const attribute = camelToKebabCase(key);
@@ -19001,11 +19017,25 @@
           const prototype = isStatic ? this : getFirstPrototypeInChainWith(this, key);
           let customGetter;
           let customSetter;
-          if (kind === "field" || kind === "accessor") {
+          if (kind === "field" || kind === "accessor")
               try {
                   this[backing] = this[name];
               }
               catch { }
+          const read = function () {
+              return customGetter ? customGetter.call(this) : this[backing];
+          };
+          const write = function (value) {
+              const previous = this[key];
+              if (previous === value)
+                  return;
+              if (customSetter)
+                  customSetter.call(this, value);
+              else
+                  this[backing] = value;
+              this.setAttribute?.(attribute, stringify(this[key]));
+          };
+          if (kind === "field" || kind === "accessor") {
               const accessor = value;
               if (accessor?.get)
                   customGetter = accessor.get;
@@ -19016,8 +19046,12 @@
                   customGetter = descriptor.get;
               if (descriptor?.set)
                   customSetter = descriptor.set;
-              const { read, write } = makeReadWrite(backing, attribute, customGetter, customSetter);
-              applyDescriptor(this, key, read, write, descriptor?.enumerable ?? true);
+              Object.defineProperty(this, key, {
+                  configurable: true,
+                  enumerable: descriptor?.enumerable ?? true,
+                  get: () => read.call(this),
+                  set: (value) => write.call(this, value),
+              });
           }
           else if (kind === "getter" || kind === "setter") {
               const installed = utils.constructorData(prototype).installed;
@@ -19029,33 +19063,13 @@
                   customGetter = descriptor.get;
               if (typeof descriptor.set === "function")
                   customSetter = descriptor.set;
-              const { read, write } = makeReadWrite(backing, attribute, customGetter, customSetter);
-              applyDescriptor(prototype, key, read, write, !!descriptor?.enumerable, true);
+              Object.defineProperty(prototype, key, {
+                  configurable: true,
+                  enumerable: !!descriptor?.enumerable,
+                  get: function () { return read.call(this); },
+                  set: function (value) { write.call(this, value); },
+              });
           }
-      });
-  }
-  function makeReadWrite(backing, attribute, customGetter, customSetter) {
-      const read = function () {
-          return customGetter ? customGetter.call(this) : this[backing];
-      };
-      const write = function (value) {
-          const previous = this[backing];
-          if (previous === value)
-              return;
-          if (customSetter)
-              customSetter.call(this, value);
-          else
-              this[backing] = value;
-          this.setAttribute?.(attribute, stringify(this[backing]));
-      };
-      return { read, write };
-  }
-  function applyDescriptor(target, key, read, write, enumerable, bindToThis = false) {
-      Object.defineProperty(target, key, {
-          configurable: true,
-          enumerable,
-          get: bindToThis ? function () { return read.call(this); } : () => read.call(target),
-          set: bindToThis ? function (v) { write.call(this, v); } : (v) => write.call(target, v),
       });
   }
 

@@ -10,6 +10,7 @@ import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement, ValidTag} from "../../../types/element.types";
+import {getPrototypeChain} from "../../../utils/dataManipulation/prototype";
 
 /**
  * @class TurboRichElement
@@ -33,17 +34,15 @@ class TurboRichElement<
         elementTag: "h4"
     };
 
-    public static create<Type extends new (...args: any[]) => TurboElement>
-    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
-        const props = properties as TurboRichElementProperties;
-        if (props.text && !props.element) {
-            props.element = props.text;
-            props.text = undefined;
+    protected static customCreate(properties: TurboRichElementProperties): object {
+        if (properties.text && !properties.element) {
+            properties.element = properties.text;
+            properties.text = undefined;
         }
-        if (props.elementTag && typeof props.element === "object" && !(props.element instanceof Element)) {
-            props.element.tag = props.elementTag;
+        if (properties.elementTag && typeof properties.element === "object" && !(properties.element instanceof Element)) {
+            properties.element.tag = properties.elementTag;
         }
-        return super.create.call(this, props);
+        return super.customCreate(properties);
     }
 
     public readonly childrenOrder = ["leftCustomElements", "leftIcon",

@@ -4780,7 +4780,7 @@ declare global {
  * @decorator
  * @function observe
  * @group Decorators
- * @category Registry, Attributes & DOM
+ * @category Attributes & DOM
  *
  * @description Stage-3 decorator for fields, getters, setters, and accessors that reflects a property to an HTML
  * attribute. So when the value of the property changes, it is reflected in the element's HTML attributes.
@@ -4804,39 +4804,6 @@ declare function observe<Type extends object, Value>(value: ((initial: Value) =>
     get?: (this: Type) => Value;
     set?: (this: Type, value: Value) => void;
 }, context: ClassFieldDecoratorContext<Type, Value> | ClassGetterDecoratorContext<Type, Value> | ClassSetterDecoratorContext<Type, Value> | ClassAccessorDecoratorContext<Type, Value>): any;
-/**
- * @function observe
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Imperatively applies the same attribute-reflection logic as the `@observe` decorator,
- * without requiring decorator syntax. Useful for dynamically observing properties at runtime,
- * or in environments where decorators are not available.
- *
- * It:
- * - Reflects the property value to its corresponding HTML attribute (in kebab-case) whenever the
- *   property changes.
- * - Records the attribute name into the class's `observedAttributes` so the browser fires
- *   `attributeChangedCallback` when the attribute changes in HTML.
- *
- * @param {object} host - The object or prototype to apply the observation to.
- * @param {string} key - The property key to observe.
- *
- * @example
- * ```ts
- * class MyEl extends HTMLElement {
- *     fieldName: string = "hello";
- * }
- * observe(MyEl.prototype, "fieldName");
- * define(MyEl); // name inferred as "my-el"
- * ```
- *
- * Leads to:
- * ```html
- * <my-el field-name="hello"></my-el>
- * ```
- */
-declare function observe(host: object, key: string): void;
 
 /**
  * @overload

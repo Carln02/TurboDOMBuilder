@@ -13,7 +13,6 @@ import {TurboInputInputInteractor} from "./input.inputInteractor";
 import {Delegate} from "../../datatypes/delegate/delegate";
 import {ValidElement} from "../../../types/element.types";
 import {expose} from "../../../decorators/expose";
-import {TurboElement} from "../../../turboElement/turboElement";
 
 /**
  * @group Components
@@ -27,19 +26,18 @@ class TurboInput<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter,
 > extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
-     public declare readonly properties: TurboInputProperties;
+     public declare readonly properties: TurboInputProperties<"input" | "textarea">;
     public static defaultProperties: TurboInputProperties = {
-        elementTag: "input",
+        inputTag: "input",
         interactors: TurboInputInputInteractor
     };
 
-    public static create<Type extends new (...args: any[]) => TurboElement>
-    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+    protected static customCreate(properties: TurboInputProperties): object {
         let el: object = properties.input;
         let elementTag: any = properties.inputTag;
         if (!elementTag) elementTag = "input";
         if (!el) el = {};
-        return super.create.call(this, {elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined});
+        return super.customCreate({...properties, elementTag, element: el, input: undefined, inputTag: undefined});
     }
 
     protected labelElement: HTMLLabelElement;
@@ -187,28 +185,6 @@ class TurboInput<
         return out;
     }
 }
-
-// /**
-//  * @group Components
-//  * @category TurboInput
-//  */
-// function turboInput<
-//     InputTag extends "input" | "textarea" = "input",
-//     ValueType extends string | number = string,
-//     ViewType extends TurboView = TurboView<any, any>,
-//     DataType extends object = object,
-//     ModelType extends TurboModel<DataType> = TurboModel,
-//     EmitterType extends TurboEmitter = TurboEmitter,
-// >(
-//     properties: TurboInputProperties<InputTag, ViewType, DataType, ModelType, EmitterType>
-// ): TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType> {
-//     let el: object = properties.input;
-//     let elementTag: any = properties.inputTag;
-//     if (!elementTag) elementTag = "input";
-//     if (!el) el = {};
-//     if (!properties.tag) properties.tag = "turbo-input";
-//     return richElement({elementTag: elementTag, element: el, ...properties, input: undefined, inputTag: undefined}) as any;
-// }
 
 define(TurboInput);
 export {TurboInput};
