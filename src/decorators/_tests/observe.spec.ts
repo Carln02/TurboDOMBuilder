@@ -32,7 +32,6 @@ describe("@observe", () => {
 
         const el = new Y();
         el.userName = "Alice";
-        console.log(el.userName)
         expect(el.getAttribute("user-name")).toBe("Alice");
 
         el.setAttribute("user-name", "Bob");
