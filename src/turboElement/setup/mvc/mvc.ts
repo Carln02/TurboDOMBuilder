@@ -3,7 +3,7 @@ import {turbo} from "../../../turboFunctions/turboFunctions";
 
 /**
  * Define MVC-style accessors on a class prototype via Object.defineProperty.
- * Adds: view, model, emitter, controllers, handlers, interactors, tools, substrates,
+ * Adds: view, model, emitter, operators, handlers, interactors, tools, substrates,
  * data, dataId, dataIndex, dataSize, and all add/get/remove methods.
  */
 export function defineMvcAccessors<Type extends new (...args: any[]) => any>(constructor: Type) {

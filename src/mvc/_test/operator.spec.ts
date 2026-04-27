@@ -1,10 +1,10 @@
 import {describe, it, expect} from "vitest";
 import {TurboView} from "../view/view";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
 
-class TrackingController extends TurboController {
+class TrackingOperator extends TurboOperator {
     public setupCalls = 0;
     public listenerCalls = 0;
 
@@ -21,14 +21,14 @@ class TrackingController extends TurboController {
     }
 }
 
-describe("TurboController", () => {
+describe("TurboOperator", () => {
     it("constructor assigns element, view, model, and emitter from properties", () => {
         const element = {id: 1};
         const model = new TurboModel({data: {foo: 1}});
         const emitter = new TurboEmitter(model);
         const view = new TurboView({element, model, emitter} as any);
 
-        const ctrl = new TrackingController({element, view, model, emitter} as any);
+        const ctrl = new TrackingOperator({element, view, model, emitter} as any);
 
         expect(ctrl.element).toBe(element);
         expect(ctrl.view).toBe(view);
@@ -38,7 +38,7 @@ describe("TurboController", () => {
 
     it("constructor works with only element (others are optional)", () => {
         const element = {id: 2};
-        const ctrl = new TrackingController({element} as any);
+        const ctrl = new TrackingOperator({element} as any);
 
         expect(ctrl.element).toBe(element);
         expect(ctrl.view).toBeUndefined();
@@ -52,7 +52,7 @@ describe("TurboController", () => {
         const emitter = new TurboEmitter();
         const view = new TurboView({element} as any);
 
-        const ctrl = new TrackingController({element} as any);
+        const ctrl = new TrackingOperator({element} as any);
         ctrl.view = view;
         ctrl.model = model;
         ctrl.emitter = emitter;
@@ -63,7 +63,7 @@ describe("TurboController", () => {
     });
 
     it("initialize() calls setupUIListeners and setupChangedCallbacks", () => {
-        const ctrl = new TrackingController({element: {}} as any);
+        const ctrl = new TrackingOperator({element: {}} as any);
 
         expect(ctrl.listenerCalls).toBe(0);
         expect(ctrl.setupCalls).toBe(0);
@@ -75,7 +75,7 @@ describe("TurboController", () => {
     });
 
     it("initialize() can be called multiple times", () => {
-        const ctrl = new TrackingController({element: {}} as any);
+        const ctrl = new TrackingOperator({element: {}} as any);
         ctrl.initialize();
         ctrl.initialize();
 
@@ -84,7 +84,7 @@ describe("TurboController", () => {
     });
 
     it("keyName can be assigned", () => {
-        const ctrl = new TrackingController({element: {}} as any);
+        const ctrl = new TrackingOperator({element: {}} as any);
         ctrl.keyName = "myCtrl";
         expect(ctrl.keyName).toBe("myCtrl");
     });
@@ -93,11 +93,11 @@ describe("TurboController", () => {
         // Use a closure instead of a class field to avoid re-initialization after super()
         let setupCalled = false;
 
-        class SetupTrackingController extends TurboController {
+        class SetupTrackingOperator extends TurboOperator {
             protected override setup(): void { setupCalled = true; }
         }
 
-        new SetupTrackingController({element: {}} as any);
+        new SetupTrackingOperator({element: {}} as any);
         expect(setupCalled).toBe(true);
     });
 });

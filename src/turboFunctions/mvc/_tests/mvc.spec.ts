@@ -3,7 +3,7 @@ import {$} from "../../turboFunctions";
 import {TurboModel} from "../../../mvc/model/model";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {TurboController} from "../../../mvc/controller/controller";
+import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
@@ -22,7 +22,7 @@ class MyView extends TurboView {
     public override initialize(): void { super.initialize(); this.inits++; }
 }
 
-class MyController extends TurboController {
+class MyOperator extends TurboOperator {
     public inits = 0;
     public override initialize(): void { super.initialize(); this.inits++; }
 }
@@ -211,27 +211,27 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // controllers getter / setter
+    // operators getter / setter
     // ------------------------------------------------------------------
 
-    describe("controllers getter / setter", () => {
-        it("controllers getter returns an empty array on a fresh selector", () => {
-            expect(sel().controllers).toEqual([]);
+    describe("operators getter / setter", () => {
+        it("operators getter returns an empty array on a fresh selector", () => {
+            expect(sel().operators).toEqual([]);
         });
 
-        it("controllers setter from constructor array creates instances", () => {
+        it("operators setter from constructor array creates instances", () => {
             const s = sel();
-            s.controllers = MyController as any;
-            expect(s.controllers).toHaveLength(1);
-            expect(s.controllers[0]).toBeInstanceOf(MyController);
+            s.operators = MyOperator as any;
+            expect(s.operators).toHaveLength(1);
+            expect(s.operators[0]).toBeInstanceOf(MyOperator);
         });
 
-        it("controllers setter from instance array stores those instances", () => {
+        it("operators setter from instance array stores those instances", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
-            ctrl.keyName = "myCtrl";
-            s.controllers = [ctrl];
-            expect(s.controllers).toContain(ctrl);
+            const ctrl = new MyOperator({element: s.element} as any);
+            ctrl.keyName = "myOp";
+            s.operators = [ctrl];
+            expect(s.operators).toContain(ctrl);
         });
     });
 
@@ -348,11 +348,11 @@ describe("TurboSelector MVC functions", () => {
             expect(s.view.emitter).toBe(s.emitter);
         });
 
-        it("wires controller.model, controller.emitter, and controller.view after setMvc", () => {
+        it("wires operator.model, operator.emitter, and operator.view after setMvc", () => {
             const s = sel();
-            s.setMvc({model: MyModel, view: MyView, controllers: [MyController], initialize: false});
-            expect(s.controllers[0].model).toBe(s.model);
-            expect(s.controllers[0].view).toBe(s.view);
+            s.setMvc({model: MyModel, view: MyView, operators: [MyOperator], initialize: false});
+            expect(s.operators[0].model).toBe(s.model);
+            expect(s.operators[0].view).toBe(s.view);
         });
 
         it("returns itself for method chaining", () => {
@@ -368,10 +368,10 @@ describe("TurboSelector MVC functions", () => {
     describe("initializeMvc", () => {
         it("calls initialize() on all attached pieces", () => {
             const s = sel();
-            s.setMvc({model: MyModel, view: MyView, controllers: [MyController], initialize: false});
+            s.setMvc({model: MyModel, view: MyView, operators: [MyOperator], initialize: false});
             s.initializeMvc();
             expect((s.view as MyView).inits).toBe(1);
-            expect((s.controllers[0] as MyController).inits).toBe(1);
+            expect((s.operators[0] as MyOperator).inits).toBe(1);
         });
 
         it("can be called multiple times", () => {
@@ -416,17 +416,17 @@ describe("TurboSelector MVC functions", () => {
 
         it("includes collection entries not present in the provided config", () => {
             const s = sel();
-            s.setMvc({controllers: [MyController], initialize: false});
+            s.setMvc({operators: [MyOperator], initialize: false});
             const diff = s.getMvcDifference({});
-            expect(Array.isArray(diff.controllers)).toBe(true);
-            expect((diff.controllers as any[]).length).toBeGreaterThan(0);
+            expect(Array.isArray(diff.operators)).toBe(true);
+            expect((diff.operators as any[]).length).toBeGreaterThan(0);
         });
 
         it("omits collection entries that match the provided config", () => {
             const s = sel();
-            s.setMvc({controllers: [MyController], initialize: false});
-            const diff = s.getMvcDifference({controllers: MyController});
-            expect(diff.controllers).toBeUndefined();
+            s.setMvc({operators: [MyOperator], initialize: false});
+            const diff = s.getMvcDifference({operators: MyOperator});
+            expect(diff.operators).toBeUndefined();
         });
 
         it("returns an empty object when no mvc pieces are set", () => {
@@ -437,59 +437,59 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // addController / getController / removeController
+    // addOperator / getOperator / removeOperator
     // ------------------------------------------------------------------
 
-    describe("addController / getController / removeController", () => {
-        it("addController stores the controller under the provided keyName", () => {
+    describe("addOperator / getOperator / removeOperator", () => {
+        it("addOperator stores the operator under the provided keyName", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
+            const ctrl = new MyOperator({element: s.element} as any);
             ctrl.keyName = "snap";
-            s.addController(ctrl);
-            expect(s.getController("snap")).toBe(ctrl);
+            s.addOperator(ctrl);
+            expect(s.getOperator("snap")).toBe(ctrl);
         });
 
-        it("addController auto-derives keyName when not set", () => {
+        it("addOperator auto-derives keyName when not set", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
-            s.addController(ctrl);
+            const ctrl = new MyOperator({element: s.element} as any);
+            s.addOperator(ctrl);
             expect(ctrl.keyName).toBeDefined();
-            expect(s.getController(ctrl.keyName)).toBe(ctrl);
+            expect(s.getOperator(ctrl.keyName)).toBe(ctrl);
         });
 
-        it("addController wires controller to the mvc model and emitter", () => {
+        it("addOperator wires operator to the mvc model and emitter", () => {
             const s = sel();
             s.setMvc({model: MyModel, emitter: TurboEmitter, initialize: false});
-            const ctrl = new MyController({element: s.element} as any);
+            const ctrl = new MyOperator({element: s.element} as any);
             ctrl.keyName = "wired";
-            s.addController(ctrl);
+            s.addOperator(ctrl);
             expect(ctrl.model).toBe(s.model);
             expect(ctrl.emitter).toBe(s.emitter);
         });
 
-        it("removeController by key removes it from the map", () => {
+        it("removeOperator by key removes it from the map", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
+            const ctrl = new MyOperator({element: s.element} as any);
             ctrl.keyName = "rm";
-            s.addController(ctrl);
-            s.removeController("rm");
-            expect(s.getController("rm")).toBeUndefined();
+            s.addOperator(ctrl);
+            s.removeOperator("rm");
+            expect(s.getOperator("rm")).toBeUndefined();
         });
 
-        it("removeController by instance removes it from the map", () => {
+        it("removeOperator by instance removes it from the map", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
+            const ctrl = new MyOperator({element: s.element} as any);
             ctrl.keyName = "rmByRef";
-            s.addController(ctrl);
-            s.removeController(ctrl);
-            expect(s.getController("rmByRef")).toBeUndefined();
+            s.addOperator(ctrl);
+            s.removeOperator(ctrl);
+            expect(s.getOperator("rmByRef")).toBeUndefined();
         });
 
-        it("addController returns itself for method chaining", () => {
+        it("addOperator returns itself for method chaining", () => {
             const s = sel();
-            const ctrl = new MyController({element: s.element} as any);
+            const ctrl = new MyOperator({element: s.element} as any);
             ctrl.keyName = "chain";
-            expect(s.addController(ctrl)).toBe(s);
+            expect(s.addOperator(ctrl)).toBe(s);
         });
     });
 

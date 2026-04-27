@@ -1,6 +1,6 @@
 import {describe, it, expect} from "vitest";
-import {controller, handler, interactor, tool, substrate} from "../mvc";
-import {TurboController} from "../../mvc/controller/controller";
+import {operator, handler, interactor, tool, substrate} from "../mvc";
+import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
@@ -9,65 +9,65 @@ import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turb
 import {TurboModel} from "../../mvc/model/model";
 
 describe("MVC decorators", () => {
-    describe("controller decorator", () => {
-        it("infers key from <name>Controller and fetches via getController()", () => {
-            class DispatchController extends TurboController {}
+    describe("operator decorator", () => {
+        it("infers key from <name>Operator and fetches via getOperator()", () => {
+            class DispatchOperator extends TurboOperator {}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {controllers: DispatchController};
-                @controller() dispatchController!: unknown;
+                static defaultProperties = {operators: DispatchOperator};
+                @operator() dispatchOperator!: unknown;
             }
 
             const h = Host.create();
-            expect(h.dispatchController).toBeInstanceOf(DispatchController);
+            expect(h.dispatchOperator).toBeInstanceOf(DispatchOperator);
         });
 
         it("uses explicit name when provided", () => {
-            class MyController extends TurboController {keyName = "my"}
+            class MyOperator extends TurboOperator {keyName = "my"}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {controllers: MyController};
-                @controller("my") toolController!: unknown;
+                static defaultProperties = {operators: MyOperator};
+                @operator("my") toolOperator!: unknown;
             }
 
             const h = Host.create();
-            expect(h.toolController).toBeInstanceOf(MyController);
+            expect(h.toolOperator).toBeInstanceOf(MyOperator);
         });
 
-        it("throws helpful error when controller not found", () => {
+        it("throws helpful error when operator not found", () => {
             class Host extends TurboHeadlessElement {
-                @controller() missingController!: unknown;
+                @operator() missingOperator!: unknown;
             }
 
             const h = Host.create();
-            expect(() => (h as any).missingController).toThrow(/Controller "missing"/);
+            expect(() => (h as any).missingOperator).toThrow(/Operator "missing"/);
         });
 
         it("setter overrides cached value", () => {
-            class AController extends TurboController {}
+            class AOperator extends TurboOperator {}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {controllers: AController};
-                @controller() aController!: unknown;
+                static defaultProperties = {operators: AOperator};
+                @operator() aOperator!: unknown;
             }
 
             const h = Host.create();
-            const first = h.aController;
-            expect(first).toBeInstanceOf(AController);
+            const first = h.aOperator;
+            expect(first).toBeInstanceOf(AOperator);
 
-            const second = new AController(h as any);
-            h.aController = second;
-            expect(h.aController).toBe(second);
-            expect(h.aController).not.toBe(first);
+            const second = new AOperator(h as any);
+            h.aOperator = second;
+            expect(h.aOperator).toBe(second);
+            expect(h.aOperator).not.toBe(first);
         });
 
         it("property is non-enumerable", () => {
-            class DemoController extends TurboController {}
+            class DemoOperator extends TurboOperator {}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {controllers: DemoController};
-                @controller() demoController!: unknown;
+                static defaultProperties = {operators: DemoOperator};
+                @operator() demoOperator!: unknown;
             }
 
             const h = Host.create();
-            expect(h.demoController).toBeInstanceOf(DemoController);
-            expect(Object.keys(h)).not.toContain("demoController");
+            expect(h.demoOperator).toBeInstanceOf(DemoOperator);
+            expect(Object.keys(h)).not.toContain("demoOperator");
         });
     });
 

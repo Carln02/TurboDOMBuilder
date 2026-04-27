@@ -258,7 +258,7 @@ type DefineOptions = {
  * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
  *
  * **MVC pieces:**
- * - `TurboController`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
+ * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
  *   `TurboView`, `TurboEmitter`, `TurboModel`
  *
  * **Fallback:**
@@ -277,7 +277,7 @@ declare enum RegistryCategory {
     TurboModel = "TurboModel",
     TurboView = "TurboView",
     TurboEmitter = "TurboEmitter",
-    TurboController = "TurboController",
+    TurboOperator = "TurboOperator",
     TurboHandler = "TurboHandler",
     TurboInteractor = "TurboInteractor",
     TurboTool = "TurboTool",
@@ -420,7 +420,7 @@ declare function getAllRegistered(): RegistryEntry[];
  * @category Registry, Attributes & DOM
  *
  * @description Returns all registered entries belonging to MVC-related categories:
- * `TurboController`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
+ * `TurboOperator`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
  * `TurboSubstrate`, `TurboTool`, and `TurboView`.
  * @returns {RegistryEntry[]} An array of all MVC registry entries.
  */
@@ -2011,9 +2011,9 @@ declare class TurboView<ElementType extends object = object, ModelType extends T
 }
 
 /**
- * @type {TurboControllerProperties}
+ * @type {TurboOperatorProperties}
  * @group MVC
- * @category Controller
+ * @category Operator
  *
  * @extends {TurboViewProperties}
  * @template {object} ElementType - The type of the element.
@@ -2021,31 +2021,31 @@ declare class TurboView<ElementType extends object = object, ModelType extends T
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
- * @description  Options used to create a new {@link TurboController} attached to an element.
+ * @description  Options used to create a new {@link TurboOperator} attached to an element.
  * @property {ViewType} [view] - The MVC view.
  */
-type TurboControllerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboViewProperties<ElementType, ModelType, EmitterType> & {
+type TurboOperatorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboViewProperties<ElementType, ModelType, EmitterType> & {
     view?: ViewType;
 };
 
 /**
- * @class TurboController
+ * @class TurboOperator
  * @group MVC
- * @category Controller
+ * @category Operator
  *
- * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
+ * @description The MVC base operator class. Its main job is to handle some part of (or all of) the logic of the
  * component. It has access to the element, the model to read and write data, the view to update the UI, and the
  * emitter to listen for changes in the model or any other internal events. It can only communicate with other
- * controllers via the emitter (by firing or listening for changes on a certain key).
+ * operators via the emitter (by firing or listening for changes on a certain key).
  * @template {object} ElementType - The type of the main component.
  * @template {TurboView} ViewType - The element's MVC view type.
  * @template {TurboModel} ModelType - The element's MVC model type.
  * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
  */
-declare class TurboController<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
+declare class TurboOperator<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> {
     /**
-     * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
-     * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+     * @description The key of the operator. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the operator's class name is MyElementSomethingOperator, the key would
      * default to "something".
      */
     keyName: string;
@@ -2065,7 +2065,7 @@ declare class TurboController<ElementType extends object = object, ViewType exte
      * @description The MVC emitter.
      */
     emitter: EmitterType;
-    constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    constructor(properties: TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType>);
     /**
      * @function setup
      * @description Called in the constructor. Use for setup that should happen at instantiation,
@@ -2075,7 +2075,7 @@ declare class TurboController<ElementType extends object = object, ViewType exte
     protected setup(): void;
     /**
      * @function initialize
-     * @description Initializes the controller. Specifically, it will set up the change callbacks.
+     * @description Initializes the operator. Specifically, it will set up the change callbacks.
      */
     initialize(): void;
     /**
@@ -2150,7 +2150,7 @@ declare class TurboEventManagerModel extends TurboModel {
     set inputDevice(value: InputDevice);
 }
 
-declare class TurboEventManagerKeyController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+declare class TurboEventManagerKeyOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
     keyDown: (e: KeyboardEvent) => void;
     protected keyDownFn(e: KeyboardEvent): void;
@@ -2158,12 +2158,12 @@ declare class TurboEventManagerKeyController extends TurboController<TurboEventM
     protected keyUpFn(e: KeyboardEvent): void;
 }
 
-declare class TurboEventManagerWheelController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+declare class TurboEventManagerWheelOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
     wheel: (e: WheelEvent) => void;
 }
 
-declare class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+declare class TurboEventManagerPointerOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
     pointerDown: (e: PointerEvent) => void;
     pointerMove: (e: PointerEvent) => void;
@@ -2486,7 +2486,7 @@ declare class TurboEvent extends Event {
     protected scalePositionsMap(positions?: TurboMap<number, Point>): TurboMap<number, Point>;
 }
 
-declare class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+declare class TurboEventManagerDispatchOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     keyName: string;
     private boundHooks;
     protected setupChangedCallbacks(): void;
@@ -2532,10 +2532,10 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboB
     get model(): TurboEventManagerModel;
     readonly properties: TurboEventManagerProperties;
     static defaultProperties: TurboEventManagerProperties;
-    protected keyController: TurboEventManagerKeyController;
-    protected wheelController: TurboEventManagerWheelController;
-    protected pointerController: TurboEventManagerPointerController;
-    protected dispatchController: TurboEventManagerDispatchController;
+    protected keyOperator: TurboEventManagerKeyOperator;
+    protected wheelOperator: TurboEventManagerWheelOperator;
+    protected pointerOperator: TurboEventManagerPointerOperator;
+    protected dispatchOperator: TurboEventManagerDispatchOperator;
     /**
      * @description The currently identified input device. It is not 100% accurate, especially when differentiating
      * between mouse and trackpad.
@@ -2647,7 +2647,7 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboB
  * @group MVC
  * @category Interactor
  *
- * @extends {TurboControllerProperties}
+ * @extends {TurboOperatorProperties}
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -2661,7 +2661,7 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboB
  * @property {TurboEventManager} [manager] - The event manager instance the listeners should register against. Defaults
  * to `TurboEventManager.instance`.
  */
-type TurboInteractorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
+type TurboInteractorProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager;
     toolName?: string;
     target?: Node;
@@ -2673,7 +2673,7 @@ type TurboInteractorProperties<ElementType extends object = object, ViewType ext
  * @group MVC
  * @category Interactor
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the main component.
  * @template {TurboView} ViewType - The element's MVC view type.
  * @template {TurboModel} ModelType - The element's MVC model type.
@@ -2681,7 +2681,7 @@ type TurboInteractorProperties<ElementType extends object = object, ViewType ext
  * @description Class representing an MVC interactor. It holds event listeners to set up on the element itself, or
  * the custom defined target.
  */
-declare class TurboInteractor<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+declare class TurboInteractor<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the interactor. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the interactor's class name is MyElementSomethingInteractor, the key would
@@ -2768,7 +2768,7 @@ type ToolBehaviorOptions = {
  * @group MVC
  * @category Tool
  *
- * @extends TurboControllerProperties
+ * @extends TurboOperatorProperties
  * @extends MakeToolOptions
  *
  * @template {object} ElementType - The type of the element.
@@ -2780,7 +2780,7 @@ type ToolBehaviorOptions = {
  * @property {string} [toolName] - The name of the tool.
  * @property {Node} [embeddedTarget] - If the tool is embedded, its target.
  */
-type TurboToolProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeToolOptions & {
+type TurboToolProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeToolOptions & {
     toolName?: string;
     embeddedTarget?: Node;
 };
@@ -2790,14 +2790,14 @@ type TurboToolProperties<ElementType extends object = object, ViewType extends T
  * @group MVC
  * @category Tool
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  * @description Class representing a tool in MVC, bound to the provided element.
  */
-declare class TurboTool<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+declare class TurboTool<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the tool. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the tool's class name is MyElementSomethingTool, the key would
@@ -3220,7 +3220,7 @@ type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMut
  * @group MVC
  * @category Substrate
  *
- * @extends TurboControllerProperties
+ * @extends TurboOperatorProperties
  * @extends MakeSubstrateOptions
  *
  * @template {object} ElementType - The type of the element.
@@ -3231,7 +3231,7 @@ type SubstrateAddCallbackProperties<Type extends SubstrateChecker | SubstrateMut
  * @description Options used to create a new {@link TurboSubstrate} attached to an element.
  * @property {string} [substrateName] - The name of the substrate.
  */
-type TurboSubstrateProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
+type TurboSubstrateProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
     substrateName?: string;
 };
 
@@ -3240,14 +3240,14 @@ type TurboSubstrateProperties<ElementType extends object = object, ViewType exte
  * @group MVC
  * @category Substrate
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  * @description Class representing a substrate in MVC, bound to the provided element.
  */
-declare class TurboSubstrate<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+declare class TurboSubstrate<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the substrate. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the substrate's class name is MyElementSomethingSubstrate, the key would
@@ -3467,9 +3467,9 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      */
     readonly dataSize: number;
     /**
-     * @description The controllers (if any) attached to the element's MVC structure.
+     * @description The operators (if any) attached to the element's MVC structure.
      */
-    controllers: TurboController[];
+    operators: TurboOperator[];
     /**
      * @description The handlers (if any) attached to the element's model.
      * Returns an empty array if no model is set.
@@ -4206,8 +4206,8 @@ type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrC
  * (or model constructor) to attach.
  * @property {MvcInstanceOrConstructor<EmitterType, ModelType>} [emitter] - The emitter (or emitter constructor) to
  * attach. If not defined, a default TurboEmitter will be created.
- * @property {MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>} [controllers] - The
- * controller, constructor of controller, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboOperator, TurboOperatorProperties>} [operators] - The
+ * operator, constructor of operator, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboHandler, ModelType>} [handlers] - The
  * handler, constructor of handler, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>} [interactors] - The
@@ -4221,7 +4221,7 @@ type MvcProperties<ViewType extends TurboView = TurboView<any, any>, ModelType e
     view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>;
     model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType);
     emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>;
-    controllers?: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>;
+    operators?: MvcManyInstancesOrConstructors<TurboOperator, TurboOperatorProperties>;
     handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>;
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>;
     tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>;
@@ -4661,28 +4661,28 @@ declare function attachListenersAndBehaviors(context: any): void;
 
 /**
  * @decorator
- * @function controller
+ * @function operator
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched controller.
- * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+ * fetched operator.
+ * @param {string} [name] - The key name of the operator in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingOperator`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @controller() protected textController: TurboController;
+ * @operator() protected textOperator: TurboOperator;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textController(): TurboController {
- *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
- *    if (typeof this.getController === "function") return this.getController("text");
+ * protected get textOperator(): TurboOperator {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getOperator("text");
+ *    if (typeof this.getOperator === "function") return this.getOperator("text");
  * }
  * ```
  */
-declare function controller(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+declare function operator(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
 /**
  * @decorator
  * @function handler
@@ -7425,7 +7425,7 @@ type ChildHandler = Node | ShadowRoot;
  * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
-declare const ApplyDefaultsMergeProperties: readonly ["interactors", "tools", "substrates", "controllers", "handlers"];
+declare const ApplyDefaultsMergeProperties: readonly ["interactors", "tools", "substrates", "operators", "handlers"];
 /**
  * @type {ApplyDefaultsOptions}
  * @group Types
@@ -8042,8 +8042,8 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboOperatorProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
 interface TurboSelector {
@@ -8623,9 +8623,9 @@ interface TurboSelector<Type extends object = Node> {
          */
         readonly dataSize: number;
         /**
-         * @description The controllers of the element's MVC structure.
+         * @description The operators of the element's MVC structure.
          */
-        controllers: TurboController[];
+        operators: TurboOperator[];
         /**
          * @description The handlers attached to the element's model.
          * Returns an empty array if no model is set.
@@ -8646,7 +8646,7 @@ interface TurboSelector<Type extends object = Node> {
         /**
          * @function setMvc
          * @description Configures the MVC structure for the element. Sets the provided MVC pieces (model, view,
-         * emitter, controllers, handlers, interactors, tools, substrates) on the element, initializes a default
+         * emitter, operators, handlers, interactors, tools, substrates) on the element, initializes a default
          * emitter if none is provided, and initializes all MVC pieces unless explicitly disabled.
          * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
          * @returns {this} Itself, allowing for method chaining.
@@ -8655,8 +8655,8 @@ interface TurboSelector<Type extends object = Node> {
         /**
          * @function initializeMvc
          * @description Initializes all MVC pieces attached to the element, in the following order: view,
-         * controllers, interactors, tools, substrates, and model. The model is initialized last to allow
-         * the view and controllers to set up their change callbacks first.
+         * operators, interactors, tools, substrates, and model. The model is initialized last to allow
+         * the view and operators to set up their change callbacks first.
          * @returns {this} Itself, allowing for method chaining.
          */
         initializeMvc(): this;
@@ -8669,7 +8669,7 @@ interface TurboSelector<Type extends object = Node> {
          * @description Computes the structural difference between the element's current MVC configuration
          * and a provided configuration description. The comparison is constructor-based (not instance-based):
          * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
-         * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `substrates`),
          *   the result contains constructors present in the current MVC but absent from the provided configuration.
          * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}] -
          *  The configuration to compare against.
@@ -8679,26 +8679,26 @@ interface TurboSelector<Type extends object = Node> {
          */
         getMvcDifference<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>>(properties?: MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>;
         /**
-         * @function getController
-         * @description Retrieves the attached MVC controller with the given key.
-         * @param {string} key - The controller's key.
-         * @returns {TurboController} - The controller.
+         * @function getOperator
+         * @description Retrieves the attached MVC operator with the given key.
+         * @param {string} key - The operator's key.
+         * @returns {TurboOperator} - The operator.
          */
-        getController(key: string): TurboController;
+        getOperator(key: string): TurboOperator;
         /**
-         * @function addController
-         * @description Adds the given controller to the element's MVC structure.
-         * @param {TurboController} controller - The controller to add.
+         * @function addOperator
+         * @description Adds the given operator to the element's MVC structure.
+         * @param {TurboOperator} operator - The operator to add.
          * @returns {this} Itself, allowing for method chaining.
          */
-        addController(controller: TurboController): this;
+        addOperator(operator: TurboOperator): this;
         /**
-         * @function removeController
-         * @description Removes the given controller from the element's MVC structure and unlinks it.
-         * @param {string | TurboController} keyOrInstance - The controller's key or instance to remove.
+         * @function removeOperator
+         * @description Removes the given operator from the element's MVC structure and unlinks it.
+         * @param {string | TurboOperator} keyOrInstance - The operator's key or instance to remove.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeController(keyOrInstance: string | TurboController): this;
+        removeOperator(keyOrInstance: string | TurboOperator): this;
         /**
          * @function getHandler
          * @description Retrieves the attached MVC handler with the given key.
@@ -9217,7 +9217,7 @@ interface TurboSelector {
          * @function applyDefaults
          * @description Apply default properties to the underlying object, with optional smart merging for
          * array-like keys. By default, merging will happen on all MVC properties that accept arrays (like
-         * `controllers`, `handlers`, `tools`, etc.) to allow for concatenation of such MVC pieces.
+         * `operators`, `handlers`, `tools`, etc.) to allow for concatenation of such MVC pieces.
          *
          * @param {Record<string, any>} defaults - Key/value map of defaults to apply on the object.
          * @param {ApplyDefaultsOptions} [options] - Optional configuration for merging keys.
@@ -9230,7 +9230,7 @@ interface TurboSelector {
          *   tag: "my-el",
          *   view: MyElementView,
          *   tools: [selectTool, panTool],
-         *   controllers: KeyboardController
+         *   operators: KeyboardOperator
          * });
          * ```
          */

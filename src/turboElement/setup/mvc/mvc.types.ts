@@ -1,7 +1,7 @@
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {TurboController} from "../../../mvc/controller/controller";
+import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
@@ -64,9 +64,9 @@ interface TurboElementMvcInterface<
     // -------------------------------------------------------------------------
 
     /**
-     * @description The controllers (if any) attached to the element's MVC structure.
+     * @description The operators (if any) attached to the element's MVC structure.
      */
-    controllers: TurboController[];
+    operators: TurboOperator[];
 
     /**
      * @description The handlers (if any) attached to the element's model.

@@ -1,7 +1,7 @@
 import {describe, it, expect} from "vitest";
 import {TurboView} from "../view/view";
 import {TurboInteractor} from "../interactor/interactor";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {turbo} from "../../turboFunctions/turboFunctions";
 import {div} from "../../elementCreation/basicElements";
 import {listener} from "../../decorators/listener/listener";
@@ -17,10 +17,10 @@ class DemoInteractor extends TurboInteractor {
 class MinimalInteractor extends TurboInteractor {}
 
 describe("TurboInteractor", () => {
-    it("is a subclass of TurboController", () => {
+    it("is a subclass of TurboOperator", () => {
         const element = div({parent: document.body});
         const itc = new MinimalInteractor({element});
-        expect(itc).toBeInstanceOf(TurboController);
+        expect(itc).toBeInstanceOf(TurboOperator);
     });
 
     it("constructor assigns element, view, model, emitter", () => {

@@ -4,7 +4,7 @@ import {TurboView} from "../view/view";
 import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboModel} from "../model/model";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
@@ -12,7 +12,7 @@ import {addRegistryCategory, define} from "../../decorators/define/define";
  * @group MVC
  * @category Interactor
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the main component.
  * @template {TurboView} ViewType - The element's MVC view type.
  * @template {TurboModel} ModelType - The element's MVC model type.
@@ -25,7 +25,7 @@ class TurboInteractor<
     ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the interactor. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the interactor's class name is MyElementSomethingInteractor, the key would

@@ -1,6 +1,6 @@
 import {describe, it, expect} from "vitest";
 import {TurboTool} from "../tool/tool";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {TurboView} from "../view/view";
 import {div} from "../../elementCreation/basicElements";
 import {$, turbo} from "../../turboFunctions/turboFunctions";
@@ -17,10 +17,10 @@ class DemoTool extends TurboTool {
 class MinimalTool extends TurboTool {}
 
 describe("TurboTool", () => {
-    it("is a subclass of TurboController", () => {
+    it("is a subclass of TurboOperator", () => {
         const element = div({parent: document.body});
         const tool = new MinimalTool({element});
-        expect(tool).toBeInstanceOf(TurboController);
+        expect(tool).toBeInstanceOf(TurboOperator);
     });
 
     it("constructor assigns element, view, model, emitter, toolName", () => {

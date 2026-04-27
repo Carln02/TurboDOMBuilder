@@ -8,12 +8,12 @@ import {
 import {$, turbo} from "../../turboFunctions/turboFunctions";
 import {auto} from "../../decorators/auto/auto";
 import {TurboEventManagerModel} from "./turboEventManager.model";
-import {TurboEventManagerKeyController} from "./controllers/turboEventManager.keyController";
-import {TurboEventManagerWheelController} from "./controllers/turboEventManager.wheelController";
-import {TurboEventManagerPointerController} from "./controllers/turboEventManager.pointerController";
-import {TurboEventManagerDispatchController} from "./controllers/turboEventManager.dispatchController";
+import {TurboEventManagerKeyOperator} from "./operators/turboEventManager.keyOperator";
+import {TurboEventManagerWheelOperator} from "./operators/turboEventManager.wheelOperator";
+import {TurboEventManagerPointerOperator} from "./operators/turboEventManager.pointerOperator";
+import {TurboEventManagerDispatchOperator} from "./operators/turboEventManager.dispatchOperator";
 import {TurboEventManagerUtilsHandler} from "./handlers/turboEventManager.utilsHandler";
-import {controller} from "../../decorators/mvc";
+import {operator} from "../../decorators/mvc";
 import {isUndefined} from "../../utils/dataManipulation/misc";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {Point} from "../../turboComponents/datatypes/point/point";
@@ -69,11 +69,11 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
 
     public static defaultProperties: TurboEventManagerProperties = {
         model: TurboEventManagerModel,
-        controllers: [
-            TurboEventManagerKeyController,
-            TurboEventManagerWheelController,
-            TurboEventManagerPointerController,
-            TurboEventManagerDispatchController
+        operators: [
+            TurboEventManagerKeyOperator,
+            TurboEventManagerWheelOperator,
+            TurboEventManagerPointerOperator,
+            TurboEventManagerDispatchOperator
         ],
         handlers: TurboEventManagerUtilsHandler,
 
@@ -86,10 +86,10 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
         moveEventsEnabled: true,
     };
 
-    @controller() protected keyController: TurboEventManagerKeyController;
-    @controller() protected wheelController: TurboEventManagerWheelController;
-    @controller() protected pointerController: TurboEventManagerPointerController;
-    @controller() protected dispatchController: TurboEventManagerDispatchController;
+    @operator() protected keyOperator: TurboEventManagerKeyOperator;
+    @operator() protected wheelOperator: TurboEventManagerWheelOperator;
+    @operator() protected pointerOperator: TurboEventManagerPointerOperator;
+    @operator() protected dispatchOperator: TurboEventManagerDispatchOperator;
 
     /**
      * @description The currently identified input device. It is not 100% accurate, especially when differentiating
@@ -118,28 +118,28 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
     public initialize() {
         super.initialize();
         this.unlock();
-        document.addEventListener("pointerdown", this.pointerController.pointerDown, {passive: false});
-        document.addEventListener("pointermove", this.pointerController.pointerMove, {passive: false});
-        document.addEventListener("pointerup", this.pointerController.pointerUp, {passive: false});
-        document.addEventListener("pointercancel", this.pointerController.pointerCancel, {passive: false});
+        document.addEventListener("pointerdown", this.pointerOperator.pointerDown, {passive: false});
+        document.addEventListener("pointermove", this.pointerOperator.pointerMove, {passive: false});
+        document.addEventListener("pointerup", this.pointerOperator.pointerUp, {passive: false});
+        document.addEventListener("pointercancel", this.pointerOperator.pointerCancel, {passive: false});
         //TODO
-        this.dispatchController.setupCustomDispatcher("pointerdown");
+        this.dispatchOperator.setupCustomDispatcher("pointerdown");
     }
 
     @auto() public set keyEventsEnabled(value: boolean) {
         if (value) {
-            document.addEventListener("keydown", this.keyController.keyDown);
-            document.addEventListener("keyup", this.keyController.keyUp);
+            document.addEventListener("keydown", this.keyOperator.keyDown);
+            document.addEventListener("keyup", this.keyOperator.keyUp);
         } else {
-            document.removeEventListener("keydown", this.keyController.keyDown);
-            document.removeEventListener("keyup", this.keyController.keyUp);
+            document.removeEventListener("keydown", this.keyOperator.keyDown);
+            document.removeEventListener("keyup", this.keyOperator.keyUp);
         }
         this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
     }
 
     @auto() public set wheelEventsEnabled(value: boolean) {
-        if (value) document.body.addEventListener("wheel", this.wheelController.wheel, {passive: false});
-        else document.body.removeEventListener("wheel", this.wheelController.wheel);
+        if (value) document.body.addEventListener("wheel", this.wheelOperator.wheel, {passive: false});
+        else document.body.removeEventListener("wheel", this.wheelOperator.wheel);
         this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
     }
 
@@ -151,29 +151,29 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
         //TODO
 
         // if (value) {
-        //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
-        //     doc.on("pointermove", this.pointerController.pointerMove, {passive: false, propagate: true});
-        //     doc.on("pointerup", this.pointerController.pointerUp, {passive: false, propagate: true});
-        //     doc.on("pointercancel", this.pointerController.pointerCancel, {passive: false, propagate: true});
+        //     doc.on("pointerdown", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+        //     doc.on("pointermove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+        //     doc.on("pointerup", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+        //     doc.on("pointercancel", this.pointerOperator.pointerCancel, {passive: false, propagate: true});
         // } else {
-        //     doc.removeListener("mousedown", this.pointerController.pointerDown);
-        //     doc.removeListener("mousemove", this.pointerController.pointerMove);
-        //     doc.removeListener("mouseup", this.pointerController.pointerUp);
-        //     doc.removeListener("mouseleave", this.pointerController.pointerLeave);
+        //     doc.removeListener("mousedown", this.pointerOperator.pointerDown);
+        //     doc.removeListener("mousemove", this.pointerOperator.pointerMove);
+        //     doc.removeListener("mouseup", this.pointerOperator.pointerUp);
+        //     doc.removeListener("mouseleave", this.pointerOperator.pointerLeave);
         // }
     }
 
     @auto() public set touchEventsEnabled(value: boolean) {
         // if (value) {
-        //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
-        //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
-        //     doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
-        //     doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
+        //     doc.on("touchstart", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+        //     doc.on("touchmove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+        //     doc.on("touchend", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+        //     doc.on("touchcancel", this.pointerOperator.pointerUp, {passive: false, propagate: true});
         // } else {
-        //     doc.removeListener("touchstart", this.pointerController.pointerDown);
-        //     doc.removeListener("touchmove", this.pointerController.pointerMove);
-        //     doc.removeListener("touchend", this.pointerController.pointerUp);
-        //     doc.removeListener("touchcancel", this.pointerController.pointerUp);
+        //     doc.removeListener("touchstart", this.pointerOperator.pointerDown);
+        //     doc.removeListener("touchmove", this.pointerOperator.pointerMove);
+        //     doc.removeListener("touchend", this.pointerOperator.pointerUp);
+        //     doc.removeListener("touchcancel", this.pointerOperator.pointerUp);
         // }
     }
 
@@ -405,15 +405,15 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
      */
 
     public setupCustomDispatcher(type: string) {
-        return this.dispatchController.setupCustomDispatcher(type);
+        return this.dispatchOperator.setupCustomDispatcher(type);
     }
 
     protected applyAndHookEvents(turboEventNames: Record<string, string>,
                                  defaultEventNames: Record<string, string>, applyTurboEvents: boolean) {
         this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
         for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
-            if (applyTurboEvents) this.dispatchController.setupCustomDispatcher(name as TurboEventNameEntry);
-            else this.dispatchController.removeCustomDispatcher(name as TurboEventNameEntry);
+            if (applyTurboEvents) this.dispatchOperator.setupCustomDispatcher(name as TurboEventNameEntry);
+            else this.dispatchOperator.removeCustomDispatcher(name as TurboEventNameEntry);
         }
     }
 

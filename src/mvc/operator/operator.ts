@@ -4,31 +4,31 @@ import {attachListenersAndBehaviors} from "../../decorators/listener/listener";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
 import {addRegistryCategory, define} from "../../decorators/define/define";
-import {TurboControllerProperties} from "./controller.types";
+import {TurboOperatorProperties} from "./operator.types";
 
 /**
- * @class TurboController
+ * @class TurboOperator
  * @group MVC
- * @category Controller
+ * @category Operator
  *
- * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
+ * @description The MVC base operator class. Its main job is to handle some part of (or all of) the logic of the
  * component. It has access to the element, the model to read and write data, the view to update the UI, and the
  * emitter to listen for changes in the model or any other internal events. It can only communicate with other
- * controllers via the emitter (by firing or listening for changes on a certain key).
+ * operators via the emitter (by firing or listening for changes on a certain key).
  * @template {object} ElementType - The type of the main component.
  * @template {TurboView} ViewType - The element's MVC view type.
  * @template {TurboModel} ModelType - The element's MVC model type.
  * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
  */
-class TurboController<
+class TurboOperator<
     ElementType extends object = object,
     ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > {
     /**
-     * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
-     * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+     * @description The key of the operator. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the operator's class name is MyElementSomethingOperator, the key would
      * default to "something".
      */
     public keyName: string;
@@ -53,7 +53,7 @@ class TurboController<
      */
     public emitter: EmitterType;
 
-    public constructor(properties: TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType>) {
+    public constructor(properties: TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType>) {
         this.element = properties.element;
         if (properties.model) this.model = properties.model;
         if (properties.emitter) this.emitter = properties.emitter;
@@ -71,7 +71,7 @@ class TurboController<
 
     /**
      * @function initialize
-     * @description Initializes the controller. Specifically, it will set up the change callbacks.
+     * @description Initializes the operator. Specifically, it will set up the change callbacks.
      */
     public initialize(): void {
         this.setupUIListeners();
@@ -97,6 +97,6 @@ class TurboController<
     }
 }
 
-addRegistryCategory(TurboController);
-define(TurboController);
-export {TurboController};
+addRegistryCategory(TurboOperator);
+define(TurboOperator);
+export {TurboOperator};

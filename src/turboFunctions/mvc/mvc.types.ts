@@ -1,4 +1,4 @@
-import {TurboController} from "../../mvc/controller/controller";
+import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
@@ -7,7 +7,7 @@ import {TurboView} from "../../mvc/view/view";
 import {TurboModel} from "../../mvc/model/model";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {TurboViewProperties} from "../../mvc/view/view.types";
-import {TurboControllerProperties} from "../../mvc/controller/controller.types";
+import {TurboOperatorProperties} from "../../mvc/operator/operator.types";
 import {TurboInteractorProperties} from "../../mvc/interactor/interactor.types";
 import {TurboToolProperties} from "../../mvc/tool/tool.types";
 import {TurboSubstrateProperties} from "../../mvc/substrate/substrate.types";
@@ -52,8 +52,8 @@ export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInst
  * (or model constructor) to attach.
  * @property {MvcInstanceOrConstructor<EmitterType, ModelType>} [emitter] - The emitter (or emitter constructor) to
  * attach. If not defined, a default TurboEmitter will be created.
- * @property {MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>} [controllers] - The
- * controller, constructor of controller, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboOperator, TurboOperatorProperties>} [operators] - The
+ * operator, constructor of operator, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboHandler, ModelType>} [handlers] - The
  * handler, constructor of handler, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>} [interactors] - The
@@ -72,7 +72,7 @@ type MvcProperties<
     model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType),
     emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>,
 
-    controllers?: MvcManyInstancesOrConstructors<TurboController, TurboControllerProperties>,
+    operators?: MvcManyInstancesOrConstructors<TurboOperator, TurboOperatorProperties>,
     handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>,
 
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>,
@@ -158,9 +158,9 @@ declare module "../turboSelector" {
         // -------------------------------------------------------------------------
 
         /**
-         * @description The controllers of the element's MVC structure.
+         * @description The operators of the element's MVC structure.
          */
-        controllers: TurboController[];
+        operators: TurboOperator[];
 
         /**
          * @description The handlers attached to the element's model.
@@ -190,7 +190,7 @@ declare module "../turboSelector" {
         /**
          * @function setMvc
          * @description Configures the MVC structure for the element. Sets the provided MVC pieces (model, view,
-         * emitter, controllers, handlers, interactors, tools, substrates) on the element, initializes a default
+         * emitter, operators, handlers, interactors, tools, substrates) on the element, initializes a default
          * emitter if none is provided, and initializes all MVC pieces unless explicitly disabled.
          * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
          * @returns {this} Itself, allowing for method chaining.
@@ -200,8 +200,8 @@ declare module "../turboSelector" {
         /**
          * @function initializeMvc
          * @description Initializes all MVC pieces attached to the element, in the following order: view,
-         * controllers, interactors, tools, substrates, and model. The model is initialized last to allow
-         * the view and controllers to set up their change callbacks first.
+         * operators, interactors, tools, substrates, and model. The model is initialized last to allow
+         * the view and operators to set up their change callbacks first.
          * @returns {this} Itself, allowing for method chaining.
          */
         initializeMvc(): this;
@@ -215,7 +215,7 @@ declare module "../turboSelector" {
          * @description Computes the structural difference between the element's current MVC configuration
          * and a provided configuration description. The comparison is constructor-based (not instance-based):
          * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
-         * - For collection fields (`controllers`, `handlers`, `interactors`, `tools`, `substrates`),
+         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `substrates`),
          *   the result contains constructors present in the current MVC but absent from the provided configuration.
          * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}] -
          *  The configuration to compare against.
@@ -232,32 +232,32 @@ declare module "../turboSelector" {
         ): MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>;
 
         // -------------------------------------------------------------------------
-        // Controllers
+        // Operators
         // -------------------------------------------------------------------------
 
         /**
-         * @function getController
-         * @description Retrieves the attached MVC controller with the given key.
-         * @param {string} key - The controller's key.
-         * @returns {TurboController} - The controller.
+         * @function getOperator
+         * @description Retrieves the attached MVC operator with the given key.
+         * @param {string} key - The operator's key.
+         * @returns {TurboOperator} - The operator.
          */
-        getController(key: string): TurboController;
+        getOperator(key: string): TurboOperator;
 
         /**
-         * @function addController
-         * @description Adds the given controller to the element's MVC structure.
-         * @param {TurboController} controller - The controller to add.
+         * @function addOperator
+         * @description Adds the given operator to the element's MVC structure.
+         * @param {TurboOperator} operator - The operator to add.
          * @returns {this} Itself, allowing for method chaining.
          */
-        addController(controller: TurboController): this;
+        addOperator(operator: TurboOperator): this;
 
         /**
-         * @function removeController
-         * @description Removes the given controller from the element's MVC structure and unlinks it.
-         * @param {string | TurboController} keyOrInstance - The controller's key or instance to remove.
+         * @function removeOperator
+         * @description Removes the given operator from the element's MVC structure and unlinks it.
+         * @param {string | TurboOperator} keyOrInstance - The operator's key or instance to remove.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeController(keyOrInstance: string | TurboController): this;
+        removeOperator(keyOrInstance: string | TurboOperator): this;
 
         // -------------------------------------------------------------------------
         // Handlers

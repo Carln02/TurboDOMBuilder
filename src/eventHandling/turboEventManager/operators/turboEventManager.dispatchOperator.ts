@@ -4,11 +4,11 @@ import {ClickMode} from "../turboEventManager.types";
 import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
 import {turbo} from "../../../turboFunctions/turboFunctions";
-import {TurboController} from "../../../mvc/controller/controller";
+import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboKeyEventName} from "../../../types/eventNaming.types";
 import {Propagation} from "../../../turboFunctions/event/event.types";
 
-export class TurboEventManagerDispatchController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+export class TurboEventManagerDispatchOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "dispatch";
 
     private boundHooks: Map<string, (e: Event) => void> = new Map();

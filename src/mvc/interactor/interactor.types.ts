@@ -3,14 +3,14 @@ import {TurboView} from "../view/view";
 import {ListenerOptions} from "../../turboComponents/datatypes/listener/listener.types";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
-import {TurboControllerProperties} from "../controller/controller.types";
+import {TurboOperatorProperties} from "../operator/operator.types";
 
 /**
  * @type {TurboInteractorProperties}
  * @group MVC
  * @category Interactor
  *
- * @extends {TurboControllerProperties}
+ * @extends {TurboOperatorProperties}
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -29,7 +29,7 @@ type TurboInteractorProperties<
     ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & {
+> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & {
     manager?: TurboEventManager,
     toolName?: string,
     target?: Node,

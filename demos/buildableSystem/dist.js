@@ -9164,7 +9164,7 @@
      * @category Misc
      * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
      */
-    const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"];
+    const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "operators", "handlers"];
 
     function setupMiscFunctions() {
         /**
@@ -10991,7 +10991,7 @@
      * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
      *
      * **MVC pieces:**
-     * - `TurboController`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
+     * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
      *   `TurboView`, `TurboEmitter`, `TurboModel`
      *
      * **Fallback:**
@@ -11011,7 +11011,7 @@
         RegistryCategory["TurboModel"] = "TurboModel";
         RegistryCategory["TurboView"] = "TurboView";
         RegistryCategory["TurboEmitter"] = "TurboEmitter";
-        RegistryCategory["TurboController"] = "TurboController";
+        RegistryCategory["TurboOperator"] = "TurboOperator";
         RegistryCategory["TurboHandler"] = "TurboHandler";
         RegistryCategory["TurboInteractor"] = "TurboInteractor";
         RegistryCategory["TurboTool"] = "TurboTool";
@@ -12268,7 +12268,7 @@
             if (!entry) {
                 entry = {
                     emitter: new TurboEmitter(),
-                    controllers: new Map(), substrates: new Map(), interactors: new Map(), tools: new Map(),
+                    operators: new Map(), substrates: new Map(), interactors: new Map(), tools: new Map(),
                     emitterFireCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
                 };
                 this.dataMap.set(element, entry);
@@ -12316,15 +12316,15 @@
                 return;
             emitter.model = attach ? mvc.model : undefined;
         }
-        updateController(element, controller, attach = true) {
-            if (!controller || !element)
+        updateOperator(element, operator, attach = true) {
+            if (!operator || !element)
                 return;
             const mvc = this.peek(element);
             if (!mvc)
                 return;
-            controller.emitter = attach ? mvc.emitter : undefined;
-            controller.model = attach ? mvc.model : undefined;
-            controller.view = attach ? mvc.view : undefined;
+            operator.emitter = attach ? mvc.emitter : undefined;
+            operator.model = attach ? mvc.model : undefined;
+            operator.view = attach ? mvc.view : undefined;
         }
         updateHandler(element, handler, attach = true) {
             if (!element || !handler)
@@ -12373,7 +12373,7 @@
             this.updateModel(element, mvc.model);
             this.updateEmitter(element, mvc.emitter);
             this.updateView(element, mvc.view);
-            mvc.controllers.forEach(controller => this.updateController(element, controller));
+            mvc.operators.forEach(operator => this.updateOperator(element, operator));
             mvc.model?.handlers.forEach(handler => this.updateHandler(element, handler));
             mvc.interactors.forEach(interactor => this.updateInteractor(element, interactor));
             mvc.tools.forEach(tool => this.updateTool(element, tool));
@@ -12417,11 +12417,11 @@
          * @protected
          * @function extractClassEssenceName
          * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
-         * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
-         * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+         * It strips the element/class name prefix (if any) and the type suffix (e.g., "Operator", "Tool") to
+         * produce a key that reads well in camelCase (e.g., `MyElementSnapOperator` -> `snap`).
          * @param element
          * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-         * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+         * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Substrate").
          * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
          */
         extractClassEssenceName(element, constructor, type) {
@@ -12441,7 +12441,7 @@
         }
     }
 
-    const MvcFields = ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"];
+    const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "substrates"];
     const utils$8 = new MvcFunctionsUtils();
     function setupMvcFunctions() {
         Object.defineProperty(TurboSelector.prototype, "mvc", {
@@ -12452,7 +12452,7 @@
                 return {
                     model: data.model,
                     view: data.view,
-                    controllers: Array.from(data.controllers?.values() ?? []),
+                    operators: Array.from(data.operators?.values() ?? []),
                     handlers: Array.from(data.model?.handlers?.values() ?? []),
                     interactors: Array.from(data.interactors?.values() ?? []),
                     tools: Array.from(data.tools?.values() ?? []),
@@ -12552,14 +12552,14 @@
         // -------------------------------------------------------------------------
         // Collections
         // -------------------------------------------------------------------------
-        Object.defineProperty(TurboSelector.prototype, "controllers", {
+        Object.defineProperty(TurboSelector.prototype, "operators", {
             get() {
-                return Array.from(utils$8.peek(this.element)?.controllers.values() ?? []);
+                return Array.from(utils$8.peek(this.element)?.operators.values() ?? []);
             },
             set(value) {
                 if (!this.element)
                     return;
-                utils$8.generateInstances(value, this.element).forEach(instance => this.addController(instance));
+                utils$8.generateInstances(value, this.element).forEach(instance => this.addOperator(instance));
                 utils$8.linkPieces(this.element);
             },
             configurable: true, enumerable: true,
@@ -12637,7 +12637,7 @@
             if (!mvc)
                 return this;
             mvc.view?.initialize();
-            mvc.controllers.forEach(controller => controller.initialize());
+            mvc.operators.forEach(operator => operator.initialize());
             mvc.interactors.forEach(interactor => interactor.initialize());
             mvc.tools.forEach(tool => tool.initialize());
             mvc.substrates.forEach(substrate => substrate.initialize());
@@ -12684,7 +12684,7 @@
             processField("view");
             processField("model");
             processField("emitter");
-            processArray("controllers");
+            processArray("operators");
             processArray("handlers");
             processArray("interactors");
             processArray("tools");
@@ -12694,23 +12694,23 @@
         // -------------------------------------------------------------------------
         // Manipulations
         // -------------------------------------------------------------------------
-        TurboSelector.prototype.getController = function (key) {
-            return utils$8.peek(this.element)?.controllers.get(key);
+        TurboSelector.prototype.getOperator = function (key) {
+            return utils$8.peek(this.element)?.operators.get(key);
         };
-        TurboSelector.prototype.addController = function (controller) {
+        TurboSelector.prototype.addOperator = function (operator) {
             if (!this.element)
                 return this;
-            if (!controller.keyName)
-                controller.keyName =
-                    utils$8.extractClassEssenceName(this.element, controller.constructor, "Controller");
-            utils$8.data(this.element).controllers.set(controller.keyName, controller);
-            utils$8.updateController(this.element, controller);
+            if (!operator.keyName)
+                operator.keyName =
+                    utils$8.extractClassEssenceName(this.element, operator.constructor, "Operator");
+            utils$8.data(this.element).operators.set(operator.keyName, operator);
+            utils$8.updateOperator(this.element, operator);
             return this;
         };
-        TurboSelector.prototype.removeController = function (keyOrInstance) {
+        TurboSelector.prototype.removeOperator = function (keyOrInstance) {
             if (!this.element)
                 return this;
-            utils$8.removeInstance(this.element, "controller", keyOrInstance);
+            utils$8.removeInstance(this.element, "operator", keyOrInstance);
             return this;
         };
         TurboSelector.prototype.getHandler = function (key) {
@@ -12868,7 +12868,7 @@
 
     /**
      * Define MVC-style accessors on a class prototype via Object.defineProperty.
-     * Adds: view, model, emitter, controllers, handlers, interactors, tools, substrates,
+     * Adds: view, model, emitter, operators, handlers, interactors, tools, substrates,
      * data, dataId, dataIndex, dataSize, and all add/get/remove methods.
      */
     function defineMvcAccessors(constructor) {
@@ -13485,7 +13485,7 @@
                     return false;
                 if (typeof value === "function")
                     return false;
-                if (key === "model" || key === "view" || key === "emitter" || key === "controllers"
+                if (key === "model" || key === "view" || key === "emitter" || key === "operators"
                     || key === "handlers" || key === "interactors" || key === "tools" || key === "substrates")
                     return false;
                 const desc = Object.getOwnPropertyDescriptor(prototype, key);
@@ -13769,8 +13769,8 @@
                     let value;
                     let functionName;
                     switch (type) {
-                        case "Controller":
-                            functionName = "getController";
+                        case "Operator":
+                            functionName = "getOperator";
                             break;
                         case "Handler":
                             functionName = "getHandler";
@@ -13799,30 +13799,30 @@
     }
     /**
      * @decorator
-     * @function controller
+     * @function operator
      * @group Decorators
      * @category MVC
      *
      * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-     * fetched controller.
-     * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
-     * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+     * fetched operator.
+     * @param {string} [name] - The key name of the operator in the MVC instance (if any). By default, it is inferred
+     * from the name of the field. If the field is named `somethingOperator`, the key name will be `something`.
      *
      * @example
      * ```ts
-     * @controller() protected textController: TurboController;
+     * @operator() protected textOperator: TurboOperator;
      * ```
      * Is equivalent to:
      * ```ts
-     * protected get textController(): TurboController {
-     *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
-     *    if (typeof this.getController === "function") return this.getController("text");
+     * protected get textOperator(): TurboOperator {
+     *    if (this.mvc instanceof Mvc) return this.mvc.getOperator("text");
+     *    if (typeof this.getOperator === "function") return this.getOperator("text");
      * }
      * ```
      */
-    function controller(name) {
+    function operator(name) {
         return function (_unused, context) {
-            generateField(context, "Controller", name);
+            generateField(context, "Operator", name);
         };
     }
     /**
@@ -14352,23 +14352,23 @@
     }
 
     /**
-     * @class TurboController
+     * @class TurboOperator
      * @group MVC
-     * @category Controller
+     * @category Operator
      *
-     * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
+     * @description The MVC base operator class. Its main job is to handle some part of (or all of) the logic of the
      * component. It has access to the element, the model to read and write data, the view to update the UI, and the
      * emitter to listen for changes in the model or any other internal events. It can only communicate with other
-     * controllers via the emitter (by firing or listening for changes on a certain key).
+     * operators via the emitter (by firing or listening for changes on a certain key).
      * @template {object} ElementType - The type of the main component.
      * @template {TurboView} ViewType - The element's MVC view type.
      * @template {TurboModel} ModelType - The element's MVC model type.
      * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
      */
-    class TurboController {
+    class TurboOperator {
         /**
-         * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
-         * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+         * @description The key of the operator. Used to retrieve it in the main component. If not set, if the element's
+         * class name is MyElement and the operator's class name is MyElementSomethingOperator, the key would
          * default to "something".
          */
         keyName;
@@ -14407,7 +14407,7 @@
         setup() { }
         /**
          * @function initialize
-         * @description Initializes the controller. Specifically, it will set up the change callbacks.
+         * @description Initializes the operator. Specifically, it will set up the change callbacks.
          */
         initialize() {
             this.setupUIListeners();
@@ -14430,10 +14430,10 @@
             initializeEffects(this);
         }
     }
-    addRegistryCategory(TurboController);
-    define(TurboController);
+    addRegistryCategory(TurboOperator);
+    define(TurboOperator);
 
-    class TurboEventManagerKeyController extends TurboController {
+    class TurboEventManagerKeyOperator extends TurboOperator {
         keyName = "key";
         keyDown = (e) => this.keyDownFn(e);
         keyDownFn(e) {
@@ -14697,7 +14697,7 @@
         }
     }
 
-    class TurboEventManagerWheelController extends TurboController {
+    class TurboEventManagerWheelOperator extends TurboOperator {
         keyName = "wheel";
         wheel = (e) => {
             if (!this.element.enabled)
@@ -14829,7 +14829,7 @@
         };
     })();
 
-    class TurboEventManagerPointerController extends TurboController {
+    class TurboEventManagerPointerOperator extends TurboOperator {
         keyName = "pointer";
         pointerDown = (e) => this.pointerDownFn(e);
         pointerMove = (e) => this.pointerMoveFn(e);
@@ -14896,7 +14896,7 @@
                 e.preventDefault();
             //New positions map
             this.model.positions = new TurboMap();
-            // Only update the current pointer’s position (others remain tracked from prior moves)
+            // Only update the current pointer's position (others remain tracked from prior moves)
             this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
             // Clear cached target origin if not dragging
             if (this.model.currentAction !== ActionMode.drag)
@@ -15041,7 +15041,7 @@
         }
     }
 
-    class TurboEventManagerDispatchController extends TurboController {
+    class TurboEventManagerDispatchOperator extends TurboOperator {
         keyName = "dispatch";
         boundHooks = new Map();
         setupChangedCallbacks() {
@@ -15257,18 +15257,18 @@
     let TurboEventManager = (() => {
         let _classSuper = TurboBaseElement;
         let _instanceExtraInitializers = [];
-        let _keyController_decorators;
-        let _keyController_initializers = [];
-        let _keyController_extraInitializers = [];
-        let _wheelController_decorators;
-        let _wheelController_initializers = [];
-        let _wheelController_extraInitializers = [];
-        let _pointerController_decorators;
-        let _pointerController_initializers = [];
-        let _pointerController_extraInitializers = [];
-        let _dispatchController_decorators;
-        let _dispatchController_initializers = [];
-        let _dispatchController_extraInitializers = [];
+        let _keyOperator_decorators;
+        let _keyOperator_initializers = [];
+        let _keyOperator_extraInitializers = [];
+        let _wheelOperator_decorators;
+        let _wheelOperator_initializers = [];
+        let _wheelOperator_extraInitializers = [];
+        let _pointerOperator_decorators;
+        let _pointerOperator_initializers = [];
+        let _pointerOperator_extraInitializers = [];
+        let _dispatchOperator_decorators;
+        let _dispatchOperator_initializers = [];
+        let _dispatchOperator_extraInitializers = [];
         let _inputDevice_decorators;
         let _inputDevice_initializers = [];
         let _inputDevice_extraInitializers = [];
@@ -15306,10 +15306,10 @@
         return class TurboEventManager extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _keyController_decorators = [controller()];
-                _wheelController_decorators = [controller()];
-                _pointerController_decorators = [controller()];
-                _dispatchController_decorators = [controller()];
+                _keyOperator_decorators = [operator()];
+                _wheelOperator_decorators = [operator()];
+                _pointerOperator_decorators = [operator()];
+                _dispatchOperator_decorators = [operator()];
                 _inputDevice_decorators = [expose("model", false)];
                 _onInputDeviceChange_decorators = [expose("model", false)];
                 _currentClick_decorators = [expose("model", false)];
@@ -15333,10 +15333,10 @@
                 __esDecorate(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(this, null, _set_clickEventsEnabled_decorators, { kind: "setter", name: "clickEventsEnabled", static: false, private: false, access: { has: obj => "clickEventsEnabled" in obj, set: (obj, value) => { obj.clickEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(this, null, _set_dragEventsEnabled_decorators, { kind: "setter", name: "dragEventsEnabled", static: false, private: false, access: { has: obj => "dragEventsEnabled" in obj, set: (obj, value) => { obj.dragEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
-                __esDecorate(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
-                __esDecorate(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
-                __esDecorate(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
+                __esDecorate(null, null, _keyOperator_decorators, { kind: "field", name: "keyOperator", static: false, private: false, access: { has: obj => "keyOperator" in obj, get: obj => obj.keyOperator, set: (obj, value) => { obj.keyOperator = value; } }, metadata: _metadata }, _keyOperator_initializers, _keyOperator_extraInitializers);
+                __esDecorate(null, null, _wheelOperator_decorators, { kind: "field", name: "wheelOperator", static: false, private: false, access: { has: obj => "wheelOperator" in obj, get: obj => obj.wheelOperator, set: (obj, value) => { obj.wheelOperator = value; } }, metadata: _metadata }, _wheelOperator_initializers, _wheelOperator_extraInitializers);
+                __esDecorate(null, null, _pointerOperator_decorators, { kind: "field", name: "pointerOperator", static: false, private: false, access: { has: obj => "pointerOperator" in obj, get: obj => obj.pointerOperator, set: (obj, value) => { obj.pointerOperator = value; } }, metadata: _metadata }, _pointerOperator_initializers, _pointerOperator_extraInitializers);
+                __esDecorate(null, null, _dispatchOperator_decorators, { kind: "field", name: "dispatchOperator", static: false, private: false, access: { has: obj => "dispatchOperator" in obj, get: obj => obj.dispatchOperator, set: (obj, value) => { obj.dispatchOperator = value; } }, metadata: _metadata }, _dispatchOperator_initializers, _dispatchOperator_extraInitializers);
                 __esDecorate(null, null, _inputDevice_decorators, { kind: "field", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, get: obj => obj.inputDevice, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, _inputDevice_initializers, _inputDevice_extraInitializers);
                 __esDecorate(null, null, _onInputDeviceChange_decorators, { kind: "field", name: "onInputDeviceChange", static: false, private: false, access: { has: obj => "onInputDeviceChange" in obj, get: obj => obj.onInputDeviceChange, set: (obj, value) => { obj.onInputDeviceChange = value; } }, metadata: _metadata }, _onInputDeviceChange_initializers, _onInputDeviceChange_extraInitializers);
                 __esDecorate(null, null, _currentClick_decorators, { kind: "field", name: "currentClick", static: false, private: false, access: { has: obj => "currentClick" in obj, get: obj => obj.currentClick, set: (obj, value) => { obj.currentClick = value; } }, metadata: _metadata }, _currentClick_initializers, _currentClick_extraInitializers);
@@ -15363,11 +15363,11 @@
             }
             static defaultProperties = {
                 model: TurboEventManagerModel,
-                controllers: [
-                    TurboEventManagerKeyController,
-                    TurboEventManagerWheelController,
-                    TurboEventManagerPointerController,
-                    TurboEventManagerDispatchController
+                operators: [
+                    TurboEventManagerKeyOperator,
+                    TurboEventManagerWheelOperator,
+                    TurboEventManagerPointerOperator,
+                    TurboEventManagerDispatchOperator
                 ],
                 handlers: TurboEventManagerUtilsHandler,
                 keyEventsEnabled: true,
@@ -15378,15 +15378,15 @@
                 dragEventsEnabled: true,
                 moveEventsEnabled: true,
             };
-            keyController = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _keyController_initializers, void 0));
-            wheelController = (__runInitializers(this, _keyController_extraInitializers), __runInitializers(this, _wheelController_initializers, void 0));
-            pointerController = (__runInitializers(this, _wheelController_extraInitializers), __runInitializers(this, _pointerController_initializers, void 0));
-            dispatchController = (__runInitializers(this, _pointerController_extraInitializers), __runInitializers(this, _dispatchController_initializers, void 0));
+            keyOperator = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _keyOperator_initializers, void 0));
+            wheelOperator = (__runInitializers(this, _keyOperator_extraInitializers), __runInitializers(this, _wheelOperator_initializers, void 0));
+            pointerOperator = (__runInitializers(this, _wheelOperator_extraInitializers), __runInitializers(this, _pointerOperator_initializers, void 0));
+            dispatchOperator = (__runInitializers(this, _pointerOperator_extraInitializers), __runInitializers(this, _dispatchOperator_initializers, void 0));
             /**
              * @description The currently identified input device. It is not 100% accurate, especially when differentiating
              * between mouse and trackpad.
              */
-            inputDevice = (__runInitializers(this, _dispatchController_extraInitializers), __runInitializers(this, _inputDevice_initializers, void 0));
+            inputDevice = (__runInitializers(this, _dispatchOperator_extraInitializers), __runInitializers(this, _inputDevice_initializers, void 0));
             onInputDeviceChange = (__runInitializers(this, _inputDevice_extraInitializers), __runInitializers(this, _onInputDeviceChange_initializers, void 0));
             currentClick = (__runInitializers(this, _onInputDeviceChange_extraInitializers), __runInitializers(this, _currentClick_initializers, void 0));
             currentKeys = (__runInitializers(this, _currentClick_extraInitializers), __runInitializers(this, _currentKeys_initializers, void 0));
@@ -15406,29 +15406,29 @@
             initialize() {
                 super.initialize();
                 this.unlock();
-                document.addEventListener("pointerdown", this.pointerController.pointerDown, { passive: false });
-                document.addEventListener("pointermove", this.pointerController.pointerMove, { passive: false });
-                document.addEventListener("pointerup", this.pointerController.pointerUp, { passive: false });
-                document.addEventListener("pointercancel", this.pointerController.pointerCancel, { passive: false });
+                document.addEventListener("pointerdown", this.pointerOperator.pointerDown, { passive: false });
+                document.addEventListener("pointermove", this.pointerOperator.pointerMove, { passive: false });
+                document.addEventListener("pointerup", this.pointerOperator.pointerUp, { passive: false });
+                document.addEventListener("pointercancel", this.pointerOperator.pointerCancel, { passive: false });
                 //TODO
-                this.dispatchController.setupCustomDispatcher("pointerdown");
+                this.dispatchOperator.setupCustomDispatcher("pointerdown");
             }
             set keyEventsEnabled(value) {
                 if (value) {
-                    document.addEventListener("keydown", this.keyController.keyDown);
-                    document.addEventListener("keyup", this.keyController.keyUp);
+                    document.addEventListener("keydown", this.keyOperator.keyDown);
+                    document.addEventListener("keyup", this.keyOperator.keyUp);
                 }
                 else {
-                    document.removeEventListener("keydown", this.keyController.keyDown);
-                    document.removeEventListener("keyup", this.keyController.keyUp);
+                    document.removeEventListener("keydown", this.keyOperator.keyDown);
+                    document.removeEventListener("keyup", this.keyOperator.keyUp);
                 }
                 this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
             }
             set wheelEventsEnabled(value) {
                 if (value)
-                    document.body.addEventListener("wheel", this.wheelController.wheel, { passive: false });
+                    document.body.addEventListener("wheel", this.wheelOperator.wheel, { passive: false });
                 else
-                    document.body.removeEventListener("wheel", this.wheelController.wheel);
+                    document.body.removeEventListener("wheel", this.wheelOperator.wheel);
                 this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
             }
             set moveEventsEnabled(value) {
@@ -15437,28 +15437,28 @@
             set mouseEventsEnabled(value) {
                 //TODO
                 // if (value) {
-                //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
-                //     doc.on("pointermove", this.pointerController.pointerMove, {passive: false, propagate: true});
-                //     doc.on("pointerup", this.pointerController.pointerUp, {passive: false, propagate: true});
-                //     doc.on("pointercancel", this.pointerController.pointerCancel, {passive: false, propagate: true});
+                //     doc.on("pointerdown", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+                //     doc.on("pointermove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+                //     doc.on("pointerup", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+                //     doc.on("pointercancel", this.pointerOperator.pointerCancel, {passive: false, propagate: true});
                 // } else {
-                //     doc.removeListener("mousedown", this.pointerController.pointerDown);
-                //     doc.removeListener("mousemove", this.pointerController.pointerMove);
-                //     doc.removeListener("mouseup", this.pointerController.pointerUp);
-                //     doc.removeListener("mouseleave", this.pointerController.pointerLeave);
+                //     doc.removeListener("mousedown", this.pointerOperator.pointerDown);
+                //     doc.removeListener("mousemove", this.pointerOperator.pointerMove);
+                //     doc.removeListener("mouseup", this.pointerOperator.pointerUp);
+                //     doc.removeListener("mouseleave", this.pointerOperator.pointerLeave);
                 // }
             }
             set touchEventsEnabled(value) {
                 // if (value) {
-                //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
-                //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
-                //     doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
-                //     doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
+                //     doc.on("touchstart", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+                //     doc.on("touchmove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+                //     doc.on("touchend", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+                //     doc.on("touchcancel", this.pointerOperator.pointerUp, {passive: false, propagate: true});
                 // } else {
-                //     doc.removeListener("touchstart", this.pointerController.pointerDown);
-                //     doc.removeListener("touchmove", this.pointerController.pointerMove);
-                //     doc.removeListener("touchend", this.pointerController.pointerUp);
-                //     doc.removeListener("touchcancel", this.pointerController.pointerUp);
+                //     doc.removeListener("touchstart", this.pointerOperator.pointerDown);
+                //     doc.removeListener("touchmove", this.pointerOperator.pointerMove);
+                //     doc.removeListener("touchend", this.pointerOperator.pointerUp);
+                //     doc.removeListener("touchcancel", this.pointerOperator.pointerUp);
                 // }
             }
             set clickEventsEnabled(value) {
@@ -15670,15 +15670,15 @@
              *
              */
             setupCustomDispatcher(type) {
-                return this.dispatchController.setupCustomDispatcher(type);
+                return this.dispatchOperator.setupCustomDispatcher(type);
             }
             applyAndHookEvents(turboEventNames, defaultEventNames, applyTurboEvents) {
                 this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
                 for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
                     if (applyTurboEvents)
-                        this.dispatchController.setupCustomDispatcher(name);
+                        this.dispatchOperator.setupCustomDispatcher(name);
                     else
-                        this.dispatchController.removeCustomDispatcher(name);
+                        this.dispatchOperator.removeCustomDispatcher(name);
                 }
             }
             destroy() {
@@ -17257,14 +17257,14 @@
      * @group MVC
      * @category Substrate
      *
-     * @extends TurboController
+     * @extends TurboOperator
      * @template {object} ElementType - The type of the element.
      * @template {TurboView} ViewType - The element's view type, if any.
      * @template {TurboModel} ModelType - The element's model type, if any.
      * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
      * @description Class representing a substrate in MVC, bound to the provided element.
      */
-    class TurboSubstrate extends TurboController {
+    class TurboSubstrate extends TurboOperator {
         /**
          * @description The name of the substrate.
          */
@@ -19686,7 +19686,7 @@
      * @group MVC
      * @category Interactor
      *
-     * @extends TurboController
+     * @extends TurboOperator
      * @template {object} ElementType - The type of the main component.
      * @template {TurboView} ViewType - The element's MVC view type.
      * @template {TurboModel} ModelType - The element's MVC model type.
@@ -19694,7 +19694,7 @@
      * @description Class representing an MVC interactor. It holds event listeners to set up on the element itself, or
      * the custom defined target.
      */
-    class TurboInteractor extends TurboController {
+    class TurboInteractor extends TurboOperator {
         #target_accessor_storage;
         /**
          * @description The target of the event listeners. Defaults to the element itself.
@@ -19933,14 +19933,14 @@
      * @group MVC
      * @category Tool
      *
-     * @extends TurboController
+     * @extends TurboOperator
      * @template {object} ElementType - The type of the element.
      * @template {TurboView} ViewType - The element's view type, if any.
      * @template {TurboModel} ModelType - The element's model type, if any.
      * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
      * @description Class representing a tool in MVC, bound to the provided element.
      */
-    class TurboTool extends TurboController {
+    class TurboTool extends TurboOperator {
         /**
          * @description The name of the tool.
          */

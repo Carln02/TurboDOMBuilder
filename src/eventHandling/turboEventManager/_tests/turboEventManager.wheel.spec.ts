@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventName} from "../../../types/eventNaming.types";
 
-describe("Wheel controller → TurboWheelEvent dispatch", () => {
+describe("Wheel operator → TurboWheelEvent dispatch", () => {
     it("emits scroll for small delta; still scroll after timeout (mouse also emits scroll)", () => {
         const mgr = TurboEventManager.create();
-        const wheelCtl = (mgr as any).wheelController;
+        const wheelCtl = (mgr as any).wheelOperator;
 
         const scrollSpy = vi.fn();
         document.addEventListener(TurboEventName.scroll, scrollSpy as any);
@@ -30,7 +30,7 @@ describe("Wheel controller → TurboWheelEvent dispatch", () => {
 
     it("emits pinch when ctrlKey is true on trackpad", () => {
         const mgr = TurboEventManager.create();
-        const wheelCtl = (mgr as any).wheelController;
+        const wheelCtl = (mgr as any).wheelOperator;
 
         const pinchSpy = vi.fn();
         document.addEventListener(TurboEventName.pinch, pinchSpy as any);

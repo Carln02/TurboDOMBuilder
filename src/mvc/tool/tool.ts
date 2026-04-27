@@ -6,7 +6,7 @@ import {ClickMode} from "../../eventHandling/turboEventManager/turboEventManager
 import {DefaultEventName, DefaultEventNameEntry} from "../../types/eventNaming.types";
 import {TurboEmitter} from "../emitter/emitter";
 import {TurboModel} from "../model/model";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
@@ -14,7 +14,7 @@ import {addRegistryCategory, define} from "../../decorators/define/define";
  * @group MVC
  * @category Tool
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -26,7 +26,7 @@ class TurboTool<
     ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the tool. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the tool's class name is MyElementSomethingTool, the key would

@@ -1,7 +1,7 @@
 import {turbo} from "../turboFunctions/turboFunctions";
 import {TurboEventManager} from "../eventHandling/turboEventManager/turboEventManager";
 
-type FieldType = "Controller" | "Handler" | "Interactor" | "Tool" | "Substrate";
+type FieldType = "Operator" | "Handler" | "Interactor" | "Tool" | "Substrate";
 
 /**
  * @internal
@@ -30,8 +30,8 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
                 let functionName: string;
 
                 switch (type) {
-                    case "Controller":
-                        functionName = "getController";
+                    case "Operator":
+                        functionName = "getOperator";
                         break;
                     case "Handler":
                         functionName = "getHandler";
@@ -60,30 +60,30 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
 
 /**
  * @decorator
- * @function controller
+ * @function operator
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched controller.
- * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+ * fetched operator.
+ * @param {string} [name] - The key name of the operator in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingOperator`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @controller() protected textController: TurboController;
+ * @operator() protected textOperator: TurboOperator;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textController(): TurboController {
- *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
- *    if (typeof this.getController === "function") return this.getController("text");
+ * protected get textOperator(): TurboOperator {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getOperator("text");
+ *    if (typeof this.getOperator === "function") return this.getOperator("text");
  * }
  * ```
  */
-function controller(name?: string) {
+function operator(name?: string) {
     return function (_unused: unknown, context: ClassFieldDecoratorContext) {
-        generateField(context, "Controller", name);
+        generateField(context, "Operator", name);
     };
 }
 
@@ -203,4 +203,4 @@ function substrate(name?: string) {
     };
 }
 
-export {controller, handler, interactor, tool, substrate};
+export {operator, handler, interactor, tool, substrate};

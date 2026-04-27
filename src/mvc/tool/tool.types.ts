@@ -2,7 +2,7 @@ import {TurboView} from "../view/view";
 import {MakeToolOptions} from "../../turboFunctions/tool/tool.types";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
-import {TurboControllerProperties} from "../controller/controller.types";
+import {TurboOperatorProperties} from "../operator/operator.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 
 /**
@@ -10,7 +10,7 @@ import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEven
  * @group MVC
  * @category Tool
  *
- * @extends TurboControllerProperties
+ * @extends TurboOperatorProperties
  * @extends MakeToolOptions
  *
  * @template {object} ElementType - The type of the element.
@@ -27,7 +27,7 @@ type TurboToolProperties<
     ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeToolOptions & {
+> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeToolOptions & {
     toolName?: string,
     embeddedTarget?: Node
 };

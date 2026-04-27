@@ -2,14 +2,14 @@ import {MakeSubstrateOptions} from "../../turboFunctions/substrate/substrate.typ
 import {TurboModel} from "../model/model";
 import {TurboView} from "../view/view";
 import {TurboEmitter} from "../emitter/emitter";
-import {TurboControllerProperties} from "../controller/controller.types";
+import {TurboOperatorProperties} from "../operator/operator.types";
 
 /**
  * @type {TurboSubstrateProperties}
  * @group MVC
  * @category Substrate
  *
- * @extends TurboControllerProperties
+ * @extends TurboOperatorProperties
  * @extends MakeSubstrateOptions
  *
  * @template {object} ElementType - The type of the element.
@@ -25,7 +25,7 @@ type TurboSubstrateProperties<
     ViewType extends TurboView = TurboView,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = TurboControllerProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
+> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeSubstrateOptions & {
     substrateName?: string,
 };
 

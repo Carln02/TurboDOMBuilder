@@ -1,4 +1,4 @@
-import {TurboController} from "../../../mvc/controller/controller";
+import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {ActionMode, ClickMode, InputDevice} from "../turboEventManager.types";
@@ -10,7 +10,7 @@ import {TurboWheelEvent} from "../../events/turboWheelEvent";
 import {clearCache} from "../../../decorators/cache/cache";
 import {TurboEventName, TurboEventNameEntry} from "../../../types/eventNaming.types";
 
-export class TurboEventManagerPointerController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+export class TurboEventManagerPointerOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     public keyName = "pointer";
 
     public pointerDown = (e: PointerEvent) => this.pointerDownFn(e);
@@ -83,7 +83,7 @@ export class TurboEventManagerPointerController extends TurboController<TurboEve
         //New positions map
         this.model.positions = new TurboMap<number, Point>();
 
-        // Only update the current pointer’s position (others remain tracked from prior moves)
+        // Only update the current pointer's position (others remain tracked from prior moves)
         this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
 
         // Clear cached target origin if not dragging

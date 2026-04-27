@@ -4,7 +4,7 @@
  * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
-const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"] as const;
+const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "operators", "handlers"] as const;
 
 /**
  * @type {ApplyDefaultsOptions}
@@ -46,7 +46,7 @@ declare module "../turboSelector" {
          * @function applyDefaults
          * @description Apply default properties to the underlying object, with optional smart merging for
          * array-like keys. By default, merging will happen on all MVC properties that accept arrays (like
-         * `controllers`, `handlers`, `tools`, etc.) to allow for concatenation of such MVC pieces.
+         * `operators`, `handlers`, `tools`, etc.) to allow for concatenation of such MVC pieces.
          *
          * @param {Record<string, any>} defaults - Key/value map of defaults to apply on the object.
          * @param {ApplyDefaultsOptions} [options] - Optional configuration for merging keys.
@@ -59,7 +59,7 @@ declare module "../turboSelector" {
          *   tag: "my-el",
          *   view: MyElementView,
          *   tools: [selectTool, panTool],
-         *   controllers: KeyboardController
+         *   operators: KeyboardOperator
          * });
          * ```
          */

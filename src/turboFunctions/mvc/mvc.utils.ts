@@ -2,7 +2,7 @@ import {TurboSelector} from "../turboSelector";
 import {TurboModel} from "../../mvc/model/model";
 import {TurboView} from "../../mvc/view/view";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
-import {TurboController} from "../../mvc/controller/controller";
+import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
 import {TurboSubstrate} from "../../mvc/substrate/substrate";
@@ -14,7 +14,7 @@ type MvcData = {
     model?: TurboModel;
     view?: TurboView;
     emitter?: TurboEmitter;
-    controllers: Map<string, TurboController>;
+    operators: Map<string, TurboOperator>;
     interactors: Map<string, TurboInteractor>;
     tools: Map<string, TurboTool>;
     substrates: Map<string, TurboSubstrate>;
@@ -39,7 +39,7 @@ export class MvcFunctionsUtils {
         if (!entry) {
             entry = {
                 emitter: new TurboEmitter(),
-                controllers: new Map(), substrates: new Map(), interactors: new Map(), tools: new Map(),
+                operators: new Map(), substrates: new Map(), interactors: new Map(), tools: new Map(),
                 emitterFireCallback: (value: any, ...keys: KeyType[]) => entry.emitter?.fireKey(value, ...keys)
             };
             this.dataMap.set(element, entry);
@@ -81,13 +81,13 @@ export class MvcFunctionsUtils {
         emitter.model = attach ? mvc.model : undefined;
     }
 
-    public updateController(element: object, controller: TurboController, attach: boolean = true) {
-        if (!controller || !element) return;
+    public updateOperator(element: object, operator: TurboOperator, attach: boolean = true) {
+        if (!operator || !element) return;
         const mvc = this.peek(element);
         if (!mvc) return;
-        controller.emitter = attach ? mvc.emitter : undefined;
-        controller.model = attach ? mvc.model : undefined;
-        controller.view = attach ? mvc.view : undefined;
+        operator.emitter = attach ? mvc.emitter : undefined;
+        operator.model = attach ? mvc.model : undefined;
+        operator.view = attach ? mvc.view : undefined;
     }
 
     public updateHandler(element: object, handler: TurboHandler, attach: boolean = true) {
@@ -131,7 +131,7 @@ export class MvcFunctionsUtils {
         this.updateModel(element, mvc.model);
         this.updateEmitter(element, mvc.emitter);
         this.updateView(element, mvc.view);
-        mvc.controllers.forEach(controller => this.updateController(element, controller));
+        mvc.operators.forEach(operator => this.updateOperator(element, operator));
         mvc.model?.handlers.forEach(handler => this.updateHandler(element, handler));
         mvc.interactors.forEach(interactor => this.updateInteractor(element, interactor));
         mvc.tools.forEach(tool => this.updateTool(element, tool));
@@ -171,11 +171,11 @@ export class MvcFunctionsUtils {
      * @protected
      * @function extractClassEssenceName
      * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
-     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
-     * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+     * It strips the element/class name prefix (if any) and the type suffix (e.g., "Operator", "Tool") to
+     * produce a key that reads well in camelCase (e.g., `MyElementSnapOperator` -> `snap`).
      * @param element
      * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-     * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+     * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Substrate").
      * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
      */
     public extractClassEssenceName(element: object, constructor: new (...args: any[]) => any, type: string): string {

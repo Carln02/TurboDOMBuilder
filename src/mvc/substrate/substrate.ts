@@ -11,7 +11,7 @@ import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 import {TurboModel} from "../model/model";
 import {TurboEmitter} from "../emitter/emitter";
-import {TurboController} from "../controller/controller";
+import {TurboOperator} from "../operator/operator";
 import {addRegistryCategory, define} from "../../decorators/define/define";
 
 /**
@@ -19,7 +19,7 @@ import {addRegistryCategory, define} from "../../decorators/define/define";
  * @group MVC
  * @category Substrate
  *
- * @extends TurboController
+ * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
@@ -31,7 +31,7 @@ class TurboSubstrate<
     ViewType extends TurboView = TurboView<any, any>,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboController<ElementType, ViewType, ModelType, EmitterType> {
+> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
      * @description The key of the substrate. Used to retrieve it in the main component. If not set, if the element's
      * class name is MyElement and the substrate's class name is MyElementSomethingSubstrate, the key would

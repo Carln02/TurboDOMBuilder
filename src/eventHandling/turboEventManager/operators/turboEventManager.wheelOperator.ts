@@ -2,11 +2,11 @@ import {TurboEventManager} from "../turboEventManager";
 import {TurboEventManagerModel} from "../turboEventManager.model";
 import {InputDevice} from "../turboEventManager.types";
 import {TurboWheelEvent} from "../../events/turboWheelEvent";
-import {TurboController} from "../../../mvc/controller/controller";
+import {TurboOperator} from "../../../mvc/operator/operator";
 import {Point} from "../../../turboComponents/datatypes/point/point";
 import {TurboEventName, TurboEventNameEntry} from "../../../types/eventNaming.types";
 
-export class TurboEventManagerWheelController extends TurboController<TurboEventManager, any, TurboEventManagerModel> {
+export class TurboEventManagerWheelOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
     public keyName: string = "wheel";
 
     public wheel = (e: WheelEvent) => {

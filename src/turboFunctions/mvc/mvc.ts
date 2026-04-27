@@ -4,12 +4,12 @@ import {TurboSubstrate} from "../../mvc/substrate/substrate";
 import {TurboTool} from "../../mvc/tool/tool";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboHandler} from "../../mvc/handler/handler";
-import {TurboController} from "../../mvc/controller/controller";
+import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {turbo} from "../turboFunctions";
 import {MvcGenerationProperties, MvcProperties} from "./mvc.types";
 
-export const MvcFields = ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"];
+export const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "substrates"];
 const utils = new MvcFunctionsUtils();
 
 export function setupMvcFunctions() {
@@ -20,7 +20,7 @@ export function setupMvcFunctions() {
             return {
                 model: data.model,
                 view: data.view,
-                controllers: Array.from(data.controllers?.values() ?? []),
+                operators: Array.from(data.operators?.values() ?? []),
                 handlers: Array.from(data.model?.handlers?.values() ?? []),
                 interactors: Array.from(data.interactors?.values() ?? []),
                 tools: Array.from(data.tools?.values() ?? []),
@@ -124,13 +124,13 @@ export function setupMvcFunctions() {
     // Collections
     // -------------------------------------------------------------------------
 
-    Object.defineProperty(TurboSelector.prototype, "controllers", {
+    Object.defineProperty(TurboSelector.prototype, "operators", {
         get(this: TurboSelector) {
-            return Array.from(utils.peek(this.element)?.controllers.values() ?? []);
+            return Array.from(utils.peek(this.element)?.operators.values() ?? []);
         },
         set(this: TurboSelector, value) {
             if (!this.element) return;
-            utils.generateInstances(value, this.element).forEach(instance => this.addController(instance));
+            utils.generateInstances(value, this.element).forEach(instance => this.addOperator(instance));
             utils.linkPieces(this.element);
         },
         configurable: true, enumerable: true,
@@ -203,7 +203,7 @@ export function setupMvcFunctions() {
         const mvc = utils.peek(this.element);
         if (!mvc) return this;
         mvc.view?.initialize();
-        mvc.controllers.forEach(controller => controller.initialize());
+        mvc.operators.forEach(operator => operator.initialize());
         mvc.interactors.forEach(interactor => interactor.initialize());
         mvc.tools.forEach(tool => tool.initialize());
         mvc.substrates.forEach(substrate => substrate.initialize());
@@ -249,7 +249,7 @@ export function setupMvcFunctions() {
         processField("view");
         processField("model");
         processField("emitter");
-        processArray("controllers");
+        processArray("operators");
         processArray("handlers");
         processArray("interactors");
         processArray("tools");
@@ -262,22 +262,22 @@ export function setupMvcFunctions() {
     // Manipulations
     // -------------------------------------------------------------------------
 
-    TurboSelector.prototype.getController = function (this: TurboSelector, key: string) {
-        return utils.peek(this.element)?.controllers.get(key);
+    TurboSelector.prototype.getOperator = function (this: TurboSelector, key: string) {
+        return utils.peek(this.element)?.operators.get(key);
     };
 
-    TurboSelector.prototype.addController = function (this: TurboSelector, controller: TurboController) {
+    TurboSelector.prototype.addOperator = function (this: TurboSelector, operator: TurboOperator) {
         if (!this.element) return this;
-        if (!controller.keyName) controller.keyName =
-            utils.extractClassEssenceName(this.element, controller.constructor as new (...args: any[]) => any, "Controller");
-        utils.data(this.element).controllers.set(controller.keyName, controller);
-        utils.updateController(this.element, controller);
+        if (!operator.keyName) operator.keyName =
+            utils.extractClassEssenceName(this.element, operator.constructor as new (...args: any[]) => any, "Operator");
+        utils.data(this.element).operators.set(operator.keyName, operator);
+        utils.updateOperator(this.element, operator);
         return this;
     };
 
-    TurboSelector.prototype.removeController = function (this: TurboSelector, keyOrInstance: string | TurboController) {
+    TurboSelector.prototype.removeOperator = function (this: TurboSelector, keyOrInstance: string | TurboOperator) {
         if (!this.element) return this;
-        utils.removeInstance(this.element, "controller", keyOrInstance);
+        utils.removeInstance(this.element, "operator", keyOrInstance);
         return this;
     };
 

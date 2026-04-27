@@ -8,10 +8,10 @@ function patchElementFromPoint(target: Element) {
     return () => (document.elementFromPoint = orig);
 }
 
-describe("Pointer controller → TurboEvent/TurboDragEvent dispatch", () => {
+describe("Pointer operator → TurboEvent/TurboDragEvent dispatch", () => {
     it("clickStart → longPress (after timeout) → clickEnd sequence", () => {
         const mgr = TurboEventManager.create({ longPressDuration: 100 });
-        const ptr = (mgr as any).pointerController;
+        const ptr = (mgr as any).pointerOperator;
 
         const target = document.createElement("div");
         document.body.appendChild(target);
@@ -45,7 +45,7 @@ describe("Pointer controller → TurboEvent/TurboDragEvent dispatch", () => {
 
     it("dragStart/drag/dragEnd when movement exceeds threshold; move events fire too", () => {
         const mgr = TurboEventManager.create({ moveThreshold: 10 });
-        const ptr = (mgr as any).pointerController;
+        const ptr = (mgr as any).pointerOperator;
 
         const origin = document.createElement("div");
         document.body.appendChild(origin);
@@ -87,7 +87,7 @@ describe("Pointer controller → TurboEvent/TurboDragEvent dispatch", () => {
 
     it("disabling dragEventEnabled prevents dragStart/drag/dragEnd", () => {
         const mgr = TurboEventManager.create({ moveThreshold: 5 });
-        const ptr = (mgr as any).pointerController;
+        const ptr = (mgr as any).pointerOperator;
 
         mgr.dragEventsEnabled = false;
 
