@@ -2,7 +2,7 @@ import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
-import {TurboSubstrate} from "../../mvc/substrate/substrate";
+import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
 import {TurboView} from "../../mvc/view/view";
 import {TurboModel} from "../../mvc/model/model";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
@@ -10,7 +10,7 @@ import {TurboViewProperties} from "../../mvc/view/view.types";
 import {TurboOperatorProperties} from "../../mvc/operator/operator.types";
 import {TurboInteractorProperties} from "../../mvc/interactor/interactor.types";
 import {TurboToolProperties} from "../../mvc/tool/tool.types";
-import {TurboSubstrateProperties} from "../../mvc/substrate/substrate.types";
+import {TurboEnforcerProperties} from "../../mvc/enforcer/enforcer.types";
 
 /**
  * @group MVC
@@ -60,8 +60,8 @@ export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInst
  * interactor, constructor of interactor, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
  * tool, constructor of tool, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
- * substrate, constructor of substrate, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboEnforcer, TurboEnforcerProperties>} [enforcers] - The
+ * enforcer, constructor of enforcer, or array of the latter, to attach.
  */
 type MvcProperties<
     ViewType extends TurboView = TurboView<any, any>,
@@ -77,7 +77,7 @@ type MvcProperties<
 
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>,
     tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>,
-    substrates?: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>,
+    enforcers?: MvcManyInstancesOrConstructors<TurboEnforcer, TurboEnforcerProperties>,
 };
 
 /**
@@ -179,9 +179,9 @@ declare module "../turboSelector" {
         tools: TurboTool[];
 
         /**
-         * @description The substrates of the element's MVC structure.
+         * @description The enforcers of the element's MVC structure.
          */
-        substrates: TurboSubstrate[];
+        enforcers: TurboEnforcer[];
 
         // -------------------------------------------------------------------------
         // MVC setup
@@ -190,7 +190,7 @@ declare module "../turboSelector" {
         /**
          * @function setMvc
          * @description Configures the MVC structure for the element. Sets the provided MVC pieces (model, view,
-         * emitter, operators, handlers, interactors, tools, substrates) on the element, initializes a default
+         * emitter, operators, handlers, interactors, tools, enforcers) on the element, initializes a default
          * emitter if none is provided, and initializes all MVC pieces unless explicitly disabled.
          * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
          * @returns {this} Itself, allowing for method chaining.
@@ -200,7 +200,7 @@ declare module "../turboSelector" {
         /**
          * @function initializeMvc
          * @description Initializes all MVC pieces attached to the element, in the following order: view,
-         * operators, interactors, tools, substrates, and model. The model is initialized last to allow
+         * operators, interactors, tools, enforcers, and model. The model is initialized last to allow
          * the view and operators to set up their change callbacks first.
          * @returns {this} Itself, allowing for method chaining.
          */
@@ -215,7 +215,7 @@ declare module "../turboSelector" {
          * @description Computes the structural difference between the element's current MVC configuration
          * and a provided configuration description. The comparison is constructor-based (not instance-based):
          * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
-         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `substrates`),
+         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `enforcers`),
          *   the result contains constructors present in the current MVC but absent from the provided configuration.
          * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}] -
          *  The configuration to compare against.
@@ -347,32 +347,32 @@ declare module "../turboSelector" {
         removeTool(keyOrInstance: string | TurboTool): this;
 
         // -------------------------------------------------------------------------
-        // Substrates
+        // Enforcers
         // -------------------------------------------------------------------------
 
         /**
-         * @function getSubstrate
-         * @description Retrieves the attached MVC substrate with the given key.
-         * @param {string} key - The substrate's key.
-         * @returns {TurboSubstrate} - The substrate.
+         * @function getEnforcer
+         * @description Retrieves the attached MVC enforcer with the given key.
+         * @param {string} key - The enforcer's key.
+         * @returns {TurboEnforcer} - The enforcer.
          */
-        getSubstrate(key: string): TurboSubstrate;
+        getEnforcer(key: string): TurboEnforcer;
 
         /**
-         * @function addSubstrate
-         * @description Adds the given substrate to the element's MVC structure.
-         * @param {TurboSubstrate} substrate - The substrate to add.
+         * @function addEnforcer
+         * @description Adds the given enforcer to the element's MVC structure.
+         * @param {TurboEnforcer} enforcer - The enforcer to add.
          * @returns {this} Itself, allowing for method chaining.
          */
-        addSubstrate(substrate: TurboSubstrate): this;
+        addEnforcer(enforcer: TurboEnforcer): this;
 
         /**
-         * @function removeSubstrate
-         * @description Removes the given substrate from the element's MVC structure and unlinks it.
-         * @param {string | TurboSubstrate} keyOrInstance - The substrate's key or instance to remove.
+         * @function removeEnforcer
+         * @description Removes the given enforcer from the element's MVC structure and unlinks it.
+         * @param {string | TurboEnforcer} keyOrInstance - The enforcer's key or instance to remove.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeSubstrate(keyOrInstance: string | TurboSubstrate): this;
+        removeEnforcer(keyOrInstance: string | TurboEnforcer): this;
     }
 }
 

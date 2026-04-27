@@ -9,11 +9,12 @@ import {TurboNumericalInput} from "./numericalInput";
  * @category TurboNumericalInput
  */
 type TurboNumericalInputProperties<
+    ValueType = string,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter,
-> = TurboInputProperties<"input", ViewType, DataType, ModelType, EmitterType> & {
+> = TurboInputProperties<"input", ValueType, ViewType, DataType, ModelType, EmitterType> & {
     multiplier?: number,
     decimalPlaces?: number,
 

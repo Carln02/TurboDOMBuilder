@@ -6,7 +6,7 @@ import {setupElementFunctions} from "./element/element";
 import {setupEventFunctions} from "./event/event";
 import {setupStyleFunctions} from "./style/style";
 import {setupToolFunctions} from "./tool/tool";
-import {setupSubstrateFunctions} from "./substrate/substrate";
+import {setupEnforcerFunctions} from "./enforcer/enforcer";
 import {TurboSelector} from "./turboSelector";
 import {callOnce} from "../decorators/callOnce";
 import {setupReifectFunctions} from "./reifect/reifect";
@@ -231,7 +231,7 @@ const turbofy = callOnce(function (options: TurbofyOptions = {}) {
     if (!options.excludeEventFunctions) setupEventFunctions();
     if (!options.excludeStyleFunctions) setupStyleFunctions();
     if (!options.excludeToolFunctions) setupToolFunctions();
-    if (!options.excludeSubstrateFunctions) setupSubstrateFunctions();
+    if (!options.excludeEnforcerFunctions) setupEnforcerFunctions();
     if (!options.excludeReifectFunctions) setupReifectFunctions();
 });
 

@@ -1,10 +1,10 @@
 import {describe, it, expect} from "vitest";
-import {operator, handler, interactor, tool, substrate} from "../mvc";
+import {operator, handler, interactor, tool, enforcer} from "../mvc";
 import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
-import {TurboSubstrate} from "../../mvc/substrate/substrate";
+import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
 import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
 import {TurboModel} from "../../mvc/model/model";
 
@@ -177,36 +177,36 @@ describe("MVC decorators", () => {
         });
     });
 
-    describe("substrate decorator", () => {
-        it("infers key from <name>Substrate and fetches via getSubstrate()", () => {
-            class GridSubstrate extends TurboSubstrate {}
+    describe("enforcer decorator", () => {
+        it("infers key from <name>Enforcer and fetches via getEnforcer()", () => {
+            class GridEnforcer extends TurboEnforcer {}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {substrates: GridSubstrate};
-                @substrate() gridSubstrate!: unknown;
+                static defaultProperties = {enforcers: GridEnforcer};
+                @enforcer() gridEnforcer!: unknown;
             }
 
             const h = Host.create();
-            expect(h.gridSubstrate).toBeInstanceOf(GridSubstrate);
+            expect(h.gridEnforcer).toBeInstanceOf(GridEnforcer);
         });
 
-        it("uses explicit name for substrate", () => {
-            class MySubstrate extends TurboSubstrate {keyName = "my"}
+        it("uses explicit name for enforcer", () => {
+            class MyEnforcer extends TurboEnforcer {keyName = "my"}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {substrates: MySubstrate};
-                @substrate("my") local!: unknown;
+                static defaultProperties = {enforcers: MyEnforcer};
+                @enforcer("my") local!: unknown;
             }
 
             const h = Host.create();
-            expect(h.local).toBeInstanceOf(MySubstrate);
+            expect(h.local).toBeInstanceOf(MyEnforcer);
         });
 
-        it("throws when substrate not found", () => {
+        it("throws when enforcer not found", () => {
             class Host extends TurboHeadlessElement {
-                @substrate() missingSubstrate!: unknown;
+                @enforcer() missingEnforcer!: unknown;
             }
 
             const h = Host.create();
-            expect(() => (h as any).missingSubstrate).toThrow(/Substrate "missing"/);
+            expect(() => (h as any).missingEnforcer).toThrow(/Enforcer "missing"/);
         });
     });
 })

@@ -41,7 +41,7 @@ export class EventFunctionsUtils {
         if (!properties.manager) properties.manager = TurboEventManager.instance;
         return this.getBoundListenersSet(properties.target).getListeners({
             ...properties,
-            optionsToSkip: ["checkSubstrates", "solveSubstrates"]
+            optionsToSkip: ["checkEnforcers", "solveEnforcers"]
         });
     }
 

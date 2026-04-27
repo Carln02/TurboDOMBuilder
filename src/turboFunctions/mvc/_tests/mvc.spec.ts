@@ -7,7 +7,7 @@ import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
-import {TurboSubstrate} from "../../../mvc/substrate/substrate";
+import {TurboEnforcer} from "../../../mvc/enforcer/enforcer";
 
 // ------------------------------------------------------------------
 // Helpers
@@ -39,7 +39,7 @@ class MyTool extends TurboTool {
     public override initialize(): void { super.initialize(); this.inits++; }
 }
 
-class MySubstrate extends TurboSubstrate {
+class MyEnforcer extends TurboEnforcer {
     public inits = 0;
     public override initialize(): void { super.initialize(); this.inits++; }
 }
@@ -288,19 +288,19 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // substrates getter / setter
+    // enforcers getter / setter
     // ------------------------------------------------------------------
 
-    describe("substrates getter / setter", () => {
-        it("substrates getter returns an empty array on a fresh selector", () => {
-            expect(sel().substrates).toEqual([]);
+    describe("enforcers getter / setter", () => {
+        it("enforcers getter returns an empty array on a fresh selector", () => {
+            expect(sel().enforcers).toEqual([]);
         });
 
-        it("substrates setter from constructor creates instances", () => {
+        it("enforcers setter from constructor creates instances", () => {
             const s = sel();
-            s.substrates = MySubstrate as any;
-            expect(s.substrates).toHaveLength(1);
-            expect(s.substrates[0]).toBeInstanceOf(MySubstrate);
+            s.enforcers = MyEnforcer as any;
+            expect(s.enforcers).toHaveLength(1);
+            expect(s.enforcers[0]).toBeInstanceOf(MyEnforcer);
         });
     });
 
@@ -628,41 +628,41 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // addSubstrate / getSubstrate / removeSubstrate
+    // addEnforcer / getEnforcer / removeEnforcer
     // ------------------------------------------------------------------
 
-    describe("addSubstrate / getSubstrate / removeSubstrate", () => {
-        it("addSubstrate stores the substrate and makes it retrievable", () => {
+    describe("addEnforcer / getEnforcer / removeEnforcer", () => {
+        it("addEnforcer stores the enforcer and makes it retrievable", () => {
             const s = sel();
-            const sub = new MySubstrate({element: s.element} as any);
+            const sub = new MyEnforcer({element: s.element} as any);
             sub.keyName = "myS";
-            s.addSubstrate(sub);
-            expect(s.getSubstrate("myS")).toBe(sub);
+            s.addEnforcer(sub);
+            expect(s.getEnforcer("myS")).toBe(sub);
         });
 
-        it("removeSubstrate by key removes it", () => {
+        it("removeEnforcer by key removes it", () => {
             const s = sel();
-            const sub = new MySubstrate({element: s.element} as any);
+            const sub = new MyEnforcer({element: s.element} as any);
             sub.keyName = "rmS";
-            s.addSubstrate(sub);
-            s.removeSubstrate("rmS");
-            expect(s.getSubstrate("rmS")).toBeUndefined();
+            s.addEnforcer(sub);
+            s.removeEnforcer("rmS");
+            expect(s.getEnforcer("rmS")).toBeUndefined();
         });
 
-        it("removeSubstrate by instance removes it", () => {
+        it("removeEnforcer by instance removes it", () => {
             const s = sel();
-            const sub = new MySubstrate({element: s.element} as any);
+            const sub = new MyEnforcer({element: s.element} as any);
             sub.keyName = "rmSRef";
-            s.addSubstrate(sub);
-            s.removeSubstrate(sub);
-            expect(s.getSubstrate("rmSRef")).toBeUndefined();
+            s.addEnforcer(sub);
+            s.removeEnforcer(sub);
+            expect(s.getEnforcer("rmSRef")).toBeUndefined();
         });
 
-        it("addSubstrate returns itself for method chaining", () => {
+        it("addEnforcer returns itself for method chaining", () => {
             const s = sel();
-            const sub = new MySubstrate({element: s.element} as any);
+            const sub = new MyEnforcer({element: s.element} as any);
             sub.keyName = "chain";
-            expect(s.addSubstrate(sub)).toBe(s);
+            expect(s.addEnforcer(sub)).toBe(s);
         });
     });
 

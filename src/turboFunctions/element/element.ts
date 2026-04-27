@@ -183,7 +183,7 @@ export function setupElementFunctions() {
             if (exclude.has(key) || key === "mvc" || key === "__proto__" || key === "prototype") return false;
             if (typeof value === "function") return false;
             if (key === "model" || key === "view" || key === "emitter" || key === "operators"
-                || key === "handlers" || key === "interactors" || key === "tools" || key === "substrates") return false;
+                || key === "handlers" || key === "interactors" || key === "tools" || key === "enforcers") return false;
 
             const desc = Object.getOwnPropertyDescriptor(prototype, key);
             if (!desc) return false;

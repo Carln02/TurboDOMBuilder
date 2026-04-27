@@ -4,7 +4,7 @@
  * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
-const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "operators", "handlers"] as const;
+const ApplyDefaultsMergeProperties = ["interactors", "tools", "enforcers", "operators", "handlers"] as const;
 
 /**
  * @type {ApplyDefaultsOptions}

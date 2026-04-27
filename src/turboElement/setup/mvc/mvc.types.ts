@@ -5,7 +5,7 @@ import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
-import {TurboSubstrate} from "../../../mvc/substrate/substrate";
+import {TurboEnforcer} from "../../../mvc/enforcer/enforcer";
 
 /**
  * @internal
@@ -85,9 +85,9 @@ interface TurboElementMvcInterface<
     tools: TurboTool[];
 
     /**
-     * @description The substrates (if any) attached to the element's MVC structure.
+     * @description The enforcers (if any) attached to the element's MVC structure.
      */
-    substrates: TurboSubstrate[];
+    enforcers: TurboEnforcer[];
 }
 
 export {TurboElementMvcInterface};

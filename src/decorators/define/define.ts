@@ -256,13 +256,13 @@ function getAllRegistered(): RegistryEntry[] {
  *
  * @description Returns all registered entries belonging to MVC-related categories:
  * `TurboOperator`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
- * `TurboSubstrate`, `TurboTool`, and `TurboView`.
+ * `TurboEnforcer`, `TurboTool`, and `TurboView`.
  * @returns {RegistryEntry[]} An array of all MVC registry entries.
  */
 function getRegisteredMvc(): RegistryEntry[] {
     return getRegisteredByCategories(RegistryCategory.TurboOperator, RegistryCategory.TurboEmitter,
         RegistryCategory.TurboHandler, RegistryCategory.TurboInteractor, RegistryCategory.TurboModel,
-        RegistryCategory.TurboSubstrate, RegistryCategory.TurboTool, RegistryCategory.TurboView);
+        RegistryCategory.TurboEnforcer, RegistryCategory.TurboTool, RegistryCategory.TurboView);
 }
 
 /**

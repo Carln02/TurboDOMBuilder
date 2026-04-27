@@ -116,26 +116,26 @@ export function setupEventFunctions() {
         if (!type) return Propagation.propagate;
 
         if (!options) options = {};
-        turbo(options).applyDefaults({checkSubstrates: true, solveSubstrates: true});
+        turbo(options).applyDefaults({checkEnforcers: true, solveEnforcers: true});
 
         const activeTool = toolName ?? manager.getCurrentToolName();
-        const checkedSubstratesFor: Set<Node> = new Set();
+        const checkedEnforcersFor: Set<Node> = new Set();
         const checkedObjectsToolMap: Map<Node, string> = new Map();
         const firedListeners: Set<Listener> = new Set();
         let propagation: Propagation = Propagation.propagate;
 
         if (this.bypassManagerOn) utils.bypassManager(this, manager, this.bypassManagerOn(event));
 
-        const checkSubstrates = (target: Node, tool?: string) => {
+        const checkEnforcers = (target: Node, tool?: string) => {
             if (!target) return;
             if (propagation === Propagation.stopImmediatePropagation) return;
 
-            if (!checkedSubstratesFor.has(target)) {
-                checkedSubstratesFor.add(target);
+            if (!checkedEnforcersFor.has(target)) {
+                checkedEnforcersFor.add(target);
                 if (tool) checkedObjectsToolMap.set(target, tool);
 
-                if (options.checkSubstrates) {
-                    const check = this.checkSubstratesForEvent({
+                if (options.checkEnforcers) {
+                    const check = this.checkEnforcersForEvent({
                         event, manager,
                         toolName: tool,
                         eventType: type,
@@ -145,14 +145,14 @@ export function setupEventFunctions() {
                     if (!check) propagation = Propagation.stopImmediatePropagation;
                 }
             }
-            checkSubstrates(target.parentNode, tool);
+            checkEnforcers(target.parentNode, tool);
         };
 
         const runListeners = (target: Node, tool?: string) => {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils.getBoundListenersSet(target);
             const entries = utils.getBoundListeners({target, type, toolName: tool, options, manager});
-            checkSubstrates(target, tool);
+            checkEnforcers(target, tool);
             if (entries.length === 0) return;
 
             if (propagation === Propagation.stopImmediatePropagation) return;
@@ -172,7 +172,7 @@ export function setupEventFunctions() {
         const applyTool = (target: Node, tool?: string) => {
             if (options.capture || !tool) return;
             if (turbo(target).isToolIgnored(tool, type, manager)) return;
-            checkSubstrates(target, tool);
+            checkEnforcers(target, tool);
             if (!this.hasToolBehavior(type, tool, manager)) return;
             if (propagation === Propagation.stopImmediatePropagation) return;
             propagation = turbo(target).applyTool(tool, type, event, manager);
@@ -207,8 +207,8 @@ export function setupEventFunctions() {
         };
 
         main();
-        if (options.solveSubstrates) checkedSubstratesFor.forEach(entry =>
-            turbo(this).solveSubstratesForEvent({
+        if (options.solveEnforcers) checkedEnforcersFor.forEach(entry =>
+            turbo(this).solveEnforcersForEvent({
                 event,
                 toolName: checkedObjectsToolMap.get(entry),
                 eventType: type,

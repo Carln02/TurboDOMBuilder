@@ -93,7 +93,7 @@ class TurboSelectWheel<
                     this.clearOpenTimer();
                     this.open = true;
                     this.dragging = true;
-                    this.reifect.enabled.transition = false;
+                    // this.reifect.enabled.transition = false;
                     this.reloadEntrySizes();
                     return Propagation.stopImmediatePropagation;
                 })
@@ -189,8 +189,8 @@ class TurboSelectWheel<
         const elements = this.reifect.getEnabledObjects();
         if (elements.length === 0) return;
 
-        elements.forEach((el, index) =>
-            this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
+        // elements.forEach((el, index) =>
+        //     this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
     }
 
     protected setupUIListeners() {
@@ -227,11 +227,11 @@ class TurboSelectWheel<
         this.totalSize = 0;
 
         this.reifect.getEnabledObjects().forEach(entry => {
-            const object = entry.object.deref();
-            const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-            this.sizePerEntry.push(size);
-            this.positionPerEntry.push(this.totalSize);
-            this.totalSize += size;
+            // const object = entry.object.deref();
+            // const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+            // this.sizePerEntry.push(size);
+            // this.positionPerEntry.push(this.totalSize);
+            // this.totalSize += size;
         });
         const flooredIndex = Math.floor(this.index);
         const indexOffset = this.index - Math.floor(this.index);
@@ -283,7 +283,7 @@ class TurboSelectWheel<
         if (index != this.index) this.index = index;
 
         if (this.reifect) {
-            this.reifect.enabled.transition = true;
+            // this.reifect.enabled.transition = true;
             this.reloadEntrySizes();
         }
 

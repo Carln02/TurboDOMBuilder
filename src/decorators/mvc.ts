@@ -1,7 +1,7 @@
 import {turbo} from "../turboFunctions/turboFunctions";
 import {TurboEventManager} from "../eventHandling/turboEventManager/turboEventManager";
 
-type FieldType = "Operator" | "Handler" | "Interactor" | "Tool" | "Substrate";
+type FieldType = "Operator" | "Handler" | "Interactor" | "Tool" | "Enforcer";
 
 /**
  * @internal
@@ -42,8 +42,8 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
                     case "Tool":
                         functionName = "getTool";
                         break;
-                    case "Substrate":
-                        functionName = "getSubstrate";
+                    case "Enforcer":
+                        functionName = "getEnforcer";
                         break;
                 }
 
@@ -176,31 +176,31 @@ function tool(name?: string) {
 
 /**
  * @decorator
- * @function substrate
+ * @function enforcer
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched substrate.
- * @param {string} [name] - The key name of the substrate in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingSubstrate`, the key name will be `something`.
+ * fetched enforcer.
+ * @param {string} [name] - The key name of the enforcer in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingEnforcer`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @tool() protected textSubstrate: TurboSubstrate;
+ * @tool() protected textEnforcer: TurboEnforcer;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textSubstrate(): TurboSubstrate {
- *    if (this.mvc instanceof Mvc) return this.mvc.getSubstrate("text");
- *    if (typeof this.getSubstrate === "function") return this.getSubstrate("text");
+ * protected get textEnforcer(): TurboEnforcer {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getEnforcer("text");
+ *    if (typeof this.getEnforcer === "function") return this.getEnforcer("text");
  * }
  * ```
  */
-function substrate(name?: string) {
+function enforcer(name?: string) {
     return function (_unused: unknown, context: ClassFieldDecoratorContext) {
-        generateField(context, "Substrate", name);
+        generateField(context, "Enforcer", name);
     };
 }
 
-export {operator, handler, interactor, tool, substrate};
+export {operator, handler, interactor, tool, enforcer};

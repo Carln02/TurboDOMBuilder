@@ -16,7 +16,7 @@ type TurbofyOptions = {
     excludeElementFunctions?: boolean,
     excludeEventFunctions?: boolean,
     excludeToolFunctions?: boolean,
-    excludeSubstrateFunctions?: boolean,
+    excludeEnforcerFunctions?: boolean,
     excludeMiscFunctions?: boolean,
     excludeReifectFunctions?: boolean
 };
