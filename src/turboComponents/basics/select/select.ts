@@ -1,4 +1,4 @@
-import {EntryData, TurboSelectConfig, TurboSelectProperties} from "./select.types";
+import {EntryData, TurboSelectProperties} from "./select.types";
 import {TurboSelectInputEvent} from "./selectInputEvent";
 import {trim} from "../../../utils/computations/misc";
 import {turbo} from "../../../turboFunctions/turboFunctions";
@@ -214,14 +214,11 @@ class TurboSelect<
     }) public entriesClasses: string | string[];
 
 
-    public static create<Type extends new (...args: any[]) => TurboBaseElement>
-    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
-        const props = properties as TurboSelectProperties;
-        const selectedValues = props.selectedValues || [];
-        props.selectedValues = undefined;
-
-        const obj = super.create.call(this, props);
-        obj.selectedValues = selectedValues;
+    protected static customCreate(properties: TurboSelectProperties): object {
+        const {selectedValues, parent} = properties;
+        const obj = super.customCreate({...properties, selectedValues: undefined, parent: undefined}) as TurboSelect;
+        obj.parent = parent;
+        obj.selectedValues = selectedValues || [];
         return obj;
     }
 

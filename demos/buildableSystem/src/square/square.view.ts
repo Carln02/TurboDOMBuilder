@@ -1,4 +1,4 @@
-import {turbo, effect, TurboView} from "../../../../build/turbodombuilder.esm";
+import {turbo, effect, TurboView, define} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {Square} from "./square";
 
@@ -21,3 +21,4 @@ export class SquareView extends TurboView<Square, SquareModel> {
         turbo(this).setStyles({width: this.model.elementSize + "px", height: this.model.elementSize + "px"});
     }
 }
+define(SquareView);

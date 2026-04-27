@@ -10,7 +10,7 @@ import {element} from "../../../elementCreation/element";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement, ValidTag} from "../../../types/element.types";
-import {getPrototypeChain} from "../../../utils/dataManipulation/prototype";
+import {signal} from "../../../decorators/reactivity/reactivity";
 
 /**
  * @class TurboRichElement
@@ -128,7 +128,7 @@ class TurboRichElement<
      * @description The text element. Can be set to a new element by a simple assignment. Setting the value to a new
      * string will update the text's textContent with the given string.
      */
-    @auto({
+    @signal @auto({
         preprocessValue: function (value: string | TurboProperties<ElementTag> | ValidElement<ElementTag>) {
             if (typeof value === "string") {
                 if (this.element && "textContent" in this.element) {

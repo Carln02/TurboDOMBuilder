@@ -3,7 +3,7 @@ import {TurboModel} from "../../mvc/model/model";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {TurboElementMvcInterface} from "../setup/mvc/mvc.types";
 import {TurboElementDefaultInterface} from "../setup/default/default.types";
-import {MvcProperties} from "../../turboFunctions/mvc/mvc.types";
+import {MvcGenerationProperties} from "../../turboFunctions/mvc/mvc.types";
 
 /**
  * @type {TurboHeadlessProperties}
@@ -21,7 +21,7 @@ type TurboHeadlessProperties<
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
     out?: string | Node,
     [key: string]: any
 };

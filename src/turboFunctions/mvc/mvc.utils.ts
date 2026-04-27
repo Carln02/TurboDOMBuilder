@@ -9,7 +9,6 @@ import {TurboSubstrate} from "../../mvc/substrate/substrate";
 import {KeyType} from "../../types/basic.types";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {MvcManyInstancesOrConstructors} from "./mvc.types";
-import {mod} from "../../utils/computations/misc";
 
 type MvcData = {
     model?: TurboModel;

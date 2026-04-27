@@ -41,15 +41,6 @@ type TurboSelectProperties<
  * @group Components
  * @category TurboSelect
  */
-type TurboSelectConfig = {
-    defaultEntriesClasses?: string | string[],
-    defaultSelectedEntriesClasses?: string | string[]
-};
-
-/**
- * @group Components
- * @category TurboSelect
- */
 type TurboSelectInputEventProperties<
     ValueType = string,
     SecondaryValueType = string,
@@ -59,4 +50,4 @@ type TurboSelectInputEventProperties<
     values: ValueType[]
 };
 
-export {TurboSelectProperties, TurboSelectConfig, TurboSelectInputEventProperties};
+export {TurboSelectProperties, TurboSelectInputEventProperties};

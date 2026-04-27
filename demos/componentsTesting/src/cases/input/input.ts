@@ -30,7 +30,7 @@ const valueProbe = (label: string, el: any) => {
 function inputTest1() {
     const ti = TurboInput.create({
         label: "Your name",
-        element: {placeholder: "type here…"}
+        input: {placeholder: "type here…"}
     });
 
     box("TurboInput.create( — Basics")
@@ -54,8 +54,7 @@ function inputTest1() {
 function inputTest2() {
     const ti = TurboInput.create({
         // no element.id provided -> TurboInput.create( should assign defaultId
-        label: "Has for/id wiring",
-        element: {}
+        label: "Has for/id wiring"
     });
 
     box("TurboInput.create( — label <-> input id")
@@ -98,7 +97,7 @@ function inputTest3() {
 function inputTest4() {
     const ti = TurboInput.create({
         label: "Focus behavior",
-        element: {value: "Select me on focus"}
+        input: {value: "Select me on focus"}
     });
 
     box("TurboInput.create( — focus modes")
@@ -135,7 +134,7 @@ function inputTest4() {
 function inputTest5() {
     const ti = TurboInput.create({
         label: "Only lowercase letters",
-        element: {placeholder: "live guard: /^[a-z]*$/"}
+        input: {placeholder: "live guard: /^[a-z]*$/"}
     });
 
     // live: only lowercase ascii
@@ -270,8 +269,7 @@ function numTest2() {
 /* 9) Numerical: regex defaults smoke (factory injects if missing) */
 function numTest3() {
     const ni = TurboNumericalInput.create({
-        label: "Regex defaults",
-        input: {}
+        label: "Regex defaults"
     });
 
     box("TurboNumericalInput — regex defaults")

@@ -312,6 +312,33 @@ function addRegistryCategory(type: new (...args: any[]) => object, category?: Re
     utils.setCategory(type, category ?? type.name);
 }
 
+/**
+ * @function getRegisteredEntry
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns the registry entry for a given class instance, looked up by its constructor.
+ * Walks the instance's prototype chain until it finds a registered constructor, so subclasses that
+ * were not themselves passed to {@link define} will still resolve to their nearest registered ancestor.
+ * @param {object} instance - The class instance to look up.
+ * @returns {RegistryEntry | undefined} The matching registry entry (containing `name`, `category`,
+ * `constructor`, and optionally `tag`), or `undefined` if no registered class is found in the chain.
+ */
+function getRegisteredEntry(instance: object): RegistryEntry {
+    if (!instance) return undefined;
+    let proto = Object.getPrototypeOf(instance);
+    while (proto && proto !== Object.prototype) {
+        const constructor = proto.constructor;
+        for (const map of utils.registry.values()) {
+            for (const entry of map.values()) {
+                if (entry.constructor === constructor) return entry;
+            }
+        }
+        proto = Object.getPrototypeOf(proto);
+    }
+    return undefined;
+}
+
 export {
     define,
     addRegistryCategory,
@@ -319,5 +346,6 @@ export {
     getAllRegistered,
     getRegisteredElements,
     getRegisteredMvc,
-    findRegistered
+    findRegistered,
+    getRegisteredEntry
 };

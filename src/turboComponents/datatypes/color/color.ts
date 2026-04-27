@@ -109,6 +109,10 @@ class Color {
         return this.a < 1 ? this.rgba : this.rgb;
     }
 
+    public fromString(value: string): Color {
+        return Color.from(value);
+    }
+
     private syncFromRgb(): void {
         if (this.syncing) return;
         this.syncing = true;

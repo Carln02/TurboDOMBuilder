@@ -7,13 +7,14 @@ class TE extends TurboProxiedElement<"div"> {
 
 describe("TurboProxiedElement: selected toggling", () => {
     it("adds/removes the default selected class on the wrapped element", () => {
+        TE.defaultProperties = {defaultSelectedClasses: "mySel"};
         const p = TE.create({tag: "div"});
 
         p.selected = true;
-        expect(p.element.classList.contains("selected")).toBe(true);
+        expect(p.element.classList.contains("mySel")).toBe(true);
 
         p.selected = false;
-        expect(p.element.classList.contains("selected")).toBe(false);
+        expect(p.element.classList.contains("mySel")).toBe(false);
     });
 
     it("plays nice when element is created via helper (div()) and then proxied", () => {

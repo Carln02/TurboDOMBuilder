@@ -18,7 +18,7 @@ export function defineDefaultProperties<Type extends new (...args: any[]) => any
             }
 
             const prevClass = this[selectedClass];
-            const nextClass = this["defaultSelectedClasses"] ?? "selected";
+            const nextClass = this["defaultSelectedClasses"] || "selected";
 
             this[selectedKey] = value;
             this[selectedClass] = nextClass;

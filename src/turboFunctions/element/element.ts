@@ -2,7 +2,6 @@ import "./element.types";
 import {TurboSelector} from "../turboSelector";
 import {CloneElementOptions, FeedforwardProperties, TurboProperties} from "./element.types";
 import {stylesheet} from "../../elementCreation/miscElements";
-import {TurboModel} from "../../mvc/model/model";
 import {ValidElement, ValidTag} from "../../types/element.types";
 import {DefaultEventName} from "../../types/eventNaming.types";
 import {stringify} from "../../utils/dataManipulation/string";
@@ -12,6 +11,10 @@ import {equalToAny} from "../../utils/computations/equity";
 import {ElementFunctionsUtils} from "./element.utils";
 import {TurboElementProperties} from "../../turboElement/turboElement.types";
 import {MvcFields} from "../mvc/mvc";
+import {TurboElement} from "../../turboElement/turboElement";
+import {TurboBaseElement} from "../../turboElement/turboBaseElement/turboBaseElement";
+import {TurboProxiedElement} from "../../turboElement/turboProxiedElement/turboProxiedElement";
+import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
 
 const utils = new ElementFunctionsUtils();
 
@@ -29,10 +32,12 @@ export function setupElementFunctions() {
      setOnlyBaseProperties: boolean = false): TurboSelector<ValidElement<Tag>> {
         if (!this.element) return this;
         const props = {...properties};
-        const isElement = this.element instanceof Element;
-        turbo(properties).removeFields(["tag", "namespace"]);
+        const element = this.element instanceof Element ? this.element :
+            this.element["element"] as any instanceof Element ? this.element["element"] : undefined;
+
+        turbo(props, true).removeFields(["tag", "namespace"]);
         const {out, shadowDOM, initialize, parent, model, data, dataId} =
-            turbo(props).extract(["out", "shadowDOM", "initialize", "parent", "model", "data", "dataId"]);
+            turbo(props, true).extract(["out", "shadowDOM", "initialize", "parent", "model", "data", "dataId"]);
         let mvcUpdated = false;
 
         if (out) {
@@ -41,10 +46,10 @@ export function setupElementFunctions() {
         }
         if (!!shadowDOM) {
             if ("shadowDOM" in this.element) this["shadowDOM"] = shadowDOM;
-            else if (isElement) this.element.attachShadow({mode: "open"});
+            else if (element) element.attachShadow({mode: "open"});
         }
 
-        if (!isElement || (isElement && !setOnlyBaseProperties)) {
+        if (!element || (element && !setOnlyBaseProperties)) {
             if (model) {
                 this.model = model;
                 if (data && this.model) {
@@ -54,55 +59,65 @@ export function setupElementFunctions() {
                 mvcUpdated = true;
             }
 
-            const mvc = turbo(props).extract(MvcFields);
+            const mvc = turbo(props, true).extract(MvcFields);
             for (const [key, value] of Object.entries(mvc)) {
-                try {this[key] = value; mvcUpdated = true;} catch {}
+                try {
+                    this[key] = value;
+                    mvcUpdated = true;
+                } catch {
+                }
             }
         }
 
-        if (isElement) for (const property of Object.keys(props)) {
-            const value = props[property];
-            if (value === undefined) continue;
-            switch (property) {
-                case "text":
-                    if (this.element instanceof HTMLElement) this.element.innerText = value;
-                    break;
-                case "style":
-                    if (!(this.element instanceof HTMLElement || this.element instanceof SVGElement)) break;
-                    this.setStyles(value, true);
-                    break;
-                case "stylesheet":
-                    stylesheet(value, this.closestRoot);
-                    break;
-                case "id":
-                    this.element.id = value;
-                    break;
-                case "classes":
-                    this.addClass(value);
-                    break;
-                case "listeners":
-                    Object.entries(value).forEach(([type, callback]) =>
-                        this.on(type, callback as any));
-                    break;
-                case "onClick":
-                    this.on(DefaultEventName.click, value as any);
-                    break;
-                case "onDrag":
-                    this.on(DefaultEventName.drag, value as any);
-                    break;
-                case "children":
-                    this.addChild(value);
-                    break;
-                default:
-                    if (setOnlyBaseProperties) break;
-                    try {this.element[property] = value} catch {
-                        try {this.setAttribute(property, stringify(value))} catch (e) {console.error(e)}
-                    }
-                    break;
+        if (element) {
+            const elementProps = turbo(props, true).extract(["text", "style",
+                "stylesheet", "id", "classes", "listeners", "onClick", "onDrag", "children"]);
+            for (const [property, value] of Object.entries(elementProps)) {
+                if (value === undefined) continue;
+                switch (property) {
+                    case "text":
+                        if (element instanceof HTMLElement) element.innerText = value;
+                        break;
+                    case "style":
+                        if (!(element instanceof HTMLElement || element instanceof SVGElement)) break;
+                        turbo(element).setStyles(value, true);
+                        break;
+                    case "stylesheet":
+                        stylesheet(value, turbo(element).closestRoot);
+                        break;
+                    case "id":
+                        element.id = value;
+                        break;
+                    case "classes":
+                        turbo(element).addClass(value);
+                        break;
+                    case "listeners":
+                        Object.entries(value).forEach(([type, callback]) =>
+                            turbo(element).on(type, callback as any));
+                        break;
+                    case "onClick":
+                        turbo(element).on(DefaultEventName.click, value as any);
+                        break;
+                    case "onDrag":
+                        turbo(element).on(DefaultEventName.drag, value as any);
+                        break;
+                    case "children":
+                        turbo(element).addChild(value);
+                        break;
+                }
             }
-        } else this.apply(props as any);
+        }
 
-        if (parent) this.addToParent(parent);
+        if (!element || !setOnlyBaseProperties) {
+            for (const [property, value] of Object.entries(props)) {
+                if (value === undefined) continue;
+                try {this.element[property] = value} catch {
+                    if (element) try {element.setAttribute(property, stringify(value))} catch (e) {console.error(e)}
+                }
+            }
+        }
+
+        if (parent) turbo(element).addToParent(parent);
 
         if (initialize === undefined || initialize) {
             if ("initialize" in this.element && typeof this.element.initialize === "function") this.element.initialize();
@@ -110,6 +125,44 @@ export function setupElementFunctions() {
         }
 
         return this;
+    };
+
+    TurboSelector.prototype.getFields = function _getFields(
+        this: TurboSelector
+    ): Record<string, any> {
+        if (!this.element) return {};
+
+        const chain = getPrototypeChain(this.element);
+        const seen = new Set<PropertyKey>();
+        const result: Record<string, any> = {};
+
+        const builtinPrototypes = new Set([
+            TurboElement.prototype, TurboBaseElement.prototype, TurboProxiedElement.prototype,
+            TurboHeadlessElement.prototype, Element.prototype, HTMLElement.prototype, Node.prototype,
+            SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype
+        ]);
+
+        if (this.element instanceof TurboElement) {
+            seen.add("onAttach");
+            seen.add("onDetach");
+            seen.add("onAdopt");
+            seen.add("defaultFeedforwardProperties");
+        }
+
+        for (const proto of [this.element, ...chain].reverse()) {
+            if (builtinPrototypes.has(proto)) {
+                for (const key of Object.getOwnPropertyNames(proto)) seen.add(key);
+                continue;
+            }
+            for (const key of Object.getOwnPropertyNames(this.element)) {
+                if (seen.has(key) || key.startsWith("_")) continue;
+                const desc = Object.getOwnPropertyDescriptor(this.element, key);
+                if (!desc || typeof desc.value === "function" || (desc.get && !desc.set)) continue;
+                result[key] = this.element[key];
+            }
+        }
+
+        return result;
     };
 
     //TODO maybe use .cloneNode() for vanilla nodes

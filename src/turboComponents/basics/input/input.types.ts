@@ -5,6 +5,7 @@ import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement} from "../../../types/element.types";
 import {TurboInput} from "./input";
+import {expose} from "../../../decorators/expose";
 
 /**
  * @group Components
@@ -12,6 +13,7 @@ import {TurboInput} from "./input";
  */
 type TurboInputProperties<
     InputTag extends "input" | "textarea" = "input",
+    ValueType = string,
     ViewType extends TurboView = TurboView,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
@@ -28,6 +30,12 @@ type TurboInputProperties<
     blurRegexCheck?: RegExp | string,
 
     selectTextOnFocus?: boolean,
+
+    value?: ValueType,
+    type?: string,
+    placeholder?: string,
+    pattern?: string,
+    size?: string
 };
 
 

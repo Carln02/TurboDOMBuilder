@@ -41,14 +41,15 @@ class TurboProxiedElement<
 
     public static create<Type extends new (...args: any[]) => TurboProxiedElement>
     (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        const prototypeChain = getPrototypeChain(this);
+        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
         return (this as any).customCreate.call(this, properties);
     }
 
     protected static customCreate(properties: object): object {
-        const prototypeChain = getPrototypeChain(this);
-        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
         const obj = new this();
-        obj[elementSymbol] = blindElement(properties);
+        obj[elementSymbol] = blindElement({tag: properties["tag"]});
+        turbo(obj, true).setProperties(properties);
         return obj;
     }
 
@@ -61,15 +62,38 @@ class TurboProxiedElement<
         return this[elementSymbol];
     }
 
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks. Called on `initialize()`.
+     * @protected
+     */
     protected setupChangedCallbacks(): void {
     }
 
+    /**
+     * @function setupUIElements
+     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+     * them in fields. Called on `initialize()`.
+     * @protected
+     */
     protected setupUIElements(): void {
     }
 
+    /**
+     * @function setupUILayout
+     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+     * this element's child tree. Called on `initialize()`.
+     * @protected
+     */
     protected setupUILayout(): void {
     }
 
+    /**
+     * @function setupUIListeners
+     * @description Setup method to initialize and define all input/DOM event listeners of the element. Called on
+     * `initialize()`.
+     * @protected
+     */
     protected setupUIListeners(): void {
     }
 }

@@ -36,7 +36,6 @@ export type MvcInstanceOrConstructor<Type, PropertiesType = any> = Type | (new (
 export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrConstructor<Type, PropertiesType>
     | MvcInstanceOrConstructor<Type, PropertiesType>[];
 
-
 /**
  * @type {MvcGenerationProperties}
  * @group MVC
@@ -63,12 +62,9 @@ export type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInst
  * tool, constructor of tool, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
  * substrate, constructor of substrate, or array of the latter, to attach.
- * @property {DataType} [data] - The data to attach to the model.
- * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
  */
-type MvcGenerationProperties<
+type MvcProperties<
     ViewType extends TurboView = TurboView<any, any>,
-    DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > = {
@@ -82,38 +78,37 @@ type MvcGenerationProperties<
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>,
     tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>,
     substrates?: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>,
-
-    data?: DataType,
-    initialize?: boolean,
 };
 
 /**
- * @type {MvcProperties}
+ * @type {MvcGenerationProperties}
  * @group MVC
  * @category MVC
  *
- * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {object} DataType - The element's data type, if any.
  * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
- * @description Type of the properties object used for instantiating an {@link Mvc} object.
- * @extends MvcGenerationProperties
- * @property {ElementType} [element] - The element to attach to the Mvc instance.
+ * @extends {MvcProperties}
+ * @description Type representing a configuration object for an {@link Mvc} instance.
+ * @property {DataType} [data] - The data to attach to the model.
+ * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
  */
-type MvcProperties<
-    ElementType extends object = object,
+type MvcGenerationProperties<
     ViewType extends TurboView = TurboView<any, any>,
     DataType extends object = object,
     ModelType extends TurboModel = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
-    element?: ElementType,
+> = MvcProperties<ViewType, ModelType, EmitterType> & {
+    data?: DataType,
+    initialize?: boolean,
 };
 
 declare module "../turboSelector" {
     interface TurboSelector<Type extends object = Node> {
+
+        readonly mvc: MvcProperties;
 
         // -------------------------------------------------------------------------
         // Singular pieces

@@ -1,0 +1,106 @@
+.edit-object {
+    display: flex;
+    flex-direction: column;
+    min-width: 260px;
+    max-width: 360px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+    color: #333;
+    overflow: hidden;
+}
+
+/* Tabs */
+.edit-object > :first-child {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f5f5f5;
+}
+
+.edit-object > :first-child > .turbo-rich-element {
+    padding: 4px 8px;
+    border-radius: 100px;
+    text-align: center;
+    cursor: pointer;
+    transition: color 0.15s, background-color 0.15s;
+    user-select: none;
+}
+
+.edit-object > :first-child > .turbo-rich-element:hover {
+    color: #333;
+    background-color: #afeae5;
+}
+
+.edit-object > :first-child > .turbo-rich-element.selected {
+    color: #111;
+    background-color: #97ede9;
+}
+
+/* Panels */
+.edit-object > :last-child {
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.edit-object > :last-child > * {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+}
+
+.edit-object > :last-child > *.selected {
+    display: flex;
+}
+
+/* Inputs */
+.edit-object .turbo-input {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.edit-object .turbo-input label {
+    flex: 0 0 40%;
+    color: #999;
+    font-size: 10px;
+    text-overflow: ellipsis;
+}
+
+.edit-object .turbo-input input,
+.edit-object .turbo-input textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #111;
+    font-size: 12px;
+    padding: 2px 0;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.edit-object .turbo-input input:focus,
+.edit-object .turbo-input textarea:focus {
+    border-color: #4a7c5e;
+}
+
+/* MVC entries */
+.edit-object .turbo-rich-element {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 3px;
+    color: #666;
+    transition: background 0.1s, color 0.1s;
+}
+
+.edit-object .turbo-rich-element:hover {
+    background: #f5f5f5;
+    color: #111;
+}

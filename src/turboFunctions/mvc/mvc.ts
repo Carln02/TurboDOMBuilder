@@ -7,12 +7,27 @@ import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboController} from "../../mvc/controller/controller";
 import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {turbo} from "../turboFunctions";
-import {MvcGenerationProperties} from "./mvc.types";
+import {MvcGenerationProperties, MvcProperties} from "./mvc.types";
 
 export const MvcFields = ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"];
 const utils = new MvcFunctionsUtils();
 
 export function setupMvcFunctions() {
+    Object.defineProperty(TurboSelector.prototype, "mvc", {
+        get(this: TurboSelector): MvcProperties {
+            const data = utils.peek(this.element);
+            if (!data) return {};
+            return {
+                model: data.model,
+                view: data.view,
+                controllers: Array.from(data.controllers?.values() ?? []),
+                handlers: Array.from(data.model?.handlers?.values() ?? []),
+                interactors: Array.from(data.interactors?.values() ?? []),
+                tools: Array.from(data.tools?.values() ?? []),
+                substrates: Array.from(data.substrates?.values() ?? []),
+            };
+        }, configurable: true, enumerable: true,
+    });
 
     // -------------------------------------------------------------------------
     // Singular pieces

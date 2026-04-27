@@ -84,4 +84,18 @@ function getPrototypeChain(object: object) {
     return chain;
 }
 
-export {getPrototypeChain, getFirstDescriptorInChain, getFirstPrototypeInChainWith, hasPropertyInChain, getSuperMethod, getSuperDescriptor};
+/**
+ * @group Utilities
+ * @category Prototype
+ */
+function getConstructorChain(object: object): any[] {
+    const chain: any[] = [];
+    let constructor = typeof object === "function" ? object : object.constructor;
+    while (constructor && constructor !== Object) {
+        chain.push(constructor);
+        constructor = Object.getPrototypeOf(constructor);
+    }
+    return chain;
+}
+
+export {getPrototypeChain, getConstructorChain, getFirstDescriptorInChain, getFirstPrototypeInChainWith, hasPropertyInChain, getSuperMethod, getSuperDescriptor};

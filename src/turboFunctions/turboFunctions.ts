@@ -39,9 +39,12 @@ function turbo<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `tu()`, `t()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-function turbo<Type extends object = Node>(object: Type): Turbo<Type>;
+function turbo<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 
 /**
  * @overload
@@ -55,7 +58,7 @@ function turbo<Type extends object = Node>(object: Type): Turbo<Type>;
  * @return {Turbo<Element>} - The instantiated, wrapped, and proxied element.
  */
 function turbo(tag?: string): Turbo<Element>;
-function turbo(tagOrElement?: object | string): Turbo {
+function turbo(tagOrElement?: object | string, raw: boolean = false): Turbo {
     turbofy();
     let el: object;
 
@@ -63,7 +66,7 @@ function turbo(tagOrElement?: object | string): Turbo {
     if (typeof tagOrElement === "string") el = element({tag: tagOrElement as any});
     else if (typeof tagOrElement === "object") {
         if (tagOrElement instanceof TurboSelector) return tagOrElement;
-        if (tagOrElement instanceof Node) el = tagOrElement;
+        if (raw || tagOrElement instanceof Node) el = tagOrElement;
         else if (tagOrElement["element"] && typeof tagOrElement["element"] === "object") {
             el = tagOrElement["element"];
         }
@@ -101,9 +104,12 @@ function tu<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `t()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-function tu<Type extends object = Node>(object: Type): Turbo<Type>;
+function tu<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 
 /**
  * @overload
@@ -117,8 +123,8 @@ function tu<Type extends object = Node>(object: Type): Turbo<Type>;
  * @return {Turbo<Element>} - The instantiated, wrapped, and proxied element.
  */
 function tu(tag: string): Turbo<Element>;
-function tu(tagOrElement?: object | string): Turbo {
-    return turbo(tagOrElement as any);
+function tu(tagOrElement?: object | string, raw: boolean = false): Turbo {
+    return turbo(tagOrElement as any, raw);
 }
 
 /**
@@ -144,9 +150,12 @@ function t<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-function t<Type extends object = Node>(object: Type): Turbo<Type>;
+function t<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 
 /**
  * @overload
@@ -160,8 +169,8 @@ function t<Type extends object = Node>(object: Type): Turbo<Type>;
  * @return {Turbo<Element>} - The instantiated, wrapped, and proxied element.
  */
 function t(tag: string): Turbo<Element>;
-function t(tagOrElement?: object | string): Turbo {
-    return turbo(tagOrElement as any);
+function t(tagOrElement?: object | string, raw: boolean = false): Turbo {
+    return turbo(tagOrElement as any, raw);
 }
 
 /**
@@ -171,7 +180,7 @@ function t(tagOrElement?: object | string): Turbo {
  *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
- * in a proxied selector that augments it with useful functions for manipulating it.You can alternatively use `turbo()`,
+ * in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use `turbo()`,
  * `tu()`, or `t()` for the same behavior.
  * @param {Tag} [tag="div"] - The HTML tag of the element to instantiate. If not defined, the tag will be set to "div".
  * @return {Turbo<ValidElement<Tag>>} - The instantiated, wrapped, and proxied element.
@@ -187,9 +196,12 @@ function $<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<Tag>>;
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `t()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-function $<Type extends object = Node>(object: Type): Turbo<Type>;
+function $<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 
 /**
  * @overload
@@ -203,8 +215,8 @@ function $<Type extends object = Node>(object: Type): Turbo<Type>;
  * @return {Turbo<Element>} - The instantiated, wrapped, and proxied element.
  */
 function $(tag: string): Turbo<Element>;
-function $(tagOrElement?: object | string): Turbo {
-    return turbo(tagOrElement as any);
+function $(tagOrElement?: object | string, raw: boolean = false): Turbo {
+    return turbo(tagOrElement as any, raw);
 }
 
 /**

@@ -1,27 +1,22 @@
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboInput} from "./input";
-import {$} from "../../../turboFunctions/turboFunctions";
+import {listener} from "../../../decorators/listener/listener";
+import {turbo} from "../../../turboFunctions/turboFunctions";
+import {Propagation} from "../../../turboFunctions/event/event.types";
 
-//TODO
 export class TurboInputInputInteractor extends TurboInteractor<TurboInput> {
     public keyName = "__input__interactor__";
 
     private _composing = false;
     private _resizeQueued = false;
 
-    // public options = {
-    //     compositionStart: {capture: true},
-    //     compositionEnd: {capture: true},
-    //     input: {capture: true},
-    // }
-
-    private get inputElement(): HTMLInputElement | HTMLTextAreaElement {
+    public get target() {
         return this.element.element;
     }
 
     public initialize() {
         super.initialize();
-        $(this.target).bypassManagerOn = () => true;
+        turbo(this.target).bypassManagerOn = () => true;
     }
 
     protected setupChangedCallbacks() {
@@ -29,64 +24,49 @@ export class TurboInputInputInteractor extends TurboInteractor<TurboInput> {
         this.emitter.add("valueSet", () => this.handleInput());
     }
 
-    public click() {
-        if (!this.element.locked) this.inputElement?.focus();
-        return false;
-    }
-
-    public focusIn(e: Event) {
-        if (e.target !== this.inputElement) return;
+    @listener() public focusIn(e: Event) {
         if (this.element.locked) {
-            this.inputElement.blur();
-            return;
+            this.target.blur();
+            return Propagation.propagate;
         }
         if (this.element.selectTextOnFocus) requestAnimationFrame(() => {
-            try {this.inputElement.select?.()} catch {}
+            try {this.target.select?.()} catch {}
         });
         this.element.onFocus.fire();
-        return true;
     }
 
-    public focusOut(e: Event) {
-        if (e.target !== this.inputElement) return;
-        this.element.value = this.element.element?.value;
+    @listener() public focusOut(e: Event) {
+        this.element.rawValue = this.element.element?.value ?? "";
         this.element.onBlur.fire();
     }
 
-    public compositionStart(e: Event) {
-        if (e.target !== this.inputElement) return;
+    @listener({options: {capture: true}}) public compositionStart(e: Event) {
         this._composing = true;
     }
 
-    public compositionEnd(e: Event) {
-        if (e.target !== this.inputElement) return;
+    @listener({options: {capture: true}}) public compositionEnd(e: Event) {
         this._composing = false;
         this.handleInput();
-        return true;
+        this.emitter.fire("processValue");
     }
 
-    public input(e: Event) {
-        if (e.target !== this.inputElement) return;
+    @listener({options: {capture: true}}) public input(e: Event) {
         this.handleInput();
-        return true;
+        this.emitter.fire("processValue");
     }
 
     private handleInput() {
         if (this._composing) return;
-        if (!this.inputElement) return;
-
-        if (this.element.dynamicVerticalResize && this.inputElement instanceof HTMLTextAreaElement) {
+        if (this.element.dynamicVerticalResize && this.target instanceof HTMLTextAreaElement) {
             if (!this._resizeQueued) {
                 this._resizeQueued = true;
                 queueMicrotask(() => {
                     this._resizeQueued = false;
-                    $(this.inputElement)
+                    turbo(this.target)
                         .setStyle("height", "auto", true)
-                        .setStyle("height", this.inputElement.scrollHeight + "px", true);
+                        .setStyle("height", this.target.scrollHeight + "px", true);
                 });
             }
         }
-
-        this.emitter.fire("processValue");
     }
 }

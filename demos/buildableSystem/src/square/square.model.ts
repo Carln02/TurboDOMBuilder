@@ -1,4 +1,4 @@
-import {Point, signal, TurboModel, Color} from "../../../../build/turbodombuilder.esm";
+import {Point, signal, TurboModel, Color, define} from "../../../../build/turbodombuilder.esm";
 
 //Model of the square element
 export class SquareModel extends TurboModel {
@@ -9,3 +9,4 @@ export class SquareModel extends TurboModel {
     @signal elementSize: number = 100;
     @signal centerAnchor: boolean = true;
 }
+define(SquareModel);

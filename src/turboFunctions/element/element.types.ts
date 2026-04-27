@@ -101,6 +101,8 @@ declare module "../turboSelector" {
          */
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
 
+        getFields(): Record<string, any>;
+
         clone(options?: CloneElementOptions): Type;
 
         /**

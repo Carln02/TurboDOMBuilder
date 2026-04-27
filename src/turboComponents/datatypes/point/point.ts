@@ -333,6 +333,18 @@ class Point {
     public static linearInterpolation(start: Point, end: Point, t: number): Point {
         return start.add(end.sub(start).mul(t));
     }
+
+    public toString(): string {
+        return JSON.stringify({x: this.x, y: this.y});
+    }
+
+    public fromString(value: string): Point {
+        try {
+            const parsed = JSON.parse(value);
+            if (typeof parsed.x === "number" && typeof parsed.y === "number")
+                return new Point(parsed.x, parsed.y);
+        } catch {new Point(0, 0);}
+    }
 }
 
 export {Point};

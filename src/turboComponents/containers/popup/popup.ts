@@ -13,6 +13,7 @@ import {Point} from "../../datatypes/point/point";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {Direction} from "../../../types/enums.types";
 import {Coordinate} from "../../../types/basic.types";
+import {effect, signal} from "../../../decorators/reactivity/reactivity";
 
 /**
  * @group Components
@@ -24,7 +25,7 @@ class TurboPopup<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-     public declare readonly properties: TurboPopupProperties;
+    public declare readonly properties: TurboPopupProperties;
     public static defaultProperties: TurboPopupProperties = {
         popupPosition: {x: 0, y: -100},
         anchorPosition: {x: 0, y: 100},
@@ -36,7 +37,7 @@ class TurboPopup<
     @auto({defaultValue: div({parent: document.body, id: "turbo-popup-parent-element"})})
     protected static parentElement: HTMLElement;
 
-    public anchor: Element = document.body;
+    @signal public anchor: Element = document.body;
 
     @auto({preprocessValue: (value: Coordinate) => new Point(value).bound(0, 100)})
     public set popupPosition(value: Coordinate) {}
@@ -101,7 +102,7 @@ class TurboPopup<
         }, {capture: true});
     }
 
-    private recomputePosition() {
+    @effect private recomputePosition() {
         if (!this.anchor) return;
         turbo(this).setStyles({maxHeight: "", maxWidth: ""}, true);
 

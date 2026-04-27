@@ -4,7 +4,6 @@ import {SquareView} from "./square.view";
 import "./square.css";
 
 //Custom square element, defined as a custom element
-@define("demo-square")
 export class Square extends TurboElement<SquareView, any, SquareModel> {
     public modifiable: boolean = true;
 
@@ -44,3 +43,4 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
         });
     }
 }
+define(Square, "demo-square");

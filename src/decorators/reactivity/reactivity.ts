@@ -427,6 +427,13 @@ function disposeEffect(target: object, key?: PropertyKey) {
     else for (const [, entry] of utils.data(target).propertyKeyMap) dispose(entry);
 }
 
+function untrack<T>(fn: () => T): T {
+    const prev = utils.activeEffect;
+    utils.activeEffect = null;
+    try { return fn(); }
+    finally { utils.activeEffect = prev; }
+}
+
 export {
     effect,
     setSignal,
@@ -436,5 +443,6 @@ export {
     getSignal,
     markDirty,
     initializeEffects,
-    disposeEffect
+    disposeEffect,
+    untrack
 };

@@ -21,7 +21,6 @@ export function setupMiscFunctions() {
         if (!this.element || typeof this.element !== "object") return this;
         if (!properties || typeof properties !== "object") return this;
         for (const [key, value] of Object.entries(properties)) {
-            if (value === undefined) continue;
             try { this.element[key] = value; } catch {}
         }
         return this;
@@ -35,7 +34,7 @@ export function setupMiscFunctions() {
         if (!keys || !Array.isArray(keys)) return this;
         for (const key of keys) {
             try { delete this.element[key]; } catch {
-                try { this.element[key] = undefined; } catch {}
+                try { delete this.element[key]; } catch {}
             }
         }
         return this;
@@ -90,7 +89,7 @@ export function setupMiscFunctions() {
         for (const key of keys) {
             if (isUndefined(this.element[key])) continue;
             result[key] = this.element[key];
-            this.element[key] = undefined;
+            delete this.element[key];
         }
         return result;
     };

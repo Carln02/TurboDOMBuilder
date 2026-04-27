@@ -40,7 +40,7 @@ function element<Tag extends ValidTag>(properties: TurboProperties<Tag> = {} as 
         element = document.createElement(properties.tag || "div");
     }
 
-    turbo(element).setProperties(properties);
+    turbo(element, true).setProperties(properties);
     return element as ValidElement<Tag>;
 }
 
@@ -59,7 +59,7 @@ function blindElement<Tag extends ValidTag>(properties: TurboProperties<Tag> = {
     if (isSvgTag(properties.tag)) element = document.createElementNS(SvgNamespace, properties.tag || "svg");
     else if (isMathMLTag(properties.tag)) element = document.createElementNS(MathMLNamespace, properties.tag || "math");
     else element = document.createElement(properties.tag || "div");
-    turbo(element).setProperties(properties);
+    turbo(element, true).setProperties(properties);
     return element as ValidElement<Tag>;
 }
 

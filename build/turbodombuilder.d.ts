@@ -464,6 +464,19 @@ declare function getRegisteredElements(): RegistryEntry[];
  * ```
  */
 declare function addRegistryCategory(type: new (...args: any[]) => object, category?: RegistryCategory): void;
+/**
+ * @function getRegisteredEntry
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns the registry entry for a given class instance, looked up by its constructor.
+ * Walks the instance's prototype chain until it finds a registered constructor, so subclasses that
+ * were not themselves passed to {@link define} will still resolve to their nearest registered ancestor.
+ * @param {object} instance - The class instance to look up.
+ * @returns {RegistryEntry | undefined} The matching registry entry (containing `name`, `category`,
+ * `constructor`, and optionally `tag`), or `undefined` if no registered class is found in the chain.
+ */
+declare function getRegisteredEntry(instance: object): RegistryEntry;
 
 /**
  * @decorator
@@ -761,6 +774,8 @@ declare class Point {
     arr(): number[];
     positionOnSegment(start: Point, end: Point): number;
     static linearInterpolation(start: Point, end: Point, t: number): Point;
+    toString(): string;
+    fromString(value: string): Point;
 }
 
 /**
@@ -4201,10 +4216,8 @@ type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrC
  * tool, constructor of tool, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>} [substrates] - The
  * substrate, constructor of substrate, or array of the latter, to attach.
- * @property {DataType} [data] - The data to attach to the model.
- * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
  */
-type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
+type MvcProperties<ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
     view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>;
     model?: ModelType | (new (data?: any, dataBlocksType?: "map" | "array") => ModelType);
     emitter?: MvcInstanceOrConstructor<EmitterType, ModelType>;
@@ -4213,26 +4226,25 @@ type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, D
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>;
     tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>;
     substrates?: MvcManyInstancesOrConstructors<TurboSubstrate, TurboSubstrateProperties>;
-    data?: DataType;
-    initialize?: boolean;
 };
 /**
- * @type {MvcProperties}
+ * @type {MvcGenerationProperties}
  * @group MVC
  * @category MVC
  *
- * @template {object} ElementType - The type of the element attached to the {@link Mvc} object.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {object} DataType - The element's data type, if any.
  * @template {TurboModel<DataType>} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
- * @description Type of the properties object used for instantiating an {@link Mvc} object.
- * @extends MvcGenerationProperties
- * @property {ElementType} [element] - The element to attach to the Mvc instance.
+ * @extends {MvcProperties}
+ * @description Type representing a configuration object for an {@link Mvc} instance.
+ * @property {DataType} [data] - The data to attach to the model.
+ * @property {boolean} [initialize] - Whether to initialize the MVC pieces after setting them or not. Defaults to true.
  */
-type MvcProperties<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
-    element?: ElementType;
+type MvcGenerationProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcProperties<ViewType, ModelType, EmitterType> & {
+    data?: DataType;
+    initialize?: boolean;
 };
 /**
  * @type {TurboHeadlessProperties}
@@ -4245,7 +4257,7 @@ type MvcProperties<ElementType extends object = object, ViewType extends TurboVi
  * @template {TurboEmitter} EmitterType - The element's emitter type, if initializing MVC.
  * @description Object containing properties for configuring a headless (non-HTML) element, with possibly MVC properties.
  */
-type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<MvcProperties<object, ViewType, DataType, ModelType, EmitterType>, "element"> & {
+type TurboHeadlessProperties<ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType> & {
     out?: string | Node;
     [key: string]: any;
 };
@@ -5054,6 +5066,7 @@ declare function disposeEffect(target: object): void;
  * @param {PropertyKey} key - The key of the signal inside `target`.
  */
 declare function disposeEffect(target: object, key: PropertyKey): void;
+declare function untrack<T>(fn: () => T): T;
 
 /**
  * @decorator
@@ -5678,6 +5691,7 @@ declare class Color {
      * @description Returns `rgb()` for opaque colors and `rgb()` with alpha for semi-transparent ones.
      */
     toString(): string;
+    fromString(value: string): Color;
     private syncFromRgb;
     private syncFromHsl;
     private syncFromHex;
@@ -5937,7 +5951,7 @@ type TurboRichElementProperties<ElementTag extends ValidTag = any, ViewType exte
 declare class TurboRichElement<ElementTag extends ValidTag = any, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
     readonly properties: TurboRichElementProperties;
     static defaultProperties: TurboRichElementProperties;
-    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: TurboRichElementProperties): object;
     readonly childrenOrder: readonly ["leftCustomElements", "leftIcon", "prefixEntry", "element", "suffixEntry", "rightIcon", "rightCustomElements"];
     /**
      * @description Adds a given element or elements to the button at a specified position.
@@ -6508,7 +6522,7 @@ declare class TurboIconToggle<ViewType extends TurboView = TurboView<any, any>, 
  * @group Components
  * @category TurboInput
  */
-type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboRichElementProperties<InputTag, ViewType, DataType, ModelType, EmitterType>, "element" | "elementTag"> & {
+type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = Omit<TurboRichElementProperties<InputTag, ViewType, DataType, ModelType, EmitterType>, "element" | "elementTag"> & {
     inputTag?: InputTag;
     input?: TurboProperties<InputTag> | ValidElement<InputTag>;
     label?: string;
@@ -6517,16 +6531,21 @@ type TurboInputProperties<InputTag extends "input" | "textarea" = "input", ViewT
     inputRegexCheck?: RegExp | string;
     blurRegexCheck?: RegExp | string;
     selectTextOnFocus?: boolean;
+    value?: ValueType;
+    type?: string;
+    placeholder?: string;
+    pattern?: string;
+    size?: string;
 };
 
 /**
  * @group Components
  * @category TurboInput
  */
-declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType extends string | number = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
-    readonly properties: TurboInputProperties;
+declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
+    readonly properties: TurboInputProperties<"input" | "textarea">;
     static defaultProperties: TurboInputProperties;
-    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: TurboInputProperties): object;
     protected labelElement: HTMLLabelElement;
     content: HTMLElement;
     defaultId: string;
@@ -6544,20 +6563,24 @@ declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueT
     get label(): string;
     get input(): ValidElement<InputTag>;
     set input(value: TurboProperties<InputTag> | ValidElement<InputTag>);
-    set element(value: TurboProperties<InputTag> | ValidElement<InputTag>);
     get element(): ValidElement<InputTag>;
+    set element(value: TurboProperties<InputTag> | ValidElement<InputTag>);
     accessor type: string;
     accessor placeholder: string;
     accessor pattern: string;
     accessor size: string;
-    initialize(): void;
     protected setupUIElements(): void;
     protected setupUILayout(): void;
     protected setupChangedCallbacks(): void;
+    protected setupUIListeners(): void;
     get value(): ValueType;
-    set value(value: string | ValueType);
+    set value(value: ValueType);
+    get rawValue(): string;
+    set rawValue(value: string);
+    setValueSilently(value: ValueType): void;
     protected processInputValue(value?: string): void;
     private sanitizeByRegex;
+    private updateId;
 }
 
 /**
@@ -6612,14 +6635,6 @@ type TurboSelectProperties<ValueType = string, SecondaryValueType = string, Entr
     parent?: Element;
     onSelect?: (b: boolean, entry: EntryType, index: number) => void;
     onEnabled?: (b: boolean, entry: EntryType, index: number) => void;
-};
-/**
- * @group Components
- * @category TurboSelect
- */
-type TurboSelectConfig = {
-    defaultEntriesClasses?: string | string[];
-    defaultSelectedEntriesClasses?: string | string[];
 };
 /**
  * @group Components
@@ -6687,7 +6702,7 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     forceSelection: boolean;
     selectedEntriesClasses: string | string[];
     entriesClasses: string | string[];
-    static create<Type extends new (...args: any[]) => TurboBaseElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    protected static customCreate(properties: TurboSelectProperties): object;
     /**
      * @description Dropdown constructor
      */
@@ -7367,9 +7382,32 @@ declare class TurboProxiedElement<ElementTag extends ValidTag = ValidTag, ViewTy
      * @description The HTML (or other) element wrapped inside this instance.
      */
     get element(): ValidElement<ElementTag>;
+    /**
+     * @function setupChangedCallbacks
+     * @description Setup method intended to initialize change listeners and callbacks. Called on `initialize()`.
+     * @protected
+     */
     protected setupChangedCallbacks(): void;
+    /**
+     * @function setupUIElements
+     * @description Setup method intended to initialize all direct sub-elements attached to this element, and store
+     * them in fields. Called on `initialize()`.
+     * @protected
+     */
     protected setupUIElements(): void;
+    /**
+     * @function setupUILayout
+     * @description Setup method to create the layout structure of the element by adding all created sub-elements to
+     * this element's child tree. Called on `initialize()`.
+     * @protected
+     */
     protected setupUILayout(): void;
+    /**
+     * @function setupUIListeners
+     * @description Setup method to initialize and define all input/DOM event listeners of the element. Called on
+     * `initialize()`.
+     * @protected
+     */
     protected setupUIListeners(): void;
 }
 
@@ -7460,9 +7498,12 @@ declare function turbo<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElem
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `tu()`, `t()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-declare function turbo<Type extends object = Node>(object: Type): Turbo<Type>;
+declare function turbo<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 /**
  * @overload
  * @function turbo
@@ -7497,9 +7538,12 @@ declare function tu<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `t()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-declare function tu<Type extends object = Node>(object: Type): Turbo<Type>;
+declare function tu<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 /**
  * @overload
  * @function tu
@@ -7534,9 +7578,12 @@ declare function t<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `$()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-declare function t<Type extends object = Node>(object: Type): Turbo<Type>;
+declare function t<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 /**
  * @overload
  * @function t
@@ -7556,7 +7603,7 @@ declare function t(tag: string): Turbo<Element>;
  *
  * @template {ValidTag} Tag
  * @description All-in-one selector function that instantiates an element with the given tag and returns it wrapped
- * in a proxied selector that augments it with useful functions for manipulating it.You can alternatively use `turbo()`,
+ * in a proxied selector that augments it with useful functions for manipulating it. You can alternatively use `turbo()`,
  * `tu()`, or `t()` for the same behavior.
  * @param {Tag} [tag="div"] - The HTML tag of the element to instantiate. If not defined, the tag will be set to "div".
  * @return {Turbo<ValidElement<Tag>>} - The instantiated, wrapped, and proxied element.
@@ -7571,9 +7618,12 @@ declare function $<Tag extends ValidTag = "div">(tag?: Tag): Turbo<ValidElement<
  * @description All-in-one selector function that wraps the given object in a proxied selector that augments it
  * with useful functions for manipulating it. You can alternatively use `turbo()`, `tu()`, or `t()` for the same behavior.
  * @param {Type} object - The object to wrap.
+ * @param {boolean} [raw=false] - If set to true, the selector will operate directly on the provided object, even
+ * if it contains an inner `element` field. Useful when you want to set properties on a proxied wrapper itself rather
+ * than its underlying DOM element.
  * @return {Turbo<Type>} - The wrapped, proxied object.
  */
-declare function $<Type extends object = Node>(object: Type): Turbo<Type>;
+declare function $<Type extends object = Node>(object: Type, raw?: boolean): Turbo<Type>;
 /**
  * @overload
  * @function $
@@ -7722,6 +7772,11 @@ declare function getSuperDescriptor(object: object, key: PropertyKey): PropertyD
  * @category Prototype
  */
 declare function getPrototypeChain(object: object): any[];
+/**
+ * @group Utilities
+ * @category Prototype
+ */
+declare function getConstructorChain(object: object): any[];
 
 /**
  * @group Utilities
@@ -7987,8 +8042,8 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectConfig, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboController, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboSubstrate, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, controller, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, substrate, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeSubstrateOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, SubstrateAddCallbackProperties, SubstrateCallbackProperties, SubstrateChecker, SubstrateMutator, SubstrateMutatorProperties, SubstrateSolver, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboControllerProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboSubstrateProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
 interface TurboSelector {
@@ -8488,6 +8543,7 @@ interface TurboSelector<Type extends object = Node> {
          * @returns {this} Itself, allowing for method chaining.
          */
         setProperties<Tag extends ValidTag>(properties: TurboProperties<Tag>, setOnlyBaseProperties?: boolean): this;
+        getFields(): Record<string, any>;
         clone(options?: CloneElementOptions): Type;
         /**
          * @description Destroys the element by removing it from the document and removing all its bound listeners.
@@ -8537,6 +8593,7 @@ interface TurboElement<ViewType extends TurboView = TurboView<any, any>, DataTyp
 interface TurboElement extends TurboElementUiInterface {
     }
 interface TurboSelector<Type extends object = Node> {
+        readonly mvc: MvcProperties;
         /**
          * @description The model of the element's MVC structure.
          */
