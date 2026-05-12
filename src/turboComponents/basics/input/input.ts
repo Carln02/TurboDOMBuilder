@@ -1,11 +1,8 @@
-import {TurboRichElement} from "../richElement/richElement";
 import {define} from "../../../decorators/define/define";
 import {TurboView} from "../../../mvc/view/view";
 import {TurboModel} from "../../../mvc/model/model";
-import {element} from "../../../elementCreation/element";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {div} from "../../../elementCreation/basicElements";
 import {TurboInputProperties} from "./input.types";
 import {randomId} from "../../../utils/computations/random";
 import {TurboProperties} from "../../../turboFunctions/element/element.types";
@@ -15,7 +12,8 @@ import {ValidElement} from "../../../types/element.types";
 import {expose} from "../../../decorators/expose";
 import {Propagation} from "../../../turboFunctions/event/event.types";
 import {DefaultEventName} from "../../../types/eventNaming.types";
-import {effect, markDirty, signal} from "../../../decorators/reactivity/reactivity";
+import {markDirty, signal} from "../../../decorators/reactivity/reactivity";
+import {TurboLabelElement} from "../labelElement/labelElement";
 
 /**
  * @group Components
@@ -28,8 +26,8 @@ class TurboInput<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter,
-> extends TurboRichElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
-    public declare readonly properties: TurboInputProperties<"input" | "textarea">;
+> extends TurboLabelElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
+    public declare readonly properties: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
 
     public static defaultProperties: TurboInputProperties = {
         inputTag: "input",
@@ -42,14 +40,10 @@ class TurboInput<
         const value = properties.value;
         const input = super.customCreate({...properties, elementTag, element,
             value: undefined, input: undefined, inputTag: undefined});
-        (input as any).value = value;
+        if (value !== undefined && value !== null) (input as any).value = value;
         return input;
     }
 
-    @signal protected labelElement: HTMLLabelElement;
-    public content: HTMLElement;
-
-    @signal public defaultId: string = "turbo-input-" + randomId();
     @signal public locked: boolean = false;
     @signal public selectTextOnFocus: boolean = false;
     @signal public dynamicVerticalResize: boolean = false;
@@ -63,26 +57,6 @@ class TurboInput<
     public readonly onFocus: Delegate<() => void> = new Delegate();
     public readonly onBlur: Delegate<() => void> = new Delegate();
     public readonly onInput: Delegate<() => void> = new Delegate();
-
-    public set label(value: string) {
-        if (!value || value.length === 0) {
-            if (this.labelElement) this.labelElement.remove();
-            return;
-        }
-
-        if (!this.labelElement) {
-            this.labelElement = element({tag: "label"});
-            turbo(this).childHandler = this;
-            turbo(this).addChild(this.labelElement, 0);
-            if (this.content) turbo(this).childHandler = this.content;
-        }
-
-        this.labelElement.textContent = value;
-    }
-
-    public get label(): string {
-        return this.labelElement?.textContent;
-    }
 
     public get input(): ValidElement<InputTag> {
         return this.element;
@@ -102,28 +76,12 @@ class TurboInput<
             if (this.elementTag === "input" && !value.type) (value as any).type = "text";
         }
         super.element = value;
-        if (this.element) {
-            if (!this.element.id) this.element.id = this.defaultId;
-            else if (this.labelElement) this.labelElement.htmlFor = this.element.id;
-        }
     }
 
     @expose("element") public accessor type: string;
     @expose("element") public accessor placeholder: string;
     @expose("element") public accessor pattern: string;
     @expose("element") public accessor size: string;
-
-    protected setupUIElements() {
-        super.setupUIElements();
-        this.content = div();
-    }
-
-    protected setupUILayout() {
-        super.setupUILayout();
-        turbo(this.content).addChild(turbo(this).childrenArray);
-        turbo(this).addChild([this.labelElement, this.content]);
-        turbo(this).childHandler = this.content;
-    }
 
     protected setupChangedCallbacks() {
         super.setupChangedCallbacks();
@@ -214,11 +172,6 @@ class TurboInput<
             if (re.test(candidate)) out = candidate;
         }
         return out;
-    }
-
-    @effect private updateId() {
-        if (this.element && !this.element.id) this.element.id = this.defaultId;
-        if (this.labelElement) this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
     }
 }
 

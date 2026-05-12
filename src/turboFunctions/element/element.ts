@@ -142,22 +142,16 @@ export function setupElementFunctions() {
             SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype
         ]);
 
-        if (this.element instanceof TurboElement) {
-            seen.add("onAttach");
-            seen.add("onDetach");
-            seen.add("onAdopt");
-            seen.add("defaultFeedforwardProperties");
-        }
-
         for (const proto of [this.element, ...chain].reverse()) {
             if (builtinPrototypes.has(proto)) {
                 for (const key of Object.getOwnPropertyNames(proto)) seen.add(key);
                 continue;
             }
-            for (const key of Object.getOwnPropertyNames(this.element)) {
+            for (const key of Object.getOwnPropertyNames(proto)) {
                 if (seen.has(key) || key.startsWith("_")) continue;
-                const desc = Object.getOwnPropertyDescriptor(this.element, key);
+                const desc = Object.getOwnPropertyDescriptor(proto, key);
                 if (!desc || typeof desc.value === "function" || (desc.get && !desc.set)) continue;
+                seen.add(key);
                 result[key] = this.element[key];
             }
         }

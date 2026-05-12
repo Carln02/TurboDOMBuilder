@@ -2,7 +2,6 @@ import {define, signal, turbo, DefaultEventName, TurboButton, effect, input, Col
 import {BucketTool} from "./bucket.tool";
 
 //Custom element for the bucket tool
-@define("demo-bucket")
 export class Bucket extends TurboButton {
     @signal private _color: Color = new Color(); //Signal to fire @effect callbacks when the value changes
 
@@ -19,7 +18,7 @@ export class Bucket extends TurboButton {
     //Function that sets up sub-elements. Called on creation.
     protected setupUIElements() {
         super.setupUIElements();
-        this.colorInput = input({type: "color", style: "visibility: hidden; position: absolute"});
+        this.colorInput = input({type: "color", hidden: true});
     }
 
     //Function that adds the sub-elements to the document. Called on creation.
@@ -39,3 +38,4 @@ export class Bucket extends TurboButton {
         turbo(this).setStyle("borderColor", this._color.toString());
     }
 }
+define(BucketTool, "demo-bucket");

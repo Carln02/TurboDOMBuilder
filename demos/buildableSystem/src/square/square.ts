@@ -1,7 +1,7 @@
 import {define, TurboElement, Point, expose, TurboRect, Color} from "../../../../build/turbodombuilder.esm";
 import {SquareModel} from "./square.model";
 import {SquareView} from "./square.view";
-import "./square.css";
+import {SquareStyles} from "./square.styles";
 
 //Custom square element, defined as a custom element
 export class Square extends TurboElement<SquareView, any, SquareModel> {
@@ -16,6 +16,7 @@ export class Square extends TurboElement<SquareView, any, SquareModel> {
     public static defaultProperties = {
         view: SquareView,
         model: SquareModel,
+        stylesheet: SquareStyles,
     };
 
     public defaultFeedforwardProperties = {style: "opacity: 0.4"};

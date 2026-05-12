@@ -6,9 +6,9 @@ import {
 import {StickyLine} from "../stickyLine/stickyLine";
 
 //Pusher substrate
-export class CanvasSubstrate extends TurboEnforcer {
+export class CanvasEnforcer extends TurboEnforcer {
     //Define the substrate's name. Equivalent to turbo(canvas).makeSubstrate("main").
-    public substrateName = "main";
+    public enforcerName = "main";
 
     public defaultQueue = [];
 

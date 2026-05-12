@@ -9479,6 +9479,17 @@
      * @group Element Creation
      * @category Base Elements
      *
+     * @description Creates a "h3" element with the specified properties.
+     * @param {TurboProperties<"h3">} [properties] - Object containing properties of the element.
+     * @returns {ValidElement<"h3">} The created element.
+     */
+    function h3(properties = {}) {
+        return element({ ...properties, tag: "h3" });
+    }
+    /**
+     * @group Element Creation
+     * @category Base Elements
+     *
      * @description Creates an "img" element with the specified properties.
      * @param {TurboProperties<"img">} [properties] - Object containing properties of the element.
      * @returns {ValidElement<"img">} The created element.
@@ -9496,6 +9507,17 @@
      */
     function input(properties = {}) {
         return element({ ...properties, tag: "input" });
+    }
+    /**
+     * @group Element Creation
+     * @category Base Elements
+     *
+     * @description Creates a "span" element with the specified properties.
+     * @param {TurboProperties<"span">} [properties] - Object containing properties of the element.
+     * @returns {ValidElement<"span">} The created element.
+     */
+    function span(properties = {}) {
+        return element({ ...properties, tag: "span" });
     }
     /**
      * @group Element Creation
@@ -13446,24 +13468,19 @@
                 TurboHeadlessElement.prototype, Element.prototype, HTMLElement.prototype, Node.prototype,
                 SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype
             ]);
-            if (this.element instanceof TurboElement) {
-                seen.add("onAttach");
-                seen.add("onDetach");
-                seen.add("onAdopt");
-                seen.add("defaultFeedforwardProperties");
-            }
             for (const proto of [this.element, ...chain].reverse()) {
                 if (builtinPrototypes.has(proto)) {
                     for (const key of Object.getOwnPropertyNames(proto))
                         seen.add(key);
                     continue;
                 }
-                for (const key of Object.getOwnPropertyNames(this.element)) {
+                for (const key of Object.getOwnPropertyNames(proto)) {
                     if (seen.has(key) || key.startsWith("_"))
                         continue;
-                    const desc = Object.getOwnPropertyDescriptor(this.element, key);
+                    const desc = Object.getOwnPropertyDescriptor(proto, key);
                     if (!desc || typeof desc.value === "function" || (desc.get && !desc.set))
                         continue;
+                    seen.add(key);
                     result[key] = this.element[key];
                 }
             }
@@ -20128,8 +20145,8 @@
       }
     }
 
-    var css_248z$3$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-    styleInject$1(css_248z$3$1);
+    var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+    styleInject$1(css_248z$3);
 
     /**
      * @group Utilities
@@ -21222,19 +21239,90 @@
         };
     })();
 
+    let TurboLabelElement = (() => {
+        let _classSuper = TurboRichElement;
+        let _instanceExtraInitializers = [];
+        let _defaultId_decorators;
+        let _defaultId_initializers = [];
+        let _defaultId_extraInitializers = [];
+        let _labelElement_decorators;
+        let _labelElement_initializers = [];
+        let _labelElement_extraInitializers = [];
+        let _get_element_decorators;
+        let _updateId_decorators;
+        return class TurboLabelElement extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _defaultId_decorators = [signal];
+                _labelElement_decorators = [signal];
+                _get_element_decorators = [signal];
+                _updateId_decorators = [effect];
+                __esDecorate(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _updateId_decorators, { kind: "method", name: "updateId", static: false, private: false, access: { has: obj => "updateId" in obj, get: obj => obj.updateId }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, null, _defaultId_decorators, { kind: "field", name: "defaultId", static: false, private: false, access: { has: obj => "defaultId" in obj, get: obj => obj.defaultId, set: (obj, value) => { obj.defaultId = value; } }, metadata: _metadata }, _defaultId_initializers, _defaultId_extraInitializers);
+                __esDecorate(null, null, _labelElement_decorators, { kind: "field", name: "labelElement", static: false, private: false, access: { has: obj => "labelElement" in obj, get: obj => obj.labelElement, set: (obj, value) => { obj.labelElement = value; } }, metadata: _metadata }, _labelElement_initializers, _labelElement_extraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            defaultId = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _defaultId_initializers, "turbo-id-" + randomId()));
+            labelElement = (__runInitializers(this, _defaultId_extraInitializers), __runInitializers(this, _labelElement_initializers, void 0));
+            content = __runInitializers(this, _labelElement_extraInitializers);
+            set label(value) {
+                if (!value || value.length === 0) {
+                    if (this.labelElement)
+                        this.labelElement.remove();
+                    return;
+                }
+                if (!this.labelElement) {
+                    this.labelElement = element({ tag: "label" });
+                    turbo(this).childHandler = this;
+                    turbo(this).addChild(this.labelElement, 0);
+                    if (this.content)
+                        turbo(this).childHandler = this.content;
+                }
+                this.labelElement.textContent = value;
+            }
+            get label() {
+                return this.labelElement?.textContent;
+            }
+            get element() {
+                return super.element;
+            }
+            set element(value) {
+                super.element = value;
+                if (this.element) {
+                    if (!this.element.id)
+                        this.element.id = this.defaultId;
+                    else if (this.labelElement)
+                        this.labelElement.htmlFor = this.element.id;
+                }
+            }
+            setupUIElements() {
+                super.setupUIElements();
+                this.content = div();
+            }
+            setupUILayout() {
+                super.setupUILayout();
+                turbo(this.content).addChild(turbo(this).childrenArray);
+                turbo(this).addChild([this.labelElement, this.content]);
+                turbo(this).childHandler = this.content;
+            }
+            updateId() {
+                if (this.element && !this.element.id)
+                    this.element.id = this.defaultId;
+                if (this.labelElement)
+                    this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
+            }
+        };
+    })();
+    define(TurboLabelElement);
+
     /**
      * @group Components
      * @category TurboInput
      */
     let TurboInput = (() => {
-        let _classSuper = TurboRichElement;
+        let _classSuper = TurboLabelElement;
         let _instanceExtraInitializers = [];
-        let _labelElement_decorators;
-        let _labelElement_initializers = [];
-        let _labelElement_extraInitializers = [];
-        let _defaultId_decorators;
-        let _defaultId_initializers = [];
-        let _defaultId_extraInitializers = [];
         let _locked_decorators;
         let _locked_initializers = [];
         let _locked_extraInitializers = [];
@@ -21259,12 +21347,9 @@
         let _size_extraInitializers = [];
         let _get_value_decorators;
         let _get_rawValue_decorators;
-        let _updateId_decorators;
         return class TurboInput extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _labelElement_decorators = [signal];
-                _defaultId_decorators = [signal];
                 _locked_decorators = [signal];
                 _selectTextOnFocus_decorators = [signal];
                 _dynamicVerticalResize_decorators = [signal];
@@ -21275,7 +21360,6 @@
                 _size_decorators = [expose("element")];
                 _get_value_decorators = [signal];
                 _get_rawValue_decorators = [signal];
-                _updateId_decorators = [effect];
                 __esDecorate(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
                 __esDecorate(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
@@ -21283,9 +21367,6 @@
                 __esDecorate(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
                 __esDecorate(this, null, _get_value_decorators, { kind: "getter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(this, null, _get_rawValue_decorators, { kind: "getter", name: "rawValue", static: false, private: false, access: { has: obj => "rawValue" in obj, get: obj => obj.rawValue }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _updateId_decorators, { kind: "method", name: "updateId", static: false, private: false, access: { has: obj => "updateId" in obj, get: obj => obj.updateId }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(null, null, _labelElement_decorators, { kind: "field", name: "labelElement", static: false, private: false, access: { has: obj => "labelElement" in obj, get: obj => obj.labelElement, set: (obj, value) => { obj.labelElement = value; } }, metadata: _metadata }, _labelElement_initializers, _labelElement_extraInitializers);
-                __esDecorate(null, null, _defaultId_decorators, { kind: "field", name: "defaultId", static: false, private: false, access: { has: obj => "defaultId" in obj, get: obj => obj.defaultId, set: (obj, value) => { obj.defaultId = value; } }, metadata: _metadata }, _defaultId_initializers, _defaultId_extraInitializers);
                 __esDecorate(null, null, _locked_decorators, { kind: "field", name: "locked", static: false, private: false, access: { has: obj => "locked" in obj, get: obj => obj.locked, set: (obj, value) => { obj.locked = value; } }, metadata: _metadata }, _locked_initializers, _locked_extraInitializers);
                 __esDecorate(null, null, _selectTextOnFocus_decorators, { kind: "field", name: "selectTextOnFocus", static: false, private: false, access: { has: obj => "selectTextOnFocus" in obj, get: obj => obj.selectTextOnFocus, set: (obj, value) => { obj.selectTextOnFocus = value; } }, metadata: _metadata }, _selectTextOnFocus_initializers, _selectTextOnFocus_extraInitializers);
                 __esDecorate(null, null, _dynamicVerticalResize_decorators, { kind: "field", name: "dynamicVerticalResize", static: false, private: false, access: { has: obj => "dynamicVerticalResize" in obj, get: obj => obj.dynamicVerticalResize, set: (obj, value) => { obj.dynamicVerticalResize = value; } }, metadata: _metadata }, _dynamicVerticalResize_initializers, _dynamicVerticalResize_extraInitializers);
@@ -21301,13 +21382,11 @@
                 const value = properties.value;
                 const input = super.customCreate({ ...properties, elementTag, element,
                     value: undefined, input: undefined, inputTag: undefined });
-                input.value = value;
+                if (value !== undefined && value !== null)
+                    input.value = value;
                 return input;
             }
-            labelElement = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _labelElement_initializers, void 0));
-            content = __runInitializers(this, _labelElement_extraInitializers);
-            defaultId = __runInitializers(this, _defaultId_initializers, "turbo-input-" + randomId());
-            locked = (__runInitializers(this, _defaultId_extraInitializers), __runInitializers(this, _locked_initializers, false));
+            locked = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _locked_initializers, false));
             selectTextOnFocus = (__runInitializers(this, _locked_extraInitializers), __runInitializers(this, _selectTextOnFocus_initializers, false));
             dynamicVerticalResize = (__runInitializers(this, _selectTextOnFocus_extraInitializers), __runInitializers(this, _dynamicVerticalResize_initializers, false));
             inputRegexCheck = __runInitializers(this, _dynamicVerticalResize_extraInitializers);
@@ -21317,24 +21396,6 @@
             onFocus = new Delegate();
             onBlur = new Delegate();
             onInput = new Delegate();
-            set label(value) {
-                if (!value || value.length === 0) {
-                    if (this.labelElement)
-                        this.labelElement.remove();
-                    return;
-                }
-                if (!this.labelElement) {
-                    this.labelElement = element({ tag: "label" });
-                    turbo(this).childHandler = this;
-                    turbo(this).addChild(this.labelElement, 0);
-                    if (this.content)
-                        turbo(this).childHandler = this.content;
-                }
-                this.labelElement.textContent = value;
-            }
-            get label() {
-                return this.labelElement?.textContent;
-            }
             get input() {
                 return this.element;
             }
@@ -21352,12 +21413,6 @@
                         value.type = "text";
                 }
                 super.element = value;
-                if (this.element) {
-                    if (!this.element.id)
-                        this.element.id = this.defaultId;
-                    else if (this.labelElement)
-                        this.labelElement.htmlFor = this.element.id;
-                }
             }
             #type_accessor_storage = __runInitializers(this, _type_initializers, void 0);
             get type() { return this.#type_accessor_storage; }
@@ -21371,16 +21426,6 @@
             #size_accessor_storage = (__runInitializers(this, _pattern_extraInitializers), __runInitializers(this, _size_initializers, void 0));
             get size() { return this.#size_accessor_storage; }
             set size(value) { this.#size_accessor_storage = value; }
-            setupUIElements() {
-                super.setupUIElements();
-                this.content = div();
-            }
-            setupUILayout() {
-                super.setupUILayout();
-                turbo(this.content).addChild(turbo(this).childrenArray);
-                turbo(this).addChild([this.labelElement, this.content]);
-                turbo(this).childHandler = this.content;
-            }
             setupChangedCallbacks() {
                 super.setupChangedCallbacks();
                 this.emitter.add("processValue", () => this.processInputValue());
@@ -21476,12 +21521,6 @@
                         out = candidate;
                 }
                 return out;
-            }
-            updateId() {
-                if (this.element && !this.element.id)
-                    this.element.id = this.defaultId;
-                if (this.labelElement)
-                    this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
             }
             constructor() {
                 super(...arguments);
@@ -23761,32 +23800,24 @@
       }
     }
 
-    var css_248z$3 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
-    styleInject(css_248z$3);
+    var css_248z$2 = "demo-toolbar{border:1px solid #838383;border-radius:12px;bottom:16px;display:flex;flex-direction:row;gap:16px;left:50%;min-width:400px;padding:8px;position:absolute;transform:translateX(-50%);z-index:2}demo-toolbar>*{border:1px solid #838383;border-radius:8px;padding:6px 10px}demo-toolbar>*>*{margin:0;padding:0}demo-toolbar>.selected{background-color:#25e463}";
+    styleInject(css_248z$2);
 
     let Toolbar = (() => {
-        let _classDecorators = [define("demo-toolbar")];
-        let _classDescriptor;
-        let _classExtraInitializers = [];
-        let _classThis;
         let _classSuper = TurboElement;
         let _instanceExtraInitializers = [];
         let _color_decorators;
         let _color_initializers = [];
         let _color_extraInitializers = [];
         let _set_entries_decorators;
-        (class extends _classSuper {
-            static { _classThis = this; }
+        return class Toolbar extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _color_decorators = [signal];
                 _set_entries_decorators = [auto()];
                 __esDecorate$1(this, null, _set_entries_decorators, { kind: "setter", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate$1(null, null, _color_decorators, { kind: "field", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-                _classThis = _classDescriptor.value;
-                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                __runInitializers$1(_classThis, _classExtraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _color_initializers, "white"));
             set entries(value) {
@@ -23803,9 +23834,9 @@
                 super(...arguments);
                 __runInitializers$1(this, _color_extraInitializers);
             }
-        });
-        return _classThis;
+        };
     })();
+    define(Toolbar, "demo-toolbar");
 
     //Select tool
     let SelectTool = (() => {
@@ -23841,6 +23872,7 @@
             }
         };
     })();
+    define(SelectTool);
 
     //Bucket tool
     let BucketTool = (() => {
@@ -23864,30 +23896,24 @@
             }
         };
     })();
+    define(BucketTool);
 
     //Custom element for the bucket tool
     let Bucket = (() => {
-        let _classDecorators = [define("demo-bucket")];
-        let _classDescriptor;
-        let _classExtraInitializers = [];
-        let _classThis;
         let _classSuper = TurboButton;
         let _instanceExtraInitializers = [];
         let __color_decorators;
         let __color_initializers = [];
         let __color_extraInitializers = [];
         let _updateBorderColor_decorators;
-        (class extends _classSuper {
-            static { _classThis = this; }
+        return class Bucket extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 __color_decorators = [signal];
                 _updateBorderColor_decorators = [effect];
                 __esDecorate$1(this, null, _updateBorderColor_decorators, { kind: "method", name: "updateBorderColor", static: false, private: false, access: { has: obj => "updateBorderColor" in obj, get: obj => obj.updateBorderColor }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate$1(null, null, __color_decorators, { kind: "field", name: "_color", static: false, private: false, access: { has: obj => "_color" in obj, get: obj => obj._color, set: (obj, value) => { obj._color = value; } }, metadata: _metadata }, __color_initializers, __color_extraInitializers);
-                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-                _classThis = _classDescriptor.value;
-                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             _color = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, __color_initializers, new Color())); //Signal to fire @effect callbacks when the value changes
             colorInput = __runInitializers$1(this, __color_extraInitializers);
@@ -23900,7 +23926,7 @@
             //Function that sets up sub-elements. Called on creation.
             setupUIElements() {
                 super.setupUIElements();
-                this.colorInput = input({ type: "color", style: "visibility: hidden; position: absolute" });
+                this.colorInput = input({ type: "color", hidden: true });
             }
             //Function that adds the sub-elements to the document. Called on creation.
             setupUILayout() {
@@ -23916,34 +23942,16 @@
             updateBorderColor() {
                 turbo(this).setStyle("borderColor", this._color.toString());
             }
-            static {
-                __runInitializers$1(_classThis, _classExtraInitializers);
-            }
-        });
-        return _classThis;
+        };
     })();
+    define(BucketTool, "demo-bucket");
 
-    var css_248z$2 = "my-canvas{display:block;height:100vh;width:100vw}";
-    styleInject(css_248z$2);
+    var css_248z$1 = "my-canvas{display:block;height:100vh;width:100vw}";
+    styleInject(css_248z$1);
 
-    let Canvas = (() => {
-        let _classDecorators = [define("my-canvas")];
-        let _classDescriptor;
-        let _classExtraInitializers = [];
-        let _classThis;
-        let _classSuper = TurboElement;
-        (class extends _classSuper {
-            static { _classThis = this; }
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                __esDecorate$1(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-                _classThis = _classDescriptor.value;
-                if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                __runInitializers$1(_classThis, _classExtraInitializers);
-            }
-        });
-        return _classThis;
-    })();
+    class Canvas extends TurboElement {
+    }
+    define(Canvas, "my-canvas");
 
     //Model of the square element
     let SquareModel = (() => {
@@ -24032,8 +24040,17 @@
     })();
     define(SquareView);
 
-    var css_248z$1 = ".demo-square{align-items:center;display:flex;height:100px;justify-content:center;position:absolute;width:100px}";
-    styleInject(css_248z$1);
+    const SquareStyles = css `
+.demo-square {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+`;
 
     //Custom square element, defined as a custom element
     let Square = (() => {
@@ -24072,6 +24089,7 @@
             static defaultProperties = {
                 view: SquareView,
                 model: SquareModel,
+                stylesheet: SquareStyles,
             };
             defaultFeedforwardProperties = (__runInitializers$1(this, _rotation_extraInitializers), { style: "opacity: 0.4" });
             move(delta) {
@@ -24120,28 +24138,34 @@
             }
         };
     })();
+    define(AddSquareTool);
 
     let EditObjectView = (() => {
         let _classSuper = TurboView;
         let _instanceExtraInitializers = [];
+        let _updateTag_decorators;
         let _updateProperties_decorators;
         let _updateMVC_decorators;
         return class EditObjectView extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _updateTag_decorators = [effect];
                 _updateProperties_decorators = [effect];
                 _updateMVC_decorators = [effect];
+                __esDecorate$1(this, null, _updateTag_decorators, { kind: "method", name: "updateTag", static: false, private: false, access: { has: obj => "updateTag" in obj, get: obj => obj.updateTag }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate$1(this, null, _updateProperties_decorators, { kind: "method", name: "updateProperties", static: false, private: false, access: { has: obj => "updateProperties" in obj, get: obj => obj.updateProperties }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate$1(this, null, _updateMVC_decorators, { kind: "method", name: "updateMVC", static: false, private: false, access: { has: obj => "updateMVC" in obj, get: obj => obj.updateMVC }, metadata: _metadata }, null, _instanceExtraInitializers);
                 if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             tabs = (__runInitializers$1(this, _instanceExtraInitializers), new Map());
+            tagName;
             tabSelector;
             tabsParent;
             panelSelector;
             panelsParent;
             setupUIElements() {
                 super.setupUIElements();
+                this.tagName = h3();
                 this.tabs.set("Properties", div({ classes: "properties-panel" }));
                 this.tabs.set("MVC", div({ classes: "mvc-panel" }));
                 this.tabsParent = div({ classes: "tabs" });
@@ -24158,7 +24182,10 @@
             }
             setupUILayout() {
                 super.setupUILayout();
-                turbo(this).addChild([this.tabsParent, this.panelsParent]);
+                turbo(this).addChild([div({ children: this.tagName }), this.tabsParent, this.panelsParent]);
+            }
+            updateTag() {
+                this.tagName.textContent = this.element.anchor.tagName;
             }
             updateProperties() {
                 const anchor = this.element.anchor;
@@ -24171,8 +24198,6 @@
                 untrack(() => {
                     const properties = turbo(anchor).getFields();
                     for (const [key, value] of Object.entries(properties)) {
-                        if (value === undefined || value === null)
-                            continue;
                         const input = TurboInput.create({ label: key, parent: panel, value });
                         let timer;
                         input.onInput.add(() => {
@@ -24192,19 +24217,24 @@
                     if (value === undefined)
                         continue;
                     if (Array.isArray(value)) {
-                        for (const entry of value) {
-                            const registryEntry = getRegisteredEntry(entry);
-                            if (!registryEntry)
-                                continue;
-                            TurboRichElement.create({ text: registryEntry.name, parent: panel });
-                        }
+                        for (const entry of value)
+                            this.createEntry(entry, panel);
                         continue;
                     }
-                    const registryEntry = getRegisteredEntry(value);
-                    if (!registryEntry)
-                        continue;
-                    TurboRichElement.create({ text: registryEntry.name, parent: panel });
+                    this.createEntry(value, panel);
                 }
+            }
+            createEntry(value, parent) {
+                const registryEntry = getRegisteredEntry(value);
+                if (!registryEntry)
+                    return;
+                TurboRichElement.create({
+                    leftIcon: registryEntry.category,
+                    text: registryEntry.name,
+                    rightIcon: "trash",
+                    parent: parent
+                });
+                // element.rightIcon.iconColor =
             }
         };
     })();
@@ -24231,7 +24261,7 @@
         };
     })();
 
-    var css_248z = ".edit-object{background:#fff;border:1px solid #e0e0e0;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);color:#333;display:flex;flex-direction:column;font-size:12px;max-width:360px;min-width:260px;overflow:hidden}.edit-object>:first-child{background:#f5f5f5;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;padding:8px 12px}.edit-object>:first-child>.turbo-rich-element{border-radius:100px;cursor:pointer;padding:4px 8px;text-align:center;transition:color .15s,background-color .15s;-webkit-user-select:none;-moz-user-select:none;user-select:none}.edit-object>:first-child>.turbo-rich-element:hover{background-color:#afeae5;color:#333}.edit-object>:first-child>.turbo-rich-element.selected{background-color:#97ede9;color:#111}.edit-object>:last-child{overflow:auto;overscroll-behavior:contain}.edit-object>:last-child>*{display:none;flex-direction:column;gap:2px;padding:10px 12px}.edit-object>:last-child>.selected{display:flex}.edit-object .turbo-input{align-items:baseline;border-bottom:1px solid #f0f0f0;display:flex;gap:8px;padding:5px 0}.edit-object .turbo-input label{color:#999;flex:0 0 40%;font-size:10px;text-overflow:ellipsis}.edit-object .turbo-input input,.edit-object .turbo-input textarea{background:transparent;border:none;color:#111;flex:1;font-size:12px;outline:none;padding:2px 0;transition:border-color .15s}.edit-object .turbo-input input:focus,.edit-object .turbo-input textarea:focus{border-color:#4a7c5e}.edit-object .turbo-rich-element{align-items:center;border-radius:3px;color:#666;display:flex;padding:5px 8px;transition:background .1s,color .1s}.edit-object .turbo-rich-element:hover{background:#f5f5f5;color:#111}";
+    var css_248z = ".edit-object{background:#fff;border:1px solid #e0e0e0;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);color:#333;display:flex;flex-direction:column;font-size:12px;max-width:360px;min-width:260px;overflow:hidden}.edit-object>:first-child{background:#f5f5f5;border-bottom:1px solid #e0e0e0;padding:8px 12px}.edit-object .tabs{display:flex;gap:8px;padding:8px 12px}.edit-object>.tabs .turbo-rich-element{border-radius:100px;cursor:pointer;padding:4px 8px;text-align:center;transition:color .15s,background-color .15s;-webkit-user-select:none;-moz-user-select:none;user-select:none}.edit-object>.tabs .turbo-rich-element:hover{background-color:#afeae5;color:#333}.edit-object>.tabs .turbo-rich-element.selected{background-color:#97ede9;color:#111}.edit-object>:last-child{overflow:auto;overscroll-behavior:contain}.edit-object>:last-child>*{display:none;flex-direction:column;gap:2px;padding:10px 12px}.edit-object>:last-child>.selected{display:flex}.edit-object .turbo-input{align-items:baseline;border-bottom:1px solid #f0f0f0;display:flex;gap:8px;padding:5px 0}.edit-object .turbo-input label{color:#999;flex:0 0 40%;font-size:10px;text-overflow:ellipsis}.edit-object .turbo-input input,.edit-object .turbo-input textarea{background:transparent;border:none;color:#111;flex:1;font-size:12px;outline:none;padding:2px 0;transition:border-color .15s}.edit-object .turbo-input input:focus,.edit-object .turbo-input textarea:focus{border-color:#4a7c5e}.edit-object .turbo-rich-element{align-items:center;border-radius:3px;color:#666;display:flex;gap:4px;padding:5px 8px;transition:background .1s,color .1s}.edit-object .turbo-rich-element:hover{background:#f5f5f5;color:#111}";
     styleInject(css_248z);
 
     class EditObject extends TurboPopup {
@@ -24242,10 +24272,264 @@
     }
     define(EditObject);
 
+    class ImportedFilesView extends TurboView {
+        addFilesButton;
+        addFilesInput;
+        dropZone;
+        pluginList;
+        initialize() {
+            super.initialize();
+            this.model.generateObserver({
+                onAdded: (value, _self, name) => this.createPluginItem(name, value)
+            });
+        }
+        setupUIElements() {
+            super.setupUIElements();
+            this.addFilesInput = input({ type: "file", multiple: true, accept: ".ts,.js", hidden: true });
+            this.addFilesButton = TurboButton.create({ leftIcon: "add", text: "Add", onClick: () => this.addFilesInput.click() });
+            this.dropZone = div({ classes: "drop-zone", children: span({ text: "Drop .ts / .js files here" }) });
+            this.pluginList = div({ classes: "plugin-list" });
+        }
+        setupUILayout() {
+            super.setupUILayout();
+            turbo(this.element.popup).addChild([this.dropZone, this.addFilesButton, this.addFilesInput, this.pluginList]);
+        }
+        setupUIListeners() {
+            super.setupUIListeners();
+            this.addFilesInput.addEventListener("change", () => {
+                if (this.addFilesInput.files?.length) {
+                    this.model.filesHandler.processFiles(this.addFilesInput.files).catch(console.error);
+                    this.addFilesInput.value = "";
+                }
+            });
+            this.dropZone.addEventListener("dragover", e => {
+                e.preventDefault();
+                this.dropZone.classList.add("drag-over");
+            });
+            ["dragleave", "dragend"].forEach(evt => this.dropZone.addEventListener(evt, () => this.dropZone.classList.remove("drag-over")));
+            this.dropZone.addEventListener("drop", e => {
+                e.preventDefault();
+                this.dropZone.classList.remove("drag-over");
+                if (e.dataTransfer?.files.length) {
+                    this.model.filesHandler.processFiles(e.dataTransfer.files).catch(console.error);
+                }
+            });
+        }
+        createPluginItem(name, entry) {
+            TurboButton.create({
+                text: "✕",
+                classes: "imported-files-remove",
+                onClick: () => this.model.delete(name),
+            });
+            const classTags = entry.classes.length
+                ? entry.classes.map(c => span({ text: c, classes: "imported-files-class-tag" }))
+                : [span({ text: "no classes", classes: "imported-files-class-tag muted" })];
+            div({ classes: "imported-files-meta", children: [
+                    span({ text: formatSize(entry.size) }),
+                    span({ text: entry.addedAt.toLocaleTimeString() }),
+                    ...classTags,
+                ] });
+            return TurboRichElement.create({ text: name });
+            // return element({tag: "li", classes: "imported-files-item", children: [
+            //         span({text: name, classes: "imported-files-name"}),
+            //         meta,
+            //         removeBtn,
+            //     ]});
+        }
+    }
+    function formatSize(bytes) {
+        return bytes < 1024 ? `${bytes}B` : `${(bytes / 1024).toFixed(1)}KB`;
+    }
+
+    class ImportedFilesFilesHandler extends TurboHandler {
+        esbuildReady;
+        setup() {
+            super.setup();
+            this.esbuildReady = this.initEsbuild().catch(err => {
+                console.error("[ImportedFiles] esbuild init failed:", err);
+                throw err;
+            });
+        }
+        esbuild = null;
+        async initEsbuild() {
+            // @ts-ignore
+            const mod = await import('https://esm.sh/esbuild-wasm@0.25.0');
+            const esbuild = mod.default ?? mod;
+            await esbuild.initialize({
+                wasmURL: "https://esm.sh/esbuild-wasm@0.25.0/esbuild.wasm",
+                worker: true,
+            });
+            this.esbuild = esbuild;
+        }
+        async processFiles(files) {
+            const fileArray = Array.from(files).filter(f => /\.(ts|js)$/.test(f.name));
+            if (!fileArray.length)
+                return;
+            await this.esbuildReady;
+            const fileMap = new Map();
+            for (const file of fileArray)
+                fileMap.set(file.name, this.rewriteSourceImports(await file.text()));
+            const entryFile = this.resolveEntryPoint(fileMap);
+            try {
+                const js = await this.compile(entryFile, fileMap);
+                const { module, blobUrl } = await this.loadModule(js);
+                const classes = this.discoverClasses(module);
+                this.model.set(entryFile, {
+                    name: entryFile,
+                    size: fileMap.get(entryFile).length,
+                    classes,
+                    addedAt: new Date(),
+                    module,
+                    blobUrl,
+                });
+            }
+            catch (err) {
+                console.error(`[ImportedFiles] Failed to load plugin "${entryFile}":`, err);
+                throw err;
+            }
+        }
+        async compile(entryName, fileMap) {
+            const result = await this.esbuild.build({
+                entryPoints: [entryName],
+                bundle: true,
+                write: false,
+                format: "esm",
+                external: ["../../../../build/turbodombuilder.esm"],
+                plugins: [this.virtualFsPlugin(fileMap)],
+            });
+            let code = result.outputFiles[0].text;
+            code = this.rewriteExternals(code);
+            return code;
+        }
+        rewriteSourceImports(source) {
+            return source.replace(/import\s*\{([^}]+)\}\s*from\s*["'][^"']+["'];?/g, (_, imports) => {
+                const names = imports.split(",").map((s) => s.trim()).filter(Boolean);
+                return names.map((n) => `const ${n} = (window as any).__hostLibs?.${n};`).join("\n");
+            });
+        }
+        virtualFsPlugin(fileMap) {
+            return {
+                name: "virtual-fs",
+                setup(build) {
+                    build.onResolve({ filter: /.*/ }, args => {
+                        // Strip leading path and extension to match against known files
+                        const basename = args.path.replace(/^.*\//, "").replace(/\.[tj]s$/, "");
+                        const match = [...fileMap.keys()].find(k => k.replace(/\.[tj]s$/, "") === basename);
+                        if (match)
+                            return { path: match, namespace: "virtual" };
+                        // Everything else — external libs AND relative imports not in the
+                        // dropped file set — mark as external so esbuild skips them
+                        return { path: args.path, external: true };
+                    });
+                    build.onLoad({ filter: /.*/, namespace: "virtual" }, args => ({
+                        contents: fileMap.get(args.path),
+                        loader: args.path.endsWith(".ts") ? "ts" : "js",
+                    }));
+                },
+            };
+        }
+        rewriteExternals(code) {
+            // Rewrite any remaining import statements to pull from window.__hostLibs
+            // Covers both turbodombuilder and relative imports (e.g. Square from "../square/square")
+            return code.replace(/import\s*\{([^}]+)\}\s*from\s*["'][^"']+["'];?/g, (_, imports) => {
+                const names = imports.split(",").map((s) => s.trim()).filter(Boolean);
+                return names.map((n) => {
+                    // Try each lib namespace in __hostLibs until one has it
+                    return `const ${n} = Object.values(window.__hostLibs ?? {}).map(lib => lib?.${n}).find(Boolean);`;
+                }).join("\n");
+            });
+        }
+        async loadModule(js) {
+            const blob = new Blob([js], { type: "text/javascript" });
+            const blobUrl = URL.createObjectURL(blob);
+            const module = await import(blobUrl);
+            return { module, blobUrl };
+        }
+        discoverClasses(module) {
+            return Object.entries(module)
+                .filter(([, val]) => {
+                if (typeof val !== "function")
+                    return false;
+                try {
+                    // Check if it's a class (has a prototype with constructor)
+                    return typeof val.prototype?.constructor === "function";
+                }
+                catch {
+                    return false;
+                }
+            })
+                .map(([name]) => name);
+        }
+        resolveEntryPoint(fileMap) {
+            if (fileMap.size === 1)
+                return [...fileMap.keys()][0];
+            const allNames = new Set(fileMap.keys());
+            const imported = new Set();
+            for (const source of fileMap.values()) {
+                const re = /from\s+["'][^"']*\/([^"'/]+)["']/g;
+                let m;
+                while ((m = re.exec(source)) !== null) {
+                    // Match against known file names with or without extension
+                    for (const name of allNames) {
+                        if (name.startsWith(m[1].replace(/\.[tj]s$/, ""))) {
+                            imported.add(name);
+                        }
+                    }
+                }
+            }
+            const roots = [...allNames].filter(n => !imported.has(n));
+            return roots[0] ?? [...allNames][0];
+        }
+    }
+
+    let ImportedFilesModel = (() => {
+        let _classSuper = TurboModel;
+        let _filesHandler_decorators;
+        let _filesHandler_initializers = [];
+        let _filesHandler_extraInitializers = [];
+        return class ImportedFilesModel extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _filesHandler_decorators = [handler()];
+                __esDecorate$1(null, null, _filesHandler_decorators, { kind: "field", name: "filesHandler", static: false, private: false, access: { has: obj => "filesHandler" in obj, get: obj => obj.filesHandler, set: (obj, value) => { obj.filesHandler = value; } }, metadata: _metadata }, _filesHandler_initializers, _filesHandler_extraInitializers);
+                if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            filesHandler = __runInitializers$1(this, _filesHandler_initializers, void 0);
+            clear(clearData = true) {
+                for (const entry of this.values)
+                    URL.revokeObjectURL(entry.blobUrl);
+                super.clear(clearData);
+            }
+            deleteAction(data, key) {
+                const entry = this.getAction(data, key);
+                if (!entry)
+                    return;
+                URL.revokeObjectURL(entry.blobUrl);
+                super.deleteAction(data, key);
+            }
+            constructor() {
+                super(...arguments);
+                __runInitializers$1(this, _filesHandler_extraInitializers);
+            }
+        };
+    })();
+
+    class ImportedFiles extends TurboButtonPopup {
+        static defaultProperties = {
+            view: ImportedFilesView,
+            handlers: ImportedFilesFilesHandler,
+            model: ImportedFilesModel,
+            data: new Map()
+        };
+    }
+    define(ImportedFiles);
+
+    TurboIcon.defaultProperties.directory = "assets/icons";
     Canvas.create({ parent: document.body });
     Toolbar.create({
         parent: document.body,
         entries: [
+            ImportedFiles.create({ leftIcon: "files" }),
             TurboButton.create({ text: "Select", tools: SelectTool, classes: "demo-button" }),
             TurboButton.create({ text: "Add Square", tools: AddSquareTool, classes: "demo-button" }),
             Bucket.create({ text: "Bucket", classes: "demo-button" }),

@@ -14,14 +14,18 @@
 
 /* Tabs */
 .edit-object > :first-child {
-    display: flex;
-    gap: 8px;
     padding: 8px 12px;
     border-bottom: 1px solid #e0e0e0;
     background: #f5f5f5;
 }
 
-.edit-object > :first-child > .turbo-rich-element {
+.edit-object .tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+}
+
+.edit-object > .tabs .turbo-rich-element {
     padding: 4px 8px;
     border-radius: 100px;
     text-align: center;
@@ -30,12 +34,12 @@
     user-select: none;
 }
 
-.edit-object > :first-child > .turbo-rich-element:hover {
+.edit-object > .tabs .turbo-rich-element:hover {
     color: #333;
     background-color: #afeae5;
 }
 
-.edit-object > :first-child > .turbo-rich-element.selected {
+.edit-object > .tabs .turbo-rich-element.selected {
     color: #111;
     background-color: #97ede9;
 }
@@ -93,6 +97,7 @@
 /* MVC entries */
 .edit-object .turbo-rich-element {
     display: flex;
+    gap: 4px;
     align-items: center;
     padding: 5px 8px;
     border-radius: 3px;

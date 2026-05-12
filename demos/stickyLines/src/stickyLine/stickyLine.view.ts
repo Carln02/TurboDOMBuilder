@@ -13,12 +13,12 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
 
     public initialize(): void {
         super.initialize();
-        requestAnimationFrame(() => turbo(this).getSubstrateObjectList().add(this.line, this.startHandle, this.endHandle));
+        requestAnimationFrame(() => turbo(this).getEnforcerObjectList().add(this.line, this.startHandle, this.endHandle));
     }
 
     protected setupUIElements() {
         super.setupUIElements();
-        this.svg = element({tag: "svg", namespace: SvgNamespace, width: "100%", height: "100%"}) as SVGSVGElement;
+        this.svg = element({tag: "svg", namespace: SvgNamespace, width: "100%" as any, height: "100%" as any}) as SVGSVGElement;
         this.line = element({tag: "line", namespace: SvgNamespace}) as SVGLineElement;
         this.hitLine = element({tag: "line", namespace: SvgNamespace}) as SVGLineElement;
         turbo(this.hitLine).setAttribute("stroke", "transparent").setAttribute("pointer-events", "stroke");

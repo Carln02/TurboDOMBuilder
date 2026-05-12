@@ -5,7 +5,6 @@ import {TurboProperties} from "../../../turboFunctions/element/element.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {ValidElement} from "../../../types/element.types";
 import {TurboInput} from "./input";
-import {expose} from "../../../decorators/expose";
 
 /**
  * @group Components

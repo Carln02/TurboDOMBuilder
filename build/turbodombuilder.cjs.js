@@ -3949,6 +3949,7 @@ function getRegisteredEntry(instance) {
     return undefined;
 }
 
+const META = Symbol("__meta__");
 /**
  * @class TurboModel
  * @group MVC
@@ -4050,6 +4051,12 @@ let TurboModel = (() => {
             this._data = data;
             if (data)
                 this.initialize();
+        }
+        /**
+         * @description The metadata held by this model. Separate from this model's data.
+         */
+        get metadata() {
+            return this.nest(META);
         }
         /**
          * @constructor
@@ -4439,10 +4446,10 @@ let TurboModel = (() => {
             return this.keys.map(key => this.get(key));
         }
         /**
-         * @property size
+         * @property dataSize
          * @description Number of entries in the model.
          */
-        get size() {
+        get dataSize() {
             return this.keys.length;
         }
         /**
@@ -5185,6 +5192,12 @@ function setupMvcFunctions() {
         },
         configurable: true, enumerable: true,
     });
+    Object.defineProperty(TurboSelector.prototype, "metadata", {
+        get() {
+            return utils$8.peek(this.element)?.model?.metadata;
+        },
+        configurable: true, enumerable: true,
+    });
     Object.defineProperty(TurboSelector.prototype, "dataId", {
         get() {
             return utils$8.peek(this.element)?.model?.id;
@@ -5210,7 +5223,7 @@ function setupMvcFunctions() {
     });
     Object.defineProperty(TurboSelector.prototype, "dataSize", {
         get() {
-            return utils$8.peek(this.element)?.model?.size;
+            return utils$8.peek(this.element)?.model?.dataSize;
         },
         configurable: true, enumerable: true,
     });
@@ -5547,10 +5560,12 @@ function defineMvcAccessors(constructor) {
             enumerable: true,
         });
     });
-    Object.defineProperty(prototype, "dataSize", {
-        get() { return turbo(this).dataSize; },
-        configurable: true,
-        enumerable: true,
+    ["metadata", "dataSize"].forEach(fieldName => {
+        Object.defineProperty(prototype, fieldName, {
+            get() { return turbo(this)[fieldName]; },
+            configurable: true,
+            enumerable: true,
+        });
     });
 }
 
@@ -6111,24 +6126,19 @@ function setupElementFunctions() {
             TurboHeadlessElement.prototype, Element.prototype, HTMLElement.prototype, Node.prototype,
             SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype
         ]);
-        if (this.element instanceof TurboElement) {
-            seen.add("onAttach");
-            seen.add("onDetach");
-            seen.add("onAdopt");
-            seen.add("defaultFeedforwardProperties");
-        }
         for (const proto of [this.element, ...chain].reverse()) {
             if (builtinPrototypes.has(proto)) {
                 for (const key of Object.getOwnPropertyNames(proto))
                     seen.add(key);
                 continue;
             }
-            for (const key of Object.getOwnPropertyNames(this.element)) {
+            for (const key of Object.getOwnPropertyNames(proto)) {
                 if (seen.has(key) || key.startsWith("_"))
                     continue;
-                const desc = Object.getOwnPropertyDescriptor(this.element, key);
+                const desc = Object.getOwnPropertyDescriptor(proto, key);
                 if (!desc || typeof desc.value === "function" || (desc.get && !desc.set))
                     continue;
+                seen.add(key);
                 result[key] = this.element[key];
             }
         }
@@ -14231,19 +14241,90 @@ let TurboInputInputInteractor = (() => {
     };
 })();
 
+let TurboLabelElement = (() => {
+    let _classSuper = TurboRichElement;
+    let _instanceExtraInitializers = [];
+    let _defaultId_decorators;
+    let _defaultId_initializers = [];
+    let _defaultId_extraInitializers = [];
+    let _labelElement_decorators;
+    let _labelElement_initializers = [];
+    let _labelElement_extraInitializers = [];
+    let _get_element_decorators;
+    let _updateId_decorators;
+    return class TurboLabelElement extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _defaultId_decorators = [signal];
+            _labelElement_decorators = [signal];
+            _get_element_decorators = [signal];
+            _updateId_decorators = [effect];
+            __esDecorate(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _updateId_decorators, { kind: "method", name: "updateId", static: false, private: false, access: { has: obj => "updateId" in obj, get: obj => obj.updateId }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(null, null, _defaultId_decorators, { kind: "field", name: "defaultId", static: false, private: false, access: { has: obj => "defaultId" in obj, get: obj => obj.defaultId, set: (obj, value) => { obj.defaultId = value; } }, metadata: _metadata }, _defaultId_initializers, _defaultId_extraInitializers);
+            __esDecorate(null, null, _labelElement_decorators, { kind: "field", name: "labelElement", static: false, private: false, access: { has: obj => "labelElement" in obj, get: obj => obj.labelElement, set: (obj, value) => { obj.labelElement = value; } }, metadata: _metadata }, _labelElement_initializers, _labelElement_extraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        defaultId = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _defaultId_initializers, "turbo-id-" + randomId()));
+        labelElement = (__runInitializers(this, _defaultId_extraInitializers), __runInitializers(this, _labelElement_initializers, void 0));
+        content = __runInitializers(this, _labelElement_extraInitializers);
+        set label(value) {
+            if (!value || value.length === 0) {
+                if (this.labelElement)
+                    this.labelElement.remove();
+                return;
+            }
+            if (!this.labelElement) {
+                this.labelElement = element({ tag: "label" });
+                turbo(this).childHandler = this;
+                turbo(this).addChild(this.labelElement, 0);
+                if (this.content)
+                    turbo(this).childHandler = this.content;
+            }
+            this.labelElement.textContent = value;
+        }
+        get label() {
+            return this.labelElement?.textContent;
+        }
+        get element() {
+            return super.element;
+        }
+        set element(value) {
+            super.element = value;
+            if (this.element) {
+                if (!this.element.id)
+                    this.element.id = this.defaultId;
+                else if (this.labelElement)
+                    this.labelElement.htmlFor = this.element.id;
+            }
+        }
+        setupUIElements() {
+            super.setupUIElements();
+            this.content = div();
+        }
+        setupUILayout() {
+            super.setupUILayout();
+            turbo(this.content).addChild(turbo(this).childrenArray);
+            turbo(this).addChild([this.labelElement, this.content]);
+            turbo(this).childHandler = this.content;
+        }
+        updateId() {
+            if (this.element && !this.element.id)
+                this.element.id = this.defaultId;
+            if (this.labelElement)
+                this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
+        }
+    };
+})();
+define(TurboLabelElement);
+
 /**
  * @group Components
  * @category TurboInput
  */
 let TurboInput = (() => {
-    let _classSuper = TurboRichElement;
+    let _classSuper = TurboLabelElement;
     let _instanceExtraInitializers = [];
-    let _labelElement_decorators;
-    let _labelElement_initializers = [];
-    let _labelElement_extraInitializers = [];
-    let _defaultId_decorators;
-    let _defaultId_initializers = [];
-    let _defaultId_extraInitializers = [];
     let _locked_decorators;
     let _locked_initializers = [];
     let _locked_extraInitializers = [];
@@ -14268,12 +14349,9 @@ let TurboInput = (() => {
     let _size_extraInitializers = [];
     let _get_value_decorators;
     let _get_rawValue_decorators;
-    let _updateId_decorators;
     return class TurboInput extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-            _labelElement_decorators = [signal];
-            _defaultId_decorators = [signal];
             _locked_decorators = [signal];
             _selectTextOnFocus_decorators = [signal];
             _dynamicVerticalResize_decorators = [signal];
@@ -14284,7 +14362,6 @@ let TurboInput = (() => {
             _size_decorators = [expose("element")];
             _get_value_decorators = [signal];
             _get_rawValue_decorators = [signal];
-            _updateId_decorators = [effect];
             __esDecorate(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
             __esDecorate(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
@@ -14292,9 +14369,6 @@ let TurboInput = (() => {
             __esDecorate(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
             __esDecorate(this, null, _get_value_decorators, { kind: "getter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _get_rawValue_decorators, { kind: "getter", name: "rawValue", static: false, private: false, access: { has: obj => "rawValue" in obj, get: obj => obj.rawValue }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _updateId_decorators, { kind: "method", name: "updateId", static: false, private: false, access: { has: obj => "updateId" in obj, get: obj => obj.updateId }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(null, null, _labelElement_decorators, { kind: "field", name: "labelElement", static: false, private: false, access: { has: obj => "labelElement" in obj, get: obj => obj.labelElement, set: (obj, value) => { obj.labelElement = value; } }, metadata: _metadata }, _labelElement_initializers, _labelElement_extraInitializers);
-            __esDecorate(null, null, _defaultId_decorators, { kind: "field", name: "defaultId", static: false, private: false, access: { has: obj => "defaultId" in obj, get: obj => obj.defaultId, set: (obj, value) => { obj.defaultId = value; } }, metadata: _metadata }, _defaultId_initializers, _defaultId_extraInitializers);
             __esDecorate(null, null, _locked_decorators, { kind: "field", name: "locked", static: false, private: false, access: { has: obj => "locked" in obj, get: obj => obj.locked, set: (obj, value) => { obj.locked = value; } }, metadata: _metadata }, _locked_initializers, _locked_extraInitializers);
             __esDecorate(null, null, _selectTextOnFocus_decorators, { kind: "field", name: "selectTextOnFocus", static: false, private: false, access: { has: obj => "selectTextOnFocus" in obj, get: obj => obj.selectTextOnFocus, set: (obj, value) => { obj.selectTextOnFocus = value; } }, metadata: _metadata }, _selectTextOnFocus_initializers, _selectTextOnFocus_extraInitializers);
             __esDecorate(null, null, _dynamicVerticalResize_decorators, { kind: "field", name: "dynamicVerticalResize", static: false, private: false, access: { has: obj => "dynamicVerticalResize" in obj, get: obj => obj.dynamicVerticalResize, set: (obj, value) => { obj.dynamicVerticalResize = value; } }, metadata: _metadata }, _dynamicVerticalResize_initializers, _dynamicVerticalResize_extraInitializers);
@@ -14310,13 +14384,11 @@ let TurboInput = (() => {
             const value = properties.value;
             const input = super.customCreate({ ...properties, elementTag, element,
                 value: undefined, input: undefined, inputTag: undefined });
-            input.value = value;
+            if (value !== undefined && value !== null)
+                input.value = value;
             return input;
         }
-        labelElement = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _labelElement_initializers, void 0));
-        content = __runInitializers(this, _labelElement_extraInitializers);
-        defaultId = __runInitializers(this, _defaultId_initializers, "turbo-input-" + randomId());
-        locked = (__runInitializers(this, _defaultId_extraInitializers), __runInitializers(this, _locked_initializers, false));
+        locked = (__runInitializers(this, _instanceExtraInitializers), __runInitializers(this, _locked_initializers, false));
         selectTextOnFocus = (__runInitializers(this, _locked_extraInitializers), __runInitializers(this, _selectTextOnFocus_initializers, false));
         dynamicVerticalResize = (__runInitializers(this, _selectTextOnFocus_extraInitializers), __runInitializers(this, _dynamicVerticalResize_initializers, false));
         inputRegexCheck = __runInitializers(this, _dynamicVerticalResize_extraInitializers);
@@ -14326,24 +14398,6 @@ let TurboInput = (() => {
         onFocus = new Delegate();
         onBlur = new Delegate();
         onInput = new Delegate();
-        set label(value) {
-            if (!value || value.length === 0) {
-                if (this.labelElement)
-                    this.labelElement.remove();
-                return;
-            }
-            if (!this.labelElement) {
-                this.labelElement = element({ tag: "label" });
-                turbo(this).childHandler = this;
-                turbo(this).addChild(this.labelElement, 0);
-                if (this.content)
-                    turbo(this).childHandler = this.content;
-            }
-            this.labelElement.textContent = value;
-        }
-        get label() {
-            return this.labelElement?.textContent;
-        }
         get input() {
             return this.element;
         }
@@ -14361,12 +14415,6 @@ let TurboInput = (() => {
                     value.type = "text";
             }
             super.element = value;
-            if (this.element) {
-                if (!this.element.id)
-                    this.element.id = this.defaultId;
-                else if (this.labelElement)
-                    this.labelElement.htmlFor = this.element.id;
-            }
         }
         #type_accessor_storage = __runInitializers(this, _type_initializers, void 0);
         get type() { return this.#type_accessor_storage; }
@@ -14380,16 +14428,6 @@ let TurboInput = (() => {
         #size_accessor_storage = (__runInitializers(this, _pattern_extraInitializers), __runInitializers(this, _size_initializers, void 0));
         get size() { return this.#size_accessor_storage; }
         set size(value) { this.#size_accessor_storage = value; }
-        setupUIElements() {
-            super.setupUIElements();
-            this.content = div();
-        }
-        setupUILayout() {
-            super.setupUILayout();
-            turbo(this.content).addChild(turbo(this).childrenArray);
-            turbo(this).addChild([this.labelElement, this.content]);
-            turbo(this).childHandler = this.content;
-        }
         setupChangedCallbacks() {
             super.setupChangedCallbacks();
             this.emitter.add("processValue", () => this.processInputValue());
@@ -14485,12 +14523,6 @@ let TurboInput = (() => {
                     out = candidate;
             }
             return out;
-        }
-        updateId() {
-            if (this.element && !this.element.id)
-                this.element.id = this.defaultId;
-            if (this.labelElement)
-                this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
         }
         constructor() {
             super(...arguments);
@@ -17146,6 +17178,7 @@ exports.TurboInput = TurboInput;
 exports.TurboInteractor = TurboInteractor;
 exports.TurboKeyEvent = TurboKeyEvent;
 exports.TurboKeyEventName = TurboKeyEventName;
+exports.TurboLabelElement = TurboLabelElement;
 exports.TurboMap = TurboMap;
 exports.TurboMarkingMenu = TurboMarkingMenu;
 exports.TurboModel = TurboModel;

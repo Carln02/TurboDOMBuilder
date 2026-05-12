@@ -138,6 +138,8 @@ declare module "../turboSelector" {
          */
         data: any;
 
+        readonly metadata: TurboModel<object>;
+
         /**
          * @description The ID of the main data block of the element's model.
          */

@@ -44,6 +44,8 @@ interface TurboElementMvcInterface<
      */
     data: DataType;
 
+    readonly metadata: TurboModel<object>;
+
     /**
      * @description The ID of the main data block (if any) of the element, taken from its model (if any).
      */

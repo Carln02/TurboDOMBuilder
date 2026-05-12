@@ -96,7 +96,8 @@ export class TurboEventManagerPointerOperator extends TurboOperator<TurboEventMa
 
             if (this.model.activePointers.size === 1 && prevPos) {
                 const delta = currentPos.sub(prevPos);
-                this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta, eventName: TurboEventName.scroll});
+                const target = document.elementFromPoint(currentPos.x, currentPos.y) || document;
+                this.emitter.fire("dispatchEvent", target, TurboWheelEvent, {delta, eventName: TurboEventName.scroll});
             } else if (this.model.activePointers.size === 2 && prevPos) {
                 const otherId = [...this.model.activePointers].find(id => id !== e.pointerId);
                 const otherPos = this.model.previousPositions.get(otherId);
@@ -105,10 +106,11 @@ export class TurboEventManagerPointerOperator extends TurboOperator<TurboEventMa
                     const currentCenter = Point.midPoint(currentPos, otherPos);
                     const scrollDelta = currentCenter.sub(prevCenter);
                     const pinchDelta = Point.dist(currentPos, otherPos) - Point.dist(prevPos, otherPos);
+                    const centerTarget = document.elementFromPoint(currentCenter.x, currentCenter.y) || document;
                     if (scrollDelta.x !== 0 || scrollDelta.y !== 0)
-                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta: scrollDelta, eventName: TurboEventName.scroll});
+                        this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, {delta: scrollDelta, eventName: TurboEventName.scroll});
                     if (pinchDelta !== 0)
-                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, {delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch});
+                        this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, {delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch});
                 }
             }
         }

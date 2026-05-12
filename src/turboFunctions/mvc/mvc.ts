@@ -90,6 +90,13 @@ export function setupMvcFunctions() {
         configurable: true, enumerable: true,
     });
 
+    Object.defineProperty(TurboSelector.prototype, "metadata", {
+        get(this: TurboSelector) {
+            return utils.peek(this.element)?.model?.metadata;
+        },
+        configurable: true, enumerable: true,
+    });
+
     Object.defineProperty(TurboSelector.prototype, "dataId", {
         get(this: TurboSelector) {
             return utils.peek(this.element)?.model?.id;
@@ -115,7 +122,7 @@ export function setupMvcFunctions() {
 
     Object.defineProperty(TurboSelector.prototype, "dataSize", {
         get(this: TurboSelector) {
-            return utils.peek(this.element)?.model?.size;
+            return utils.peek(this.element)?.model?.dataSize;
         },
         configurable: true, enumerable: true,
     });

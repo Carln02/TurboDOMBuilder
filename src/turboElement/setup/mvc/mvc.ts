@@ -19,9 +19,12 @@ export function defineMvcAccessors<Type extends new (...args: any[]) => any>(con
         });
     });
 
-    Object.defineProperty(prototype, "dataSize", {
-        get() { return turbo(this).dataSize; },
-        configurable: true,
-        enumerable: true,
+
+    ["metadata", "dataSize"].forEach(fieldName => {
+        Object.defineProperty(prototype, fieldName, {
+            get() { return turbo(this)[fieldName]; },
+            configurable: true,
+            enumerable: true,
+        });
     });
 }

@@ -102,6 +102,10 @@ import {TurboNumericalInput} from "./turboComponents/basics/input/numericalInput
 export {TurboNumericalInput};
 import {TurboNumericalInputProperties} from "./turboComponents/basics/input/numericalInput/numericalInput.types";
 export {TurboNumericalInputProperties};
+import {TurboLabelElement} from "./turboComponents/basics/labelElement/labelElement";
+export {TurboLabelElement};
+import {TurboLabelElementProperties} from "./turboComponents/basics/labelElement/labelElement.types";
+export {TurboLabelElementProperties};
 import {TurboRichElement} from "./turboComponents/basics/richElement/richElement";
 export {TurboRichElement};
 import {TurboRichElementProperties} from "./turboComponents/basics/richElement/richElement.types";

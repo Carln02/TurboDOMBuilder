@@ -11,6 +11,8 @@ import {TurboHandler} from "../handler/handler";
 import {FlatKeyType, KeyType} from "../../types/basic.types";
 import {addRegistryCategory, define} from "../../decorators/define/define";
 
+const META = Symbol("__meta__");
+
 /**
  * @class TurboModel
  * @group MVC
@@ -115,6 +117,13 @@ class TurboModel<
         this.clear(false);
         this._data = data;
         if (data) this.initialize();
+    }
+
+    /**
+     * @description The metadata held by this model. Separate from this model's data.
+     */
+    public get metadata(): TurboModel<object> {
+        return this.nest(META);
     }
 
     /**
@@ -598,10 +607,10 @@ class TurboModel<
     }
 
     /**
-     * @property size
+     * @property dataSize
      * @description Number of entries in the model.
      */
-    public get size(): number {
+    public get dataSize(): number {
         return this.keys.length;
     }
 

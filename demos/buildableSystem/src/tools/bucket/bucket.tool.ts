@@ -1,4 +1,4 @@
-import {TurboTool, TurboEvent, Propagation, behavior, Color} from "../../../../../build/turbodombuilder.esm";
+import {TurboTool, TurboEvent, Propagation, behavior, Color, define} from "../../../../../build/turbodombuilder.esm";
 import {Bucket} from "./bucket";
 
 //Bucket tool
@@ -13,3 +13,4 @@ export class BucketTool extends TurboTool<Bucket> {
         }
     }
 }
+define(BucketTool);

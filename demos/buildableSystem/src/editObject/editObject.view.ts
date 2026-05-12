@@ -1,9 +1,10 @@
-import {TurboView, TurboSelect, div, turbo, untrack, effect, TurboInput, getRegisteredEntry, TurboRichElement} from "../../../../build/turbodombuilder.esm";
+import {TurboView, TurboSelect, div, turbo, h3, untrack, effect, TurboInput, getRegisteredEntry, TurboRichElement} from "../../../../build/turbodombuilder.esm";
 import {EditObject} from "./editObject";
 
 export class EditObjectView extends TurboView<EditObject> {
     private readonly tabs: Map<string, HTMLElement> = new Map();
 
+    private tagName: HTMLElement;
     private tabSelector: TurboSelect;
     private tabsParent: HTMLElement;
 
@@ -13,6 +14,7 @@ export class EditObjectView extends TurboView<EditObject> {
     protected setupUIElements() {
         super.setupUIElements();
 
+        this.tagName = h3();
         this.tabs.set("Properties", div({classes: "properties-panel"}));
         this.tabs.set("MVC", div({classes: "mvc-panel"}));
 
@@ -31,7 +33,11 @@ export class EditObjectView extends TurboView<EditObject> {
 
     protected setupUILayout() {
         super.setupUILayout();
-        turbo(this).addChild([this.tabsParent, this.panelsParent]);
+        turbo(this).addChild([div({children: this.tagName}), this.tabsParent, this.panelsParent]);
+    }
+
+    @effect updateTag() {
+        this.tagName.textContent = this.element.anchor.tagName;
     }
 
     @effect updateProperties() {
@@ -44,7 +50,7 @@ export class EditObjectView extends TurboView<EditObject> {
         untrack(() => {
             const properties = turbo(anchor).getFields();
             for (const [key, value] of Object.entries(properties)) {
-                if (value === undefined || value === null) continue;
+
                 const input = TurboInput.create({label: key, parent: panel, value});
                 let timer: number;
                 input.onInput.add(() => {
@@ -52,7 +58,7 @@ export class EditObjectView extends TurboView<EditObject> {
                     timer = requestAnimationFrame(() => anchor[key] = input.value);
                 });
             }
-        })
+        });
     }
 
     @effect updateMVC() {
@@ -63,16 +69,22 @@ export class EditObjectView extends TurboView<EditObject> {
         for (const value of Object.values(mvc)) {
             if (value === undefined) continue;
             if (Array.isArray(value)) {
-                for (const entry of value) {
-                    const registryEntry = getRegisteredEntry(entry);
-                    if (!registryEntry) continue;
-                    TurboRichElement.create({text: registryEntry.name, parent: panel});
-                }
+                for (const entry of value) this.createEntry(entry, panel);
                 continue;
             }
-            const registryEntry = getRegisteredEntry(value);
-            if (!registryEntry) continue;
-            TurboRichElement.create({text: registryEntry.name, parent: panel});
+            this.createEntry(value, panel);
         }
+    }
+
+    private createEntry(value: any, parent: HTMLElement) {
+        const registryEntry = getRegisteredEntry(value);
+        if (!registryEntry) return;
+        const element = TurboRichElement.create({
+            leftIcon: registryEntry.category,
+            text: registryEntry.name,
+            rightIcon: "trash",
+            parent: parent
+        });
+        // element.rightIcon.iconColor =
     }
 }
