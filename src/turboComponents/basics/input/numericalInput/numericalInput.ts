@@ -28,7 +28,7 @@ class TurboNumericalInput<
     public max: number;
 
     public get value(): number {
-        return Number.parseFloat(this.element.value) / this.multiplier;
+        return this.element ? Number.parseFloat(this.element.value) / this.multiplier : undefined;
     }
 
     public set value(value: string | number) {

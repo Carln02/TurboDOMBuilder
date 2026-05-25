@@ -5,11 +5,6 @@ import {CloneElementOptions, FeedforwardProperties} from "../../../turboFunction
  * @internal
  */
 interface TurboElementDefaultInterface {
-    /**
-     * @description Whether the element is selected or not.
-     */
-    selected: boolean;
-
     readonly properties: object;
 
     /**

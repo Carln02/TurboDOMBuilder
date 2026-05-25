@@ -1,10 +1,10 @@
 import {describe, it, expect} from "vitest";
-import {operator, handler, interactor, tool, enforcer} from "../mvc";
+import {operator, handler, interactor, tool, constrainer} from "../mvc";
 import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
-import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../mvc/constrainer/constrainer";
 import {TurboHeadlessElement} from "../../turboElement/turboHeadlessElement/turboHeadlessElement";
 import {TurboModel} from "../../mvc/model/model";
 
@@ -177,36 +177,36 @@ describe("MVC decorators", () => {
         });
     });
 
-    describe("enforcer decorator", () => {
-        it("infers key from <name>Enforcer and fetches via getEnforcer()", () => {
-            class GridEnforcer extends TurboEnforcer {}
+    describe("constrainer decorator", () => {
+        it("infers key from <name>Constrainer and fetches via getConstrainer()", () => {
+            class GridConstrainer extends TurboConstrainer {}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {enforcers: GridEnforcer};
-                @enforcer() gridEnforcer!: unknown;
+                static defaultProperties = {constrainers: GridConstrainer};
+                @constrainer() gridConstrainer!: unknown;
             }
 
             const h = Host.create();
-            expect(h.gridEnforcer).toBeInstanceOf(GridEnforcer);
+            expect(h.gridConstrainer).toBeInstanceOf(GridConstrainer);
         });
 
-        it("uses explicit name for enforcer", () => {
-            class MyEnforcer extends TurboEnforcer {keyName = "my"}
+        it("uses explicit name for constrainer", () => {
+            class MyConstrainer extends TurboConstrainer {keyName = "my"}
             class Host extends TurboHeadlessElement {
-                static defaultProperties = {enforcers: MyEnforcer};
-                @enforcer("my") local!: unknown;
+                static defaultProperties = {constrainers: MyConstrainer};
+                @constrainer("my") local!: unknown;
             }
 
             const h = Host.create();
-            expect(h.local).toBeInstanceOf(MyEnforcer);
+            expect(h.local).toBeInstanceOf(MyConstrainer);
         });
 
-        it("throws when enforcer not found", () => {
+        it("throws when constrainer not found", () => {
             class Host extends TurboHeadlessElement {
-                @enforcer() missingEnforcer!: unknown;
+                @constrainer() missingConstrainer!: unknown;
             }
 
             const h = Host.create();
-            expect(() => (h as any).missingEnforcer).toThrow(/Enforcer "missing"/);
+            expect(() => (h as any).missingConstrainer).toThrow(/Constrainer "missing"/);
         });
     });
 })

@@ -83,11 +83,8 @@ class TurboObserver<
             if (properties.onUpdated) properties.onUpdated(data, instance, self, ...keys);
             else {
                 if (typeof instance !== "object") return;
-                if ("model" in instance && instance.model instanceof TurboModel) instance.model.set(data, ...keys);
-                else {
-                    if ("data" in instance) instance.data = data;
-                    if ("dataId" in instance) instance.dataId = keys[keys.length - 1].toString();
-                }
+                if ("data" in instance) instance.data = data;
+                if ("dataId" in instance) instance.dataId = keys[keys.length - 1].toString();
             }
         });
 

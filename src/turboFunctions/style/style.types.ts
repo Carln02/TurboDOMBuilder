@@ -1,4 +1,5 @@
 import {PartialRecord} from "../../types/basic.types";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 /**
  * @type {StylesRoot}
@@ -25,6 +26,16 @@ declare module "../turboSelector" {
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
          */
         readonly closestRoot: StylesRoot;
+
+        /**
+         * @description Whether the element is selected or not. Setting it on an Element will accordingly toggle on it
+         * the "selected" CSS class (or whichever default selected class was set for this element) and update the UI.
+         */
+        selected: boolean;
+
+        defaultSelectedClasses: string | string[];
+
+        readonly onSelected: Delegate<(value: boolean) => void>;
 
         /**
          * @function setStyle

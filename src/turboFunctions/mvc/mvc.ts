@@ -1,6 +1,6 @@
 import {TurboSelector} from "../turboSelector";
 import {MvcFunctionsUtils} from "./mvc.utils";
-import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../mvc/constrainer/constrainer";
 import {TurboTool} from "../../mvc/tool/tool";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboHandler} from "../../mvc/handler/handler";
@@ -9,7 +9,7 @@ import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {turbo} from "../turboFunctions";
 import {MvcGenerationProperties, MvcProperties} from "./mvc.types";
 
-export const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "enforcers"];
+export const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "constrainers"];
 const utils = new MvcFunctionsUtils();
 
 export function setupMvcFunctions() {
@@ -24,7 +24,7 @@ export function setupMvcFunctions() {
                 handlers: Array.from(data.model?.handlers?.values() ?? []),
                 interactors: Array.from(data.interactors?.values() ?? []),
                 tools: Array.from(data.tools?.values() ?? []),
-                enforcers: Array.from(data.enforcers?.values() ?? []),
+                constrainers: Array.from(data.constrainers?.values() ?? []),
             };
         }, configurable: true, enumerable: true,
     });
@@ -178,13 +178,13 @@ export function setupMvcFunctions() {
         configurable: true, enumerable: true,
     });
 
-    Object.defineProperty(TurboSelector.prototype, "enforcers", {
+    Object.defineProperty(TurboSelector.prototype, "constrainers", {
         get(this: TurboSelector) {
-            return Array.from(utils.peek(this.element)?.enforcers.values() ?? []);
+            return Array.from(utils.peek(this.element)?.constrainers.values() ?? []);
         },
         set(this: TurboSelector, value) {
             if (!this.element) return;
-            utils.generateInstances(value, this.element).forEach(instance => this.addEnforcer(instance));
+            utils.generateInstances(value, this.element).forEach(instance => this.addConstrainer(instance));
             utils.linkPieces(this.element);
         },
         configurable: true, enumerable: true,
@@ -213,7 +213,7 @@ export function setupMvcFunctions() {
         mvc.operators.forEach(operator => operator.initialize());
         mvc.interactors.forEach(interactor => interactor.initialize());
         mvc.tools.forEach(tool => tool.initialize());
-        mvc.enforcers.forEach(enforcer => enforcer.initialize());
+        mvc.constrainers.forEach(constrainer => constrainer.initialize());
         mvc.model?.initialize();
         return this;
     }
@@ -260,7 +260,7 @@ export function setupMvcFunctions() {
         processArray("handlers");
         processArray("interactors");
         processArray("tools");
-        processArray("enforcers");
+        processArray("constrainers");
         return difference;
     }
 
@@ -345,22 +345,22 @@ export function setupMvcFunctions() {
         return this;
     };
 
-    TurboSelector.prototype.getEnforcer = function (this: TurboSelector, key: string) {
-        return utils.peek(this.element)?.enforcers.get(key);
+    TurboSelector.prototype.getConstrainer = function (this: TurboSelector, key: string) {
+        return utils.peek(this.element)?.constrainers.get(key);
     };
 
-    TurboSelector.prototype.addEnforcer = function (this: TurboSelector, enforcer: TurboEnforcer) {
+    TurboSelector.prototype.addConstrainer = function (this: TurboSelector, constrainer: TurboConstrainer) {
         if (!this.element) return this;
-        if (!enforcer.keyName) enforcer.keyName =
-            utils.extractClassEssenceName(this.element, enforcer.constructor as any, "Enforcer");
-        utils.data(this.element).enforcers.set(enforcer.keyName, enforcer);
-        utils.updateEnforcer(this.element, enforcer);
+        if (!constrainer.keyName) constrainer.keyName =
+            utils.extractClassEssenceName(this.element, constrainer.constructor as any, "Constrainer");
+        utils.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+        utils.updateConstrainer(this.element, constrainer);
         return this;
     };
 
-    TurboSelector.prototype.removeEnforcer = function (this: TurboSelector, keyOrInstance: string | TurboEnforcer) {
+    TurboSelector.prototype.removeConstrainer = function (this: TurboSelector, keyOrInstance: string | TurboConstrainer) {
         if (!this.element) return this;
-        utils.removeInstance(this.element, "enforcer", keyOrInstance);
+        utils.removeInstance(this.element, "constrainer", keyOrInstance);
         return this;
     };
 }

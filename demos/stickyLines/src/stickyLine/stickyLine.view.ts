@@ -13,7 +13,7 @@ export class StickyLineView extends TurboView<StickyLine, StickyLineModel> {
 
     public initialize(): void {
         super.initialize();
-        requestAnimationFrame(() => turbo(this).getEnforcerObjectList().add(this.line, this.startHandle, this.endHandle));
+        requestAnimationFrame(() => turbo(this).getConstrainerObjectList().add(this.line, this.startHandle, this.endHandle));
     }
 
     protected setupUIElements() {

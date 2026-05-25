@@ -1,7 +1,8 @@
 import {alphabeticalSorting} from "../../../utils/dataManipulation/misc";
 import {stringify} from "../../../utils/dataManipulation/string";
 
-class TurboNestedMapNode<KeyType, ValueType> extends Map<KeyType, ValueType> {}
+class TurboNestedMapNode<KeyType, ValueType> extends Map<KeyType, ValueType> {
+}
 
 /**
  * @class TurboNestedMap
@@ -41,11 +42,12 @@ class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
      * @function getFlat
      * @description Retrieve the value at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
      */
-    public getFlat(flatKey: number | string): ValueType {
-        const keys = this.scopeKey(flatKey);
-        if (keys.length) return this.get(...keys) as ValueType;
+    public getFlat(flatKey: number | string, depth?: number): ValueType {
+        const keys = this.scopeKey(flatKey, depth);
+        if (keys?.length) return this.get(...keys) as ValueType;
     }
 
     /**
@@ -108,10 +110,11 @@ class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
      * @description Store a value at the given flat key.
      * @param {ValueType} value - The value to store.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      */
-    public setFlat(value: ValueType, flatKey: number | string) {
-        const keys = this.scopeKey(flatKey);
-        if (keys.length) this.set(value, ...keys);
+    public setFlat(value: ValueType, flatKey: number | string, depth?: number) {
+        const keys = this.scopeKey(flatKey, depth);
+        if (keys?.length) this.set(value, ...keys);
     }
 
     /*
@@ -137,11 +140,12 @@ class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
      * @function hasFlat
      * @description Check whether an entry exists at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {boolean}
      */
-    public hasFlat(flatKey: number | string): boolean {
-        const keys = this.scopeKey(flatKey);
-        return keys.length ? this.has(...keys) : false;
+    public hasFlat(flatKey: number | string, depth?: number): boolean {
+        const keys = this.scopeKey(flatKey, depth);
+        return keys?.length ? this.has(...keys) : false;
     }
 
     /**
@@ -332,9 +336,9 @@ class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
 
         if (compatible.every(k => typeof k === "number")) {
             let index = 0;
-            const allLeafPaths = this.findPaths(this.nestedMap);
+            const allLeafPaths = this.findPaths(this.nestedMap).filter(p => p.length === keys.length);
             for (const path of allLeafPaths) {
-                if (path.length === keys.length && path.every((k, i) => k === keys[i])) return index;
+                if (path.every((k, i) => k === keys[i])) return index;
                 index++;
             }
         }
@@ -348,16 +352,19 @@ class TurboNestedMap<ValueType = any, KeyType = string | symbol | number> {
      * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
      * - A numeric global leaf index becomes the corresponding numeric path.
      * @param {number | string} flatKey - The flat key to convert.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
      */
-    public scopeKey(flatKey: number | string): KeyType[] {
+    public scopeKey(flatKey: number | string, depth?: number): KeyType[] {
         if (typeof flatKey === "string") {
             const parts = flatKey.split("|") as any;
             return parts.length >= 1 ? parts : undefined;
         }
 
         if (typeof flatKey === "number") {
-            const allLeafPaths = this.findPaths(this.nestedMap);
+            const allLeafPaths = depth !== undefined
+                ? this.findPaths(this.nestedMap).filter(p => p.length === depth)
+                : this.findPaths(this.nestedMap);
             if (flatKey < 0) return allLeafPaths[0];
             if (flatKey >= allLeafPaths.length) return allLeafPaths[allLeafPaths.length - 1];
             return allLeafPaths[flatKey];

@@ -1,5 +1,5 @@
 import {
-    $, div, TurboButton,
+    $, div, span, TurboButton,
     TurboSelect, TurboRichElement
 } from "../../../../../build/turbodombuilder.esm";
 import { box } from "../../demoBox/demoBox";
@@ -224,6 +224,66 @@ function selectTestTabs() {
     b.addSubBox("Panels", tabPanels);
 }
 
+/* 9) entriesClasses / selectedEntriesClasses styling */
+function selectTest9() {
+    const sel = TurboSelect.create({
+        values: ["Alpha", "Beta", "Gamma"],
+        entriesClasses: "entry-pill",
+        selectedEntriesClasses: "entry-pill--active",
+    });
+    const host = div({classes: "select-parent"});
+    sel.parent = host;
+
+    box("TurboSelect — entriesClasses / selectedEntriesClasses")
+        .addSubBox("styled entries (check DevTools for classes)", host)
+        .addContent(TurboButton.create({
+            text: "Change entriesClasses → 'entry-alt'",
+            onClick: () => sel.entriesClasses = "entry-alt"
+        }))
+        .addContent(TurboButton.create({
+            text: "Change selectedEntriesClasses → 'entry-alt--active'",
+            onClick: () => sel.selectedEntriesClasses = "entry-alt--active"
+        }))
+        .addContent(TurboButton.create({
+            text: "Log classes",
+            onClick: () => sel.entries.forEach(e =>
+                console.log((e as HTMLElement).className, "selected:", sel.isSelected(e as any))
+            )
+        }));
+}
+
+/* 10) clear() + onEntryRemoved */
+function selectTest10() {
+    const log = span({text: "removed: (none)"});
+
+    const sel = TurboSelect.create({ values: ["P", "Q", "R", "S"] });
+    sel.onEntryRemoved = (entry) => {
+        log.textContent = "removed: " + ((entry as HTMLElement).textContent?.trim() ?? "?");
+    };
+
+    const host = div({classes: "select-parent"});
+    sel.parent = host;
+
+    box("TurboSelect — clear() + onEntryRemoved")
+        .addSubBox("host", host)
+        .addContent(log)
+        .addContent(TurboButton.create({
+            text: "Remove last node",
+            onClick: () => {
+                const last = host.lastElementChild;
+                if (last) last.remove();
+            }
+        }))
+        .addContent(TurboButton.create({
+            text: "clear() all",
+            onClick: () => sel.clear()
+        }))
+        .addContent(TurboButton.create({
+            text: "Reset values",
+            onClick: () => sel.values = ["P", "Q", "R", "S"]
+        }));
+}
+
 export function setupSelectTests() {
     selectTest1();
     selectTest2();
@@ -233,5 +293,7 @@ export function setupSelectTests() {
     selectTest6();
     selectTest7();
     selectTest8();
+    selectTest9();
+    selectTest10();
     selectTestTabs();
 }

@@ -10,7 +10,7 @@ import {element} from "../elementCreation/element";
 import {turbo} from "../turboFunctions/turboFunctions";
 import {getPrototypeChain} from "../utils/dataManipulation/prototype";
 import {isUndefined} from "../utils/dataManipulation/misc";
-import {kebabToCamelCase} from "../utils/dataManipulation/string";
+import {kebabToCamelCase} from "../utils/conversions/string";
 import {parse} from "@ungap/structured-clone/json";
 import {addRegistryCategory} from "../decorators/define/define";
 

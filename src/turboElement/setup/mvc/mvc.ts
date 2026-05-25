@@ -3,7 +3,7 @@ import {turbo} from "../../../turboFunctions/turboFunctions";
 
 /**
  * Define MVC-style accessors on a class prototype via Object.defineProperty.
- * Adds: view, model, emitter, operators, handlers, interactors, tools, enforcers,
+ * Adds: view, model, emitter, operators, handlers, interactors, tools, constrainers,
  * data, dataId, dataIndex, dataSize, and all add/get/remove methods.
  */
 export function defineMvcAccessors<Type extends new (...args: any[]) => any>(constructor: Type) {
@@ -20,7 +20,7 @@ export function defineMvcAccessors<Type extends new (...args: any[]) => any>(con
     });
 
 
-    ["metadata", "dataSize"].forEach(fieldName => {
+    ["dataSize"].forEach(fieldName => {
         Object.defineProperty(prototype, fieldName, {
             get() { return turbo(this)[fieldName]; },
             configurable: true,

@@ -1,7 +1,7 @@
 import {
-    TurboEnforcer,
+    TurboConstrainer,
     solver,
-    EnforcerCallbackProperties,
+    ConstrainerCallbackProperties,
     Point,
     DefaultEventName,
     turbo,
@@ -11,8 +11,8 @@ import {StickyLine} from "./stickyLine";
 import {StickyLineView} from "./stickyLine.view";
 import {StickyLineModel} from "./stickyLine.model";
 
-export class StickyLineEnforcer extends TurboEnforcer<StickyLine, StickyLineView, StickyLineModel> {
-    public enforcerName = "stickyLine";
+export class StickyLineConstrainer extends TurboConstrainer<StickyLine, StickyLineView, StickyLineModel> {
+    public constrainerName = "stickyLine";
 
     protected objectData: WeakMap<object, number> = new WeakMap();
 
@@ -27,7 +27,7 @@ export class StickyLineEnforcer extends TurboEnforcer<StickyLine, StickyLineView
         });
     }
 
-    @solver() protected ensureAlignment(properties: EnforcerCallbackProperties) {
+    @solver() protected ensureAlignment(properties: ConstrainerCallbackProperties) {
         const target = properties.target as Element;
         if (!target || !(target instanceof Element) || target instanceof StickyLine) return;
 

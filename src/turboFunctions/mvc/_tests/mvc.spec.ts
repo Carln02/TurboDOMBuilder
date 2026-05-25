@@ -7,7 +7,7 @@ import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
-import {TurboEnforcer} from "../../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../../mvc/constrainer/constrainer";
 
 // ------------------------------------------------------------------
 // Helpers
@@ -39,7 +39,7 @@ class MyTool extends TurboTool {
     public override initialize(): void { super.initialize(); this.inits++; }
 }
 
-class MyEnforcer extends TurboEnforcer {
+class MyConstrainer extends TurboConstrainer {
     public inits = 0;
     public override initialize(): void { super.initialize(); this.inits++; }
 }
@@ -288,19 +288,19 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // enforcers getter / setter
+    // constrainers getter / setter
     // ------------------------------------------------------------------
 
-    describe("enforcers getter / setter", () => {
-        it("enforcers getter returns an empty array on a fresh selector", () => {
-            expect(sel().enforcers).toEqual([]);
+    describe("constrainers getter / setter", () => {
+        it("constrainers getter returns an empty array on a fresh selector", () => {
+            expect(sel().constrainers).toEqual([]);
         });
 
-        it("enforcers setter from constructor creates instances", () => {
+        it("constrainers setter from constructor creates instances", () => {
             const s = sel();
-            s.enforcers = MyEnforcer as any;
-            expect(s.enforcers).toHaveLength(1);
-            expect(s.enforcers[0]).toBeInstanceOf(MyEnforcer);
+            s.constrainers = MyConstrainer as any;
+            expect(s.constrainers).toHaveLength(1);
+            expect(s.constrainers[0]).toBeInstanceOf(MyConstrainer);
         });
     });
 
@@ -628,41 +628,41 @@ describe("TurboSelector MVC functions", () => {
     });
 
     // ------------------------------------------------------------------
-    // addEnforcer / getEnforcer / removeEnforcer
+    // addConstrainer / getConstrainer / removeConstrainer
     // ------------------------------------------------------------------
 
-    describe("addEnforcer / getEnforcer / removeEnforcer", () => {
-        it("addEnforcer stores the enforcer and makes it retrievable", () => {
+    describe("addConstrainer / getConstrainer / removeConstrainer", () => {
+        it("addConstrainer stores the constrainer and makes it retrievable", () => {
             const s = sel();
-            const sub = new MyEnforcer({element: s.element} as any);
+            const sub = new MyConstrainer({element: s.element} as any);
             sub.keyName = "myS";
-            s.addEnforcer(sub);
-            expect(s.getEnforcer("myS")).toBe(sub);
+            s.addConstrainer(sub);
+            expect(s.getConstrainer("myS")).toBe(sub);
         });
 
-        it("removeEnforcer by key removes it", () => {
+        it("removeConstrainer by key removes it", () => {
             const s = sel();
-            const sub = new MyEnforcer({element: s.element} as any);
+            const sub = new MyConstrainer({element: s.element} as any);
             sub.keyName = "rmS";
-            s.addEnforcer(sub);
-            s.removeEnforcer("rmS");
-            expect(s.getEnforcer("rmS")).toBeUndefined();
+            s.addConstrainer(sub);
+            s.removeConstrainer("rmS");
+            expect(s.getConstrainer("rmS")).toBeUndefined();
         });
 
-        it("removeEnforcer by instance removes it", () => {
+        it("removeConstrainer by instance removes it", () => {
             const s = sel();
-            const sub = new MyEnforcer({element: s.element} as any);
+            const sub = new MyConstrainer({element: s.element} as any);
             sub.keyName = "rmSRef";
-            s.addEnforcer(sub);
-            s.removeEnforcer(sub);
-            expect(s.getEnforcer("rmSRef")).toBeUndefined();
+            s.addConstrainer(sub);
+            s.removeConstrainer(sub);
+            expect(s.getConstrainer("rmSRef")).toBeUndefined();
         });
 
-        it("addEnforcer returns itself for method chaining", () => {
+        it("addConstrainer returns itself for method chaining", () => {
             const s = sel();
-            const sub = new MyEnforcer({element: s.element} as any);
+            const sub = new MyConstrainer({element: s.element} as any);
             sub.keyName = "chain";
-            expect(s.addEnforcer(sub)).toBe(s);
+            expect(s.addConstrainer(sub)).toBe(s);
         });
     });
 

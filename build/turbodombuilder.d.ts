@@ -1,4 +1,4 @@
-import { Doc, Map as Map$1, Array, YEvent, AbstractType } from 'yjs';
+import { Doc, YEvent, Array, Map as Map$1, AbstractType } from 'yjs';
 export { AbstractType as YAbstractType, Array as YArray, YArrayEvent, Doc as YDoc, YEvent, Map as YMap, YMapEvent, Text as YText } from 'yjs';
 
 /**
@@ -228,255 +228,6 @@ declare function callOnce<Type extends (...args: any[]) => any>(fn: Type): Type;
  * ```
  */
 declare function callOncePerInstance<Type extends object>(value: (this: Type, ...args: any[]) => any, context: ClassMethodDecoratorContext<Type>): any;
-
-/**
- * @type {DefineOptions}
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Options object for the {@link define} decorator and imperative function.
- * @property {boolean} [injectAttributeBridge=true] - Whether to inject an `attributeChangedCallback`
- * into the class prototype if one is not already present. When enabled, HTML attribute changes are
- * automatically mirrored to their associated `@observe`-decorated fields, and vice versa.
- */
-type DefineOptions = {
-    injectAttributeBridge?: boolean;
-};
-/**
- * @enum {string} RegistryCategory
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Categorizes registered classes by their base type in the TurboDom registry.
- * Categories are ordered from most to least specific within each group, which determines
- * how {@link inferCategory} resolves ambiguous inheritance chains.
- *
- * **TurboDom elements** (most to least specific):
- * - `TurboProxiedElement`, `TurboElement`, `TurboBaseElement`, `TurboHeadlessElement`
- *
- * **Native DOM elements** (most to least specific):
- * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
- *
- * **MVC pieces:**
- * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboEnforcer`,
- *   `TurboView`, `TurboEmitter`, `TurboModel`
- *
- * **Fallback:**
- * - `Other` — for classes that do not match any recognized base type.
- */
-declare enum RegistryCategory {
-    TurboElement = "TurboElement",
-    TurboBaseElement = "TurboBaseElement",
-    TurboHeadlessElement = "TurboHeadlessElement",
-    TurboProxiedElement = "TurboProxiedElement",
-    HTMLElement = "HTMLElement",
-    SVGElement = "SVGElement",
-    MathMLElement = "MathMLElement",
-    Element = "Element",
-    Node = "Node",
-    TurboModel = "TurboModel",
-    TurboView = "TurboView",
-    TurboEmitter = "TurboEmitter",
-    TurboOperator = "TurboOperator",
-    TurboHandler = "TurboHandler",
-    TurboInteractor = "TurboInteractor",
-    TurboTool = "TurboTool",
-    TurboEnforcer = "TurboEnforcer",
-    Other = "Other"
-}
-/**
- * @type {RegistryEntry}
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Represents a single entry in the TurboDom class registry, as stored and returned
- * by {@link findRegistered} and related query functions.
- * @property {new (...args: any[]) => any} constructor - The registered class constructor.
- * @property {RegistryCategory} category - The category the class was registered under,
- * either explicitly provided or inferred from its inheritance chain.
- * @property {string} name - The registered name of the class, used as the registry key.
- * Typically the class name as passed to {@link define}.
- * @property {string} [tag] - The custom element tag name associated with this class.
- * Only present for classes registered as custom HTML elements via {@link define}.
- */
-type RegistryEntry = {
-    constructor: new (...args: any[]) => any;
-    category: RegistryCategory | string;
-    tag?: string;
-    name: string;
-};
-
-/**
- * @decorator
- * @function define
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Stage-3 **class** decorator factory that registers a class in the TurboDom registry
- * and, if the class extends a DOM element, also registers it as a custom HTML element. Specifically, it:
- * - Registers the class in the registry by {@link RegistryCategory}, inferring the category
- *   from the class's inheritance chain.
- * - If the class extends a DOM `Element`:
- *   - Registers it with the browser's `customElements` registry under the provided or inferred tag name.
- *   - Stores the tag name on the class as a static `tagName` property.
- *   - Adds the tag name as a CSS class to all instances (enabling CSS targeting by class hierarchy).
- *   - Wraps the static `create()` method to automatically inject the tag name into creation properties.
- *   - Publishes a live `observedAttributes` getter aggregating all `@observe`-decorated fields
- *     across the entire class hierarchy.
- *   - Optionally injects an `attributeChangedCallback` that mirrors HTML attribute changes to
- *     their corresponding `@observe`-decorated fields, and vice versa.
- *
- * @param {string} className - The class name, used as the registry key and to infer the tag name.
- * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
- * `className` if omitted (e.g. `"MyEl"` → `"my-el"`).
- * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
- *
- * @example
- * ```ts
- * @define("MyEl")           // tag inferred as "my-el"
- * class MyEl extends TurboElement { ... }
- *
- * @define("MyEl", "my-el") // explicit tag name
- * class MyEl extends TurboElement { ... }
- *
- * @define("MyModel")        // non-element: only registered in TurboDom registry
- * class MyModel extends TurboModel { ... }
- * ```
- */
-declare function define(className: string, elementName?: string, options?: DefineOptions): any;
-/**
- * @function define
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Imperative equivalent of the `@define` decorator. Applies identical registration
- * and setup logic without requiring decorator syntax — useful for dynamically registering classes
- * at runtime, or in build environments where class decorators cause unwanted output transformations.
- *
- * When the class extends a DOM `Element`, it:
- * - Registers it with the browser's `customElements` registry.
- * - Stores the tag name as a static `tagName` property.
- * - Adds the tag name as a CSS class to all instances.
- * - Wraps the static `create()` method to automatically inject the tag.
- * - Publishes a live `observedAttributes` getter across the class hierarchy.
- * - Optionally injects an `attributeChangedCallback` attribute bridge.
- *
- * For all classes (element or not), it registers the class in the registry by {@link RegistryCategory}.
- *
- * @param {Type} Base - The class to register.
- * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
- * `className` if omitted.
- * @param {string} [className] - The class name, used as the registry key. Inferred from
- * `Base.name` if omitted.
- * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
- * @returns {Type} The class, unchanged, after all setup has been applied.
- *
- * @example
- * ```ts
- * class MyEl extends TurboElement { ... }
- * define(MyEl);                    // className → "MyEl", tag → "my-el"
- * define(MyEl, "my-el");           // explicit tag, className inferred
- * define(MyEl, "my-el", "MyEl");   // both explicit
- *
- * class MyModel extends TurboModel { ... }
- * define(MyModel, undefined, "MyModel"); // non-element, registry only
- * ```
- */
-declare function define<Type extends new (...args: any[]) => any>(Base: Type, elementName?: string, className?: string, options?: DefineOptions): Type;
-/**
- * @function findRegistered
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Finds a registered entry by name, optionally scoped to a specific category.
- * If no category is provided, searches across all categories and returns the first match.
- * @param {string} name - The registered name to search for.
- * @param {RegistryCategory} [category] - The category to scope the search to. Searches all categories if omitted.
- * @returns {RegistryEntry} The matching registry entry, or `undefined` if not found.
- */
-declare function findRegistered(name: string, category?: RegistryCategory): RegistryEntry;
-/**
- * @function getRegisteredByCategories
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Returns all registered entries across one or more specified categories.
- * @param {...RegistryCategory[]} categories - The categories to retrieve entries from.
- * @returns {RegistryEntry[]} An array of all registry entries in the specified categories.
- */
-declare function getRegisteredByCategories(...categories: RegistryCategory[]): RegistryEntry[];
-/**
- * @function getAllRegistered
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Returns all registered entries across every category in the registry.
- * @returns {RegistryEntry[]} An array of all registry entries.
- */
-declare function getAllRegistered(): RegistryEntry[];
-/**
- * @function getRegisteredMvc
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Returns all registered entries belonging to MVC-related categories:
- * `TurboOperator`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
- * `TurboEnforcer`, `TurboTool`, and `TurboView`.
- * @returns {RegistryEntry[]} An array of all MVC registry entries.
- */
-declare function getRegisteredMvc(): RegistryEntry[];
-/**
- * @function getRegisteredElements
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Returns all registered entries belonging to element-related categories:
- * `TurboElement`, `TurboProxiedElement`, `Element`, `HTMLElement`, `SVGElement`, and `MathMLElement`.
- * @returns {RegistryEntry[]} An array of all element registry entries.
- */
-declare function getRegisteredElements(): RegistryEntry[];
-/**
- * @function addRegistryCategory
- * @group Decorators
- * @category Registry
- *
- * @description Associates a class constructor with a {@link RegistryCategory} in the TurboDom registry's
- * category inference map. When {@link define} is called on a subclass, it walks the prototype chain and
- * uses this map to determine the appropriate category without requiring direct imports of the base classes
- * (which would cause circular dependencies).
- *
- * This should be called once per base class, after its definition, by the TurboDom internals.
- * User-defined subclasses do not need to call this — category inference propagates automatically
- * through the prototype chain.
- *
- * @param {new (...args: any[]) => object} type - The base class constructor to associate with a category.
- * @param {RegistryCategory} [category] - The category to associate with the class. Defaults to the
- * class name if omitted, which is useful when the class name matches a {@link RegistryCategory} value.
- *
- * @example
- * ```ts
- * // At the bottom of turboModel.ts, after class definition:
- * addRegistryCategory(TurboModel, RegistryCategory.TurboModel);
- *
- * // Later, when a subclass is defined:
- * class MyModel extends TurboModel { ... }
- * define(MyModel, "MyModel"); // infers RegistryCategory.TurboModel automatically
- * ```
- */
-declare function addRegistryCategory(type: new (...args: any[]) => object, category?: RegistryCategory): void;
-/**
- * @function getRegisteredEntry
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Returns the registry entry for a given class instance, looked up by its constructor.
- * Walks the instance's prototype chain until it finds a registered constructor, so subclasses that
- * were not themselves passed to {@link define} will still resolve to their nearest registered ancestor.
- * @param {object} instance - The class instance to look up.
- * @returns {RegistryEntry | undefined} The matching registry entry (containing `name`, `category`,
- * `constructor`, and optionally `tag`), or `undefined` if no registered class is found in the chain.
- */
-declare function getRegisteredEntry(instance: object): RegistryEntry;
 
 /**
  * @type KeyType
@@ -810,9 +561,10 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
      * @function getFlat
      * @description Retrieve the value at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
      */
-    getFlat(flatKey: number | string): ValueType;
+    getFlat(flatKey: number | string, depth?: number): ValueType;
     /**
      * @function getKey
      * @description Find the key path of the first occurrence of the given value.
@@ -846,8 +598,9 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
      * @description Store a value at the given flat key.
      * @param {ValueType} value - The value to store.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      */
-    setFlat(value: ValueType, flatKey: number | string): void;
+    setFlat(value: ValueType, flatKey: number | string, depth?: number): void;
     /**
      * @function has
      * @description Check whether an entry exists at the given key path.
@@ -859,9 +612,10 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
      * @function hasFlat
      * @description Check whether an entry exists at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {boolean}
      */
-    hasFlat(flatKey: number | string): boolean;
+    hasFlat(flatKey: number | string, depth?: number): boolean;
     /**
      * @function hasValue
      * @description Check whether the given value exists anywhere in the map.
@@ -962,9 +716,10 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
      * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
      * - A numeric global leaf index becomes the corresponding numeric path.
      * @param {number | string} flatKey - The flat key to convert.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
      */
-    scopeKey(flatKey: number | string): KeyType[];
+    scopeKey(flatKey: number | string, depth?: number): KeyType[];
     /**
      * @function clear
      * @description Remove all entries from the map.
@@ -1306,6 +1061,8 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * by the key path as spread arguments.
      */
     readonly onKeyChanged: Delegate<(value: any, ...keys: KeyType[]) => void>;
+    readonly onDataChanged: Delegate<(oldData: any, newData: any) => void>;
+    fireCallbackHook: (value: any, key: string) => void;
     protected isInitialized: boolean;
     private readonly signals;
     protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>>;
@@ -1324,7 +1081,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     /**
      * @description The metadata held by this model. Separate from this model's data.
      */
-    get metadata(): TurboModel<object>;
+    get meta(): TurboModel<object>;
     /**
      * @constructor
      * @description Create a new TurboModel.
@@ -1791,6 +1548,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     addHandler(handler: TurboHandler): void;
     setDataWithoutInitializing(data: DataType): void;
     private routeMutation;
+    fireCallback(key: string, value?: any): void;
 }
 
 /**
@@ -2294,14 +2052,14 @@ type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propa
  * @extends AddEventListenerOptions
  * @description Options used for listeners.
  *
- * @property {boolean} [checkEnforcers] - If true, checks enforcers before execution. Defaults to true.
- * @property {boolean} [solveEnforcers] - If true, triggers enforcer solving after execution. Defaults to true.
+ * @property {boolean} [checkConstrainers] - If true, checks constrainers before execution. Defaults to true.
+ * @property {boolean} [solveConstrainers] - If true, triggers constrainer solving after execution. Defaults to true.
  * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
  * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
  */
 type ListenerOptions = AddEventListenerOptions & {
-    checkEnforcers?: boolean;
-    solveEnforcers?: boolean;
+    checkConstrainers?: boolean;
+    solveConstrainers?: boolean;
     throttleEveryFrames?: number;
     throttleEveryMs?: number;
 };
@@ -2663,23 +2421,23 @@ declare class TurboTool<ElementType extends object = object, ViewType extends Tu
 }
 
 /**
- * @type {TurboEnforcerProperties}
+ * @type {TurboConstrainerProperties}
  * @group MVC
- * @category Enforcer
+ * @category Constrainer
  *
  * @extends TurboOperatorProperties
- * @extends MakeEnforcerOptions
+ * @extends MakeConstrainerOptions
  *
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
- * @description Options used to create a new {@link TurboEnforcer} attached to an element.
- * @property {string} [enforcerName] - The name of the enforcer.
+ * @description Options used to create a new {@link TurboConstrainer} attached to an element.
+ * @property {string} [constrainerName] - The name of the constrainer.
  */
-type TurboEnforcerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeEnforcerOptions & {
-    enforcerName?: string;
+type TurboConstrainerProperties<ElementType extends object = object, ViewType extends TurboView = TurboView, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboOperatorProperties<ElementType, ViewType, ModelType, EmitterType> & MakeConstrainerOptions & {
+    constrainerName?: string;
 };
 
 /**
@@ -2947,98 +2705,98 @@ declare class TurboNodeList<Type extends object = object> {
 }
 
 /**
- * @class TurboEnforcer
+ * @class TurboConstrainer
  * @group MVC
- * @category Enforcer
+ * @category Constrainer
  *
  * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- * @description Class representing an enforcer in MVC, bound to the provided element.
+ * @description Class representing an constrainer in MVC, bound to the provided element.
  */
-declare class TurboEnforcer<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
+declare class TurboConstrainer<ElementType extends object = object, ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboOperator<ElementType, ViewType, ModelType, EmitterType> {
     /**
-     * @description The key of the enforcer. Used to retrieve it in the main component. If not set, if the element's
-     * class name is MyElement and the enforcer's class name is MyElementSomethingEnforcer, the key would
+     * @description The key of the constrainer. Used to retrieve it in the main component. If not set, if the element's
+     * class name is MyElement and the constrainer's class name is MyElementSomethingConstrainer, the key would
      * default to "something".
      */
     keyName: string;
     /**
-     * @description The name of the enforcer.
+     * @description The name of the constrainer.
      */
-    readonly enforcerName: string;
+    readonly constrainerName: string;
     /**
-     * @description The property keys of the enforcer solvers defined in the instance.
+     * @description The property keys of the constrainer solvers defined in the instance.
      */
-    readonly solversMetadata: EnforcerAddCallbackProperties<EnforcerSolver>[];
+    readonly solversMetadata: ConstrainerAddCallbackProperties<ConstrainerSolver>[];
     /**
-     * @description The property keys of the enforcer checkers defined in the instance.
+     * @description The property keys of the constrainer checkers defined in the instance.
      */
-    readonly checkersMetadata: EnforcerAddCallbackProperties<EnforcerChecker>[];
+    readonly checkersMetadata: ConstrainerAddCallbackProperties<ConstrainerChecker>[];
     /**
-     * @description The property keys of the enforcer mutators defined in the instance.
+     * @description The property keys of the constrainer mutators defined in the instance.
      */
-    readonly mutatorsMetadata: EnforcerAddCallbackProperties<EnforcerMutator>[];
+    readonly mutatorsMetadata: ConstrainerAddCallbackProperties<ConstrainerMutator>[];
     /**
-     * @description The priority of the enforcer. Higher priority enforcers (lower number) should
+     * @description The priority of the constrainer. Higher priority constrainers (lower number) should
      * be resolved first. Defaults to 10.
      */
     priority: number;
     /**
-     * @description The list of objects constrained by the enforcer. To manipulate, check {@link TurboNodeList}.
-     * Defaults to the children of the element the enforcer is attached to.
+     * @description The list of objects constrained by the constrainer. To manipulate, check {@link TurboNodeList}.
+     * Defaults to the children of the element the constrainer is attached to.
      */
     objectList: TurboNodeList;
     /**
-     * @description The list of objects that trigger the enforcer to resolve.
-     * Interacting with any of these objects would typically lead to the solving of the given enforcer.
+     * @description The list of objects that trigger the constrainer to resolve.
+     * Interacting with any of these objects would typically lead to the solving of the given constrainer.
      * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
      */
     triggerList: TurboNodeList;
     /**
-     * @description The default queue template for the enforcer, used when starting a new resolving pass.
-     * It defaults to the enforcer's object list.
+     * @description The default queue template for the constrainer, used when starting a new resolving pass.
+     * It defaults to the constrainer's object list.
      */
     defaultQueue: object[] | TurboQueue<object>;
     /**
-     * @description The maximum number of passes allowed per object for this enforcer during resolving.
+     * @description The maximum number of passes allowed per object for this constrainer during resolving.
      * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
      */
     maxPasses: number;
     /**
-     * @description Whether the enforcer is active. Defaults to true.
+     * @description Whether the constrainer is active. Defaults to true.
      */
     get active(): boolean;
     set active(value: boolean);
     /**
-     * @description Delegate fired whenever an object is added to or removed from the enforcer's object list.
+     * @description Delegate fired whenever an object is added to or removed from the constrainer's object list.
      */
     get onObjectListChange(): Delegate<(object: object, status: "added" | "removed") => void>;
     /**
-     * @description The current queue to be processed by the enforcer while resolving.
+     * @description The current queue to be processed by the constrainer while resolving.
      */
     get queue(): TurboQueue<object>;
-    constructor(properties: TurboEnforcerProperties<ElementType, ViewType, ModelType, EmitterType>);
+    constructor(properties: TurboConstrainerProperties<ElementType, ViewType, ModelType, EmitterType>);
     /**
      * @function initialize
      * @override
-     * @description Initialization function that calls {@link makeEnforcer} on `this.element`, sets it up, and attaches
+     * @description Initialization function that calls {@link makeConstrainer} on `this.element`, sets it up, and attaches
      * all the defined solvers.
      */
     initialize(): void;
     /**
      * @function getObjectPasses
      * @description Retrieve how many times the given object has been processed for the current resolving session
-     * of the enforcer.
+     * of the constrainer.
      * @param {object} object - The object to query.
      * @return {number} - Number of passes already performed on this object.
      */
     getObjectPasses(object: object): number;
     /**
      * @function getObjectData
-     * @description Retrieve custom per-object data for this enforcer. It is reset on every new
+     * @description Retrieve custom per-object data for this constrainer. It is reset on every new
      * resolving session.
      * @param {object} object - The object to query.
      * @return {Record<string, any>} - The stored data object (or an empty object if none).
@@ -3046,7 +2804,7 @@ declare class TurboEnforcer<ElementType extends object = object, ViewType extend
     getObjectData(object: object): Record<string, any>;
     /**
      * @function setObjectData
-     * @description Set custom per-object data for this enforcer. It is reset on every new resolving session.
+     * @description Set custom per-object data for this constrainer. It is reset on every new resolving session.
      * @param {object} object - The object to update.
      * @param {Record<string, any>} [data] - The new data object to associate with this object.
      * @return {this} - Itself for chaining.
@@ -3054,95 +2812,95 @@ declare class TurboEnforcer<ElementType extends object = object, ViewType extend
     setObjectData(object: object, data?: Record<string, any>): this;
     /**
      * @function addChecker
-     * @description Register a checker in the enforcer. Checkers dictate whether the event should continue
+     * @description Register a checker in the constrainer. Checkers dictate whether the event should continue
      * executing depending on the provided context (event, tool, target, etc.).
-     * @param {EnforcerAddCallbackProperties<EnforcerChecker>} properties - Configuration object, including the
+     * @param {ConstrainerAddCallbackProperties<ConstrainerChecker>} properties - Configuration object, including the
      * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
-     * `enforcer`, and the `priority` of the checker.
+     * `constrainer`, and the `priority` of the checker.
      * @return {this} - Itself for chaining.
      */
-    addChecker(properties: EnforcerAddCallbackProperties<EnforcerChecker>): this;
+    addChecker(properties: ConstrainerAddCallbackProperties<ConstrainerChecker>): this;
     /**
      * @function removeChecker
-     * @description Remove a checker from this enforcer by its name.
+     * @description Remove a checker from this constrainer by its name.
      * @param {string} name - The checker name.
      * @return {this} - Itself for chaining.
      */
     removeChecker(name: string): this;
     /**
      * @function clearCheckers
-     * @description Remove all checkers attached to this enforcer.
+     * @description Remove all checkers attached to this constrainer.
      * @return {this} - Itself for chaining.
      */
     clearCheckers(): this;
     /**
      * @function check
-     * @description Evaluate all checkers for this enforcer and return whether the event should proceed or halt.
-     * @param {EnforcerCallbackProperties} [properties] - Context passed to each checker.
-     * @return {boolean} - Whether the enforcer passes all checks.
+     * @description Evaluate all checkers for this constrainer and return whether the event should proceed or halt.
+     * @param {ConstrainerCallbackProperties} [properties] - Context passed to each checker.
+     * @return {boolean} - Whether the constrainer passes all checks.
      */
-    check(properties?: EnforcerCallbackProperties): boolean;
+    check(properties?: ConstrainerCallbackProperties): boolean;
     /**
      * @function addMutator
-     * @description Register a mutator in the enforcer. Mutators compute or transform a value based on the context.
-     * @param {EnforcerAddCallbackProperties<EnforcerMutator>} properties - Configuration object, including the
+     * @description Register a mutator in the constrainer. Mutators compute or transform a value based on the context.
+     * @param {ConstrainerAddCallbackProperties<ConstrainerMutator>} properties - Configuration object, including the
      * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
      * @return {this} - Itself for chaining.
      */
-    addMutator(properties: EnforcerAddCallbackProperties<EnforcerMutator>): this;
+    addMutator(properties: ConstrainerAddCallbackProperties<ConstrainerMutator>): this;
     /**
      * @function removeMutator
-     * @description Remove a mutator from this enforcer by its name.
+     * @description Remove a mutator from this constrainer by its name.
      * @param {string} name - The mutator name.
      * @return {this} - Itself for chaining.
      */
     removeMutator(name: string): this;
     /**
      * @function clearMutators
-     * @description Remove all mutators attached to this enforcer.
+     * @description Remove all mutators attached to this constrainer.
      * @return {this} - Itself for chaining.
      */
     clearMutators(): this;
     /**
      * @function mutate
      * @template Type - The type of the value to mutate
-     * @description Execute a mutator for this enforcer and return the resulting value.
-     * @param {EnforcerMutatorProperties<Type>} [properties] - Context object, including the
+     * @description Execute a mutator for this constrainer and return the resulting value.
+     * @param {ConstrainerMutatorProperties<Type>} [properties] - Context object, including the
      * `mutation` to execute, and the input `value` to mutate.
      * @return {Type} - The mutated result.
      */
-    mutate<Type = any>(properties?: EnforcerMutatorProperties<Type>): Type;
+    mutate<Type = any>(properties?: ConstrainerMutatorProperties<Type>): Type;
     /**
      * @function addSolver
-     * @description Register a solver in the enforcer. Solvers typically execute after an event is fired to
-     * ensure the enforcer's constraints are maintained. They process all objects in the enforcer's queue,
+     * @description Register a solver in the constrainer. Solvers typically execute after an event is fired to
+     * ensure the constrainer's constraints are maintained. They process all objects in the constrainer's queue,
      * one after the other.
-     * @param {EnforcerAddCallbackProperties<EnforcerSolver>} properties - Configuration object, including the
+     * @param {ConstrainerAddCallbackProperties<ConstrainerSolver>} properties - Configuration object, including the
      * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
      * @return {this} - Itself for chaining.
      */
-    addSolver(properties: EnforcerAddCallbackProperties<EnforcerSolver>): this;
+    addSolver(properties: ConstrainerAddCallbackProperties<ConstrainerSolver>): this;
     /**
      * @function removeSolver
-     * @description Remove the given function from the enforcer's list of solvers.
+     * @description Remove the given function from the constrainer's list of solvers.
      * @param {string} name - The solver's name.
      * @return {this} - Itself for chaining.
      */
     removeSolver(name: string): this;
     /**
      * @function clearSolvers
-     * @description Remove all solvers attached to the enforcer.
+     * @description Remove all solvers attached to the constrainer.
      * @return {this} - Itself for chaining.
      */
     clearSolvers(): this;
     /**
      * @function solve
-     * @description Solve the enforcer by executing all of its attached solvers. Each solver will be executed
-     * on every object in the enforcer's queue, incrementing its number of passes in the process.
-     * @param {EnforcerCallbackProperties} [properties] - Options object to configure the context.
+     * @description Solve the constrainer by executing all of its attached solvers. Each solver will be executed
+     * on every object in the constrainer's queue, incrementing its number of passes in the process.
+     * @param {ConstrainerCallbackProperties} [properties] - Options object to configure the context.
      * @return {this} - Itself for chaining.
      */
-    solve(properties?: EnforcerCallbackProperties): this;
+    solve(properties?: ConstrainerCallbackProperties): this;
 }
 
 /**
@@ -3165,7 +2923,6 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      * @description The main data block (if any) attached to the element, taken from its model (if any).
      */
     data: DataType;
-    readonly metadata: TurboModel<object>;
     /**
      * @description The ID of the main data block (if any) of the element, taken from its model (if any).
      */
@@ -3196,9 +2953,9 @@ interface TurboElementMvcInterface<ViewType extends TurboView = TurboView<any, a
      */
     tools: TurboTool[];
     /**
-     * @description The enforcers (if any) attached to the element's MVC structure.
+     * @description The constrainers (if any) attached to the element's MVC structure.
      */
-    enforcers: TurboEnforcer[];
+    constrainers: TurboConstrainer[];
 }
 
 /**
@@ -3808,17 +3565,11 @@ type TurboProperties<Tag extends ValidTag = "div"> = ElementTagDefinition<Tag> &
  */
 interface TurboElementUiInterface {
     /**
-     * @description Whether the element is selected or not. Setting it will accordingly toggle the "selected" CSS
-     * class (or whichever default selected class was set in the config) on the element and update the UI.
-     */
-    selected: boolean;
-    /**
      * @description Whether to set the default CSS classes defined in the static config on the element or not. Setting
      * it will accordingly add/remove the CSS classes from the element.
      */
     unsetDefaultClasses: boolean;
     shadowDOM: boolean;
-    defaultSelectedClasses: string | string[];
     defaultClasses: string | string[];
 }
 
@@ -3852,10 +3603,6 @@ type TurboElementProperties<ViewType extends TurboView = TurboView, DataType ext
  * @internal
  */
 interface TurboElementDefaultInterface {
-    /**
-     * @description Whether the element is selected or not.
-     */
-    selected: boolean;
     readonly properties: object;
     /**
      * @function destroy
@@ -3926,8 +3673,8 @@ type MvcManyInstancesOrConstructors<Type, PropertiesType = any> = MvcInstanceOrC
  * interactor, constructor of interactor, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
  * tool, constructor of tool, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboEnforcer, TurboEnforcerProperties>} [enforcers] - The
- * enforcer, constructor of enforcer, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboConstrainer, TurboConstrainerProperties>} [constrainers] - The
+ * constrainer, constructor of constrainer, or array of the latter, to attach.
  */
 type MvcProperties<ViewType extends TurboView = TurboView<any, any>, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = {
     view?: MvcInstanceOrConstructor<ViewType, TurboViewProperties>;
@@ -3937,7 +3684,7 @@ type MvcProperties<ViewType extends TurboView = TurboView<any, any>, ModelType e
     handlers?: MvcManyInstancesOrConstructors<TurboHandler, ModelType>;
     interactors?: MvcManyInstancesOrConstructors<TurboInteractor, TurboInteractorProperties>;
     tools?: MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>;
-    enforcers?: MvcManyInstancesOrConstructors<TurboEnforcer, TurboEnforcerProperties>;
+    constrainers?: MvcManyInstancesOrConstructors<TurboConstrainer, TurboConstrainerProperties>;
 };
 /**
  * @type {MvcGenerationProperties}
@@ -3980,7 +3727,6 @@ declare class TurboEventManagerUtilsHandler extends TurboHandler<TurboEventManag
     applyEventNames(eventNames: Record<string, string>): void;
     setTimer(timerName: string, callback: () => void, duration: number): void;
     clearTimer(timerName: string): void;
-    selectTool(element: Node, value: boolean): void;
     activateTool(element: Node, toolName: string, value: boolean): void;
 }
 
@@ -4394,6 +4140,8 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboB
     set preventDefaultMouse(value: boolean);
     get preventDefaultTouch(): boolean;
     set preventDefaultTouch(value: boolean);
+    get preventDefaults(): boolean;
+    set preventDefaults(value: boolean);
     /**
      * @description All attached tools in an array
      */
@@ -4458,37 +4206,37 @@ declare class TurboEventManager<ToolType extends string = string> extends TurboB
 }
 
 /**
- * @type {MakeEnforcerOptions}
+ * @type {MakeConstrainerOptions}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing objects used to configure the creation of enforcers. Used in {@link makeEnforcer}.
- * @property {() => void} [onActivate] - Callback function to execute when the enforcer is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the enforcer is deactivated.
- * @property {number} [priority] - The priority of the enforcer. Higher priority enforcers (lower number) should
+ * @description Type representing objects used to configure the creation of constrainers. Used in {@link makeConstrainer}.
+ * @property {() => void} [onActivate] - Callback function to execute when the constrainer is activated.
+ * @property {() => void} [onDeactivate] - Callback function to execute when the constrainer is deactivated.
+ * @property {number} [priority] - The priority of the constrainer. Higher priority constrainers (lower number) should
  * be resolved first. Defaults to 10.
- * @property {boolean} [active] - Whether the enforcer is active. Defaults to true.
- * @property {TurboEnforcer} [attachedInstance] - The optional TurboEnforcer instance to attach to the enforcer.
+ * @property {boolean} [active] - Whether the constrainer is active. Defaults to true.
+ * @property {TurboConstrainer} [attachedInstance] - The optional TurboConstrainer instance to attach to the constrainer.
  */
-type MakeEnforcerOptions = {
+type MakeConstrainerOptions = {
     onActivate?: () => void;
     onDeactivate?: () => void;
     priority?: number;
     active?: boolean;
-    attachedInstance?: TurboEnforcer;
+    attachedInstance?: TurboConstrainer;
 };
 /**
- * @type {EnforcerCallbackProperties}
+ * @type {ConstrainerCallbackProperties}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing objects passed as context for resolving enforcers. Given as first parameter to
- * solvers when executing them via {@link solveEnforcer}.
- * @property {string} [enforcer] - The targeted enforcer. Defaults to `currentEnforcer`.
- * @property {object} [enforcerHost] - The object to which the target enforcer is attached.
+ * @description Type representing objects passed as context for resolving constrainers. Given as first parameter to
+ * solvers when executing them via {@link solveConstrainer}.
+ * @property {string} [constrainer] - The targeted constrainer. Defaults to `currentConstrainer`.
+ * @property {object} [constrainerHost] - The object to which the target constrainer is attached.
  * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link solveEnforcer} when processing every object in the enforcer's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the enforcer.
+ * {@link solveConstrainer} when processing every object in the constrainer's list.
+ * @property {Event} [event] - The event (if any) that fired the resolving of the constrainer.
  * @property {string} [eventType] - The type of the event.
  * @property {Node} [eventTarget] - The target of the event.
  * @property {string} [toolName] - The name of the active tool when the event was fired.
@@ -4496,9 +4244,9 @@ type MakeEnforcerOptions = {
  * @property {TurboEventManager} [manager] - The event manager that captured the event. Defaults to the first
  * instantiated event manager.
  */
-type EnforcerCallbackProperties = {
-    enforcer?: string;
-    enforcerHost?: object;
+type ConstrainerCallbackProperties = {
+    constrainer?: string;
+    constrainerHost?: object;
     target?: object;
     event?: Event;
     eventType?: string;
@@ -4508,61 +4256,61 @@ type EnforcerCallbackProperties = {
     manager?: TurboEventManager;
 };
 /**
- * @type {EnforcerMutatorProperties}
+ * @type {ConstrainerMutatorProperties}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @extends EnforcerCallbackProperties
+ * @extends ConstrainerCallbackProperties
  * @template Type - The type of the value to mutate.
- * @description Type representing objects passed as context to mutate a value in an enforcer. Given as first parameter to
+ * @description Type representing objects passed as context to mutate a value in an constrainer. Given as first parameter to
  * mutators when executing them via {@link mutate}.
  * @property {string} [mutation] - The name of the mutator to execute.
  * @property {Type} [value] - The value to mutate.
  */
-type EnforcerMutatorProperties<Type = any> = EnforcerCallbackProperties & {
+type ConstrainerMutatorProperties<Type = any> = ConstrainerCallbackProperties & {
     mutation?: string;
     value?: Type;
 };
 /**
- * @type {EnforcerChecker}
+ * @type {ConstrainerChecker}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of checker functions that enforcers expect.
+ * @description Type representing the signature of checker functions that constrainers expect.
  */
-type EnforcerChecker = (properties: EnforcerCallbackProperties, ...args: any[]) => boolean;
+type ConstrainerChecker = (properties: ConstrainerCallbackProperties, ...args: any[]) => boolean;
 /**
- * @type {EnforcerMutator}
+ * @type {ConstrainerMutator}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of mutator functions that enforcers expect.
+ * @description Type representing the signature of mutator functions that constrainers expect.
  */
-type EnforcerMutator<Type = any> = (properties: EnforcerMutatorProperties<Type>, ...args: any[]) => Type;
+type ConstrainerMutator<Type = any> = (properties: ConstrainerMutatorProperties<Type>, ...args: any[]) => Type;
 /**
- * @type {EnforcerSolver}
+ * @type {ConstrainerSolver}
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of solver functions that enforcers expect.
+ * @description Type representing the signature of solver functions that constrainers expect.
  */
-type EnforcerSolver = (properties: EnforcerCallbackProperties, ...args: any[]) => Propagation | void;
+type ConstrainerSolver = (properties: ConstrainerCallbackProperties, ...args: any[]) => Propagation | void;
 /**
- * @type {EnforcerAddCallbackProperties}
+ * @type {ConstrainerAddCallbackProperties}
  * @group Types
- * @category Enforcer
- * @template {EnforcerChecker | EnforcerMutator | EnforcerSolver} Type - The type of callback.
+ * @category Constrainer
+ * @template {ConstrainerChecker | ConstrainerMutator | ConstrainerSolver} Type - The type of callback.
  *
- * @description Type representing a configuration object to add a new callback to the given enforcer.
+ * @description Type representing a configuration object to add a new callback to the given constrainer.
  * @property {string} [name] - The name of the callback to add.
  * @property {Type} [callback] - The callback to add.
- * @property {string} [enforcer] - The enforcer to add the callback to.
+ * @property {string} [constrainer] - The constrainer to add the callback to.
  * @property {number} [priority] - The priority of the callback.
  */
-type EnforcerAddCallbackProperties<Type extends EnforcerChecker | EnforcerMutator | EnforcerSolver> = {
+type ConstrainerAddCallbackProperties<Type extends ConstrainerChecker | ConstrainerMutator | ConstrainerSolver> = {
     name?: string;
     callback?: Type;
-    enforcer?: string;
+    constrainer?: string;
     priority?: number;
 };
 /**
@@ -4571,14 +4319,14 @@ type EnforcerAddCallbackProperties<Type extends EnforcerChecker | EnforcerMutato
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer solvers.
+ * @description Stage-3 decorator that turns methods into constrainer solvers.
  * @example
  * ```ts
- * @solver private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @solver private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -4586,21 +4334,21 @@ type EnforcerAddCallbackProperties<Type extends EnforcerChecker | EnforcerMutato
  * }
  * ```
  */
-declare function solver(properties?: EnforcerAddCallbackProperties<EnforcerSolver>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+declare function solver(properties?: ConstrainerAddCallbackProperties<ConstrainerSolver>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
 /**
  * @decorator
  * @function checker
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer checkers.
+ * @description Stage-3 decorator that turns methods into constrainer checkers.
  * @example
  * ```ts
- * @checker private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @checker private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -4608,21 +4356,21 @@ declare function solver(properties?: EnforcerAddCallbackProperties<EnforcerSolve
  * }
  * ```
  */
-declare function checker(properties?: EnforcerAddCallbackProperties<EnforcerChecker>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+declare function checker(properties?: ConstrainerAddCallbackProperties<ConstrainerChecker>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
 /**
  * @decorator
  * @function mutator
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer mutators.
+ * @description Stage-3 decorator that turns methods into constrainer mutators.
  * @example
  * ```ts
- * @mutator private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @mutator private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -4630,7 +4378,256 @@ declare function checker(properties?: EnforcerAddCallbackProperties<EnforcerChec
  * }
  * ```
  */
-declare function mutator(properties?: EnforcerAddCallbackProperties<EnforcerMutator>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+declare function mutator(properties?: ConstrainerAddCallbackProperties<ConstrainerMutator>): <Type extends object>(value: ((this: Type, ...args: any[]) => any), context: ClassMethodDecoratorContext<Type>) => any;
+
+/**
+ * @type {DefineOptions}
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Options object for the {@link define} decorator and imperative function.
+ * @property {boolean} [injectAttributeBridge=true] - Whether to inject an `attributeChangedCallback`
+ * into the class prototype if one is not already present. When enabled, HTML attribute changes are
+ * automatically mirrored to their associated `@observe`-decorated fields, and vice versa.
+ */
+type DefineOptions = {
+    injectAttributeBridge?: boolean;
+};
+/**
+ * @enum {string} RegistryCategory
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Categorizes registered classes by their base type in the TurboDom registry.
+ * Categories are ordered from most to least specific within each group, which determines
+ * how {@link inferCategory} resolves ambiguous inheritance chains.
+ *
+ * **TurboDom elements** (most to least specific):
+ * - `TurboProxiedElement`, `TurboElement`, `TurboBaseElement`, `TurboHeadlessElement`
+ *
+ * **Native DOM elements** (most to least specific):
+ * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
+ *
+ * **MVC pieces:**
+ * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboConstrainer`,
+ *   `TurboView`, `TurboEmitter`, `TurboModel`
+ *
+ * **Fallback:**
+ * - `Other` — for classes that do not match any recognized base type.
+ */
+declare enum RegistryCategory {
+    TurboElement = "TurboElement",
+    TurboBaseElement = "TurboBaseElement",
+    TurboHeadlessElement = "TurboHeadlessElement",
+    TurboProxiedElement = "TurboProxiedElement",
+    HTMLElement = "HTMLElement",
+    SVGElement = "SVGElement",
+    MathMLElement = "MathMLElement",
+    Element = "Element",
+    Node = "Node",
+    TurboModel = "TurboModel",
+    TurboView = "TurboView",
+    TurboEmitter = "TurboEmitter",
+    TurboOperator = "TurboOperator",
+    TurboHandler = "TurboHandler",
+    TurboInteractor = "TurboInteractor",
+    TurboTool = "TurboTool",
+    TurboConstrainer = "TurboConstrainer",
+    Other = "Other"
+}
+/**
+ * @type {RegistryEntry}
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Represents a single entry in the TurboDom class registry, as stored and returned
+ * by {@link findRegistered} and related query functions.
+ * @property {new (...args: any[]) => any} constructor - The registered class constructor.
+ * @property {RegistryCategory} category - The category the class was registered under,
+ * either explicitly provided or inferred from its inheritance chain.
+ * @property {string} name - The registered name of the class, used as the registry key.
+ * Typically the class name as passed to {@link define}.
+ * @property {string} [tag] - The custom element tag name associated with this class.
+ * Only present for classes registered as custom HTML elements via {@link define}.
+ */
+type RegistryEntry = {
+    constructor: new (...args: any[]) => any;
+    category: RegistryCategory | string;
+    tag?: string;
+    name: string;
+};
+
+/**
+ * @decorator
+ * @function define
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Stage-3 **class** decorator factory that registers a class in the TurboDom registry
+ * and, if the class extends a DOM element, also registers it as a custom HTML element. Specifically, it:
+ * - Registers the class in the registry by {@link RegistryCategory}, inferring the category
+ *   from the class's inheritance chain.
+ * - If the class extends a DOM `Element`:
+ *   - Registers it with the browser's `customElements` registry under the provided or inferred tag name.
+ *   - Stores the tag name on the class as a static `tagName` property.
+ *   - Adds the tag name as a CSS class to all instances (enabling CSS targeting by class hierarchy).
+ *   - Wraps the static `create()` method to automatically inject the tag name into creation properties.
+ *   - Publishes a live `observedAttributes` getter aggregating all `@observe`-decorated fields
+ *     across the entire class hierarchy.
+ *   - Optionally injects an `attributeChangedCallback` that mirrors HTML attribute changes to
+ *     their corresponding `@observe`-decorated fields, and vice versa.
+ *
+ * @param {string} className - The class name, used as the registry key and to infer the tag name.
+ * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
+ * `className` if omitted (e.g. `"MyEl"` → `"my-el"`).
+ * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
+ *
+ * @example
+ * ```ts
+ * @define("MyEl")           // tag inferred as "my-el"
+ * class MyEl extends TurboElement { ... }
+ *
+ * @define("MyEl", "my-el") // explicit tag name
+ * class MyEl extends TurboElement { ... }
+ *
+ * @define("MyModel")        // non-element: only registered in TurboDom registry
+ * class MyModel extends TurboModel { ... }
+ * ```
+ */
+declare function define(className: string, elementName?: string, options?: DefineOptions): any;
+/**
+ * @function define
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Imperative equivalent of the `@define` decorator. Applies identical registration
+ * and setup logic without requiring decorator syntax — useful for dynamically registering classes
+ * at runtime, or in build environments where class decorators cause unwanted output transformations.
+ *
+ * When the class extends a DOM `Element`, it:
+ * - Registers it with the browser's `customElements` registry.
+ * - Stores the tag name as a static `tagName` property.
+ * - Adds the tag name as a CSS class to all instances.
+ * - Wraps the static `create()` method to automatically inject the tag.
+ * - Publishes a live `observedAttributes` getter across the class hierarchy.
+ * - Optionally injects an `attributeChangedCallback` attribute bridge.
+ *
+ * For all classes (element or not), it registers the class in the registry by {@link RegistryCategory}.
+ *
+ * @param {Type} Base - The class to register.
+ * @param {string} [elementName] - The custom element tag name. Inferred as the kebab-case of
+ * `className` if omitted.
+ * @param {string} [className] - The class name, used as the registry key. Inferred from
+ * `Base.name` if omitted.
+ * @param {DefineOptions} [options] - Configuration options. See {@link DefineOptions}.
+ * @returns {Type} The class, unchanged, after all setup has been applied.
+ *
+ * @example
+ * ```ts
+ * class MyEl extends TurboElement { ... }
+ * define(MyEl);                    // className → "MyEl", tag → "my-el"
+ * define(MyEl, "my-el");           // explicit tag, className inferred
+ * define(MyEl, "my-el", "MyEl");   // both explicit
+ *
+ * class MyModel extends TurboModel { ... }
+ * define(MyModel, undefined, "MyModel"); // non-element, registry only
+ * ```
+ */
+declare function define<Type extends new (...args: any[]) => any>(Base: Type, elementName?: string, className?: string, options?: DefineOptions): Type;
+/**
+ * @function findRegistered
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Finds a registered entry by name, optionally scoped to a specific category.
+ * If no category is provided, searches across all categories and returns the first match.
+ * @param {string} name - The registered name to search for.
+ * @param {RegistryCategory} [category] - The category to scope the search to. Searches all categories if omitted.
+ * @returns {RegistryEntry} The matching registry entry, or `undefined` if not found.
+ */
+declare function findRegistered(name: string, category?: RegistryCategory): RegistryEntry;
+/**
+ * @function getRegisteredByCategories
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries across one or more specified categories.
+ * @param {...RegistryCategory[]} categories - The categories to retrieve entries from.
+ * @returns {RegistryEntry[]} An array of all registry entries in the specified categories.
+ */
+declare function getRegisteredByCategories(...categories: RegistryCategory[]): RegistryEntry[];
+/**
+ * @function getAllRegistered
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries across every category in the registry.
+ * @returns {RegistryEntry[]} An array of all registry entries.
+ */
+declare function getAllRegistered(): RegistryEntry[];
+/**
+ * @function getRegisteredMvc
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries belonging to MVC-related categories:
+ * `TurboOperator`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
+ * `TurboConstrainer`, `TurboTool`, and `TurboView`.
+ * @returns {RegistryEntry[]} An array of all MVC registry entries.
+ */
+declare function getRegisteredMvc(): RegistryEntry[];
+/**
+ * @function getRegisteredElements
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns all registered entries belonging to element-related categories:
+ * `TurboElement`, `TurboProxiedElement`, `Element`, `HTMLElement`, `SVGElement`, and `MathMLElement`.
+ * @returns {RegistryEntry[]} An array of all element registry entries.
+ */
+declare function getRegisteredElements(): RegistryEntry[];
+/**
+ * @function addRegistryCategory
+ * @group Decorators
+ * @category Registry
+ *
+ * @description Associates a class constructor with a {@link RegistryCategory} in the TurboDom registry's
+ * category inference map. When {@link define} is called on a subclass, it walks the prototype chain and
+ * uses this map to determine the appropriate category without requiring direct imports of the base classes
+ * (which would cause circular dependencies).
+ *
+ * This should be called once per base class, after its definition, by the TurboDom internals.
+ * User-defined subclasses do not need to call this — category inference propagates automatically
+ * through the prototype chain.
+ *
+ * @param {new (...args: any[]) => object} type - The base class constructor to associate with a category.
+ * @param {RegistryCategory} [category] - The category to associate with the class. Defaults to the
+ * class name if omitted, which is useful when the class name matches a {@link RegistryCategory} value.
+ *
+ * @example
+ * ```ts
+ * // At the bottom of turboModel.ts, after class definition:
+ * addRegistryCategory(TurboModel, RegistryCategory.TurboModel);
+ *
+ * // Later, when a subclass is defined:
+ * class MyModel extends TurboModel { ... }
+ * define(MyModel, "MyModel"); // infers RegistryCategory.TurboModel automatically
+ * ```
+ */
+declare function addRegistryCategory(type: new (...args: any[]) => object, category?: RegistryCategory): void;
+/**
+ * @function getRegisteredEntry
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Returns the registry entry for a given class instance, looked up by its constructor.
+ * Walks the instance's prototype chain until it finds a registered constructor, so subclasses that
+ * were not themselves passed to {@link define} will still resolve to their nearest registered ancestor.
+ * @param {object} instance - The class instance to look up.
+ * @returns {RegistryEntry | undefined} The matching registry entry (containing `name`, `category`,
+ * `constructor`, and optionally `tag`), or `undefined` if no registered class is found in the chain.
+ */
+declare function getRegisteredEntry(instance: object): RegistryEntry;
 
 /**
  * @decorator
@@ -4830,28 +4827,28 @@ declare function interactor(name?: string): (_unused: unknown, context: ClassFie
 declare function tool(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
 /**
  * @decorator
- * @function enforcer
+ * @function constrainer
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched enforcer.
- * @param {string} [name] - The key name of the enforcer in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingEnforcer`, the key name will be `something`.
+ * fetched constrainer.
+ * @param {string} [name] - The key name of the constrainer in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingConstrainer`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @tool() protected textEnforcer: TurboEnforcer;
+ * @tool() protected textConstrainer: TurboConstrainer;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textEnforcer(): TurboEnforcer {
- *    if (this.mvc instanceof Mvc) return this.mvc.getEnforcer("text");
- *    if (typeof this.getEnforcer === "function") return this.getEnforcer("text");
+ * protected get textConstrainer(): TurboConstrainer {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getConstrainer("text");
+ *    if (typeof this.getConstrainer === "function") return this.getConstrainer("text");
  * }
  * ```
  */
-declare function enforcer(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
+declare function constrainer(name?: string): (_unused: unknown, context: ClassFieldDecoratorContext) => void;
 
 /**
  * @internal
@@ -5524,7 +5521,7 @@ type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataT
  * @group MVC
  * @category TurboModel
  */
-declare class TurboYModel<YType extends Map$1 | Array = Map$1 | Array, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<YType, DataKeyType, IdType, ComponentType, DataEntryType> {
+declare class TurboYModel<DataType = any, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private observer;
     /**
      * @inheritDoc
@@ -6573,6 +6570,7 @@ declare class TurboLabelElement<ElementTag extends ValidTag = any, ViewType exte
 declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboLabelElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
     readonly properties: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
     static defaultProperties: TurboInputProperties;
+    static create: <InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>) => TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
     protected static customCreate(properties: TurboInputProperties): object;
     locked: boolean;
     selectTextOnFocus: boolean;
@@ -6841,6 +6839,16 @@ declare class TurboSelectElement<ValueType = string, SecondaryValueType = string
     initialize(): void;
 }
 
+declare enum ContentSwitchMode {
+    fadeLeft = "fadeLeft",
+    fadeRight = "fadeRight",
+    carousel = "carousel"
+}
+type TurboContentSwitchProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    mode?: ContentSwitchMode;
+    transitionDuration?: number;
+    transitionReifect?: StatefulReifect<Shown> | StatefulReifectProperties<Shown>;
+};
 /**
  * @group Components
  * @category Reifect
@@ -6937,6 +6945,25 @@ declare class Reifect<ClassType extends object = Node> extends StatefulReifect<"
     set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>);
     initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"default", ClassType>): void;
     apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"default", ClassType>): void;
+}
+
+declare class TurboContentSwitch<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
+    static defaultProperties: {
+        transitionReifect: Reifect<Node>;
+    };
+    readonly properties: TurboContentSwitchProperties<ViewType, DataType, ModelType, EmitterType>;
+    private _previousSelectedIndex;
+    set mode(value: ContentSwitchMode);
+    get mode(): ContentSwitchMode;
+    set transitionDuration(_value: number);
+    get transitionDuration(): number;
+    set transitionReifect(value: Reifect);
+    set movementReifect(value: StatefulReifect<Shown>);
+    initialize(): void;
+    private applyFadeTransition;
+    private initCarouselEntry;
+    private applyCarouselTransition;
+    private generateTransitionReifect;
 }
 
 /**
@@ -7131,9 +7158,6 @@ declare class TurboRect extends DOMRect {
     overlaps(other: DOMRect): boolean;
     overlaps(point: Point): boolean;
     overlaps(a: Point, b: Point): boolean;
-}
-
-declare class TurboGrid<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
 }
 
 /**
@@ -7358,6 +7382,9 @@ declare class TurboButtonPopup<ElementTag extends ValidTag = any, ViewType exten
     private openPopup;
 }
 
+declare class TurboGrid<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel = TurboModel, EmitterType extends TurboEmitter = TurboEmitter<any>> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+}
+
 /**
  * @class TurboHeadlessElement
  * @group TurboElement
@@ -7445,7 +7472,7 @@ type ChildHandler = Node | ShadowRoot;
  * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
-declare const ApplyDefaultsMergeProperties: readonly ["interactors", "tools", "enforcers", "operators", "handlers"];
+declare const ApplyDefaultsMergeProperties: readonly ["interactors", "tools", "constrainers", "operators", "handlers"];
 /**
  * @type {ApplyDefaultsOptions}
  * @group Types
@@ -7492,7 +7519,7 @@ type TurbofyOptions = {
     excludeElementFunctions?: boolean;
     excludeEventFunctions?: boolean;
     excludeToolFunctions?: boolean;
-    excludeEnforcerFunctions?: boolean;
+    excludeConstrainerFunctions?: boolean;
     excludeMiscFunctions?: boolean;
     excludeReifectFunctions?: boolean;
 };
@@ -7680,6 +7707,16 @@ declare function eachEqualToAny<Type = any>(values: Type[], ...entries: Type[]):
 
 /**
  * @group Utilities
+ * @category String
+ *
+ * @description Extracts the extension from the given filename or path (e.g.: ".png").
+ * @param {string} str - The filename or path
+ * @return The extension, or an empty string if not found.
+ */
+declare function getFileExtension(str?: string): string;
+
+/**
+ * @group Utilities
  * @category Hash
  */
 declare function hashString(input: string): Promise<string>;
@@ -7730,6 +7767,53 @@ declare function randomFromRange(n1: number, n2: number): number;
  * @category Random
  */
 declare function randomString(length?: number): string;
+
+declare function replaceUrlParams(...params: {
+    name: string;
+    value: string;
+}[]): void;
+declare function getUrlParam(name: string): string;
+declare function pushUrlParams(...params: {
+    name: string;
+    value: string;
+}[]): void;
+declare function clearUrlParams(): void;
+
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from camelCase to kebab-case.
+ * @param {string} str - The string to convert
+ */
+declare function camelToKebabCase(str?: string): string;
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from kebab-case to camelCase.
+ * @param {string} str - The string to convert
+ */
+declare function kebabToCamelCase(str?: string): string;
+
+/**
+ * @description Formats the given number of seconds as "MM:SS". The ":" can be replaced and specified in the separator
+ * parameter.
+ * @param seconds
+ * @param separator
+ */
+declare function formatMMSS(seconds: number, separator?: string): string;
+/**
+ * @description Formats the given number of seconds as "HH:MM:SS". The ":" can be replaced and specified in the separator
+ * parameter.
+ * @param seconds
+ * @param separator
+ */
+declare function formatHHMMSS(seconds: number, separator?: string): string;
+declare function formatMmSs(seconds: number, separator?: string): string;
+
+declare function blobToUrl(blob: Blob): Promise<string>;
+declare function urlToBlob(url: string): Promise<Blob>;
 
 /**
  * @group Utilities
@@ -7816,31 +7900,6 @@ declare function stringify(value: any): string;
  * @returns {any} - The original value
  */
 declare function parse(str: string): any;
-/**
- * @group Utilities
- * @category String
- *
- * @description Extracts the extension from the given filename or path (e.g.: ".png").
- * @param {string} str - The filename or path
- * @return The extension, or an empty string if not found.
- */
-declare function getFileExtension(str?: string): string;
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from camelCase to kebab-case.
- * @param {string} str - The string to convert
- */
-declare function camelToKebabCase(str?: string): string;
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from kebab-case to camelCase.
- * @param {string} str - The string to convert
- */
-declare function kebabToCamelCase(str?: string): string;
 
 /**
  * @group Utilities
@@ -7852,6 +7911,8 @@ declare function kebabToCamelCase(str?: string): string;
  * @returns An SVGElement promise
  */
 declare function fetchSvg(path: string, logError?: boolean): Promise<SVGElement>;
+
+declare function getVideoDuration(input: Blob | string): Promise<number>;
 
 /**
  * @function createYDoc
@@ -8062,8 +8123,8 @@ type FontProperties = {
  */
 declare function loadLocalFont(font: FontProperties): void;
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEnforcer, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, enforcer, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, video };
-export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, EnforcerAddCallbackProperties, EnforcerCallbackProperties, EnforcerChecker, EnforcerMutator, EnforcerMutatorProperties, EnforcerSolver, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeEnforcerOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEnforcerProperties, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboLabelElementProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboOperatorProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };
+export type { ApplyDefaultsOptions, AutoOptions, BasicPropertyConfig, BlockStoreType, CacheOptions, ChildHandler, CloneElementOptions, ConstrainerAddCallbackProperties, ConstrainerCallbackProperties, ConstrainerChecker, ConstrainerMutator, ConstrainerMutatorProperties, ConstrainerSolver, Coordinate, DefaultEventNameEntry, DefaultEventNameKey, DefineOptions, ElementTagDefinition, ElementTagMap, EnabledTurboEventTypes, FeedforwardProperties, FlatKeyType, FlexRect, FontProperties, HTMLElementMutableFields, HTMLElementNonFunctions, HTMLTag, KeyType, ListenerCallback, ListenerOptions, ListenerProperties, MakeConstrainerOptions, MakeToolOptions, MatchListenerProperties, MathMLTag, MvcBlockKeyType, MvcBlocksType, MvcFlatKeyType, MvcGenerationProperties, MvcProperties, NodeListSlot, NodeListType, PartialRecord, PreventDefaultOptions, PropertyConfig, RegistryEntry, ReifectAppliedOptions, ReifectEnabledObject, ReifectInterpolator, ReifectObjectData, ReifectOnSwitchCallback, SVGTag, SVGTagMap, ScopedKey, SetToolOptions, SignalBox, SignalEntry, StateInterpolator, StateSpecificProperty, StatefulReifectCoreProperties, StatefulReifectProperties, StatelessPropertyConfig, StatelessReifectCoreProperties, StatelessReifectProperties, StylesRoot, StylesType, ToolBehaviorCallback, ToolBehaviorOptions, Turbo, TurboButtonPopupProperties, TurboConstrainerProperties, TurboContentSwitchProperties, TurboDragEventProperties, TurboDrawerProperties, TurboDropdownProperties, TurboElementDefaultInterface, TurboElementMvcInterface, TurboElementProperties, TurboElementPropertiesMap, TurboElementTagNameMap, TurboElementUiInterface, TurboEventManagerLockStateProperties, TurboEventManagerProperties, TurboEventManagerStateProperties, TurboEventNameEntry, TurboEventNameKey, TurboEventProperties, TurboHeadlessProperties, TurboIconProperties, TurboIconSwitchProperties, TurboIconToggleProperties, TurboInputProperties, TurboInteractorProperties, TurboKeyEventProperties, TurboLabelElementProperties, TurboMarkingMenuProperties, TurboModelProperties, TurboModelProxy, TurboNumericalInputProperties, TurboObserverProperties, TurboOperatorProperties, TurboPopupProperties, TurboProperties, TurboProxiedProperties, TurboRawEventProperties, TurboRectProperties, TurboRichElementProperties, TurboSelectElementProperties, TurboSelectInputEventProperties, TurboSelectProperties, TurboSelectWheelProperties, TurboSelectWheelStylingProperties, TurboToolProperties, TurboViewProperties, TurboWheelEventProperties, TurbofyOptions, ValidElement, ValidHTMLElement, ValidMathMLElement, ValidNode, ValidSVGElement, ValidTag, YDocumentProperties };
 
 // Flattened from relative module augmentations
 interface TurboSelector {
@@ -8373,15 +8434,15 @@ interface TurboTool<ElementType extends object = object> {
          */
         onDeactivate(): void;
     }
-interface TurboEnforcer {
+interface TurboConstrainer {
         /**
          * @function onActivate
-         * @description Function to execute when the enforcer is activated.
+         * @description Function to execute when the constrainer is activated.
          */
         onActivate(): void;
         /**
          * @function onDeactivate
-         * @description Function to execute when the enforcer is deactivated.
+         * @description Function to execute when the constrainer is deactivated.
          */
         onDeactivate(): void;
     }
@@ -8494,13 +8555,13 @@ interface TurboSelector<Type extends object = Node> {
          */
         tools: TurboTool[];
         /**
-         * @description The enforcers of the element's MVC structure.
+         * @description The constrainers of the element's MVC structure.
          */
-        enforcers: TurboEnforcer[];
+        constrainers: TurboConstrainer[];
         /**
          * @function setMvc
          * @description Configures the MVC structure for the element. Sets the provided MVC pieces (model, view,
-         * emitter, operators, handlers, interactors, tools, enforcers) on the element, initializes a default
+         * emitter, operators, handlers, interactors, tools, constrainers) on the element, initializes a default
          * emitter if none is provided, and initializes all MVC pieces unless explicitly disabled.
          * @param {MvcGenerationProperties} properties - The properties to configure the MVC structure.
          * @returns {this} Itself, allowing for method chaining.
@@ -8509,7 +8570,7 @@ interface TurboSelector<Type extends object = Node> {
         /**
          * @function initializeMvc
          * @description Initializes all MVC pieces attached to the element, in the following order: view,
-         * operators, interactors, tools, enforcers, and model. The model is initialized last to allow
+         * operators, interactors, tools, constrainers, and model. The model is initialized last to allow
          * the view and operators to set up their change callbacks first.
          * @returns {this} Itself, allowing for method chaining.
          */
@@ -8523,7 +8584,7 @@ interface TurboSelector<Type extends object = Node> {
          * @description Computes the structural difference between the element's current MVC configuration
          * and a provided configuration description. The comparison is constructor-based (not instance-based):
          * - For singular fields (`view`, `model`, `emitter`), the constructors are compared.
-         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `enforcers`),
+         * - For collection fields (`operators`, `handlers`, `interactors`, `tools`, `constrainers`),
          *   the result contains constructors present in the current MVC but absent from the provided configuration.
          * @param {MvcGenerationProperties<ViewType, DataType, ModelType, EmitterType>} [properties={}] -
          *  The configuration to compare against.
@@ -8620,26 +8681,26 @@ interface TurboSelector<Type extends object = Node> {
          */
         removeTool(keyOrInstance: string | TurboTool): this;
         /**
-         * @function getEnforcer
-         * @description Retrieves the attached MVC enforcer with the given key.
-         * @param {string} key - The enforcer's key.
-         * @returns {TurboEnforcer} - The enforcer.
+         * @function getConstrainer
+         * @description Retrieves the attached MVC constrainer with the given key.
+         * @param {string} key - The constrainer's key.
+         * @returns {TurboConstrainer} - The constrainer.
          */
-        getEnforcer(key: string): TurboEnforcer;
+        getConstrainer(key: string): TurboConstrainer;
         /**
-         * @function addEnforcer
-         * @description Adds the given enforcer to the element's MVC structure.
-         * @param {TurboEnforcer} enforcer - The enforcer to add.
+         * @function addConstrainer
+         * @description Adds the given constrainer to the element's MVC structure.
+         * @param {TurboConstrainer} constrainer - The constrainer to add.
          * @returns {this} Itself, allowing for method chaining.
          */
-        addEnforcer(enforcer: TurboEnforcer): this;
+        addConstrainer(constrainer: TurboConstrainer): this;
         /**
-         * @function removeEnforcer
-         * @description Removes the given enforcer from the element's MVC structure and unlinks it.
-         * @param {string | TurboEnforcer} keyOrInstance - The enforcer's key or instance to remove.
+         * @function removeConstrainer
+         * @description Removes the given constrainer from the element's MVC structure and unlinks it.
+         * @param {string | TurboConstrainer} keyOrInstance - The constrainer's key or instance to remove.
          * @returns {this} Itself, allowing for method chaining.
          */
-        removeEnforcer(keyOrInstance: string | TurboEnforcer): this;
+        removeConstrainer(keyOrInstance: string | TurboConstrainer): this;
     }
 interface TurboHeadlessElement extends TurboElementDefaultInterface {
     }
@@ -8647,305 +8708,312 @@ interface TurboHeadlessElement<ViewType extends TurboView = TurboView<any, any>,
     }
 interface TurboSelector {
         /**
-         * @description Array of all the enforcers attached to this element.
+         * @description Array of all the constrainers attached to this element.
          */
-        readonly enforcersNames: string[];
+        readonly constrainersNames: string[];
         /**
-         * @function makeEnforcer
-         * @description Creates a new enforcer attached to this element. Useful to maintain certain constraints or
-         * ensure some behaviors persist on a list of objects (by attaching solvers to this enforcer).
-         * @param {string} name - The name of the new enforcer.
-         * @param {MakeEnforcerOptions} [options] - Options parameter to configure the newly-created enforcer.
+         * @function makeConstrainer
+         * @description Creates a new constrainer attached to this element. Useful to maintain certain constraints or
+         * ensure some behaviors persist on a list of objects (by attaching solvers to this constrainer).
+         * @param {string} name - The name of the new constrainer.
+         * @param {MakeConstrainerOptions} [options] - Options parameter to configure the newly-created constrainer.
          * @return {this} - Itself for chaining.
          */
-        makeEnforcer(name: string, options?: MakeEnforcerOptions): this;
+        makeConstrainer(name: string, options?: MakeConstrainerOptions): this;
         /**
-         * @description Array of active enforcers on this element.
+         * @description Array of active constrainers on this element.
          */
-        readonly activeEnforcers: string[];
+        readonly activeConstrainers: string[];
         /**
-         * @function activateEnforcer
-         * @description Activate the given enforcer.
-         * @param {string[]} enforcers - The name of the enforcer(s) to activate. Defaults to the first active enforcer.
+         * @function activateConstrainer
+         * @description Activate the given constrainer.
+         * @param {string[]} constrainers - The name of the constrainer(s) to activate. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        activateEnforcer(...enforcers: string[]): this;
+        activateConstrainer(...constrainers: string[]): this;
         /**
-         * @function deactivateEnforcer
-         * @description Deactivate the given enforcer.
-         * @param {string[]} enforcers - The name of the enforcer(s) to deactivate. Defaults to the first active enforcer.
+         * @function deactivateConstrainer
+         * @description Deactivate the given constrainer.
+         * @param {string[]} constrainers - The name of the constrainer(s) to deactivate. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        deactivateEnforcer(...enforcers: string[]): this;
+        deactivateConstrainer(...constrainers: string[]): this;
         /**
-         * @function toggleEnforcer
-         * @description Toggle the active state of the given enforcer.
-         * @param {string} enforcer - The name of the enforcer to toggle. Defaults to the first active enforcer.
-         * @param {boolean} [force] - If set, the enforcer's active state will be set to this value.
+         * @function toggleConstrainer
+         * @description Toggle the active state of the given constrainer.
+         * @param {string} constrainer - The name of the constrainer to toggle. Defaults to the first active constrainer.
+         * @param {boolean} [force] - If set, the constrainer's active state will be set to this value.
          * @return {this} - Itself for chaining.
          */
-        toggleEnforcer(enforcer?: string, force?: boolean): this;
+        toggleConstrainer(constrainer?: string, force?: boolean): this;
         /**
-         * @function activateOnlyEnforcer
-         * @description Activate the provided enforcer and deactivate all other enforcers attached to this element.
-         * @param {string} enforcer - The enforcer name to activate as the single active enforcer. Defaults to the
-         * first active enforcer.
+         * @function activateOnlyConstrainer
+         * @description Activate the provided constrainer and deactivate all other constrainers attached to this element.
+         * @param {string} constrainer - The constrainer name to activate as the single active constrainer. Defaults to the
+         * first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        activateOnlyEnforcer(enforcer: string): this;
+        activateOnlyConstrainer(constrainer: string): this;
         /**
-         * @function activateAllEnforcers
-         * @description Activate all the enforcers attached to this element.
+         * @function activateAllConstrainers
+         * @description Activate all the constrainers attached to this element.
          * @return {this} - Itself for chaining.
          */
-        activateAllEnforcers(): this;
+        activateAllConstrainers(): this;
         /**
-         * @function deactivateAllEnforcers
-         * @description Deactivate all the enforcers attached to this element.
+         * @function deactivateAllConstrainers
+         * @description Deactivate all the constrainers attached to this element.
          * @return {this} - Itself for chaining.
          */
-        deactivateAllEnforcers(): this;
+        deactivateAllConstrainers(): this;
         /**
-         * @function onEnforcerActivate
-         * @description Get the delegate fired when the enforcer of the given name is activated.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @function onConstrainerActivate
+         * @description Get the delegate fired when the constrainer of the given name is activated.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {Delegate<() => void>} - The delegate.
          */
-        onEnforcerActivate(enforcer?: string): Delegate<() => void>;
+        onConstrainerActivate(constrainer?: string): Delegate<() => void>;
         /**
-         * @function onEnforcerDeactivate
-         * @description Get the delegate fired when the enforcer of the given name is deactivated.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @function onConstrainerDeactivate
+         * @description Get the delegate fired when the constrainer of the given name is deactivated.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {Delegate<() => void>} - The delegate.
          */
-        onEnforcerDeactivate(enforcer?: string): Delegate<() => void>;
+        onConstrainerDeactivate(constrainer?: string): Delegate<() => void>;
         /**
-         * @function getEnforcerPriority
-         * @description Get the priority of the targeted enforcer. Higher priority enforcers (lower number) should
+         * @function getConstrainerPriority
+         * @description Get the priority of the targeted constrainer. Higher priority constrainers (lower number) should
          * be resolved first.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
-         * @return {number} - The enforcer priority.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
+         * @return {number} - The constrainer priority.
          */
-        getEnforcerPriority(enforcer?: string): number;
+        getConstrainerPriority(constrainer?: string): number;
         /**
-         * @function setEnforcerPriority
-         * @description Set the priority of the targeted enforcer. Higher priority enforcers (lower number) should
+         * @function setConstrainerPriority
+         * @description Set the priority of the targeted constrainer. Higher priority constrainers (lower number) should
          * be resolved first.
          * @param {number} priority - The priority value to set.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        setEnforcerPriority(priority: number, enforcer?: string): this;
+        setConstrainerPriority(priority: number, constrainer?: string): this;
         /**
-         * @function getEnforcerObjectList
-         * @description Retrieve the list of objects that are constrained by the given enforcer.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @function getConstrainerObjectList
+         * @description Retrieve the list of objects that are constrained by the given constrainer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {TurboNodeList} - The list of objects. To manipulate, check {@link TurboNodeList}.
          */
-        getEnforcerObjectList(enforcer?: string): TurboNodeList;
+        getConstrainerObjectList(constrainer?: string): TurboNodeList;
         /**
-         * @function onEnforcerObjectListChange
-         * @description Get the delegate fired whenever an object is added to or removed from the enforcer's object list.
-         * Defaults to the children of the element the enforcer is attached to.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @function onConstrainerObjectListChange
+         * @description Get the delegate fired whenever an object is added to or removed from the constrainer's object list.
+         * Defaults to the children of the element the constrainer is attached to.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {Delegate<(object: object, status: "added" | "removed") => void>} - The delegate.
          */
-        onEnforcerObjectListChange(enforcer?: string): Delegate<(object: object, status: "added" | "removed") => void>;
+        onConstrainerObjectListChange(constrainer?: string): Delegate<(object: object, status: "added" | "removed") => void>;
         /**
-         * @function getEnforcerTriggerList
-         * @description Retrieve the list of objects that trigger the given enforcer to resolve.
-         * Interacting with any of these objects would typically lead to the solving of the given enforcer.
-         * Defaults to the enforcer's object list.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @function getConstrainerTriggerList
+         * @description Retrieve the list of objects that trigger the given constrainer to resolve.
+         * Interacting with any of these objects would typically lead to the solving of the given constrainer.
+         * Defaults to the constrainer's object list.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {TurboNodeList} - The list of trigger objects. To manipulate, check {@link TurboNodeList}.
          */
-        getEnforcerTriggerList(enforcer?: string): TurboNodeList;
+        getConstrainerTriggerList(constrainer?: string): TurboNodeList;
         /**
-         * @function getEnforcerQueue
-         * @description Retrieve the current queue to be processed by the enforcer while resolving.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
-         * @return {TurboQueue<object>} - The current enforcer queue.
+         * @function getConstrainerQueue
+         * @description Retrieve the current queue to be processed by the constrainer while resolving.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
+         * @return {TurboQueue<object>} - The current constrainer queue.
          */
-        getEnforcerQueue(enforcer?: string): TurboQueue<object>;
+        getConstrainerQueue(constrainer?: string): TurboQueue<object>;
         /**
-         * @function getDefaultEnforcerQueue
-         * @description Retrieve the default queue template for the enforcer, used when starting a new resolving pass.
-         * It defaults to the enforcer's object list.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
-         * @return {TurboQueue<object>} - The default enforcer queue.
+         * @function getDefaultConstrainerQueue
+         * @description Retrieve the default queue template for the constrainer, used when starting a new resolving pass.
+         * It defaults to the constrainer's object list.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
+         * @return {TurboQueue<object>} - The default constrainer queue.
          */
-        getDefaultEnforcerQueue(enforcer?: string): TurboQueue<object>;
+        getDefaultConstrainerQueue(constrainer?: string): TurboQueue<object>;
         /**
-         * @function setDefaultEnforcerQueue
-         * @description Define the default queue template for the enforcer, used when starting a new resolving pass.
+         * @function setDefaultConstrainerQueue
+         * @description Define the default queue template for the constrainer, used when starting a new resolving pass.
          * @param {object[] | TurboQueue<object>} queue - The queue (or list to build a queue from).
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        setDefaultEnforcerQueue(queue: object[] | TurboQueue<object>, enforcer?: string): this;
+        setDefaultConstrainerQueue(queue: object[] | TurboQueue<object>, constrainer?: string): this;
         /**
-         * @function getObjectPassesForEnforcer
+         * @function getObjectPassesForConstrainer
          * @description Retrieve how many times the given object has been processed for the current resolving session
-         * of the enforcer.
+         * of the constrainer.
          * @param {object} object - The object to query.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {number} - Number of passes already performed on this object.
          */
-        getObjectPassesForEnforcer(object: object, enforcer?: string): number;
+        getObjectPassesForConstrainer(object: object, constrainer?: string): number;
         /**
-         * @function getMaxPassesForEnforcer
-         * @description Get the maximum number of passes allowed per object for this enforcer during resolving.
+         * @function getMaxPassesForConstrainer
+         * @description Get the maximum number of passes allowed per object for this constrainer during resolving.
          * This helps prevent infinite cycles in constraint propagation.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {number} - The maximum allowed passes.
          */
-        getMaxPassesForEnforcer(enforcer?: string): number;
+        getMaxPassesForConstrainer(constrainer?: string): number;
         /**
-         * @function setMaxPassesForEnforcer
-         * @description Set the maximum number of passes allowed per object for this enforcer during resolving. This
+         * @function setMaxPassesForConstrainer
+         * @description Set the maximum number of passes allowed per object for this constrainer during resolving. This
          * helps prevent infinite cycles in constraint propagation.
          * @param {number} passes - Maximum number of passes.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        setMaxPassesForEnforcer(passes: number, enforcer?: string): this;
+        setMaxPassesForConstrainer(passes: number, constrainer?: string): this;
         /**
-         * @function getObjectDataForEnforcer
-         * @description Retrieve custom per-object data for this enforcer. It is reset on every new
+         * @function getObjectDataForConstrainer
+         * @description Retrieve custom per-object data for this constrainer. It is reset on every new
          * resolving session.
          * @param {object} object - The object to query.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {Record<string, any>} - The stored data object (or an empty object if none).
          */
-        getObjectDataForEnforcer(object: object, enforcer?: string): Record<string, any>;
+        getObjectDataForConstrainer(object: object, constrainer?: string): Record<string, any>;
         /**
-         * @function setObjectDataForEnforcer
-         * @description Set custom per-object data for this enforcer. It is reset on every new resolving session.
+         * @function setObjectDataForConstrainer
+         * @description Set custom per-object data for this constrainer. It is reset on every new resolving session.
          * @param {object} object - The object to update.
          * @param {Record<string, any>} [data] - The new data object to associate with this object.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        setObjectDataForEnforcer(object: object, data?: Record<string, any>, enforcer?: string): this;
+        setObjectDataForConstrainer(object: object, data?: Record<string, any>, constrainer?: string): this;
         /**
          * @function addChecker
-         * @description Register a checker in the enforcer. Checkers dictate whether the event should continue
+         * @description Register a checker in the constrainer. Checkers dictate whether the event should continue
          * executing depending on the provided context (event, tool, target, etc.).
-         * @param {EnforcerAddCallbackProperties<EnforcerChecker>} properties - Configuration object, including the
+         * @param {ConstrainerAddCallbackProperties<ConstrainerChecker>} properties - Configuration object, including the
          * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
-         * `enforcer`, and the `priority` of the checker.
+         * `constrainer`, and the `priority` of the checker.
          * @return {this} - Itself for chaining.
          */
-        addChecker(properties: EnforcerAddCallbackProperties<EnforcerChecker>): this;
+        addChecker(properties: ConstrainerAddCallbackProperties<ConstrainerChecker>): this;
         /**
          * @function removeChecker
-         * @description Remove a checker from the given enforcer by its name.
+         * @description Remove a checker from the given constrainer by its name.
          * @param {string} name - The checker name.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        removeChecker(name: string, enforcer?: string): this;
+        removeChecker(name: string, constrainer?: string): this;
         /**
          * @function clearCheckers
-         * @description Remove all checkers attached to the given enforcer.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @description Remove all checkers attached to the given constrainer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        clearCheckers(enforcer?: string): this;
+        clearCheckers(constrainer?: string): this;
         /**
-         * @function checkEnforcer
-         * @description Evaluate all checkers for the targeted enforcer and return whether the event should proceed or halt.
-         * @param {EnforcerCallbackProperties} [properties] - Context passed to each checker.
-         * @return {boolean} - Whether the enforcer passes all checks.
+         * @function checkConstrainer
+         * @description Evaluate all checkers for the targeted constrainer and return whether the event should proceed or halt.
+         * @param {ConstrainerCallbackProperties} [properties] - Context passed to each checker.
+         * @return {boolean} - Whether the constrainer passes all checks.
          */
-        checkEnforcer(properties?: EnforcerCallbackProperties): boolean;
+        checkConstrainer(properties?: ConstrainerCallbackProperties): boolean;
         /**
-         * @function checkEnforcersForEvent
-         * @description Evaluate checkers for all relevant enforcers for a given event context.
-         * @param {EnforcerCallbackProperties} [properties] - Event context.
+         * @function checkConstrainersForEvent
+         * @description Evaluate checkers for all relevant constrainers for a given event context.
+         * @param {ConstrainerCallbackProperties} [properties] - Event context.
          * @return {boolean} - Whether all the checkers allowed the event to proceed.
          */
-        checkEnforcersForEvent(properties?: EnforcerCallbackProperties): boolean;
+        checkConstrainersForEvent(properties?: ConstrainerCallbackProperties): boolean;
         /**
          * @function addMutator
-         * @description Register a mutator in the enforcer. Mutators compute or transform a value based on the context.
-         * @param {EnforcerAddCallbackProperties<EnforcerMutator>} properties - Configuration object, including the
+         * @description Register a mutator in the constrainer. Mutators compute or transform a value based on the context.
+         * @param {ConstrainerAddCallbackProperties<ConstrainerMutator>} properties - Configuration object, including the
          * mutator `callback` to be executed, the `name` of the mutator to access it later, the name of the attached
-         * `enforcer`, and the `priority` of the mutator.
+         * `constrainer`, and the `priority` of the mutator.
          * @return {this} - Itself for chaining.
          */
-        addMutator(properties: EnforcerAddCallbackProperties<EnforcerMutator>): this;
+        addMutator(properties: ConstrainerAddCallbackProperties<ConstrainerMutator>): this;
         /**
          * @function removeMutator
-         * @description Remove a mutator from the given enforcer by its name.
+         * @description Remove a mutator from the given constrainer by its name.
          * @param {string} name - The mutator name.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        removeMutator(name: string, enforcer?: string): this;
+        removeMutator(name: string, constrainer?: string): this;
         /**
          * @function clearMutators
-         * @description Remove all mutators attached to the given enforcer.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @description Remove all mutators attached to the given constrainer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        clearMutators(enforcer?: string): this;
+        clearMutators(constrainer?: string): this;
         /**
          * @function mutate
          * @template Type - The type of the value to mutate
-         * @description Execute a mutator for the targeted enforcer and return the resulting value.
-         * @param {EnforcerMutatorProperties<Type>} [properties] - Context object, including the
+         * @description Execute a mutator for the targeted constrainer and return the resulting value.
+         * @param {ConstrainerMutatorProperties<Type>} [properties] - Context object, including the
          * `mutation` to execute, and the input `value` to mutate.
          * @return {Type} - The mutated result.
          */
-        mutate<Type = any>(properties?: EnforcerMutatorProperties<Type>): Type;
+        mutate<Type = any>(properties?: ConstrainerMutatorProperties<Type>): Type;
         /**
          * @function addSolver
-         * @description Register a solver in the enforcer. Solvers typically execute after an event is fired to
-         * ensure the enforcer's constraints are maintained. They process all objects in the enforcer's queue,
+         * @description Register a solver in the constrainer. Solvers typically execute after an event is fired to
+         * ensure the constrainer's constraints are maintained. They process all objects in the constrainer's queue,
          * one after the other.
-         * @param {EnforcerAddCallbackProperties<EnforcerSolver>} properties - Configuration object, including the
+         * @param {ConstrainerAddCallbackProperties<ConstrainerSolver>} properties - Configuration object, including the
          * solver `callback` to be executed, the `name` of the solver to access it later, the name of the attached
-         * `enforcer`, and the `priority` of the solver.
+         * `constrainer`, and the `priority` of the solver.
          * @return {this} - Itself for chaining.
          */
-        addSolver(properties: EnforcerAddCallbackProperties<EnforcerSolver>): this;
+        addSolver(properties: ConstrainerAddCallbackProperties<ConstrainerSolver>): this;
         /**
          * @function removeSolver
-         * @description Remove the given function from the enforcer's list of solvers.
+         * @description Remove the given function from the constrainer's list of solvers.
          * @param {string} name - The solver's name.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        removeSolver(name: string, enforcer?: string): this;
+        removeSolver(name: string, constrainer?: string): this;
         /**
          * @function clearSolvers
-         * @description Remove all solvers attached to the enforcer.
-         * @param {string} [enforcer] - The name of the targeted enforcer. Defaults to the first active enforcer.
+         * @description Remove all solvers attached to the constrainer.
+         * @param {string} [constrainer] - The name of the targeted constrainer. Defaults to the first active constrainer.
          * @return {this} - Itself for chaining.
          */
-        clearSolvers(enforcer?: string): this;
+        clearSolvers(constrainer?: string): this;
         /**
-         * @function solveEnforcer
-         * @description Solve the enforcer by executing all of its attached solvers. Each solver will be executed
-         * on every object in the enforcer's queue, incrementing its number of passes in the process.
-         * @param {EnforcerCallbackProperties} [properties] - Options object to configure the context.
+         * @function solveConstrainer
+         * @description Solve the constrainer by executing all of its attached solvers. Each solver will be executed
+         * on every object in the constrainer's queue, incrementing its number of passes in the process.
+         * @param {ConstrainerCallbackProperties} [properties] - Options object to configure the context.
          * @return {this} - Itself for chaining.
          */
-        solveEnforcer(properties?: EnforcerCallbackProperties): this;
+        solveConstrainer(properties?: ConstrainerCallbackProperties): this;
         /**
-         * @function solveEnforcersForEvent
-         * @description Solve all relevant enforcers for a given event context.
-         * @param {EnforcerCallbackProperties} [properties] - Event context to pass to solvers.
+         * @function solveConstrainersForEvent
+         * @description Solve all relevant constrainers for a given event context.
+         * @param {ConstrainerCallbackProperties} [properties] - Event context to pass to solvers.
          * @return {this} - Itself for chaining.
          */
-        solveEnforcersForEvent(properties?: EnforcerCallbackProperties): this;
+        solveConstrainersForEvent(properties?: ConstrainerCallbackProperties): this;
     }
 interface TurboSelector {
         /**
          * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
          */
         readonly closestRoot: StylesRoot;
+        /**
+         * @description Whether the element is selected or not. Setting it on an Element will accordingly toggle on it
+         * the "selected" CSS class (or whichever default selected class was set for this element) and update the UI.
+         */
+        selected: boolean;
+        defaultSelectedClasses: string | string[];
+        readonly onSelected: Delegate<(value: boolean) => void>;
         /**
          * @function setStyle
          * @description Set a certain style attribute of the element to the provided value.
@@ -9000,6 +9068,9 @@ interface TurboElementTagNameMap {
     }
 interface TurboElementTagNameMap {
         "turbo-select-element": TurboSelectElement;
+    }
+interface TurboElementTagNameMap {
+        "turbo-content-switch": TurboContentSwitch;
     }
 interface TurboElementTagNameMap {
         "turbo-drawer": TurboDrawer;
@@ -9196,12 +9267,20 @@ interface TurboSelector {
          * @overload
          * @function closest
          * @description Finds the closest ancestor of the current element (or the current element itself) that matches
-         * the provided CSS selector.
-         * @param {Type} type - The (valid) CSS selector string.
-         * constructor/class to match.
+         * that is an instance of the element associated with the given tag name.
+         * @param {Type} type - The (valid) tag name.
          * @returns {Element} The matching ancestor element, or null if no match is found.
          */
-        closest(type: string): Element;
+        closest<Tag extends ValidTag>(type: Tag): ValidElement<Tag>;
+        /**
+         * @overload
+         * @function closest
+         * @description Finds the closest ancestor of the current element (or the current element itself) that matches
+         * the provided CSS selector.
+         * @param {Type} type - The (valid) CSS selector string.
+         * @returns {Element} The matching ancestor element, or null if no match is found.
+         */
+        closest<Tag extends string>(type: Tag): Element;
         /**
          * @overload
          * @function closest
@@ -9209,7 +9288,6 @@ interface TurboSelector {
          * @description Finds the closest ancestor of the current element (or the current element itself) that is an
          * instance of the given class.
          * @param {new (...args: any[]) => Type} type - The class to match.
-         * constructor/class to match.
          * @returns {Element} The matching ancestor element, or null if no match is found.
          */
         closest<Type extends Element>(type: new (...args: any[]) => Type): Type;

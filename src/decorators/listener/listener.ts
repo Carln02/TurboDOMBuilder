@@ -1,5 +1,5 @@
 import {ListenerProperties} from "../../turboComponents/datatypes/listener/listener.types";
-import {camelToKebabCase} from "../../utils/dataManipulation/string";
+import {camelToKebabCase} from "../../utils/conversions/string";
 import {DefaultEventName} from "../../types/eventNaming.types";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {turbo} from "../../turboFunctions/turboFunctions";

@@ -50,7 +50,8 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
     protected static managers: TurboEventManager[] = [];
 
     public static get instance(): TurboEventManager {
-        return TurboEventManager.managers.length > 0 ? TurboEventManager.managers[0] : TurboEventManager.create();
+        if (TurboEventManager.managers.length == 0) this.managers.push(TurboEventManager.create());
+        return TurboEventManager.managers[0];
     }
 
     public static get allManagers(): TurboEventManager[] {
@@ -244,6 +245,16 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
         this.model.state.preventDefaultTouch = value;
     }
 
+    public get preventDefaults(): boolean {
+        return this.preventDefaultMouse || this.preventDefaultTouch || this.preventDefaultWheel;
+    }
+
+    public set preventDefaults(value: boolean) {
+        this.model.state.preventDefaultWheel = value;
+        this.model.state.preventDefaultMouse = value;
+        this.model.state.preventDefaultTouch = value;
+    }
+
     /*
      *
      *
@@ -366,7 +377,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
 
             //Deselect and deactivate previous tool
             this.getSimilarTools(previousTool).forEach(element => {
-                if (options.select) this.model.utils.selectTool(element, false);
+                if (options.select) turbo(element).selected = false;
                 if (options.activate) this.model.utils.activateTool(element, this.getToolName(previousTool), false);
             });
         }
@@ -378,7 +389,7 @@ class TurboEventManager<ToolType extends string = string> extends TurboBaseEleme
         //Select and activate the tool
         this.getSimilarTools(tool).forEach(element => {
             if (options.activate) this.model.utils.activateTool(element, this.getToolName(tool), true);
-            if (options.select) this.model.utils.selectTool(element, true);
+            if (options.select) turbo(element).selected = true;
         });
 
         //Fire tool changed

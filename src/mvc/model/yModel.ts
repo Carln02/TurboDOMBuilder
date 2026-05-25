@@ -10,12 +10,12 @@ import {KeyType} from "../../types/basic.types";
  * @category TurboModel
  */
 class TurboYModel<
-    YType extends YMap | YArray = YMap | YArray,
+    DataType = any,
     DataKeyType extends KeyType = any,
     IdType extends KeyType = any,
     ComponentType extends object = any,
     DataEntryType = any
-> extends TurboModel<YType, DataKeyType, IdType, ComponentType, DataEntryType> {
+> extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
 
     /**
@@ -82,7 +82,7 @@ class TurboYModel<
      */
     protected hasAction(data: any, key: KeyType): boolean {
         if (data instanceof YMap) return data.has(key.toString());
-        if (data instanceof YArray) return typeof key === "number" && key >= 0 && key < this.size;
+        if (data instanceof YArray) return typeof key === "number" && key >= 0 && key < this.dataSize;
         return super.hasAction(data, key);
     }
 
@@ -91,7 +91,7 @@ class TurboYModel<
      */
     protected deleteAction(data: any, key: KeyType) {
         if (data instanceof YMap) data.delete(key.toString());
-        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size) data.delete(key, 1);
+        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize) data.delete(key, 1);
         else super.deleteAction(data, key);
     }
 

@@ -1,7 +1,7 @@
 import {turbo} from "../turboFunctions/turboFunctions";
 import {TurboEventManager} from "../eventHandling/turboEventManager/turboEventManager";
 
-type FieldType = "Operator" | "Handler" | "Interactor" | "Tool" | "Enforcer";
+type FieldType = "Operator" | "Handler" | "Interactor" | "Tool" | "Constrainer";
 
 /**
  * @internal
@@ -42,8 +42,8 @@ function generateField(context: ClassFieldDecoratorContext, type: FieldType, nam
                     case "Tool":
                         functionName = "getTool";
                         break;
-                    case "Enforcer":
-                        functionName = "getEnforcer";
+                    case "Constrainer":
+                        functionName = "getConstrainer";
                         break;
                 }
 
@@ -176,31 +176,31 @@ function tool(name?: string) {
 
 /**
  * @decorator
- * @function enforcer
+ * @function constrainer
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched enforcer.
- * @param {string} [name] - The key name of the enforcer in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingEnforcer`, the key name will be `something`.
+ * fetched constrainer.
+ * @param {string} [name] - The key name of the constrainer in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingConstrainer`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @tool() protected textEnforcer: TurboEnforcer;
+ * @tool() protected textConstrainer: TurboConstrainer;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textEnforcer(): TurboEnforcer {
- *    if (this.mvc instanceof Mvc) return this.mvc.getEnforcer("text");
- *    if (typeof this.getEnforcer === "function") return this.getEnforcer("text");
+ * protected get textConstrainer(): TurboConstrainer {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getConstrainer("text");
+ *    if (typeof this.getConstrainer === "function") return this.getConstrainer("text");
  * }
  * ```
  */
-function enforcer(name?: string) {
+function constrainer(name?: string) {
     return function (_unused: unknown, context: ClassFieldDecoratorContext) {
-        generateField(context, "Enforcer", name);
+        generateField(context, "Constrainer", name);
     };
 }
 
-export {operator, handler, interactor, tool, enforcer};
+export {operator, handler, interactor, tool, constrainer};

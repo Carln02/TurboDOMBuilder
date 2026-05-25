@@ -9108,7 +9108,7 @@
    * @category Misc
    * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
    */
-  const ApplyDefaultsMergeProperties = ["interactors", "tools", "substrates", "controllers", "handlers"];
+  const ApplyDefaultsMergeProperties = ["interactors", "tools", "constrainers", "operators", "handlers"];
 
   function setupMiscFunctions() {
       /**
@@ -9363,7 +9363,7 @@
       else {
           element = document.createElement(properties.tag || "div");
       }
-      turbo(element).setProperties(properties);
+      turbo(element, true).setProperties(properties);
       return element;
   }
   /**
@@ -9383,7 +9383,7 @@
           element = document.createElementNS(MathMLNamespace, properties.tag || "math");
       else
           element = document.createElement(properties.tag || "div");
-      turbo(element).setProperties(properties);
+      turbo(element, true).setProperties(properties);
       return element;
   }
   /**
@@ -9711,44 +9711,6 @@
       catch {
       }
       return str;
-  }
-  /**
-   * @group Utilities
-   * @category String
-   *
-   * @description Extracts the extension from the given filename or path (e.g.: ".png").
-   * @param {string} str - The filename or path
-   * @return The extension, or an empty string if not found.
-   */
-  function getFileExtension(str) {
-      if (!str || str.length == 0)
-          return "";
-      const match = str.match(/\.\S{1,4}$/);
-      return match ? match[0] : "";
-  }
-  /**
-   * @group Utilities
-   * @category String
-   *
-   * @description converts the provided string from camelCase to kebab-case.
-   * @param {string} str - The string to convert
-   */
-  function camelToKebabCase(str) {
-      if (!str || str.length == 0)
-          return;
-      return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-  }
-  /**
-   * @group Utilities
-   * @category String
-   *
-   * @description converts the provided string from kebab-case to camelCase.
-   * @param {string} str - The string to convert
-   */
-  function kebabToCamelCase(str) {
-      if (!str || str.length == 0)
-          return;
-      return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
   }
   function areSimilar(...entries) {
       if (entries.length < 2)
@@ -10212,6 +10174,12 @@
           eff.run();
           return () => eff.dispose();
       }
+  }
+  function markDirty(target, ...keys) {
+      const computedKey = keys.length > 1
+          ? utils$a.getKeyFromPath(target, keys)
+          : keys[0];
+      return utils$a.markDirty(target, computedKey ?? keys[0]);
   }
   /**
    * @function initializeEffects
@@ -10963,7 +10931,7 @@
    * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
    *
    * **MVC pieces:**
-   * - `TurboController`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboSubstrate`,
+   * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboConstrainer`,
    *   `TurboView`, `TurboEmitter`, `TurboModel`
    *
    * **Fallback:**
@@ -10983,11 +10951,11 @@
       RegistryCategory["TurboModel"] = "TurboModel";
       RegistryCategory["TurboView"] = "TurboView";
       RegistryCategory["TurboEmitter"] = "TurboEmitter";
-      RegistryCategory["TurboController"] = "TurboController";
+      RegistryCategory["TurboOperator"] = "TurboOperator";
       RegistryCategory["TurboHandler"] = "TurboHandler";
       RegistryCategory["TurboInteractor"] = "TurboInteractor";
       RegistryCategory["TurboTool"] = "TurboTool";
-      RegistryCategory["TurboSubstrate"] = "TurboSubstrate";
+      RegistryCategory["TurboConstrainer"] = "TurboConstrainer";
       RegistryCategory["Other"] = "Other";
   })(RegistryCategory || (RegistryCategory = {}));
 
@@ -11080,6 +11048,31 @@
           }
           return result;
       }
+  }
+
+  /**
+   * @group Utilities
+   * @category String
+   *
+   * @description converts the provided string from camelCase to kebab-case.
+   * @param {string} str - The string to convert
+   */
+  function camelToKebabCase(str) {
+      if (!str || str.length == 0)
+          return;
+      return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+  }
+  /**
+   * @group Utilities
+   * @category String
+   *
+   * @description converts the provided string from kebab-case to camelCase.
+   * @param {string} str - The string to convert
+   */
+  function kebabToCamelCase(str) {
+      if (!str || str.length == 0)
+          return;
+      return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
   }
 
   const utils$9 = new DefineDecoratorUtils();
@@ -11228,6 +11221,7 @@
       utils$9.setCategory(type, type.name);
   }
 
+  const META = Symbol("__meta__");
   /**
    * @class TurboModel
    * @group MVC
@@ -11329,6 +11323,12 @@
               this._data = data;
               if (data)
                   this.initialize();
+          }
+          /**
+           * @description The metadata held by this model. Separate from this model's data.
+           */
+          get metadata() {
+              return this.nest(META);
           }
           /**
            * @constructor
@@ -11718,10 +11718,10 @@
               return this.keys.map(key => this.get(key));
           }
           /**
-           * @property size
+           * @property dataSize
            * @description Number of entries in the model.
            */
-          get size() {
+          get dataSize() {
               return this.keys.length;
           }
           /**
@@ -12212,7 +12212,7 @@
           if (!entry) {
               entry = {
                   emitter: new TurboEmitter(),
-                  controllers: new Map(), substrates: new Map(), interactors: new Map(), tools: new Map(),
+                  operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
                   emitterFireCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
               };
               this.dataMap.set(element, entry);
@@ -12260,15 +12260,15 @@
               return;
           emitter.model = attach ? mvc.model : undefined;
       }
-      updateController(element, controller, attach = true) {
-          if (!controller || !element)
+      updateOperator(element, operator, attach = true) {
+          if (!operator || !element)
               return;
           const mvc = this.peek(element);
           if (!mvc)
               return;
-          controller.emitter = attach ? mvc.emitter : undefined;
-          controller.model = attach ? mvc.model : undefined;
-          controller.view = attach ? mvc.view : undefined;
+          operator.emitter = attach ? mvc.emitter : undefined;
+          operator.model = attach ? mvc.model : undefined;
+          operator.view = attach ? mvc.view : undefined;
       }
       updateHandler(element, handler, attach = true) {
           if (!element || !handler)
@@ -12298,15 +12298,15 @@
           tool.view = attach ? mvc.view : undefined;
           tool.emitter = attach ? mvc.emitter : undefined;
       }
-      updateSubstrate(element, substrate, attach = true) {
-          if (!element || !substrate)
+      updateConstrainer(element, constrainer, attach = true) {
+          if (!element || !constrainer)
               return;
           const mvc = this.peek(element);
           if (!mvc)
               return;
-          substrate.model = attach ? mvc.model : undefined;
-          substrate.view = attach ? mvc.view : undefined;
-          substrate.emitter = attach ? mvc.emitter : undefined;
+          constrainer.model = attach ? mvc.model : undefined;
+          constrainer.view = attach ? mvc.view : undefined;
+          constrainer.emitter = attach ? mvc.emitter : undefined;
       }
       linkPieces(element) {
           if (!element)
@@ -12317,11 +12317,11 @@
           this.updateModel(element, mvc.model);
           this.updateEmitter(element, mvc.emitter);
           this.updateView(element, mvc.view);
-          mvc.controllers.forEach(controller => this.updateController(element, controller));
+          mvc.operators.forEach(operator => this.updateOperator(element, operator));
           mvc.model?.handlers.forEach(handler => this.updateHandler(element, handler));
           mvc.interactors.forEach(interactor => this.updateInteractor(element, interactor));
           mvc.tools.forEach(tool => this.updateTool(element, tool));
-          mvc.substrates.forEach(substrate => this.updateSubstrate(element, substrate));
+          mvc.constrainers.forEach(constrainer => this.updateConstrainer(element, constrainer));
       }
       removeInstance(element, kind, keyOrInstance) {
           if (!element)
@@ -12361,11 +12361,11 @@
        * @protected
        * @function extractClassEssenceName
        * @description Utility that derives a shorter "essence" key name for an MVC piece from its constructor name.
-       * It strips the element/class name prefix (if any) and the type suffix (e.g., "Controller", "Tool") to
-       * produce a key that reads well in camelCase (e.g., `MyElementSnapController` -> `snap`).
+       * It strips the element/class name prefix (if any) and the type suffix (e.g., "Operator", "Tool") to
+       * produce a key that reads well in camelCase (e.g., `MyElementSnapOperator` -> `snap`).
        * @param element
        * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-       * @param {string} type - The type suffix to strip (e.g., "Controller", "Handler", "Tool", "Substrate").
+       * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Constrainer").
        * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
        */
       extractClassEssenceName(element, constructor, type) {
@@ -12385,7 +12385,7 @@
       }
   }
 
-  const MvcFields = ["model", "view", "emitter", "controllers", "handlers", "interactors", "tools", "substrates"];
+  const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "constrainers"];
   const utils$8 = new MvcFunctionsUtils();
   function setupMvcFunctions() {
       Object.defineProperty(TurboSelector.prototype, "mvc", {
@@ -12396,11 +12396,11 @@
               return {
                   model: data.model,
                   view: data.view,
-                  controllers: Array.from(data.controllers?.values() ?? []),
+                  operators: Array.from(data.operators?.values() ?? []),
                   handlers: Array.from(data.model?.handlers?.values() ?? []),
                   interactors: Array.from(data.interactors?.values() ?? []),
                   tools: Array.from(data.tools?.values() ?? []),
-                  substrates: Array.from(data.substrates?.values() ?? []),
+                  constrainers: Array.from(data.constrainers?.values() ?? []),
               };
           }, configurable: true, enumerable: true,
       });
@@ -12464,6 +12464,12 @@
           },
           configurable: true, enumerable: true,
       });
+      Object.defineProperty(TurboSelector.prototype, "metadata", {
+          get() {
+              return utils$8.peek(this.element)?.model?.metadata;
+          },
+          configurable: true, enumerable: true,
+      });
       Object.defineProperty(TurboSelector.prototype, "dataId", {
           get() {
               return utils$8.peek(this.element)?.model?.id;
@@ -12489,21 +12495,21 @@
       });
       Object.defineProperty(TurboSelector.prototype, "dataSize", {
           get() {
-              return utils$8.peek(this.element)?.model?.size;
+              return utils$8.peek(this.element)?.model?.dataSize;
           },
           configurable: true, enumerable: true,
       });
       // -------------------------------------------------------------------------
       // Collections
       // -------------------------------------------------------------------------
-      Object.defineProperty(TurboSelector.prototype, "controllers", {
+      Object.defineProperty(TurboSelector.prototype, "operators", {
           get() {
-              return Array.from(utils$8.peek(this.element)?.controllers.values() ?? []);
+              return Array.from(utils$8.peek(this.element)?.operators.values() ?? []);
           },
           set(value) {
               if (!this.element)
                   return;
-              utils$8.generateInstances(value, this.element).forEach(instance => this.addController(instance));
+              utils$8.generateInstances(value, this.element).forEach(instance => this.addOperator(instance));
               utils$8.linkPieces(this.element);
           },
           configurable: true, enumerable: true,
@@ -12543,14 +12549,14 @@
           },
           configurable: true, enumerable: true,
       });
-      Object.defineProperty(TurboSelector.prototype, "substrates", {
+      Object.defineProperty(TurboSelector.prototype, "constrainers", {
           get() {
-              return Array.from(utils$8.peek(this.element)?.substrates.values() ?? []);
+              return Array.from(utils$8.peek(this.element)?.constrainers.values() ?? []);
           },
           set(value) {
               if (!this.element)
                   return;
-              utils$8.generateInstances(value, this.element).forEach(instance => this.addSubstrate(instance));
+              utils$8.generateInstances(value, this.element).forEach(instance => this.addConstrainer(instance));
               utils$8.linkPieces(this.element);
           },
           configurable: true, enumerable: true,
@@ -12581,10 +12587,10 @@
           if (!mvc)
               return this;
           mvc.view?.initialize();
-          mvc.controllers.forEach(controller => controller.initialize());
+          mvc.operators.forEach(operator => operator.initialize());
           mvc.interactors.forEach(interactor => interactor.initialize());
           mvc.tools.forEach(tool => tool.initialize());
-          mvc.substrates.forEach(substrate => substrate.initialize());
+          mvc.constrainers.forEach(constrainer => constrainer.initialize());
           mvc.model?.initialize();
           return this;
       };
@@ -12628,33 +12634,33 @@
           processField("view");
           processField("model");
           processField("emitter");
-          processArray("controllers");
+          processArray("operators");
           processArray("handlers");
           processArray("interactors");
           processArray("tools");
-          processArray("substrates");
+          processArray("constrainers");
           return difference;
       };
       // -------------------------------------------------------------------------
       // Manipulations
       // -------------------------------------------------------------------------
-      TurboSelector.prototype.getController = function (key) {
-          return utils$8.peek(this.element)?.controllers.get(key);
+      TurboSelector.prototype.getOperator = function (key) {
+          return utils$8.peek(this.element)?.operators.get(key);
       };
-      TurboSelector.prototype.addController = function (controller) {
+      TurboSelector.prototype.addOperator = function (operator) {
           if (!this.element)
               return this;
-          if (!controller.keyName)
-              controller.keyName =
-                  utils$8.extractClassEssenceName(this.element, controller.constructor, "Controller");
-          utils$8.data(this.element).controllers.set(controller.keyName, controller);
-          utils$8.updateController(this.element, controller);
+          if (!operator.keyName)
+              operator.keyName =
+                  utils$8.extractClassEssenceName(this.element, operator.constructor, "Operator");
+          utils$8.data(this.element).operators.set(operator.keyName, operator);
+          utils$8.updateOperator(this.element, operator);
           return this;
       };
-      TurboSelector.prototype.removeController = function (keyOrInstance) {
+      TurboSelector.prototype.removeOperator = function (keyOrInstance) {
           if (!this.element)
               return this;
-          utils$8.removeInstance(this.element, "controller", keyOrInstance);
+          utils$8.removeInstance(this.element, "operator", keyOrInstance);
           return this;
       };
       TurboSelector.prototype.getHandler = function (key) {
@@ -12714,23 +12720,23 @@
           utils$8.removeInstance(this.element, "tool", keyOrInstance);
           return this;
       };
-      TurboSelector.prototype.getSubstrate = function (key) {
-          return utils$8.peek(this.element)?.substrates.get(key);
+      TurboSelector.prototype.getConstrainer = function (key) {
+          return utils$8.peek(this.element)?.constrainers.get(key);
       };
-      TurboSelector.prototype.addSubstrate = function (substrate) {
+      TurboSelector.prototype.addConstrainer = function (constrainer) {
           if (!this.element)
               return this;
-          if (!substrate.keyName)
-              substrate.keyName =
-                  utils$8.extractClassEssenceName(this.element, substrate.constructor, "Substrate");
-          utils$8.data(this.element).substrates.set(substrate.keyName, substrate);
-          utils$8.updateSubstrate(this.element, substrate);
+          if (!constrainer.keyName)
+              constrainer.keyName =
+                  utils$8.extractClassEssenceName(this.element, constrainer.constructor, "Constrainer");
+          utils$8.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+          utils$8.updateConstrainer(this.element, constrainer);
           return this;
       };
-      TurboSelector.prototype.removeSubstrate = function (keyOrInstance) {
+      TurboSelector.prototype.removeConstrainer = function (keyOrInstance) {
           if (!this.element)
               return this;
-          utils$8.removeInstance(this.element, "substrate", keyOrInstance);
+          utils$8.removeInstance(this.element, "constrainer", keyOrInstance);
           return this;
       };
   }
@@ -12812,7 +12818,7 @@
 
   /**
    * Define MVC-style accessors on a class prototype via Object.defineProperty.
-   * Adds: view, model, emitter, controllers, handlers, interactors, tools, substrates,
+   * Adds: view, model, emitter, operators, handlers, interactors, tools, constrainers,
    * data, dataId, dataIndex, dataSize, and all add/get/remove methods.
    */
   function defineMvcAccessors(constructor) {
@@ -12826,10 +12832,12 @@
               enumerable: true,
           });
       });
-      Object.defineProperty(prototype, "dataSize", {
-          get() { return turbo(this).dataSize; },
-          configurable: true,
-          enumerable: true,
+      ["metadata", "dataSize"].forEach(fieldName => {
+          Object.defineProperty(prototype, fieldName, {
+              get() { return turbo(this)[fieldName]; },
+              configurable: true,
+              enumerable: true,
+          });
       });
   }
 
@@ -13277,8 +13285,8 @@
           const props = { ...properties };
           const element = this.element instanceof Element ? this.element :
               this.element["element"] instanceof Element ? this.element["element"] : undefined;
-          turbo(props).removeFields(["tag", "namespace"]);
-          const { out, shadowDOM, initialize, parent, model, data, dataId } = turbo(props).extract(["out", "shadowDOM", "initialize", "parent", "model", "data", "dataId"]);
+          turbo(props, true).removeFields(["tag", "namespace"]);
+          const { out, shadowDOM, initialize, parent, model, data, dataId } = turbo(props, true).extract(["out", "shadowDOM", "initialize", "parent", "model", "data", "dataId"]);
           let mvcUpdated = false;
           if (out) {
               if (typeof out == "string")
@@ -13301,7 +13309,7 @@
                   }
                   mvcUpdated = true;
               }
-              const mvc = turbo(props).extract(MvcFields);
+              const mvc = turbo(props, true).extract(MvcFields);
               for (const [key, value] of Object.entries(mvc)) {
                   try {
                       this[key] = value;
@@ -13312,7 +13320,7 @@
               }
           }
           if (element) {
-              const elementProps = turbo(props).extract(["text", "style",
+              const elementProps = turbo(props, true).extract(["text", "style",
                   "stylesheet", "id", "classes", "listeners", "onClick", "onDrag", "children"]);
               for (const [property, value] of Object.entries(elementProps)) {
                   if (value === undefined)
@@ -13382,43 +13390,29 @@
       TurboSelector.prototype.getFields = function _getFields() {
           if (!this.element)
               return {};
-          const result = {};
+          const chain = getPrototypeChain(this.element);
           const seen = new Set();
+          const result = {};
           const builtinPrototypes = new Set([
               TurboElement.prototype, TurboBaseElement.prototype, TurboProxiedElement.prototype,
               TurboHeadlessElement.prototype, Element.prototype, HTMLElement.prototype, Node.prototype,
-              SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype,
-              Object.prototype
+              SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype
           ]);
-          let proto = Object.getPrototypeOf(this.element);
-          while (proto && !builtinPrototypes.has(proto)) {
+          for (const proto of [this.element, ...chain].reverse()) {
+              if (builtinPrototypes.has(proto)) {
+                  for (const key of Object.getOwnPropertyNames(proto))
+                      seen.add(key);
+                  continue;
+              }
               for (const key of Object.getOwnPropertyNames(proto)) {
-                  if (seen.has(key))
-                      continue;
-                  seen.add(key);
-                  if (key === "constructor" || key.startsWith("_"))
+                  if (seen.has(key) || key.startsWith("_"))
                       continue;
                   const desc = Object.getOwnPropertyDescriptor(proto, key);
-                  if (!desc)
+                  if (!desc || typeof desc.value === "function" || (desc.get && !desc.set))
                       continue;
-                  if (typeof desc.value === "function")
-                      continue;
-                  if (desc.get && !desc.set)
-                      continue; // readonly getter
+                  seen.add(key);
                   result[key] = this.element[key];
               }
-              proto = Object.getPrototypeOf(proto);
-          }
-          // Also grab own enumerable properties directly on the instance
-          for (const key of Object.getOwnPropertyNames(this.element)) {
-              if (seen.has(key) || key.startsWith("_"))
-                  continue;
-              const desc = Object.getOwnPropertyDescriptor(this.element, key);
-              if (!desc || typeof desc.value === "function")
-                  continue;
-              if (desc.get && !desc.set)
-                  continue;
-              result[key] = this.element[key];
           }
           return result;
       };
@@ -13438,8 +13432,8 @@
                   return false;
               if (typeof value === "function")
                   return false;
-              if (key === "model" || key === "view" || key === "emitter" || key === "controllers"
-                  || key === "handlers" || key === "interactors" || key === "tools" || key === "substrates")
+              if (key === "model" || key === "view" || key === "emitter" || key === "operators"
+                  || key === "handlers" || key === "interactors" || key === "tools" || key === "constrainers")
                   return false;
               const desc = Object.getOwnPropertyDescriptor(prototype, key);
               if (!desc)
@@ -13722,8 +13716,8 @@
                   let value;
                   let functionName;
                   switch (type) {
-                      case "Controller":
-                          functionName = "getController";
+                      case "Operator":
+                          functionName = "getOperator";
                           break;
                       case "Handler":
                           functionName = "getHandler";
@@ -13734,8 +13728,8 @@
                       case "Tool":
                           functionName = "getTool";
                           break;
-                      case "Substrate":
-                          functionName = "getSubstrate";
+                      case "Constrainer":
+                          functionName = "getConstrainer";
                           break;
                   }
                   if (!functionName)
@@ -13752,30 +13746,30 @@
   }
   /**
    * @decorator
-   * @function controller
+   * @function operator
    * @group Decorators
    * @category MVC
    *
    * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
-   * fetched controller.
-   * @param {string} [name] - The key name of the controller in the MVC instance (if any). By default, it is inferred
-   * from the name of the field. If the field is named `somethingController`, the key name will be `something`.
+   * fetched operator.
+   * @param {string} [name] - The key name of the operator in the MVC instance (if any). By default, it is inferred
+   * from the name of the field. If the field is named `somethingOperator`, the key name will be `something`.
    *
    * @example
    * ```ts
-   * @controller() protected textController: TurboController;
+   * @operator() protected textOperator: TurboOperator;
    * ```
    * Is equivalent to:
    * ```ts
-   * protected get textController(): TurboController {
-   *    if (this.mvc instanceof Mvc) return this.mvc.getController("text");
-   *    if (typeof this.getController === "function") return this.getController("text");
+   * protected get textOperator(): TurboOperator {
+   *    if (this.mvc instanceof Mvc) return this.mvc.getOperator("text");
+   *    if (typeof this.getOperator === "function") return this.getOperator("text");
    * }
    * ```
    */
-  function controller(name) {
+  function operator(name) {
       return function (_unused, context) {
-          generateField(context, "Controller", name);
+          generateField(context, "Operator", name);
       };
   }
   /**
@@ -14271,23 +14265,23 @@
   }
 
   /**
-   * @class TurboController
+   * @class TurboOperator
    * @group MVC
-   * @category Controller
+   * @category Operator
    *
-   * @description The MVC base controller class. Its main job is to handle some part of (or all of) the logic of the
+   * @description The MVC base operator class. Its main job is to handle some part of (or all of) the logic of the
    * component. It has access to the element, the model to read and write data, the view to update the UI, and the
    * emitter to listen for changes in the model or any other internal events. It can only communicate with other
-   * controllers via the emitter (by firing or listening for changes on a certain key).
+   * operators via the emitter (by firing or listening for changes on a certain key).
    * @template {object} ElementType - The type of the main component.
    * @template {TurboView} ViewType - The element's MVC view type.
    * @template {TurboModel} ModelType - The element's MVC model type.
    * @template {TurboEmitter} EmitterType - The element's MVC emitter type.
    */
-  class TurboController {
+  class TurboOperator {
       /**
-       * @description The key of the controller. Used to retrieve it in the main component. If not set, if the element's
-       * class name is MyElement and the controller's class name is MyElementSomethingController, the key would
+       * @description The key of the operator. Used to retrieve it in the main component. If not set, if the element's
+       * class name is MyElement and the operator's class name is MyElementSomethingOperator, the key would
        * default to "something".
        */
       keyName;
@@ -14326,7 +14320,7 @@
       setup() { }
       /**
        * @function initialize
-       * @description Initializes the controller. Specifically, it will set up the change callbacks.
+       * @description Initializes the operator. Specifically, it will set up the change callbacks.
        */
       initialize() {
           this.setupUIListeners();
@@ -14349,10 +14343,10 @@
           initializeEffects(this);
       }
   }
-  addRegistryCategory(TurboController);
-  define(TurboController);
+  addRegistryCategory(TurboOperator);
+  define(TurboOperator);
 
-  class TurboEventManagerKeyController extends TurboController {
+  class TurboEventManagerKeyOperator extends TurboOperator {
       keyName = "key";
       keyDown = (e) => this.keyDownFn(e);
       keyDownFn(e) {
@@ -14601,9 +14595,22 @@
       static linearInterpolation(start, end, t) {
           return start.add(end.sub(start).mul(t));
       }
+      toString() {
+          return JSON.stringify({ x: this.x, y: this.y });
+      }
+      fromString(value) {
+          try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed.x === "number" && typeof parsed.y === "number")
+                  return new Point(parsed.x, parsed.y);
+          }
+          catch {
+              new Point(0, 0);
+          }
+      }
   }
 
-  class TurboEventManagerWheelController extends TurboController {
+  class TurboEventManagerWheelOperator extends TurboOperator {
       keyName = "wheel";
       wheel = (e) => {
           if (!this.element.enabled)
@@ -14629,7 +14636,8 @@
           const eventName = (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
               ? TurboEventName.pinch
               : TurboEventName.scroll;
-          this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
+          const target = document.elementFromPoint(e.clientX, e.clientY) || document;
+          this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
       };
   }
 
@@ -14735,7 +14743,7 @@
       };
   })();
 
-  class TurboEventManagerPointerController extends TurboController {
+  class TurboEventManagerPointerOperator extends TurboOperator {
       keyName = "pointer";
       pointerDown = (e) => this.pointerDownFn(e);
       pointerMove = (e) => this.pointerMoveFn(e);
@@ -14802,7 +14810,7 @@
               e.preventDefault();
           //New positions map
           this.model.positions = new TurboMap();
-          // Only update the current pointer’s position (others remain tracked from prior moves)
+          // Only update the current pointer's position (others remain tracked from prior moves)
           this.model.positions.set(e.pointerId, new Point(e.clientX, e.clientY));
           // Clear cached target origin if not dragging
           if (this.model.currentAction !== ActionMode.drag)
@@ -14813,7 +14821,8 @@
               const prevPos = this.model.previousPositions.get(e.pointerId);
               if (this.model.activePointers.size === 1 && prevPos) {
                   const delta = currentPos.sub(prevPos);
-                  this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta, eventName: TurboEventName.scroll });
+                  const target = document.elementFromPoint(currentPos.x, currentPos.y) || document;
+                  this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta, eventName: TurboEventName.scroll });
               }
               else if (this.model.activePointers.size === 2 && prevPos) {
                   const otherId = [...this.model.activePointers].find(id => id !== e.pointerId);
@@ -14823,10 +14832,11 @@
                       const currentCenter = Point.midPoint(currentPos, otherPos);
                       const scrollDelta = currentCenter.sub(prevCenter);
                       const pinchDelta = Point.dist(currentPos, otherPos) - Point.dist(prevPos, otherPos);
+                      const centerTarget = document.elementFromPoint(currentCenter.x, currentCenter.y) || document;
                       if (scrollDelta.x !== 0 || scrollDelta.y !== 0)
-                          this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: scrollDelta, eventName: TurboEventName.scroll });
+                          this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, { delta: scrollDelta, eventName: TurboEventName.scroll });
                       if (pinchDelta !== 0)
-                          this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch });
+                          this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, { delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch });
                   }
               }
           }
@@ -14947,7 +14957,7 @@
       }
   }
 
-  class TurboEventManagerDispatchController extends TurboController {
+  class TurboEventManagerDispatchOperator extends TurboOperator {
       keyName = "dispatch";
       boundHooks = new Map();
       setupChangedCallbacks() {
@@ -15163,18 +15173,18 @@
   let TurboEventManager = (() => {
       let _classSuper = TurboBaseElement;
       let _instanceExtraInitializers = [];
-      let _keyController_decorators;
-      let _keyController_initializers = [];
-      let _keyController_extraInitializers = [];
-      let _wheelController_decorators;
-      let _wheelController_initializers = [];
-      let _wheelController_extraInitializers = [];
-      let _pointerController_decorators;
-      let _pointerController_initializers = [];
-      let _pointerController_extraInitializers = [];
-      let _dispatchController_decorators;
-      let _dispatchController_initializers = [];
-      let _dispatchController_extraInitializers = [];
+      let _keyOperator_decorators;
+      let _keyOperator_initializers = [];
+      let _keyOperator_extraInitializers = [];
+      let _wheelOperator_decorators;
+      let _wheelOperator_initializers = [];
+      let _wheelOperator_extraInitializers = [];
+      let _pointerOperator_decorators;
+      let _pointerOperator_initializers = [];
+      let _pointerOperator_extraInitializers = [];
+      let _dispatchOperator_decorators;
+      let _dispatchOperator_initializers = [];
+      let _dispatchOperator_extraInitializers = [];
       let _inputDevice_decorators;
       let _inputDevice_initializers = [];
       let _inputDevice_extraInitializers = [];
@@ -15212,10 +15222,10 @@
       return class TurboEventManager extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _keyController_decorators = [controller()];
-              _wheelController_decorators = [controller()];
-              _pointerController_decorators = [controller()];
-              _dispatchController_decorators = [controller()];
+              _keyOperator_decorators = [operator()];
+              _wheelOperator_decorators = [operator()];
+              _pointerOperator_decorators = [operator()];
+              _dispatchOperator_decorators = [operator()];
               _inputDevice_decorators = [expose("model", false)];
               _onInputDeviceChange_decorators = [expose("model", false)];
               _currentClick_decorators = [expose("model", false)];
@@ -15239,10 +15249,10 @@
               __esDecorate$1(this, null, _set_touchEventsEnabled_decorators, { kind: "setter", name: "touchEventsEnabled", static: false, private: false, access: { has: obj => "touchEventsEnabled" in obj, set: (obj, value) => { obj.touchEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_clickEventsEnabled_decorators, { kind: "setter", name: "clickEventsEnabled", static: false, private: false, access: { has: obj => "clickEventsEnabled" in obj, set: (obj, value) => { obj.clickEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_dragEventsEnabled_decorators, { kind: "setter", name: "dragEventsEnabled", static: false, private: false, access: { has: obj => "dragEventsEnabled" in obj, set: (obj, value) => { obj.dragEventsEnabled = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(null, null, _keyController_decorators, { kind: "field", name: "keyController", static: false, private: false, access: { has: obj => "keyController" in obj, get: obj => obj.keyController, set: (obj, value) => { obj.keyController = value; } }, metadata: _metadata }, _keyController_initializers, _keyController_extraInitializers);
-              __esDecorate$1(null, null, _wheelController_decorators, { kind: "field", name: "wheelController", static: false, private: false, access: { has: obj => "wheelController" in obj, get: obj => obj.wheelController, set: (obj, value) => { obj.wheelController = value; } }, metadata: _metadata }, _wheelController_initializers, _wheelController_extraInitializers);
-              __esDecorate$1(null, null, _pointerController_decorators, { kind: "field", name: "pointerController", static: false, private: false, access: { has: obj => "pointerController" in obj, get: obj => obj.pointerController, set: (obj, value) => { obj.pointerController = value; } }, metadata: _metadata }, _pointerController_initializers, _pointerController_extraInitializers);
-              __esDecorate$1(null, null, _dispatchController_decorators, { kind: "field", name: "dispatchController", static: false, private: false, access: { has: obj => "dispatchController" in obj, get: obj => obj.dispatchController, set: (obj, value) => { obj.dispatchController = value; } }, metadata: _metadata }, _dispatchController_initializers, _dispatchController_extraInitializers);
+              __esDecorate$1(null, null, _keyOperator_decorators, { kind: "field", name: "keyOperator", static: false, private: false, access: { has: obj => "keyOperator" in obj, get: obj => obj.keyOperator, set: (obj, value) => { obj.keyOperator = value; } }, metadata: _metadata }, _keyOperator_initializers, _keyOperator_extraInitializers);
+              __esDecorate$1(null, null, _wheelOperator_decorators, { kind: "field", name: "wheelOperator", static: false, private: false, access: { has: obj => "wheelOperator" in obj, get: obj => obj.wheelOperator, set: (obj, value) => { obj.wheelOperator = value; } }, metadata: _metadata }, _wheelOperator_initializers, _wheelOperator_extraInitializers);
+              __esDecorate$1(null, null, _pointerOperator_decorators, { kind: "field", name: "pointerOperator", static: false, private: false, access: { has: obj => "pointerOperator" in obj, get: obj => obj.pointerOperator, set: (obj, value) => { obj.pointerOperator = value; } }, metadata: _metadata }, _pointerOperator_initializers, _pointerOperator_extraInitializers);
+              __esDecorate$1(null, null, _dispatchOperator_decorators, { kind: "field", name: "dispatchOperator", static: false, private: false, access: { has: obj => "dispatchOperator" in obj, get: obj => obj.dispatchOperator, set: (obj, value) => { obj.dispatchOperator = value; } }, metadata: _metadata }, _dispatchOperator_initializers, _dispatchOperator_extraInitializers);
               __esDecorate$1(null, null, _inputDevice_decorators, { kind: "field", name: "inputDevice", static: false, private: false, access: { has: obj => "inputDevice" in obj, get: obj => obj.inputDevice, set: (obj, value) => { obj.inputDevice = value; } }, metadata: _metadata }, _inputDevice_initializers, _inputDevice_extraInitializers);
               __esDecorate$1(null, null, _onInputDeviceChange_decorators, { kind: "field", name: "onInputDeviceChange", static: false, private: false, access: { has: obj => "onInputDeviceChange" in obj, get: obj => obj.onInputDeviceChange, set: (obj, value) => { obj.onInputDeviceChange = value; } }, metadata: _metadata }, _onInputDeviceChange_initializers, _onInputDeviceChange_extraInitializers);
               __esDecorate$1(null, null, _currentClick_decorators, { kind: "field", name: "currentClick", static: false, private: false, access: { has: obj => "currentClick" in obj, get: obj => obj.currentClick, set: (obj, value) => { obj.currentClick = value; } }, metadata: _metadata }, _currentClick_initializers, _currentClick_extraInitializers);
@@ -15256,7 +15266,9 @@
           }
           static managers = [];
           static get instance() {
-              return TurboEventManager.managers.length > 0 ? TurboEventManager.managers[0] : TurboEventManager.create();
+              if (TurboEventManager.managers.length == 0)
+                  this.managers.push(TurboEventManager.create());
+              return TurboEventManager.managers[0];
           }
           static get allManagers() {
               return [...this.managers];
@@ -15269,11 +15281,11 @@
           }
           static defaultProperties = {
               model: TurboEventManagerModel,
-              controllers: [
-                  TurboEventManagerKeyController,
-                  TurboEventManagerWheelController,
-                  TurboEventManagerPointerController,
-                  TurboEventManagerDispatchController
+              operators: [
+                  TurboEventManagerKeyOperator,
+                  TurboEventManagerWheelOperator,
+                  TurboEventManagerPointerOperator,
+                  TurboEventManagerDispatchOperator
               ],
               handlers: TurboEventManagerUtilsHandler,
               keyEventsEnabled: true,
@@ -15284,15 +15296,15 @@
               dragEventsEnabled: true,
               moveEventsEnabled: true,
           };
-          keyController = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _keyController_initializers, void 0));
-          wheelController = (__runInitializers$1(this, _keyController_extraInitializers), __runInitializers$1(this, _wheelController_initializers, void 0));
-          pointerController = (__runInitializers$1(this, _wheelController_extraInitializers), __runInitializers$1(this, _pointerController_initializers, void 0));
-          dispatchController = (__runInitializers$1(this, _pointerController_extraInitializers), __runInitializers$1(this, _dispatchController_initializers, void 0));
+          keyOperator = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _keyOperator_initializers, void 0));
+          wheelOperator = (__runInitializers$1(this, _keyOperator_extraInitializers), __runInitializers$1(this, _wheelOperator_initializers, void 0));
+          pointerOperator = (__runInitializers$1(this, _wheelOperator_extraInitializers), __runInitializers$1(this, _pointerOperator_initializers, void 0));
+          dispatchOperator = (__runInitializers$1(this, _pointerOperator_extraInitializers), __runInitializers$1(this, _dispatchOperator_initializers, void 0));
           /**
            * @description The currently identified input device. It is not 100% accurate, especially when differentiating
            * between mouse and trackpad.
            */
-          inputDevice = (__runInitializers$1(this, _dispatchController_extraInitializers), __runInitializers$1(this, _inputDevice_initializers, void 0));
+          inputDevice = (__runInitializers$1(this, _dispatchOperator_extraInitializers), __runInitializers$1(this, _inputDevice_initializers, void 0));
           onInputDeviceChange = (__runInitializers$1(this, _inputDevice_extraInitializers), __runInitializers$1(this, _onInputDeviceChange_initializers, void 0));
           currentClick = (__runInitializers$1(this, _onInputDeviceChange_extraInitializers), __runInitializers$1(this, _currentClick_initializers, void 0));
           currentKeys = (__runInitializers$1(this, _currentClick_extraInitializers), __runInitializers$1(this, _currentKeys_initializers, void 0));
@@ -15312,29 +15324,29 @@
           initialize() {
               super.initialize();
               this.unlock();
-              document.addEventListener("pointerdown", this.pointerController.pointerDown, { passive: false });
-              document.addEventListener("pointermove", this.pointerController.pointerMove, { passive: false });
-              document.addEventListener("pointerup", this.pointerController.pointerUp, { passive: false });
-              document.addEventListener("pointercancel", this.pointerController.pointerCancel, { passive: false });
+              document.addEventListener("pointerdown", this.pointerOperator.pointerDown, { passive: false });
+              document.addEventListener("pointermove", this.pointerOperator.pointerMove, { passive: false });
+              document.addEventListener("pointerup", this.pointerOperator.pointerUp, { passive: false });
+              document.addEventListener("pointercancel", this.pointerOperator.pointerCancel, { passive: false });
               //TODO
-              this.dispatchController.setupCustomDispatcher("pointerdown");
+              this.dispatchOperator.setupCustomDispatcher("pointerdown");
           }
           set keyEventsEnabled(value) {
               if (value) {
-                  document.addEventListener("keydown", this.keyController.keyDown);
-                  document.addEventListener("keyup", this.keyController.keyUp);
+                  document.addEventListener("keydown", this.keyOperator.keyDown);
+                  document.addEventListener("keyup", this.keyOperator.keyUp);
               }
               else {
-                  document.removeEventListener("keydown", this.keyController.keyDown);
-                  document.removeEventListener("keyup", this.keyController.keyUp);
+                  document.removeEventListener("keydown", this.keyOperator.keyDown);
+                  document.removeEventListener("keyup", this.keyOperator.keyUp);
               }
               this.applyAndHookEvents(TurboKeyEventName, DefaultKeyEventName, value);
           }
           set wheelEventsEnabled(value) {
               if (value)
-                  document.body.addEventListener("wheel", this.wheelController.wheel, { passive: false });
+                  document.body.addEventListener("wheel", this.wheelOperator.wheel, { passive: false });
               else
-                  document.body.removeEventListener("wheel", this.wheelController.wheel);
+                  document.body.removeEventListener("wheel", this.wheelOperator.wheel);
               this.applyAndHookEvents(TurboWheelEventName, DefaultWheelEventName, value);
           }
           set moveEventsEnabled(value) {
@@ -15343,28 +15355,28 @@
           set mouseEventsEnabled(value) {
               //TODO
               // if (value) {
-              //     doc.on("pointerdown", this.pointerController.pointerDown, {passive: false, propagate: true});
-              //     doc.on("pointermove", this.pointerController.pointerMove, {passive: false, propagate: true});
-              //     doc.on("pointerup", this.pointerController.pointerUp, {passive: false, propagate: true});
-              //     doc.on("pointercancel", this.pointerController.pointerCancel, {passive: false, propagate: true});
+              //     doc.on("pointerdown", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+              //     doc.on("pointermove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+              //     doc.on("pointerup", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+              //     doc.on("pointercancel", this.pointerOperator.pointerCancel, {passive: false, propagate: true});
               // } else {
-              //     doc.removeListener("mousedown", this.pointerController.pointerDown);
-              //     doc.removeListener("mousemove", this.pointerController.pointerMove);
-              //     doc.removeListener("mouseup", this.pointerController.pointerUp);
-              //     doc.removeListener("mouseleave", this.pointerController.pointerLeave);
+              //     doc.removeListener("mousedown", this.pointerOperator.pointerDown);
+              //     doc.removeListener("mousemove", this.pointerOperator.pointerMove);
+              //     doc.removeListener("mouseup", this.pointerOperator.pointerUp);
+              //     doc.removeListener("mouseleave", this.pointerOperator.pointerLeave);
               // }
           }
           set touchEventsEnabled(value) {
               // if (value) {
-              //     doc.on("touchstart", this.pointerController.pointerDown, {passive: false, propagate: true});
-              //     doc.on("touchmove", this.pointerController.pointerMove, {passive: false, propagate: true});
-              //     doc.on("touchend", this.pointerController.pointerUp, {passive: false, propagate: true});
-              //     doc.on("touchcancel", this.pointerController.pointerUp, {passive: false, propagate: true});
+              //     doc.on("touchstart", this.pointerOperator.pointerDown, {passive: false, propagate: true});
+              //     doc.on("touchmove", this.pointerOperator.pointerMove, {passive: false, propagate: true});
+              //     doc.on("touchend", this.pointerOperator.pointerUp, {passive: false, propagate: true});
+              //     doc.on("touchcancel", this.pointerOperator.pointerUp, {passive: false, propagate: true});
               // } else {
-              //     doc.removeListener("touchstart", this.pointerController.pointerDown);
-              //     doc.removeListener("touchmove", this.pointerController.pointerMove);
-              //     doc.removeListener("touchend", this.pointerController.pointerUp);
-              //     doc.removeListener("touchcancel", this.pointerController.pointerUp);
+              //     doc.removeListener("touchstart", this.pointerOperator.pointerDown);
+              //     doc.removeListener("touchmove", this.pointerOperator.pointerMove);
+              //     doc.removeListener("touchend", this.pointerOperator.pointerUp);
+              //     doc.removeListener("touchcancel", this.pointerOperator.pointerUp);
               // }
           }
           set clickEventsEnabled(value) {
@@ -15420,6 +15432,14 @@
               return this.model.state.preventDefaultTouch && (this.model.lockState.preventDefaultTouch ?? true);
           }
           set preventDefaultTouch(value) {
+              this.model.state.preventDefaultTouch = value;
+          }
+          get preventDefaults() {
+              return this.preventDefaultMouse || this.preventDefaultTouch || this.preventDefaultWheel;
+          }
+          set preventDefaults(value) {
+              this.model.state.preventDefaultWheel = value;
+              this.model.state.preventDefaultMouse = value;
               this.model.state.preventDefaultTouch = value;
           }
           /*
@@ -15576,15 +15596,15 @@
            *
            */
           setupCustomDispatcher(type) {
-              return this.dispatchController.setupCustomDispatcher(type);
+              return this.dispatchOperator.setupCustomDispatcher(type);
           }
           applyAndHookEvents(turboEventNames, defaultEventNames, applyTurboEvents) {
               this.model.utils.applyEventNames(applyTurboEvents ? turboEventNames : defaultEventNames);
               for (const name of Object.values(applyTurboEvents ? turboEventNames : defaultEventNames)) {
                   if (applyTurboEvents)
-                      this.dispatchController.setupCustomDispatcher(name);
+                      this.dispatchOperator.setupCustomDispatcher(name);
                   else
-                      this.dispatchController.removeCustomDispatcher(name);
+                      this.dispatchOperator.removeCustomDispatcher(name);
               }
           }
           destroy() {
@@ -15812,7 +15832,7 @@
               properties.manager = TurboEventManager.instance;
           return this.getBoundListenersSet(properties.target).getListeners({
               ...properties,
-              optionsToSkip: ["checkSubstrates", "solveSubstrates"]
+              optionsToSkip: ["checkConstrainers", "solveConstrainers"]
           });
       }
       getPreventDefaultListeners(element) {
@@ -15936,25 +15956,25 @@
               return Propagation.propagate;
           if (!options)
               options = {};
-          turbo(options).applyDefaults({ checkSubstrates: true, solveSubstrates: true });
+          turbo(options).applyDefaults({ checkConstrainers: true, solveConstrainers: true });
           const activeTool = toolName ?? manager.getCurrentToolName();
-          const checkedSubstratesFor = new Set();
+          const checkedConstrainersFor = new Set();
           const checkedObjectsToolMap = new Map();
           const firedListeners = new Set();
           let propagation = Propagation.propagate;
           if (this.bypassManagerOn)
               utils$5.bypassManager(this, manager, this.bypassManagerOn(event));
-          const checkSubstrates = (target, tool) => {
+          const checkConstrainers = (target, tool) => {
               if (!target)
                   return;
               if (propagation === Propagation.stopImmediatePropagation)
                   return;
-              if (!checkedSubstratesFor.has(target)) {
-                  checkedSubstratesFor.add(target);
+              if (!checkedConstrainersFor.has(target)) {
+                  checkedConstrainersFor.add(target);
                   if (tool)
                       checkedObjectsToolMap.set(target, tool);
-                  if (options.checkSubstrates) {
-                      const check = this.checkSubstratesForEvent({
+                  if (options.checkConstrainers) {
+                      const check = this.checkConstrainersForEvent({
                           event, manager,
                           toolName: tool,
                           eventType: type,
@@ -15965,13 +15985,13 @@
                           propagation = Propagation.stopImmediatePropagation;
                   }
               }
-              checkSubstrates(target.parentNode, tool);
+              checkConstrainers(target.parentNode, tool);
           };
           const runListeners = (target, tool) => {
               const ts = target instanceof TurboSelector ? target : turbo(target);
               const boundSet = utils$5.getBoundListenersSet(target);
               const entries = utils$5.getBoundListeners({ target, type, toolName: tool, options, manager });
-              checkSubstrates(target, tool);
+              checkConstrainers(target, tool);
               if (entries.length === 0)
                   return;
               if (propagation === Propagation.stopImmediatePropagation)
@@ -15996,7 +16016,7 @@
                   return;
               if (turbo(target).isToolIgnored(tool, type, manager))
                   return;
-              checkSubstrates(target, tool);
+              checkConstrainers(target, tool);
               if (!this.hasToolBehavior(type, tool, manager))
                   return;
               if (propagation === Propagation.stopImmediatePropagation)
@@ -16034,8 +16054,8 @@
               runListeners(this, undefined);
           };
           main();
-          if (options.solveSubstrates)
-              checkedSubstratesFor.forEach(entry => turbo(this).solveSubstratesForEvent({
+          if (options.solveConstrainers)
+              checkedConstrainersFor.forEach(entry => turbo(this).solveConstrainersForEvent({
                   event,
                   toolName: checkedObjectsToolMap.get(entry),
                   eventType: type,
@@ -17159,84 +17179,84 @@
   })();
 
   /**
-   * @class TurboSubstrate
+   * @class TurboConstrainer
    * @group MVC
-   * @category Substrate
+   * @category Constrainer
    *
-   * @extends TurboController
+   * @extends TurboOperator
    * @template {object} ElementType - The type of the element.
    * @template {TurboView} ViewType - The element's view type, if any.
    * @template {TurboModel} ModelType - The element's model type, if any.
    * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
-   * @description Class representing a substrate in MVC, bound to the provided element.
+   * @description Class representing an constrainer in MVC, bound to the provided element.
    */
-  class TurboSubstrate extends TurboController {
+  class TurboConstrainer extends TurboOperator {
       /**
-       * @description The name of the substrate.
+       * @description The name of the constrainer.
        */
-      substrateName;
+      constrainerName;
       /**
-       * @description The property keys of the substrate solvers defined in the instance.
+       * @description The property keys of the constrainer solvers defined in the instance.
        */
       solversMetadata = [];
       /**
-       * @description The property keys of the substrate checkers defined in the instance.
+       * @description The property keys of the constrainer checkers defined in the instance.
        */
       checkersMetadata = [];
       /**
-       * @description The property keys of the substrate mutators defined in the instance.
+       * @description The property keys of the constrainer mutators defined in the instance.
        */
       mutatorsMetadata = [];
       /**
-       * @description The priority of the substrate. Higher priority substrates (lower number) should
+       * @description The priority of the constrainer. Higher priority constrainers (lower number) should
        * be resolved first. Defaults to 10.
        */
       priority;
       /**
-       * @description The list of objects constrained by the substrate. To manipulate, check {@link TurboNodeList}.
-       * Defaults to the children of the element the substrate is attached to.
+       * @description The list of objects constrained by the constrainer. To manipulate, check {@link TurboNodeList}.
+       * Defaults to the children of the element the constrainer is attached to.
        */
       objectList;
       /**
-       * @description The list of objects that trigger the substrate to resolve.
-       * Interacting with any of these objects would typically lead to the solving of the given substrate.
+       * @description The list of objects that trigger the constrainer to resolve.
+       * Interacting with any of these objects would typically lead to the solving of the given constrainer.
        * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
        */
       triggerList;
       /**
-       * @description The default queue template for the substrate, used when starting a new resolving pass.
-       * It defaults to the substrate's object list.
+       * @description The default queue template for the constrainer, used when starting a new resolving pass.
+       * It defaults to the constrainer's object list.
        */
       defaultQueue;
       /**
-       * @description The maximum number of passes allowed per object for this substrate during resolving.
+       * @description The maximum number of passes allowed per object for this constrainer during resolving.
        * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
        */
       maxPasses;
       /**
-       * @description Whether the substrate is active. Defaults to true.
+       * @description Whether the constrainer is active. Defaults to true.
        */
       get active() {
-          return turbo(this).activeSubstrates.includes(this.substrateName);
+          return turbo(this).activeConstrainers.includes(this.constrainerName);
       }
       set active(value) {
-          turbo(this).toggleSubstrate(this.substrateName, value);
+          turbo(this).toggleConstrainer(this.constrainerName, value);
       }
       /**
-       * @description Delegate fired whenever an object is added to or removed from the substrate's object list.
+       * @description Delegate fired whenever an object is added to or removed from the constrainer's object list.
        */
       get onObjectListChange() {
-          return turbo(this).onSubstrateObjectListChange(this.substrateName);
+          return turbo(this).onConstrainerObjectListChange(this.constrainerName);
       }
       /**
-       * @description The current queue to be processed by the substrate while resolving.
+       * @description The current queue to be processed by the constrainer while resolving.
        */
       get queue() {
-          return turbo(this).getSubstrateQueue(this.substrateName);
+          return turbo(this).getConstrainerQueue(this.constrainerName);
       }
       constructor(properties) {
           super(properties);
-          this.substrateName = properties.substrateName ?? this.substrateName ?? undefined;
+          this.constrainerName = properties.constrainerName ?? this.constrainerName ?? undefined;
           if (properties.onActivate)
               this.onActivate = properties.onActivate;
           if (properties.onDeactivate)
@@ -17256,14 +17276,14 @@
       /**
        * @function initialize
        * @override
-       * @description Initialization function that calls {@link makeSubstrate} on `this.element`, sets it up, and attaches
+       * @description Initialization function that calls {@link makeConstrainer} on `this.element`, sets it up, and attaches
        * all the defined solvers.
        */
       initialize() {
           super.initialize();
-          if (!this.substrateName)
+          if (!this.constrainerName)
               return;
-          turbo(this).makeSubstrate(this.substrateName, {
+          turbo(this).makeConstrainer(this.constrainerName, {
               onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
               onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
               attachedInstance: this
@@ -17273,7 +17293,7 @@
                   return;
               turbo(this).addSolver({
                   name: metadata.name,
-                  substrate: this.substrateName,
+                  constrainer: this.constrainerName,
                   priority: metadata.priority,
                   callback: props => this[metadata.name]?.(props)
               });
@@ -17283,7 +17303,7 @@
                   return;
               turbo(this).addChecker({
                   name: metadata.name,
-                  substrate: this.substrateName,
+                  constrainer: this.constrainerName,
                   priority: metadata.priority,
                   callback: props => this[metadata.name]?.(props)
               });
@@ -17293,7 +17313,7 @@
                   return;
               turbo(this).addMutator({
                   name: metadata.name,
-                  substrate: this.substrateName,
+                  constrainer: this.constrainerName,
                   priority: metadata.priority,
                   callback: props => this[metadata.name]?.(props)
               });
@@ -17302,164 +17322,163 @@
       /**
        * @function getObjectPasses
        * @description Retrieve how many times the given object has been processed for the current resolving session
-       * of the substrate.
+       * of the constrainer.
        * @param {object} object - The object to query.
        * @return {number} - Number of passes already performed on this object.
        */
       getObjectPasses(object) {
-          return turbo(this).getObjectPassesForSubstrate(object, this.substrateName);
+          return turbo(this).getObjectPassesForConstrainer(object, this.constrainerName);
       }
       /**
        * @function getObjectData
-       * @description Retrieve custom per-object data for this substrate. It is reset on every new
+       * @description Retrieve custom per-object data for this constrainer. It is reset on every new
        * resolving session.
        * @param {object} object - The object to query.
        * @return {Record<string, any>} - The stored data object (or an empty object if none).
        */
       getObjectData(object) {
-          return turbo(this).getObjectDataForSubstrate(object, this.substrateName);
+          return turbo(this).getObjectDataForConstrainer(object, this.constrainerName);
       }
       /**
        * @function setObjectData
-       * @description Set custom per-object data for this substrate. It is reset on every new resolving session.
+       * @description Set custom per-object data for this constrainer. It is reset on every new resolving session.
        * @param {object} object - The object to update.
        * @param {Record<string, any>} [data] - The new data object to associate with this object.
        * @return {this} - Itself for chaining.
        */
       setObjectData(object, data) {
-          return turbo(this).setObjectDataForSubstrate(object, data, this.substrateName);
+          return turbo(this).setObjectDataForConstrainer(object, data, this.constrainerName);
       }
       /**
        * @function addChecker
-       * @description Register a checker in the substrate. Checkers dictate whether the event should continue
+       * @description Register a checker in the constrainer. Checkers dictate whether the event should continue
        * executing depending on the provided context (event, tool, target, etc.).
-       * @param {SubstrateAddCallbackProperties<SubstrateChecker>} properties - Configuration object, including the
+       * @param {ConstrainerAddCallbackProperties<ConstrainerChecker>} properties - Configuration object, including the
        * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
-       * `substrate`, and the `priority` of the checker.
+       * `constrainer`, and the `priority` of the checker.
        * @return {this} - Itself for chaining.
        */
       addChecker(properties) {
-          turbo(this).addChecker({ ...properties, substrate: this.substrateName });
+          turbo(this).addChecker({ ...properties, constrainer: this.constrainerName });
           return this;
       }
       /**
        * @function removeChecker
-       * @description Remove a checker from this substrate by its name.
+       * @description Remove a checker from this constrainer by its name.
        * @param {string} name - The checker name.
        * @return {this} - Itself for chaining.
        */
       removeChecker(name) {
-          turbo(this).removeChecker(name, this.substrateName);
+          turbo(this).removeChecker(name, this.constrainerName);
           return this;
       }
       /**
        * @function clearCheckers
-       * @description Remove all checkers attached to this substrate.
+       * @description Remove all checkers attached to this constrainer.
        * @return {this} - Itself for chaining.
        */
       clearCheckers() {
-          turbo(this).clearCheckers(this.substrateName);
+          turbo(this).clearCheckers(this.constrainerName);
           return this;
       }
       /**
        * @function check
-       * @description Evaluate all checkers for this substrate and return whether the event should proceed or halt.
-       * @param {SubstrateCallbackProperties} [properties] - Context passed to each checker.
-       * @return {boolean} - Whether the substrate passes all checks.
+       * @description Evaluate all checkers for this constrainer and return whether the event should proceed or halt.
+       * @param {ConstrainerCallbackProperties} [properties] - Context passed to each checker.
+       * @return {boolean} - Whether the constrainer passes all checks.
        */
       check(properties) {
-          return turbo(this).checkSubstrate({ ...properties, substrate: this.substrateName });
+          return turbo(this).checkConstrainer({ ...properties, constrainer: this.constrainerName });
       }
-      //MUTATOR
       /**
        * @function addMutator
-       * @description Register a mutator in the substrate. Mutators compute or transform a value based on the context.
-       * @param {SubstrateAddCallbackProperties<SubstrateMutator>} properties - Configuration object, including the
+       * @description Register a mutator in the constrainer. Mutators compute or transform a value based on the context.
+       * @param {ConstrainerAddCallbackProperties<ConstrainerMutator>} properties - Configuration object, including the
        * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
        * @return {this} - Itself for chaining.
        */
       addMutator(properties) {
-          turbo(this).addMutator({ ...properties, substrate: this.substrateName });
+          turbo(this).addMutator({ ...properties, constrainer: this.constrainerName });
           return this;
       }
       /**
        * @function removeMutator
-       * @description Remove a mutator from this substrate by its name.
+       * @description Remove a mutator from this constrainer by its name.
        * @param {string} name - The mutator name.
        * @return {this} - Itself for chaining.
        */
       removeMutator(name) {
-          turbo(this).removeMutator(name, this.substrateName);
+          turbo(this).removeMutator(name, this.constrainerName);
           return this;
       }
       /**
        * @function clearMutators
-       * @description Remove all mutators attached to this substrate.
+       * @description Remove all mutators attached to this constrainer.
        * @return {this} - Itself for chaining.
        */
       clearMutators() {
-          turbo(this).clearMutators(this.substrateName);
+          turbo(this).clearMutators(this.constrainerName);
           return this;
       }
       /**
        * @function mutate
        * @template Type - The type of the value to mutate
-       * @description Execute a mutator for this substrate and return the resulting value.
-       * @param {SubstrateMutatorProperties<Type>} [properties] - Context object, including the
+       * @description Execute a mutator for this constrainer and return the resulting value.
+       * @param {ConstrainerMutatorProperties<Type>} [properties] - Context object, including the
        * `mutation` to execute, and the input `value` to mutate.
        * @return {Type} - The mutated result.
        */
       mutate(properties) {
-          return turbo(this).mutate({ ...properties, substrate: this.substrateName });
+          return turbo(this).mutate({ ...properties, constrainer: this.constrainerName });
       }
       /**
        * @function addSolver
-       * @description Register a solver in the substrate. Solvers typically execute after an event is fired to
-       * ensure the substrate's constraints are maintained. They process all objects in the substrate's queue,
+       * @description Register a solver in the constrainer. Solvers typically execute after an event is fired to
+       * ensure the constrainer's constraints are maintained. They process all objects in the constrainer's queue,
        * one after the other.
-       * @param {SubstrateAddCallbackProperties<SubstrateSolver>} properties - Configuration object, including the
+       * @param {ConstrainerAddCallbackProperties<ConstrainerSolver>} properties - Configuration object, including the
        * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
        * @return {this} - Itself for chaining.
        */
       addSolver(properties) {
-          turbo(this).addSolver({ ...properties, substrate: this.substrateName });
+          turbo(this).addSolver({ ...properties, constrainer: this.constrainerName });
           return this;
       }
       /**
        * @function removeSolver
-       * @description Remove the given function from the substrate's list of solvers.
+       * @description Remove the given function from the constrainer's list of solvers.
        * @param {string} name - The solver's name.
        * @return {this} - Itself for chaining.
        */
       removeSolver(name) {
-          turbo(this).removeSolver(name, this.substrateName);
+          turbo(this).removeSolver(name, this.constrainerName);
           return this;
       }
       /**
        * @function clearSolvers
-       * @description Remove all solvers attached to the substrate.
+       * @description Remove all solvers attached to the constrainer.
        * @return {this} - Itself for chaining.
        */
       clearSolvers() {
-          turbo(this).clearSolvers(this.substrateName);
+          turbo(this).clearSolvers(this.constrainerName);
           return this;
       }
       /**
-       * @function solveSubstrate
-       * @description Solve the substrate by executing all of its attached solvers. Each solver will be executed
-       * on every object in the substrate's queue, incrementing its number of passes in the process.
-       * @param {SubstrateCallbackProperties} [properties] - Options object to configure the context.
+       * @function solve
+       * @description Solve the constrainer by executing all of its attached solvers. Each solver will be executed
+       * on every object in the constrainer's queue, incrementing its number of passes in the process.
+       * @param {ConstrainerCallbackProperties} [properties] - Options object to configure the context.
        * @return {this} - Itself for chaining.
        */
       solve(properties = {}) {
-          turbo(this).solveSubstrate({ ...properties, substrate: this.substrateName });
+          turbo(this).solveConstrainer({ ...properties, constrainer: this.constrainerName });
           return this;
       }
   }
-  addRegistryCategory(TurboSubstrate);
-  define(TurboSubstrate);
+  addRegistryCategory(TurboConstrainer);
+  define(TurboConstrainer);
 
-  class SubstrateFunctionsUtils {
+  class ConstrainerFunctionsUtils {
       objectsSet = new TurboWeakSet();
       dataMap = new WeakMap;
       data(element) {
@@ -17468,10 +17487,10 @@
           if (!element)
               return {};
           if (!this.dataMap.has(element))
-              this.dataMap.set(element, { substrates: new Map() });
+              this.dataMap.set(element, { constrainers: new Map() });
           return this.dataMap.get(element);
       }
-      createSubstrate(element, substrate) {
+      createConstrainer(element, constrainer) {
           if (element instanceof TurboSelector)
               element = element.element;
           const objectList = new TurboNodeList(element instanceof Element ? element.children
@@ -17496,12 +17515,12 @@
           };
           if (element) {
               this.objectsSet.add(element);
-              this.data(element).substrates.set(substrate, data);
+              this.data(element).constrainers.set(constrainer, data);
           }
           return data;
       }
-      activate(element, substrate, activate) {
-          const data = this.getSubstrateData(element, substrate);
+      activate(element, constrainer, activate) {
+          const data = this.getConstrainerData(element, constrainer);
           if (!data)
               return;
           if (typeof activate === "boolean")
@@ -17509,14 +17528,14 @@
           else
               data.active = !data.active;
       }
-      getSubstrateData(element, substrate) {
-          return this.data(element)?.substrates?.get(substrate);
+      getConstrainerData(element, constrainer) {
+          return this.data(element)?.constrainers?.get(constrainer);
       }
-      getSubstrates(element) {
-          return [...this.data(element)?.substrates?.keys()];
+      getConstrainers(element) {
+          return [...this.data(element)?.constrainers?.keys()];
       }
-      getActiveSubstrates(element) {
-          const data = this.data(element)?.substrates;
+      getActiveConstrainers(element) {
+          const data = this.data(element)?.constrainers;
           if (!data)
               return [];
           const entries = [];
@@ -17526,8 +17545,8 @@
           }
           return entries;
       }
-      getDefaultSubstrate(element, allowInactive = true) {
-          const data = this.data(element).substrates;
+      getDefaultConstrainer(element, allowInactive = true) {
+          const data = this.data(element).constrainers;
           if (!data)
               return;
           for (const [key, value] of data.entries()) {
@@ -17537,62 +17556,62 @@
           if (allowInactive)
               return data.keys()[0];
       }
-      getCustomData(element, substrate, object) {
-          const substrateData = this.getSubstrateData(element, substrate);
-          if (!substrateData || !substrateData.customData)
+      getCustomData(element, constrainer, object) {
+          const constrainerData = this.getConstrainerData(element, constrainer);
+          if (!constrainerData || !constrainerData.customData)
               return {};
-          let customData = substrateData.customData.get(object);
+          let customData = constrainerData.customData.get(object);
           if (!customData) {
               customData = {};
-              substrateData.customData.set(object, customData);
+              constrainerData.customData.set(object, customData);
           }
           return customData;
       }
-      getSubstratesTriggeredByObjects(...elements) {
+      getConstrainersTriggeredByObjects(...elements) {
           if (!elements || elements.length === 0)
               return [];
           const nodeTargets = elements.filter(el => el instanceof Node);
           const data = [];
-          const checkTargets = (substrateName, object) => {
+          const checkTargets = (constrainerName, object) => {
               const hits = new Set();
-              const list = this.getField(object, substrateName, "triggerList") ?? new TurboNodeList();
+              const list = this.getField(object, constrainerName, "triggerList") ?? new TurboNodeList();
               for (const el of nodeTargets)
                   if (list.has(el))
                       hits.add(el);
               return Array.from(hits.values());
           };
-          this.objectsSet.toArray().forEach(object => this.data(object).substrates.forEach((substrateData, name) => {
-              if (!substrateData.active)
+          this.objectsSet.toArray().forEach(object => this.data(object).constrainers.forEach((constrainerData, name) => {
+              if (!constrainerData.active)
                   return;
               const hits = checkTargets(name, object);
               if (hits.length > 0)
-                  data.push({ name, data: substrateData, host: object, targets: hits });
+                  data.push({ name, data: constrainerData, host: object, targets: hits });
           }));
           data.sort((a, b) => this.getField(a.host, a.name, "priority") - this.getField(b.host, b.name, "priority"));
           return data;
       }
-      getField(element, substrate, field) {
-          const data = this.getSubstrateData(element, substrate);
+      getField(element, constrainer, field) {
+          const data = this.getConstrainerData(element, constrainer);
           if (!data)
               return;
-          if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate
+          if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer
               && data.attachedInstance[field] !== undefined)
               return data.attachedInstance[field];
           return data[field];
       }
-      setField(element, substrate, field, value) {
-          const data = this.getSubstrateData(element, substrate);
-          if (data.attachedInstance && data.attachedInstance instanceof TurboSubstrate)
+      setField(element, constrainer, field, value) {
+          const data = this.getConstrainerData(element, constrainer);
+          if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer)
               data.attachedInstance[field] = value;
           else
               data[field] = value;
       }
-      setupSubstrateCallbackProperties(element, properties) {
+      setupConstrainerCallbackProperties(element, properties) {
           if (element instanceof TurboSelector)
               element = element.element;
           turbo(properties).applyDefaults({
-              substrateHost: element,
-              substrate: element ? this.getDefaultSubstrate(element, false) : undefined,
+              constrainerHost: element,
+              constrainer: element ? this.getDefaultConstrainer(element, false) : undefined,
               manager: TurboEventManager.instance,
               eventOptions: {},
               toolName: properties.event?.toolName,
@@ -17600,38 +17619,38 @@
               eventTarget: properties.event?.target
           });
       }
-      solveSubstrateInternal(data, properties) {
-          const substrateData = data.data;
-          substrateData.passes = new WeakMap();
-          substrateData.customData = new WeakMap();
-          substrateData.queue = turbo(data.host).getDefaultSubstrateQueue(data.name);
-          if (!substrateData.queue)
-              substrateData.queue = new TurboQueue();
-          if (!substrateData.solvers)
+      solveConstrainerInternal(data, properties) {
+          const constrainerData = data.data;
+          constrainerData.passes = new WeakMap();
+          constrainerData.customData = new WeakMap();
+          constrainerData.queue = turbo(data.host).getDefaultConstrainerQueue(data.name);
+          if (!constrainerData.queue)
+              constrainerData.queue = new TurboQueue();
+          if (!constrainerData.solvers)
               return;
           let object = properties.eventTarget;
           if (properties.eventTarget)
-              substrateData.queue.remove(properties.eventTarget);
+              constrainerData.queue.remove(properties.eventTarget);
           else
-              object = substrateData.queue.pop();
+              object = constrainerData.queue.pop();
           const onObjectAdded = (entry, state) => {
               if (state === "added")
-                  substrateData.queue.push(entry);
+                  constrainerData.queue.push(entry);
           };
-          substrateData.objectList.onChanged.add(onObjectAdded);
+          constrainerData.objectList.onChanged.add(onObjectAdded);
           while (object) {
-              const passes = substrateData.passes.get(object) ?? 0;
-              if (passes < substrateData.maxPasses) {
-                  substrateData.passes.set(object, passes + 1);
-                  for (const solverName of substrateData.sortedSolvers) {
-                      const propagation = substrateData.solvers.get(solverName)?.callback({ ...properties, target: object, substrate: data.name });
+              const passes = constrainerData.passes.get(object) ?? 0;
+              if (passes < constrainerData.maxPasses) {
+                  constrainerData.passes.set(object, passes + 1);
+                  for (const solverName of constrainerData.sortedSolvers) {
+                      const propagation = constrainerData.solvers.get(solverName)?.callback({ ...properties, target: object, constrainer: data.name });
                       if (propagation === Propagation.stopImmediatePropagation || propagation === Propagation.stopPropagation)
                           break;
                   }
               }
-              object = substrateData.queue.pop();
+              object = constrainerData.queue.pop();
           }
-          substrateData.objectList.onChanged.remove(onObjectAdded);
+          constrainerData.objectList.onChanged.remove(onObjectAdded);
       }
   }
 
@@ -17690,187 +17709,187 @@
       return result;
   }
 
-  const utils$2 = new SubstrateFunctionsUtils();
-  function setupSubstrateFunctions() {
-      TurboSelector.prototype.makeSubstrate = function _makeSubstrate(substrate, options) {
-          if (!utils$2.getSubstrateData(this, substrate))
-              utils$2.createSubstrate(this, substrate);
+  const utils$2 = new ConstrainerFunctionsUtils();
+  function setupConstrainerFunctions() {
+      TurboSelector.prototype.makeConstrainer = function _makeConstrainer(constrainer, options) {
+          if (!utils$2.getConstrainerData(this, constrainer))
+              utils$2.createConstrainer(this, constrainer);
           if (options?.onActivate)
-              this.onSubstrateActivate(substrate).add(options.onActivate);
+              this.onConstrainerActivate(constrainer).add(options.onActivate);
           if (options?.onDeactivate)
-              this.onSubstrateDeactivate(substrate).add(options.onDeactivate);
+              this.onConstrainerDeactivate(constrainer).add(options.onDeactivate);
           if (options?.priority)
-              utils$2.getSubstrateData(this, substrate).priority = options.priority;
+              utils$2.getConstrainerData(this, constrainer).priority = options.priority;
           if (options?.attachedInstance)
-              utils$2.getSubstrateData(this, substrate).attachedInstance = options.attachedInstance;
+              utils$2.getConstrainerData(this, constrainer).attachedInstance = options.attachedInstance;
           if (options?.active || options?.active === undefined)
-              utils$2.activate(this, substrate, true);
+              utils$2.activate(this, constrainer, true);
           return this;
       };
-      Object.defineProperty(TurboSelector.prototype, "substratesNames", {
+      Object.defineProperty(TurboSelector.prototype, "constrainersNames", {
           get: function () {
-              return utils$2.getSubstrates(this.element);
+              return utils$2.getConstrainers(this.element);
           },
           configurable: false,
           enumerable: true
       });
       //ACTIVATION
-      Object.defineProperty(TurboSelector.prototype, "activeSubstrates", {
+      Object.defineProperty(TurboSelector.prototype, "activeConstrainers", {
           get: function () {
-              return utils$2.getActiveSubstrates(this.element);
+              return utils$2.getActiveConstrainers(this.element);
           },
           configurable: false,
           enumerable: true
       });
-      TurboSelector.prototype.activateSubstrate = function _activateSubstrates(...substrates) {
-          const targets = substrates.length ? substrates : [utils$2.getDefaultSubstrate(this)];
-          targets.forEach(substrate => {
-              if (substrate)
-                  utils$2.activate(this, substrate, true);
+      TurboSelector.prototype.activateConstrainer = function _activateConstrainers(...constrainers) {
+          const targets = constrainers.length ? constrainers : [utils$2.getDefaultConstrainer(this)];
+          targets.forEach(constrainer => {
+              if (constrainer)
+                  utils$2.activate(this, constrainer, true);
           });
           return this;
       };
-      TurboSelector.prototype.deactivateSubstrate = function _deactivateSubstrates(...substrates) {
-          const targets = substrates.length ? substrates : [utils$2.getDefaultSubstrate(this)];
-          targets.forEach(substrate => {
-              if (substrate)
-                  utils$2.activate(this, substrate, false);
+      TurboSelector.prototype.deactivateConstrainer = function _deactivateConstrainers(...constrainers) {
+          const targets = constrainers.length ? constrainers : [utils$2.getDefaultConstrainer(this)];
+          targets.forEach(constrainer => {
+              if (constrainer)
+                  utils$2.activate(this, constrainer, false);
           });
           return this;
       };
-      TurboSelector.prototype.toggleSubstrate = function _toggleSubstrates(substrate = utils$2.getDefaultSubstrate(this), force) {
-          if (substrate)
-              utils$2.activate(this, substrate, force);
+      TurboSelector.prototype.toggleConstrainer = function _toggleConstrainers(constrainer = utils$2.getDefaultConstrainer(this), force) {
+          if (constrainer)
+              utils$2.activate(this, constrainer, force);
           return this;
       };
-      TurboSelector.prototype.activateOnlySubstrate = function _activateOnlySubstrates(substrate = utils$2.getDefaultSubstrate(this)) {
-          if (substrate)
-              utils$2.getSubstrates(this).forEach(subs => utils$2.activate(this, substrate, substrate === subs));
+      TurboSelector.prototype.activateOnlyConstrainer = function _activateOnlyConstrainers(constrainer = utils$2.getDefaultConstrainer(this)) {
+          if (constrainer)
+              utils$2.getConstrainers(this).forEach(enf => utils$2.activate(this, constrainer, constrainer === enf));
           return this;
       };
-      TurboSelector.prototype.activateAllSubstrates = function _activateAllSubstrates() {
-          utils$2.getSubstrates(this).forEach(substrate => utils$2.activate(this, substrate, true));
+      TurboSelector.prototype.activateAllConstrainers = function _activateAllConstrainers() {
+          utils$2.getConstrainers(this).forEach(constrainer => utils$2.activate(this, constrainer, true));
           return this;
       };
-      TurboSelector.prototype.deactivateAllSubstrates = function _deactivateAllSubstrates() {
-          utils$2.getSubstrates(this).forEach(substrate => utils$2.activate(this, substrate, false));
+      TurboSelector.prototype.deactivateAllConstrainers = function _deactivateAllConstrainers() {
+          utils$2.getConstrainers(this).forEach(constrainer => utils$2.activate(this, constrainer, false));
           return this;
       };
-      TurboSelector.prototype.onSubstrateActivate = function _onSubstrateActivate(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getSubstrateData(this, substrate)?.onActivate ?? new Delegate();
+      TurboSelector.prototype.onConstrainerActivate = function _onConstrainerActivate(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getConstrainerData(this, constrainer)?.onActivate ?? new Delegate();
       };
-      TurboSelector.prototype.onSubstrateDeactivate = function _onSubstrateDeactivate(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getSubstrateData(this, substrate)?.onDeactivate ?? new Delegate();
+      TurboSelector.prototype.onConstrainerDeactivate = function _onConstrainerDeactivate(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getConstrainerData(this, constrainer)?.onDeactivate ?? new Delegate();
       };
       //PRIORITY
-      TurboSelector.prototype.getSubstratePriority = function _getSubstratePriority(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getField(this, substrate, "priority") ?? 0;
+      TurboSelector.prototype.getConstrainerPriority = function _getConstrainerPriority(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getField(this, constrainer, "priority") ?? 0;
       };
-      TurboSelector.prototype.setSubstratePriority = function _setSubstratePriority(priority, substrate = utils$2.getDefaultSubstrate(this)) {
+      TurboSelector.prototype.setConstrainerPriority = function _setConstrainerPriority(priority, constrainer = utils$2.getDefaultConstrainer(this)) {
           if (typeof priority === "number")
-              utils$2.setField(this, substrate, "priority", priority);
+              utils$2.setField(this, constrainer, "priority", priority);
           return this;
       };
       //OBJECT LIST
-      TurboSelector.prototype.getSubstrateObjectList = function _getSubstrateObjectList(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getField(this, substrate, "objectList") ?? new TurboNodeList();
+      TurboSelector.prototype.getConstrainerObjectList = function _getConstrainerObjectList(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getField(this, constrainer, "objectList") ?? new TurboNodeList();
       };
-      TurboSelector.prototype.onSubstrateObjectListChange = function _onSubstrateObjectListChange(substrate) {
-          return utils$2.getSubstrateData(this, substrate).objectsChangedDelegate;
+      TurboSelector.prototype.onConstrainerObjectListChange = function _onConstrainerObjectListChange(constrainer) {
+          return utils$2.getConstrainerData(this, constrainer).objectsChangedDelegate;
       };
       //TRIGGER LIST
-      TurboSelector.prototype.getSubstrateTriggerList = function _getSubstrateTriggerList(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getField(this, substrate, "triggerList") ?? new TurboNodeList();
+      TurboSelector.prototype.getConstrainerTriggerList = function _getConstrainerTriggerList(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getField(this, constrainer, "triggerList") ?? new TurboNodeList();
       };
       //QUEUE
-      TurboSelector.prototype.getSubstrateQueue = function _getSubstrateQueue(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getSubstrateData(this, substrate).queue;
+      TurboSelector.prototype.getConstrainerQueue = function _getConstrainerQueue(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getConstrainerData(this, constrainer).queue;
       };
-      TurboSelector.prototype.getDefaultSubstrateQueue = function _getDefaultSubstrateQueue(substrate = utils$2.getDefaultSubstrate(this)) {
-          const queue = utils$2.getField(this, substrate, "defaultQueue");
+      TurboSelector.prototype.getDefaultConstrainerQueue = function _getDefaultConstrainerQueue(constrainer = utils$2.getDefaultConstrainer(this)) {
+          const queue = utils$2.getField(this, constrainer, "defaultQueue");
           if (queue instanceof TurboQueue)
               return queue.clone();
           else if (queue instanceof Array || queue instanceof Set)
               return new TurboQueue().push(...queue);
-          return new TurboQueue().push(...this.getSubstrateObjectList(substrate));
+          return new TurboQueue().push(...this.getConstrainerObjectList(constrainer));
       };
-      TurboSelector.prototype.setDefaultSubstrateQueue = function _setDefaultSubstrateQueue(queue, substrate = utils$2.getDefaultSubstrate(this)) {
+      TurboSelector.prototype.setDefaultConstrainerQueue = function _setDefaultConstrainerQueue(queue, constrainer = utils$2.getDefaultConstrainer(this)) {
           if (!queue || typeof queue !== "object")
               return this;
           if (Array.isArray(queue))
               queue = new TurboQueue().push(...queue);
           if (queue instanceof TurboQueue)
-              utils$2.setField(this, substrate, "defaultQueue", queue.clone());
+              utils$2.setField(this, constrainer, "defaultQueue", queue.clone());
           return this;
       };
       //PASSES
-      TurboSelector.prototype.getObjectPassesForSubstrate = function _getObjectPassesForSubstrate(object, substrate = utils$2.getDefaultSubstrate(this)) {
+      TurboSelector.prototype.getObjectPassesForConstrainer = function _getObjectPassesForConstrainer(object, constrainer = utils$2.getDefaultConstrainer(this)) {
           if (!object)
               return 0;
-          const map = utils$2.getSubstrateData(this, substrate).passes;
+          const map = utils$2.getConstrainerData(this, constrainer).passes;
           if (!map || !(map instanceof WeakMap))
               return 0;
           return map.get(object) ?? 0;
       };
-      TurboSelector.prototype.getMaxPassesForSubstrate = function _getMaxPassesForSubstrate(substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getField(this, substrate, "maxPasses");
+      TurboSelector.prototype.getMaxPassesForConstrainer = function _getMaxPassesForConstrainer(constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getField(this, constrainer, "maxPasses");
       };
-      TurboSelector.prototype.setMaxPassesForSubstrate = function _setMaxPassesForSubstrate(passes, substrate = utils$2.getDefaultSubstrate(this)) {
-          utils$2.setField(this, substrate, "maxPasses", passes);
+      TurboSelector.prototype.setMaxPassesForConstrainer = function _setMaxPassesForConstrainer(passes, constrainer = utils$2.getDefaultConstrainer(this)) {
+          utils$2.setField(this, constrainer, "maxPasses", passes);
           return this;
       };
       //CUSTOM DATA
-      TurboSelector.prototype.getObjectDataForSubstrate = function _getObjectDataForSubstrate(object, substrate = utils$2.getDefaultSubstrate(this)) {
-          return utils$2.getCustomData(this.element, substrate, object);
+      TurboSelector.prototype.getObjectDataForConstrainer = function _getObjectDataForConstrainer(object, constrainer = utils$2.getDefaultConstrainer(this)) {
+          return utils$2.getCustomData(this.element, constrainer, object);
       };
-      TurboSelector.prototype.setObjectDataForSubstrate = function _setObjectDataForSubstrate(object, data, substrate = utils$2.getDefaultSubstrate(this)) {
+      TurboSelector.prototype.setObjectDataForConstrainer = function _setObjectDataForConstrainer(object, data, constrainer = utils$2.getDefaultConstrainer(this)) {
           if (!data || typeof data !== "object")
               data = {};
-          utils$2.getSubstrateData(this.element, substrate).customData.set(object, data);
+          utils$2.getConstrainerData(this.element, constrainer).customData.set(object, data);
           return this;
       };
       //CHECKER
       TurboSelector.prototype.addChecker = function _addChecker(properties) {
           if (!properties || !properties.name || !properties.callback)
               return this;
-          const substrate = properties.substrate || utils$2.getDefaultSubstrate(this);
-          utils$2.getSubstrateData(this, substrate).checkers?.set(properties.name, properties.callback);
+          const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+          utils$2.getConstrainerData(this, constrainer).checkers?.set(properties.name, properties.callback);
           return this;
       };
-      TurboSelector.prototype.removeChecker = function _removeChecker(name, substrate = utils$2.getDefaultSubstrate(this)) {
-          utils$2.getSubstrateData(this, substrate).checkers?.delete(name);
+      TurboSelector.prototype.removeChecker = function _removeChecker(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+          utils$2.getConstrainerData(this, constrainer).checkers?.delete(name);
           return this;
       };
-      TurboSelector.prototype.clearCheckers = function _clearCheckers(substrate = utils$2.getDefaultSubstrate(this)) {
-          utils$2.getSubstrateData(this, substrate).checkers?.clear();
+      TurboSelector.prototype.clearCheckers = function _clearCheckers(constrainer = utils$2.getDefaultConstrainer(this)) {
+          utils$2.getConstrainerData(this, constrainer).checkers?.clear();
           return this;
       };
-      TurboSelector.prototype.checkSubstrate = function _checkSubstrate(properties) {
+      TurboSelector.prototype.checkConstrainer = function _checkConstrainer(properties) {
           if (!properties)
               properties = {};
-          utils$2.setupSubstrateCallbackProperties(this, properties);
-          if (!properties.substrate)
+          utils$2.setupConstrainerCallbackProperties(this, properties);
+          if (!properties.constrainer)
               return true;
-          const substrate = properties.substrate || utils$2.getDefaultSubstrate(this);
-          for (const checker of utils$2.getSubstrateData(this, substrate).checkers.values()) {
+          const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+          for (const checker of utils$2.getConstrainerData(this, constrainer).checkers.values()) {
               if (!checker(properties))
                   return false;
           }
           return true;
       };
-      TurboSelector.prototype.checkSubstratesForEvent = function _checkSubstratesForEvent(properties) {
+      TurboSelector.prototype.checkConstrainersForEvent = function _checkConstrainersForEvent(properties) {
           if (!properties || !properties.event)
               return true;
-          utils$2.setupSubstrateCallbackProperties(null, properties);
+          utils$2.setupConstrainerCallbackProperties(null, properties);
           if (!properties.eventTarget || typeof properties.eventTarget !== "object") {
               properties.eventTarget = this.element;
               if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                   return true;
           }
-          const substratesData = utils$2.getSubstratesTriggeredByObjects(properties.eventTarget);
-          for (const substrateData of substratesData) {
-              for (const checker of substrateData.data.checkers.values()) {
-                  if (!checker({ ...properties, substrate: substrateData.name }))
+          const constrainersData = utils$2.getConstrainersTriggeredByObjects(properties.eventTarget);
+          for (const constrainerData of constrainersData) {
+              for (const checker of constrainerData.data.checkers.values()) {
+                  if (!checker({ ...properties, constrainer: constrainerData.name }))
                       return false;
               }
           }
@@ -17880,25 +17899,25 @@
       TurboSelector.prototype.addMutator = function _addMutator(properties) {
           if (!properties || !properties.name || !properties.callback)
               return this;
-          const substrate = properties.substrate || utils$2.getDefaultSubstrate(this);
-          utils$2.getSubstrateData(this, substrate).mutators?.set(properties.name, properties.callback);
+          const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+          utils$2.getConstrainerData(this, constrainer).mutators?.set(properties.name, properties.callback);
           return this;
       };
-      TurboSelector.prototype.removeMutator = function _removeMutator(name, substrate = utils$2.getDefaultSubstrate(this)) {
-          utils$2.getSubstrateData(this, substrate).mutators?.delete(name);
+      TurboSelector.prototype.removeMutator = function _removeMutator(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+          utils$2.getConstrainerData(this, constrainer).mutators?.delete(name);
           return this;
       };
-      TurboSelector.prototype.clearMutators = function _clearMutators(substrate = utils$2.getDefaultSubstrate(this)) {
-          utils$2.getSubstrateData(this, substrate).mutators?.clear();
+      TurboSelector.prototype.clearMutators = function _clearMutators(constrainer = utils$2.getDefaultConstrainer(this)) {
+          utils$2.getConstrainerData(this, constrainer).mutators?.clear();
           return this;
       };
       TurboSelector.prototype.mutate = function _mutate(properties) {
           if (!properties || !properties.mutation)
               return;
-          utils$2.setupSubstrateCallbackProperties(this, properties);
-          if (!properties.substrate)
+          utils$2.setupConstrainerCallbackProperties(this, properties);
+          if (!properties.constrainer)
               return this;
-          const mutation = utils$2.getSubstrateData(this, properties.substrate).mutators?.get(properties.mutation);
+          const mutation = utils$2.getConstrainerData(this, properties.constrainer).mutators?.get(properties.mutation);
           if (mutation)
               return mutation(properties);
       };
@@ -17908,21 +17927,21 @@
               return this;
           if (!properties.name)
               properties.name = randomString(8);
-          const substrate = properties.substrate ?? utils$2.getDefaultSubstrate(this);
-          const data = utils$2.getSubstrateData(this, substrate);
+          const constrainer = properties.constrainer ?? utils$2.getDefaultConstrainer(this);
+          const data = utils$2.getConstrainerData(this, constrainer);
           if (!data)
               return this;
           const name = properties.name;
           delete properties.name;
-          delete properties.substrate;
+          delete properties.constrainer;
           if (!properties.priority)
               properties.priority = 10;
           data.solvers?.set(name, properties);
           binaryInsert(data.sortedSolvers, name, (name1, name2) => data.solvers.get(name1).priority - data.solvers.get(name2).priority);
           return this;
       };
-      TurboSelector.prototype.removeSolver = function _removeSolver(name, substrate = utils$2.getDefaultSubstrate(this)) {
-          const data = utils$2.getSubstrateData(this, substrate);
+      TurboSelector.prototype.removeSolver = function _removeSolver(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+          const data = utils$2.getConstrainerData(this, constrainer);
           if (!data)
               return this;
           data.solvers?.delete(name);
@@ -17931,38 +17950,38 @@
               data.sortedSolvers.splice(index, 1);
           return this;
       };
-      TurboSelector.prototype.clearSolvers = function _clearSolvers(substrate = utils$2.getDefaultSubstrate(this)) {
-          const data = utils$2.getSubstrateData(this, substrate);
+      TurboSelector.prototype.clearSolvers = function _clearSolvers(constrainer = utils$2.getDefaultConstrainer(this)) {
+          const data = utils$2.getConstrainerData(this, constrainer);
           if (!data)
               return this;
           data.solvers?.clear();
           data.sortedSolvers = [];
           return this;
       };
-      TurboSelector.prototype.solveSubstrate = function _solveSubstrate(properties = {}) {
+      TurboSelector.prototype.solveConstrainer = function _solveConstrainer(properties = {}) {
           if (!properties)
               properties = {};
-          utils$2.setupSubstrateCallbackProperties(this, properties);
-          if (!properties.substrate)
+          utils$2.setupConstrainerCallbackProperties(this, properties);
+          if (!properties.constrainer)
               return this;
-          const data = utils$2.getSubstrateData(this, properties.substrate);
+          const data = utils$2.getConstrainerData(this, properties.constrainer);
           if (!data)
               return this;
-          utils$2.solveSubstrateInternal({ data, host: this.element, name: properties.substrate }, properties);
+          utils$2.solveConstrainerInternal({ data, host: this.element, name: properties.constrainer }, properties);
           return this;
       };
-      TurboSelector.prototype.solveSubstratesForEvent = function _solveSubstratesForEvent(properties) {
+      TurboSelector.prototype.solveConstrainersForEvent = function _solveConstrainersForEvent(properties) {
           if (!properties || !properties.event)
               return this;
-          utils$2.setupSubstrateCallbackProperties(null, properties);
+          utils$2.setupConstrainerCallbackProperties(null, properties);
           if (!properties.eventTarget || typeof properties.eventTarget !== "object") {
               properties.eventTarget = this.element;
               if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                   return this;
           }
-          const substratesData = utils$2.getSubstratesTriggeredByObjects(properties.eventTarget);
-          for (const substrateData of substratesData)
-              utils$2.solveSubstrateInternal(substrateData, properties);
+          const constrainersData = utils$2.getConstrainersTriggeredByObjects(properties.eventTarget);
+          for (const constrainerData of constrainersData)
+              utils$2.solveConstrainerInternal(constrainerData, properties);
           return this;
       };
   }
@@ -19189,8 +19208,8 @@
           setupStyleFunctions();
       if (!options.excludeToolFunctions)
           setupToolFunctions();
-      if (!options.excludeSubstrateFunctions)
-          setupSubstrateFunctions();
+      if (!options.excludeConstrainerFunctions)
+          setupConstrainerFunctions();
       if (!options.excludeReifectFunctions)
           setupReifectFunctions();
   });
@@ -19592,7 +19611,7 @@
    * @group MVC
    * @category Interactor
    *
-   * @extends TurboController
+   * @extends TurboOperator
    * @template {object} ElementType - The type of the main component.
    * @template {TurboView} ViewType - The element's MVC view type.
    * @template {TurboModel} ModelType - The element's MVC model type.
@@ -19600,7 +19619,7 @@
    * @description Class representing an MVC interactor. It holds event listeners to set up on the element itself, or
    * the custom defined target.
    */
-  class TurboInteractor extends TurboController {
+  class TurboInteractor extends TurboOperator {
       #target_accessor_storage;
       /**
        * @description The target of the event listeners. Defaults to the element itself.
@@ -19839,14 +19858,14 @@
    * @group MVC
    * @category Tool
    *
-   * @extends TurboController
+   * @extends TurboOperator
    * @template {object} ElementType - The type of the element.
    * @template {TurboView} ViewType - The element's view type, if any.
    * @template {TurboModel} ModelType - The element's model type, if any.
    * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
    * @description Class representing a tool in MVC, bound to the provided element.
    */
-  class TurboTool extends TurboController {
+  class TurboTool extends TurboOperator {
       /**
        * @description The name of the tool.
        */
@@ -20035,8 +20054,23 @@
     }
   }
 
-  var css_248z$3$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-  styleInject$1(css_248z$3$1);
+  var css_248z$4$1 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+  styleInject$1(css_248z$4$1);
+
+  /**
+   * @group Utilities
+   * @category String
+   *
+   * @description Extracts the extension from the given filename or path (e.g.: ".png").
+   * @param {string} str - The filename or path
+   * @return The extension, or an empty string if not found.
+   */
+  function getFileExtension(str) {
+      if (!str || str.length == 0)
+          return "";
+      const match = str.match(/\.\S{1,4}$/);
+      return match ? match[0] : "";
+  }
 
   /**
    * @group Utilities
@@ -20202,6 +20236,9 @@
            */
           toString() {
               return this.a < 1 ? this.rgba : this.rgb;
+          }
+          fromString(value) {
+              return Color.from(value);
           }
           syncFromRgb() {
               if (this.syncing)
@@ -20769,7 +20806,7 @@
                           return value;
                       }
                   })];
-              _set_element_decorators = [auto({
+              _set_element_decorators = [signal, auto({
                       preprocessValue: function (value) {
                           if (typeof value === "string") {
                               if (this.element && "textContent" in this.element) {
@@ -21093,7 +21130,7 @@
               this.element.onFocus.fire();
           }
           focusOut(e) {
-              this.element.value = this.element.element?.value;
+              this.element.rawValue = this.element.element?.value ?? "";
               this.element.onBlur.fire();
           }
           compositionStart(e) {
@@ -21102,9 +21139,11 @@
           compositionEnd(e) {
               this._composing = false;
               this.handleInput();
+              this.emitter.fire("processValue");
           }
           input(e) {
               this.handleInput();
+              this.emitter.fire("processValue");
           }
           handleInput() {
               if (this._composing)
@@ -21120,17 +21159,104 @@
                       });
                   }
               }
-              this.emitter.fire("processValue");
           }
       };
   })();
+
+  let TurboLabelElement = (() => {
+      let _classSuper = TurboRichElement;
+      let _instanceExtraInitializers = [];
+      let _defaultId_decorators;
+      let _defaultId_initializers = [];
+      let _defaultId_extraInitializers = [];
+      let _labelElement_decorators;
+      let _labelElement_initializers = [];
+      let _labelElement_extraInitializers = [];
+      let _get_element_decorators;
+      let _updateId_decorators;
+      return class TurboLabelElement extends _classSuper {
+          static {
+              const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+              _defaultId_decorators = [signal];
+              _labelElement_decorators = [signal];
+              _get_element_decorators = [signal];
+              _updateId_decorators = [effect];
+              __esDecorate$1(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _updateId_decorators, { kind: "method", name: "updateId", static: false, private: false, access: { has: obj => "updateId" in obj, get: obj => obj.updateId }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(null, null, _defaultId_decorators, { kind: "field", name: "defaultId", static: false, private: false, access: { has: obj => "defaultId" in obj, get: obj => obj.defaultId, set: (obj, value) => { obj.defaultId = value; } }, metadata: _metadata }, _defaultId_initializers, _defaultId_extraInitializers);
+              __esDecorate$1(null, null, _labelElement_decorators, { kind: "field", name: "labelElement", static: false, private: false, access: { has: obj => "labelElement" in obj, get: obj => obj.labelElement, set: (obj, value) => { obj.labelElement = value; } }, metadata: _metadata }, _labelElement_initializers, _labelElement_extraInitializers);
+              if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+          }
+          defaultId = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _defaultId_initializers, "turbo-id-" + randomId()));
+          labelElement = (__runInitializers$1(this, _defaultId_extraInitializers), __runInitializers$1(this, _labelElement_initializers, void 0));
+          content = __runInitializers$1(this, _labelElement_extraInitializers);
+          set label(value) {
+              if (!value || value.length === 0) {
+                  if (this.labelElement)
+                      this.labelElement.remove();
+                  return;
+              }
+              if (!this.labelElement) {
+                  this.labelElement = element({ tag: "label" });
+                  turbo(this).childHandler = this;
+                  turbo(this).addChild(this.labelElement, 0);
+                  if (this.content)
+                      turbo(this).childHandler = this.content;
+              }
+              this.labelElement.textContent = value;
+          }
+          get label() {
+              return this.labelElement?.textContent;
+          }
+          get element() {
+              return super.element;
+          }
+          set element(value) {
+              super.element = value;
+              if (this.element) {
+                  if (!this.element.id)
+                      this.element.id = this.defaultId;
+                  else if (this.labelElement)
+                      this.labelElement.htmlFor = this.element.id;
+              }
+          }
+          setupUIElements() {
+              super.setupUIElements();
+              this.content = div();
+          }
+          setupUILayout() {
+              super.setupUILayout();
+              turbo(this.content).addChild(turbo(this).childrenArray);
+              turbo(this).addChild([this.labelElement, this.content]);
+              turbo(this).childHandler = this.content;
+          }
+          updateId() {
+              if (this.element && !this.element.id)
+                  this.element.id = this.defaultId;
+              if (this.labelElement)
+                  this.labelElement.htmlFor = this.element?.id ?? this.defaultId;
+          }
+      };
+  })();
+  define(TurboLabelElement);
 
   /**
    * @group Components
    * @category TurboInput
    */
   let TurboInput = (() => {
-      let _classSuper = TurboRichElement;
+      let _classSuper = TurboLabelElement;
+      let _instanceExtraInitializers = [];
+      let _locked_decorators;
+      let _locked_initializers = [];
+      let _locked_extraInitializers = [];
+      let _selectTextOnFocus_decorators;
+      let _selectTextOnFocus_initializers = [];
+      let _selectTextOnFocus_extraInitializers = [];
+      let _dynamicVerticalResize_decorators;
+      let _dynamicVerticalResize_initializers = [];
+      let _dynamicVerticalResize_extraInitializers = [];
+      let _get_element_decorators;
       let _type_decorators;
       let _type_initializers = [];
       let _type_extraInitializers = [];
@@ -21143,17 +21269,31 @@
       let _size_decorators;
       let _size_initializers = [];
       let _size_extraInitializers = [];
+      let _get_value_decorators;
+      let _get_rawValue_decorators;
       return class TurboInput extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+              _locked_decorators = [signal];
+              _selectTextOnFocus_decorators = [signal];
+              _dynamicVerticalResize_decorators = [signal];
+              _get_element_decorators = [signal];
               _type_decorators = [expose("element")];
               _placeholder_decorators = [expose("element")];
               _pattern_decorators = [expose("element")];
               _size_decorators = [expose("element")];
+              _get_value_decorators = [signal];
+              _get_rawValue_decorators = [signal];
+              __esDecorate$1(this, null, _get_element_decorators, { kind: "getter", name: "element", static: false, private: false, access: { has: obj => "element" in obj, get: obj => obj.element }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
               __esDecorate$1(this, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
               __esDecorate$1(this, null, _pattern_decorators, { kind: "accessor", name: "pattern", static: false, private: false, access: { has: obj => "pattern" in obj, get: obj => obj.pattern, set: (obj, value) => { obj.pattern = value; } }, metadata: _metadata }, _pattern_initializers, _pattern_extraInitializers);
               __esDecorate$1(this, null, _size_decorators, { kind: "accessor", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, _size_initializers, _size_extraInitializers);
+              __esDecorate$1(this, null, _get_value_decorators, { kind: "getter", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _get_rawValue_decorators, { kind: "getter", name: "rawValue", static: false, private: false, access: { has: obj => "rawValue" in obj, get: obj => obj.rawValue }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(null, null, _locked_decorators, { kind: "field", name: "locked", static: false, private: false, access: { has: obj => "locked" in obj, get: obj => obj.locked, set: (obj, value) => { obj.locked = value; } }, metadata: _metadata }, _locked_initializers, _locked_extraInitializers);
+              __esDecorate$1(null, null, _selectTextOnFocus_decorators, { kind: "field", name: "selectTextOnFocus", static: false, private: false, access: { has: obj => "selectTextOnFocus" in obj, get: obj => obj.selectTextOnFocus, set: (obj, value) => { obj.selectTextOnFocus = value; } }, metadata: _metadata }, _selectTextOnFocus_initializers, _selectTextOnFocus_extraInitializers);
+              __esDecorate$1(null, null, _dynamicVerticalResize_decorators, { kind: "field", name: "dynamicVerticalResize", static: false, private: false, access: { has: obj => "dynamicVerticalResize" in obj, get: obj => obj.dynamicVerticalResize, set: (obj, value) => { obj.dynamicVerticalResize = value; } }, metadata: _metadata }, _dynamicVerticalResize_initializers, _dynamicVerticalResize_extraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
           static defaultProperties = {
@@ -21161,46 +21301,33 @@
               interactors: TurboInputInputInteractor
           };
           static customCreate(properties) {
-              let element = properties.input ?? {};
-              let elementTag = properties.inputTag ?? "input";
-              return super.customCreate({ ...properties, elementTag, element, input: undefined, inputTag: undefined });
+              const element = properties.input ?? {};
+              const elementTag = properties.inputTag ?? "input";
+              const value = properties.value;
+              const input = super.customCreate({ ...properties, elementTag, element,
+                  value: undefined, input: undefined, inputTag: undefined });
+              if (value !== undefined && value !== null)
+                  input.value = value;
+              return input;
           }
-          labelElement;
-          content;
-          defaultId = "turbo-input-" + randomId();
-          locked = false;
-          selectTextOnFocus = false;
-          dynamicVerticalResize = false;
-          inputRegexCheck;
+          locked = (__runInitializers$1(this, _instanceExtraInitializers), __runInitializers$1(this, _locked_initializers, false));
+          selectTextOnFocus = (__runInitializers$1(this, _locked_extraInitializers), __runInitializers$1(this, _selectTextOnFocus_initializers, false));
+          dynamicVerticalResize = (__runInitializers$1(this, _selectTextOnFocus_extraInitializers), __runInitializers$1(this, _dynamicVerticalResize_initializers, false));
+          inputRegexCheck = __runInitializers$1(this, _dynamicVerticalResize_extraInitializers);
           blurRegexCheck;
           lastValidForInput = "";
           lastValidForBlur = "";
           onFocus = new Delegate();
           onBlur = new Delegate();
           onInput = new Delegate();
-          set label(value) {
-              if (!value || value.length === 0) {
-                  if (this.labelElement)
-                      this.labelElement.remove();
-                  return;
-              }
-              if (!this.labelElement) {
-                  this.labelElement = element({ tag: "label", htmlFor: this.element?.id ?? this.defaultId });
-                  turbo(this).childHandler = this;
-                  turbo(this).addChild(this.labelElement, 0);
-                  if (this.content)
-                      turbo(this).childHandler = this.content;
-              }
-              this.labelElement.textContent = value;
-          }
-          get label() {
-              return this.labelElement?.textContent;
-          }
           get input() {
               return this.element;
           }
           set input(value) {
               this.element = value;
+          }
+          get element() {
+              return super.element;
           }
           set element(value) {
               if (!(value instanceof Node) && typeof value === "object") {
@@ -21210,16 +21337,6 @@
                       value.type = "text";
               }
               super.element = value;
-              console.log(this.element);
-              if (this.element) {
-                  if (!this.element.id)
-                      this.element.id = this.defaultId;
-                  else if (this.labelElement)
-                      this.labelElement.htmlFor = this.element.id;
-              }
-          }
-          get element() {
-              return super.element;
           }
           #type_accessor_storage = __runInitializers$1(this, _type_initializers, void 0);
           get type() { return this.#type_accessor_storage; }
@@ -21233,20 +21350,6 @@
           #size_accessor_storage = (__runInitializers$1(this, _pattern_extraInitializers), __runInitializers$1(this, _size_initializers, void 0));
           get size() { return this.#size_accessor_storage; }
           set size(value) { this.#size_accessor_storage = value; }
-          initialize() {
-              super.initialize();
-              // turbo(this).getInteractor("__input__interactor__").target = this.content;
-          }
-          setupUIElements() {
-              super.setupUIElements();
-              this.content = div();
-          }
-          setupUILayout() {
-              super.setupUILayout();
-              turbo(this.content).addChild(turbo(this).childrenArray);
-              turbo(this).addChild([this.labelElement, this.content]);
-              turbo(this).childHandler = this.content;
-          }
           setupChangedCallbacks() {
               super.setupChangedCallbacks();
               this.emitter.add("processValue", () => this.processInputValue());
@@ -21260,16 +21363,35 @@
               });
           }
           get value() {
-              const value = this.element?.value;
+              const value = this.rawValue;
+              if (!value)
+                  return undefined;
               try {
                   const num = parseFloat(value);
                   if (!isNaN(num))
                       return num;
               }
               catch { }
+              try {
+                  const current = this.value;
+                  if (current && typeof current === "object" && "fromString" in current
+                      && typeof current.fromString === "function")
+                      return current.fromString(value);
+              }
+              catch { }
+              try {
+                  return JSON.parse(value);
+              }
+              catch { }
               return value;
           }
           set value(value) {
+              this.rawValue = value.toString();
+          }
+          get rawValue() {
+              return this.element?.value ?? "";
+          }
+          set rawValue(value) {
               if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement))
                   return;
               let strValue = value.toString();
@@ -21280,6 +21402,11 @@
               }
               this.element.value = strValue;
               this.emitter.fire("valueSet");
+          }
+          setValueSilently(value) {
+              if (!(this.element instanceof HTMLInputElement) && !(this.element instanceof HTMLTextAreaElement))
+                  return;
+              this.element.value = typeof value?.toString === "function" ? value.toString() : String(value);
           }
           processInputValue(value = this.element.value) {
               if (this.inputRegexCheck) {
@@ -21301,7 +21428,9 @@
               else {
                   this.lastValidForBlur = value;
               }
-              this.element.value = value;
+              if (this.element instanceof HTMLInputElement || this.element instanceof HTMLTextAreaElement)
+                  this.element.value = value;
+              markDirty(this, "rawValue");
               this.onInput.fire();
           }
           sanitizeByRegex(value, rule) {
@@ -21339,7 +21468,7 @@
       min;
       max;
       get value() {
-          return Number.parseFloat(this.element.value) / this.multiplier;
+          return this.element ? Number.parseFloat(this.element.value) / this.multiplier : undefined;
       }
       set value(value) {
           if (!value || value == "")
@@ -22060,6 +22189,185 @@
       };
   })();
   define(TurboSelectElement);
+
+  var css_248z$3$1 = "turbo-content-switch{display:block;overflow:hidden;position:relative}turbo-content-switch>*{box-sizing:border-box;left:0;top:0;width:100%}";
+  styleInject$1(css_248z$3$1);
+
+  var ContentSwitchMode;
+  (function (ContentSwitchMode) {
+      ContentSwitchMode["fadeLeft"] = "fadeLeft";
+      ContentSwitchMode["fadeRight"] = "fadeRight";
+      ContentSwitchMode["carousel"] = "carousel";
+  })(ContentSwitchMode || (ContentSwitchMode = {}));
+
+  let TurboContentSwitch = (() => {
+      let _classSuper = TurboElement;
+      let _instanceExtraInitializers = [];
+      let _set_mode_decorators;
+      let _set_transitionDuration_decorators;
+      let _get_transitionReifect_decorators;
+      return class TurboContentSwitch extends _classSuper {
+          static {
+              const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+              _set_mode_decorators = [auto({ defaultValue: ContentSwitchMode.fadeRight })];
+              _set_transitionDuration_decorators = [auto({ defaultValue: 0.3 })];
+              _get_transitionReifect_decorators = [auto({
+                      setIfUndefined: true,
+                      preprocessValue: function (value) {
+                          return this.generateTransitionReifect(value);
+                      }
+                  })];
+              __esDecorate$1(this, null, _set_mode_decorators, { kind: "setter", name: "mode", static: false, private: false, access: { has: obj => "mode" in obj, set: (obj, value) => { obj.mode = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _get_transitionReifect_decorators, { kind: "getter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, get: obj => obj.transitionReifect }, metadata: _metadata }, null, _instanceExtraInitializers);
+              if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+          }
+          selector = (__runInitializers$1(this, _instanceExtraInitializers), new TurboSelect());
+          _previousSelectedIndex = -1;
+          set mode(value) {
+              turbo(this).toggleClass("carousel", value === ContentSwitchMode.carousel);
+          }
+          get mode() { return; }
+          set transitionDuration(_value) { }
+          get transitionDuration() { return; }
+          get transitionReifect() { return; }
+          set transitionReifect(_value) {
+              const reifect = this.transitionReifect;
+              const entries = this.selector.entries;
+              if (reifect && entries.length > 0)
+                  reifect.attach(...entries);
+          }
+          initialize() {
+              this.selector.parent = this;
+              this.selector.onEntryAdded.add((entry) => {
+                  if (this.mode === ContentSwitchMode.carousel) {
+                      this.initCarouselEntry(entry);
+                      return;
+                  }
+                  const reifect = this.transitionReifect;
+                  if (!reifect?.enabled)
+                      return;
+                  reifect.attach(entry);
+                  reifect.initialize(Shown.hidden, entry, { applyStylesInstantly: true });
+                  turbo(entry).setStyles({ position: "absolute" }, true);
+              });
+              this.selector.onSelect.add(() => {
+                  if (this.mode === ContentSwitchMode.carousel) {
+                      this.applyCarouselTransition();
+                  }
+                  else {
+                      this.applyFadeTransition();
+                  }
+              });
+              super.initialize();
+          }
+          applyFadeTransition() {
+              const selectedEntry = this.selector.selectedEntry;
+              this.selector.entries.forEach(entry => {
+                  const isSelected = entry === selectedEntry;
+                  turbo(entry).setStyles({ position: isSelected ? "relative" : "absolute" }, true);
+                  const reifect = this.transitionReifect;
+                  if (reifect?.enabled)
+                      reifect.apply(isSelected ? Shown.visible : Shown.hidden, entry);
+              });
+          }
+          initCarouselEntry(entry) {
+              turbo(entry).setStyles({
+                  position: "absolute",
+                  opacity: "0",
+                  transform: "translateX(100%)",
+                  pointerEvents: "none",
+                  transition: "none",
+              }, true);
+          }
+          applyCarouselTransition() {
+              const entries = this.selector.entries;
+              const selectedEntry = this.selector.selectedEntry;
+              const newIndex = this.selector.getIndex(selectedEntry);
+              const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
+              const prevIndex = this._previousSelectedIndex;
+              this._previousSelectedIndex = newIndex;
+              const duration = this.transitionDuration;
+              const transitionStr = `transform ${duration}s ease-out, opacity ${duration}s ease-out`;
+              entries.forEach((entry, i) => {
+                  const el = entry;
+                  const isSelected = entry === selectedEntry;
+                  const wasPrevious = i === prevIndex;
+                  if (isSelected) {
+                      turbo(el).setStyles({
+                          transition: "none",
+                          transform: `translateX(${forward ? "100%" : "-100%"})`,
+                          opacity: "0",
+                          position: "relative",
+                          pointerEvents: "none",
+                      }, true);
+                      requestAnimationFrame(() => {
+                          turbo(el).setStyles({
+                              transition: transitionStr,
+                              transform: "translateX(0)",
+                              opacity: "1",
+                              pointerEvents: "all",
+                          }, true);
+                      });
+                  }
+                  else if (wasPrevious) {
+                      turbo(el).setStyles({
+                          transition: transitionStr,
+                          transform: `translateX(${forward ? "-100%" : "100%"})`,
+                          opacity: "0",
+                          pointerEvents: "none",
+                      }, true);
+                      setTimeout(() => {
+                          turbo(el).setStyles({
+                              position: "absolute",
+                              transition: "none",
+                          }, true);
+                      }, duration * 1000);
+                  }
+                  else {
+                      turbo(el).setStyles({
+                          transition: "none",
+                          position: "absolute",
+                          opacity: "0",
+                          transform: `translateX(${i < newIndex ? "-100%" : "100%"})`,
+                          pointerEvents: "none",
+                      }, true);
+                  }
+              });
+          }
+          generateTransitionReifect(value) {
+              if (value instanceof StatefulReifect)
+                  return value;
+              if (typeof value === "object" && value !== null) {
+                  return new StatefulReifect(value);
+              }
+              if (this.mode === ContentSwitchMode.carousel) {
+                  const r = new StatefulReifect({ states: [Shown.visible, Shown.hidden], styles: {} });
+                  r.enabled = false;
+                  return r;
+              }
+              const dx = this.mode === ContentSwitchMode.fadeLeft ? "-100%" : "100%";
+              return new StatefulReifect({
+                  states: [Shown.visible, Shown.hidden],
+                  styles: {
+                      [Shown.visible]: () => ({
+                          opacity: "1",
+                          transform: "translateX(0)",
+                          pointerEvents: "all",
+                          transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
+                      }),
+                      [Shown.hidden]: () => ({
+                          opacity: "0",
+                          transform: `translateX(${dx})`,
+                          pointerEvents: "none",
+                          transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
+                      })
+                  }
+              });
+          }
+      };
+  })();
+  define(TurboContentSwitch, "turbo-content-switch");
 
   var css_248z$2$1 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
   styleInject$1(css_248z$2$1);
@@ -22980,7 +23288,7 @@
                       this.clearOpenTimer();
                       this.open = true;
                       this.dragging = true;
-                      this.reifect.enabled.transition = false;
+                      // this.reifect.enabled.transition = false;
                       this.reloadEntrySizes();
                       return Propagation.stopImmediatePropagation;
                   })
@@ -23043,7 +23351,8 @@
               const elements = this.reifect.getEnabledObjects();
               if (elements.length === 0)
                   return;
-              elements.forEach((el, index) => this.computeAndApplyStyling(el.object.deref(), this.positionPerEntry[index] - value));
+              // elements.forEach((el, index) =>
+              //     this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
           }
           setupUIListeners() {
               super.setupUIListeners();
@@ -23078,11 +23387,11 @@
               this.positionPerEntry.length = 0;
               this.totalSize = 0;
               this.reifect.getEnabledObjects().forEach(entry => {
-                  const object = entry.object.deref();
-                  const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-                  this.sizePerEntry.push(size);
-                  this.positionPerEntry.push(this.totalSize);
-                  this.totalSize += size;
+                  // const object = entry.object.deref();
+                  // const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
+                  // this.sizePerEntry.push(size);
+                  // this.positionPerEntry.push(this.totalSize);
+                  // this.totalSize += size;
               });
               const flooredIndex = Math.floor(this.index);
               const indexOffset = this.index - Math.floor(this.index);
@@ -23133,7 +23442,7 @@
               if (index != this.index)
                   this.index = index;
               if (this.reifect) {
-                  this.reifect.enabled.transition = true;
+                  // this.reifect.enabled.transition = true;
                   this.reloadEntrySizes();
               }
               const computedStyle = getComputedStyle(this.selectedEntry);
@@ -23556,6 +23865,42 @@
           onClick: () => r.text = "Updated!"
       }));
   }
+  function richTest3() {
+      const r = TurboRichElement.create({
+          text: "Clear parts",
+          leftIcon: "link",
+          rightIcon: "share",
+          prefixEntry: "PRE",
+          suffixEntry: "SUF",
+      });
+      box("RichElement — clearing parts")
+          .addSubBox("start (fully loaded)", r)
+          .addContent(TurboButton.create({
+          text: "leftIcon = null",
+          onClick: () => r.leftIcon = null
+      }))
+          .addContent(TurboButton.create({
+          text: "rightIcon = null",
+          onClick: () => r.rightIcon = null
+      }))
+          .addContent(TurboButton.create({
+          text: "prefixEntry = null",
+          onClick: () => r.prefixEntry = null
+      }))
+          .addContent(TurboButton.create({
+          text: "suffixEntry = null",
+          onClick: () => r.suffixEntry = null
+      }))
+          .addContent(TurboButton.create({
+          text: "restore all",
+          onClick: () => {
+              r.leftIcon = "link";
+              r.rightIcon = "share";
+              r.prefixEntry = "PRE";
+              r.suffixEntry = "SUF";
+          }
+      }));
+  }
   function richTest4() {
       // Replace center element with custom element; also provide via object props
       const r = TurboRichElement.create({ text: "Center text" });
@@ -23690,6 +24035,7 @@
   function setupRichElementTests() {
       richTest1();
       richTest2();
+      richTest3();
       richTest4();
       richTest5();
       richTest6();
@@ -24152,6 +24498,59 @@
       b.addSubBox("Tabs", tabBar);
       b.addSubBox("Panels", tabPanels);
   }
+  /* 9) entriesClasses / selectedEntriesClasses styling */
+  function selectTest9() {
+      const sel = TurboSelect.create({
+          values: ["Alpha", "Beta", "Gamma"],
+          entriesClasses: "entry-pill",
+          selectedEntriesClasses: "entry-pill--active",
+      });
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      box("TurboSelect — entriesClasses / selectedEntriesClasses")
+          .addSubBox("styled entries (check DevTools for classes)", host)
+          .addContent(TurboButton.create({
+          text: "Change entriesClasses → 'entry-alt'",
+          onClick: () => sel.entriesClasses = "entry-alt"
+      }))
+          .addContent(TurboButton.create({
+          text: "Change selectedEntriesClasses → 'entry-alt--active'",
+          onClick: () => sel.selectedEntriesClasses = "entry-alt--active"
+      }))
+          .addContent(TurboButton.create({
+          text: "Log classes",
+          onClick: () => sel.entries.forEach(e => console.log(e.className, "selected:", sel.isSelected(e)))
+      }));
+  }
+  /* 10) clear() + onEntryRemoved */
+  function selectTest10() {
+      const log = span({ text: "removed: (none)" });
+      const sel = TurboSelect.create({ values: ["P", "Q", "R", "S"] });
+      sel.onEntryRemoved = (entry) => {
+          log.textContent = "removed: " + (entry.textContent?.trim() ?? "?");
+      };
+      const host = div({ classes: "select-parent" });
+      sel.parent = host;
+      box("TurboSelect — clear() + onEntryRemoved")
+          .addSubBox("host", host)
+          .addContent(log)
+          .addContent(TurboButton.create({
+          text: "Remove last node",
+          onClick: () => {
+              const last = host.lastElementChild;
+              if (last)
+                  last.remove();
+          }
+      }))
+          .addContent(TurboButton.create({
+          text: "clear() all",
+          onClick: () => sel.clear()
+      }))
+          .addContent(TurboButton.create({
+          text: "Reset values",
+          onClick: () => sel.values = ["P", "Q", "R", "S"]
+      }));
+  }
   function setupSelectTests() {
       selectTest1();
       selectTest2();
@@ -24161,6 +24560,8 @@
       selectTest6();
       selectTest7();
       selectTest8();
+      selectTest9();
+      selectTest10();
       selectTestTabs();
   }
 
@@ -24696,6 +25097,26 @@
           onClick: () => console.log("[dd7] value:", dd.selectedValue)
       }));
   }
+  function ddTestCustomSelector() {
+      const customSel = TurboRichElement.create({
+          text: "Pick one ▾",
+          leftIcon: "chevron-left",
+      });
+      const dd = TurboDropdown.create({
+          values: ["North", "South", "East", "West"],
+          selector: customSel,
+      });
+      // Not a TurboButton, so wire the display text update manually
+      dd.select.onSelect = () => {
+          customSel.text = String(dd.selectedValue) + " ▾";
+      };
+      box("TurboDropdown — custom selector element")
+          .addSubBox("RichElement as selector", dd)
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[dd-custom] selected:", dd.selectedValue)
+      }));
+  }
   function ddTestTabs() {
       const tabs = [
           { key: "overview", label: "Overview", content: div({ text: "Overview content..." }) },
@@ -24730,19 +25151,171 @@
       ddTest5();
       ddTest6();
       ddTest7();
+      ddTestCustomSelector();
       ddTestTabs();
   }
 
-  /* 1) Basics: values[] -> single select, forceSelection default */
   function selectWheelTest1() {
-      const host = div({ classes: "select-parent" });
       const wheel = TurboSelectWheel.create({});
-      wheel.selector.values = ["Alpha", "Beta", "Gamma"];
-      const b = box("TurboSelectWheel — Basics");
-      b.addSubBox("host", host);
+      wheel.values = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
+      box("TurboSelectWheel — Basics")
+          .addSubBox("wheel", wheel)
+          .addContent(TurboButton.create({
+          text: "Select Beta",
+          onClick: () => wheel.selector.select("Beta")
+      }))
+          .addContent(TurboButton.create({
+          text: "selectByIndex(2)",
+          onClick: () => wheel.selector.selectByIndex(2)
+      }))
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[wheel1] selected:", wheel.selectedValue)
+      }));
+  }
+  function selectWheelTest2() {
+      const wheel = TurboSelectWheel.create({});
+      wheel.alwaysOpen = true;
+      wheel.values = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      box("TurboSelectWheel — alwaysOpen")
+          .addSubBox("wheel (always visible)", wheel)
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[wheel2] selected:", wheel.selectedValue)
+      }))
+          .addContent(TurboButton.create({
+          text: "alwaysOpen = false",
+          onClick: () => wheel.alwaysOpen = false
+      }))
+          .addContent(TurboButton.create({
+          text: "alwaysOpen = true",
+          onClick: () => wheel.alwaysOpen = true
+      }));
   }
   function setupSelectWheelTests() {
       selectWheelTest1();
+      selectWheelTest2();
+  }
+
+  const panelColors = ["#4a90d9", "#6bc76f", "#e07b4a", "#9b59b6"];
+  const makePanel = (label, color) => div({
+      styles: {
+          background: color,
+          padding: "1.5rem 2rem",
+          borderRadius: "12px",
+          fontSize: "1.1rem",
+          fontWeight: "600",
+          color: "#fff",
+          minHeight: "100px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+      },
+      text: label,
+  });
+  function makeSwitch(mode, extraProps = {}) {
+      const cs = TurboContentSwitch.create({ mode, ...extraProps });
+      cs.selector.forceSelection = false;
+      return cs;
+  }
+  /* 1) fadeRight (default) */
+  function csTest1() {
+      const cs = makeSwitch();
+      const panels = ["Panel A", "Panel B", "Panel C"].map((label, i) => {
+          const p = makePanel(label, panelColors[i]);
+          cs.appendChild(p);
+          return p;
+      });
+      // Let MO process entries, then show first panel
+      setTimeout(() => cs.selector.select(panels[0]));
+      box("TurboContentSwitch — fadeRight (default)")
+          .addSubBox("switch", cs)
+          .addContent(TurboButton.create({ text: "→ Panel A", onClick: () => cs.selector.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Panel B", onClick: () => cs.selector.select(panels[1]) }))
+          .addContent(TurboButton.create({ text: "→ Panel C", onClick: () => cs.selector.select(panels[2]) }));
+  }
+  /* 2) fadeLeft */
+  function csTest2() {
+      const cs = makeSwitch(ContentSwitchMode.fadeLeft);
+      const panels = ["Left A", "Left B", "Left C"].map((label, i) => {
+          const p = makePanel(label, [panelColors[0], panelColors[2], panelColors[3]][i]);
+          cs.appendChild(p);
+          return p;
+      });
+      setTimeout(() => cs.selector.select(panels[0]));
+      box("TurboContentSwitch — fadeLeft")
+          .addSubBox("switch", cs)
+          .addContent(TurboButton.create({ text: "→ Left A", onClick: () => cs.selector.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Left B", onClick: () => cs.selector.select(panels[1]) }))
+          .addContent(TurboButton.create({ text: "→ Left C", onClick: () => cs.selector.select(panels[2]) }));
+  }
+  /* 3) carousel — direction-aware, no wrap to avoid index-direction mismatch */
+  function csTest3() {
+      const cs = makeSwitch(ContentSwitchMode.carousel);
+      const panels = ["Slide 1", "Slide 2", "Slide 3", "Slide 4"].map((label, i) => {
+          const p = makePanel(label, panelColors[i]);
+          cs.appendChild(p);
+          return p;
+      });
+      let currentIndex = 0;
+      setTimeout(() => cs.selector.select(panels[0]));
+      box("TurboContentSwitch — carousel")
+          .addSubBox("switch", cs)
+          .addContent(TurboButton.create({
+          text: "← Prev",
+          onClick: () => {
+              if (currentIndex > 0) {
+                  currentIndex--;
+                  cs.selector.select(panels[currentIndex]);
+              }
+          }
+      }))
+          .addContent(TurboButton.create({
+          text: "Next →",
+          onClick: () => {
+              if (currentIndex < panels.length - 1) {
+                  currentIndex++;
+                  cs.selector.select(panels[currentIndex]);
+              }
+          }
+      }))
+          .addContent(TurboButton.create({
+          text: "→ Slide 1",
+          onClick: () => { currentIndex = 0; cs.selector.select(panels[0]); }
+      }))
+          .addContent(TurboButton.create({
+          text: "→ Slide 4",
+          onClick: () => { currentIndex = 3; cs.selector.select(panels[3]); }
+      }));
+  }
+  /* 4) custom transitionDuration */
+  function csTest4() {
+      const cs = TurboContentSwitch.create({ transitionDuration: 0.8 });
+      cs.selector.forceSelection = false;
+      const panels = ["Slow A", "Slow B"].map((label, i) => {
+          const p = makePanel(label, [panelColors[1], panelColors[2]][i]);
+          cs.appendChild(p);
+          return p;
+      });
+      setTimeout(() => cs.selector.select(panels[0]));
+      box("TurboContentSwitch — custom transitionDuration (0.8s)")
+          .addSubBox("switch", cs)
+          .addContent(TurboButton.create({ text: "→ Slow A", onClick: () => cs.selector.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Slow B", onClick: () => cs.selector.select(panels[1]) }))
+          .addContent(TurboButton.create({
+          text: "duration = 0.2s",
+          onClick: () => cs.transitionDuration = 0.2
+      }))
+          .addContent(TurboButton.create({
+          text: "duration = 1.5s",
+          onClick: () => cs.transitionDuration = 1.5
+      }));
+  }
+  function setupContentSwitchTests() {
+      csTest1();
+      csTest2();
+      csTest3();
+      csTest4();
   }
 
   turbo(TurboIcon.defaultProperties).applyDefaults({ directory: "assets", defaultClasses: "icon" });
@@ -24763,5 +25336,7 @@
   setupDropdownTests();
   h1({ text: "TurboSelectWheel", parent: document.body });
   setupSelectWheelTests();
+  h1({ text: "TurboContentSwitch", parent: document.body });
+  setupContentSwitchTests();
 
 })();

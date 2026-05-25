@@ -298,18 +298,24 @@ export function setupHierarchyFunctions() {
      * constructor/class to match.
      * @returns {Element | null} The matching ancestor element, or null if no match is found.
      */
-    TurboSelector.prototype.closest = function _closest<TagOrType extends string | (new (...args: any[]) => Element)>(
+    TurboSelector.prototype.closest = function _closest(
         this: TurboSelector,
-        type: TagOrType | (new (...args: any[]) => TagOrType)
-    ): (TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType) | null {
+        type: string | (new (...args: any[]) => Element)
+    ): Element {
         if (!this.element || !type || !(this.element instanceof Element)) return null;
 
         if (typeof type === "string") {
-            return this.element.closest(type) as TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType;
+            const constructor = customElements.get(type);
+            if (constructor) {
+                let element: Element = this.element;
+                while (element && !(element instanceof constructor)) element = element.parentElement;
+                return element || null;
+            }
+            return this.element.closest(type);
         } else if (typeof type === "function") {
-            let element: Element | null = this.element;
-            while (element && !(element instanceof type)) element = element.parentElement;
-            return (element as TagOrType extends ValidTag ? ValidElement<TagOrType> : TagOrType) || null;
+            let element: Element = this.element;
+            while (element && !(element instanceof type)) element = (element as Element).parentElement;
+            return element || null;
         }
         return null;
     };

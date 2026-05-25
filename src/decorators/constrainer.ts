@@ -1,8 +1,8 @@
 import {
-    EnforcerAddCallbackProperties,
-    EnforcerChecker, EnforcerMutator,
-    EnforcerSolver
-} from "../turboFunctions/enforcer/enforcer.types";
+    ConstrainerAddCallbackProperties,
+    ConstrainerChecker, ConstrainerMutator,
+    ConstrainerSolver
+} from "../turboFunctions/constrainer/constrainer.types";
 
 /**
  * @decorator
@@ -10,14 +10,14 @@ import {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer solvers.
+ * @description Stage-3 decorator that turns methods into constrainer solvers.
  * @example
  * ```ts
- * @solver private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @solver private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -25,7 +25,7 @@ import {
  * }
  * ```
  */
-function solver(properties?: EnforcerAddCallbackProperties<EnforcerSolver>) {
+function solver(properties?: ConstrainerAddCallbackProperties<ConstrainerSolver>) {
     return function <Type extends object>(
         value: ((this: Type, ...args: any[]) => any),
         context: ClassMethodDecoratorContext<Type>
@@ -49,14 +49,14 @@ function solver(properties?: EnforcerAddCallbackProperties<EnforcerSolver>) {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer checkers.
+ * @description Stage-3 decorator that turns methods into constrainer checkers.
  * @example
  * ```ts
- * @checker private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @checker private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -64,7 +64,7 @@ function solver(properties?: EnforcerAddCallbackProperties<EnforcerSolver>) {
  * }
  * ```
  */
-function checker(properties?: EnforcerAddCallbackProperties<EnforcerChecker>) {
+function checker(properties?: ConstrainerAddCallbackProperties<ConstrainerChecker>) {
     return function <Type extends object>(
         value: ((this: Type, ...args: any[]) => any),
         context: ClassMethodDecoratorContext<Type>
@@ -88,14 +88,14 @@ function checker(properties?: EnforcerAddCallbackProperties<EnforcerChecker>) {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer mutators.
+ * @description Stage-3 decorator that turns methods into constrainer mutators.
  * @example
  * ```ts
- * @mutator private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @mutator private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -103,7 +103,7 @@ function checker(properties?: EnforcerAddCallbackProperties<EnforcerChecker>) {
  * }
  * ```
  */
-function mutator(properties?: EnforcerAddCallbackProperties<EnforcerMutator>) {
+function mutator(properties?: ConstrainerAddCallbackProperties<ConstrainerMutator>) {
     return function <Type extends object>(
         value: ((this: Type, ...args: any[]) => any),
         context: ClassMethodDecoratorContext<Type>

@@ -7,6 +7,7 @@ import {setupDrawerTests} from "./cases/drawer/drawer";
 import {setupPopupTests} from "./cases/popup/popup";
 import {setupDropdownTests} from "./cases/dropdown/dropdown";
 import {setupSelectWheelTests} from "./cases/selectWheel/selectWheel";
+import {setupContentSwitchTests} from "./cases/contentSwitch/contentSwitch";
 
 turbo(TurboIcon.defaultProperties).applyDefaults({directory: "assets", defaultClasses: "icon"});
 TurboEventManager.instance.preventDefaultWheel = false;
@@ -27,3 +28,5 @@ h1({text: "TurboDropdown", parent: document.body});
 setupDropdownTests();
 h1({text: "TurboSelectWheel", parent: document.body});
 setupSelectWheelTests();
+h1({text: "TurboContentSwitch", parent: document.body});
+setupContentSwitchTests();

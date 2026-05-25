@@ -69,14 +69,14 @@ type ListenerCallback<Type extends Node = Node> = ((e: Event, el: Type) => Propa
  * @extends AddEventListenerOptions
  * @description Options used for listeners.
  *
- * @property {boolean} [checkEnforcers] - If true, checks enforcers before execution. Defaults to true.
- * @property {boolean} [solveEnforcers] - If true, triggers enforcer solving after execution. Defaults to true.
+ * @property {boolean} [checkConstrainers] - If true, checks constrainers before execution. Defaults to true.
+ * @property {boolean} [solveConstrainers] - If true, triggers constrainer solving after execution. Defaults to true.
  * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
  * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
  */
 type ListenerOptions = AddEventListenerOptions & {
-    checkEnforcers?: boolean,
-    solveEnforcers?: boolean,
+    checkConstrainers?: boolean,
+    solveConstrainers?: boolean,
     throttleEveryFrames?: number,
     throttleEveryMs?: number,
 };

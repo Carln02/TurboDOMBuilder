@@ -34,6 +34,17 @@ class TurboInput<
         interactors: TurboInputInputInteractor
     };
 
+    public declare static create: <
+        InputTag extends "input" | "textarea" = "input",
+        ValueType = string,
+        ViewType extends TurboView = TurboView<any, any>,
+        DataType extends object = object,
+        ModelType extends TurboModel<DataType> = TurboModel,
+        EmitterType extends TurboEmitter = TurboEmitter
+    >(
+        properties?: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>
+    ) => TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
+
     protected static customCreate(properties: TurboInputProperties): object {
         const element: object = properties.input ?? {};
         const elementTag: any = properties.inputTag ?? "input";

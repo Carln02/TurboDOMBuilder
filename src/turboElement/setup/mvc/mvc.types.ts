@@ -5,7 +5,7 @@ import {TurboOperator} from "../../../mvc/operator/operator";
 import {TurboHandler} from "../../../mvc/handler/handler";
 import {TurboInteractor} from "../../../mvc/interactor/interactor";
 import {TurboTool} from "../../../mvc/tool/tool";
-import {TurboEnforcer} from "../../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../../mvc/constrainer/constrainer";
 
 /**
  * @internal
@@ -43,8 +43,6 @@ interface TurboElementMvcInterface<
      * @description The main data block (if any) attached to the element, taken from its model (if any).
      */
     data: DataType;
-
-    readonly metadata: TurboModel<object>;
 
     /**
      * @description The ID of the main data block (if any) of the element, taken from its model (if any).
@@ -87,9 +85,9 @@ interface TurboElementMvcInterface<
     tools: TurboTool[];
 
     /**
-     * @description The enforcers (if any) attached to the element's MVC structure.
+     * @description The constrainers (if any) attached to the element's MVC structure.
      */
-    enforcers: TurboEnforcer[];
+    constrainers: TurboConstrainer[];
 }
 
 export {TurboElementMvcInterface};

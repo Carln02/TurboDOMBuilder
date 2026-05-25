@@ -5,7 +5,6 @@ export function defineUIPrototype<Type extends new (...args: any[]) => any>(cons
     const shadowDOMKey = Symbol("__shadow_dom__");
     const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
     const defaultClassesKey = Symbol("__default_classes__");
-    const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
 
     Object.defineProperty(prototype, "shadowDOM", {
         get: function (): boolean {return this[shadowDOMKey] ?? false;},
@@ -39,17 +38,6 @@ export function defineUIPrototype<Type extends new (...args: any[]) => any>(cons
             if (!this.unsetDefaultClasses) turbo(this).toggleClass(this[defaultClassesKey], false);
             this[defaultClassesKey] = value;
             if (!this.unsetDefaultClasses) turbo(this).toggleClass(value, true);
-        },
-        enumerable: true,
-        configurable: true,
-    });
-
-    Object.defineProperty(prototype, "defaultSelectedClasses", {
-        get: function (): string | string[] {return this[defaultSelectedClassesKey] ?? "";},
-        set: function (value: string | string[]) {
-            if (this.selected) turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
-            this[defaultSelectedClassesKey] = value;
-            if (this.selected) turbo(this).toggleClass(value, true);
         },
         enumerable: true,
         configurable: true,

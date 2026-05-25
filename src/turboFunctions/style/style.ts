@@ -2,8 +2,14 @@ import {StylesType} from "./style.types";
 import {TurboSelector} from "../turboSelector";
 import {StyleFunctionsUtils} from "./style.utils";
 import {PartialRecord} from "../../types/basic.types";
+import {turbo} from "../turboFunctions";
+import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 
 const utils = new StyleFunctionsUtils();
+
+const selectedKey = Symbol("__selected__");
+const selectedClass = Symbol("__selectedClass__");
+const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
 
 export function setupStyleFunctions() {
     /**
@@ -21,6 +27,52 @@ export function setupStyleFunctions() {
         },
         configurable: false,
         enumerable: true
+    });
+
+    Object.defineProperty(TurboSelector.prototype, "selected", {
+        get(this: any) {
+            return !!this[selectedKey]
+        },
+        set(this: TurboSelector<object>, value: boolean) {
+            const element = this.element;
+            if (!element) return;
+
+            if (element instanceof Element) {
+                const prevClass = element[selectedClass];
+                const nextClass = element["defaultSelectedClasses"] || "selected";
+                element[selectedClass] = nextClass;
+                if (prevClass && prevClass !== nextClass) turbo(element).toggleClass(prevClass, false);
+                turbo(element).toggleClass(nextClass, !!value);
+            }
+
+            element[selectedKey] = value;
+            this.onSelected.fire(value);
+        },
+        enumerable: true,
+        configurable: true,
+    });
+
+    Object.defineProperty(TurboSelector.prototype, "defaultSelectedClasses", {
+        get: function (): string | string[] {
+            return this[defaultSelectedClassesKey] ?? "";
+        },
+        set: function (value: string | string[]) {
+            if (this.selected) turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
+            this[defaultSelectedClassesKey] = value;
+            if (this.selected) turbo(this).toggleClass(value, true);
+        },
+        enumerable: true,
+        configurable: true,
+    });
+
+    Object.defineProperty(TurboSelector.prototype, "onSelected", {
+        get: function (): Delegate<(value: boolean) => void> {
+            const data = utils.data(this);
+            if (!data["onSelected"]) data["onSelected"] = new Delegate();
+            return data["onSelected"];
+        },
+        enumerable: true,
+        configurable: true,
     });
 
     /**

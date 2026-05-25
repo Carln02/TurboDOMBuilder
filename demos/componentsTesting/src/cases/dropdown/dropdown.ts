@@ -179,6 +179,30 @@ function ddTest7() {
         }));
 }
 
+function ddTestCustomSelector() {
+    const customSel = TurboRichElement.create({
+        text: "Pick one ▾",
+        leftIcon: "chevron-left",
+    });
+
+    const dd = TurboDropdown.create({
+        values: ["North", "South", "East", "West"],
+        selector: customSel,
+    });
+
+    // Not a TurboButton, so wire the display text update manually
+    dd.select.onSelect = () => {
+        customSel.text = String(dd.selectedValue) + " ▾";
+    };
+
+    box("TurboDropdown — custom selector element")
+        .addSubBox("RichElement as selector", dd)
+        .addContent(TurboButton.create({
+            text: "Log selected",
+            onClick: () => console.log("[dd-custom] selected:", dd.selectedValue)
+        }));
+}
+
 function ddTestTabs() {
     const tabs = [
         {key: "overview", label: "Overview", content: div({text: "Overview content..."})},
@@ -219,5 +243,6 @@ export function setupDropdownTests() {
     ddTest5();
     ddTest6();
     ddTest7();
+    ddTestCustomSelector();
     ddTestTabs();
 }

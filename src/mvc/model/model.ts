@@ -10,6 +10,7 @@ import {turbo} from "../../turboFunctions/turboFunctions";
 import {TurboHandler} from "../handler/handler";
 import {FlatKeyType, KeyType} from "../../types/basic.types";
 import {addRegistryCategory, define} from "../../decorators/define/define";
+import {mod} from "../../utils/computations/misc";
 
 const META = Symbol("__meta__");
 
@@ -91,6 +92,10 @@ class TurboModel<
      */
     public readonly onKeyChanged = new Delegate<(value: any, ...keys: KeyType[]) => void>();
 
+    public readonly onDataChanged = new Delegate<(oldData: any, newData: any) => void>();
+
+    public fireCallbackHook: (value: any, key: string) => void;
+
     protected isInitialized: boolean = false;
 
     private readonly signals: Map<DataKeyType, SignalBox<unknown>> = new Map();
@@ -115,14 +120,16 @@ class TurboModel<
 
     public set data(data: DataType) {
         this.clear(false);
+        const oldData = this._data;
         this._data = data;
         if (data) this.initialize();
+        this.onDataChanged.fire(oldData, data);
     }
 
     /**
      * @description The metadata held by this model. Separate from this model's data.
      */
-    public get metadata(): TurboModel<object> {
+    public get meta(): TurboModel<object> {
         return this.nest(META);
     }
 
@@ -139,6 +146,7 @@ class TurboModel<
         this.setup();
         if (properties.initialize) this.initialize();
         if (properties.makeSignals) this.makeSignals(TurboModel.ALL);
+        this.onDataChanged.fire(undefined, this._data);
     }
 
     /**
@@ -824,6 +832,10 @@ class TurboModel<
             if (model.nestedModels.has(key)) return model.nestedModels.get(key);
 
             const child = new this.modelConstructor({...properties, data: model.get(key), initialize: true});
+            model.onKeyChanged.add((value, changedKey) => {
+                if (changedKey !== key) return;
+                if (child.data !== value) child.data = value;
+            });
             child.onKeyChanged.add((_value, ...keys: KeyType[]) => {
                 if (!model.enabledCallbacks || !model.bubbleChanges) return;
                 model.keyChanged(keys, model.get(key));
@@ -1135,6 +1147,10 @@ class TurboModel<
         const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
         if (typeof parentData !== "object") return;
         return rawCallback(parentData, childKeys[childKeys.length - 1]);
+    }
+
+    public fireCallback(key: string, value?: any) {
+        this.fireCallbackHook?.(value, key);
     }
 }
 

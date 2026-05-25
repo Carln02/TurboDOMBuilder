@@ -68,33 +68,6 @@
  */
 
 /**
- * @typedef {Object} DefineOptions
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Options object for the {@link define} decorator and imperative function.
- * @property {boolean} [injectAttributeBridge=true] - Whether to inject an `attributeChangedCallback`
- * into the class prototype if one is not already present. When enabled, HTML attribute changes are
- * automatically mirrored to their associated `@observe`-decorated fields, and vice versa.
- */
-
-/**
- * @typedef {Object} RegistryEntry
- * @group Decorators
- * @category Registry, Attributes & DOM
- *
- * @description Represents a single entry in the TurboDom class registry, as stored and returned
- * by {@link findRegistered} and related query functions.
- * @property {new (...args: any[]) => any} constructor - The registered class constructor.
- * @property {RegistryCategory} category - The category the class was registered under,
- * either explicitly provided or inferred from its inheritance chain.
- * @property {string} name - The registered name of the class, used as the registry key.
- * Typically the class name as passed to {@link define}.
- * @property {string} [tag] - The custom element tag name associated with this class.
- * Only present for classes registered as custom HTML elements via {@link define}.
- */
-
-/**
  * @typedef {Object} SignalEntry
  * @group Decorators
  * @category Signal
@@ -234,8 +207,8 @@
  * @extends AddEventListenerOptions
  * @description Options used for listeners.
  *
- * @property {boolean} [checkEnforcers] - If true, checks enforcers before execution. Defaults to true.
- * @property {boolean} [solveEnforcers] - If true, triggers enforcer solving after execution. Defaults to true.
+ * @property {boolean} [checkConstrainers] - If true, checks constrainers before execution. Defaults to true.
+ * @property {boolean} [solveConstrainers] - If true, triggers constrainer solving after execution. Defaults to true.
  * @property {number} [throttleEveryFrames] - Throttle execution to at most once every N animation frames.
  * @property {number} [throttleEveryMs] - Throttle execution to at most once every N milliseconds.
  */
@@ -320,20 +293,20 @@
  */
 
 /**
- * @typedef {Object} TurboEnforcerProperties
+ * @typedef {Object} TurboConstrainerProperties
  * @group MVC
- * @category Enforcer
+ * @category Constrainer
  *
  * @extends TurboOperatorProperties
- * @extends MakeEnforcerOptions
+ * @extends MakeConstrainerOptions
  *
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
  *
- * @description Options used to create a new {@link TurboEnforcer} attached to an element.
- * @property {string} [enforcerName] - The name of the enforcer.
+ * @description Options used to create a new {@link TurboConstrainer} attached to an element.
+ * @property {string} [constrainerName] - The name of the constrainer.
  */
 
 /**
@@ -399,8 +372,8 @@
  * interactor, constructor of interactor, or array of the latter, to attach.
  * @property {MvcManyInstancesOrConstructors<TurboTool, TurboToolProperties>} [tools] - The
  * tool, constructor of tool, or array of the latter, to attach.
- * @property {MvcManyInstancesOrConstructors<TurboEnforcer, TurboEnforcerProperties>} [enforcers] - The
- * enforcer, constructor of enforcer, or array of the latter, to attach.
+ * @property {MvcManyInstancesOrConstructors<TurboConstrainer, TurboConstrainerProperties>} [constrainers] - The
+ * constrainer, constructor of constrainer, or array of the latter, to attach.
  */
 
 /**
@@ -432,31 +405,31 @@
  */
 
 /**
- * @typedef {Object} MakeEnforcerOptions
+ * @typedef {Object} MakeConstrainerOptions
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing objects used to configure the creation of enforcers. Used in {@link makeEnforcer}.
- * @property {() => void} [onActivate] - Callback function to execute when the enforcer is activated.
- * @property {() => void} [onDeactivate] - Callback function to execute when the enforcer is deactivated.
- * @property {number} [priority] - The priority of the enforcer. Higher priority enforcers (lower number) should
+ * @description Type representing objects used to configure the creation of constrainers. Used in {@link makeConstrainer}.
+ * @property {() => void} [onActivate] - Callback function to execute when the constrainer is activated.
+ * @property {() => void} [onDeactivate] - Callback function to execute when the constrainer is deactivated.
+ * @property {number} [priority] - The priority of the constrainer. Higher priority constrainers (lower number) should
  * be resolved first. Defaults to 10.
- * @property {boolean} [active] - Whether the enforcer is active. Defaults to true.
- * @property {TurboEnforcer} [attachedInstance] - The optional TurboEnforcer instance to attach to the enforcer.
+ * @property {boolean} [active] - Whether the constrainer is active. Defaults to true.
+ * @property {TurboConstrainer} [attachedInstance] - The optional TurboConstrainer instance to attach to the constrainer.
  */
 
 /**
- * @typedef {Object} EnforcerCallbackProperties
+ * @typedef {Object} ConstrainerCallbackProperties
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing objects passed as context for resolving enforcers. Given as first parameter to
- * solvers when executing them via {@link solveEnforcer}.
- * @property {string} [enforcer] - The targeted enforcer. Defaults to `currentEnforcer`.
- * @property {object} [enforcerHost] - The object to which the target enforcer is attached.
+ * @description Type representing objects passed as context for resolving constrainers. Given as first parameter to
+ * solvers when executing them via {@link solveConstrainer}.
+ * @property {string} [constrainer] - The targeted constrainer. Defaults to `currentConstrainer`.
+ * @property {object} [constrainerHost] - The object to which the target constrainer is attached.
  * @property {object} [target] - The current object being processed by the solver. Property set by
- * {@link solveEnforcer} when processing every object in the enforcer's list.
- * @property {Event} [event] - The event (if any) that fired the resolving of the enforcer.
+ * {@link solveConstrainer} when processing every object in the constrainer's list.
+ * @property {Event} [event] - The event (if any) that fired the resolving of the constrainer.
  * @property {string} [eventType] - The type of the event.
  * @property {Node} [eventTarget] - The target of the event.
  * @property {string} [toolName] - The name of the active tool when the event was fired.
@@ -466,53 +439,80 @@
  */
 
 /**
- * @typedef {Object} EnforcerMutatorProperties
+ * @typedef {Object} ConstrainerMutatorProperties
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @extends EnforcerCallbackProperties
+ * @extends ConstrainerCallbackProperties
  * @template Type - The type of the value to mutate.
- * @description Type representing objects passed as context to mutate a value in an enforcer. Given as first parameter to
+ * @description Type representing objects passed as context to mutate a value in an constrainer. Given as first parameter to
  * mutators when executing them via {@link mutate}.
  * @property {string} [mutation] - The name of the mutator to execute.
  * @property {Type} [value] - The value to mutate.
  */
 
 /**
- * @typedef {Object} EnforcerChecker
+ * @typedef {Object} ConstrainerChecker
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of checker functions that enforcers expect.
+ * @description Type representing the signature of checker functions that constrainers expect.
  */
 
 /**
- * @typedef {Object} EnforcerMutator
+ * @typedef {Object} ConstrainerMutator
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of mutator functions that enforcers expect.
+ * @description Type representing the signature of mutator functions that constrainers expect.
  */
 
 /**
- * @typedef {Object} EnforcerSolver
+ * @typedef {Object} ConstrainerSolver
  * @group Types
- * @category Enforcer
+ * @category Constrainer
  *
- * @description Type representing the signature of solver functions that enforcers expect.
+ * @description Type representing the signature of solver functions that constrainers expect.
  */
 
 /**
- * @typedef {Object} EnforcerAddCallbackProperties
+ * @typedef {Object} ConstrainerAddCallbackProperties
  * @group Types
- * @category Enforcer
- * @template {EnforcerChecker | EnforcerMutator | EnforcerSolver} Type - The type of callback.
+ * @category Constrainer
+ * @template {ConstrainerChecker | ConstrainerMutator | ConstrainerSolver} Type - The type of callback.
  *
- * @description Type representing a configuration object to add a new callback to the given enforcer.
+ * @description Type representing a configuration object to add a new callback to the given constrainer.
  * @property {string} [name] - The name of the callback to add.
  * @property {Type} [callback] - The callback to add.
- * @property {string} [enforcer] - The enforcer to add the callback to.
+ * @property {string} [constrainer] - The constrainer to add the callback to.
  * @property {number} [priority] - The priority of the callback.
+ */
+
+/**
+ * @typedef {Object} DefineOptions
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Options object for the {@link define} decorator and imperative function.
+ * @property {boolean} [injectAttributeBridge=true] - Whether to inject an `attributeChangedCallback`
+ * into the class prototype if one is not already present. When enabled, HTML attribute changes are
+ * automatically mirrored to their associated `@observe`-decorated fields, and vice versa.
+ */
+
+/**
+ * @typedef {Object} RegistryEntry
+ * @group Decorators
+ * @category Registry, Attributes & DOM
+ *
+ * @description Represents a single entry in the TurboDom class registry, as stored and returned
+ * by {@link findRegistered} and related query functions.
+ * @property {new (...args: any[]) => any} constructor - The registered class constructor.
+ * @property {RegistryCategory} category - The category the class was registered under,
+ * either explicitly provided or inferred from its inheritance chain.
+ * @property {string} name - The registered name of the class, used as the registry key.
+ * Typically the class name as passed to {@link define}.
+ * @property {string} [tag] - The custom element tag name associated with this class.
+ * Only present for classes registered as custom HTML elements via {@link define}.
  */
 
 /**
@@ -1318,6 +1318,13 @@ function setupHierarchyFunctions() {
         if (!this.element || !type || !(this.element instanceof Element))
             return null;
         if (typeof type === "string") {
+            const constructor = customElements.get(type);
+            if (constructor) {
+                let element = this.element;
+                while (element && !(element instanceof constructor))
+                    element = element.parentElement;
+                return element || null;
+            }
             return this.element.closest(type);
         }
         else if (typeof type === "function") {
@@ -1404,7 +1411,7 @@ function setupHierarchyFunctions() {
  * @category Misc
  * @description Default array-like keys to merge when applying defaults with {@link TurboSelector.applyDefaults}.
  */
-const ApplyDefaultsMergeProperties = ["interactors", "tools", "enforcers", "operators", "handlers"];
+const ApplyDefaultsMergeProperties = ["interactors", "tools", "constrainers", "operators", "handlers"];
 
 function setupMiscFunctions() {
     /**
@@ -2147,44 +2154,6 @@ function parse$1(str) {
     catch {
     }
     return str;
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description Extracts the extension from the given filename or path (e.g.: ".png").
- * @param {string} str - The filename or path
- * @return The extension, or an empty string if not found.
- */
-function getFileExtension(str) {
-    if (!str || str.length == 0)
-        return "";
-    const match = str.match(/\.\S{1,4}$/);
-    return match ? match[0] : "";
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from camelCase to kebab-case.
- * @param {string} str - The string to convert
- */
-function camelToKebabCase(str) {
-    if (!str || str.length == 0)
-        return;
-    return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-}
-/**
- * @group Utilities
- * @category String
- *
- * @description converts the provided string from kebab-case to camelCase.
- * @param {string} str - The string to convert
- */
-function kebabToCamelCase(str) {
-    if (!str || str.length == 0)
-        return;
-    return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
 }
 
 /**
@@ -3045,11 +3014,12 @@ class TurboNestedMap {
      * @function getFlat
      * @description Retrieve the value at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
      */
-    getFlat(flatKey) {
-        const keys = this.scopeKey(flatKey);
-        if (keys.length)
+    getFlat(flatKey, depth) {
+        const keys = this.scopeKey(flatKey, depth);
+        if (keys?.length)
             return this.get(...keys);
     }
     /**
@@ -3110,10 +3080,11 @@ class TurboNestedMap {
      * @description Store a value at the given flat key.
      * @param {ValueType} value - The value to store.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      */
-    setFlat(value, flatKey) {
-        const keys = this.scopeKey(flatKey);
-        if (keys.length)
+    setFlat(value, flatKey, depth) {
+        const keys = this.scopeKey(flatKey, depth);
+        if (keys?.length)
             this.set(value, ...keys);
     }
     /*
@@ -3139,11 +3110,12 @@ class TurboNestedMap {
      * @function hasFlat
      * @description Check whether an entry exists at the given flat key.
      * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {boolean}
      */
-    hasFlat(flatKey) {
-        const keys = this.scopeKey(flatKey);
-        return keys.length ? this.has(...keys) : false;
+    hasFlat(flatKey, depth) {
+        const keys = this.scopeKey(flatKey, depth);
+        return keys?.length ? this.has(...keys) : false;
     }
     /**
      * @function hasValue
@@ -3315,9 +3287,9 @@ class TurboNestedMap {
             return;
         if (compatible.every(k => typeof k === "number")) {
             let index = 0;
-            const allLeafPaths = this.findPaths(this.nestedMap);
+            const allLeafPaths = this.findPaths(this.nestedMap).filter(p => p.length === keys.length);
             for (const path of allLeafPaths) {
-                if (path.length === keys.length && path.every((k, i) => k === keys[i]))
+                if (path.every((k, i) => k === keys[i]))
                     return index;
                 index++;
             }
@@ -3330,15 +3302,18 @@ class TurboNestedMap {
      * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
      * - A numeric global leaf index becomes the corresponding numeric path.
      * @param {number | string} flatKey - The flat key to convert.
+     * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
      * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
      */
-    scopeKey(flatKey) {
+    scopeKey(flatKey, depth) {
         if (typeof flatKey === "string") {
             const parts = flatKey.split("|");
             return parts.length >= 1 ? parts : undefined;
         }
         if (typeof flatKey === "number") {
-            const allLeafPaths = this.findPaths(this.nestedMap);
+            const allLeafPaths = depth !== undefined
+                ? this.findPaths(this.nestedMap).filter(p => p.length === depth)
+                : this.findPaths(this.nestedMap);
             if (flatKey < 0)
                 return allLeafPaths[0];
             if (flatKey >= allLeafPaths.length)
@@ -3455,14 +3430,10 @@ class TurboObserver extends TurboNestedMap {
             else {
                 if (typeof instance !== "object")
                     return;
-                if ("model" in instance && instance.model instanceof TurboModel)
-                    instance.model.set(data, ...keys);
-                else {
-                    if ("data" in instance)
-                        instance.data = data;
-                    if ("dataId" in instance)
-                        instance.dataId = keys[keys.length - 1].toString();
-                }
+                if ("data" in instance)
+                    instance.data = data;
+                if ("dataId" in instance)
+                    instance.dataId = keys[keys.length - 1].toString();
             }
         });
         this.onDeleted.add((data, instance, self, ...keys) => {
@@ -3586,7 +3557,7 @@ class TurboObserver extends TurboNestedMap {
  * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
  *
  * **MVC pieces:**
- * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboEnforcer`,
+ * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboConstrainer`,
  *   `TurboView`, `TurboEmitter`, `TurboModel`
  *
  * **Fallback:**
@@ -3610,7 +3581,7 @@ var RegistryCategory;
     RegistryCategory["TurboHandler"] = "TurboHandler";
     RegistryCategory["TurboInteractor"] = "TurboInteractor";
     RegistryCategory["TurboTool"] = "TurboTool";
-    RegistryCategory["TurboEnforcer"] = "TurboEnforcer";
+    RegistryCategory["TurboConstrainer"] = "TurboConstrainer";
     RegistryCategory["Other"] = "Other";
 })(RegistryCategory || (RegistryCategory = {}));
 
@@ -3703,6 +3674,31 @@ class DefineDecoratorUtils {
         }
         return result;
     }
+}
+
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from camelCase to kebab-case.
+ * @param {string} str - The string to convert
+ */
+function camelToKebabCase(str) {
+    if (!str || str.length == 0)
+        return;
+    return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description converts the provided string from kebab-case to camelCase.
+ * @param {string} str - The string to convert
+ */
+function kebabToCamelCase(str) {
+    if (!str || str.length == 0)
+        return;
+    return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
 }
 
 const utils$9 = new DefineDecoratorUtils();
@@ -3870,11 +3866,11 @@ function getAllRegistered() {
  *
  * @description Returns all registered entries belonging to MVC-related categories:
  * `TurboOperator`, `TurboEmitter`, `TurboHandler`, `TurboInteractor`, `TurboModel`,
- * `TurboEnforcer`, `TurboTool`, and `TurboView`.
+ * `TurboConstrainer`, `TurboTool`, and `TurboView`.
  * @returns {RegistryEntry[]} An array of all MVC registry entries.
  */
 function getRegisteredMvc() {
-    return getRegisteredByCategories(RegistryCategory.TurboOperator, RegistryCategory.TurboEmitter, RegistryCategory.TurboHandler, RegistryCategory.TurboInteractor, RegistryCategory.TurboModel, RegistryCategory.TurboEnforcer, RegistryCategory.TurboTool, RegistryCategory.TurboView);
+    return getRegisteredByCategories(RegistryCategory.TurboOperator, RegistryCategory.TurboEmitter, RegistryCategory.TurboHandler, RegistryCategory.TurboInteractor, RegistryCategory.TurboModel, RegistryCategory.TurboConstrainer, RegistryCategory.TurboTool, RegistryCategory.TurboView);
 }
 /**
  * @function getRegisteredElements
@@ -4029,6 +4025,8 @@ let TurboModel = (() => {
          * by the key path as spread arguments.
          */
         onKeyChanged = (__runInitializers(this, _bubbleChanges_extraInitializers), new Delegate());
+        onDataChanged = new Delegate();
+        fireCallbackHook;
         isInitialized = false;
         signals = new Map();
         changeObservers = new TurboWeakSet();
@@ -4047,14 +4045,16 @@ let TurboModel = (() => {
         }
         set data(data) {
             this.clear(false);
+            const oldData = this._data;
             this._data = data;
             if (data)
                 this.initialize();
+            this.onDataChanged.fire(oldData, data);
         }
         /**
          * @description The metadata held by this model. Separate from this model's data.
          */
-        get metadata() {
+        get meta() {
             return this.nest(META);
         }
         /**
@@ -4074,6 +4074,7 @@ let TurboModel = (() => {
                 this.initialize();
             if (properties.makeSignals)
                 this.makeSignals(TurboModel.ALL);
+            this.onDataChanged.fire(undefined, this._data);
         }
         /**
          * @function setup
@@ -4583,6 +4584,12 @@ let TurboModel = (() => {
                 if (model.nestedModels.has(key))
                     return model.nestedModels.get(key);
                 const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
+                model.onKeyChanged.add((value, changedKey) => {
+                    if (changedKey !== key)
+                        return;
+                    if (child.data !== value)
+                        child.data = value;
+                });
                 child.onKeyChanged.add((_value, ...keys) => {
                     if (!model.enabledCallbacks || !model.bubbleChanges)
                         return;
@@ -4799,6 +4806,9 @@ let TurboModel = (() => {
                 return;
             return rawCallback(parentData, childKeys[childKeys.length - 1]);
         }
+        fireCallback(key, value) {
+            this.fireCallbackHook?.(value, key);
+        }
     };
 })();
 addRegistryCategory(TurboModel);
@@ -4939,8 +4949,9 @@ class MvcFunctionsUtils {
         if (!entry) {
             entry = {
                 emitter: new TurboEmitter(),
-                operators: new Map(), enforcers: new Map(), interactors: new Map(), tools: new Map(),
-                emitterFireCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
+                operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
+                emitterCallback: (value, key) => entry.emitter?.fire(value, key),
+                emitterKeyCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
             };
             this.dataMap.set(element, entry);
         }
@@ -4963,11 +4974,13 @@ class MvcFunctionsUtils {
         if (!mvc)
             return;
         if (attach) {
-            if (!model.onKeyChanged.has(mvc.emitterFireCallback))
-                model.onKeyChanged.add(mvc.emitterFireCallback);
+            if (!model.onKeyChanged.has(mvc.emitterKeyCallback))
+                model.onKeyChanged.add(mvc.emitterKeyCallback);
+            model.fireCallbackHook = mvc.emitterCallback;
         }
         else {
-            model.onKeyChanged.remove(mvc.emitterFireCallback);
+            model.onKeyChanged.remove(mvc.emitterKeyCallback);
+            model.fireCallbackHook = undefined;
         }
     }
     updateView(element, view, attach = true) {
@@ -5025,15 +5038,15 @@ class MvcFunctionsUtils {
         tool.view = attach ? mvc.view : undefined;
         tool.emitter = attach ? mvc.emitter : undefined;
     }
-    updateEnforcer(element, enforcer, attach = true) {
-        if (!element || !enforcer)
+    updateConstrainer(element, constrainer, attach = true) {
+        if (!element || !constrainer)
             return;
         const mvc = this.peek(element);
         if (!mvc)
             return;
-        enforcer.model = attach ? mvc.model : undefined;
-        enforcer.view = attach ? mvc.view : undefined;
-        enforcer.emitter = attach ? mvc.emitter : undefined;
+        constrainer.model = attach ? mvc.model : undefined;
+        constrainer.view = attach ? mvc.view : undefined;
+        constrainer.emitter = attach ? mvc.emitter : undefined;
     }
     linkPieces(element) {
         if (!element)
@@ -5048,7 +5061,7 @@ class MvcFunctionsUtils {
         mvc.model?.handlers.forEach(handler => this.updateHandler(element, handler));
         mvc.interactors.forEach(interactor => this.updateInteractor(element, interactor));
         mvc.tools.forEach(tool => this.updateTool(element, tool));
-        mvc.enforcers.forEach(enforcer => this.updateEnforcer(element, enforcer));
+        mvc.constrainers.forEach(constrainer => this.updateConstrainer(element, constrainer));
     }
     removeInstance(element, kind, keyOrInstance) {
         if (!element)
@@ -5092,7 +5105,7 @@ class MvcFunctionsUtils {
      * produce a key that reads well in camelCase (e.g., `MyElementSnapOperator` -> `snap`).
      * @param element
      * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-     * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Enforcer").
+     * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Constrainer").
      * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
      */
     extractClassEssenceName(element, constructor, type) {
@@ -5112,7 +5125,7 @@ class MvcFunctionsUtils {
     }
 }
 
-const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "enforcers"];
+const MvcFields = ["model", "view", "emitter", "operators", "handlers", "interactors", "tools", "constrainers"];
 const utils$8 = new MvcFunctionsUtils();
 function setupMvcFunctions() {
     Object.defineProperty(TurboSelector.prototype, "mvc", {
@@ -5127,7 +5140,7 @@ function setupMvcFunctions() {
                 handlers: Array.from(data.model?.handlers?.values() ?? []),
                 interactors: Array.from(data.interactors?.values() ?? []),
                 tools: Array.from(data.tools?.values() ?? []),
-                enforcers: Array.from(data.enforcers?.values() ?? []),
+                constrainers: Array.from(data.constrainers?.values() ?? []),
             };
         }, configurable: true, enumerable: true,
     });
@@ -5276,14 +5289,14 @@ function setupMvcFunctions() {
         },
         configurable: true, enumerable: true,
     });
-    Object.defineProperty(TurboSelector.prototype, "enforcers", {
+    Object.defineProperty(TurboSelector.prototype, "constrainers", {
         get() {
-            return Array.from(utils$8.peek(this.element)?.enforcers.values() ?? []);
+            return Array.from(utils$8.peek(this.element)?.constrainers.values() ?? []);
         },
         set(value) {
             if (!this.element)
                 return;
-            utils$8.generateInstances(value, this.element).forEach(instance => this.addEnforcer(instance));
+            utils$8.generateInstances(value, this.element).forEach(instance => this.addConstrainer(instance));
             utils$8.linkPieces(this.element);
         },
         configurable: true, enumerable: true,
@@ -5317,7 +5330,7 @@ function setupMvcFunctions() {
         mvc.operators.forEach(operator => operator.initialize());
         mvc.interactors.forEach(interactor => interactor.initialize());
         mvc.tools.forEach(tool => tool.initialize());
-        mvc.enforcers.forEach(enforcer => enforcer.initialize());
+        mvc.constrainers.forEach(constrainer => constrainer.initialize());
         mvc.model?.initialize();
         return this;
     };
@@ -5365,7 +5378,7 @@ function setupMvcFunctions() {
         processArray("handlers");
         processArray("interactors");
         processArray("tools");
-        processArray("enforcers");
+        processArray("constrainers");
         return difference;
     };
     // -------------------------------------------------------------------------
@@ -5447,51 +5460,30 @@ function setupMvcFunctions() {
         utils$8.removeInstance(this.element, "tool", keyOrInstance);
         return this;
     };
-    TurboSelector.prototype.getEnforcer = function (key) {
-        return utils$8.peek(this.element)?.enforcers.get(key);
+    TurboSelector.prototype.getConstrainer = function (key) {
+        return utils$8.peek(this.element)?.constrainers.get(key);
     };
-    TurboSelector.prototype.addEnforcer = function (enforcer) {
+    TurboSelector.prototype.addConstrainer = function (constrainer) {
         if (!this.element)
             return this;
-        if (!enforcer.keyName)
-            enforcer.keyName =
-                utils$8.extractClassEssenceName(this.element, enforcer.constructor, "Enforcer");
-        utils$8.data(this.element).enforcers.set(enforcer.keyName, enforcer);
-        utils$8.updateEnforcer(this.element, enforcer);
+        if (!constrainer.keyName)
+            constrainer.keyName =
+                utils$8.extractClassEssenceName(this.element, constrainer.constructor, "Constrainer");
+        utils$8.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+        utils$8.updateConstrainer(this.element, constrainer);
         return this;
     };
-    TurboSelector.prototype.removeEnforcer = function (keyOrInstance) {
+    TurboSelector.prototype.removeConstrainer = function (keyOrInstance) {
         if (!this.element)
             return this;
-        utils$8.removeInstance(this.element, "enforcer", keyOrInstance);
+        utils$8.removeInstance(this.element, "constrainer", keyOrInstance);
         return this;
     };
 }
 
 function defineDefaultProperties(constructor) {
     const prototype = constructor.prototype;
-    const selectedKey = Symbol("__selected__");
-    const selectedClass = Symbol("__selectedClass__");
     const initializedKey = Symbol("__initialized__");
-    Object.defineProperty(prototype, "selected", {
-        get() { return !!this[selectedKey]; },
-        set(value) {
-            const element = this instanceof Element ? this : this.element instanceof Element ? this.element : undefined;
-            if (!element) {
-                this[selectedKey] = value;
-                return;
-            }
-            const prevClass = this[selectedClass];
-            const nextClass = this["defaultSelectedClasses"] || "selected";
-            this[selectedKey] = value;
-            this[selectedClass] = nextClass;
-            if (prevClass && prevClass !== nextClass)
-                turbo(element).toggleClass(prevClass, false);
-            turbo(element).toggleClass(nextClass, !!value);
-        },
-        enumerable: true,
-        configurable: true,
-    });
     Object.defineProperty(prototype, "destroy", {
         value: function () { },
         configurable: true,
@@ -5545,7 +5537,7 @@ function defineDefaultProperties(constructor) {
 
 /**
  * Define MVC-style accessors on a class prototype via Object.defineProperty.
- * Adds: view, model, emitter, operators, handlers, interactors, tools, enforcers,
+ * Adds: view, model, emitter, operators, handlers, interactors, tools, constrainers,
  * data, dataId, dataIndex, dataSize, and all add/get/remove methods.
  */
 function defineMvcAccessors(constructor) {
@@ -5559,7 +5551,7 @@ function defineMvcAccessors(constructor) {
             enumerable: true,
         });
     });
-    ["metadata", "dataSize"].forEach(fieldName => {
+    ["dataSize"].forEach(fieldName => {
         Object.defineProperty(prototype, fieldName, {
             get() { return turbo(this)[fieldName]; },
             configurable: true,
@@ -5573,7 +5565,6 @@ function defineUIPrototype(constructor) {
     const shadowDOMKey = Symbol("__shadow_dom__");
     const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
     const defaultClassesKey = Symbol("__default_classes__");
-    const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
     Object.defineProperty(prototype, "shadowDOM", {
         get: function () { return this[shadowDOMKey] ?? false; },
         set: function (value) {
@@ -5610,18 +5601,6 @@ function defineUIPrototype(constructor) {
                 turbo(this).toggleClass(this[defaultClassesKey], false);
             this[defaultClassesKey] = value;
             if (!this.unsetDefaultClasses)
-                turbo(this).toggleClass(value, true);
-        },
-        enumerable: true,
-        configurable: true,
-    });
-    Object.defineProperty(prototype, "defaultSelectedClasses", {
-        get: function () { return this[defaultSelectedClassesKey] ?? ""; },
-        set: function (value) {
-            if (this.selected)
-                turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
-            this[defaultSelectedClassesKey] = value;
-            if (this.selected)
                 turbo(this).toggleClass(value, true);
         },
         enumerable: true,
@@ -6160,7 +6139,7 @@ function setupElementFunctions() {
             if (typeof value === "function")
                 return false;
             if (key === "model" || key === "view" || key === "emitter" || key === "operators"
-                || key === "handlers" || key === "interactors" || key === "tools" || key === "enforcers")
+                || key === "handlers" || key === "interactors" || key === "tools" || key === "constrainers")
                 return false;
             const desc = Object.getOwnPropertyDescriptor(prototype, key);
             if (!desc)
@@ -6455,8 +6434,8 @@ function generateField(context, type, name) {
                     case "Tool":
                         functionName = "getTool";
                         break;
-                    case "Enforcer":
-                        functionName = "getEnforcer";
+                    case "Constrainer":
+                        functionName = "getConstrainer";
                         break;
                 }
                 if (!functionName)
@@ -6585,30 +6564,30 @@ function tool(name) {
 }
 /**
  * @decorator
- * @function enforcer
+ * @function constrainer
  * @group Decorators
  * @category MVC
  *
  * @description Stage-3 field decorator for MVC structure. It reduces code by turning the decorated field into a
- * fetched enforcer.
- * @param {string} [name] - The key name of the enforcer in the MVC instance (if any). By default, it is inferred
- * from the name of the field. If the field is named `somethingEnforcer`, the key name will be `something`.
+ * fetched constrainer.
+ * @param {string} [name] - The key name of the constrainer in the MVC instance (if any). By default, it is inferred
+ * from the name of the field. If the field is named `somethingConstrainer`, the key name will be `something`.
  *
  * @example
  * ```ts
- * @tool() protected textEnforcer: TurboEnforcer;
+ * @tool() protected textConstrainer: TurboConstrainer;
  * ```
  * Is equivalent to:
  * ```ts
- * protected get textEnforcer(): TurboEnforcer {
- *    if (this.mvc instanceof Mvc) return this.mvc.getEnforcer("text");
- *    if (typeof this.getEnforcer === "function") return this.getEnforcer("text");
+ * protected get textConstrainer(): TurboConstrainer {
+ *    if (this.mvc instanceof Mvc) return this.mvc.getConstrainer("text");
+ *    if (typeof this.getConstrainer === "function") return this.getConstrainer("text");
  * }
  * ```
  */
-function enforcer(name) {
+function constrainer(name) {
     return function (_unused, context) {
-        generateField(context, "Enforcer", name);
+        generateField(context, "Constrainer", name);
     };
 }
 
@@ -7481,7 +7460,8 @@ class TurboEventManagerWheelOperator extends TurboOperator {
         const eventName = (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
             ? TurboEventName.pinch
             : TurboEventName.scroll;
-        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
+        const target = document.elementFromPoint(e.clientX, e.clientY) || document;
+        this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
     };
 }
 
@@ -7665,7 +7645,8 @@ class TurboEventManagerPointerOperator extends TurboOperator {
             const prevPos = this.model.previousPositions.get(e.pointerId);
             if (this.model.activePointers.size === 1 && prevPos) {
                 const delta = currentPos.sub(prevPos);
-                this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta, eventName: TurboEventName.scroll });
+                const target = document.elementFromPoint(currentPos.x, currentPos.y) || document;
+                this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta, eventName: TurboEventName.scroll });
             }
             else if (this.model.activePointers.size === 2 && prevPos) {
                 const otherId = [...this.model.activePointers].find(id => id !== e.pointerId);
@@ -7675,10 +7656,11 @@ class TurboEventManagerPointerOperator extends TurboOperator {
                     const currentCenter = Point.midPoint(currentPos, otherPos);
                     const scrollDelta = currentCenter.sub(prevCenter);
                     const pinchDelta = Point.dist(currentPos, otherPos) - Point.dist(prevPos, otherPos);
+                    const centerTarget = document.elementFromPoint(currentCenter.x, currentCenter.y) || document;
                     if (scrollDelta.x !== 0 || scrollDelta.y !== 0)
-                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: scrollDelta, eventName: TurboEventName.scroll });
+                        this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, { delta: scrollDelta, eventName: TurboEventName.scroll });
                     if (pinchDelta !== 0)
-                        this.emitter.fire("dispatchEvent", document, TurboWheelEvent, { delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch });
+                        this.emitter.fire("dispatchEvent", centerTarget, TurboWheelEvent, { delta: new Point(0, pinchDelta), eventName: TurboEventName.pinch });
                 }
             }
         }
@@ -7943,10 +7925,6 @@ class TurboEventManagerUtilsHandler extends TurboHandler {
         clearTimeout(timer);
         this.model.timerMap.delete(timerName);
     }
-    selectTool(element, value) {
-        if ("selected" in element && typeof element["selected"] === "boolean")
-            element["selected"] = value;
-    }
     activateTool(element, toolName, value) {
         if (value)
             $(element).onToolActivate(toolName).fire();
@@ -8108,7 +8086,9 @@ let TurboEventManager = (() => {
         }
         static managers = [];
         static get instance() {
-            return TurboEventManager.managers.length > 0 ? TurboEventManager.managers[0] : TurboEventManager.create();
+            if (TurboEventManager.managers.length == 0)
+                this.managers.push(TurboEventManager.create());
+            return TurboEventManager.managers[0];
         }
         static get allManagers() {
             return [...this.managers];
@@ -8274,6 +8254,14 @@ let TurboEventManager = (() => {
         set preventDefaultTouch(value) {
             this.model.state.preventDefaultTouch = value;
         }
+        get preventDefaults() {
+            return this.preventDefaultMouse || this.preventDefaultTouch || this.preventDefaultWheel;
+        }
+        set preventDefaults(value) {
+            this.model.state.preventDefaultWheel = value;
+            this.model.state.preventDefaultMouse = value;
+            this.model.state.preventDefaultTouch = value;
+        }
         /*
          *
          *
@@ -8390,7 +8378,7 @@ let TurboEventManager = (() => {
                 //Deselect and deactivate previous tool
                 this.getSimilarTools(previousTool).forEach(element => {
                     if (options.select)
-                        this.model.utils.selectTool(element, false);
+                        turbo(element).selected = false;
                     if (options.activate)
                         this.model.utils.activateTool(element, this.getToolName(previousTool), false);
                 });
@@ -8404,7 +8392,7 @@ let TurboEventManager = (() => {
                 if (options.activate)
                     this.model.utils.activateTool(element, this.getToolName(tool), true);
                 if (options.select)
-                    this.model.utils.selectTool(element, true);
+                    turbo(element).selected = true;
             });
             //Fire tool changed
             this.onToolChange.fire(previousTool, tool, type);
@@ -8664,7 +8652,7 @@ class EventFunctionsUtils {
             properties.manager = TurboEventManager.instance;
         return this.getBoundListenersSet(properties.target).getListeners({
             ...properties,
-            optionsToSkip: ["checkEnforcers", "solveEnforcers"]
+            optionsToSkip: ["checkConstrainers", "solveConstrainers"]
         });
     }
     getPreventDefaultListeners(element) {
@@ -8788,25 +8776,25 @@ function setupEventFunctions() {
             return Propagation.propagate;
         if (!options)
             options = {};
-        turbo(options).applyDefaults({ checkEnforcers: true, solveEnforcers: true });
+        turbo(options).applyDefaults({ checkConstrainers: true, solveConstrainers: true });
         const activeTool = toolName ?? manager.getCurrentToolName();
-        const checkedEnforcersFor = new Set();
+        const checkedConstrainersFor = new Set();
         const checkedObjectsToolMap = new Map();
         const firedListeners = new Set();
         let propagation = Propagation.propagate;
         if (this.bypassManagerOn)
             utils$5.bypassManager(this, manager, this.bypassManagerOn(event));
-        const checkEnforcers = (target, tool) => {
+        const checkConstrainers = (target, tool) => {
             if (!target)
                 return;
             if (propagation === Propagation.stopImmediatePropagation)
                 return;
-            if (!checkedEnforcersFor.has(target)) {
-                checkedEnforcersFor.add(target);
+            if (!checkedConstrainersFor.has(target)) {
+                checkedConstrainersFor.add(target);
                 if (tool)
                     checkedObjectsToolMap.set(target, tool);
-                if (options.checkEnforcers) {
-                    const check = this.checkEnforcersForEvent({
+                if (options.checkConstrainers) {
+                    const check = this.checkConstrainersForEvent({
                         event, manager,
                         toolName: tool,
                         eventType: type,
@@ -8817,13 +8805,13 @@ function setupEventFunctions() {
                         propagation = Propagation.stopImmediatePropagation;
                 }
             }
-            checkEnforcers(target.parentNode, tool);
+            checkConstrainers(target.parentNode, tool);
         };
         const runListeners = (target, tool) => {
             const ts = target instanceof TurboSelector ? target : turbo(target);
             const boundSet = utils$5.getBoundListenersSet(target);
             const entries = utils$5.getBoundListeners({ target, type, toolName: tool, options, manager });
-            checkEnforcers(target, tool);
+            checkConstrainers(target, tool);
             if (entries.length === 0)
                 return;
             if (propagation === Propagation.stopImmediatePropagation)
@@ -8848,7 +8836,7 @@ function setupEventFunctions() {
                 return;
             if (turbo(target).isToolIgnored(tool, type, manager))
                 return;
-            checkEnforcers(target, tool);
+            checkConstrainers(target, tool);
             if (!this.hasToolBehavior(type, tool, manager))
                 return;
             if (propagation === Propagation.stopImmediatePropagation)
@@ -8886,8 +8874,8 @@ function setupEventFunctions() {
             runListeners(this, undefined);
         };
         main();
-        if (options.solveEnforcers)
-            checkedEnforcersFor.forEach(entry => turbo(this).solveEnforcersForEvent({
+        if (options.solveConstrainers)
+            checkedConstrainersFor.forEach(entry => turbo(this).solveConstrainersForEvent({
                 event,
                 toolName: checkedObjectsToolMap.get(entry),
                 eventType: type,
@@ -9072,6 +9060,9 @@ class StyleFunctionsUtils {
 }
 
 const utils$4 = new StyleFunctionsUtils();
+const selectedKey = Symbol("__selected__");
+const selectedClass = Symbol("__selectedClass__");
+const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
 function setupStyleFunctions() {
     /**
      * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
@@ -9088,6 +9079,52 @@ function setupStyleFunctions() {
         },
         configurable: false,
         enumerable: true
+    });
+    Object.defineProperty(TurboSelector.prototype, "selected", {
+        get() {
+            return !!this[selectedKey];
+        },
+        set(value) {
+            const element = this.element;
+            if (!element)
+                return;
+            if (element instanceof Element) {
+                const prevClass = element[selectedClass];
+                const nextClass = element["defaultSelectedClasses"] || "selected";
+                element[selectedClass] = nextClass;
+                if (prevClass && prevClass !== nextClass)
+                    turbo(element).toggleClass(prevClass, false);
+                turbo(element).toggleClass(nextClass, !!value);
+            }
+            element[selectedKey] = value;
+            this.onSelected.fire(value);
+        },
+        enumerable: true,
+        configurable: true,
+    });
+    Object.defineProperty(TurboSelector.prototype, "defaultSelectedClasses", {
+        get: function () {
+            return this[defaultSelectedClassesKey] ?? "";
+        },
+        set: function (value) {
+            if (this.selected)
+                turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
+            this[defaultSelectedClassesKey] = value;
+            if (this.selected)
+                turbo(this).toggleClass(value, true);
+        },
+        enumerable: true,
+        configurable: true,
+    });
+    Object.defineProperty(TurboSelector.prototype, "onSelected", {
+        get: function () {
+            const data = utils$4.data(this);
+            if (!data["onSelected"])
+                data["onSelected"] = new Delegate();
+            return data["onSelected"];
+        },
+        enumerable: true,
+        configurable: true,
     });
     /**
      * @description Set a certain style attribute of the element to the provided value.
@@ -10011,84 +10048,84 @@ let TurboNodeList = (() => {
 })();
 
 /**
- * @class TurboEnforcer
+ * @class TurboConstrainer
  * @group MVC
- * @category Enforcer
+ * @category Constrainer
  *
  * @extends TurboOperator
  * @template {object} ElementType - The type of the element.
  * @template {TurboView} ViewType - The element's view type, if any.
  * @template {TurboModel} ModelType - The element's model type, if any.
  * @template {TurboEmitter} EmitterType - The element's emitter type, if any.
- * @description Class representing an enforcer in MVC, bound to the provided element.
+ * @description Class representing an constrainer in MVC, bound to the provided element.
  */
-class TurboEnforcer extends TurboOperator {
+class TurboConstrainer extends TurboOperator {
     /**
-     * @description The name of the enforcer.
+     * @description The name of the constrainer.
      */
-    enforcerName;
+    constrainerName;
     /**
-     * @description The property keys of the enforcer solvers defined in the instance.
+     * @description The property keys of the constrainer solvers defined in the instance.
      */
     solversMetadata = [];
     /**
-     * @description The property keys of the enforcer checkers defined in the instance.
+     * @description The property keys of the constrainer checkers defined in the instance.
      */
     checkersMetadata = [];
     /**
-     * @description The property keys of the enforcer mutators defined in the instance.
+     * @description The property keys of the constrainer mutators defined in the instance.
      */
     mutatorsMetadata = [];
     /**
-     * @description The priority of the enforcer. Higher priority enforcers (lower number) should
+     * @description The priority of the constrainer. Higher priority constrainers (lower number) should
      * be resolved first. Defaults to 10.
      */
     priority;
     /**
-     * @description The list of objects constrained by the enforcer. To manipulate, check {@link TurboNodeList}.
-     * Defaults to the children of the element the enforcer is attached to.
+     * @description The list of objects constrained by the constrainer. To manipulate, check {@link TurboNodeList}.
+     * Defaults to the children of the element the constrainer is attached to.
      */
     objectList;
     /**
-     * @description The list of objects that trigger the enforcer to resolve.
-     * Interacting with any of these objects would typically lead to the solving of the given enforcer.
+     * @description The list of objects that trigger the constrainer to resolve.
+     * Interacting with any of these objects would typically lead to the solving of the given constrainer.
      * To manipulate, check {@link TurboNodeList}. Defaults to the objects in this.objectList.
      */
     triggerList;
     /**
-     * @description The default queue template for the enforcer, used when starting a new resolving pass.
-     * It defaults to the enforcer's object list.
+     * @description The default queue template for the constrainer, used when starting a new resolving pass.
+     * It defaults to the constrainer's object list.
      */
     defaultQueue;
     /**
-     * @description The maximum number of passes allowed per object for this enforcer during resolving.
+     * @description The maximum number of passes allowed per object for this constrainer during resolving.
      * This helps prevent infinite cycles in constraint propagation. Defaults to 5.
      */
     maxPasses;
     /**
-     * @description Whether the enforcer is active. Defaults to true.
+     * @description Whether the constrainer is active. Defaults to true.
      */
     get active() {
-        return turbo(this).activeEnforcers.includes(this.enforcerName);
+        return turbo(this).activeConstrainers.includes(this.constrainerName);
     }
     set active(value) {
-        turbo(this).toggleEnforcer(this.enforcerName, value);
+        turbo(this).toggleConstrainer(this.constrainerName, value);
     }
     /**
-     * @description Delegate fired whenever an object is added to or removed from the enforcer's object list.
+     * @description Delegate fired whenever an object is added to or removed from the constrainer's object list.
      */
     get onObjectListChange() {
-        return turbo(this).onEnforcerObjectListChange(this.enforcerName);
+        return turbo(this).onConstrainerObjectListChange(this.constrainerName);
     }
     /**
-     * @description The current queue to be processed by the enforcer while resolving.
+     * @description The current queue to be processed by the constrainer while resolving.
      */
     get queue() {
-        return turbo(this).getEnforcerQueue(this.enforcerName);
+        return turbo(this).getConstrainerQueue(this.constrainerName);
     }
     constructor(properties) {
         super(properties);
-        this.enforcerName = properties.enforcerName ?? this.enforcerName ?? undefined;
+        this.constrainerName = properties.constrainerName ?? this.constrainerName ?? undefined;
         if (properties.onActivate)
             this.onActivate = properties.onActivate;
         if (properties.onDeactivate)
@@ -10108,14 +10145,14 @@ class TurboEnforcer extends TurboOperator {
     /**
      * @function initialize
      * @override
-     * @description Initialization function that calls {@link makeEnforcer} on `this.element`, sets it up, and attaches
+     * @description Initialization function that calls {@link makeConstrainer} on `this.element`, sets it up, and attaches
      * all the defined solvers.
      */
     initialize() {
         super.initialize();
-        if (!this.enforcerName)
+        if (!this.constrainerName)
             return;
-        turbo(this).makeEnforcer(this.enforcerName, {
+        turbo(this).makeConstrainer(this.constrainerName, {
             onActivate: typeof this.onActivate === "function" ? this.onActivate.bind(this) : undefined,
             onDeactivate: typeof this.onDeactivate === "function" ? this.onDeactivate.bind(this) : undefined,
             attachedInstance: this
@@ -10125,7 +10162,7 @@ class TurboEnforcer extends TurboOperator {
                 return;
             turbo(this).addSolver({
                 name: metadata.name,
-                enforcer: this.enforcerName,
+                constrainer: this.constrainerName,
                 priority: metadata.priority,
                 callback: props => this[metadata.name]?.(props)
             });
@@ -10135,7 +10172,7 @@ class TurboEnforcer extends TurboOperator {
                 return;
             turbo(this).addChecker({
                 name: metadata.name,
-                enforcer: this.enforcerName,
+                constrainer: this.constrainerName,
                 priority: metadata.priority,
                 callback: props => this[metadata.name]?.(props)
             });
@@ -10145,7 +10182,7 @@ class TurboEnforcer extends TurboOperator {
                 return;
             turbo(this).addMutator({
                 name: metadata.name,
-                enforcer: this.enforcerName,
+                constrainer: this.constrainerName,
                 priority: metadata.priority,
                 callback: props => this[metadata.name]?.(props)
             });
@@ -10154,163 +10191,163 @@ class TurboEnforcer extends TurboOperator {
     /**
      * @function getObjectPasses
      * @description Retrieve how many times the given object has been processed for the current resolving session
-     * of the enforcer.
+     * of the constrainer.
      * @param {object} object - The object to query.
      * @return {number} - Number of passes already performed on this object.
      */
     getObjectPasses(object) {
-        return turbo(this).getObjectPassesForEnforcer(object, this.enforcerName);
+        return turbo(this).getObjectPassesForConstrainer(object, this.constrainerName);
     }
     /**
      * @function getObjectData
-     * @description Retrieve custom per-object data for this enforcer. It is reset on every new
+     * @description Retrieve custom per-object data for this constrainer. It is reset on every new
      * resolving session.
      * @param {object} object - The object to query.
      * @return {Record<string, any>} - The stored data object (or an empty object if none).
      */
     getObjectData(object) {
-        return turbo(this).getObjectDataForEnforcer(object, this.enforcerName);
+        return turbo(this).getObjectDataForConstrainer(object, this.constrainerName);
     }
     /**
      * @function setObjectData
-     * @description Set custom per-object data for this enforcer. It is reset on every new resolving session.
+     * @description Set custom per-object data for this constrainer. It is reset on every new resolving session.
      * @param {object} object - The object to update.
      * @param {Record<string, any>} [data] - The new data object to associate with this object.
      * @return {this} - Itself for chaining.
      */
     setObjectData(object, data) {
-        return turbo(this).setObjectDataForEnforcer(object, data, this.enforcerName);
+        return turbo(this).setObjectDataForConstrainer(object, data, this.constrainerName);
     }
     /**
      * @function addChecker
-     * @description Register a checker in the enforcer. Checkers dictate whether the event should continue
+     * @description Register a checker in the constrainer. Checkers dictate whether the event should continue
      * executing depending on the provided context (event, tool, target, etc.).
-     * @param {EnforcerAddCallbackProperties<EnforcerChecker>} properties - Configuration object, including the
+     * @param {ConstrainerAddCallbackProperties<ConstrainerChecker>} properties - Configuration object, including the
      * checker `callback` to be executed, the `name` of the checker to access it later, the name of the attached
-     * `enforcer`, and the `priority` of the checker.
+     * `constrainer`, and the `priority` of the checker.
      * @return {this} - Itself for chaining.
      */
     addChecker(properties) {
-        turbo(this).addChecker({ ...properties, enforcer: this.enforcerName });
+        turbo(this).addChecker({ ...properties, constrainer: this.constrainerName });
         return this;
     }
     /**
      * @function removeChecker
-     * @description Remove a checker from this enforcer by its name.
+     * @description Remove a checker from this constrainer by its name.
      * @param {string} name - The checker name.
      * @return {this} - Itself for chaining.
      */
     removeChecker(name) {
-        turbo(this).removeChecker(name, this.enforcerName);
+        turbo(this).removeChecker(name, this.constrainerName);
         return this;
     }
     /**
      * @function clearCheckers
-     * @description Remove all checkers attached to this enforcer.
+     * @description Remove all checkers attached to this constrainer.
      * @return {this} - Itself for chaining.
      */
     clearCheckers() {
-        turbo(this).clearCheckers(this.enforcerName);
+        turbo(this).clearCheckers(this.constrainerName);
         return this;
     }
     /**
      * @function check
-     * @description Evaluate all checkers for this enforcer and return whether the event should proceed or halt.
-     * @param {EnforcerCallbackProperties} [properties] - Context passed to each checker.
-     * @return {boolean} - Whether the enforcer passes all checks.
+     * @description Evaluate all checkers for this constrainer and return whether the event should proceed or halt.
+     * @param {ConstrainerCallbackProperties} [properties] - Context passed to each checker.
+     * @return {boolean} - Whether the constrainer passes all checks.
      */
     check(properties) {
-        return turbo(this).checkEnforcer({ ...properties, enforcer: this.enforcerName });
+        return turbo(this).checkConstrainer({ ...properties, constrainer: this.constrainerName });
     }
     /**
      * @function addMutator
-     * @description Register a mutator in the enforcer. Mutators compute or transform a value based on the context.
-     * @param {EnforcerAddCallbackProperties<EnforcerMutator>} properties - Configuration object, including the
+     * @description Register a mutator in the constrainer. Mutators compute or transform a value based on the context.
+     * @param {ConstrainerAddCallbackProperties<ConstrainerMutator>} properties - Configuration object, including the
      * mutator `callback` to be executed, the `name` of the mutator to access it later, and the `priority` of the mutator.
      * @return {this} - Itself for chaining.
      */
     addMutator(properties) {
-        turbo(this).addMutator({ ...properties, enforcer: this.enforcerName });
+        turbo(this).addMutator({ ...properties, constrainer: this.constrainerName });
         return this;
     }
     /**
      * @function removeMutator
-     * @description Remove a mutator from this enforcer by its name.
+     * @description Remove a mutator from this constrainer by its name.
      * @param {string} name - The mutator name.
      * @return {this} - Itself for chaining.
      */
     removeMutator(name) {
-        turbo(this).removeMutator(name, this.enforcerName);
+        turbo(this).removeMutator(name, this.constrainerName);
         return this;
     }
     /**
      * @function clearMutators
-     * @description Remove all mutators attached to this enforcer.
+     * @description Remove all mutators attached to this constrainer.
      * @return {this} - Itself for chaining.
      */
     clearMutators() {
-        turbo(this).clearMutators(this.enforcerName);
+        turbo(this).clearMutators(this.constrainerName);
         return this;
     }
     /**
      * @function mutate
      * @template Type - The type of the value to mutate
-     * @description Execute a mutator for this enforcer and return the resulting value.
-     * @param {EnforcerMutatorProperties<Type>} [properties] - Context object, including the
+     * @description Execute a mutator for this constrainer and return the resulting value.
+     * @param {ConstrainerMutatorProperties<Type>} [properties] - Context object, including the
      * `mutation` to execute, and the input `value` to mutate.
      * @return {Type} - The mutated result.
      */
     mutate(properties) {
-        return turbo(this).mutate({ ...properties, enforcer: this.enforcerName });
+        return turbo(this).mutate({ ...properties, constrainer: this.constrainerName });
     }
     /**
      * @function addSolver
-     * @description Register a solver in the enforcer. Solvers typically execute after an event is fired to
-     * ensure the enforcer's constraints are maintained. They process all objects in the enforcer's queue,
+     * @description Register a solver in the constrainer. Solvers typically execute after an event is fired to
+     * ensure the constrainer's constraints are maintained. They process all objects in the constrainer's queue,
      * one after the other.
-     * @param {EnforcerAddCallbackProperties<EnforcerSolver>} properties - Configuration object, including the
+     * @param {ConstrainerAddCallbackProperties<ConstrainerSolver>} properties - Configuration object, including the
      * solver `callback` to be executed, the `name` of the solver to access it later, and the `priority` of the solver.
      * @return {this} - Itself for chaining.
      */
     addSolver(properties) {
-        turbo(this).addSolver({ ...properties, enforcer: this.enforcerName });
+        turbo(this).addSolver({ ...properties, constrainer: this.constrainerName });
         return this;
     }
     /**
      * @function removeSolver
-     * @description Remove the given function from the enforcer's list of solvers.
+     * @description Remove the given function from the constrainer's list of solvers.
      * @param {string} name - The solver's name.
      * @return {this} - Itself for chaining.
      */
     removeSolver(name) {
-        turbo(this).removeSolver(name, this.enforcerName);
+        turbo(this).removeSolver(name, this.constrainerName);
         return this;
     }
     /**
      * @function clearSolvers
-     * @description Remove all solvers attached to the enforcer.
+     * @description Remove all solvers attached to the constrainer.
      * @return {this} - Itself for chaining.
      */
     clearSolvers() {
-        turbo(this).clearSolvers(this.enforcerName);
+        turbo(this).clearSolvers(this.constrainerName);
         return this;
     }
     /**
      * @function solve
-     * @description Solve the enforcer by executing all of its attached solvers. Each solver will be executed
-     * on every object in the enforcer's queue, incrementing its number of passes in the process.
-     * @param {EnforcerCallbackProperties} [properties] - Options object to configure the context.
+     * @description Solve the constrainer by executing all of its attached solvers. Each solver will be executed
+     * on every object in the constrainer's queue, incrementing its number of passes in the process.
+     * @param {ConstrainerCallbackProperties} [properties] - Options object to configure the context.
      * @return {this} - Itself for chaining.
      */
     solve(properties = {}) {
-        turbo(this).solveEnforcer({ ...properties, enforcer: this.enforcerName });
+        turbo(this).solveConstrainer({ ...properties, constrainer: this.constrainerName });
         return this;
     }
 }
-addRegistryCategory(TurboEnforcer);
-define(TurboEnforcer);
+addRegistryCategory(TurboConstrainer);
+define(TurboConstrainer);
 
-class EnforcerFunctionsUtils {
+class ConstrainerFunctionsUtils {
     objectsSet = new TurboWeakSet();
     dataMap = new WeakMap;
     data(element) {
@@ -10319,10 +10356,10 @@ class EnforcerFunctionsUtils {
         if (!element)
             return {};
         if (!this.dataMap.has(element))
-            this.dataMap.set(element, { enforcers: new Map() });
+            this.dataMap.set(element, { constrainers: new Map() });
         return this.dataMap.get(element);
     }
-    createEnforcer(element, enforcer) {
+    createConstrainer(element, constrainer) {
         if (element instanceof TurboSelector)
             element = element.element;
         const objectList = new TurboNodeList(element instanceof Element ? element.children
@@ -10347,12 +10384,12 @@ class EnforcerFunctionsUtils {
         };
         if (element) {
             this.objectsSet.add(element);
-            this.data(element).enforcers.set(enforcer, data);
+            this.data(element).constrainers.set(constrainer, data);
         }
         return data;
     }
-    activate(element, enforcer, activate) {
-        const data = this.getEnforcerData(element, enforcer);
+    activate(element, constrainer, activate) {
+        const data = this.getConstrainerData(element, constrainer);
         if (!data)
             return;
         if (typeof activate === "boolean")
@@ -10360,14 +10397,14 @@ class EnforcerFunctionsUtils {
         else
             data.active = !data.active;
     }
-    getEnforcerData(element, enforcer) {
-        return this.data(element)?.enforcers?.get(enforcer);
+    getConstrainerData(element, constrainer) {
+        return this.data(element)?.constrainers?.get(constrainer);
     }
-    getEnforcers(element) {
-        return [...this.data(element)?.enforcers?.keys()];
+    getConstrainers(element) {
+        return [...this.data(element)?.constrainers?.keys()];
     }
-    getActiveEnforcers(element) {
-        const data = this.data(element)?.enforcers;
+    getActiveConstrainers(element) {
+        const data = this.data(element)?.constrainers;
         if (!data)
             return [];
         const entries = [];
@@ -10377,8 +10414,8 @@ class EnforcerFunctionsUtils {
         }
         return entries;
     }
-    getDefaultEnforcer(element, allowInactive = true) {
-        const data = this.data(element).enforcers;
+    getDefaultConstrainer(element, allowInactive = true) {
+        const data = this.data(element).constrainers;
         if (!data)
             return;
         for (const [key, value] of data.entries()) {
@@ -10388,62 +10425,62 @@ class EnforcerFunctionsUtils {
         if (allowInactive)
             return data.keys()[0];
     }
-    getCustomData(element, enforcer, object) {
-        const enforcerData = this.getEnforcerData(element, enforcer);
-        if (!enforcerData || !enforcerData.customData)
+    getCustomData(element, constrainer, object) {
+        const constrainerData = this.getConstrainerData(element, constrainer);
+        if (!constrainerData || !constrainerData.customData)
             return {};
-        let customData = enforcerData.customData.get(object);
+        let customData = constrainerData.customData.get(object);
         if (!customData) {
             customData = {};
-            enforcerData.customData.set(object, customData);
+            constrainerData.customData.set(object, customData);
         }
         return customData;
     }
-    getEnforcersTriggeredByObjects(...elements) {
+    getConstrainersTriggeredByObjects(...elements) {
         if (!elements || elements.length === 0)
             return [];
         const nodeTargets = elements.filter(el => el instanceof Node);
         const data = [];
-        const checkTargets = (enforcerName, object) => {
+        const checkTargets = (constrainerName, object) => {
             const hits = new Set();
-            const list = this.getField(object, enforcerName, "triggerList") ?? new TurboNodeList();
+            const list = this.getField(object, constrainerName, "triggerList") ?? new TurboNodeList();
             for (const el of nodeTargets)
                 if (list.has(el))
                     hits.add(el);
             return Array.from(hits.values());
         };
-        this.objectsSet.toArray().forEach(object => this.data(object).enforcers.forEach((enforcerData, name) => {
-            if (!enforcerData.active)
+        this.objectsSet.toArray().forEach(object => this.data(object).constrainers.forEach((constrainerData, name) => {
+            if (!constrainerData.active)
                 return;
             const hits = checkTargets(name, object);
             if (hits.length > 0)
-                data.push({ name, data: enforcerData, host: object, targets: hits });
+                data.push({ name, data: constrainerData, host: object, targets: hits });
         }));
         data.sort((a, b) => this.getField(a.host, a.name, "priority") - this.getField(b.host, b.name, "priority"));
         return data;
     }
-    getField(element, enforcer, field) {
-        const data = this.getEnforcerData(element, enforcer);
+    getField(element, constrainer, field) {
+        const data = this.getConstrainerData(element, constrainer);
         if (!data)
             return;
-        if (data.attachedInstance && data.attachedInstance instanceof TurboEnforcer
+        if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer
             && data.attachedInstance[field] !== undefined)
             return data.attachedInstance[field];
         return data[field];
     }
-    setField(element, enforcer, field, value) {
-        const data = this.getEnforcerData(element, enforcer);
-        if (data.attachedInstance && data.attachedInstance instanceof TurboEnforcer)
+    setField(element, constrainer, field, value) {
+        const data = this.getConstrainerData(element, constrainer);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer)
             data.attachedInstance[field] = value;
         else
             data[field] = value;
     }
-    setupEnforcerCallbackProperties(element, properties) {
+    setupConstrainerCallbackProperties(element, properties) {
         if (element instanceof TurboSelector)
             element = element.element;
         turbo(properties).applyDefaults({
-            enforcerHost: element,
-            enforcer: element ? this.getDefaultEnforcer(element, false) : undefined,
+            constrainerHost: element,
+            constrainer: element ? this.getDefaultConstrainer(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: properties.event?.toolName,
@@ -10451,38 +10488,38 @@ class EnforcerFunctionsUtils {
             eventTarget: properties.event?.target
         });
     }
-    solveEnforcerInternal(data, properties) {
-        const enforcerData = data.data;
-        enforcerData.passes = new WeakMap();
-        enforcerData.customData = new WeakMap();
-        enforcerData.queue = turbo(data.host).getDefaultEnforcerQueue(data.name);
-        if (!enforcerData.queue)
-            enforcerData.queue = new TurboQueue();
-        if (!enforcerData.solvers)
+    solveConstrainerInternal(data, properties) {
+        const constrainerData = data.data;
+        constrainerData.passes = new WeakMap();
+        constrainerData.customData = new WeakMap();
+        constrainerData.queue = turbo(data.host).getDefaultConstrainerQueue(data.name);
+        if (!constrainerData.queue)
+            constrainerData.queue = new TurboQueue();
+        if (!constrainerData.solvers)
             return;
         let object = properties.eventTarget;
         if (properties.eventTarget)
-            enforcerData.queue.remove(properties.eventTarget);
+            constrainerData.queue.remove(properties.eventTarget);
         else
-            object = enforcerData.queue.pop();
+            object = constrainerData.queue.pop();
         const onObjectAdded = (entry, state) => {
             if (state === "added")
-                enforcerData.queue.push(entry);
+                constrainerData.queue.push(entry);
         };
-        enforcerData.objectList.onChanged.add(onObjectAdded);
+        constrainerData.objectList.onChanged.add(onObjectAdded);
         while (object) {
-            const passes = enforcerData.passes.get(object) ?? 0;
-            if (passes < enforcerData.maxPasses) {
-                enforcerData.passes.set(object, passes + 1);
-                for (const solverName of enforcerData.sortedSolvers) {
-                    const propagation = enforcerData.solvers.get(solverName)?.callback({ ...properties, target: object, enforcer: data.name });
+            const passes = constrainerData.passes.get(object) ?? 0;
+            if (passes < constrainerData.maxPasses) {
+                constrainerData.passes.set(object, passes + 1);
+                for (const solverName of constrainerData.sortedSolvers) {
+                    const propagation = constrainerData.solvers.get(solverName)?.callback({ ...properties, target: object, constrainer: data.name });
                     if (propagation === Propagation.stopImmediatePropagation || propagation === Propagation.stopPropagation)
                         break;
                 }
             }
-            object = enforcerData.queue.pop();
+            object = constrainerData.queue.pop();
         }
-        enforcerData.objectList.onChanged.remove(onObjectAdded);
+        constrainerData.objectList.onChanged.remove(onObjectAdded);
     }
 }
 
@@ -10541,187 +10578,187 @@ function randomString(length = 12) {
     return result;
 }
 
-const utils$2 = new EnforcerFunctionsUtils();
-function setupEnforcerFunctions() {
-    TurboSelector.prototype.makeEnforcer = function _makeEnforcer(enforcer, options) {
-        if (!utils$2.getEnforcerData(this, enforcer))
-            utils$2.createEnforcer(this, enforcer);
+const utils$2 = new ConstrainerFunctionsUtils();
+function setupConstrainerFunctions() {
+    TurboSelector.prototype.makeConstrainer = function _makeConstrainer(constrainer, options) {
+        if (!utils$2.getConstrainerData(this, constrainer))
+            utils$2.createConstrainer(this, constrainer);
         if (options?.onActivate)
-            this.onEnforcerActivate(enforcer).add(options.onActivate);
+            this.onConstrainerActivate(constrainer).add(options.onActivate);
         if (options?.onDeactivate)
-            this.onEnforcerDeactivate(enforcer).add(options.onDeactivate);
+            this.onConstrainerDeactivate(constrainer).add(options.onDeactivate);
         if (options?.priority)
-            utils$2.getEnforcerData(this, enforcer).priority = options.priority;
+            utils$2.getConstrainerData(this, constrainer).priority = options.priority;
         if (options?.attachedInstance)
-            utils$2.getEnforcerData(this, enforcer).attachedInstance = options.attachedInstance;
+            utils$2.getConstrainerData(this, constrainer).attachedInstance = options.attachedInstance;
         if (options?.active || options?.active === undefined)
-            utils$2.activate(this, enforcer, true);
+            utils$2.activate(this, constrainer, true);
         return this;
     };
-    Object.defineProperty(TurboSelector.prototype, "enforcersNames", {
+    Object.defineProperty(TurboSelector.prototype, "constrainersNames", {
         get: function () {
-            return utils$2.getEnforcers(this.element);
+            return utils$2.getConstrainers(this.element);
         },
         configurable: false,
         enumerable: true
     });
     //ACTIVATION
-    Object.defineProperty(TurboSelector.prototype, "activeEnforcers", {
+    Object.defineProperty(TurboSelector.prototype, "activeConstrainers", {
         get: function () {
-            return utils$2.getActiveEnforcers(this.element);
+            return utils$2.getActiveConstrainers(this.element);
         },
         configurable: false,
         enumerable: true
     });
-    TurboSelector.prototype.activateEnforcer = function _activateEnforcers(...enforcers) {
-        const targets = enforcers.length ? enforcers : [utils$2.getDefaultEnforcer(this)];
-        targets.forEach(enforcer => {
-            if (enforcer)
-                utils$2.activate(this, enforcer, true);
+    TurboSelector.prototype.activateConstrainer = function _activateConstrainers(...constrainers) {
+        const targets = constrainers.length ? constrainers : [utils$2.getDefaultConstrainer(this)];
+        targets.forEach(constrainer => {
+            if (constrainer)
+                utils$2.activate(this, constrainer, true);
         });
         return this;
     };
-    TurboSelector.prototype.deactivateEnforcer = function _deactivateEnforcers(...enforcers) {
-        const targets = enforcers.length ? enforcers : [utils$2.getDefaultEnforcer(this)];
-        targets.forEach(enforcer => {
-            if (enforcer)
-                utils$2.activate(this, enforcer, false);
+    TurboSelector.prototype.deactivateConstrainer = function _deactivateConstrainers(...constrainers) {
+        const targets = constrainers.length ? constrainers : [utils$2.getDefaultConstrainer(this)];
+        targets.forEach(constrainer => {
+            if (constrainer)
+                utils$2.activate(this, constrainer, false);
         });
         return this;
     };
-    TurboSelector.prototype.toggleEnforcer = function _toggleEnforcers(enforcer = utils$2.getDefaultEnforcer(this), force) {
-        if (enforcer)
-            utils$2.activate(this, enforcer, force);
+    TurboSelector.prototype.toggleConstrainer = function _toggleConstrainers(constrainer = utils$2.getDefaultConstrainer(this), force) {
+        if (constrainer)
+            utils$2.activate(this, constrainer, force);
         return this;
     };
-    TurboSelector.prototype.activateOnlyEnforcer = function _activateOnlyEnforcers(enforcer = utils$2.getDefaultEnforcer(this)) {
-        if (enforcer)
-            utils$2.getEnforcers(this).forEach(enf => utils$2.activate(this, enforcer, enforcer === enf));
+    TurboSelector.prototype.activateOnlyConstrainer = function _activateOnlyConstrainers(constrainer = utils$2.getDefaultConstrainer(this)) {
+        if (constrainer)
+            utils$2.getConstrainers(this).forEach(enf => utils$2.activate(this, constrainer, constrainer === enf));
         return this;
     };
-    TurboSelector.prototype.activateAllEnforcers = function _activateAllEnforcers() {
-        utils$2.getEnforcers(this).forEach(enforcer => utils$2.activate(this, enforcer, true));
+    TurboSelector.prototype.activateAllConstrainers = function _activateAllConstrainers() {
+        utils$2.getConstrainers(this).forEach(constrainer => utils$2.activate(this, constrainer, true));
         return this;
     };
-    TurboSelector.prototype.deactivateAllEnforcers = function _deactivateAllEnforcers() {
-        utils$2.getEnforcers(this).forEach(enforcer => utils$2.activate(this, enforcer, false));
+    TurboSelector.prototype.deactivateAllConstrainers = function _deactivateAllConstrainers() {
+        utils$2.getConstrainers(this).forEach(constrainer => utils$2.activate(this, constrainer, false));
         return this;
     };
-    TurboSelector.prototype.onEnforcerActivate = function _onEnforcerActivate(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getEnforcerData(this, enforcer)?.onActivate ?? new Delegate();
+    TurboSelector.prototype.onConstrainerActivate = function _onConstrainerActivate(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getConstrainerData(this, constrainer)?.onActivate ?? new Delegate();
     };
-    TurboSelector.prototype.onEnforcerDeactivate = function _onEnforcerDeactivate(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getEnforcerData(this, enforcer)?.onDeactivate ?? new Delegate();
+    TurboSelector.prototype.onConstrainerDeactivate = function _onConstrainerDeactivate(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getConstrainerData(this, constrainer)?.onDeactivate ?? new Delegate();
     };
     //PRIORITY
-    TurboSelector.prototype.getEnforcerPriority = function _getEnforcerPriority(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getField(this, enforcer, "priority") ?? 0;
+    TurboSelector.prototype.getConstrainerPriority = function _getConstrainerPriority(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getField(this, constrainer, "priority") ?? 0;
     };
-    TurboSelector.prototype.setEnforcerPriority = function _setEnforcerPriority(priority, enforcer = utils$2.getDefaultEnforcer(this)) {
+    TurboSelector.prototype.setConstrainerPriority = function _setConstrainerPriority(priority, constrainer = utils$2.getDefaultConstrainer(this)) {
         if (typeof priority === "number")
-            utils$2.setField(this, enforcer, "priority", priority);
+            utils$2.setField(this, constrainer, "priority", priority);
         return this;
     };
     //OBJECT LIST
-    TurboSelector.prototype.getEnforcerObjectList = function _getEnforcerObjectList(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getField(this, enforcer, "objectList") ?? new TurboNodeList();
+    TurboSelector.prototype.getConstrainerObjectList = function _getConstrainerObjectList(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getField(this, constrainer, "objectList") ?? new TurboNodeList();
     };
-    TurboSelector.prototype.onEnforcerObjectListChange = function _onEnforcerObjectListChange(enforcer) {
-        return utils$2.getEnforcerData(this, enforcer).objectsChangedDelegate;
+    TurboSelector.prototype.onConstrainerObjectListChange = function _onConstrainerObjectListChange(constrainer) {
+        return utils$2.getConstrainerData(this, constrainer).objectsChangedDelegate;
     };
     //TRIGGER LIST
-    TurboSelector.prototype.getEnforcerTriggerList = function _getEnforcerTriggerList(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getField(this, enforcer, "triggerList") ?? new TurboNodeList();
+    TurboSelector.prototype.getConstrainerTriggerList = function _getConstrainerTriggerList(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getField(this, constrainer, "triggerList") ?? new TurboNodeList();
     };
     //QUEUE
-    TurboSelector.prototype.getEnforcerQueue = function _getEnforcerQueue(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getEnforcerData(this, enforcer).queue;
+    TurboSelector.prototype.getConstrainerQueue = function _getConstrainerQueue(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getConstrainerData(this, constrainer).queue;
     };
-    TurboSelector.prototype.getDefaultEnforcerQueue = function _getDefaultEnforcerQueue(enforcer = utils$2.getDefaultEnforcer(this)) {
-        const queue = utils$2.getField(this, enforcer, "defaultQueue");
+    TurboSelector.prototype.getDefaultConstrainerQueue = function _getDefaultConstrainerQueue(constrainer = utils$2.getDefaultConstrainer(this)) {
+        const queue = utils$2.getField(this, constrainer, "defaultQueue");
         if (queue instanceof TurboQueue)
             return queue.clone();
         else if (queue instanceof Array || queue instanceof Set)
             return new TurboQueue().push(...queue);
-        return new TurboQueue().push(...this.getEnforcerObjectList(enforcer));
+        return new TurboQueue().push(...this.getConstrainerObjectList(constrainer));
     };
-    TurboSelector.prototype.setDefaultEnforcerQueue = function _setDefaultEnforcerQueue(queue, enforcer = utils$2.getDefaultEnforcer(this)) {
+    TurboSelector.prototype.setDefaultConstrainerQueue = function _setDefaultConstrainerQueue(queue, constrainer = utils$2.getDefaultConstrainer(this)) {
         if (!queue || typeof queue !== "object")
             return this;
         if (Array.isArray(queue))
             queue = new TurboQueue().push(...queue);
         if (queue instanceof TurboQueue)
-            utils$2.setField(this, enforcer, "defaultQueue", queue.clone());
+            utils$2.setField(this, constrainer, "defaultQueue", queue.clone());
         return this;
     };
     //PASSES
-    TurboSelector.prototype.getObjectPassesForEnforcer = function _getObjectPassesForEnforcer(object, enforcer = utils$2.getDefaultEnforcer(this)) {
+    TurboSelector.prototype.getObjectPassesForConstrainer = function _getObjectPassesForConstrainer(object, constrainer = utils$2.getDefaultConstrainer(this)) {
         if (!object)
             return 0;
-        const map = utils$2.getEnforcerData(this, enforcer).passes;
+        const map = utils$2.getConstrainerData(this, constrainer).passes;
         if (!map || !(map instanceof WeakMap))
             return 0;
         return map.get(object) ?? 0;
     };
-    TurboSelector.prototype.getMaxPassesForEnforcer = function _getMaxPassesForEnforcer(enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getField(this, enforcer, "maxPasses");
+    TurboSelector.prototype.getMaxPassesForConstrainer = function _getMaxPassesForConstrainer(constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getField(this, constrainer, "maxPasses");
     };
-    TurboSelector.prototype.setMaxPassesForEnforcer = function _setMaxPassesForEnforcer(passes, enforcer = utils$2.getDefaultEnforcer(this)) {
-        utils$2.setField(this, enforcer, "maxPasses", passes);
+    TurboSelector.prototype.setMaxPassesForConstrainer = function _setMaxPassesForConstrainer(passes, constrainer = utils$2.getDefaultConstrainer(this)) {
+        utils$2.setField(this, constrainer, "maxPasses", passes);
         return this;
     };
     //CUSTOM DATA
-    TurboSelector.prototype.getObjectDataForEnforcer = function _getObjectDataForEnforcer(object, enforcer = utils$2.getDefaultEnforcer(this)) {
-        return utils$2.getCustomData(this.element, enforcer, object);
+    TurboSelector.prototype.getObjectDataForConstrainer = function _getObjectDataForConstrainer(object, constrainer = utils$2.getDefaultConstrainer(this)) {
+        return utils$2.getCustomData(this.element, constrainer, object);
     };
-    TurboSelector.prototype.setObjectDataForEnforcer = function _setObjectDataForEnforcer(object, data, enforcer = utils$2.getDefaultEnforcer(this)) {
+    TurboSelector.prototype.setObjectDataForConstrainer = function _setObjectDataForConstrainer(object, data, constrainer = utils$2.getDefaultConstrainer(this)) {
         if (!data || typeof data !== "object")
             data = {};
-        utils$2.getEnforcerData(this.element, enforcer).customData.set(object, data);
+        utils$2.getConstrainerData(this.element, constrainer).customData.set(object, data);
         return this;
     };
     //CHECKER
     TurboSelector.prototype.addChecker = function _addChecker(properties) {
         if (!properties || !properties.name || !properties.callback)
             return this;
-        const enforcer = properties.enforcer || utils$2.getDefaultEnforcer(this);
-        utils$2.getEnforcerData(this, enforcer).checkers?.set(properties.name, properties.callback);
+        const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+        utils$2.getConstrainerData(this, constrainer).checkers?.set(properties.name, properties.callback);
         return this;
     };
-    TurboSelector.prototype.removeChecker = function _removeChecker(name, enforcer = utils$2.getDefaultEnforcer(this)) {
-        utils$2.getEnforcerData(this, enforcer).checkers?.delete(name);
+    TurboSelector.prototype.removeChecker = function _removeChecker(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+        utils$2.getConstrainerData(this, constrainer).checkers?.delete(name);
         return this;
     };
-    TurboSelector.prototype.clearCheckers = function _clearCheckers(enforcer = utils$2.getDefaultEnforcer(this)) {
-        utils$2.getEnforcerData(this, enforcer).checkers?.clear();
+    TurboSelector.prototype.clearCheckers = function _clearCheckers(constrainer = utils$2.getDefaultConstrainer(this)) {
+        utils$2.getConstrainerData(this, constrainer).checkers?.clear();
         return this;
     };
-    TurboSelector.prototype.checkEnforcer = function _checkEnforcer(properties) {
+    TurboSelector.prototype.checkConstrainer = function _checkConstrainer(properties) {
         if (!properties)
             properties = {};
-        utils$2.setupEnforcerCallbackProperties(this, properties);
-        if (!properties.enforcer)
+        utils$2.setupConstrainerCallbackProperties(this, properties);
+        if (!properties.constrainer)
             return true;
-        const enforcer = properties.enforcer || utils$2.getDefaultEnforcer(this);
-        for (const checker of utils$2.getEnforcerData(this, enforcer).checkers.values()) {
+        const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+        for (const checker of utils$2.getConstrainerData(this, constrainer).checkers.values()) {
             if (!checker(properties))
                 return false;
         }
         return true;
     };
-    TurboSelector.prototype.checkEnforcersForEvent = function _checkEnforcersForEvent(properties) {
+    TurboSelector.prototype.checkConstrainersForEvent = function _checkConstrainersForEvent(properties) {
         if (!properties || !properties.event)
             return true;
-        utils$2.setupEnforcerCallbackProperties(null, properties);
+        utils$2.setupConstrainerCallbackProperties(null, properties);
         if (!properties.eventTarget || typeof properties.eventTarget !== "object") {
             properties.eventTarget = this.element;
             if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                 return true;
         }
-        const enforcersData = utils$2.getEnforcersTriggeredByObjects(properties.eventTarget);
-        for (const enforcerData of enforcersData) {
-            for (const checker of enforcerData.data.checkers.values()) {
-                if (!checker({ ...properties, enforcer: enforcerData.name }))
+        const constrainersData = utils$2.getConstrainersTriggeredByObjects(properties.eventTarget);
+        for (const constrainerData of constrainersData) {
+            for (const checker of constrainerData.data.checkers.values()) {
+                if (!checker({ ...properties, constrainer: constrainerData.name }))
                     return false;
             }
         }
@@ -10731,25 +10768,25 @@ function setupEnforcerFunctions() {
     TurboSelector.prototype.addMutator = function _addMutator(properties) {
         if (!properties || !properties.name || !properties.callback)
             return this;
-        const enforcer = properties.enforcer || utils$2.getDefaultEnforcer(this);
-        utils$2.getEnforcerData(this, enforcer).mutators?.set(properties.name, properties.callback);
+        const constrainer = properties.constrainer || utils$2.getDefaultConstrainer(this);
+        utils$2.getConstrainerData(this, constrainer).mutators?.set(properties.name, properties.callback);
         return this;
     };
-    TurboSelector.prototype.removeMutator = function _removeMutator(name, enforcer = utils$2.getDefaultEnforcer(this)) {
-        utils$2.getEnforcerData(this, enforcer).mutators?.delete(name);
+    TurboSelector.prototype.removeMutator = function _removeMutator(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+        utils$2.getConstrainerData(this, constrainer).mutators?.delete(name);
         return this;
     };
-    TurboSelector.prototype.clearMutators = function _clearMutators(enforcer = utils$2.getDefaultEnforcer(this)) {
-        utils$2.getEnforcerData(this, enforcer).mutators?.clear();
+    TurboSelector.prototype.clearMutators = function _clearMutators(constrainer = utils$2.getDefaultConstrainer(this)) {
+        utils$2.getConstrainerData(this, constrainer).mutators?.clear();
         return this;
     };
     TurboSelector.prototype.mutate = function _mutate(properties) {
         if (!properties || !properties.mutation)
             return;
-        utils$2.setupEnforcerCallbackProperties(this, properties);
-        if (!properties.enforcer)
+        utils$2.setupConstrainerCallbackProperties(this, properties);
+        if (!properties.constrainer)
             return this;
-        const mutation = utils$2.getEnforcerData(this, properties.enforcer).mutators?.get(properties.mutation);
+        const mutation = utils$2.getConstrainerData(this, properties.constrainer).mutators?.get(properties.mutation);
         if (mutation)
             return mutation(properties);
     };
@@ -10759,21 +10796,21 @@ function setupEnforcerFunctions() {
             return this;
         if (!properties.name)
             properties.name = randomString(8);
-        const enforcer = properties.enforcer ?? utils$2.getDefaultEnforcer(this);
-        const data = utils$2.getEnforcerData(this, enforcer);
+        const constrainer = properties.constrainer ?? utils$2.getDefaultConstrainer(this);
+        const data = utils$2.getConstrainerData(this, constrainer);
         if (!data)
             return this;
         const name = properties.name;
         delete properties.name;
-        delete properties.enforcer;
+        delete properties.constrainer;
         if (!properties.priority)
             properties.priority = 10;
         data.solvers?.set(name, properties);
         binaryInsert(data.sortedSolvers, name, (name1, name2) => data.solvers.get(name1).priority - data.solvers.get(name2).priority);
         return this;
     };
-    TurboSelector.prototype.removeSolver = function _removeSolver(name, enforcer = utils$2.getDefaultEnforcer(this)) {
-        const data = utils$2.getEnforcerData(this, enforcer);
+    TurboSelector.prototype.removeSolver = function _removeSolver(name, constrainer = utils$2.getDefaultConstrainer(this)) {
+        const data = utils$2.getConstrainerData(this, constrainer);
         if (!data)
             return this;
         data.solvers?.delete(name);
@@ -10782,38 +10819,38 @@ function setupEnforcerFunctions() {
             data.sortedSolvers.splice(index, 1);
         return this;
     };
-    TurboSelector.prototype.clearSolvers = function _clearSolvers(enforcer = utils$2.getDefaultEnforcer(this)) {
-        const data = utils$2.getEnforcerData(this, enforcer);
+    TurboSelector.prototype.clearSolvers = function _clearSolvers(constrainer = utils$2.getDefaultConstrainer(this)) {
+        const data = utils$2.getConstrainerData(this, constrainer);
         if (!data)
             return this;
         data.solvers?.clear();
         data.sortedSolvers = [];
         return this;
     };
-    TurboSelector.prototype.solveEnforcer = function _solveEnforcer(properties = {}) {
+    TurboSelector.prototype.solveConstrainer = function _solveConstrainer(properties = {}) {
         if (!properties)
             properties = {};
-        utils$2.setupEnforcerCallbackProperties(this, properties);
-        if (!properties.enforcer)
+        utils$2.setupConstrainerCallbackProperties(this, properties);
+        if (!properties.constrainer)
             return this;
-        const data = utils$2.getEnforcerData(this, properties.enforcer);
+        const data = utils$2.getConstrainerData(this, properties.constrainer);
         if (!data)
             return this;
-        utils$2.solveEnforcerInternal({ data, host: this.element, name: properties.enforcer }, properties);
+        utils$2.solveConstrainerInternal({ data, host: this.element, name: properties.constrainer }, properties);
         return this;
     };
-    TurboSelector.prototype.solveEnforcersForEvent = function _solveEnforcersForEvent(properties) {
+    TurboSelector.prototype.solveConstrainersForEvent = function _solveConstrainersForEvent(properties) {
         if (!properties || !properties.event)
             return this;
-        utils$2.setupEnforcerCallbackProperties(null, properties);
+        utils$2.setupConstrainerCallbackProperties(null, properties);
         if (!properties.eventTarget || typeof properties.eventTarget !== "object") {
             properties.eventTarget = this.element;
             if (!properties.eventTarget || typeof properties.eventTarget !== "object")
                 return this;
         }
-        const enforcersData = utils$2.getEnforcersTriggeredByObjects(properties.eventTarget);
-        for (const enforcerData of enforcersData)
-            utils$2.solveEnforcerInternal(enforcerData, properties);
+        const constrainersData = utils$2.getConstrainersTriggeredByObjects(properties.eventTarget);
+        for (const constrainerData of constrainersData)
+            utils$2.solveConstrainerInternal(constrainerData, properties);
         return this;
     };
 }
@@ -12076,8 +12113,8 @@ const turbofy = callOnce(function (options = {}) {
         setupStyleFunctions();
     if (!options.excludeToolFunctions)
         setupToolFunctions();
-    if (!options.excludeEnforcerFunctions)
-        setupEnforcerFunctions();
+    if (!options.excludeConstrainerFunctions)
+        setupConstrainerFunctions();
     if (!options.excludeReifectFunctions)
         setupReifectFunctions();
 });
@@ -12379,14 +12416,14 @@ function clearCacheEntry(instance, field) {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer solvers.
+ * @description Stage-3 decorator that turns methods into constrainer solvers.
  * @example
  * ```ts
- * @solver private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @solver private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -12418,14 +12455,14 @@ function solver(properties) {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer checkers.
+ * @description Stage-3 decorator that turns methods into constrainer checkers.
  * @example
  * ```ts
- * @checker private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @checker private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -12457,14 +12494,14 @@ function checker(properties) {
  * @group Decorators
  * @category MVC
  *
- * @description Stage-3 decorator that turns methods into enforcer mutators.
+ * @description Stage-3 decorator that turns methods into constrainer mutators.
  * @example
  * ```ts
- * @mutator private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * @mutator private constrainPosition(properties: ConstrainerSolverProperties) {...}
  * ```
  * Is equivalent to:
  * ```ts
- * private constrainPosition(properties: EnforcerSolverProperties) {...}
+ * private constrainPosition(properties: ConstrainerSolverProperties) {...}
  *
  * public initialize() {
  *   ...
@@ -12819,7 +12856,7 @@ let TurboYModel = (() => {
             if (data instanceof Map$1)
                 return data.has(key.toString());
             if (data instanceof Array$1)
-                return typeof key === "number" && key >= 0 && key < this.size;
+                return typeof key === "number" && key >= 0 && key < this.dataSize;
             return super.hasAction(data, key);
         }
         /**
@@ -12828,7 +12865,7 @@ let TurboYModel = (() => {
         deleteAction(data, key) {
             if (data instanceof Map$1)
                 data.delete(key.toString());
-            else if (data instanceof Array$1 && typeof key === "number" && key >= 0 && key < this.size)
+            else if (data instanceof Array$1 && typeof key === "number" && key >= 0 && key < this.dataSize)
                 data.delete(key, 1);
             else
                 super.deleteAction(data, key);
@@ -13126,8 +13163,23 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z$3 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
-styleInject(css_248z$3);
+var css_248z$4 = "turbo-button{align-items:center;background-color:#dadada;border:1px solid #000;border-radius:.4em;color:#000;display:inline-flex;flex-direction:row;gap:.4em;padding:.5em .7em;text-decoration:none}turbo-button>h4{flex-grow:1}";
+styleInject(css_248z$4);
+
+/**
+ * @group Utilities
+ * @category String
+ *
+ * @description Extracts the extension from the given filename or path (e.g.: ".png").
+ * @param {string} str - The filename or path
+ * @return The extension, or an empty string if not found.
+ */
+function getFileExtension(str) {
+    if (!str || str.length == 0)
+        return "";
+    const match = str.match(/\.\S{1,4}$/);
+    return match ? match[0] : "";
+}
 
 /**
  * @group Utilities
@@ -14545,7 +14597,7 @@ class TurboNumericalInput extends TurboInput {
     min;
     max;
     get value() {
-        return Number.parseFloat(this.element.value) / this.multiplier;
+        return this.element ? Number.parseFloat(this.element.value) / this.multiplier : undefined;
     }
     set value(value) {
         if (!value || value == "")
@@ -15266,6 +15318,195 @@ let TurboSelectElement = (() => {
     };
 })();
 define(TurboSelectElement);
+
+var css_248z$3 = "turbo-content-switch{display:block;overflow:hidden;position:relative}turbo-content-switch>*{box-sizing:border-box;left:0;top:0;width:100%}";
+styleInject(css_248z$3);
+
+var ContentSwitchMode;
+(function (ContentSwitchMode) {
+    ContentSwitchMode["fadeLeft"] = "fadeLeft";
+    ContentSwitchMode["fadeRight"] = "fadeRight";
+    ContentSwitchMode["carousel"] = "carousel";
+})(ContentSwitchMode || (ContentSwitchMode = {}));
+
+let TurboContentSwitch = (() => {
+    let _classSuper = TurboSelectElement;
+    let _instanceExtraInitializers = [];
+    let _set_mode_decorators;
+    let _set_transitionDuration_decorators;
+    let _set_transitionReifect_decorators;
+    let _set_movementReifect_decorators;
+    return class TurboContentSwitch extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _set_mode_decorators = [auto({ defaultValue: ContentSwitchMode.fadeRight })];
+            _set_transitionDuration_decorators = [auto({ defaultValue: 0.3 })];
+            _set_transitionReifect_decorators = [auto()];
+            _set_movementReifect_decorators = [auto()];
+            __esDecorate(this, null, _set_mode_decorators, { kind: "setter", name: "mode", static: false, private: false, access: { has: obj => "mode" in obj, set: (obj, value) => { obj.mode = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_transitionReifect_decorators, { kind: "setter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, set: (obj, value) => { obj.transitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _set_movementReifect_decorators, { kind: "setter", name: "movementReifect", static: false, private: false, access: { has: obj => "movementReifect" in obj, set: (obj, value) => { obj.movementReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        static defaultProperties = {
+            transitionReifect: new Reifect({ styles: "transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;" }),
+        };
+        _previousSelectedIndex = (__runInitializers(this, _instanceExtraInitializers), -1);
+        set mode(value) {
+            turbo(this).toggleClass("carousel", value === ContentSwitchMode.carousel);
+        }
+        get mode() { return; }
+        set transitionDuration(_value) { }
+        get transitionDuration() { return; }
+        set transitionReifect(value) {
+            if (value && this.entries.length > 0)
+                value.attach(...this.entries);
+        }
+        set movementReifect(value) {
+            if (value && this.entries.length > 0)
+                value.attach(...this.entries);
+        }
+        initialize() {
+            // this.movementReifect = new StatefulReifect<Shown>({
+            //     states: Shown,
+            //     styles: (state, index) => {
+            //         const newIndex = this.select.getIndex(this.select.selectedEntry);
+            //         const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
+            //         //TODO
+            //     }
+            // });
+            this.select.parent = this;
+            this.select.onEntryAdded.add((entry) => {
+                if (this.mode === ContentSwitchMode.carousel) {
+                    this.initCarouselEntry(entry);
+                    return;
+                }
+                const reifect = this.movementReifect;
+                if (!reifect?.enabled)
+                    return;
+                reifect.attach(entry);
+                reifect.initialize(Shown.hidden, entry, { applyStylesInstantly: true });
+                turbo(entry).setStyles({ position: "absolute" }, true);
+            });
+            this.select.onSelect.add(() => {
+                if (this.mode === ContentSwitchMode.carousel) {
+                    this.applyCarouselTransition();
+                }
+                else {
+                    this.applyFadeTransition();
+                }
+            });
+            super.initialize();
+        }
+        applyFadeTransition() {
+            const selectedEntry = this.select.selectedEntry;
+            this.select.entries.forEach(entry => {
+                const isSelected = entry === selectedEntry;
+                turbo(entry).setStyles({ position: isSelected ? "relative" : "absolute" }, true);
+                const reifect = this.movementReifect;
+                if (reifect?.enabled)
+                    reifect.apply(isSelected ? Shown.visible : Shown.hidden, entry);
+            });
+        }
+        initCarouselEntry(entry) {
+            turbo(entry).setStyles({
+                position: "absolute",
+                opacity: "0",
+                transform: "translateX(100%)",
+                pointerEvents: "none",
+                transition: "none",
+            }, true);
+        }
+        applyCarouselTransition() {
+            const entries = this.select.entries;
+            const selectedEntry = this.select.selectedEntry;
+            const newIndex = this.select.getIndex(selectedEntry);
+            const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
+            const prevIndex = this._previousSelectedIndex;
+            this._previousSelectedIndex = newIndex;
+            const duration = this.transitionDuration;
+            const transitionStr = `transform ${duration}s ease-out, opacity ${duration}s ease-out`;
+            entries.forEach((entry, i) => {
+                const el = entry;
+                const isSelected = entry === selectedEntry;
+                const wasPrevious = i === prevIndex;
+                if (isSelected) {
+                    turbo(el).setStyles({
+                        transition: "none",
+                        transform: `translateX(${forward ? "100%" : "-100%"})`,
+                        opacity: "0",
+                        position: "relative",
+                        pointerEvents: "none",
+                    }, true);
+                    requestAnimationFrame(() => {
+                        turbo(el).setStyles({
+                            transition: transitionStr,
+                            transform: "translateX(0)",
+                            opacity: "1",
+                            pointerEvents: "all",
+                        }, true);
+                    });
+                }
+                else if (wasPrevious) {
+                    turbo(el).setStyles({
+                        transition: transitionStr,
+                        transform: `translateX(${forward ? "-100%" : "100%"})`,
+                        opacity: "0",
+                        pointerEvents: "none",
+                    }, true);
+                    setTimeout(() => {
+                        turbo(el).setStyles({
+                            position: "absolute",
+                            transition: "none",
+                        }, true);
+                    }, duration * 1000);
+                }
+                else {
+                    turbo(el).setStyles({
+                        transition: "none",
+                        position: "absolute",
+                        opacity: "0",
+                        transform: `translateX(${i < newIndex ? "-100%" : "100%"})`,
+                        pointerEvents: "none",
+                    }, true);
+                }
+            });
+        }
+        generateTransitionReifect(value) {
+            if (value instanceof StatefulReifect)
+                return value;
+            if (typeof value === "object" && value !== null) {
+                return new StatefulReifect(value);
+            }
+            if (this.mode === ContentSwitchMode.carousel) {
+                const r = new StatefulReifect({ states: [Shown.visible, Shown.hidden], styles: {} });
+                r.enabled = false;
+                return r;
+            }
+            const dx = this.mode === ContentSwitchMode.fadeLeft ? "-100%" : "100%";
+            //TODO remove this
+            return new StatefulReifect({
+                states: [Shown.visible, Shown.hidden],
+                styles: {
+                    [Shown.visible]: () => ({
+                        opacity: "1",
+                        transform: "translateX(0)",
+                        pointerEvents: "all",
+                        transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
+                    }),
+                    [Shown.hidden]: () => ({
+                        opacity: "0",
+                        transform: `translateX(${dx})`,
+                        pointerEvents: "none",
+                        transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
+                    })
+                }
+            });
+        }
+    };
+})();
+define(TurboContentSwitch, "turbo-content-switch");
 
 var css_248z$2 = ".turbo-drawer{align-items:center;direction:ltr;display:inline-flex}.turbo-drawer-panel-container{align-items:center;display:flex;overflow:hidden;position:relative}.turbo-drawer-thumb{display:inline-block;position:relative}.top-drawer .turbo-drawer-panel-container,.turbo-drawer.top-drawer{flex-direction:column}.bottom-drawer .turbo-drawer-panel-container,.turbo-drawer.bottom-drawer{flex-direction:column-reverse}.left-drawer .turbo-drawer-panel-container,.turbo-drawer.left-drawer{flex-direction:row}.right-drawer .turbo-drawer-panel-container,.turbo-drawer.right-drawer{flex-direction:row-reverse}";
 styleInject(css_248z$2);
@@ -16214,9 +16455,6 @@ class TurboRect extends DOMRect {
     }
 }
 
-class TurboGrid extends TurboElement {
-}
-
 var css_248z = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
 styleInject(css_248z);
 
@@ -16785,6 +17023,9 @@ let TurboButtonPopup = (() => {
 })();
 define(TurboButtonPopup);
 
+class TurboGrid extends TurboElement {
+}
+
 /**
  * @group Utilities
  * @category Hash
@@ -16813,6 +17054,114 @@ async function hashBySize(input, chars = 12) {
         .replace(/\//g, "_")
         .replace(/=+$/g, "")
         .slice(0, chars);
+}
+
+function replaceUrlParams(...params) {
+    const url = new URL(window.location.href);
+    params.forEach(({ name, value }) => url.searchParams.set(name, value));
+    history.replaceState(null, "", url);
+}
+function getUrlParam(name) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+}
+function pushUrlParams(...params) {
+    const url = new URL(window.location.href);
+    params.forEach(({ name, value }) => url.searchParams.set(name, value));
+    history.pushState(null, "", url);
+}
+function clearUrlParams() {
+    const url = new URL(window.location.href);
+    url.searchParams.forEach((_, name) => url.searchParams.delete(name));
+    history.replaceState(null, "", url);
+}
+
+/**
+ * @description Formats the given number of seconds as "MM:SS". The ":" can be replaced and specified in the separator
+ * parameter.
+ * @param seconds
+ * @param separator
+ */
+function formatMMSS(seconds, separator = ":") {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    const formattedMinutes = String(minutes).padStart(2, "0");
+    const formattedSeconds = String(remainingSeconds).padStart(2, "0");
+    return formattedMinutes + separator + formattedSeconds;
+}
+/**
+ * @description Formats the given number of seconds as "HH:MM:SS". The ":" can be replaced and specified in the separator
+ * parameter.
+ * @param seconds
+ * @param separator
+ */
+function formatHHMMSS(seconds, separator = ":") {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    const formattedHours = String(hours).padStart(2, "0");
+    const formattedMinutes = String(minutes).padStart(2, "0");
+    const formattedSeconds = String(remainingSeconds).padStart(2, "0");
+    return formattedHours + separator + formattedMinutes + separator + formattedSeconds;
+}
+function formatMmSs(seconds, separator = "") {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return (minutes > 0 ? (minutes + "m" + separator) : "") + remainingSeconds + "s";
+}
+
+function blobToUrl(blob) {
+    return new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.readAsDataURL(blob);
+    });
+}
+function urlToBlob(url) {
+    return new Promise((resolve) => {
+        fetch(url).then(res => resolve(res.blob()));
+    });
+}
+
+async function getVideoDuration(input) {
+    const el = video({ preload: "metadata" });
+    return new Promise((resolve, reject) => {
+        let objectUrl = null;
+        const cleanup = () => {
+            el.removeAttribute("src");
+            el.load();
+            if (objectUrl)
+                URL.revokeObjectURL(objectUrl);
+        };
+        el.onerror = () => {
+            cleanup();
+            reject(new Error("Failed to load video metadata"));
+        };
+        el.onloadedmetadata = () => {
+            if (el.duration === Infinity) {
+                el.currentTime = 1e101;
+                el.ontimeupdate = () => {
+                    el.ontimeupdate = null;
+                    const d = el.duration;
+                    cleanup();
+                    resolve(d);
+                };
+            }
+            else {
+                const d = el.duration;
+                cleanup();
+                resolve(d);
+            }
+        };
+        if (typeof input === "string") {
+            el.crossOrigin = "anonymous";
+            el.src = input;
+        }
+        else {
+            objectUrl = URL.createObjectURL(input);
+            el.src = objectUrl;
+        }
+    });
 }
 
 /**
@@ -17099,4 +17448,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEnforcer, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, closestPointOnAabb, closestPointOnSegment, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, enforcer, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, polygonsIntersect, projectPolygonOntoAxis, randomFromRange, randomId, randomString, removeFromYArray, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };

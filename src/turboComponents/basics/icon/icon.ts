@@ -10,7 +10,7 @@ import {equalToAny} from "../../../utils/computations/equity";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
 import {cache} from "../../../decorators/cache/cache";
 import {isUndefined} from "../../../utils/dataManipulation/misc";
-import {getFileExtension} from "../../../utils/dataManipulation/string";
+import {getFileExtension} from "../../../utils/computations/file";
 import {fetchSvg} from "../../../utils/dataManipulation/svg";
 import {Color} from "../../datatypes/color/color";
 import {TurboIconProperties} from "./icon.types";

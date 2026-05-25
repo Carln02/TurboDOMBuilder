@@ -1,6 +1,6 @@
 import {css} from "../css";
 import {FontProperties} from "./font.types";
-import {getFileExtension} from "../../dataManipulation/string";
+import {getFileExtension} from "../../computations/file";
 import {stylesheet} from "../../../elementCreation/miscElements";
 
 /**

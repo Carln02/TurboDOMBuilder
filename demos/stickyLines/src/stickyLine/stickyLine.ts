@@ -3,7 +3,7 @@ import {StickyLineView} from "./stickyLine.view";
 import {StickyLineModel} from "./stickyLine.model";
 import "./stickyLine.css";
 import {Square} from "../square/square";
-import {StickyLineEnforcer} from "./stickyLine.enforcer";
+import {StickyLineConstrainer} from "./stickyLine.constrainer";
 
 @define("sticky-line")
 export class StickyLine extends TurboElement<StickyLineView, any, StickyLineModel> {
@@ -21,7 +21,7 @@ export class StickyLine extends TurboElement<StickyLineView, any, StickyLineMode
     public static defaultProperties = {
         model: StickyLineModel,
         view: StickyLineView,
-        enforcers: StickyLineEnforcer,
+        constrainers: StickyLineConstrainer,
         origin: new Point(500, 300),
     };
 

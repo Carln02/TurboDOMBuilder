@@ -1,18 +1,18 @@
 import {
-    TurboEnforcer,
-    solver, EnforcerCallbackProperties,
+    TurboConstrainer,
+    solver, ConstrainerCallbackProperties,
     turbo, TurboRect
 } from "../../../../build/turbodombuilder.esm";
 import {StickyLine} from "../stickyLine/stickyLine";
 
 //Pusher substrate
-export class CanvasEnforcer extends TurboEnforcer {
+export class CanvasConstrainer extends TurboConstrainer {
     //Define the substrate's name. Equivalent to turbo(canvas).makeSubstrate("main").
-    public enforcerName = "main";
+    public constrainerName = "main";
 
     public defaultQueue = [];
 
-    @solver() protected refreshStickyLinesLists(properties: EnforcerCallbackProperties) {
+    @solver() protected refreshStickyLinesLists(properties: ConstrainerCallbackProperties) {
         const target = properties.target;
         if (!target) return;
 
@@ -21,8 +21,8 @@ export class CanvasEnforcer extends TurboEnforcer {
 
         for (const stickyline of stickylines) {
             if (stickyline === target) continue;
-            if (overlaps.includes(stickyline)) turbo(stickyline).getEnforcerObjectList().add(target);
-            else if (properties.eventTarget !== stickyline) turbo(stickyline).getEnforcerObjectList().remove(target);
+            if (overlaps.includes(stickyline)) turbo(stickyline).getConstrainerObjectList().add(target);
+            else if (properties.eventTarget !== stickyline) turbo(stickyline).getConstrainerObjectList().remove(target);
         }
 
     }

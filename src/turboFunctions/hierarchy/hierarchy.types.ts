@@ -1,3 +1,5 @@
+import {ValidElement, ValidTag} from "../../types/element.types";
+
 /**
  * @type {ChildHandler}
  * @group Types
@@ -190,12 +192,21 @@ declare module "../turboSelector" {
          * @overload
          * @function closest
          * @description Finds the closest ancestor of the current element (or the current element itself) that matches
-         * the provided CSS selector.
-         * @param {Type} type - The (valid) CSS selector string.
-         * constructor/class to match.
+         * that is an instance of the element associated with the given tag name.
+         * @param {Type} type - The (valid) tag name.
          * @returns {Element} The matching ancestor element, or null if no match is found.
          */
-        closest(type: string): Element;
+        closest<Tag extends ValidTag>(type: Tag): ValidElement<Tag>;
+
+        /**
+         * @overload
+         * @function closest
+         * @description Finds the closest ancestor of the current element (or the current element itself) that matches
+         * the provided CSS selector.
+         * @param {Type} type - The (valid) CSS selector string.
+         * @returns {Element} The matching ancestor element, or null if no match is found.
+         */
+        closest<Tag extends string>(type: Tag): Element;
 
         /**
          * @overload
@@ -204,7 +215,6 @@ declare module "../turboSelector" {
          * @description Finds the closest ancestor of the current element (or the current element itself) that is an
          * instance of the given class.
          * @param {new (...args: any[]) => Type} type - The class to match.
-         * constructor/class to match.
          * @returns {Element} The matching ancestor element, or null if no match is found.
          */
         closest<Type extends Element>(type: new (...args: any[]) => Type): Type;

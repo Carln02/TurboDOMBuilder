@@ -51,6 +51,44 @@ function richTest2() {
         }));
 }
 
+function richTest3() {
+    const r = TurboRichElement.create({
+        text: "Clear parts",
+        leftIcon: "link",
+        rightIcon: "share",
+        prefixEntry: "PRE",
+        suffixEntry: "SUF",
+    });
+
+    box("RichElement — clearing parts")
+        .addSubBox("start (fully loaded)", r)
+        .addContent(TurboButton.create({
+            text: "leftIcon = null",
+            onClick: () => r.leftIcon = null
+        }))
+        .addContent(TurboButton.create({
+            text: "rightIcon = null",
+            onClick: () => r.rightIcon = null
+        }))
+        .addContent(TurboButton.create({
+            text: "prefixEntry = null",
+            onClick: () => r.prefixEntry = null
+        }))
+        .addContent(TurboButton.create({
+            text: "suffixEntry = null",
+            onClick: () => r.suffixEntry = null
+        }))
+        .addContent(TurboButton.create({
+            text: "restore all",
+            onClick: () => {
+                r.leftIcon = "link";
+                r.rightIcon = "share";
+                r.prefixEntry = "PRE";
+                r.suffixEntry = "SUF";
+            }
+        }));
+}
+
 function richTest4() {
     // Replace center element with custom element; also provide via object props
     const r = TurboRichElement.create({text: "Center text"});
@@ -195,6 +233,7 @@ function richTest8() {
 export function setupRichElementTests() {
     richTest1();
     richTest2();
+    richTest3();
     richTest4();
     richTest5();
     richTest6();

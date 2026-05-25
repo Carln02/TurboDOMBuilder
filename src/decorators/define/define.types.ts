@@ -28,7 +28,7 @@ type DefineOptions = {
  * - `SVGElement`, `MathMLElement`, `HTMLElement`, `Element`, `Node`
  *
  * **MVC pieces:**
- * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboEnforcer`,
+ * - `TurboOperator`, `TurboHandler`, `TurboInteractor`, `TurboTool`, `TurboConstrainer`,
  *   `TurboView`, `TurboEmitter`, `TurboModel`
  *
  * **Fallback:**
@@ -53,7 +53,7 @@ enum RegistryCategory {
     TurboHandler = "TurboHandler",
     TurboInteractor = "TurboInteractor",
     TurboTool = "TurboTool",
-    TurboEnforcer = "TurboEnforcer",
+    TurboConstrainer = "TurboConstrainer",
 
     Other = "Other",
 }

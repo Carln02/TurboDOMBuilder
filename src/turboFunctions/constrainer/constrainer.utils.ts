@@ -1,5 +1,5 @@
 import {TurboSelector} from "../turboSelector";
-import {EnforcerCallbackProperties, EnforcerChecker, EnforcerMutator, EnforcerSolver} from "./enforcer.types";
+import {ConstrainerCallbackProperties, ConstrainerChecker, ConstrainerMutator, ConstrainerSolver} from "./constrainer.types";
 import {Delegate} from "../../turboComponents/datatypes/delegate/delegate";
 import {TurboWeakSet} from "../../turboComponents/datatypes/weakSet/weakSet";
 import {TurboQueue} from "../../turboComponents/datatypes/queue/queue";
@@ -7,11 +7,11 @@ import {turbo} from "../turboFunctions";
 import {TurboEventManager} from "../../eventHandling/turboEventManager/turboEventManager";
 import {TurboEvent} from "../../eventHandling/events/turboEvent";
 import {Propagation} from "../event/event.types";
-import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../mvc/constrainer/constrainer";
 import {TurboNodeList} from "../../turboComponents/datatypes/nodeList/nodeList";
 
-type EnforcerData = {
-    attachedInstance?: TurboEnforcer,
+type ConstrainerData = {
+    attachedInstance?: TurboConstrainer,
 
     active: boolean,
     objectList: TurboNodeList,
@@ -30,47 +30,47 @@ type EnforcerData = {
     onActivate: Delegate<() => void>,
     onDeactivate: Delegate<() => void>,
 
-    checkers: Map<string, EnforcerChecker>,
-    mutators: Map<string, EnforcerMutator>,
+    checkers: Map<string, ConstrainerChecker>,
+    mutators: Map<string, ConstrainerMutator>,
 
-    solvers: Map<string, EnforcerCallbackObject<EnforcerSolver>>,
+    solvers: Map<string, ConstrainerCallbackObject<ConstrainerSolver>>,
     sortedSolvers: string[]
 };
 
 type ElementData = {
-    enforcers: Map<string, EnforcerData>,
+    constrainers: Map<string, ConstrainerData>,
 };
 
-type EnforcerCallbackObject<Type extends EnforcerChecker | EnforcerMutator | EnforcerSolver> = {
+type ConstrainerCallbackObject<Type extends ConstrainerChecker | ConstrainerMutator | ConstrainerSolver> = {
     callback: Type,
     priority: number,
 };
 
-type EnforcerDataWithId = {
-    data: EnforcerData,
+type ConstrainerDataWithId = {
+    data: ConstrainerData,
     name: string,
     host: object,
     targets?: object[]
 };
 
-export class EnforcerFunctionsUtils {
+export class ConstrainerFunctionsUtils {
     private objectsSet: TurboWeakSet = new TurboWeakSet();
     private dataMap = new WeakMap<object, ElementData>;
 
     public data(element: object): ElementData {
         if (element instanceof TurboSelector) element = element.element;
         if (!element) return {} as any;
-        if (!this.dataMap.has(element)) this.dataMap.set(element, {enforcers: new Map()});
+        if (!this.dataMap.has(element)) this.dataMap.set(element, {constrainers: new Map()});
         return this.dataMap.get(element);
     }
 
-    public createEnforcer(element: object, enforcer: string): EnforcerData {
+    public createConstrainer(element: object, constrainer: string): ConstrainerData {
         if (element instanceof TurboSelector) element = element.element;
         const objectList = new TurboNodeList(element instanceof Element ? element.children
             : element instanceof Node ? element.childNodes
                 : []);
 
-        const data: EnforcerData = {
+        const data: ConstrainerData = {
             active: false,
             objectList: objectList,
             triggerList: new TurboNodeList(objectList),
@@ -95,28 +95,28 @@ export class EnforcerFunctionsUtils {
 
         if (element) {
             this.objectsSet.add(element);
-            this.data(element).enforcers.set(enforcer, data);
+            this.data(element).constrainers.set(constrainer, data);
         }
         return data;
     }
 
-    public activate(element: object, enforcer: string, activate?: boolean) {
-        const data = this.getEnforcerData(element, enforcer);
+    public activate(element: object, constrainer: string, activate?: boolean) {
+        const data = this.getConstrainerData(element, constrainer);
         if (!data) return;
         if (typeof activate === "boolean") data.active = activate;
         else data.active = !data.active;
     }
 
-    public getEnforcerData(element: object, enforcer: string): EnforcerData {
-        return this.data(element)?.enforcers?.get(enforcer);
+    public getConstrainerData(element: object, constrainer: string): ConstrainerData {
+        return this.data(element)?.constrainers?.get(constrainer);
     }
 
-    public getEnforcers(element: object): string[] {
-        return [...this.data(element)?.enforcers?.keys()];
+    public getConstrainers(element: object): string[] {
+        return [...this.data(element)?.constrainers?.keys()];
     }
 
-    public getActiveEnforcers(element: object): string[] {
-        const data = this.data(element)?.enforcers;
+    public getActiveConstrainers(element: object): string[] {
+        const data = this.data(element)?.constrainers;
         if (!data) return [];
 
         const entries = [];
@@ -126,8 +126,8 @@ export class EnforcerFunctionsUtils {
         return entries;
     }
 
-    public getDefaultEnforcer(element: object, allowInactive: boolean = true): string {
-        const data = this.data(element).enforcers;
+    public getDefaultConstrainer(element: object, allowInactive: boolean = true): string {
+        const data = this.data(element).constrainers;
         if (!data) return;
 
         for (const [key, value] of data.entries()) {
@@ -136,35 +136,35 @@ export class EnforcerFunctionsUtils {
         if (allowInactive) return data.keys()[0];
     }
 
-    public getCustomData(element: object, enforcer: string, object: object): Record<string, any> {
-        const enforcerData = this.getEnforcerData(element, enforcer);
-        if (!enforcerData || !enforcerData.customData) return {};
-        let customData = enforcerData.customData.get(object);
+    public getCustomData(element: object, constrainer: string, object: object): Record<string, any> {
+        const constrainerData = this.getConstrainerData(element, constrainer);
+        if (!constrainerData || !constrainerData.customData) return {};
+        let customData = constrainerData.customData.get(object);
         if (!customData) {
             customData = {};
-            enforcerData.customData.set(object, customData);
+            constrainerData.customData.set(object, customData);
         }
         return customData;
     }
 
-    public getEnforcersTriggeredByObjects(...elements: object[]): EnforcerDataWithId[] {
+    public getConstrainersTriggeredByObjects(...elements: object[]): ConstrainerDataWithId[] {
         if (!elements || elements.length === 0) return [];
 
         const nodeTargets: Node[] = elements.filter(el => el instanceof Node);
-        const data: EnforcerDataWithId[] = [];
+        const data: ConstrainerDataWithId[] = [];
 
-        const checkTargets = (enforcerName: string, object: object): object[] => {
+        const checkTargets = (constrainerName: string, object: object): object[] => {
             const hits: Set<object> = new Set();
-            const list = this.getField(object, enforcerName, "triggerList") ?? new TurboNodeList()
+            const list = this.getField(object, constrainerName, "triggerList") ?? new TurboNodeList()
             for (const el of nodeTargets) if (list.has(el)) hits.add(el);
             return Array.from(hits.values());
         };
 
         this.objectsSet.toArray().forEach(object =>
-            this.data(object).enforcers.forEach((enforcerData, name) => {
-                if (!enforcerData.active) return;
+            this.data(object).constrainers.forEach((constrainerData, name) => {
+                if (!constrainerData.active) return;
                 const hits = checkTargets(name, object);
-                if (hits.length > 0) data.push({name, data: enforcerData, host: object, targets: hits});
+                if (hits.length > 0) data.push({name, data: constrainerData, host: object, targets: hits});
             })
         );
 
@@ -173,25 +173,25 @@ export class EnforcerFunctionsUtils {
         return data;
     }
 
-    public getField(element: object, enforcer: string, field: string): any {
-        const data = this.getEnforcerData(element, enforcer);
+    public getField(element: object, constrainer: string, field: string): any {
+        const data = this.getConstrainerData(element, constrainer);
         if (!data) return;
-        if (data.attachedInstance && data.attachedInstance instanceof TurboEnforcer
+        if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer
             && data.attachedInstance[field] !== undefined) return data.attachedInstance[field];
         return data[field];
     }
 
-    public setField(element: object, enforcer: string, field: string, value: any) {
-        const data = this.getEnforcerData(element, enforcer);
-        if (data.attachedInstance && data.attachedInstance instanceof TurboEnforcer) data.attachedInstance[field] = value;
+    public setField(element: object, constrainer: string, field: string, value: any) {
+        const data = this.getConstrainerData(element, constrainer);
+        if (data.attachedInstance && data.attachedInstance instanceof TurboConstrainer) data.attachedInstance[field] = value;
         else data[field] = value;
     }
 
-    public setupEnforcerCallbackProperties(element: object, properties: EnforcerCallbackProperties) {
+    public setupConstrainerCallbackProperties(element: object, properties: ConstrainerCallbackProperties) {
         if (element instanceof TurboSelector) element = element.element;
         turbo(properties).applyDefaults({
-            enforcerHost: element,
-            enforcer: element ? this.getDefaultEnforcer(element, false) : undefined,
+            constrainerHost: element,
+            constrainer: element ? this.getDefaultConstrainer(element, false) : undefined,
             manager: TurboEventManager.instance,
             eventOptions: {},
             toolName: (properties.event as TurboEvent)?.toolName,
@@ -200,38 +200,38 @@ export class EnforcerFunctionsUtils {
         });
     }
 
-    public solveEnforcerInternal(data: EnforcerDataWithId, properties: EnforcerCallbackProperties) {
-        const enforcerData = data.data;
-        enforcerData.passes = new WeakMap();
-        enforcerData.customData = new WeakMap();
-        enforcerData.queue = turbo(data.host).getDefaultEnforcerQueue(data.name);
-        if (!enforcerData.queue) enforcerData.queue = new TurboQueue();
+    public solveConstrainerInternal(data: ConstrainerDataWithId, properties: ConstrainerCallbackProperties) {
+        const constrainerData = data.data;
+        constrainerData.passes = new WeakMap();
+        constrainerData.customData = new WeakMap();
+        constrainerData.queue = turbo(data.host).getDefaultConstrainerQueue(data.name);
+        if (!constrainerData.queue) constrainerData.queue = new TurboQueue();
 
-        if (!enforcerData.solvers) return;
+        if (!constrainerData.solvers) return;
         let object: object = properties.eventTarget;
 
-        if (properties.eventTarget) enforcerData.queue.remove(properties.eventTarget);
-        else object = enforcerData.queue.pop();
+        if (properties.eventTarget) constrainerData.queue.remove(properties.eventTarget);
+        else object = constrainerData.queue.pop();
 
         const onObjectAdded = (entry: object, state: "added" | "removed") => {
-            if (state === "added") enforcerData.queue.push(entry);
+            if (state === "added") constrainerData.queue.push(entry);
         };
-        enforcerData.objectList.onChanged.add(onObjectAdded);
+        constrainerData.objectList.onChanged.add(onObjectAdded);
 
         while (object) {
-            const passes = enforcerData.passes.get(object) ?? 0;
-            if (passes < enforcerData.maxPasses) {
-                enforcerData.passes.set(object, passes + 1);
+            const passes = constrainerData.passes.get(object) ?? 0;
+            if (passes < constrainerData.maxPasses) {
+                constrainerData.passes.set(object, passes + 1);
 
-                for (const solverName of enforcerData.sortedSolvers) {
-                    const propagation = enforcerData.solvers.get(solverName)?.callback({...properties, target: object, enforcer: data.name});
+                for (const solverName of constrainerData.sortedSolvers) {
+                    const propagation = constrainerData.solvers.get(solverName)?.callback({...properties, target: object, constrainer: data.name});
                     if (propagation === Propagation.stopImmediatePropagation || propagation === Propagation.stopPropagation) break;
                 }
             }
 
-            object = enforcerData.queue.pop();
+            object = constrainerData.queue.pop();
         }
 
-        enforcerData.objectList.onChanged.remove(onObjectAdded);
+        constrainerData.objectList.onChanged.remove(onObjectAdded);
     }
 }

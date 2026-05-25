@@ -2,12 +2,12 @@ import {describe, it, expect, vi} from "vitest";
 import {div} from "../../../elementCreation/basicElements";
 import {turbo} from "../../turboFunctions";
 
-describe("Enforcer functions – extras", () => {
-    it("addObjectToEnforcer / removeObjectFromEnforcer with Set", () => {
+describe("Constrainer functions – extras", () => {
+    it("addObjectToConstrainer / removeObjectFromConstrainer with Set", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
-        const objectList = turbo(host).getEnforcerObjectList("main");
+        const objectList = turbo(host).getConstrainerObjectList("main");
 
         const a = {id: "a"};
         const b = {id: "b"};
@@ -25,14 +25,14 @@ describe("Enforcer functions – extras", () => {
         expect(objectList.size).toBe(1);
     });
 
-    it("hasObjectInEnforcer works for HTMLCollection and NodeList", () => {
+    it("hasObjectInConstrainer works for HTMLCollection and NodeList", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
         // HTMLCollection (children)
         const span = document.createElement("span");
         host.appendChild(span);
-        const objectList = turbo(host).getEnforcerObjectList("main");
+        const objectList = turbo(host).getConstrainerObjectList("main");
         expect(objectList.has(span)).toBe(true);
 
         // NodeList (childNodes)
@@ -42,30 +42,30 @@ describe("Enforcer functions – extras", () => {
         expect(objectList.has(txt)).toBe(true);
     });
 
-    it("wasObjectProcessedByEnforcer changes after solveEnforcer", () => {
+    it("wasObjectProcessedByConstrainer changes after solveConstrainer", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
-        const objectList = turbo(host).getEnforcerObjectList("main");
+        const objectList = turbo(host).getConstrainerObjectList("main");
         const a = {id: "a"};
         objectList.add(a);
 
         const solver = vi.fn();
         turbo(host).addSolver({callback: solver});
 
-        expect(turbo(host).getObjectPassesForEnforcer(a, "main")).toBe(0);
+        expect(turbo(host).getObjectPassesForConstrainer(a, "main")).toBe(0);
 
-        turbo(host).solveEnforcer(); // processes 'a'
+        turbo(host).solveConstrainer(); // processes 'a'
 
         expect(solver).toHaveBeenCalledTimes(1);
-        expect(turbo(host).getObjectPassesForEnforcer(a, "main")).toBe(1);
+        expect(turbo(host).getObjectPassesForConstrainer(a, "main")).toBe(1);
     });
 
-    it("solveEnforcer processes all items in a Set and honors eventTarget first", () => {
+    it("solveConstrainer processes all items in a Set and honors eventTarget first", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
-        const objectList = turbo(host).getEnforcerObjectList("main");
+        const objectList = turbo(host).getConstrainerObjectList("main");
         const a = {id: "a"};
         const b = {id: "b"};
         objectList.add(a, b);
@@ -74,7 +74,7 @@ describe("Enforcer functions – extras", () => {
         const solver = vi.fn((props) => calls.push(props.target));
         turbo(host).addSolver({callback: solver as any});
 
-        turbo(host).solveEnforcer({eventTarget: b as any});
+        turbo(host).solveConstrainer({eventTarget: b as any});
 
         expect(calls.length).toBe(2);
         // First call should be eventTarget
@@ -82,11 +82,11 @@ describe("Enforcer functions – extras", () => {
         expect(new Set(calls)).toEqual(new Set([a, b]));
     });
 
-    it("solveEnforcer picks up items added during the same pass (Set)", () => {
+    it("solveConstrainer picks up items added during the same pass (Set)", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
-        const objectList = turbo(host).getEnforcerObjectList("main");
+        const objectList = turbo(host).getConstrainerObjectList("main");
         const a = {id: "a"};
         const b = {id: "b"};
         const c = {id: "c"};
@@ -97,16 +97,16 @@ describe("Enforcer functions – extras", () => {
             seen.push(props.target);
             objectList.add(c);
         });
-        turbo(host).addSolver({callback: solver, enforcer: "main"});
-        turbo(host).solveEnforcer();
+        turbo(host).addSolver({callback: solver, constrainer: "main"});
+        turbo(host).solveConstrainer();
 
         expect(new Set(seen)).toEqual(new Set([a, b, c]));
         expect(solver).toHaveBeenCalledTimes(3);
     });
 
-    it("solveEnforcer with default HTMLCollection processes existing and newly appended children", () => {
+    it("solveConstrainer with default HTMLCollection processes existing and newly appended children", () => {
         const host = div({parent: document.body});
-        turbo(host).makeEnforcer("main");
+        turbo(host).makeConstrainer("main");
 
         // default: objects = host.children (HTMLCollection)
         const s1 = document.createElement("span");
@@ -121,12 +121,12 @@ describe("Enforcer functions – extras", () => {
             if (processed.length === 1) {
                 const s3 = document.createElement("span");
                 host.appendChild(s3);
-                turbo(host).getEnforcerQueue().push(s3);
+                turbo(host).getConstrainerQueue().push(s3);
             }
         });
         turbo(host).addSolver({callback: solver});
 
-        turbo(host).solveEnforcer();
+        turbo(host).solveConstrainer();
 
         // Should have processed s1, s2, and s3
         expect(processed.length).toBe(3);

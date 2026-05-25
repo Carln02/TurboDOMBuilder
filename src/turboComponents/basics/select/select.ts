@@ -213,7 +213,6 @@ class TurboSelect<
         }
     }) public entriesClasses: string | string[];
 
-
     protected static customCreate(properties: TurboSelectProperties): object {
         const {selectedValues, parent} = properties;
         const obj = super.customCreate({...properties, selectedValues: undefined, parent: undefined}) as TurboSelect;

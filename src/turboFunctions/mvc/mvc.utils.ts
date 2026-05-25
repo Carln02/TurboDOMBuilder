@@ -5,7 +5,7 @@ import {TurboEmitter} from "../../mvc/emitter/emitter";
 import {TurboOperator} from "../../mvc/operator/operator";
 import {TurboInteractor} from "../../mvc/interactor/interactor";
 import {TurboTool} from "../../mvc/tool/tool";
-import {TurboEnforcer} from "../../mvc/enforcer/enforcer";
+import {TurboConstrainer} from "../../mvc/constrainer/constrainer";
 import {KeyType} from "../../types/basic.types";
 import {TurboHandler} from "../../mvc/handler/handler";
 import {MvcManyInstancesOrConstructors} from "./mvc.types";
@@ -17,8 +17,9 @@ type MvcData = {
     operators: Map<string, TurboOperator>;
     interactors: Map<string, TurboInteractor>;
     tools: Map<string, TurboTool>;
-    enforcers: Map<string, TurboEnforcer>;
-    emitterFireCallback: (value: any, ...keys: KeyType[]) => void;
+    constrainers: Map<string, TurboConstrainer>;
+    emitterCallback: (value: any, key: string) => void;
+    emitterKeyCallback: (value: any, ...keys: KeyType[]) => void;
 };
 
 export class MvcFunctionsUtils {
@@ -39,8 +40,9 @@ export class MvcFunctionsUtils {
         if (!entry) {
             entry = {
                 emitter: new TurboEmitter(),
-                operators: new Map(), enforcers: new Map(), interactors: new Map(), tools: new Map(),
-                emitterFireCallback: (value: any, ...keys: KeyType[]) => entry.emitter?.fireKey(value, ...keys)
+                operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
+                emitterCallback: (value: any, key: string) => entry.emitter?.fire(value, key),
+                emitterKeyCallback: (value: any, ...keys: KeyType[]) => entry.emitter?.fireKey(value, ...keys)
             };
             this.dataMap.set(element, entry);
         }
@@ -59,10 +61,11 @@ export class MvcFunctionsUtils {
         const mvc = this.peek(element);
         if (!mvc) return;
         if (attach) {
-            if (!model.onKeyChanged.has(mvc.emitterFireCallback))
-                model.onKeyChanged.add(mvc.emitterFireCallback);
+            if (!model.onKeyChanged.has(mvc.emitterKeyCallback)) model.onKeyChanged.add(mvc.emitterKeyCallback);
+            model.fireCallbackHook = mvc.emitterCallback;
         } else {
-            model.onKeyChanged.remove(mvc.emitterFireCallback);
+            model.onKeyChanged.remove(mvc.emitterKeyCallback);
+            model.fireCallbackHook = undefined;
         }
     }
 
@@ -115,13 +118,13 @@ export class MvcFunctionsUtils {
         tool.emitter = attach ? mvc.emitter : undefined;
     }
 
-    public updateEnforcer(element: object, enforcer: TurboEnforcer, attach: boolean = true) {
-        if (!element || !enforcer) return;
+    public updateConstrainer(element: object, constrainer: TurboConstrainer, attach: boolean = true) {
+        if (!element || !constrainer) return;
         const mvc = this.peek(element);
         if (!mvc) return;
-        enforcer.model = attach ? mvc.model : undefined;
-        enforcer.view = attach ? mvc.view : undefined;
-        enforcer.emitter = attach ? mvc.emitter : undefined;
+        constrainer.model = attach ? mvc.model : undefined;
+        constrainer.view = attach ? mvc.view : undefined;
+        constrainer.emitter = attach ? mvc.emitter : undefined;
     }
 
     public linkPieces(element: object) {
@@ -135,7 +138,7 @@ export class MvcFunctionsUtils {
         mvc.model?.handlers.forEach(handler => this.updateHandler(element, handler));
         mvc.interactors.forEach(interactor => this.updateInteractor(element, interactor));
         mvc.tools.forEach(tool => this.updateTool(element, tool));
-        mvc.enforcers.forEach(enforcer => this.updateEnforcer(element, enforcer));
+        mvc.constrainers.forEach(constrainer => this.updateConstrainer(element, constrainer));
     }
 
     public removeInstance(element: object, kind: string, keyOrInstance: string | object) {
@@ -175,7 +178,7 @@ export class MvcFunctionsUtils {
      * produce a key that reads well in camelCase (e.g., `MyElementSnapOperator` -> `snap`).
      * @param element
      * @param {new (...args: any[]) => any} constructor - The constructor to derive the name from.
-     * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Enforcer").
+     * @param {string} type - The type suffix to strip (e.g., "Operator", "Handler", "Tool", "Constrainer").
      * @returns {string} - A lower-cased, camel-style key name derived from the constructor.
      */
     public extractClassEssenceName(element: object, constructor: new (...args: any[]) => any, type: string): string {

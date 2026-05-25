@@ -1,6 +1,7 @@
-import {camelToKebabCase, stringify} from "../../utils/dataManipulation/string";
+import {stringify} from "../../utils/dataManipulation/string";
 import {getFirstDescriptorInChain, getFirstPrototypeInChainWith} from "../../utils/dataManipulation/prototype";
 import {ObserveUtils} from "./observe.utils";
+import {camelToKebabCase} from "../../utils/conversions/string";
 
 // https://github.com/microsoft/TypeScript/issues/53461
 // To make sure that metadata exists on decorator contexts.
