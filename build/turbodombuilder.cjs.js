@@ -4032,7 +4032,8 @@ let TurboModel = (() => {
         signals = new Map();
         changeObservers = new TurboWeakSet();
         nestedModels = new Map();
-        nestListeners = new Set();
+        nestListener = false;
+        childObservers = new TurboWeakSet();
         /**
          * @description The ID of the data held by this model.
          */
@@ -4520,7 +4521,8 @@ let TurboModel = (() => {
             this.nestedModels.forEach(nested => nested.clear());
             this.nestedModels.clear();
             this.signals.clear();
-            this.nestListeners.clear();
+            this.nestListener = false;
+            this.childObservers?.toArray().forEach(e => this.childObservers?.delete(e));
             this.changeObservers?.toArray().forEach(observer => observer.clear());
             this.isInitialized = false;
         }
@@ -4579,46 +4581,19 @@ let TurboModel = (() => {
             const properties = lastEntry !== null && typeof lastEntry === "object" ? lastEntry : {};
             const keys = args.slice(0, lastEntry !== null && typeof lastEntry === "object" ? -1 : undefined);
             if (keys.length === 0)
-                keys.push(TurboModel.ALL);
+                return [this];
             turbo(properties).applyDefaults({ bubbleChanges: this.bubbleChanges, enabledCallbacks: this.enabledCallbacks });
-            const createChild = (model, key) => {
-                if (model.nestedModels.has(key))
-                    return model.nestedModels.get(key);
-                const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
-                model.onKeyChanged.add((value, changedKey) => {
-                    if (changedKey !== key)
-                        return;
-                    if (child.data !== value)
-                        child.data = value;
-                });
-                child.onKeyChanged.add((_value, ...keys) => {
-                    if (!model.enabledCallbacks || !model.bubbleChanges)
-                        return;
-                    model.keyChanged(keys, model.get(key));
-                });
-                model.nestedModels.set(key, child);
-                return child;
-            };
-            let results = [this];
-            for (const entry of keys) {
-                if (entry === TurboModel.ALL) {
-                    const parents = [...results];
-                    results = parents.flatMap(parent => parent.keys.map(k => createChild(parent, k)));
-                    for (const parent of parents) {
-                        parent.nestListeners.add(child => {
-                            const sibling = [...parent.nestedModels.values()].find((model) => model !== child);
-                            if (!sibling)
-                                return;
-                            sibling.nestListeners.forEach(listener => child.nestListeners.add(listener));
-                            sibling.changeObservers?.toArray().forEach(obs => child.changeObservers?.add(obs));
-                        });
-                    }
-                }
-                else {
-                    results = results.map(parent => createChild(parent, entry));
-                }
+            return this.nestRecur(keys, properties);
+        }
+        nestRecur(keys, properties) {
+            if (keys.length === 0)
+                return [this];
+            if (keys[0] === TurboModel.ALL) {
+                this.nestListener = true;
+                return this.keys.flatMap(key => this.createNestedChild(this, key, properties).nestRecur(keys.slice(1), properties));
             }
-            return results;
+            else
+                return this.createNestedChild(this, keys[0], properties).nestRecur(keys.slice(1), properties);
         }
         nest(...keysAndProperties) {
             return this.nestAll(...keysAndProperties)[0];
@@ -4648,28 +4623,58 @@ let TurboModel = (() => {
          * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
          */
         generateObserver(properties = {}, ...keys) {
-            const models = keys.length === 0 ? [this] : this.nestAll(keys[0], ...keys.slice(1));
             const observer = new (properties.customConstructor
                 ?? this.observerConstructor
                 ?? (TurboObserver))({
                 initialize: true,
                 ...properties,
                 onDestroy: (self) => {
-                    models.forEach(model => model.changeObservers?.delete(self));
+                    this.unregisterObserverFromPath(self, keys);
                     properties.onDestroy?.(self);
                 },
                 onInitialize: (self) => {
-                    for (const model of models) {
-                        if (!model.isInitialized)
-                            continue;
-                        for (const key of model.keys)
-                            self.keyChanged([key], model.get(key));
-                    }
+                    this.initializeObserverOnPath(self, keys);
                     properties.onInitialize?.(self);
                 }
             });
-            models.forEach(model => model.changeObservers?.add(observer));
+            this.registerObserverOnPath(observer, keys);
             return observer;
+        }
+        initializeObserverOnPath(observer, keys) {
+            if (keys.length === 0) {
+                if (this.isInitialized)
+                    for (const key of this.keys)
+                        observer.keyChanged([key], this.get(key));
+            }
+            else if (keys[0] === TurboModel.ALL) {
+                for (const child of this.nestedModels.values())
+                    child.initializeObserverOnPath(observer, keys.slice(1));
+            }
+            else
+                this.getNested(keys[0])?.initializeObserverOnPath(observer, keys.slice(1));
+        }
+        registerObserverOnPath(observer, keys) {
+            if (keys.length === 0)
+                this.changeObservers?.add(observer);
+            else if (keys[0] === TurboModel.ALL) {
+                this.childObservers.add({ observer, keys: keys.slice(1) });
+                for (const child of this.nestedModels.values())
+                    child.registerObserverOnPath(observer, keys.slice(1));
+            }
+            else
+                this.getNested(keys[0])?.registerObserverOnPath(observer, keys.slice(1));
+        }
+        unregisterObserverFromPath(observer, keys) {
+            if (keys.length === 0)
+                this.changeObservers?.delete(observer);
+            else if (keys[0] === TurboModel.ALL) {
+                this.childObservers?.toArray().filter(e => e.observer === observer)
+                    .forEach(e => this.childObservers?.delete(e));
+                for (const child of this.nestedModels.values())
+                    child.unregisterObserverFromPath(observer, keys.slice(1));
+            }
+            else
+                this.getNested(keys[0])?.unregisterObserverFromPath(observer, keys.slice(1));
         }
         /*
          *
@@ -4695,9 +4700,9 @@ let TurboModel = (() => {
                 this.signals.delete(key);
             if (!this.enabledCallbacks)
                 return;
-            if (!deleted && !this.nestedModels.has(key) && this.nestListeners.size > 0) {
-                const model = this.nest(key);
-                this.nestListeners.forEach(listener => listener(model, key));
+            if (!deleted && !this.nestedModels.has(key) && this.nestListener) {
+                const child = this.nest(key);
+                this.childObservers?.toArray().forEach(({ observer, keys }) => child.registerObserverOnPath(observer, keys));
             }
             this.onKeyChanged.fire(value, ...keys);
             this.changeObservers?.toArray().forEach(observer => observer.keyChanged(keys, value, deleted));
@@ -4810,6 +4815,25 @@ let TurboModel = (() => {
         fireCallback(key, value) {
             this.fireCallbackHook?.(value, key);
         }
+        createNestedChild(model, key, properties) {
+            if (model.nestedModels.has(key))
+                return model.nestedModels.get(key);
+            const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
+            model.onKeyChanged.add((value, changedKey) => {
+                if (changedKey !== key)
+                    return;
+                if (child.data !== value)
+                    child.data = value;
+            });
+            child.onKeyChanged.add((_value, ...keys) => {
+                if (!model.enabledCallbacks || !model.bubbleChanges)
+                    return;
+                model.keyChanged(keys, model.get(key));
+            });
+            model.nestedModels.set(key, child);
+            return child;
+        }
+        ;
     };
 })();
 addRegistryCategory(TurboModel);

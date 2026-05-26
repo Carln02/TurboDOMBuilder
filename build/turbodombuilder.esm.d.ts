@@ -1015,6 +1015,10 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
     protected setup(): void;
 }
 
+type ChildObserverData = {
+    observer: TurboObserver;
+    keys: KeyType[];
+};
 /**
  * @class TurboModel
  * @group MVC
@@ -1067,7 +1071,8 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     private readonly signals;
     protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>>;
     protected readonly nestedModels: Map<DataKeyType, TurboModel>;
-    protected readonly nestListeners: Set<(model: TurboModel, key: DataKeyType) => void>;
+    protected nestListener: boolean;
+    protected readonly childObservers: TurboWeakSet<ChildObserverData>;
     /**
      * @description The ID of the data held by this model.
      */
@@ -1425,6 +1430,12 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     getSignal(...keys: KeyType[]): SignalBox<any>;
     /**
      * @function nestAll
+     * @description Return `[this]`.
+     * @returns {[this]}
+     */
+    nestAll(): [this];
+    /**
+     * @function nestAll
      * @description Create or retrieve nested {@link TurboModel} instances at each entry under the given key path.
      * Use {@link TurboModel.ALL} in the path to expand all entries at that level.
      * @param {...KeyType[]} keys - Key path to the subtree to expand.
@@ -1440,6 +1451,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @returns {TurboModel[]} Array of nested models.
      */
     nestAll<NestedDataType = any, NestedKeyType extends KeyType = any>(...keysAndProperties: [...KeyType[], TurboModelProperties]): TurboModel<NestedDataType, NestedKeyType>[];
+    private nestRecur;
     /**
      * @function nest
      * @description Create or retrieve a single nested {@link TurboModel} at the given key.
@@ -1494,6 +1506,9 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
      */
     generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType>, ...keys: KeyType[]): TurboObserver<DataEntryType, ComponentType, DataKeyType>;
+    protected initializeObserverOnPath(observer: TurboObserver, keys: KeyType[]): void;
+    protected registerObserverOnPath(observer: TurboObserver, keys: KeyType[]): void;
+    protected unregisterObserverFromPath(observer: TurboObserver, keys: KeyType[]): void;
     /**
      * @protected
      * @function keyChanged
@@ -1549,6 +1564,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     setDataWithoutInitializing(data: DataType): void;
     private routeMutation;
     fireCallback(key: string, value?: any): void;
+    private createNestedChild;
 }
 
 /**

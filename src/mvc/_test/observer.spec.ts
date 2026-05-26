@@ -1,5 +1,6 @@
 import {describe, it, expect} from "vitest";
 import {TurboObserver} from "../model/observer";
+import {TurboModel} from "../model/model";
 
 function makeInstance(id: string) {
     return {id, removed: false, remove() { this.removed = true; }};
@@ -219,6 +220,143 @@ describe("TurboObserver", () => {
             obs.keyChanged(["k"], "v");
             obs.detach("k" as any);
             expect(obs.hasValue(inst)).toBe(false);
+        });
+    });
+
+    // ── generateObserver path tests ───────────────────────────────────────────────
+
+    describe("generateObserver paths", () => {
+        it("ALL: fires onAdded for all existing children", () => {
+            const model = new TurboModel({data: {a: 1, b: 2, c: 3}, initialize: true});
+            const added: string[] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys[0] as string); return {}; }
+            }, TurboModel.ALL);
+            expect(added.sort()).toEqual(["a", "b", "c"]);
+        });
+
+        it("ALL: fires onAdded for children added after observer creation", () => {
+            const model = new TurboModel({data: {} as Record<string, number>, initialize: true});
+            const added: string[] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys[0] as string); return {}; }
+            }, TurboModel.ALL);
+            model.set(10, "x" as any);
+            model.set(20, "y" as any);
+            expect(added.sort()).toEqual(["x", "y"]);
+        });
+
+        it("ALL, ALL: fires onAdded for all existing leaf entries", () => {
+            const model = new TurboModel({
+                data: {row0: {a: 1, b: 2}, row1: {c: 3}},
+                initialize: true
+            });
+            const added: string[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys as string[]); return {}; }
+            }, TurboModel.ALL, TurboModel.ALL);
+            expect(added).toHaveLength(3);
+            expect(added.map(k => k.join(".")).sort()).toEqual(["row0.a", "row0.b", "row1.c"]);
+        });
+
+        it("ALL, ALL: fires onAdded for leaf entries added after observer creation", () => {
+            const model = new TurboModel({
+                data: {row0: {}} as Record<string, Record<string, number>>,
+                initialize: true
+            });
+            const added: string[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys as string[]); return {}; }
+            }, TurboModel.ALL, TurboModel.ALL);
+
+            model.set(99, "row0" as any, "x" as any);
+            model.set(42, "row1" as any, "y" as any);
+            expect(added.map(k => k.join(".")).sort()).toEqual(["row0.x", "row1.y"]);
+        });
+
+        it("ALL, ALL: fires onAdded when a new top-level row is added with existing children", () => {
+            const model = new TurboModel({
+                data: {} as Record<string, Record<string, number>>,
+                initialize: true
+            });
+            const added: string[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys as string[]); return {}; }
+            }, TurboModel.ALL, TurboModel.ALL);
+
+            model.set({p: 1, q: 2} as any, "row0" as any);
+            expect(added.map(k => k.join(".")).sort()).toEqual(["row0.p", "row0.q"]);
+        });
+
+        it("ALL, 5, 4, ALL: fires onAdded only for leaf entries at correct path", () => {
+            const model = new TurboModel({
+                data: {
+                    row0: {5: {4: {leaf0: "v0", leaf1: "v1"}}},
+                    row1: {5: {4: {leaf2: "v2"}}},
+                },
+                initialize: true
+            });
+            const added: string[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys as string[]); return {}; }
+            }, TurboModel.ALL, "5" as any, "4" as any, TurboModel.ALL);
+
+            expect(added).toHaveLength(3);
+            expect(added.map(k => k.join(".")).sort()).toEqual([
+                "row0.leaf0", "row0.leaf1", "row1.leaf2"
+            ]);
+        });
+
+        it("ALL, 5, 4, ALL: fires onAdded for new leaf entries added after observer creation", () => {
+            const model = new TurboModel({
+                data: {row0: {5: {4: {}}}} as any,
+                initialize: true
+            });
+            const added: string[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys as string[]); return {}; }
+            }, TurboModel.ALL, "5" as any, "4" as any, TurboModel.ALL);
+
+            model.set("newVal" as any, "row0" as any, "5" as any, "4" as any, "newLeaf" as any);
+            expect(added.map(k => k.join(".")).sort()).toEqual(["row0.newLeaf"]);
+        });
+
+        it("onUpdated fires with correct keys on subsequent change", () => {
+            const model = new TurboModel({data: {a: 1}, initialize: true});
+            const updated: any[][] = [];
+            model.generateObserver({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0]}),
+                onUpdated: (_d, _i, _s, ...keys) => updated.push(keys as any[]),
+            }, TurboModel.ALL);
+
+            model.set(99, "a" as any);
+            expect(updated).toHaveLength(1);
+            expect(updated[0]).toEqual(["a"]);
+        });
+
+        it("onDeleted fires and removes instance on delete", () => {
+            const model = new TurboModel({data: {a: 1, b: 2}, initialize: true});
+            const deleted: string[] = [];
+            const obs = model.generateObserver({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0]}),
+                onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
+            }, TurboModel.ALL);
+
+            model.delete("a" as any);
+            expect(deleted).toEqual(["a"]);
+            expect(obs.get("a" as any)).toBeUndefined();
+        });
+
+        it("destroy() unregisters the observer so future changes don't fire", () => {
+            const model = new TurboModel({data: {} as Record<string, number>, initialize: true});
+            const added: string[] = [];
+            const obs = model.generateObserver({
+                onAdded: (_d, _s, ...keys) => { added.push(keys[0] as string); return {}; }
+            }, TurboModel.ALL);
+
+            obs.destroy();
+            model.set(1, "z" as any);
+            expect(added).toHaveLength(0);
         });
     });
 });
