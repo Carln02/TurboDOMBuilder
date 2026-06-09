@@ -24,7 +24,7 @@ const makePanel = (label: string, color: string) =>
 
 function makeSwitch(mode?: ContentSwitchMode, extraProps: object = {}) {
     const cs = TurboContentSwitch.create({mode, ...extraProps} as any);
-    cs.selector.forceSelection = false;
+    cs.select.forceSelection = false;
     return cs;
 }
 
@@ -39,13 +39,13 @@ function csTest1() {
     });
 
     // Let MO process entries, then show first panel
-    setTimeout(() => cs.selector.select(panels[0]));
+    setTimeout(() => cs.select.select(panels[0]));
 
     box("TurboContentSwitch — fadeRight (default)")
         .addSubBox("switch", cs)
-        .addContent(TurboButton.create({text: "→ Panel A", onClick: () => cs.selector.select(panels[0])}))
-        .addContent(TurboButton.create({text: "→ Panel B", onClick: () => cs.selector.select(panels[1])}))
-        .addContent(TurboButton.create({text: "→ Panel C", onClick: () => cs.selector.select(panels[2])}));
+        .addContent(TurboButton.create({text: "→ Panel A", onClick: () => cs.select.select(panels[0])}))
+        .addContent(TurboButton.create({text: "→ Panel B", onClick: () => cs.select.select(panels[1])}))
+        .addContent(TurboButton.create({text: "→ Panel C", onClick: () => cs.select.select(panels[2])}));
 }
 
 /* 2) fadeLeft */
@@ -58,13 +58,13 @@ function csTest2() {
         return p;
     });
 
-    setTimeout(() => cs.selector.select(panels[0]));
+    setTimeout(() => cs.select.select(panels[0]));
 
     box("TurboContentSwitch — fadeLeft")
         .addSubBox("switch", cs)
-        .addContent(TurboButton.create({text: "→ Left A", onClick: () => cs.selector.select(panels[0])}))
-        .addContent(TurboButton.create({text: "→ Left B", onClick: () => cs.selector.select(panels[1])}))
-        .addContent(TurboButton.create({text: "→ Left C", onClick: () => cs.selector.select(panels[2])}));
+        .addContent(TurboButton.create({text: "→ Left A", onClick: () => cs.select.select(panels[0])}))
+        .addContent(TurboButton.create({text: "→ Left B", onClick: () => cs.select.select(panels[1])}))
+        .addContent(TurboButton.create({text: "→ Left C", onClick: () => cs.select.select(panels[2])}));
 }
 
 /* 3) carousel — direction-aware, no wrap to avoid index-direction mismatch */
@@ -78,7 +78,7 @@ function csTest3() {
     });
 
     let currentIndex = 0;
-    setTimeout(() => cs.selector.select(panels[0]));
+    setTimeout(() => cs.select.select(panels[0]));
 
     box("TurboContentSwitch — carousel")
         .addSubBox("switch", cs)
@@ -87,7 +87,7 @@ function csTest3() {
             onClick: () => {
                 if (currentIndex > 0) {
                     currentIndex--;
-                    cs.selector.select(panels[currentIndex]);
+                    cs.select.select(panels[currentIndex]);
                 }
             }
         }))
@@ -96,24 +96,24 @@ function csTest3() {
             onClick: () => {
                 if (currentIndex < panels.length - 1) {
                     currentIndex++;
-                    cs.selector.select(panels[currentIndex]);
+                    cs.select.select(panels[currentIndex]);
                 }
             }
         }))
         .addContent(TurboButton.create({
             text: "→ Slide 1",
-            onClick: () => { currentIndex = 0; cs.selector.select(panels[0]); }
+            onClick: () => { currentIndex = 0; cs.select.select(panels[0]); }
         }))
         .addContent(TurboButton.create({
             text: "→ Slide 4",
-            onClick: () => { currentIndex = 3; cs.selector.select(panels[3]); }
+            onClick: () => { currentIndex = 3; cs.select.select(panels[3]); }
         }));
 }
 
 /* 4) custom transitionDuration */
 function csTest4() {
     const cs = TurboContentSwitch.create({transitionDuration: 0.8} as any);
-    cs.selector.forceSelection = false;
+    cs.select.forceSelection = false;
 
     const panels = ["Slow A", "Slow B"].map((label, i) => {
         const p = makePanel(label, [panelColors[1], panelColors[2]][i]);
@@ -121,12 +121,12 @@ function csTest4() {
         return p;
     });
 
-    setTimeout(() => cs.selector.select(panels[0]));
+    setTimeout(() => cs.select.select(panels[0]));
 
     box("TurboContentSwitch — custom transitionDuration (0.8s)")
         .addSubBox("switch", cs)
-        .addContent(TurboButton.create({text: "→ Slow A", onClick: () => cs.selector.select(panels[0])}))
-        .addContent(TurboButton.create({text: "→ Slow B", onClick: () => cs.selector.select(panels[1])}))
+        .addContent(TurboButton.create({text: "→ Slow A", onClick: () => cs.select.select(panels[0])}))
+        .addContent(TurboButton.create({text: "→ Slow B", onClick: () => cs.select.select(panels[1])}))
         .addContent(TurboButton.create({
             text: "duration = 0.2s",
             onClick: () => (cs as any).transitionDuration = 0.2

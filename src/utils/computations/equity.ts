@@ -5,7 +5,7 @@
 function areEqual<Type = any>(...entries: Type[]): boolean {
     if (entries.length < 2) return true;
     for (let i = 0; i < entries.length - 1; i++) {
-        if (entries[i] != entries[i + 1]) return false;
+        if (!Object.is(entries[i], entries[i + 1])) return false;
     }
     return true;
 }

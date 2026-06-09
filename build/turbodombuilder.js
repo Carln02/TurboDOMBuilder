@@ -2164,7 +2164,7 @@ var Turbo = (function (exports, yjs) {
         if (entries.length < 2)
             return true;
         for (let i = 0; i < entries.length - 1; i++) {
-            if (entries[i] != entries[i + 1])
+            if (!Object.is(entries[i], entries[i + 1]))
                 return false;
         }
         return true;
@@ -2815,86 +2815,6 @@ var Turbo = (function (exports, yjs) {
         }
         finally {
             utils$a.activeEffect = prev;
-        }
-    }
-
-    /**
-     * @group Components
-     * @category TurboWeakSet
-     */
-    class TurboWeakSet {
-        _weakRefs;
-        constructor() {
-            this._weakRefs = new Set();
-        }
-        // Add an object as a WeakRef if it's not already in the set
-        add(obj) {
-            if (!this.has(obj))
-                this._weakRefs.add(new WeakRef(obj));
-            return this;
-        }
-        // Check if the set contains a WeakRef to the given object
-        has(obj) {
-            for (const weakRef of this._weakRefs) {
-                if (weakRef.deref() === obj)
-                    return true;
-            }
-            return false;
-        }
-        // Delete the WeakRef associated with the given object
-        delete(obj) {
-            for (const weakRef of this._weakRefs) {
-                if (weakRef.deref() === obj) {
-                    this._weakRefs.delete(weakRef);
-                    return true;
-                }
-            }
-            return false;
-        }
-        // Clean up any WeakRefs whose objects have been garbage-collected
-        cleanup() {
-            for (const weakRef of this._weakRefs) {
-                if (weakRef.deref() === undefined)
-                    this._weakRefs.delete(weakRef);
-            }
-        }
-        // Convert live objects in the TurboWeakSet to an array
-        toArray() {
-            const result = [];
-            for (const weakRef of this._weakRefs) {
-                const obj = weakRef.deref();
-                if (obj !== undefined)
-                    result.push(obj);
-                else
-                    this._weakRefs.delete(weakRef);
-            }
-            return result;
-        }
-        // Get the size of the TurboWeakSet (only live objects)
-        get size() {
-            return this.toArray().length;
-        }
-        // Clear all weak references
-        clear() {
-            this._weakRefs.clear();
-        }
-        forEach(callback, thisArg) {
-            for (const weakRef of this._weakRefs) {
-                const obj = weakRef.deref();
-                if (obj !== undefined)
-                    callback.call(thisArg, obj, obj, this);
-                else
-                    this._weakRefs.delete(weakRef);
-            }
-        }
-        *[Symbol.iterator]() {
-            for (const weakRef of this._weakRefs) {
-                const obj = weakRef.deref();
-                if (obj !== undefined)
-                    yield obj;
-                else
-                    this._weakRefs.delete(weakRef);
-            }
         }
     }
 
@@ -3979,9 +3899,8 @@ var Turbo = (function (exports, yjs) {
              */
             static ALL = Symbol("ALL");
             static from(data = {}, id) {
-                const model = new TurboModel({ data, id });
-                model.makeSignals(TurboModel.ALL);
-                const proxy = new Proxy(data, {
+                const model = TurboModel.create({ data, id, initialize: true, makeSignals: true });
+                return new Proxy(data, {
                     get(target, key) {
                         if (key === "$model")
                             return model;
@@ -3994,7 +3913,14 @@ var Turbo = (function (exports, yjs) {
                         return true;
                     }
                 });
-                return proxy;
+            }
+            static create(properties = {}) {
+                const model = new this(properties);
+                if (properties.initialize)
+                    model.initialize();
+                if (properties.makeSignals)
+                    model.makeSignals(TurboModel.ALL);
+                return model;
             }
             /**
              * @description The default constructor used to create nested {@link TurboModel} instances.
@@ -4029,10 +3955,9 @@ var Turbo = (function (exports, yjs) {
             fireCallbackHook;
             isInitialized = false;
             signals = new Map();
-            changeObservers = new TurboWeakSet();
+            changeObservers = new Set();
             nestedModels = new Map();
-            nestListener = false;
-            childObservers = new TurboWeakSet();
+            nestedListeners = new Set();
             /**
              * @description The ID of the data held by this model.
              */
@@ -4045,8 +3970,10 @@ var Turbo = (function (exports, yjs) {
                 return this._data;
             }
             set data(data) {
-                this.clear(false);
                 const oldData = this._data;
+                if (areEqual(oldData, data))
+                    return;
+                this.clear(false);
                 this._data = data;
                 if (data)
                     this.initialize();
@@ -4071,10 +3998,6 @@ var Turbo = (function (exports, yjs) {
                 if (typeof properties.bubbleChanges === "boolean")
                     this.bubbleChanges = properties.bubbleChanges;
                 this.setup();
-                if (properties.initialize)
-                    this.initialize();
-                if (properties.makeSignals)
-                    this.makeSignals(TurboModel.ALL);
                 this.onDataChanged.fire(undefined, this._data);
             }
             /**
@@ -4231,22 +4154,39 @@ var Turbo = (function (exports, yjs) {
              * @param {any} value - The value to set.
              */
             internalSet(model, data, value, key) {
+                if (isUndefined(key)) {
+                    if (!model || areEqual(model.data, value))
+                        return false;
+                    model.data = value;
+                    return true;
+                }
                 if (model) {
                     const nested = model.getNested(key);
                     if (nested)
                         nested.data = value;
                 }
-                if (!data)
-                    return;
+                if (!data || typeof data !== "object")
+                    return false;
                 const prev = this.getAction(data, key);
-                if (Object.is(prev, value))
-                    return;
+                if (prev === value || Object.is(prev, value))
+                    return false;
                 this.setAction(data, value, key);
-                if (model)
-                    model.keyChanged([key], value);
+                return true;
             }
             set(value, ...keys) {
-                this.routeMutation(keys, (data, key) => this.internalSet(data === this.data ? this : undefined, data, value, key), (model, keys) => model.set(value, ...keys));
+                let bool;
+                if (keys.length < 2)
+                    bool = this.internalSet(this, this.data, value, keys[0]);
+                else {
+                    const nested = this.getNested(keys[0]);
+                    if (nested)
+                        bool = nested.set(value, ...keys.slice(1));
+                    else
+                        bool = this.internalSet(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+                }
+                if (bool)
+                    this.keyChanged(keys, value);
+                return bool;
             }
             /**
              * @function setFlat
@@ -4258,7 +4198,8 @@ var Turbo = (function (exports, yjs) {
             setFlat(value, flatKey, depth) {
                 const keys = this.scopeKey(flatKey, depth);
                 if (keys?.length)
-                    this.set(value, ...keys);
+                    return this.set(value, ...keys);
+                return false;
             }
             /*
              *
@@ -4276,12 +4217,9 @@ var Turbo = (function (exports, yjs) {
              * @returns {KeyType} The index or key where the value was stored.
              */
             internalAdd(model, data, value, key) {
-                if (!data)
-                    return key;
-                key = this.addAction(model, data, value, key);
-                if (model)
-                    model.keyChanged([key], value);
-                return key;
+                if (!data || typeof data !== "object")
+                    return;
+                return this.addAction(model, data, value, key);
             }
             /**
              * @protected
@@ -4303,11 +4241,23 @@ var Turbo = (function (exports, yjs) {
                     data.splice(index, 0, value);
                     return index;
                 }
-                this.internalSet(model, data, value, key);
-                return key;
+                const bool = this.internalSet(model, data, value, key);
+                return bool ? key : undefined;
             }
             add(value, ...keys) {
-                return this.routeMutation(keys, (data, key) => this.internalAdd(data === this.data ? this : undefined, data, value, key), (nested, keys) => nested.add(value, ...keys));
+                let key;
+                if (keys.length < 2)
+                    key = this.internalAdd(this, this.data, value, keys[0]);
+                else {
+                    const nested = this.getNested(keys[0]);
+                    if (nested)
+                        key = nested.add(value, ...keys.slice(1));
+                    else
+                        key = this.internalAdd(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+                }
+                if (!isUndefined(key))
+                    this.keyChanged([...keys, key]);
+                return key;
             }
             /**
              * @function addFlat
@@ -4365,7 +4315,7 @@ var Turbo = (function (exports, yjs) {
              * DELETE
              *
              */
-            /**
+            /**å
              * @protected
              * @function deleteAction
              * @description Remove a single key from a container. Override this method to support other datatypes.
@@ -4401,11 +4351,24 @@ var Turbo = (function (exports, yjs) {
                     }
                 }
                 this.deleteAction(data, key);
-                if (model)
-                    model.keyChanged([key], undefined, true);
             }
             delete(...keys) {
-                return this.routeMutation(keys, (data, key) => this.internalDelete(data === this.data ? this : undefined, data, key), (nested, keys) => nested.delete(...keys));
+                if (keys.length === 0)
+                    return;
+                if (keys.length === 1)
+                    this.internalDelete(this, this.data, keys[0]);
+                else {
+                    const nested = this.getNested(keys[0]);
+                    if (nested)
+                        nested.delete(...keys.slice(1));
+                    else {
+                        const parentData = this.get(keys[0], ...keys.slice(1, -1));
+                        if (typeof parentData !== "object")
+                            return;
+                        this.internalDelete(undefined, parentData, keys[keys.length - 1]);
+                    }
+                }
+                this.keyChanged(keys, undefined, true);
             }
             /**
              * @function deleteFlat
@@ -4423,21 +4386,21 @@ var Turbo = (function (exports, yjs) {
              * KEYS
              *
              */
+            getKeysAction(data) {
+                if (!data || typeof data !== "object")
+                    return [];
+                if (Array.isArray(data))
+                    return Array.from({ length: data.length }, (_, i) => i);
+                if (data instanceof Map)
+                    return Array.from(data.keys());
+                return [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
+            }
             /**
              * @property keys
              * @description All keys currently present in the model.
              */
             get keys() {
-                if (!this.data || typeof this.data !== "object")
-                    return [];
-                if (Array.isArray(this.data))
-                    return Array.from({ length: this.data.length }, (_, i) => i);
-                if (this.data instanceof Map)
-                    return Array.from(this.data.keys());
-                return [
-                    ...Object.keys(this.data),
-                    ...Object.getOwnPropertySymbols(this.data)
-                ];
+                return this.getKeysAction(this.data);
             }
             /**
              * @property values
@@ -4506,8 +4469,17 @@ var Turbo = (function (exports, yjs) {
                 if (!this.data || this.isInitialized)
                     return;
                 this.isInitialized = true;
+                for (const [key, child] of this.nestedModels) {
+                    const newData = this.get(key);
+                    if (child.data !== newData)
+                        child.data = newData;
+                    else if (!child.isInitialized)
+                        child.initialize();
+                }
                 for (const key of this.keys)
                     this.keyChanged([key]);
+                for (const observer of this.changeObservers)
+                    observer.observer.initialize();
             }
             /**
              * @function clear
@@ -4517,12 +4489,16 @@ var Turbo = (function (exports, yjs) {
             clear(clearData = true) {
                 if (clearData)
                     this._data = undefined;
-                this.nestedModels.forEach(nested => nested.clear());
-                this.nestedModels.clear();
+                this.nestedModels.forEach(nested => nested.clear(clearData));
+                if (clearData)
+                    this.nestedModels.clear();
                 this.signals.clear();
-                this.nestListener = false;
-                this.childObservers?.toArray().forEach(e => this.childObservers?.delete(e));
-                this.changeObservers?.toArray().forEach(observer => observer.clear());
+                if (clearData)
+                    this.nestedListeners.clear();
+                if (clearData)
+                    this.changeObservers.forEach(e => this.changeObservers.delete(e));
+                else
+                    this.changeObservers.forEach(e => e.observer.clear());
                 this.isInitialized = false;
             }
             /**
@@ -4567,7 +4543,7 @@ var Turbo = (function (exports, yjs) {
                 };
                 const pathKeys = keys.slice(0, -1);
                 const signalKey = keys[keys.length - 1];
-                const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0], ...pathKeys.slice(1));
+                const models = this.nestAll(...pathKeys);
                 if (signalKey === TurboModel.ALL)
                     return models.flatMap(model => model.keys.map(k => maker(k, model)));
                 return models.map(model => maker(signalKey, model));
@@ -4588,7 +4564,10 @@ var Turbo = (function (exports, yjs) {
                 if (keys.length === 0)
                     return [this];
                 if (keys[0] === TurboModel.ALL) {
-                    this.nestListener = true;
+                    this.nestedListeners.add({
+                        listener: (selfKeys) => this.createNestedChild(this, selfKeys[0], properties).nestRecur(keys.slice(1), properties),
+                        keys: keys.slice(1)
+                    });
                     return this.keys.flatMap(key => this.createNestedChild(this, key, properties).nestRecur(keys.slice(1), properties));
                 }
                 else
@@ -4622,58 +4601,41 @@ var Turbo = (function (exports, yjs) {
              * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
              */
             generateObserver(properties = {}, ...keys) {
+                const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
                 const observer = new (properties.customConstructor
                     ?? this.observerConstructor
                     ?? (TurboObserver))({
-                    initialize: true,
                     ...properties,
+                    initialize: false,
                     onDestroy: (self) => {
-                        this.unregisterObserverFromPath(self, keys);
+                        Array.from(this.changeObservers)
+                            .filter(e => e.observer === self)
+                            .forEach(e => this.changeObservers.delete(e));
                         properties.onDestroy?.(self);
                     },
                     onInitialize: (self) => {
-                        this.initializeObserverOnPath(self, keys);
+                        this.initializeObserverOnPath(this.data, self, keys, []);
                         properties.onInitialize?.(self);
                     }
                 });
-                this.registerObserverOnPath(observer, keys);
+                this.changeObservers.add({ keys, observer });
+                if (initialize)
+                    observer.initialize();
                 return observer;
             }
-            initializeObserverOnPath(observer, keys) {
+            initializeObserverOnPath(data, observer, keys, prefixKeys) {
                 if (keys.length === 0) {
-                    if (this.isInitialized)
-                        for (const key of this.keys)
-                            observer.keyChanged([key], this.get(key));
+                    if (!this.isInitialized)
+                        return;
+                    for (const key of this.getKeysAction(data))
+                        observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
                 }
-                else if (keys[0] === TurboModel.ALL) {
-                    for (const child of this.nestedModels.values())
-                        child.initializeObserverOnPath(observer, keys.slice(1));
-                }
+                else if (keys[0] === TurboModel.ALL)
+                    for (const key of this.getKeysAction(data)) {
+                        this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+                    }
                 else
-                    this.getNested(keys[0])?.initializeObserverOnPath(observer, keys.slice(1));
-            }
-            registerObserverOnPath(observer, keys) {
-                if (keys.length === 0)
-                    this.changeObservers?.add(observer);
-                else if (keys[0] === TurboModel.ALL) {
-                    this.childObservers.add({ observer, keys: keys.slice(1) });
-                    for (const child of this.nestedModels.values())
-                        child.registerObserverOnPath(observer, keys.slice(1));
-                }
-                else
-                    this.getNested(keys[0])?.registerObserverOnPath(observer, keys.slice(1));
-            }
-            unregisterObserverFromPath(observer, keys) {
-                if (keys.length === 0)
-                    this.changeObservers?.delete(observer);
-                else if (keys[0] === TurboModel.ALL) {
-                    this.childObservers?.toArray().filter(e => e.observer === observer)
-                        .forEach(e => this.childObservers?.delete(e));
-                    for (const child of this.nestedModels.values())
-                        child.unregisterObserverFromPath(observer, keys.slice(1));
-                }
-                else
-                    this.getNested(keys[0])?.unregisterObserverFromPath(observer, keys.slice(1));
+                    this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]]);
             }
             /*
              *
@@ -4689,7 +4651,7 @@ var Turbo = (function (exports, yjs) {
              * @param {unknown} [value] - The new value. Defaults to the current value at the key.
              * @param {boolean} [deleted=false] - Whether the entry was removed.
              */
-            keyChanged(keys, value = this.get(keys[0]), deleted = false) {
+            keyChanged(keys, value = this.get(...keys), deleted = false) {
                 const key = keys[0];
                 if (key === undefined)
                     return;
@@ -4699,12 +4661,37 @@ var Turbo = (function (exports, yjs) {
                     this.signals.delete(key);
                 if (!this.enabledCallbacks)
                     return;
-                if (!deleted && !this.nestedModels.has(key) && this.nestListener) {
-                    const child = this.nest(key);
-                    this.childObservers?.toArray().forEach(({ observer, keys }) => child.registerObserverOnPath(observer, keys));
-                }
+                if (!deleted && !this.nestedModels.has(key) && this.nestedListeners.size > 0)
+                    this.nestedListeners.forEach(({ listener }) => listener(keys, value));
                 this.onKeyChanged.fire(value, ...keys);
-                this.changeObservers?.toArray().forEach(observer => observer.keyChanged(keys, value, deleted));
+                this.changeObservers.forEach(({ observer, keys: pattern }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+            }
+            matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted) {
+                if (!observer.isInitialized)
+                    return;
+                if (pattern.length === 0) {
+                    if (incomingKeys.length === 0) {
+                        if (!deleted && value !== null && typeof value === "object") {
+                            for (const key of this.getKeysAction(value)) {
+                                observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
+                            }
+                        }
+                    }
+                    else
+                        observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                    return;
+                }
+                if (incomingKeys.length === 0) {
+                    if (!deleted && value !== null && typeof value === "object") {
+                        for (const key of this.getKeysAction(value))
+                            this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+                    }
+                    return;
+                }
+                const [head, ...tail] = incomingKeys;
+                const [patternHead, ...patternTail] = pattern;
+                if (patternHead === TurboModel.ALL || patternHead === head)
+                    this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
             }
             static flattenSize(data, depth) {
                 if (!data || depth <= 0 || !Array.isArray(data))
@@ -4798,26 +4785,13 @@ var Turbo = (function (exports, yjs) {
                 this.clear(false);
                 this._data = data;
             }
-            routeMutation(keys, rawCallback, nestedCallback) {
-                const firstKey = keys[0];
-                const childKeys = keys.slice(1);
-                const nested = this.getNested(firstKey);
-                if (childKeys.length === 0)
-                    return rawCallback(this.data, firstKey);
-                if (nested)
-                    return nestedCallback(nested, childKeys);
-                const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
-                if (typeof parentData !== "object")
-                    return;
-                return rawCallback(parentData, childKeys[childKeys.length - 1]);
-            }
             fireCallback(key, value) {
                 this.fireCallbackHook?.(value, key);
             }
             createNestedChild(model, key, properties) {
                 if (model.nestedModels.has(key))
                     return model.nestedModels.get(key);
-                const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
+                const child = this.modelConstructor.create({ ...properties, data: model.get(key), initialize: this.isInitialized });
                 model.onKeyChanged.add((value, changedKey) => {
                     if (changedKey !== key)
                         return;
@@ -5181,7 +5155,9 @@ var Turbo = (function (exports, yjs) {
                 const mvc = utils$8.data(this.element);
                 utils$8.attachModel(this.element, this.model, false);
                 utils$8.updateModel(this.element, mvc.model, false);
-                mvc.model = utils$8.generateInstance(value);
+                if (!value)
+                    return;
+                mvc.model = typeof value === "function" ? value.create() : value;
                 utils$8.attachModel(this.element, mvc.model);
                 utils$8.linkPieces(this.element);
             },
@@ -5230,7 +5206,7 @@ var Turbo = (function (exports, yjs) {
         });
         Object.defineProperty(TurboSelector.prototype, "metadata", {
             get() {
-                return utils$8.peek(this.element)?.model?.metadata;
+                return utils$8.peek(this.element)?.model?.meta;
             },
             configurable: true, enumerable: true,
         });
@@ -5417,7 +5393,10 @@ var Turbo = (function (exports, yjs) {
             if (!operator.keyName)
                 operator.keyName =
                     utils$8.extractClassEssenceName(this.element, operator.constructor, "Operator");
-            utils$8.data(this.element).operators.set(operator.keyName, operator);
+            const data = utils$8.data(this.element);
+            if (data.operators.has(operator.keyName))
+                return this;
+            data.operators.set(operator.keyName, operator);
             utils$8.updateOperator(this.element, operator);
             return this;
         };
@@ -5436,7 +5415,10 @@ var Turbo = (function (exports, yjs) {
             if (!handler.keyName)
                 handler.keyName =
                     utils$8.extractClassEssenceName(this.element, handler.constructor, "Handler");
-            utils$8.data(this.element).model?.handlers.set(handler.keyName, handler);
+            const data = utils$8.data(this.element);
+            if (data.model?.handlers.has(handler.keyName))
+                return this;
+            data.model?.handlers.set(handler.keyName, handler);
             utils$8.updateHandler(this.element, handler);
             return this;
         };
@@ -5455,7 +5437,10 @@ var Turbo = (function (exports, yjs) {
             if (!interactor.keyName)
                 interactor.keyName =
                     utils$8.extractClassEssenceName(this.element, interactor.constructor, "Interactor");
-            utils$8.data(this.element).interactors.set(interactor.keyName, interactor);
+            const data = utils$8.data(this.element);
+            if (data.interactors.has(interactor.keyName))
+                return this;
+            data.interactors.set(interactor.keyName, interactor);
             utils$8.updateInteractor(this.element, interactor);
             return this;
         };
@@ -5474,7 +5459,10 @@ var Turbo = (function (exports, yjs) {
             if (!tool.keyName)
                 tool.keyName =
                     utils$8.extractClassEssenceName(this.element, tool.constructor, "Tool");
-            utils$8.data(this.element).tools.set(tool.keyName, tool);
+            const data = utils$8.data(this.element);
+            if (data.tools.has(tool.keyName))
+                return this;
+            data.tools.set(tool.keyName, tool);
             utils$8.updateTool(this.element, tool);
             return this;
         };
@@ -5493,7 +5481,10 @@ var Turbo = (function (exports, yjs) {
             if (!constrainer.keyName)
                 constrainer.keyName =
                     utils$8.extractClassEssenceName(this.element, constrainer.constructor, "Constrainer");
-            utils$8.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+            const data = utils$8.data(this.element);
+            if (data.constrainers.has(constrainer.keyName))
+                return this;
+            data.constrainers.set(constrainer.keyName, constrainer);
             utils$8.updateConstrainer(this.element, constrainer);
             return this;
         };
@@ -5754,11 +5745,12 @@ var Turbo = (function (exports, yjs) {
         static defaultProperties = {
             defaultSelectedClasses: "selected"
         };
-        static create(properties = {}) {
-            const prototypeChain = getPrototypeChain(this);
-            for (const prototype of prototypeChain)
-                turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
-            return this.customCreate.call(this, properties);
+        // public static create<Type extends new (...args: any[]) => TurboElement>
+        // (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+        //     return (this as any).customCreate.call(this, properties);
+        // }
+        static create(properties) {
+            return this.customCreate(properties ?? {});
         }
         static customCreate(properties) {
             const prototypeChain = getPrototypeChain(this);
@@ -7954,6 +7946,86 @@ var Turbo = (function (exports, yjs) {
                 $(element).onToolActivate(toolName).fire();
             else
                 $(element).onToolDeactivate(toolName).fire();
+        }
+    }
+
+    /**
+     * @group Components
+     * @category TurboWeakSet
+     */
+    class TurboWeakSet {
+        _weakRefs;
+        constructor() {
+            this._weakRefs = new Set();
+        }
+        // Add an object as a WeakRef if it's not already in the set
+        add(obj) {
+            if (!this.has(obj))
+                this._weakRefs.add(new WeakRef(obj));
+            return this;
+        }
+        // Check if the set contains a WeakRef to the given object
+        has(obj) {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === obj)
+                    return true;
+            }
+            return false;
+        }
+        // Delete the WeakRef associated with the given object
+        delete(obj) {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === obj) {
+                    this._weakRefs.delete(weakRef);
+                    return true;
+                }
+            }
+            return false;
+        }
+        // Clean up any WeakRefs whose objects have been garbage-collected
+        cleanup() {
+            for (const weakRef of this._weakRefs) {
+                if (weakRef.deref() === undefined)
+                    this._weakRefs.delete(weakRef);
+            }
+        }
+        // Convert live objects in the TurboWeakSet to an array
+        toArray() {
+            const result = [];
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    result.push(obj);
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+            return result;
+        }
+        // Get the size of the TurboWeakSet (only live objects)
+        get size() {
+            return this.toArray().length;
+        }
+        // Clear all weak references
+        clear() {
+            this._weakRefs.clear();
+        }
+        forEach(callback, thisArg) {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    callback.call(thisArg, obj, obj, this);
+                else
+                    this._weakRefs.delete(weakRef);
+            }
+        }
+        *[Symbol.iterator]() {
+            for (const weakRef of this._weakRefs) {
+                const obj = weakRef.deref();
+                if (obj !== undefined)
+                    yield obj;
+                else
+                    this._weakRefs.delete(weakRef);
+            }
         }
     }
 
@@ -12820,9 +12892,9 @@ var Turbo = (function (exports, yjs) {
                 if (!this.data || !(this.data instanceof yjs.AbstractType))
                     return;
                 if (value)
-                    this.data.observe(this.observer);
+                    this.attachNestedObservers(this.data);
                 else
-                    this.data.unobserve(this.observer);
+                    this.detachNestedObservers(this.data);
             }
             /*
              *
@@ -12844,12 +12916,12 @@ var Turbo = (function (exports, yjs) {
              */
             setAction(data, value, key) {
                 if (data instanceof yjs.Map)
-                    data.set(key.toString(), value);
+                    data.doc.transact(() => data.set(key.toString(), value), this);
                 else if (data instanceof yjs.Array) {
                     const index = trim(Number(key), data.length + 1);
                     if (index < data.length)
                         data.delete(index, 1);
-                    data.insert(index, [value]);
+                    data.doc.transact(() => data.insert(index, [value]), this);
                 }
                 else
                     super.setAction(data, value, key);
@@ -12862,12 +12934,12 @@ var Turbo = (function (exports, yjs) {
                     let index = key;
                     if (isUndefined(index) || typeof index !== "number" || index > data.length) {
                         index = data.length;
-                        data.push([value]);
+                        data.doc.transact(() => data.push([value]), this);
                     }
                     else {
                         if (index < 0)
                             index = 0;
-                        data.insert(index, [value]);
+                        data.doc.transact(() => data.insert(index, [value]), this);
                     }
                     return index;
                 }
@@ -12888,25 +12960,25 @@ var Turbo = (function (exports, yjs) {
              */
             deleteAction(data, key) {
                 if (data instanceof yjs.Map)
-                    data.delete(key.toString());
+                    data.doc.transact(() => data.delete(key.toString()), this);
                 else if (data instanceof yjs.Array && typeof key === "number" && key >= 0 && key < this.dataSize)
-                    data.delete(key, 1);
+                    data.doc.transact(() => data.delete(key, 1), this);
                 else
                     super.deleteAction(data, key);
             }
             /**
              * @inheritDoc
              */
-            get keys() {
-                if (this.data instanceof yjs.Map)
-                    return Array.from(this.data.keys());
-                if (this.data instanceof yjs.Array) {
+            getKeysAction(data) {
+                if (data instanceof yjs.Map)
+                    return Array.from(data.keys());
+                if (data instanceof yjs.Array) {
                     const output = [];
-                    for (let i = 0; i < this.data.length; i++)
+                    for (let i = 0; i < data.length; i++)
                         output.push(i);
                     return output;
                 }
-                return super.keys;
+                return super.getKeysAction(data);
             }
             /**
              * @inheritDoc
@@ -12914,7 +12986,7 @@ var Turbo = (function (exports, yjs) {
             initialize() {
                 super.initialize();
                 if (this.enabledCallbacks && this.data instanceof yjs.AbstractType)
-                    this.data?.observe(this.observer);
+                    this.attachNestedObservers(this.data);
             }
             /**
              * @inheritDoc
@@ -12930,18 +13002,22 @@ var Turbo = (function (exports, yjs) {
              *
              */
             observeChanges(event, transaction) {
-                //TODO
-                !!transaction?.local;
-                transaction?.origin;
+                !!transaction?.local; //TODO
+                const origin = transaction?.origin;
+                if (origin === this)
+                    return;
+                const basePath = this.getPathToTarget(event.target);
                 if (event instanceof yjs.YMapEvent) {
                     event.keysChanged.forEach(key => {
                         const change = event.changes.keys.get(key);
                         if (!change)
                             return;
                         if (change.action === "delete")
-                            this.keyChanged([key], undefined, true);
-                        else
-                            this.keyChanged([key]);
+                            this.keyChanged([...basePath, key], undefined, true);
+                        else {
+                            this.attachNestedObservers(this.getAction(event.target, key));
+                            this.keyChanged([...basePath, key]);
+                        }
                     });
                 }
                 else if (event instanceof yjs.YArrayEvent) {
@@ -12954,21 +13030,40 @@ var Turbo = (function (exports, yjs) {
                             const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                             const count = insertedItems.length;
                             this.shiftIndices(currentIndex, count);
-                            for (let i = 0; i < count; i++)
-                                this.keyChanged([currentIndex + i]);
+                            for (let i = 0; i < count; i++) {
+                                this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                                this.keyChanged([...basePath, currentIndex + i]);
+                            }
                             currentIndex += count;
                         }
                         else if (delta.delete) {
                             const count = delta.delete;
                             for (let i = 0; i < count; i++)
-                                this.keyChanged([currentIndex + i], undefined, true);
+                                this.keyChanged([...basePath, currentIndex + i], undefined, true);
                             this.shiftIndices(currentIndex + count, -count);
                         }
                     }
                 }
             }
+            attachNestedObservers(value) {
+                if (!(value instanceof yjs.AbstractType))
+                    return;
+                value.observe(this.observer);
+                for (const key of this.getKeysAction(value)) {
+                    if (!this.nestedModels.has(key))
+                        this.attachNestedObservers(this.getAction(value, key));
+                }
+            }
+            detachNestedObservers(value) {
+                if (!(value instanceof yjs.AbstractType))
+                    return;
+                value.unobserve(this.observer);
+                for (const key of this.getKeysAction(value))
+                    this.detachNestedObservers(this.getAction(value, key));
+            }
             shiftIndices(fromIndex, offset) {
-                this.changeObservers?.toArray().forEach(observer => {
+                Array.from(this.changeObservers).forEach(entry => {
+                    const observer = entry.observer;
                     const pathsToShift = observer.paths
                         .filter(path => Number(path[0]) >= fromIndex);
                     const itemsToShift = pathsToShift
@@ -12982,6 +13077,20 @@ var Turbo = (function (exports, yjs) {
                         observer.set(instance, newIndex, ...path.slice(1));
                     }
                 });
+            }
+            getPathToTarget(target) {
+                const search = (current, path) => {
+                    if (current === target)
+                        return path;
+                    for (const key of this.getKeysAction(current)) {
+                        const child = this.getAction(current, key);
+                        const result = search(child, [...path, key]);
+                        if (result)
+                            return result;
+                    }
+                    return null;
+                };
+                return search(this.data, []) ?? [];
             }
         };
     })();
@@ -14505,7 +14614,7 @@ var Turbo = (function (exports, yjs) {
             set size(value) { this.#size_accessor_storage = value; }
             setupChangedCallbacks() {
                 super.setupChangedCallbacks();
-                this.emitter.add("processValue", () => this.processInputValue());
+                this.emitter?.add("processValue", () => this.processInputValue());
             }
             setupUIListeners() {
                 super.setupUIListeners();

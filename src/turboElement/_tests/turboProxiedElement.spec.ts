@@ -1,19 +1,19 @@
 import {describe, it, expect} from "vitest";
 import {TurboProxiedElement} from "../turboProxiedElement/turboProxiedElement";
 import {div} from "../../elementCreation/basicElements";
+import {turbo} from "../../turboFunctions/turboFunctions";
 
 class TE extends TurboProxiedElement<"div"> {
 }
 
 describe("TurboProxiedElement: selected toggling", () => {
     it("adds/removes the default selected class on the wrapped element", () => {
-        TE.defaultProperties = {defaultSelectedClasses: "mySel"};
         const p = TE.create({tag: "div"});
-
-        p.selected = true;
+        turbo(p).defaultSelectedClasses = "mySel";
+        turbo(p).selected = true;
         expect(p.element.classList.contains("mySel")).toBe(true);
 
-        p.selected = false;
+        turbo(p).selected = false;
         expect(p.element.classList.contains("mySel")).toBe(false);
     });
 
@@ -24,7 +24,7 @@ describe("TurboProxiedElement: selected toggling", () => {
         const p = (class extends TurboProxiedElement<"div"> {}).create({tag: "div"});
         document.body.appendChild(p.element);
 
-        p.selected = true;
+        turbo(p).selected = true;
         expect(p.element.classList.contains("selected")).toBe(true);
         expect(host.classList.contains("selected")).toBe(false);
     });

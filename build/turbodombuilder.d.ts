@@ -967,24 +967,6 @@ type SignalBox<Type> = Type & SignalEntry<Type> & {
 };
 
 /**
- * @group Components
- * @category TurboWeakSet
- */
-declare class TurboWeakSet<Type extends object = object> {
-    private readonly _weakRefs;
-    constructor();
-    add(obj: Type): this;
-    has(obj: Type): boolean;
-    delete(obj: Type): boolean;
-    cleanup(): void;
-    toArray(): Type[];
-    get size(): number;
-    clear(): void;
-    forEach(callback: (value: Type, set: this) => void, thisArg?: any): void;
-    [Symbol.iterator](): IterableIterator<Type>;
-}
-
-/**
  * @class TurboHandler
  * @group MVC
  * @category Handler
@@ -1015,8 +997,12 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
     protected setup(): void;
 }
 
-type ChildObserverData = {
-    observer: TurboObserver;
+type ObserverData<DataType = any, ComponentType extends object = any, DataKeyType extends KeyType = KeyType> = {
+    observer: TurboObserver<DataType, ComponentType, DataKeyType>;
+    keys: KeyType[];
+};
+type ListenerData = {
+    listener: (keys: KeyType[], value: any) => void;
     keys: KeyType[];
 };
 /**
@@ -1040,6 +1026,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      */
     static readonly ALL: unique symbol;
     static from<DataType extends object = any, IdType extends KeyType = any>(data?: DataType, id?: IdType): TurboModelProxy<DataType, IdType>;
+    static create<DataType = any, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any>(properties?: TurboModelProperties): TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType>;
     /**
      * @description The default constructor used to create nested {@link TurboModel} instances.
      */
@@ -1069,10 +1056,9 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
     fireCallbackHook: (value: any, key: string) => void;
     protected isInitialized: boolean;
     private readonly signals;
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>>;
+    protected readonly changeObservers: Set<ObserverData<DataEntryType, ComponentType, DataKeyType>>;
     protected readonly nestedModels: Map<DataKeyType, TurboModel>;
-    protected nestListener: boolean;
-    protected readonly childObservers: TurboWeakSet<ChildObserverData>;
+    protected nestedListeners: Set<ListenerData>;
     /**
      * @description The ID of the data held by this model.
      */
@@ -1179,21 +1165,21 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @param {KeyType} key - The key to write.
      * @param {any} value - The value to set.
      */
-    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType): void;
+    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType): boolean;
     /**
      * @function set
      * @description Set a value at the given key and notify observers and signals if the value changed.
      * @param {KeyType} key - The key to write.
      * @param {unknown} value - The value to set.
      */
-    set(value: unknown, key: DataKeyType): void;
+    set(value: unknown, key: DataKeyType): boolean;
     /**
      * @function set
      * @description Set a value at the given key path and notify observers and signals if the value changed.
      * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @param {unknown} value - The value to set.
      */
-    set(value: unknown, ...keys: KeyType[]): void;
+    set(value: unknown, ...keys: KeyType[]): boolean;
     /**
      * @function setFlat
      * @description Set a value at the given flat key.
@@ -1201,7 +1187,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
      * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
      */
-    setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): void;
+    setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): boolean;
     /**
      * @protected
      * @function internalAdd
@@ -1289,7 +1275,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @returns {boolean}
      */
     hasFlat(flatKey: FlatKeyType, depth?: number): boolean;
-    /**
+    /**å
      * @protected
      * @function deleteAction
      * @description Remove a single key from a container. Override this method to support other datatypes.
@@ -1327,6 +1313,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
      */
     deleteFlat(flatKey: FlatKeyType, depth?: number): void;
+    protected getKeysAction(data: any): KeyType[];
     /**
      * @property keys
      * @description All keys currently present in the model.
@@ -1506,9 +1493,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
      */
     generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType>, ...keys: KeyType[]): TurboObserver<DataEntryType, ComponentType, DataKeyType>;
-    protected initializeObserverOnPath(observer: TurboObserver, keys: KeyType[]): void;
-    protected registerObserverOnPath(observer: TurboObserver, keys: KeyType[]): void;
-    protected unregisterObserverFromPath(observer: TurboObserver, keys: KeyType[]): void;
+    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[]): void;
     /**
      * @protected
      * @function keyChanged
@@ -1519,6 +1504,7 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @param {boolean} [deleted=false] - Whether the entry was removed.
      */
     protected keyChanged(keys: KeyType[], value?: unknown, deleted?: boolean): void;
+    private matchObserverAndNotify;
     private static flattenSize;
     /**
      * @function flattenKey
@@ -1562,7 +1548,6 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      */
     addHandler(handler: TurboHandler): void;
     setDataWithoutInitializing(data: DataType): void;
-    private routeMutation;
     fireCallback(key: string, value?: any): void;
     private createNestedChild;
 }
@@ -3765,6 +3750,24 @@ declare class TurboMap<KeyType, ValueType> extends Map<KeyType, ValueType> {
     merge(map: Map<KeyType, ValueType>): TurboMap<KeyType, ValueType>;
 }
 
+/**
+ * @group Components
+ * @category TurboWeakSet
+ */
+declare class TurboWeakSet<Type extends object = object> {
+    private readonly _weakRefs;
+    constructor();
+    add(obj: Type): this;
+    has(obj: Type): boolean;
+    delete(obj: Type): boolean;
+    cleanup(): void;
+    toArray(): Type[];
+    get size(): number;
+    clear(): void;
+    forEach(callback: (value: Type, set: this) => void, thisArg?: any): void;
+    [Symbol.iterator](): IterableIterator<Type>;
+}
+
 declare class TurboEventManagerModel extends TurboModel {
     utils: TurboEventManagerUtilsHandler;
     readonly state: TurboEventManagerStateProperties;
@@ -5538,7 +5541,7 @@ type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataT
  * @category TurboModel
  */
 declare class TurboYModel<DataType = any, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
-    private observer;
+    private readonly observer;
     /**
      * @inheritDoc
      */
@@ -5570,7 +5573,7 @@ declare class TurboYModel<DataType = any, DataKeyType extends KeyType = any, IdT
     /**
      * @inheritDoc
      */
-    get keys(): DataKeyType[];
+    protected getKeysAction(data: any): KeyType[];
     /**
      * @inheritDoc
      */
@@ -5580,7 +5583,10 @@ declare class TurboYModel<DataType = any, DataKeyType extends KeyType = any, IdT
      */
     clear(clearData?: boolean): void;
     protected observeChanges(event: YEvent, transaction: any): void;
+    private attachNestedObservers;
+    private detachNestedObservers;
     private shiftIndices;
+    private getPathToTarget;
 }
 
 /**
@@ -5600,7 +5606,7 @@ declare class TurboElement<ViewType extends TurboView = TurboView<any, any>, Dat
      * @description Default properties assigned to a new instance.
      */
     static defaultProperties: TurboElementProperties;
-    static create<Type extends new (...args: any[]) => TurboElement>(this: Type, properties?: InstanceType<Type>["properties"]): InstanceType<Type>;
+    static create<Type extends new (...args: any[]) => TurboElement, PropertiesType extends InstanceType<Type>["properties"]>(this: Type, properties?: PropertiesType): InstanceType<Type>;
     protected static customCreate(properties: object): object;
     readonly properties: TurboElementProperties;
     /**
@@ -6586,7 +6592,6 @@ declare class TurboLabelElement<ElementTag extends ValidTag = any, ViewType exte
 declare class TurboInput<InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboLabelElement<InputTag, ViewType, DataType, ModelType, EmitterType> {
     readonly properties: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
     static defaultProperties: TurboInputProperties;
-    static create: <InputTag extends "input" | "textarea" = "input", ValueType = string, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter>(properties?: TurboInputProperties<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>) => TurboInput<InputTag, ValueType, ViewType, DataType, ModelType, EmitterType>;
     protected static customCreate(properties: TurboInputProperties): object;
     locked: boolean;
     selectTextOnFocus: boolean;
@@ -6633,7 +6638,7 @@ type TurboNumericalInputProperties<ValueType = string, ViewType extends TurboVie
  * @category TurboNumericalInput
  */
 declare class TurboNumericalInput<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
-    readonly properties: TurboNumericalInputProperties;
+    readonly properties: TurboNumericalInputProperties<number, ViewType, DataType, ModelType, EmitterType>;
     static defaultProperties: TurboNumericalInputProperties;
     multiplier: number;
     decimalPlaces: number;

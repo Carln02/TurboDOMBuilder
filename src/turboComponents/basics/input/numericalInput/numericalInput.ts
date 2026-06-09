@@ -15,7 +15,8 @@ class TurboNumericalInput<
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
 > extends TurboInput<"input", number, ViewType, DataType, ModelType, EmitterType> {
-     public declare readonly properties: TurboNumericalInputProperties;
+     public declare readonly properties: TurboNumericalInputProperties<number, ViewType, DataType, ModelType, EmitterType>;
+
     public static defaultProperties: TurboNumericalInputProperties = {
         inputRegexCheck: /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?\.?$|^-$|^$/,
         blurRegexCheck: /^(?!-0?(\.0+)?$)-?(0|[1-9]\d*)?(\.\d+)?(?<=\d)$/,

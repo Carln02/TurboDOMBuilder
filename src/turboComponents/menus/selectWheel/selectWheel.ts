@@ -27,7 +27,6 @@ import {Propagation} from "../../../turboFunctions/event/event.types";
  * @extends TurboSelect
  * @description Class to create a dynamic selection wheel.
  * @template {string} ValueType
- * @template {TurboSelectEntry<ValueType, any>} EntryType
  */
 class TurboSelectWheel<
     ValueType = string,

@@ -9022,6 +9022,13 @@
           if (!this.element || !type || !(this.element instanceof Element))
               return null;
           if (typeof type === "string") {
+              const constructor = customElements.get(type);
+              if (constructor) {
+                  let element = this.element;
+                  while (element && !(element instanceof constructor))
+                      element = element.parentElement;
+                  return element || null;
+              }
               return this.element.closest(type);
           }
           else if (typeof type === "function") {
@@ -9712,6 +9719,20 @@
       }
       return str;
   }
+
+  /**
+   * @group Utilities
+   * @category Equity
+   */
+  function areEqual(...entries) {
+      if (entries.length < 2)
+          return true;
+      for (let i = 0; i < entries.length - 1; i++) {
+          if (!Object.is(entries[i], entries[i + 1]))
+              return false;
+      }
+      return true;
+  }
   function areSimilar(...entries) {
       if (entries.length < 2)
           return true;
@@ -10195,86 +10216,6 @@
   }
 
   /**
-   * @group Components
-   * @category TurboWeakSet
-   */
-  class TurboWeakSet {
-      _weakRefs;
-      constructor() {
-          this._weakRefs = new Set();
-      }
-      // Add an object as a WeakRef if it's not already in the set
-      add(obj) {
-          if (!this.has(obj))
-              this._weakRefs.add(new WeakRef(obj));
-          return this;
-      }
-      // Check if the set contains a WeakRef to the given object
-      has(obj) {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === obj)
-                  return true;
-          }
-          return false;
-      }
-      // Delete the WeakRef associated with the given object
-      delete(obj) {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === obj) {
-                  this._weakRefs.delete(weakRef);
-                  return true;
-              }
-          }
-          return false;
-      }
-      // Clean up any WeakRefs whose objects have been garbage-collected
-      cleanup() {
-          for (const weakRef of this._weakRefs) {
-              if (weakRef.deref() === undefined)
-                  this._weakRefs.delete(weakRef);
-          }
-      }
-      // Convert live objects in the TurboWeakSet to an array
-      toArray() {
-          const result = [];
-          for (const weakRef of this._weakRefs) {
-              const obj = weakRef.deref();
-              if (obj !== undefined)
-                  result.push(obj);
-              else
-                  this._weakRefs.delete(weakRef);
-          }
-          return result;
-      }
-      // Get the size of the TurboWeakSet (only live objects)
-      get size() {
-          return this.toArray().length;
-      }
-      // Clear all weak references
-      clear() {
-          this._weakRefs.clear();
-      }
-      forEach(callback, thisArg) {
-          for (const weakRef of this._weakRefs) {
-              const obj = weakRef.deref();
-              if (obj !== undefined)
-                  callback.call(thisArg, obj, obj, this);
-              else
-                  this._weakRefs.delete(weakRef);
-          }
-      }
-      *[Symbol.iterator]() {
-          for (const weakRef of this._weakRefs) {
-              const obj = weakRef.deref();
-              if (obj !== undefined)
-                  yield obj;
-              else
-                  this._weakRefs.delete(weakRef);
-          }
-      }
-  }
-
-  /**
    * @internal
    * @class SimpleDelegate
    * @template {(...args: any[]) => any} CallbackType - The type of callbacks accepted by the delegate.
@@ -10390,11 +10331,12 @@
        * @function getFlat
        * @description Retrieve the value at the given flat key.
        * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+       * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
        * @returns {ValueType | undefined} The stored value, or `undefined` if not found.
        */
-      getFlat(flatKey) {
-          const keys = this.scopeKey(flatKey);
-          if (keys.length)
+      getFlat(flatKey, depth) {
+          const keys = this.scopeKey(flatKey, depth);
+          if (keys?.length)
               return this.get(...keys);
       }
       /**
@@ -10455,10 +10397,11 @@
        * @description Store a value at the given flat key.
        * @param {ValueType} value - The value to store.
        * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+       * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
        */
-      setFlat(value, flatKey) {
-          const keys = this.scopeKey(flatKey);
-          if (keys.length)
+      setFlat(value, flatKey, depth) {
+          const keys = this.scopeKey(flatKey, depth);
+          if (keys?.length)
               this.set(value, ...keys);
       }
       /*
@@ -10484,11 +10427,12 @@
        * @function hasFlat
        * @description Check whether an entry exists at the given flat key.
        * @param {number | string} flatKey - A flat key produced by {@link flattenKey}.
+       * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
        * @returns {boolean}
        */
-      hasFlat(flatKey) {
-          const keys = this.scopeKey(flatKey);
-          return keys.length ? this.has(...keys) : false;
+      hasFlat(flatKey, depth) {
+          const keys = this.scopeKey(flatKey, depth);
+          return keys?.length ? this.has(...keys) : false;
       }
       /**
        * @function hasValue
@@ -10660,9 +10604,9 @@
               return;
           if (compatible.every(k => typeof k === "number")) {
               let index = 0;
-              const allLeafPaths = this.findPaths(this.nestedMap);
+              const allLeafPaths = this.findPaths(this.nestedMap).filter(p => p.length === keys.length);
               for (const path of allLeafPaths) {
-                  if (path.length === keys.length && path.every((k, i) => k === keys[i]))
+                  if (path.every((k, i) => k === keys[i]))
                       return index;
                   index++;
               }
@@ -10675,15 +10619,18 @@
        * - A string `"k0|k1|k2"` becomes `[k0, k1, k2]`.
        * - A numeric global leaf index becomes the corresponding numeric path.
        * @param {number | string} flatKey - The flat key to convert.
+       * @param {number} [depth] - Optional depth of the entry for numerical flat keys.
        * @returns {KeyType[] | undefined} The key path, or `undefined` if conversion fails.
        */
-      scopeKey(flatKey) {
+      scopeKey(flatKey, depth) {
           if (typeof flatKey === "string") {
               const parts = flatKey.split("|");
               return parts.length >= 1 ? parts : undefined;
           }
           if (typeof flatKey === "number") {
-              const allLeafPaths = this.findPaths(this.nestedMap);
+              const allLeafPaths = depth !== undefined
+                  ? this.findPaths(this.nestedMap).filter(p => p.length === depth)
+                  : this.findPaths(this.nestedMap);
               if (flatKey < 0)
                   return allLeafPaths[0];
               if (flatKey >= allLeafPaths.length)
@@ -10800,14 +10747,10 @@
               else {
                   if (typeof instance !== "object")
                       return;
-                  if ("model" in instance && instance.model instanceof TurboModel)
-                      instance.model.set(data, ...keys);
-                  else {
-                      if ("data" in instance)
-                          instance.data = data;
-                      if ("dataId" in instance)
-                          instance.dataId = keys[keys.length - 1].toString();
-                  }
+                  if ("data" in instance)
+                      instance.data = data;
+                  if ("dataId" in instance)
+                      instance.dataId = keys[keys.length - 1].toString();
               }
           });
           this.onDeleted.add((data, instance, self, ...keys) => {
@@ -11256,9 +11199,8 @@
            */
           static ALL = Symbol("ALL");
           static from(data = {}, id) {
-              const model = new TurboModel({ data, id });
-              model.makeSignals(TurboModel.ALL);
-              const proxy = new Proxy(data, {
+              const model = TurboModel.create({ data, id, initialize: true, makeSignals: true });
+              return new Proxy(data, {
                   get(target, key) {
                       if (key === "$model")
                           return model;
@@ -11271,7 +11213,14 @@
                       return true;
                   }
               });
-              return proxy;
+          }
+          static create(properties = {}) {
+              const model = new this(properties);
+              if (properties.initialize)
+                  model.initialize();
+              if (properties.makeSignals)
+                  model.makeSignals(TurboModel.ALL);
+              return model;
           }
           /**
            * @description The default constructor used to create nested {@link TurboModel} instances.
@@ -11302,11 +11251,13 @@
            * by the key path as spread arguments.
            */
           onKeyChanged = (__runInitializers$1(this, _bubbleChanges_extraInitializers), new Delegate());
+          onDataChanged = new Delegate();
+          fireCallbackHook;
           isInitialized = false;
           signals = new Map();
-          changeObservers = new TurboWeakSet();
+          changeObservers = new Set();
           nestedModels = new Map();
-          nestListeners = new Set();
+          nestedListeners = new Set();
           /**
            * @description The ID of the data held by this model.
            */
@@ -11319,15 +11270,19 @@
               return this._data;
           }
           set data(data) {
+              const oldData = this._data;
+              if (areEqual(oldData, data))
+                  return;
               this.clear(false);
               this._data = data;
               if (data)
                   this.initialize();
+              this.onDataChanged.fire(oldData, data);
           }
           /**
            * @description The metadata held by this model. Separate from this model's data.
            */
-          get metadata() {
+          get meta() {
               return this.nest(META);
           }
           /**
@@ -11343,10 +11298,7 @@
               if (typeof properties.bubbleChanges === "boolean")
                   this.bubbleChanges = properties.bubbleChanges;
               this.setup();
-              if (properties.initialize)
-                  this.initialize();
-              if (properties.makeSignals)
-                  this.makeSignals(TurboModel.ALL);
+              this.onDataChanged.fire(undefined, this._data);
           }
           /**
            * @function setup
@@ -11502,22 +11454,39 @@
            * @param {any} value - The value to set.
            */
           internalSet(model, data, value, key) {
+              if (isUndefined(key)) {
+                  if (!model || areEqual(model.data, value))
+                      return false;
+                  model.data = value;
+                  return true;
+              }
               if (model) {
                   const nested = model.getNested(key);
                   if (nested)
                       nested.data = value;
               }
-              if (!data)
-                  return;
+              if (!data || typeof data !== "object")
+                  return false;
               const prev = this.getAction(data, key);
-              if (Object.is(prev, value))
-                  return;
+              if (prev === value || Object.is(prev, value))
+                  return false;
               this.setAction(data, value, key);
-              if (model)
-                  model.keyChanged([key], value);
+              return true;
           }
           set(value, ...keys) {
-              this.routeMutation(keys, (data, key) => this.internalSet(data === this.data ? this : undefined, data, value, key), (model, keys) => model.set(value, ...keys));
+              let bool;
+              if (keys.length < 2)
+                  bool = this.internalSet(this, this.data, value, keys[0]);
+              else {
+                  const nested = this.getNested(keys[0]);
+                  if (nested)
+                      bool = nested.set(value, ...keys.slice(1));
+                  else
+                      bool = this.internalSet(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+              }
+              if (bool)
+                  this.keyChanged(keys, value);
+              return bool;
           }
           /**
            * @function setFlat
@@ -11529,7 +11498,8 @@
           setFlat(value, flatKey, depth) {
               const keys = this.scopeKey(flatKey, depth);
               if (keys?.length)
-                  this.set(value, ...keys);
+                  return this.set(value, ...keys);
+              return false;
           }
           /*
            *
@@ -11547,12 +11517,9 @@
            * @returns {KeyType} The index or key where the value was stored.
            */
           internalAdd(model, data, value, key) {
-              if (!data)
-                  return key;
-              key = this.addAction(model, data, value, key);
-              if (model)
-                  model.keyChanged([key], value);
-              return key;
+              if (!data || typeof data !== "object")
+                  return;
+              return this.addAction(model, data, value, key);
           }
           /**
            * @protected
@@ -11574,11 +11541,23 @@
                   data.splice(index, 0, value);
                   return index;
               }
-              this.internalSet(model, data, value, key);
-              return key;
+              const bool = this.internalSet(model, data, value, key);
+              return bool ? key : undefined;
           }
           add(value, ...keys) {
-              return this.routeMutation(keys, (data, key) => this.internalAdd(data === this.data ? this : undefined, data, value, key), (nested, keys) => nested.add(value, ...keys));
+              let key;
+              if (keys.length < 2)
+                  key = this.internalAdd(this, this.data, value, keys[0]);
+              else {
+                  const nested = this.getNested(keys[0]);
+                  if (nested)
+                      key = nested.add(value, ...keys.slice(1));
+                  else
+                      key = this.internalAdd(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+              }
+              if (!isUndefined(key))
+                  this.keyChanged([...keys, key]);
+              return key;
           }
           /**
            * @function addFlat
@@ -11636,7 +11615,7 @@
            * DELETE
            *
            */
-          /**
+          /**å
            * @protected
            * @function deleteAction
            * @description Remove a single key from a container. Override this method to support other datatypes.
@@ -11672,11 +11651,24 @@
                   }
               }
               this.deleteAction(data, key);
-              if (model)
-                  model.keyChanged([key], undefined, true);
           }
           delete(...keys) {
-              return this.routeMutation(keys, (data, key) => this.internalDelete(data === this.data ? this : undefined, data, key), (nested, keys) => nested.delete(...keys));
+              if (keys.length === 0)
+                  return;
+              if (keys.length === 1)
+                  this.internalDelete(this, this.data, keys[0]);
+              else {
+                  const nested = this.getNested(keys[0]);
+                  if (nested)
+                      nested.delete(...keys.slice(1));
+                  else {
+                      const parentData = this.get(keys[0], ...keys.slice(1, -1));
+                      if (typeof parentData !== "object")
+                          return;
+                      this.internalDelete(undefined, parentData, keys[keys.length - 1]);
+                  }
+              }
+              this.keyChanged(keys, undefined, true);
           }
           /**
            * @function deleteFlat
@@ -11694,21 +11686,21 @@
            * KEYS
            *
            */
+          getKeysAction(data) {
+              if (!data || typeof data !== "object")
+                  return [];
+              if (Array.isArray(data))
+                  return Array.from({ length: data.length }, (_, i) => i);
+              if (data instanceof Map)
+                  return Array.from(data.keys());
+              return [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
+          }
           /**
            * @property keys
            * @description All keys currently present in the model.
            */
           get keys() {
-              if (!this.data || typeof this.data !== "object")
-                  return [];
-              if (Array.isArray(this.data))
-                  return Array.from({ length: this.data.length }, (_, i) => i);
-              if (this.data instanceof Map)
-                  return Array.from(this.data.keys());
-              return [
-                  ...Object.keys(this.data),
-                  ...Object.getOwnPropertySymbols(this.data)
-              ];
+              return this.getKeysAction(this.data);
           }
           /**
            * @property values
@@ -11777,8 +11769,17 @@
               if (!this.data || this.isInitialized)
                   return;
               this.isInitialized = true;
+              for (const [key, child] of this.nestedModels) {
+                  const newData = this.get(key);
+                  if (child.data !== newData)
+                      child.data = newData;
+                  else if (!child.isInitialized)
+                      child.initialize();
+              }
               for (const key of this.keys)
                   this.keyChanged([key]);
+              for (const observer of this.changeObservers)
+                  observer.observer.initialize();
           }
           /**
            * @function clear
@@ -11788,11 +11789,16 @@
           clear(clearData = true) {
               if (clearData)
                   this._data = undefined;
-              this.nestedModels.forEach(nested => nested.clear());
-              this.nestedModels.clear();
+              this.nestedModels.forEach(nested => nested.clear(clearData));
+              if (clearData)
+                  this.nestedModels.clear();
               this.signals.clear();
-              this.nestListeners.clear();
-              this.changeObservers?.toArray().forEach(observer => observer.clear());
+              if (clearData)
+                  this.nestedListeners.clear();
+              if (clearData)
+                  this.changeObservers.forEach(e => this.changeObservers.delete(e));
+              else
+                  this.changeObservers.forEach(e => e.observer.clear());
               this.isInitialized = false;
           }
           /**
@@ -11837,7 +11843,7 @@
               };
               const pathKeys = keys.slice(0, -1);
               const signalKey = keys[keys.length - 1];
-              const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0], ...pathKeys.slice(1));
+              const models = this.nestAll(...pathKeys);
               if (signalKey === TurboModel.ALL)
                   return models.flatMap(model => model.keys.map(k => maker(k, model)));
               return models.map(model => maker(signalKey, model));
@@ -11850,40 +11856,22 @@
               const properties = lastEntry !== null && typeof lastEntry === "object" ? lastEntry : {};
               const keys = args.slice(0, lastEntry !== null && typeof lastEntry === "object" ? -1 : undefined);
               if (keys.length === 0)
-                  keys.push(TurboModel.ALL);
+                  return [this];
               turbo(properties).applyDefaults({ bubbleChanges: this.bubbleChanges, enabledCallbacks: this.enabledCallbacks });
-              const createChild = (model, key) => {
-                  if (model.nestedModels.has(key))
-                      return model.nestedModels.get(key);
-                  const child = new this.modelConstructor({ ...properties, data: model.get(key), initialize: true });
-                  child.onKeyChanged.add((_value, ...keys) => {
-                      if (!model.enabledCallbacks || !model.bubbleChanges)
-                          return;
-                      model.keyChanged(keys, model.get(key));
+              return this.nestRecur(keys, properties);
+          }
+          nestRecur(keys, properties) {
+              if (keys.length === 0)
+                  return [this];
+              if (keys[0] === TurboModel.ALL) {
+                  this.nestedListeners.add({
+                      listener: (selfKeys) => this.createNestedChild(this, selfKeys[0], properties).nestRecur(keys.slice(1), properties),
+                      keys: keys.slice(1)
                   });
-                  model.nestedModels.set(key, child);
-                  return child;
-              };
-              let results = [this];
-              for (const entry of keys) {
-                  if (entry === TurboModel.ALL) {
-                      const parents = [...results];
-                      results = parents.flatMap(parent => parent.keys.map(k => createChild(parent, k)));
-                      for (const parent of parents) {
-                          parent.nestListeners.add(child => {
-                              const sibling = [...parent.nestedModels.values()].find((model) => model !== child);
-                              if (!sibling)
-                                  return;
-                              sibling.nestListeners.forEach(listener => child.nestListeners.add(listener));
-                              sibling.changeObservers?.toArray().forEach(obs => child.changeObservers?.add(obs));
-                          });
-                      }
-                  }
-                  else {
-                      results = results.map(parent => createChild(parent, entry));
-                  }
+                  return this.keys.flatMap(key => this.createNestedChild(this, key, properties).nestRecur(keys.slice(1), properties));
               }
-              return results;
+              else
+                  return this.createNestedChild(this, keys[0], properties).nestRecur(keys.slice(1), properties);
           }
           nest(...keysAndProperties) {
               return this.nestAll(...keysAndProperties)[0];
@@ -11913,28 +11901,41 @@
            * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
            */
           generateObserver(properties = {}, ...keys) {
-              const models = keys.length === 0 ? [this] : this.nestAll(keys[0], ...keys.slice(1));
+              const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
               const observer = new (properties.customConstructor
                   ?? this.observerConstructor
                   ?? (TurboObserver))({
-                  initialize: true,
                   ...properties,
+                  initialize: false,
                   onDestroy: (self) => {
-                      models.forEach(model => model.changeObservers?.delete(self));
+                      Array.from(this.changeObservers)
+                          .filter(e => e.observer === self)
+                          .forEach(e => this.changeObservers.delete(e));
                       properties.onDestroy?.(self);
                   },
                   onInitialize: (self) => {
-                      for (const model of models) {
-                          if (!model.isInitialized)
-                              continue;
-                          for (const key of model.keys)
-                              self.keyChanged([key], model.get(key));
-                      }
+                      this.initializeObserverOnPath(this.data, self, keys, []);
                       properties.onInitialize?.(self);
                   }
               });
-              models.forEach(model => model.changeObservers?.add(observer));
+              this.changeObservers.add({ keys, observer });
+              if (initialize)
+                  observer.initialize();
               return observer;
+          }
+          initializeObserverOnPath(data, observer, keys, prefixKeys) {
+              if (keys.length === 0) {
+                  if (!this.isInitialized)
+                      return;
+                  for (const key of this.getKeysAction(data))
+                      observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
+              }
+              else if (keys[0] === TurboModel.ALL)
+                  for (const key of this.getKeysAction(data)) {
+                      this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+                  }
+              else
+                  this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]]);
           }
           /*
            *
@@ -11950,7 +11951,7 @@
            * @param {unknown} [value] - The new value. Defaults to the current value at the key.
            * @param {boolean} [deleted=false] - Whether the entry was removed.
            */
-          keyChanged(keys, value = this.get(keys[0]), deleted = false) {
+          keyChanged(keys, value = this.get(...keys), deleted = false) {
               const key = keys[0];
               if (key === undefined)
                   return;
@@ -11960,12 +11961,37 @@
                   this.signals.delete(key);
               if (!this.enabledCallbacks)
                   return;
-              if (!deleted && !this.nestedModels.has(key) && this.nestListeners.size > 0) {
-                  const model = this.nest(key);
-                  this.nestListeners.forEach(listener => listener(model, key));
-              }
+              if (!deleted && !this.nestedModels.has(key) && this.nestedListeners.size > 0)
+                  this.nestedListeners.forEach(({ listener }) => listener(keys, value));
               this.onKeyChanged.fire(value, ...keys);
-              this.changeObservers?.toArray().forEach(observer => observer.keyChanged(keys, value, deleted));
+              this.changeObservers.forEach(({ observer, keys: pattern }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+          }
+          matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted) {
+              if (!observer.isInitialized)
+                  return;
+              if (pattern.length === 0) {
+                  if (incomingKeys.length === 0) {
+                      if (!deleted && value !== null && typeof value === "object") {
+                          for (const key of this.getKeysAction(value)) {
+                              observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
+                          }
+                      }
+                  }
+                  else
+                      observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                  return;
+              }
+              if (incomingKeys.length === 0) {
+                  if (!deleted && value !== null && typeof value === "object") {
+                      for (const key of this.getKeysAction(value))
+                          this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+                  }
+                  return;
+              }
+              const [head, ...tail] = incomingKeys;
+              const [patternHead, ...patternTail] = pattern;
+              if (patternHead === TurboModel.ALL || patternHead === head)
+                  this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
           }
           static flattenSize(data, depth) {
               if (!data || depth <= 0 || !Array.isArray(data))
@@ -12059,19 +12085,28 @@
               this.clear(false);
               this._data = data;
           }
-          routeMutation(keys, rawCallback, nestedCallback) {
-              const firstKey = keys[0];
-              const childKeys = keys.slice(1);
-              const nested = this.getNested(firstKey);
-              if (childKeys.length === 0)
-                  return rawCallback(this.data, firstKey);
-              if (nested)
-                  return nestedCallback(nested, childKeys);
-              const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
-              if (typeof parentData !== "object")
-                  return;
-              return rawCallback(parentData, childKeys[childKeys.length - 1]);
+          fireCallback(key, value) {
+              this.fireCallbackHook?.(value, key);
           }
+          createNestedChild(model, key, properties) {
+              if (model.nestedModels.has(key))
+                  return model.nestedModels.get(key);
+              const child = this.modelConstructor.create({ ...properties, data: model.get(key), initialize: this.isInitialized });
+              model.onKeyChanged.add((value, changedKey) => {
+                  if (changedKey !== key)
+                      return;
+                  if (child.data !== value)
+                      child.data = value;
+              });
+              child.onKeyChanged.add((_value, ...keys) => {
+                  if (!model.enabledCallbacks || !model.bubbleChanges)
+                      return;
+                  model.keyChanged(keys, model.get(key));
+              });
+              model.nestedModels.set(key, child);
+              return child;
+          }
+          ;
       };
   })();
   addRegistryCategory(TurboModel);
@@ -12213,7 +12248,8 @@
               entry = {
                   emitter: new TurboEmitter(),
                   operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
-                  emitterFireCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
+                  emitterCallback: (value, key) => entry.emitter?.fire(value, key),
+                  emitterKeyCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
               };
               this.dataMap.set(element, entry);
           }
@@ -12236,11 +12272,13 @@
           if (!mvc)
               return;
           if (attach) {
-              if (!model.onKeyChanged.has(mvc.emitterFireCallback))
-                  model.onKeyChanged.add(mvc.emitterFireCallback);
+              if (!model.onKeyChanged.has(mvc.emitterKeyCallback))
+                  model.onKeyChanged.add(mvc.emitterKeyCallback);
+              model.fireCallbackHook = mvc.emitterCallback;
           }
           else {
-              model.onKeyChanged.remove(mvc.emitterFireCallback);
+              model.onKeyChanged.remove(mvc.emitterKeyCallback);
+              model.fireCallbackHook = undefined;
           }
       }
       updateView(element, view, attach = true) {
@@ -12417,7 +12455,9 @@
               const mvc = utils$8.data(this.element);
               utils$8.attachModel(this.element, this.model, false);
               utils$8.updateModel(this.element, mvc.model, false);
-              mvc.model = utils$8.generateInstance(value);
+              if (!value)
+                  return;
+              mvc.model = typeof value === "function" ? value.create() : value;
               utils$8.attachModel(this.element, mvc.model);
               utils$8.linkPieces(this.element);
           },
@@ -12466,7 +12506,7 @@
       });
       Object.defineProperty(TurboSelector.prototype, "metadata", {
           get() {
-              return utils$8.peek(this.element)?.model?.metadata;
+              return utils$8.peek(this.element)?.model?.meta;
           },
           configurable: true, enumerable: true,
       });
@@ -12653,7 +12693,10 @@
           if (!operator.keyName)
               operator.keyName =
                   utils$8.extractClassEssenceName(this.element, operator.constructor, "Operator");
-          utils$8.data(this.element).operators.set(operator.keyName, operator);
+          const data = utils$8.data(this.element);
+          if (data.operators.has(operator.keyName))
+              return this;
+          data.operators.set(operator.keyName, operator);
           utils$8.updateOperator(this.element, operator);
           return this;
       };
@@ -12672,7 +12715,10 @@
           if (!handler.keyName)
               handler.keyName =
                   utils$8.extractClassEssenceName(this.element, handler.constructor, "Handler");
-          utils$8.data(this.element).model?.handlers.set(handler.keyName, handler);
+          const data = utils$8.data(this.element);
+          if (data.model?.handlers.has(handler.keyName))
+              return this;
+          data.model?.handlers.set(handler.keyName, handler);
           utils$8.updateHandler(this.element, handler);
           return this;
       };
@@ -12691,7 +12737,10 @@
           if (!interactor.keyName)
               interactor.keyName =
                   utils$8.extractClassEssenceName(this.element, interactor.constructor, "Interactor");
-          utils$8.data(this.element).interactors.set(interactor.keyName, interactor);
+          const data = utils$8.data(this.element);
+          if (data.interactors.has(interactor.keyName))
+              return this;
+          data.interactors.set(interactor.keyName, interactor);
           utils$8.updateInteractor(this.element, interactor);
           return this;
       };
@@ -12710,7 +12759,10 @@
           if (!tool.keyName)
               tool.keyName =
                   utils$8.extractClassEssenceName(this.element, tool.constructor, "Tool");
-          utils$8.data(this.element).tools.set(tool.keyName, tool);
+          const data = utils$8.data(this.element);
+          if (data.tools.has(tool.keyName))
+              return this;
+          data.tools.set(tool.keyName, tool);
           utils$8.updateTool(this.element, tool);
           return this;
       };
@@ -12729,7 +12781,10 @@
           if (!constrainer.keyName)
               constrainer.keyName =
                   utils$8.extractClassEssenceName(this.element, constrainer.constructor, "Constrainer");
-          utils$8.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+          const data = utils$8.data(this.element);
+          if (data.constrainers.has(constrainer.keyName))
+              return this;
+          data.constrainers.set(constrainer.keyName, constrainer);
           utils$8.updateConstrainer(this.element, constrainer);
           return this;
       };
@@ -12743,28 +12798,7 @@
 
   function defineDefaultProperties(constructor) {
       const prototype = constructor.prototype;
-      const selectedKey = Symbol("__selected__");
-      const selectedClass = Symbol("__selectedClass__");
       const initializedKey = Symbol("__initialized__");
-      Object.defineProperty(prototype, "selected", {
-          get() { return !!this[selectedKey]; },
-          set(value) {
-              const element = this instanceof Element ? this : this.element instanceof Element ? this.element : undefined;
-              if (!element) {
-                  this[selectedKey] = value;
-                  return;
-              }
-              const prevClass = this[selectedClass];
-              const nextClass = this["defaultSelectedClasses"] || "selected";
-              this[selectedKey] = value;
-              this[selectedClass] = nextClass;
-              if (prevClass && prevClass !== nextClass)
-                  turbo(element).toggleClass(prevClass, false);
-              turbo(element).toggleClass(nextClass, !!value);
-          },
-          enumerable: true,
-          configurable: true,
-      });
       Object.defineProperty(prototype, "destroy", {
           value: function () { },
           configurable: true,
@@ -12832,7 +12866,7 @@
               enumerable: true,
           });
       });
-      ["metadata", "dataSize"].forEach(fieldName => {
+      ["dataSize"].forEach(fieldName => {
           Object.defineProperty(prototype, fieldName, {
               get() { return turbo(this)[fieldName]; },
               configurable: true,
@@ -12846,7 +12880,6 @@
       const shadowDOMKey = Symbol("__shadow_dom__");
       const unsetDefaultClassesKey = Symbol("__unset_default_classes__");
       const defaultClassesKey = Symbol("__default_classes__");
-      const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
       Object.defineProperty(prototype, "shadowDOM", {
           get: function () { return this[shadowDOMKey] ?? false; },
           set: function (value) {
@@ -12883,18 +12916,6 @@
                   turbo(this).toggleClass(this[defaultClassesKey], false);
               this[defaultClassesKey] = value;
               if (!this.unsetDefaultClasses)
-                  turbo(this).toggleClass(value, true);
-          },
-          enumerable: true,
-          configurable: true,
-      });
-      Object.defineProperty(prototype, "defaultSelectedClasses", {
-          get: function () { return this[defaultSelectedClassesKey] ?? ""; },
-          set: function (value) {
-              if (this.selected)
-                  turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
-              this[defaultSelectedClassesKey] = value;
-              if (this.selected)
                   turbo(this).toggleClass(value, true);
           },
           enumerable: true,
@@ -13024,11 +13045,12 @@
       static defaultProperties = {
           defaultSelectedClasses: "selected"
       };
-      static create(properties = {}) {
-          const prototypeChain = getPrototypeChain(this);
-          for (const prototype of prototypeChain)
-              turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
-          return this.customCreate.call(this, properties);
+      // public static create<Type extends new (...args: any[]) => TurboElement>
+      // (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+      //     return (this as any).customCreate.call(this, properties);
+      // }
+      static create(properties) {
+          return this.customCreate(properties ?? {});
       }
       static customCreate(properties) {
           const prototypeChain = getPrototypeChain(this);
@@ -15101,15 +15123,91 @@
           clearTimeout(timer);
           this.model.timerMap.delete(timerName);
       }
-      selectTool(element, value) {
-          if ("selected" in element && typeof element["selected"] === "boolean")
-              element["selected"] = value;
-      }
       activateTool(element, toolName, value) {
           if (value)
               $(element).onToolActivate(toolName).fire();
           else
               $(element).onToolDeactivate(toolName).fire();
+      }
+  }
+
+  /**
+   * @group Components
+   * @category TurboWeakSet
+   */
+  class TurboWeakSet {
+      _weakRefs;
+      constructor() {
+          this._weakRefs = new Set();
+      }
+      // Add an object as a WeakRef if it's not already in the set
+      add(obj) {
+          if (!this.has(obj))
+              this._weakRefs.add(new WeakRef(obj));
+          return this;
+      }
+      // Check if the set contains a WeakRef to the given object
+      has(obj) {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === obj)
+                  return true;
+          }
+          return false;
+      }
+      // Delete the WeakRef associated with the given object
+      delete(obj) {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === obj) {
+                  this._weakRefs.delete(weakRef);
+                  return true;
+              }
+          }
+          return false;
+      }
+      // Clean up any WeakRefs whose objects have been garbage-collected
+      cleanup() {
+          for (const weakRef of this._weakRefs) {
+              if (weakRef.deref() === undefined)
+                  this._weakRefs.delete(weakRef);
+          }
+      }
+      // Convert live objects in the TurboWeakSet to an array
+      toArray() {
+          const result = [];
+          for (const weakRef of this._weakRefs) {
+              const obj = weakRef.deref();
+              if (obj !== undefined)
+                  result.push(obj);
+              else
+                  this._weakRefs.delete(weakRef);
+          }
+          return result;
+      }
+      // Get the size of the TurboWeakSet (only live objects)
+      get size() {
+          return this.toArray().length;
+      }
+      // Clear all weak references
+      clear() {
+          this._weakRefs.clear();
+      }
+      forEach(callback, thisArg) {
+          for (const weakRef of this._weakRefs) {
+              const obj = weakRef.deref();
+              if (obj !== undefined)
+                  callback.call(thisArg, obj, obj, this);
+              else
+                  this._weakRefs.delete(weakRef);
+          }
+      }
+      *[Symbol.iterator]() {
+          for (const weakRef of this._weakRefs) {
+              const obj = weakRef.deref();
+              if (obj !== undefined)
+                  yield obj;
+              else
+                  this._weakRefs.delete(weakRef);
+          }
       }
   }
 
@@ -15558,7 +15656,7 @@
                   //Deselect and deactivate previous tool
                   this.getSimilarTools(previousTool).forEach(element => {
                       if (options.select)
-                          this.model.utils.selectTool(element, false);
+                          turbo(element).selected = false;
                       if (options.activate)
                           this.model.utils.activateTool(element, this.getToolName(previousTool), false);
                   });
@@ -15572,7 +15670,7 @@
                   if (options.activate)
                       this.model.utils.activateTool(element, this.getToolName(tool), true);
                   if (options.select)
-                      this.model.utils.selectTool(element, true);
+                      turbo(element).selected = true;
               });
               //Fire tool changed
               this.onToolChange.fire(previousTool, tool, type);
@@ -16240,6 +16338,9 @@
   }
 
   const utils$4 = new StyleFunctionsUtils();
+  const selectedKey = Symbol("__selected__");
+  const selectedClass = Symbol("__selectedClass__");
+  const defaultSelectedClassesKey = Symbol("__default_selected_classes__");
   function setupStyleFunctions() {
       /**
        * @description The closest root to the element in the document (the closest ShadowRoot, or the document's head).
@@ -16256,6 +16357,52 @@
           },
           configurable: false,
           enumerable: true
+      });
+      Object.defineProperty(TurboSelector.prototype, "selected", {
+          get() {
+              return !!this[selectedKey];
+          },
+          set(value) {
+              const element = this.element;
+              if (!element)
+                  return;
+              if (element instanceof Element) {
+                  const prevClass = element[selectedClass];
+                  const nextClass = element["defaultSelectedClasses"] || "selected";
+                  element[selectedClass] = nextClass;
+                  if (prevClass && prevClass !== nextClass)
+                      turbo(element).toggleClass(prevClass, false);
+                  turbo(element).toggleClass(nextClass, !!value);
+              }
+              element[selectedKey] = value;
+              this.onSelected.fire(value);
+          },
+          enumerable: true,
+          configurable: true,
+      });
+      Object.defineProperty(TurboSelector.prototype, "defaultSelectedClasses", {
+          get: function () {
+              return this[defaultSelectedClassesKey] ?? "";
+          },
+          set: function (value) {
+              if (this.selected)
+                  turbo(this).toggleClass(this[defaultSelectedClassesKey], false);
+              this[defaultSelectedClassesKey] = value;
+              if (this.selected)
+                  turbo(this).toggleClass(value, true);
+          },
+          enumerable: true,
+          configurable: true,
+      });
+      Object.defineProperty(TurboSelector.prototype, "onSelected", {
+          get: function () {
+              const data = utils$4.data(this);
+              if (!data["onSelected"])
+                  data["onSelected"] = new Delegate();
+              return data["onSelected"];
+          },
+          enumerable: true,
+          configurable: true,
       });
       /**
        * @description Set a certain style attribute of the element to the provided value.
@@ -19687,9 +19834,9 @@
               if (!this.data || !(this.data instanceof AbstractType))
                   return;
               if (value)
-                  this.data.observe(this.observer);
+                  this.attachNestedObservers(this.data);
               else
-                  this.data.unobserve(this.observer);
+                  this.detachNestedObservers(this.data);
           }
           /*
            *
@@ -19711,12 +19858,12 @@
            */
           setAction(data, value, key) {
               if (data instanceof YMap)
-                  data.set(key.toString(), value);
+                  data.doc.transact(() => data.set(key.toString(), value), this);
               else if (data instanceof YArray) {
                   const index = trim(Number(key), data.length + 1);
                   if (index < data.length)
                       data.delete(index, 1);
-                  data.insert(index, [value]);
+                  data.doc.transact(() => data.insert(index, [value]), this);
               }
               else
                   super.setAction(data, value, key);
@@ -19729,12 +19876,12 @@
                   let index = key;
                   if (isUndefined(index) || typeof index !== "number" || index > data.length) {
                       index = data.length;
-                      data.push([value]);
+                      data.doc.transact(() => data.push([value]), this);
                   }
                   else {
                       if (index < 0)
                           index = 0;
-                      data.insert(index, [value]);
+                      data.doc.transact(() => data.insert(index, [value]), this);
                   }
                   return index;
               }
@@ -19747,7 +19894,7 @@
               if (data instanceof YMap)
                   return data.has(key.toString());
               if (data instanceof YArray)
-                  return typeof key === "number" && key >= 0 && key < this.size;
+                  return typeof key === "number" && key >= 0 && key < this.dataSize;
               return super.hasAction(data, key);
           }
           /**
@@ -19755,25 +19902,25 @@
            */
           deleteAction(data, key) {
               if (data instanceof YMap)
-                  data.delete(key.toString());
-              else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.size)
-                  data.delete(key, 1);
+                  data.doc.transact(() => data.delete(key.toString()), this);
+              else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize)
+                  data.doc.transact(() => data.delete(key, 1), this);
               else
                   super.deleteAction(data, key);
           }
           /**
            * @inheritDoc
            */
-          get keys() {
-              if (this.data instanceof YMap)
-                  return Array.from(this.data.keys());
-              if (this.data instanceof YArray) {
+          getKeysAction(data) {
+              if (data instanceof YMap)
+                  return Array.from(data.keys());
+              if (data instanceof YArray) {
                   const output = [];
-                  for (let i = 0; i < this.data.length; i++)
+                  for (let i = 0; i < data.length; i++)
                       output.push(i);
                   return output;
               }
-              return super.keys;
+              return super.getKeysAction(data);
           }
           /**
            * @inheritDoc
@@ -19781,7 +19928,7 @@
           initialize() {
               super.initialize();
               if (this.enabledCallbacks && this.data instanceof AbstractType)
-                  this.data?.observe(this.observer);
+                  this.attachNestedObservers(this.data);
           }
           /**
            * @inheritDoc
@@ -19797,18 +19944,22 @@
            *
            */
           observeChanges(event, transaction) {
-              //TODO
-              !!transaction?.local;
-              transaction?.origin;
+              !!transaction?.local; //TODO
+              const origin = transaction?.origin;
+              if (origin === this)
+                  return;
+              const basePath = this.getPathToTarget(event.target);
               if (event instanceof YMapEvent) {
                   event.keysChanged.forEach(key => {
                       const change = event.changes.keys.get(key);
                       if (!change)
                           return;
                       if (change.action === "delete")
-                          this.keyChanged([key], undefined, true);
-                      else
-                          this.keyChanged([key]);
+                          this.keyChanged([...basePath, key], undefined, true);
+                      else {
+                          this.attachNestedObservers(this.getAction(event.target, key));
+                          this.keyChanged([...basePath, key]);
+                      }
                   });
               }
               else if (event instanceof YArrayEvent) {
@@ -19821,21 +19972,40 @@
                           const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                           const count = insertedItems.length;
                           this.shiftIndices(currentIndex, count);
-                          for (let i = 0; i < count; i++)
-                              this.keyChanged([currentIndex + i]);
+                          for (let i = 0; i < count; i++) {
+                              this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                              this.keyChanged([...basePath, currentIndex + i]);
+                          }
                           currentIndex += count;
                       }
                       else if (delta.delete) {
                           const count = delta.delete;
                           for (let i = 0; i < count; i++)
-                              this.keyChanged([currentIndex + i], undefined, true);
+                              this.keyChanged([...basePath, currentIndex + i], undefined, true);
                           this.shiftIndices(currentIndex + count, -count);
                       }
                   }
               }
           }
+          attachNestedObservers(value) {
+              if (!(value instanceof AbstractType))
+                  return;
+              value.observe(this.observer);
+              for (const key of this.getKeysAction(value)) {
+                  if (!this.nestedModels.has(key))
+                      this.attachNestedObservers(this.getAction(value, key));
+              }
+          }
+          detachNestedObservers(value) {
+              if (!(value instanceof AbstractType))
+                  return;
+              value.unobserve(this.observer);
+              for (const key of this.getKeysAction(value))
+                  this.detachNestedObservers(this.getAction(value, key));
+          }
           shiftIndices(fromIndex, offset) {
-              this.changeObservers?.toArray().forEach(observer => {
+              Array.from(this.changeObservers).forEach(entry => {
+                  const observer = entry.observer;
                   const pathsToShift = observer.paths
                       .filter(path => Number(path[0]) >= fromIndex);
                   const itemsToShift = pathsToShift
@@ -19849,6 +20019,20 @@
                       observer.set(instance, newIndex, ...path.slice(1));
                   }
               });
+          }
+          getPathToTarget(target) {
+              const search = (current, path) => {
+                  if (current === target)
+                      return path;
+                  for (const key of this.getKeysAction(current)) {
+                      const child = this.getAction(current, key);
+                      const result = search(child, [...path, key]);
+                      if (result)
+                          return result;
+                  }
+                  return null;
+              };
+              return search(this.data, []) ?? [];
           }
       };
   })();
@@ -21352,7 +21536,7 @@
           set size(value) { this.#size_accessor_storage = value; }
           setupChangedCallbacks() {
               super.setupChangedCallbacks();
-              this.emitter.add("processValue", () => this.processInputValue());
+              this.emitter?.add("processValue", () => this.processInputValue());
           }
           setupUIListeners() {
               super.setupUIListeners();
@@ -22201,57 +22385,66 @@
   })(ContentSwitchMode || (ContentSwitchMode = {}));
 
   let TurboContentSwitch = (() => {
-      let _classSuper = TurboElement;
+      let _classSuper = TurboSelectElement;
       let _instanceExtraInitializers = [];
       let _set_mode_decorators;
       let _set_transitionDuration_decorators;
-      let _get_transitionReifect_decorators;
+      let _set_transitionReifect_decorators;
+      let _set_movementReifect_decorators;
       return class TurboContentSwitch extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
               _set_mode_decorators = [auto({ defaultValue: ContentSwitchMode.fadeRight })];
               _set_transitionDuration_decorators = [auto({ defaultValue: 0.3 })];
-              _get_transitionReifect_decorators = [auto({
-                      setIfUndefined: true,
-                      preprocessValue: function (value) {
-                          return this.generateTransitionReifect(value);
-                      }
-                  })];
+              _set_transitionReifect_decorators = [auto()];
+              _set_movementReifect_decorators = [auto()];
               __esDecorate$1(this, null, _set_mode_decorators, { kind: "setter", name: "mode", static: false, private: false, access: { has: obj => "mode" in obj, set: (obj, value) => { obj.mode = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _get_transitionReifect_decorators, { kind: "getter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, get: obj => obj.transitionReifect }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_transitionReifect_decorators, { kind: "setter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, set: (obj, value) => { obj.transitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_movementReifect_decorators, { kind: "setter", name: "movementReifect", static: false, private: false, access: { has: obj => "movementReifect" in obj, set: (obj, value) => { obj.movementReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
-          selector = (__runInitializers$1(this, _instanceExtraInitializers), new TurboSelect());
-          _previousSelectedIndex = -1;
+          static defaultProperties = {
+              transitionReifect: new Reifect({ styles: "transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;" }),
+          };
+          _previousSelectedIndex = (__runInitializers$1(this, _instanceExtraInitializers), -1);
           set mode(value) {
               turbo(this).toggleClass("carousel", value === ContentSwitchMode.carousel);
           }
           get mode() { return; }
           set transitionDuration(_value) { }
           get transitionDuration() { return; }
-          get transitionReifect() { return; }
-          set transitionReifect(_value) {
-              const reifect = this.transitionReifect;
-              const entries = this.selector.entries;
-              if (reifect && entries.length > 0)
-                  reifect.attach(...entries);
+          set transitionReifect(value) {
+              if (value && this.entries.length > 0)
+                  value.attach(...this.entries);
+          }
+          set movementReifect(value) {
+              if (value && this.entries.length > 0)
+                  value.attach(...this.entries);
           }
           initialize() {
-              this.selector.parent = this;
-              this.selector.onEntryAdded.add((entry) => {
+              // this.movementReifect = new StatefulReifect<Shown>({
+              //     states: Shown,
+              //     styles: (state, index) => {
+              //         const newIndex = this.select.getIndex(this.select.selectedEntry);
+              //         const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
+              //         //TODO
+              //     }
+              // });
+              this.select.parent = this;
+              this.select.onEntryAdded.add((entry) => {
                   if (this.mode === ContentSwitchMode.carousel) {
                       this.initCarouselEntry(entry);
                       return;
                   }
-                  const reifect = this.transitionReifect;
+                  const reifect = this.movementReifect;
                   if (!reifect?.enabled)
                       return;
                   reifect.attach(entry);
                   reifect.initialize(Shown.hidden, entry, { applyStylesInstantly: true });
                   turbo(entry).setStyles({ position: "absolute" }, true);
               });
-              this.selector.onSelect.add(() => {
+              this.select.onSelect.add(() => {
                   if (this.mode === ContentSwitchMode.carousel) {
                       this.applyCarouselTransition();
                   }
@@ -22262,11 +22455,11 @@
               super.initialize();
           }
           applyFadeTransition() {
-              const selectedEntry = this.selector.selectedEntry;
-              this.selector.entries.forEach(entry => {
+              const selectedEntry = this.select.selectedEntry;
+              this.select.entries.forEach(entry => {
                   const isSelected = entry === selectedEntry;
                   turbo(entry).setStyles({ position: isSelected ? "relative" : "absolute" }, true);
-                  const reifect = this.transitionReifect;
+                  const reifect = this.movementReifect;
                   if (reifect?.enabled)
                       reifect.apply(isSelected ? Shown.visible : Shown.hidden, entry);
               });
@@ -22281,9 +22474,9 @@
               }, true);
           }
           applyCarouselTransition() {
-              const entries = this.selector.entries;
-              const selectedEntry = this.selector.selectedEntry;
-              const newIndex = this.selector.getIndex(selectedEntry);
+              const entries = this.select.entries;
+              const selectedEntry = this.select.selectedEntry;
+              const newIndex = this.select.getIndex(selectedEntry);
               const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
               const prevIndex = this._previousSelectedIndex;
               this._previousSelectedIndex = newIndex;
@@ -22347,6 +22540,7 @@
                   return r;
               }
               const dx = this.mode === ContentSwitchMode.fadeLeft ? "-100%" : "100%";
+              //TODO remove this
               return new StatefulReifect({
                   states: [Shown.visible, Shown.hidden],
                   styles: {
@@ -25215,7 +25409,7 @@
   });
   function makeSwitch(mode, extraProps = {}) {
       const cs = TurboContentSwitch.create({ mode, ...extraProps });
-      cs.selector.forceSelection = false;
+      cs.select.forceSelection = false;
       return cs;
   }
   /* 1) fadeRight (default) */
@@ -25227,12 +25421,12 @@
           return p;
       });
       // Let MO process entries, then show first panel
-      setTimeout(() => cs.selector.select(panels[0]));
+      setTimeout(() => cs.select.select(panels[0]));
       box("TurboContentSwitch — fadeRight (default)")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Panel A", onClick: () => cs.selector.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Panel B", onClick: () => cs.selector.select(panels[1]) }))
-          .addContent(TurboButton.create({ text: "→ Panel C", onClick: () => cs.selector.select(panels[2]) }));
+          .addContent(TurboButton.create({ text: "→ Panel A", onClick: () => cs.select.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Panel B", onClick: () => cs.select.select(panels[1]) }))
+          .addContent(TurboButton.create({ text: "→ Panel C", onClick: () => cs.select.select(panels[2]) }));
   }
   /* 2) fadeLeft */
   function csTest2() {
@@ -25242,12 +25436,12 @@
           cs.appendChild(p);
           return p;
       });
-      setTimeout(() => cs.selector.select(panels[0]));
+      setTimeout(() => cs.select.select(panels[0]));
       box("TurboContentSwitch — fadeLeft")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Left A", onClick: () => cs.selector.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Left B", onClick: () => cs.selector.select(panels[1]) }))
-          .addContent(TurboButton.create({ text: "→ Left C", onClick: () => cs.selector.select(panels[2]) }));
+          .addContent(TurboButton.create({ text: "→ Left A", onClick: () => cs.select.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Left B", onClick: () => cs.select.select(panels[1]) }))
+          .addContent(TurboButton.create({ text: "→ Left C", onClick: () => cs.select.select(panels[2]) }));
   }
   /* 3) carousel — direction-aware, no wrap to avoid index-direction mismatch */
   function csTest3() {
@@ -25258,7 +25452,7 @@
           return p;
       });
       let currentIndex = 0;
-      setTimeout(() => cs.selector.select(panels[0]));
+      setTimeout(() => cs.select.select(panels[0]));
       box("TurboContentSwitch — carousel")
           .addSubBox("switch", cs)
           .addContent(TurboButton.create({
@@ -25266,7 +25460,7 @@
           onClick: () => {
               if (currentIndex > 0) {
                   currentIndex--;
-                  cs.selector.select(panels[currentIndex]);
+                  cs.select.select(panels[currentIndex]);
               }
           }
       }))
@@ -25275,33 +25469,33 @@
           onClick: () => {
               if (currentIndex < panels.length - 1) {
                   currentIndex++;
-                  cs.selector.select(panels[currentIndex]);
+                  cs.select.select(panels[currentIndex]);
               }
           }
       }))
           .addContent(TurboButton.create({
           text: "→ Slide 1",
-          onClick: () => { currentIndex = 0; cs.selector.select(panels[0]); }
+          onClick: () => { currentIndex = 0; cs.select.select(panels[0]); }
       }))
           .addContent(TurboButton.create({
           text: "→ Slide 4",
-          onClick: () => { currentIndex = 3; cs.selector.select(panels[3]); }
+          onClick: () => { currentIndex = 3; cs.select.select(panels[3]); }
       }));
   }
   /* 4) custom transitionDuration */
   function csTest4() {
       const cs = TurboContentSwitch.create({ transitionDuration: 0.8 });
-      cs.selector.forceSelection = false;
+      cs.select.forceSelection = false;
       const panels = ["Slow A", "Slow B"].map((label, i) => {
           const p = makePanel(label, [panelColors[1], panelColors[2]][i]);
           cs.appendChild(p);
           return p;
       });
-      setTimeout(() => cs.selector.select(panels[0]));
+      setTimeout(() => cs.select.select(panels[0]));
       box("TurboContentSwitch — custom transitionDuration (0.8s)")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Slow A", onClick: () => cs.selector.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Slow B", onClick: () => cs.selector.select(panels[1]) }))
+          .addContent(TurboButton.create({ text: "→ Slow A", onClick: () => cs.select.select(panels[0]) }))
+          .addContent(TurboButton.create({ text: "→ Slow B", onClick: () => cs.select.select(panels[1]) }))
           .addContent(TurboButton.create({
           text: "duration = 0.2s",
           onClick: () => cs.transitionDuration = 0.2

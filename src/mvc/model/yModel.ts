@@ -16,7 +16,7 @@ class TurboYModel<
     ComponentType extends object = any,
     DataEntryType = any
 > extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
-    private observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
+    private readonly observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
 
     /**
      * @inheritDoc
@@ -28,8 +28,8 @@ class TurboYModel<
      */
     @auto({override: true}) public set enabledCallbacks(value: boolean) {
         if (!this.data || !(this.data instanceof YAbstractType)) return;
-        if (value) this.data.observe(this.observer);
-        else this.data.unobserve(this.observer);
+        if (value) this.attachNestedObservers(this.data);
+        else this.detachNestedObservers(this.data);
     }
 
     /*
@@ -51,11 +51,11 @@ class TurboYModel<
      * @inheritDoc
      */
     protected setAction(data: any, value: any, key: KeyType) {
-        if (data instanceof YMap) data.set(key.toString(), value);
+        if (data instanceof YMap) data.doc.transact(() => data.set(key.toString(), value), this);
         else if (data instanceof YArray) {
             const index = trim(Number(key), data.length + 1);
             if (index < data.length) data.delete(index, 1);
-            data.insert(index, [value]);
+            data.doc.transact(() =>  data.insert(index, [value]), this);
         } else super.setAction(data, value, key);
     }
 
@@ -67,10 +67,10 @@ class TurboYModel<
             let index = key as number;
             if (isUndefined(index) || typeof index !== "number" || index > data.length) {
                 index = data.length;
-                data.push([value]);
+                data.doc.transact(() =>  data.push([value]), this);
             } else {
                 if (index < 0) index = 0;
-                data.insert(index, [value]);
+                data.doc.transact(() =>  data.insert(index, [value]), this);
             }
             return index as DataKeyType;
         }
@@ -90,22 +90,23 @@ class TurboYModel<
      * @inheritDoc
      */
     protected deleteAction(data: any, key: KeyType) {
-        if (data instanceof YMap) data.delete(key.toString());
-        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize) data.delete(key, 1);
+        if (data instanceof YMap)  data.doc.transact(() =>  data.delete(key.toString()), this);
+        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize)
+            data.doc.transact(() =>  data.delete(key, 1), this);
         else super.deleteAction(data, key);
     }
 
     /**
      * @inheritDoc
      */
-    public get keys(): DataKeyType[] {
-        if (this.data instanceof YMap) return Array.from(this.data.keys()) as DataKeyType[];
-        if (this.data instanceof YArray) {
-            const output: DataKeyType[] = [];
-            for (let i = 0; i < this.data.length; i++) output.push(i as DataKeyType);
+    protected getKeysAction(data: any): KeyType[] {
+        if (data instanceof YMap) return Array.from(data.keys());
+        if (data instanceof YArray) {
+            const output: KeyType[] = [];
+            for (let i = 0; i < data.length; i++) output.push(i);
             return output;
         }
-        return super.keys;
+        return super.getKeysAction(data);
     }
 
     /**
@@ -113,7 +114,7 @@ class TurboYModel<
      */
     public initialize() {
         super.initialize();
-        if (this.enabledCallbacks && this.data instanceof YAbstractType) this.data?.observe(this.observer);
+        if (this.enabledCallbacks && this.data instanceof YAbstractType) this.attachNestedObservers(this.data);
     }
 
     /**
@@ -131,16 +132,21 @@ class TurboYModel<
      */
 
     protected observeChanges(event: YEvent, transaction: any) {
-        //TODO
-        const isLocal = !!transaction?.local;
+        const isLocal = !!transaction?.local; //TODO
         const origin = transaction?.origin;
+        if (origin === this) return;
+
+        const basePath = this.getPathToTarget(event.target);
 
         if (event instanceof YMapEvent) {
             event.keysChanged.forEach(key => {
                 const change = event.changes.keys.get(key);
                 if (!change) return;
-                if (change.action === "delete") this.keyChanged([key], undefined, true);
-                else this.keyChanged([key]);
+                if (change.action === "delete") this.keyChanged([...basePath, key], undefined, true);
+                else {
+                    this.attachNestedObservers(this.getAction(event.target, key));
+                    this.keyChanged([...basePath, key]);
+                }
             });
         } else if (event instanceof YArrayEvent) {
             let currentIndex = 0;
@@ -151,19 +157,37 @@ class TurboYModel<
                     const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                     const count = insertedItems.length;
                     this.shiftIndices(currentIndex, count);
-                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as DataKeyType]);
+                    for (let i = 0; i < count; i++) {
+                        this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                        this.keyChanged([...basePath, currentIndex + i]);
+                    }
                     currentIndex += count;
                 } else if (delta.delete) {
                     const count = delta.delete;
-                    for (let i = 0; i < count; i++) this.keyChanged([currentIndex + i as DataKeyType], undefined, true);
+                    for (let i = 0; i < count; i++) this.keyChanged([...basePath, currentIndex + i], undefined, true);
                     this.shiftIndices(currentIndex + count, -count);
                 }
             }
         }
     }
 
+    private attachNestedObservers(value: any) {
+        if (!(value instanceof YAbstractType)) return;
+        value.observe(this.observer);
+        for (const key of this.getKeysAction(value)) {
+            if (!this.nestedModels.has(key as any)) this.attachNestedObservers(this.getAction(value, key));
+        }
+    }
+
+    private detachNestedObservers(value: any) {
+        if (!(value instanceof YAbstractType)) return;
+        value.unobserve(this.observer);
+        for (const key of this.getKeysAction(value)) this.detachNestedObservers(this.getAction(value, key));
+    }
+
     private shiftIndices(fromIndex: number, offset: number) {
-        this.changeObservers?.toArray().forEach(observer => {
+        Array.from(this.changeObservers).forEach(entry => {
+            const observer = entry.observer;
             const pathsToShift = observer.paths
                 .filter(path => Number(path[0]) >= fromIndex);
 
@@ -178,6 +202,19 @@ class TurboYModel<
                 observer.set(instance, newIndex as DataKeyType, ...path.slice(1));
             }
         });
+    }
+
+    private getPathToTarget(target: any): KeyType[] {
+        const search = (current: any, path: KeyType[]): KeyType[] => {
+            if (current === target) return path;
+            for (const key of this.getKeysAction(current)) {
+                const child = this.getAction(current, key);
+                const result = search(child, [...path, key]);
+                if (result) return result;
+            }
+            return null;
+        };
+        return search(this.data, []) ?? [];
     }
 }
 

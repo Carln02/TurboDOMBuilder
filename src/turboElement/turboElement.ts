@@ -39,11 +39,16 @@ class TurboElement<
         defaultSelectedClasses: "selected"
     };
 
-    public static create<Type extends new (...args: any[]) => TurboElement>
-    (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
-        const prototypeChain = getPrototypeChain(this);
-        for (const prototype of prototypeChain) turbo(properties).applyDefaults(prototype["defaultProperties"] ?? {});
-        return (this as any).customCreate.call(this, properties);
+    // public static create<Type extends new (...args: any[]) => TurboElement>
+    // (this: Type, properties: InstanceType<Type>["properties"] = {}): InstanceType<Type> {
+    //     return (this as any).customCreate.call(this, properties);
+    // }
+
+    public static create<
+        Type extends new (...args: any[]) => TurboElement,
+        PropertiesType extends InstanceType<Type>["properties"]
+    >(this: Type, properties?: PropertiesType): InstanceType<Type> {
+        return (this as any).customCreate(properties ?? {});
     }
 
     protected static customCreate(properties: object): object {

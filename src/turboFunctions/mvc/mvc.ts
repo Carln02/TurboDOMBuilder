@@ -42,7 +42,8 @@ export function setupMvcFunctions() {
             const mvc = utils.data(this.element);
             utils.attachModel(this.element, this.model, false);
             utils.updateModel(this.element, mvc.model, false);
-            mvc.model = utils.generateInstance(value);
+            if (!value) return;
+            mvc.model = typeof value === "function" ? (value as any).create() : value;
             utils.attachModel(this.element, mvc.model);
             utils.linkPieces(this.element);
         },
@@ -92,7 +93,7 @@ export function setupMvcFunctions() {
 
     Object.defineProperty(TurboSelector.prototype, "metadata", {
         get(this: TurboSelector) {
-            return utils.peek(this.element)?.model?.metadata;
+            return utils.peek(this.element)?.model?.meta;
         },
         configurable: true, enumerable: true,
     });
@@ -277,7 +278,9 @@ export function setupMvcFunctions() {
         if (!this.element) return this;
         if (!operator.keyName) operator.keyName =
             utils.extractClassEssenceName(this.element, operator.constructor as new (...args: any[]) => any, "Operator");
-        utils.data(this.element).operators.set(operator.keyName, operator);
+        const data = utils.data(this.element);
+        if (data.operators.has(operator.keyName)) return this;
+        data.operators.set(operator.keyName, operator);
         utils.updateOperator(this.element, operator);
         return this;
     };
@@ -296,7 +299,9 @@ export function setupMvcFunctions() {
         if (!this.element) return this;
         if (!handler.keyName) handler.keyName =
             utils.extractClassEssenceName(this.element, handler.constructor as new (...args: any[]) => any, "Handler");
-        utils.data(this.element).model?.handlers.set(handler.keyName, handler);
+        const data = utils.data(this.element);
+        if (data.model?.handlers.has(handler.keyName)) return this;
+        data.model?.handlers.set(handler.keyName, handler);
         utils.updateHandler(this.element, handler);
         return this;
     };
@@ -315,7 +320,9 @@ export function setupMvcFunctions() {
         if (!this.element) return this;
         if (!interactor.keyName) interactor.keyName =
             utils.extractClassEssenceName(this.element, interactor.constructor as any, "Interactor");
-        utils.data(this.element).interactors.set(interactor.keyName, interactor);
+        const data = utils.data(this.element);
+        if (data.interactors.has(interactor.keyName)) return this;
+        data.interactors.set(interactor.keyName, interactor);
         utils.updateInteractor(this.element, interactor);
         return this;
     };
@@ -334,7 +341,9 @@ export function setupMvcFunctions() {
         if (!this.element) return this;
         if (!tool.keyName) tool.keyName =
             utils.extractClassEssenceName(this.element, tool.constructor as any, "Tool");
-        utils.data(this.element).tools.set(tool.keyName, tool);
+        const data = utils.data(this.element);
+        if (data.tools.has(tool.keyName)) return this;
+        data.tools.set(tool.keyName, tool);
         utils.updateTool(this.element, tool);
         return this;
     };
@@ -353,7 +362,9 @@ export function setupMvcFunctions() {
         if (!this.element) return this;
         if (!constrainer.keyName) constrainer.keyName =
             utils.extractClassEssenceName(this.element, constrainer.constructor as any, "Constrainer");
-        utils.data(this.element).constrainers.set(constrainer.keyName, constrainer);
+        const data = utils.data(this.element);
+        if (data.constrainers.has(constrainer.keyName)) return this;
+        data.constrainers.set(constrainer.keyName, constrainer);
         utils.updateConstrainer(this.element, constrainer);
         return this;
     };

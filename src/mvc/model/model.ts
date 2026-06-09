@@ -10,12 +10,21 @@ import {turbo} from "../../turboFunctions/turboFunctions";
 import {TurboHandler} from "../handler/handler";
 import {FlatKeyType, KeyType} from "../../types/basic.types";
 import {addRegistryCategory, define} from "../../decorators/define/define";
-import {mod} from "../../utils/computations/misc";
+import {areEqual} from "../../utils/computations/equity";
 
 const META = Symbol("__meta__");
 
-type ChildObserverData = {
-    observer: TurboObserver,
+type ObserverData<
+    DataType = any,
+    ComponentType extends object = any,
+    DataKeyType extends KeyType = KeyType,
+> = {
+    observer: TurboObserver<DataType, ComponentType, DataKeyType>,
+    keys: KeyType[],
+};
+
+type ListenerData = {
+    listener: (keys: KeyType[], value: any) => void,
     keys: KeyType[],
 };
 
@@ -50,9 +59,8 @@ class TurboModel<
         DataType extends object = any,
         IdType extends KeyType = any
     >(data: DataType = {} as any, id?: IdType): TurboModelProxy<DataType, IdType> {
-        const model = new TurboModel({data, id});
-        model.makeSignals(TurboModel.ALL);
-        const proxy = new Proxy(data, {
+        const model = TurboModel.create({data, id, initialize: true, makeSignals: true});
+        return new Proxy(data, {
             get(target, key) {
                 if (key === "$model") return model;
                 return model.get(key as any);
@@ -62,8 +70,20 @@ class TurboModel<
                 model.set(value, key as any);
                 return true;
             }
-        });
-        return proxy as TurboModelProxy<DataType, IdType>;
+        }) as TurboModelProxy<DataType, IdType>;
+    }
+
+    public static create<
+        DataType = any,
+        DataKeyType extends KeyType = any,
+        IdType extends KeyType = any,
+        ComponentType extends object = any,
+        DataEntryType = any
+    >(properties: TurboModelProperties = {}): TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
+        const model = new this(properties);
+        if (properties.initialize) model.initialize();
+        if (properties.makeSignals) model.makeSignals(TurboModel.ALL);
+        return model;
     }
 
     /**
@@ -105,12 +125,10 @@ class TurboModel<
 
     private readonly signals: Map<DataKeyType, SignalBox<unknown>> = new Map();
 
-    protected readonly changeObservers: TurboWeakSet<TurboObserver<DataEntryType, ComponentType, DataKeyType>> = new TurboWeakSet();
+    protected readonly changeObservers: Set<ObserverData<DataEntryType, ComponentType, DataKeyType>> = new Set();
+
     protected readonly nestedModels: Map<DataKeyType, TurboModel> = new Map();
-
-    protected nestListener: boolean = false;
-
-    protected readonly childObservers: TurboWeakSet<ChildObserverData> = new TurboWeakSet();
+    protected nestedListeners: Set<ListenerData> = new Set();
 
     /**
      * @description The ID of the data held by this model.
@@ -127,8 +145,9 @@ class TurboModel<
     }
 
     public set data(data: DataType) {
-        this.clear(false);
         const oldData = this._data;
+        if (areEqual(oldData, data)) return;
+        this.clear(false);
         this._data = data;
         if (data) this.initialize();
         this.onDataChanged.fire(oldData, data);
@@ -152,8 +171,6 @@ class TurboModel<
         if (typeof properties.enabledCallbacks === "boolean") this.enabledCallbacks = properties.enabledCallbacks;
         if (typeof properties.bubbleChanges === "boolean") this.bubbleChanges = properties.bubbleChanges;
         this.setup();
-        if (properties.initialize) this.initialize();
-        if (properties.makeSignals) this.makeSignals(TurboModel.ALL);
         this.onDataChanged.fire(undefined, this._data);
     }
 
@@ -323,17 +340,23 @@ class TurboModel<
      * @param {KeyType} key - The key to write.
      * @param {any} value - The value to set.
      */
-    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType) {
+    protected internalSet(model: TurboModel, data: any, value: any, key: KeyType): boolean {
+        if (isUndefined(key)) {
+            if (!model || areEqual(model.data, value)) return false;
+            model.data = value;
+            return true;
+        }
+
         if (model) {
             const nested = model.getNested(key);
             if (nested) nested.data = value;
         }
 
-        if (!data) return;
+        if (!data || typeof data !== "object") return false;
         const prev = this.getAction(data, key);
-        if (Object.is(prev, value)) return;
+        if (prev === value || Object.is(prev, value)) return false;
         this.setAction(data, value, key);
-        if (model) model.keyChanged([key], value);
+        return true;
     }
 
     /**
@@ -342,7 +365,7 @@ class TurboModel<
      * @param {KeyType} key - The key to write.
      * @param {unknown} value - The value to set.
      */
-    public set(value: unknown, key: DataKeyType): void;
+    public set(value: unknown, key: DataKeyType): boolean;
 
     /**
      * @function set
@@ -350,13 +373,18 @@ class TurboModel<
      * @param {...KeyType[]} keys - Ordered path from outermost to innermost key.
      * @param {unknown} value - The value to set.
      */
-    public set(value: unknown, ...keys: KeyType[]): void;
-    public set(value: unknown, ...keys: KeyType[]): void {
-        this.routeMutation(
-            keys,
-            (data, key) => this.internalSet(data === this.data ? this : undefined, data, value, key),
-            (model, keys) => model.set(value, ...keys),
-        );
+    public set(value: unknown, ...keys: KeyType[]): boolean;
+    public set(value: unknown, ...keys: KeyType[]): boolean {
+        let bool: boolean;
+        if (keys.length < 2) bool = this.internalSet(this, this.data, value, keys[0]);
+        else {
+            const nested = this.getNested(keys[0]);
+            if (nested) bool = nested.set(value, ...keys.slice(1));
+            else bool = this.internalSet(undefined,
+                this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+        }
+        if (bool) this.keyChanged(keys, value);
+        return bool;
     }
 
     /**
@@ -366,9 +394,10 @@ class TurboModel<
      * @param {FlatKeyType} flatKey - A flat key produced by {@link flattenKey}.
      * @param {number} [depth] - Required when `flatKey` is a numeric index. The depth of the key path.
      */
-    public setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): void {
+    public setFlat(value: unknown, flatKey: FlatKeyType, depth?: number): boolean {
         const keys = this.scopeKey(flatKey as any, depth);
-        if (keys?.length) this.set(value, ...keys);
+        if (keys?.length) return this.set(value, ...keys);
+        return false;
     }
 
     /*
@@ -388,10 +417,8 @@ class TurboModel<
      * @returns {KeyType} The index or key where the value was stored.
      */
     protected internalAdd(model: TurboModel, data: any, value: any, key: KeyType): KeyType {
-        if (!data) return key;
-        key = this.addAction(model, data, value, key);
-        if (model) model.keyChanged([key], value);
-        return key;
+        if (!data || typeof data !== "object") return;
+        return this.addAction(model, data, value, key);
     }
 
     /**
@@ -412,8 +439,8 @@ class TurboModel<
             data.splice(index, 0, value);
             return index;
         }
-        this.internalSet(model, data, value, key);
-        return key;
+        const bool = this.internalSet(model, data, value, key);
+        return bool ? key : undefined;
     }
 
     /**
@@ -444,11 +471,16 @@ class TurboModel<
      */
     public add(value: unknown, ...keys: KeyType[]): KeyType;
     public add(value: unknown, ...keys: KeyType[]): KeyType {
-        return this.routeMutation(
-            keys,
-            (data, key) => this.internalAdd(data === this.data ? this : undefined, data, value, key),
-            (nested, keys) => nested.add(value, ...keys)
-        );
+        let key: KeyType;
+        if (keys.length < 2) key = this.internalAdd(this, this.data, value, keys[0]);
+        else {
+            const nested = this.getNested(keys[0]);
+            if (nested) key = nested.add(value, ...keys.slice(1));
+            else key = this.internalAdd(undefined, this.get(keys[0],
+                ...keys.slice(1, -1)), value, keys[keys.length - 1]);
+        }
+        if (!isUndefined(key)) this.keyChanged([...keys, key]);
+        return key;
     }
 
     /**
@@ -524,7 +556,7 @@ class TurboModel<
      *
      */
 
-    /**
+    /**å
      * @protected
      * @function deleteAction
      * @description Remove a single key from a container. Override this method to support other datatypes.
@@ -557,7 +589,6 @@ class TurboModel<
             }
         }
         this.deleteAction(data, key);
-        if (model) model.keyChanged([key], undefined, true);
     }
 
     /**
@@ -574,11 +605,18 @@ class TurboModel<
      */
     public delete(...keys: KeyType[]): void;
     public delete(...keys: KeyType[]): void {
-        return this.routeMutation(
-            keys,
-            (data, key) => this.internalDelete(data === this.data ? this : undefined, data, key),
-            (nested, keys) => nested.delete(...keys)
-        );
+        if (keys.length === 0) return;
+        if (keys.length === 1) this.internalDelete(this, this.data, keys[0]);
+        else {
+            const nested = this.getNested(keys[0]);
+            if (nested) nested.delete(...keys.slice(1));
+            else {
+                const parentData = this.get(keys[0], ...keys.slice(1, -1));
+                if (typeof parentData !== "object") return;
+                this.internalDelete(undefined, parentData, keys[keys.length - 1]);
+            }
+        }
+        this.keyChanged(keys, undefined, true);
     }
 
     /**
@@ -598,20 +636,19 @@ class TurboModel<
      *
      */
 
+    protected getKeysAction(data: any): KeyType[] {
+        if (!data || typeof data !== "object") return [];
+        if (Array.isArray(data)) return Array.from({length: data.length}, (_, i) => i);
+        if (data instanceof Map) return Array.from(data.keys());
+        return [...Object.keys(data), ...Object.getOwnPropertySymbols(data)];
+    }
+
     /**
      * @property keys
      * @description All keys currently present in the model.
      */
     public get keys(): DataKeyType[] {
-        if (!this.data || typeof this.data !== "object") return [];
-
-        if (Array.isArray(this.data)) return Array.from({length: this.data.length}, (_, i) => i) as DataKeyType[];
-        if (this.data instanceof Map) return Array.from(this.data.keys());
-
-        return [
-            ...Object.keys(this.data),
-            ...Object.getOwnPropertySymbols(this.data)
-        ] as DataKeyType[];
+        return this.getKeysAction(this.data) as DataKeyType[];
     }
 
     /**
@@ -689,7 +726,13 @@ class TurboModel<
     public initialize() {
         if (!this.data || this.isInitialized) return;
         this.isInitialized = true;
+        for (const [key, child] of this.nestedModels) {
+            const newData = this.get(key);
+            if (child.data !== newData) child.data = newData;
+            else if (!child.isInitialized) child.initialize();
+        }
         for (const key of this.keys) this.keyChanged([key]);
+        for (const observer of this.changeObservers) observer.observer.initialize();
     }
 
     /**
@@ -699,12 +742,12 @@ class TurboModel<
      */
     public clear(clearData: boolean = true) {
         if (clearData) this._data = undefined;
-        this.nestedModels.forEach(nested => nested.clear());
-        this.nestedModels.clear();
+        this.nestedModels.forEach(nested => nested.clear(clearData));
+        if (clearData) this.nestedModels.clear();
         this.signals.clear();
-        this.nestListener = false;
-        this.childObservers?.toArray().forEach(e => this.childObservers?.delete(e));
-        this.changeObservers?.toArray().forEach(observer => observer.clear());
+        if (clearData) this.nestedListeners.clear();
+        if (clearData) this.changeObservers.forEach(e => this.changeObservers.delete(e));
+        else this.changeObservers.forEach(e => e.observer.clear());
         this.isInitialized = false;
     }
 
@@ -774,7 +817,7 @@ class TurboModel<
 
         const pathKeys = keys.slice(0, -1);
         const signalKey = keys[keys.length - 1] as DataKeyType;
-        const models = pathKeys.length === 0 ? [this] : this.nestAll(pathKeys[0], ...pathKeys.slice(1));
+        const models = this.nestAll(...pathKeys);
         if (signalKey === TurboModel.ALL) return models.flatMap(model => model.keys.map(k => maker(k, model)));
         return models.map(model => maker(signalKey, model));
     }
@@ -848,7 +891,11 @@ class TurboModel<
     private nestRecur(keys: KeyType[], properties: any): TurboModel[] {
         if (keys.length === 0) return [this];
         if (keys[0] === TurboModel.ALL) {
-            this.nestListener = true;
+            this.nestedListeners.add({
+                listener: (selfKeys) =>
+                    this.createNestedChild(this, selfKeys[0], properties).nestRecur(keys.slice(1), properties),
+                keys: keys.slice(1)
+            });
             return this.keys.flatMap(key =>
                 this.createNestedChild(this, key, properties).nestRecur(keys.slice(1), properties));
         } else return this.createNestedChild(this, keys[0], properties).nestRecur(keys.slice(1), properties);
@@ -940,50 +987,40 @@ class TurboModel<
         properties: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType> = {},
         ...keys: KeyType[]
     ): TurboObserver<DataEntryType, ComponentType, DataKeyType> {
+        const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
         const observer = new (
             properties.customConstructor
             ?? this.observerConstructor
             ?? TurboObserver<DataEntryType, ComponentType, DataKeyType>
         )({
-            initialize: true,
             ...properties,
+            initialize: false,
             onDestroy: (self) => {
-                this.unregisterObserverFromPath(self, keys);
+                Array.from(this.changeObservers)
+                    .filter(e => e.observer === self)
+                    .forEach(e => this.changeObservers.delete(e));
                 properties.onDestroy?.(self);
             },
             onInitialize: (self) => {
-                this.initializeObserverOnPath(self, keys);
+                this.initializeObserverOnPath(this.data, self, keys, []);
                 properties.onInitialize?.(self);
             }
         }) as TurboObserver<DataEntryType, ComponentType, DataKeyType>;
 
-        this.registerObserverOnPath(observer, keys);
+        this.changeObservers.add({keys, observer});
+        if (initialize) observer.initialize();
         return observer;
     }
 
-    protected initializeObserverOnPath(observer: TurboObserver, keys: KeyType[]) {
+    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[]) {
         if (keys.length === 0) {
-            if (this.isInitialized) for (const key of this.keys) observer.keyChanged([key] as any, this.get(key));
-        } else if (keys[0] === TurboModel.ALL) {
-            for (const child of this.nestedModels.values()) child.initializeObserverOnPath(observer, keys.slice(1));
-        } else this.getNested(keys[0])?.initializeObserverOnPath(observer, keys.slice(1));
-    }
-
-    protected registerObserverOnPath(observer: TurboObserver, keys: KeyType[]) {
-        if (keys.length === 0) this.changeObservers?.add(observer as any);
-        else if (keys[0] === TurboModel.ALL) {
-            this.childObservers.add({observer, keys: keys.slice(1)});
-            for (const child of this.nestAll(TurboModel.ALL)) child.registerObserverOnPath(observer, keys.slice(1));
-        } else this.nest(keys[0])?.registerObserverOnPath(observer, keys.slice(1));
-    }
-
-    protected unregisterObserverFromPath(observer: TurboObserver, keys: KeyType[]) {
-        if (keys.length === 0) this.changeObservers?.delete(observer as any);
-        else if (keys[0] === TurboModel.ALL) {
-            this.childObservers?.toArray().filter(e => e.observer === observer)
-                .forEach(e => this.childObservers?.delete(e));
-            for (const child of this.nestedModels.values()) child.unregisterObserverFromPath(observer, keys.slice(1));
-        } else this.getNested(keys[0])?.unregisterObserverFromPath(observer, keys.slice(1));
+            if (!this.isInitialized) return;
+            for (const key of this.getKeysAction(data)) observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
+        } else if (keys[0] === TurboModel.ALL) for (const key of this.getKeysAction(data)) {
+            this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+        }
+        else this.initializeObserverOnPath(this.getAction(data, keys[0]), observer,
+                keys.slice(1), [...prefixKeys, keys[0]]);
     }
 
     /*
@@ -1001,7 +1038,7 @@ class TurboModel<
      * @param {unknown} [value] - The new value. Defaults to the current value at the key.
      * @param {boolean} [deleted=false] - Whether the entry was removed.
      */
-    protected keyChanged(keys: KeyType[], value: unknown = this.get(keys[0] as any), deleted: boolean = false) {
+    protected keyChanged(keys: KeyType[], value: unknown = this.get(...keys), deleted: boolean = false) {
         const key = keys[0] as DataKeyType;
         if (key === undefined) return;
 
@@ -1010,15 +1047,42 @@ class TurboModel<
         if (deleted) this.signals.delete(key);
 
         if (!this.enabledCallbacks) return;
-        if (!deleted && !this.nestedModels.has(key) && this.nestListener) {
-            const child = this.nest(key);
-            this.childObservers?.toArray().forEach(({observer, keys}) =>
-                    child.registerObserverOnPath(observer, keys));
-        }
+        if (!deleted && !this.nestedModels.has(key) && this.nestedListeners.size > 0)
+            this.nestedListeners.forEach(({listener}) => listener(keys, value));
 
         this.onKeyChanged.fire(value, ...keys);
-        this.changeObservers?.toArray().forEach(observer =>
-            observer.keyChanged(keys as any[], value as any, deleted));
+        this.changeObservers.forEach(({observer, keys: pattern}) =>
+            this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+    }
+
+    private matchObserverAndNotify(observer: TurboObserver, incomingKeys: KeyType[], pattern: KeyType[],
+                           prefixKeys: KeyType[], value: unknown, deleted: boolean) {
+        if (!observer.isInitialized) return;
+
+        if (pattern.length === 0) {
+            if (incomingKeys.length === 0) {
+                if (!deleted && value !== null && typeof value === "object") {
+                    for (const key of this.getKeysAction(value)) {
+                        observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
+                    }
+                }
+            }
+            else observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+            return;
+        }
+
+        if (incomingKeys.length === 0) {
+            if (!deleted && value !== null && typeof value === "object") {
+                for (const key of this.getKeysAction(value))
+                    this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+            }
+            return;
+        }
+
+        const [head, ...tail] = incomingKeys;
+        const [patternHead, ...patternTail] = pattern;
+        if (patternHead === TurboModel.ALL || patternHead === head)
+            this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
     }
 
     private static flattenSize(data: any, depth: number): number {
@@ -1141,30 +1205,14 @@ class TurboModel<
         this._data = data;
     }
 
-    private routeMutation<Type = any>(
-        keys: KeyType[],
-        rawCallback: (data: any, key: KeyType) => Type,
-        nestedCallback: (model: TurboModel, keys: KeyType[]) => Type
-    ): Type {
-        const firstKey = keys[0] as DataKeyType;
-        const childKeys = keys.slice(1);
-        const nested = this.getNested(firstKey);
-
-        if (childKeys.length === 0) return rawCallback(this.data, firstKey);
-        if (nested) return nestedCallback(nested, childKeys);
-        const parentData = this.get(firstKey, ...childKeys.slice(0, -1));
-        if (typeof parentData !== "object") return;
-        return rawCallback(parentData, childKeys[childKeys.length - 1]);
-    }
-
     public fireCallback(key: string, value?: any) {
         this.fireCallbackHook?.(value, key);
     }
 
-    private createNestedChild (model: TurboModel, key: KeyType, properties: TurboModelProperties): TurboModel {
+    private createNestedChild(model: TurboModel, key: KeyType, properties: TurboModelProperties): TurboModel {
         if (model.nestedModels.has(key)) return model.nestedModels.get(key);
 
-        const child = new this.modelConstructor({...properties, data: model.get(key), initialize: true});
+        const child = (this.modelConstructor as any).create({...properties, data: model.get(key), initialize: this.isInitialized});
         model.onKeyChanged.add((value, changedKey) => {
             if (changedKey !== key) return;
             if (child.data !== value) child.data = value;
