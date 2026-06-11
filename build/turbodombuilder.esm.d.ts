@@ -6358,9 +6358,10 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
      * @returns {ReifectEnabledObject} - The corresponding enabled state.
      */
     getObjectEnabledState(object: ClassType): ReifectEnabledObject;
-    initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
-    apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
-    toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): void;
+    initialize(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this;
+    apply(state: State | boolean, objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this;
+    toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this;
+    unapply(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this;
     /**
      * @function reloadFor
      * @description Generates the transition CSS string for the provided transition with the correct interpolation
@@ -6371,14 +6372,19 @@ declare class StatefulReifect<State extends string | number | symbol = any, Clas
     reloadFor(object: ClassType): this;
     getEnabledObjects(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): ClassType[];
     applyAll(object: ClassType, applyStylesInstantly?: boolean): void;
+    unapplyAll(object: ClassType, applyStylesInstantly?: boolean): void;
     refreshAll(): void;
     applyProperties(object: ClassType, state?: State): void;
+    unapplyProperties(object: ClassType): void;
     refreshProperties(): void;
     applyReplaceWith(object: ClassType, state?: State): void;
+    unapplyReplaceWith(object: ClassType): void;
     refreshReplaceWith(): void;
     applyClasses(object: ClassType, state?: State): void;
+    unapplyClasses(object: ClassType): void;
     refreshClasses(): void;
     applyStyles(object: ClassType, state?: State, applyStylesInstantly?: boolean): void;
+    unapplyStyles(object: ClassType, applyStylesInstantly?: boolean): void;
     refreshStyles(): void;
     getChainableStyles(object: ClassType): Partial<Record<string, string>>;
     protected applyField(object: ClassType, field: string, callback: (object: ClassType, data: ReifectObjectData<State, ClassType>, state: State) => void, state?: State): void;
@@ -6782,6 +6788,9 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
      * @description The dropdown's currently selected entries
      */
     get selectedEntry(): EntryType;
+    get selectedIndex(): number;
+    set selectedIndex(value: number);
+    get selectedIndices(): number[];
     set selectedValues(values: ValueType[]);
     /**
      * @description The dropdown's currently selected values
@@ -6823,52 +6832,6 @@ declare class TurboSelectInputEvent<ValueType = string, SecondaryValueType = str
 type TurboSelectElementProperties<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel<DataType>, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & TurboSelectProperties<ValueType, SecondaryValueType, EntryType> & {
     entriesClasses?: string | string[];
     selectedEntriesClasses?: string | string[];
-};
-
-/**
- * @class TurboSelectElement
- * @group Components
- * @category TurboSelectElement
- *
- * @description Select element class for creating Turbo button elements.
- * @extends TurboElement
- */
-declare class TurboSelectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    readonly properties: TurboSelectElementProperties;
-    static defaultProperties: TurboSelectElementProperties;
-    readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
-    entriesTag: ValidTag;
-    get entries(): EntryType[];
-    set entries(value: HTMLCollection | NodeList | EntryType[]);
-    values: ValueType[];
-    accessor selectedEntries: EntryType[];
-    accessor selectedEntry: EntryType;
-    entriesClasses: string | string[];
-    selectedEntriesClasses: string | string[];
-    accessor inputName: string;
-    accessor inputField: HTMLInputElement;
-    accessor multiSelection: boolean;
-    accessor forceSelection: boolean;
-    accessor enabledEntries: EntryType[];
-    accessor enabledValues: ValueType[];
-    accessor enabledSecondaryValues: SecondaryValueType[];
-    accessor selectedValue: ValueType;
-    accessor selectedValues: ValueType[];
-    accessor selectedSecondaryValues: SecondaryValueType[];
-    accessor selectedSecondaryValue: SecondaryValueType;
-    accessor stringSelectedValue: string;
-    initialize(): void;
-}
-
-declare enum ContentSwitchMode {
-    fadeLeft = "fadeLeft",
-    fadeRight = "fadeRight",
-    carousel = "carousel"
-}
-type TurboContentSwitchProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
-    mode?: ContentSwitchMode;
-    transitionDuration?: number;
-    transitionReifect?: StatefulReifect<Shown> | StatefulReifectProperties<Shown>;
 };
 /**
  * @group Components
@@ -6966,25 +6929,105 @@ declare class Reifect<ClassType extends object = Node> extends StatefulReifect<"
     set replaceWith(value: StatelessPropertyConfig<ClassType, ClassType>);
     initialize(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<"default", ClassType>): void;
     apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"default", ClassType>): void;
+    protected normalizePropertyConfig<Type>(currentConfig: any, newConfig: any): any;
 }
+
+/**
+ * @class TurboSelectElement
+ * @group Components
+ * @category TurboSelectElement
+ *
+ * @description Select element class for creating Turbo button elements.
+ * @extends TurboElement
+ */
+declare class TurboSelectElement<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
+    readonly properties: TurboSelectElementProperties;
+    static defaultProperties: TurboSelectElementProperties;
+    protected _sizeTransitionTimeout: ReturnType<typeof setTimeout>;
+    readonly select: TurboSelect<ValueType, SecondaryValueType, EntryType>;
+    entriesTag: ValidTag;
+    get entries(): EntryType[];
+    set entries(value: HTMLCollection | NodeList | EntryType[]);
+    values: ValueType[];
+    accessor selectedEntries: EntryType[];
+    accessor selectedEntry: EntryType;
+    accessor selectedIndex: number;
+    accessor selectedIndices: number[];
+    entriesClasses: string | string[];
+    selectedEntriesClasses: string | string[];
+    accessor inputName: string;
+    accessor inputField: HTMLInputElement;
+    accessor multiSelection: boolean;
+    accessor forceSelection: boolean;
+    accessor enabledEntries: EntryType[];
+    accessor enabledValues: ValueType[];
+    accessor enabledSecondaryValues: SecondaryValueType[];
+    accessor selectedValue: ValueType;
+    accessor selectedValues: ValueType[];
+    accessor selectedSecondaryValues: SecondaryValueType[];
+    accessor selectedSecondaryValue: SecondaryValueType;
+    accessor stringSelectedValue: string;
+    initialize(): void;
+    private _transitionDuration;
+    get transitionDuration(): number;
+    /**
+     * @description Duration of the container size transition in seconds. Kept in sync with
+     * `switchTransitionReifect` — set this to change both at once.
+     */
+    set transitionDuration(value: number);
+    set transitionReifect(value: Reifect | StatelessReifectProperties);
+    get transitionReifect(): Reifect;
+    /**
+     * @description Animates the container from its current size to the selected entry's natural
+     * size. Subclasses should call `super.applyTransition()` then add their own entry-level logic.
+     *
+     * The sequence:
+     * 1. Freeze container at current px size (gives CSS transition a `from` value)
+     * 2. Call `beforeResize()` — subclass hook to prepare entries before the frame
+     * 3. Next frame: read selected entry's natural size, animate container to it
+     * 4. After `transitionDuration`ms: release explicit container size
+     */
+    protected applyTransition(): void;
+    /**
+     * @description Called synchronously inside `applyTransition`, before the rAF that reads the
+     * selected entry's new size. Use this to reposition/reflow entries so the size read is correct.
+     * @param selectedEntry - The newly selected entry.
+     */
+    protected beforeResize(selectedEntry: EntryType): void;
+    /**
+     * @description Called after the container size transition completes.
+     * @param selectedEntry - The selected entry.
+     */
+    protected afterResize(selectedEntry: EntryType): void;
+}
+
+declare enum ContentSwitchMode {
+    fadeLeft = "fadeLeft",
+    fadeRight = "fadeRight",
+    carousel = "carousel"
+}
+type TurboContentSwitchProperties<ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> = TurboElementProperties<ViewType, DataType, ModelType, EmitterType> & {
+    mode?: ContentSwitchMode;
+    transitionDuration?: number;
+    transitionReifect?: StatefulReifect<Shown> | StatefulReifectProperties<Shown>;
+};
 
 declare class TurboContentSwitch<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
     static defaultProperties: {
-        transitionReifect: Reifect<Node>;
+        transitionDuration: number;
     };
     readonly properties: TurboContentSwitchProperties<ViewType, DataType, ModelType, EmitterType>;
-    private _previousSelectedIndex;
     set mode(value: ContentSwitchMode);
-    get mode(): ContentSwitchMode;
-    set transitionDuration(_value: number);
-    get transitionDuration(): number;
-    set transitionReifect(value: Reifect);
-    set movementReifect(value: StatefulReifect<Shown>);
+    set entryTransitionReifect(value: Reifect | StatelessReifectProperties);
+    get entryTransitionReifect(): Reifect;
+    set movementReifect(value: Reifect | StatelessReifectProperties);
+    get movementReifect(): Reifect;
+    set transitionDuration(value: number);
     initialize(): void;
-    private applyFadeTransition;
-    private initCarouselEntry;
-    private applyCarouselTransition;
-    private generateTransitionReifect;
+    protected setupEntry(entry: EntryType): void;
+    private freezeAndHide;
+    private reloadMovementReifect;
+    protected beforeResize(selectedEntry: EntryType): void;
 }
 
 /**
@@ -7299,59 +7342,56 @@ type TurboSelectWheelStylingProperties = {
  * @group Components
  * @category TurboSelectWheel
  *
- * @extends TurboSelect
- * @description Class to create a dynamic selection wheel.
- * @template {string} ValueType
- * @template {TurboSelectEntry<ValueType, any>} EntryType
+ * @extends TurboSelectElement
+ * @description A swipeable selection wheel. Entries are always position absolute, fanned out by a
+ * continuous pixel offset. Dragging moves all entries in real time; releasing snaps to the nearest.
+ * The container sizes to the selected entry. Visual state is driven by `entryTransitionReifect`
+ * (CSS transitions) and `computeAndApplyStyling` (per-entry opacity/scale/transform).
  */
-declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-    readonly properties: TurboSelectWheelProperties;
-    selector: TurboSelect<ValueType, SecondaryValueType, EntryType>;
-    accessor entries: EntryType[];
-    accessor values: ValueType[];
-    accessor selectedEntry: EntryType;
-    accessor selectedValue: ValueType;
+declare class TurboSelectWheel<ValueType = string, SecondaryValueType = string, EntryType extends HTMLElement = HTMLElement, ViewType extends TurboView = TurboView<any, any>, DataType extends object = object, ModelType extends TurboModel<DataType> = TurboModel, EmitterType extends TurboEmitter = TurboEmitter> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
+    static defaultProperties: {
+        transitionDuration: number;
+    };
+    readonly properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType>;
     private _currentPosition;
+    private _index;
     protected readonly sizePerEntry: number[];
     protected readonly positionPerEntry: number[];
     protected totalSize: number;
     dragLimitOffset: number;
-    /**
-     * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
-     */
     openTimeout: number;
     direction: Direction;
     scale: Record<Range, number>;
     generateCustomStyling: (properties: TurboSelectWheelStylingProperties) => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
     protected dragging: boolean;
-    protected openTimer: NodeJS.Timeout;
+    protected openTimer: ReturnType<typeof setTimeout>;
     initialize(): void;
     opacity: Record<Range, number>;
     set size(value: Record<Range, number> | number);
     get size(): Record<Range, number>;
-    get reifect(): Reifect;
-    set reifect(value: Reifect | StatelessReifectProperties);
-    private readonly closeOnClick;
+    set entryTransitionReifect(value: Reifect | StatelessReifectProperties);
+    get entryTransitionReifect(): Reifect;
+    set transitionDuration(value: number);
+    set customReifect(value: Reifect | StatelessReifectProperties | null);
+    get customReifect(): Reifect;
+    private readonly _closeOnClick;
     set alwaysOpen(value: boolean);
-    get isVertical(): boolean;
-    set index(value: number);
-    protected get trimmedIndex(): number;
-    protected get flooredTrimmedIndex(): number;
     set open(value: boolean);
+    get isVertical(): boolean;
+    /** Fractional index — integer when snapped, fractional mid-drag. */
+    get index(): number;
+    protected set index(value: number);
     get currentPosition(): number;
     protected set currentPosition(value: number);
     protected setupUIListeners(): void;
-    protected computeDragValue(delta: Point): number;
-    /**
-     * Recalculates the dimensions and positions of all entries
-     */
+    protected computeDragDelta(delta: Point): number;
     protected reloadEntrySizes(): void;
-    protected recomputeIndex(): void;
+    protected indexToPosition(index: number): number;
+    protected positionToIndex(position: number): number;
+    protected snapToNearest(): void;
+    protected applyTransition(): void;
+    protected applyAllEntryStyles(): void;
     protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size?: Record<Range, number>): void;
-    select(entry: ValueType | EntryType, selected?: boolean): this;
-    clear(): void;
-    refresh(): void;
-    reset(): void;
     protected clearOpenTimer(): void;
     protected setOpenTimer(): void;
 }

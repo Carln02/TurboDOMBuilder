@@ -1,0 +1,18 @@
+turbo-select-wheel {
+    display: block;
+    position: relative;
+    height: var(2rem);
+}
+
+turbo-select-wheel > * {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Prevent text wrapping so offsetWidth is stable */
+    white-space: nowrap;
+
+    /* Pointer events only on visible entries */
+    user-select: none;
+}

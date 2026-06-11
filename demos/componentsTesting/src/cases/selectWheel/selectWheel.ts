@@ -1,6 +1,7 @@
 import { TurboSelectWheel, TurboButton
 } from "../../../../../build/turbodombuilder.esm";
 import { box } from "../../demoBox/demoBox";
+import "./selectWheel.css";
 
 function selectWheelTest1() {
     const wheel = TurboSelectWheel.create({});
@@ -10,11 +11,11 @@ function selectWheelTest1() {
         .addSubBox("wheel", wheel)
         .addContent(TurboButton.create({
             text: "Select Beta",
-            onClick: () => wheel.selector.select("Beta")
+            onClick: () => wheel.select.select("Beta")
         }))
         .addContent(TurboButton.create({
             text: "selectByIndex(2)",
-            onClick: () => wheel.selector.selectByIndex(2)
+            onClick: () => wheel.select.selectByIndex(2)
         }))
         .addContent(TurboButton.create({
             text: "Log selected",

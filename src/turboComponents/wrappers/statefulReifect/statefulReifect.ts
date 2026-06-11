@@ -385,8 +385,8 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
      */
 
     public initialize(state: State | boolean, objects?: ClassType | ClassType[],
-                      options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled) return;
+                      options?: ReifectAppliedOptions<State, ClassType>): this {
+        if (!this.enabled) return this;
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
 
@@ -398,11 +398,12 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
             this.applyAll(object, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.index, data.total, this.getObject(data));
         });
+        return this;
     }
 
     public apply(state: State | boolean, objects?: ClassType | ClassType[],
-                 options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled) return;
+                 options?: ReifectAppliedOptions<State, ClassType>): this {
+        if (!this.enabled) return this;
 
         state = this.parseState(state);
         options = this.initializeOptions(options, objects);
@@ -415,10 +416,11 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
             this.applyAll(object, options?.applyStylesInstantly);
             if (data.onSwitch) data.onSwitch(state, data.index, data.total, this.getObject(data));
         });
+        return this;
     }
 
-    public toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>) {
-        if (!this.enabled) return;
+    public toggle(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this {
+        if (!this.enabled) return this;
 
         if (!objects) objects = [];
         else if (objects instanceof HTMLCollection) objects = [...objects] as ClassType[];
@@ -427,7 +429,21 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         const referenceObject = objects[0] ?? this.attachedObjects.array[0];
         const previousState = this.getData(referenceObject)?.lastState;
         const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
-        this.apply(this.states[nextStateIndex], objects, options);
+        return this.apply(this.states[nextStateIndex], objects, options);
+    }
+
+    //TODO FIXXXX
+    public unapply(objects?: ClassType | ClassType[], options?: ReifectAppliedOptions<State, ClassType>): this {
+        if (!this.enabled) return this;
+        options = this.initializeOptions(options, objects);
+
+        this.getEnabledObjects(objects, options).forEach(object => {
+            const data = this.getData(object);
+            if (!data || !data.resolvedValues) return;
+            this.unapplyAll(object, options?.applyStylesInstantly);
+            // if (data.onSwitch) data.onSwitch(undefined, data.index, data.total, this.getObject(data));
+        });
+        return this;
     }
 
     /**
@@ -495,6 +511,13 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         this.applyClasses(object);
     }
 
+    public unapplyAll(object: ClassType, applyStylesInstantly: boolean = false) {
+        this.unapplyReplaceWith(object);
+        this.unapplyStyles(object, applyStylesInstantly);
+        this.unapplyProperties(object);
+        this.unapplyClasses(object);
+    }
+
     public refreshAll() {
         this.refreshReplaceWith();
         this.refreshProperties();
@@ -518,6 +541,21 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         }, state);
     }
 
+    public unapplyProperties(object: ClassType) {
+        this.applyField(object, "properties", (object, data, state) => {
+            const properties = data.resolvedValues?.properties?.[state];
+            if (!properties) return;
+            for (const field of Object.keys(properties)) {
+                if (!field) continue;
+                try {
+                    object[field] = undefined;
+                } catch (e: any) {
+                    console.error(`Unable to unset property ${field}: ${e.message}`);
+                }
+            }
+        });
+    }
+
     public refreshProperties() {
         if (!this.enabled|| !this.propertiesEnabled) return;
         this.attachedObjects.forEach(object => this.applyProperties(object));
@@ -536,6 +574,10 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         }, state);
     }
 
+    public unapplyReplaceWith(object: ClassType) {
+        return;
+    }
+
     public refreshReplaceWith() {
         if (!this.enabled || !this.replacedWithEnabled) return;
         this.attachedObjects.forEach(object => this.applyReplaceWith(object));
@@ -548,6 +590,15 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
                 turbo(object).toggleClass(value, state === key);
             }
         }, state);
+    }
+
+    public unapplyClasses(object: ClassType) {
+        this.applyField(object, "classes", (object, data, state) => {
+            if (!(object instanceof Element) || !data.resolvedValues?.classes) return;
+            for (const value of Object.values(data.resolvedValues.classes) as [string, string][]) {
+                turbo(object).toggleClass(value, false);
+            }
+        });
     }
 
     public refreshClasses() {
@@ -573,14 +624,33 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         }, state);
     }
 
+    public unapplyStyles(object: ClassType, applyStylesInstantly: boolean = false) {
+        this.applyField(object, "styles", (object, data, state) => {
+            if (!(object instanceof Element) || !data.resolvedValues?.styles) return;
+            let hasChainable = false;
+
+            for (const state of this.states) {
+                const styles = data.resolvedValues.styles?.[state];
+                if (!styles) return;
+                for (const key of Object.keys(styles)) {
+                    if (StatefulReifect.chainableStyleFields.has(key)) hasChainable = true;
+                    else turbo(object).setStyle(key as any, "", applyStylesInstantly);
+                }
+            }
+            data.resolvedValues.styles = {};
+            if (hasChainable) turbo(object).reloadReifectsChainableStyles();
+        });
+    }
+
     public refreshStyles() {
         if (!this.enabled || !this.stylesEnabled) return;
         this.attachedObjects.forEach(object => this.applyStyles(object));
     }
 
     public getChainableStyles(object: ClassType): Partial<Record<string, string>> {
+        if (!this.enabled || !this.stylesEnabled) return {};
         const data = this.getData(object);
-        if (!data?.resolvedValues?.styles || !data.lastState) return {};
+        if (!data?.resolvedValues?.styles || !data.lastState || !data.enabled.global || !data.enabled.styles) return {};
         const styles = data.resolvedValues.styles[data.lastState];
         if (!styles) return {};
 
@@ -717,7 +787,7 @@ class StatefulReifect<State extends string | number | symbol = any, ClassType ex
         newConfig: PropertyConfig<Type, State, ClassType>,
     ): PartialRecord<State, ReifectInterpolator<Type, ClassType>> {
         const out: PartialRecord<State, ReifectInterpolator<Type, ClassType>> = currentConfig ? {...currentConfig} : {};
-        if (isUndefined(newConfig)) return out;
+        if (isUndefined(newConfig) || !this.states?.length) return out;
 
         const isObject = typeof newConfig === "object" && newConfig !== null && !Array.isArray(newConfig);
         const keys = isObject ? Reflect.ownKeys(newConfig as object) : [];

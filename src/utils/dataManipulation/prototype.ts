@@ -39,6 +39,17 @@ function getFirstPrototypeInChainWith(object: object, key: PropertyKey): any {
     return undefined;
 }
 
+function getLastPrototypeInChainWith(object: object, key: PropertyKey): any {
+    let currentObject: any = Object.getPrototypeOf(object);
+    let result: PropertyDescriptor;
+    while (currentObject && currentObject !== Object.prototype) {
+        const descriptor = Object.getOwnPropertyDescriptor(currentObject, key);
+        if (descriptor) result = currentObject;
+        currentObject = Object.getPrototypeOf(currentObject);
+    }
+    return result;
+}
+
 /**
  * @group Utilities
  * @category Prototype

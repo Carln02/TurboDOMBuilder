@@ -8,25 +8,25 @@ import {TurboModel} from "../../../mvc/model/model";
 import {$, turbo} from "../../../turboFunctions/turboFunctions";
 import {auto} from "../../../decorators/auto/auto";
 import {TurboDragEvent} from "../../../eventHandling/events/turboDragEvent";
-import {TurboElement} from "../../../turboElement/turboElement";
 import {Direction, Range} from "../../../types/enums.types";
 import {DefaultEventName} from "../../../types/eventNaming.types";
 import {Point} from "../../datatypes/point/point";
 import {PartialRecord} from "../../../types/basic.types";
 import {TurboEmitter} from "../../../mvc/emitter/emitter";
-import {expose} from "../../../decorators/expose";
-import {TurboSelect} from "../../basics/select/select";
 import {StatelessReifectProperties} from "../../wrappers/reifect/reifect.types";
 import {Propagation} from "../../../turboFunctions/event/event.types";
+import {TurboSelectElement} from "../../basics/selectElement/selectElement";
 
 /**
  * @class TurboSelectWheel
  * @group Components
  * @category TurboSelectWheel
  *
- * @extends TurboSelect
- * @description Class to create a dynamic selection wheel.
- * @template {string} ValueType
+ * @extends TurboSelectElement
+ * @description A swipeable selection wheel. Entries are always position absolute, fanned out by a
+ * continuous pixel offset. Dragging moves all entries in real time; releasing snaps to the nearest.
+ * The container sizes to the selected entry. Visual state is driven by `entryTransitionReifect`
+ * (CSS transitions) and `computeAndApplyStyling` (per-entry opacity/scale/transform).
  */
 class TurboSelectWheel<
     ValueType = string,
@@ -36,26 +36,20 @@ class TurboSelectWheel<
     DataType extends object = object,
     ModelType extends TurboModel<DataType> = TurboModel,
     EmitterType extends TurboEmitter = TurboEmitter
-> extends TurboElement<ViewType, DataType, ModelType, EmitterType> {
-     public declare readonly properties: TurboSelectWheelProperties;
-    public selector: TurboSelect<ValueType, SecondaryValueType, EntryType>;
+> extends TurboSelectElement<ValueType, SecondaryValueType, EntryType, ViewType, DataType, ModelType, EmitterType> {
+    public static defaultProperties = {transitionDuration: 0.3};
 
-    @expose("selector") public accessor entries: EntryType[];
-    @expose("selector") public accessor values: ValueType[];
-    @expose("selector", false) public accessor selectedEntry: EntryType;
-    @expose("selector", false) public accessor selectedValue: ValueType;
+    public declare readonly properties: TurboSelectWheelProperties<ValueType, SecondaryValueType, EntryType,
+        ViewType, DataType, ModelType, EmitterType>;
 
     private _currentPosition: number = 0;
+    private _index: number = 0;
 
     protected readonly sizePerEntry: number[] = [];
     protected readonly positionPerEntry: number[] = [];
     protected totalSize: number = 0;
 
     public dragLimitOffset: number = 30;
-
-    /**
-     * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
-     */
     public openTimeout: number = 3000;
     public direction: Direction = Direction.horizontal;
     public scale: Record<Range, number> = {max: 1, min: 0.5};
@@ -63,134 +57,125 @@ class TurboSelectWheel<
     public generateCustomStyling: (properties: TurboSelectWheelStylingProperties)
         => string | PartialRecord<keyof CSSStyleDeclaration, string | number>;
 
-    protected dragging: boolean;
-    protected openTimer: NodeJS.Timeout;
-
+    protected dragging: boolean = false;
+    protected openTimer: ReturnType<typeof setTimeout>;
 
     public initialize(): void {
-        this.selector = TurboSelect.create() as any;
-        this.selector.multiSelection = false;
-        this.selector.forceSelection = true;
+        this.select.onEntryAdded.add(entry => {
+            turbo(entry).setStyles({position: "absolute", whiteSpace: "nowrap"}, true);
+            this.entryTransitionReifect?.attach(entry);
+            this.customReifect?.attach(entry);
 
-        this.selector.onSelect.add((b) => {
-            if (!b) return;
-            this.open = true;
-            if (!this.alwaysOpen) this.setOpenTimer();
+            turbo(entry).on(DefaultEventName.dragStart, () => {
+                this.clearOpenTimer();
+                this.open = true;
+                this.dragging = true;
+                if (this.entryTransitionReifect) this.entryTransitionReifect.unapply();
+                this.reloadEntrySizes();
+                return Propagation.stopImmediatePropagation;
+            });
+
+            requestAnimationFrame(() => {
+                this.reloadEntrySizes();
+            });
         });
 
-        this.selector.onEntryRemoved.add((entry) => this.reifect?.detach(entry));
-        this.selector.onEntryAdded.add((entry) => {
-            if (entry instanceof Element && entry.parentElement) {
-                this.reifect?.attach(entry);
-                this.reloadEntrySizes();
-            }
-
-            let showTimer: NodeJS.Timeout;
-            turbo(entry)
-                .setStyles({position: "absolute"})
-                .on(DefaultEventName.dragStart, (e: Event) => {
-                    this.clearOpenTimer();
-                    this.open = true;
-                    this.dragging = true;
-                    // this.reifect.enabled.transition = false;
-                    this.reloadEntrySizes();
-                    return Propagation.stopImmediatePropagation;
-                })
-                .on("pointerover", () => {
-                    clearTimeout(showTimer);
-                    showTimer = setTimeout(() => this.open = true, 1000);
-                })
-                .on("pointerout", () => {
-                    if (showTimer) clearTimeout(showTimer);
-                    showTimer = null;
-                });
-
-            this.refresh();
+        this.select.onEntryRemoved.add(entry => {
+            this.entryTransitionReifect?.detach(entry);
+            this.customReifect?.detach(entry);
+            requestAnimationFrame(() => this.reloadEntrySizes());
         });
 
         super.initialize();
-        this.refresh();
 
-        turbo(this).setStyles({display: "block", position: "relative"});
+        turbo(this).setStyles({display: "inline-block", position: "relative", overflow: "hidden"});
     }
 
     @auto({
         defaultValue: {max: 1, min: 0},
-        preprocessValue: (value) => {
-            return {
-                max: trim(value?.max, 1),
-                min: trim(value?.min, 1)
-            }
-        }
+        preprocessValue: (value) => ({
+            max: trim(value?.max ?? 1, 1),
+            min: trim(value?.min ?? 0, 1),
+        }),
     }) public opacity: Record<Range, number>;
 
     @auto({
-        preprocessValue: (value) => typeof value == "object" ? value : {max: value ?? 100, min: -(value ?? 100)}
+        defaultValue: {max: 100, min: -100},
+        preprocessValue: (value) =>
+            typeof value === "object" ? value : {max: value ?? 100, min: -(value ?? 100)},
     }) public set size(value: Record<Range, number> | number) {}
-
-    public get size(): Record<Range, number> {return}
+    public get size(): Record<Range, number> { return; }
 
     @auto({
         preprocessValue: function (value) {
+            if (!value) return;
             if (value instanceof Reifect) return value;
-            if (!value) value = {};
-            if (!value.transitionProperties) value.transitionProperties = "opacity transform";
-            if (value.transitionDuration == undefined) value.transitionDuration = 0.2;
-            if (!value.transitionTimingFunction) value.transitionTimingFunction = "ease-in-out";
             return new Reifect(value);
         }
-    }) public get reifect(): Reifect {return}
+    }) public set entryTransitionReifect(value: Reifect | StatelessReifectProperties) {
+        if (!value) return;
+        if (this.entries.length > 0) value.attach(...this.entries);
+    }
+    public get entryTransitionReifect(): Reifect {return;}
 
-    public set reifect(value: Reifect | StatelessReifectProperties) {
-        this.reifect.attach(...this.entries);
+    @auto({override: true}) public set transitionDuration(value: number) {
+        if (value <= 0) return;
+        if (!this.entryTransitionReifect) this.entryTransitionReifect = new Reifect({});
+        this.entryTransitionReifect.styles = `transition: transform ${value}s ease-in-out, opacity ${value}s ease-in-out`;
     }
 
-    private readonly closeOnClick = () => this.open = false;
+    @auto({
+        preprocessValue: function (value) {
+            if (!value) return null;
+            if (value instanceof Reifect) return value;
+            return new Reifect(value as StatelessReifectProperties);
+        },
+    }) public set customReifect(value: Reifect | StatelessReifectProperties | null) {
+        if (this.customReifect && this.entries.length > 0) this.customReifect.attach(...this.entries);
+    }
+    public get customReifect(): Reifect { return; }
+
+    private readonly _closeOnClick = () => this.open = false;
 
     @auto({defaultValue: false}) public set alwaysOpen(value: boolean) {
-        if (value) turbo(document.body).removeListener(DefaultEventName.click, this.closeOnClick);
-        else turbo(document.body).on(DefaultEventName.click, this.closeOnClick);
+        if (value) turbo(document.body).removeListener(DefaultEventName.click, this._closeOnClick);
+        else turbo(document.body).on(DefaultEventName.click, this._closeOnClick);
         this.open = value;
-    }
-
-    public get isVertical() {
-        return this.direction == Direction.vertical;
-    }
-
-    @auto({cancelIfUnchanged: false}) public set index(value: number) {
-        this.selector.selectByIndex(this.trimmedIndex);
-    }
-
-    protected get trimmedIndex() {
-        return trim(Math.round(this.index), this.entries.length - 1);
-    }
-
-    protected get flooredTrimmedIndex() {
-        return trim(Math.floor(this.index), this.entries.length - 1);
     }
 
     @auto() public set open(value: boolean) {
         turbo(this).setStyle("overflow", value ? "visible" : "hidden");
     }
 
-    public get currentPosition(): number {
-        return this._currentPosition;
+    public get isVertical() {
+        return this.direction === Direction.vertical;
     }
+
+    /** Fractional index — integer when snapped, fractional mid-drag. */
+    public get index(): number { return this._index; }
+    protected set index(value: number) {
+        this._index = value;
+        this.select.selectByIndex(trim(Math.round(value), this.entries.length - 1));
+    }
+
+    // -------------------------------------------------------------------------
+    // Position
+    // -------------------------------------------------------------------------
+
+    public get currentPosition(): number { return this._currentPosition; }
 
     protected set currentPosition(value: number) {
+        if (!this.sizePerEntry.length) return;
         const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
         const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
-
-        if (value < min) value = min;
-        if (value > max) value = max;
-
-        this._currentPosition = value;
-        const elements = this.reifect.getEnabledObjects();
-        if (elements.length === 0) return;
-
-        // elements.forEach((el, index) =>
-        //     this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
+        this._currentPosition = Math.min(Math.max(value, min), max);
+        this._index = this.positionToIndex(this._currentPosition);
+        this.applyAllEntryStyles();
     }
+
+    // -------------------------------------------------------------------------
+    // UI Listeners
+    // -------------------------------------------------------------------------
 
     protected setupUIListeners() {
         super.setupUIListeners();
@@ -198,112 +183,134 @@ class TurboSelectWheel<
         turbo(document.body)
             .on(DefaultEventName.drag, (e: TurboDragEvent) => {
                 if (!this.dragging) return;
-                e.stopImmediatePropagation();
-                this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
+                this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
+                return Propagation.stopImmediatePropagation;
             })
-            .on(DefaultEventName.dragEnd, (e: TurboDragEvent) => {
+            .on(DefaultEventName.dragEnd, () => {
                 if (!this.dragging) return;
-                e.stopImmediatePropagation();
                 this.dragging = false;
-                this.recomputeIndex();
-                // this.snapTo(this.trimmedIndex);
+                if (this.entryTransitionReifect) this.entryTransitionReifect.apply();
+                this.snapToNearest();
                 if (!this.alwaysOpen) this.setOpenTimer();
+                return Propagation.stopImmediatePropagation;
             });
     }
 
-    protected computeDragValue(delta: Point): number {
+    protected computeDragDelta(delta: Point): number {
         return -delta[this.isVertical ? "y" : "x"];
     }
 
-    /**
-     * Recalculates the dimensions and positions of all entries
-     */
-    protected reloadEntrySizes() {
-        if (!this.reifect) return;
+    // -------------------------------------------------------------------------
+    // Layout
+    // -------------------------------------------------------------------------
 
+    protected reloadEntrySizes() {
         this.sizePerEntry.length = 0;
         this.positionPerEntry.length = 0;
         this.totalSize = 0;
 
-        this.reifect.getEnabledObjects().forEach(entry => {
-            // const object = entry.object.deref();
-            // const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-            // this.sizePerEntry.push(size);
-            // this.positionPerEntry.push(this.totalSize);
-            // this.totalSize += size;
+        this.entries.forEach(entry => {
+            const size = entry[this.isVertical ? "offsetHeight" : "offsetWidth"];
+            this.sizePerEntry.push(size);
+            this.positionPerEntry.push(this.totalSize);
+            this.totalSize += size;
         });
-        const flooredIndex = Math.floor(this.index);
-        const indexOffset = this.index - Math.floor(this.index);
 
-        this.currentPosition = 0;
-        if (this.index < 0) this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
-        else if (this.index >= this.sizePerEntry.length) this.currentPosition =
-            (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
-        else this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+        if (!this.sizePerEntry.length) { this._currentPosition = 0; return; }
+        this._currentPosition = this.indexToPosition(this._index);
+        this.applyAllEntryStyles();
+        if (this.selectedIndex >= 0) this.applyTransition();
     }
 
-    protected recomputeIndex() {
-        let index = 0;
-        while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition) index++;
-        if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2) index++;
-        this.index = index;
+    protected indexToPosition(index: number): number {
+        if (!this.sizePerEntry.length) return 0;
+        if (index < 0) return -Math.abs(index) * this.sizePerEntry[0];
+        if (index >= this.sizePerEntry.length)
+            return this.totalSize - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
+        const floor = trim(Math.floor(index), this.sizePerEntry.length - 1);
+        return this.positionPerEntry[floor] + this.sizePerEntry[floor] * (index - Math.floor(index));
     }
 
-    protected computeAndApplyStyling(element: HTMLElement, translationValue: number, size: Record<Range, number> = this.size) {
-        let opacityValue: number, scaleValue: number;
+    protected positionToIndex(position: number): number {
+        if (!this.positionPerEntry.length) return 0;
+        let i = 0;
+        while (i < this.positionPerEntry.length - 1 && this.positionPerEntry[i + 1] <= position) i++;
+        if (i >= this.sizePerEntry.length - 1) return i;
+        return i + Math.min((position - this.positionPerEntry[i]) / (this.sizePerEntry[i] || 1), 1);
+    }
+
+    protected snapToNearest() {
+        const nearest = trim(Math.round(this.positionToIndex(this._currentPosition)), this.entries.length - 1);
+        this.index = nearest;
+        this._currentPosition = this.indexToPosition(nearest);
+        this.applyAllEntryStyles();
+    }
+
+    // -------------------------------------------------------------------------
+    // Transition (overrides TurboSelectElement — wheel sizes to selected entry directly)
+    // -------------------------------------------------------------------------
+
+    protected applyTransition() {
+        const i = this.selectedIndex;
+        if (i < 0) return;
+
+        this._index = i;
+        this._currentPosition = this.indexToPosition(i);
+        this.applyAllEntryStyles();
+
+        // Size container to selected entry
+        if (this.sizePerEntry.length) {
+            const entry = this.entries[i] as HTMLElement;
+            const w = this.isVertical ? entry.offsetWidth : this.sizePerEntry[i];
+            const h = this.isVertical ? this.sizePerEntry[i] : entry.offsetHeight;
+            $(this).setStyles({width: `${w}px`, height: `${h}px`});
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Styling
+    // -------------------------------------------------------------------------
+
+    protected applyAllEntryStyles() {
+        this.entries.forEach((el, i) => {
+            const translationValue = (this.positionPerEntry[i] ?? 0) - this._currentPosition;
+            if (this.customReifect) {
+                this.customReifect.apply(el as any, {recomputeProperties: true});
+            } else {
+                this.computeAndApplyStyling(el, translationValue);
+            }
+        });
+    }
+
+    protected computeAndApplyStyling(
+        element: HTMLElement,
+        translationValue: number,
+        size: Record<Range, number> = this.size,
+    ) {
         const bound = translationValue > 0 ? size.max : size.min;
-        opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
-        scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+        const opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+        const scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
 
         let styles: string | PartialRecord<keyof CSSStyleDeclaration, string | number> = {
-            left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
-            calc(${!this.isVertical ? translationValue : 0}px - 50%),
-            calc(${this.isVertical ? translationValue : 0}px - 50%),
-            0) scale3d(${scaleValue}, ${scaleValue}, 1)`
+            left: "50%",
+            top: "50%",
+            opacity: opacityValue,
+            transform: `translate3d(
+                calc(${!this.isVertical ? translationValue : 0}px - 50%),
+                calc(${this.isVertical ? translationValue : 0}px - 50%),
+                0) scale3d(${scaleValue}, ${scaleValue}, 1)`,
         };
 
         if (this.generateCustomStyling) styles = this.generateCustomStyling({
-            element: element,
-            translationValue: translationValue,
-            opacityValue: opacityValue,
-            scaleValue: scaleValue,
-            size: size,
-            defaultComputedStyles: styles
+            element, translationValue, opacityValue, scaleValue, size, defaultComputedStyles: styles,
         });
 
         $(element).setStyles(styles);
     }
 
-    public select(entry: ValueType | EntryType, selected: boolean = true): this {
-        // super.select(entry, selected);
-        if (entry === undefined || entry === null) return this;
-
-        const index = this.selector.getIndex(this.selectedEntry);
-        if (index != this.index) this.index = index;
-
-        if (this.reifect) {
-            // this.reifect.enabled.transition = true;
-            this.reloadEntrySizes();
-        }
-
-        const computedStyle = getComputedStyle(this.selectedEntry);
-        $(this).setStyles({minWidth: computedStyle.width, minHeight: computedStyle.height}, true);
-        return this;
-    }
-
-    public clear(): void {
-        this.reifect.detach(...this.entries);
-        this.selector.clear();
-    }
-
-    public refresh() {
-        if (this.selectedEntry) this.select(this.selectedEntry);
-        else this.reset();
-    }
-
-    public reset() {
-        this.select(this.entries[0]);
-    }
+    // -------------------------------------------------------------------------
+    // Timer helpers
+    // -------------------------------------------------------------------------
 
     protected clearOpenTimer() {
         if (this.openTimer) clearTimeout(this.openTimer);

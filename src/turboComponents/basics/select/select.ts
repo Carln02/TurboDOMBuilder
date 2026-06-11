@@ -191,7 +191,11 @@ class TurboSelect<
         this.forceSelection = !value;
     }
 
-    @auto({defaultValueCallback: function () {return !this.multiSelection}})
+    @auto({
+        defaultValueCallback: function () {
+            return !this.multiSelection
+        }
+    })
     public forceSelection: boolean;
 
     //TODO FIX
@@ -404,6 +408,18 @@ class TurboSelect<
 
     public get selectedEntry(): EntryType {
         return this.selectedEntries[0];
+    }
+
+    public get selectedIndex(): number {
+        return this.getIndex(this.selectedEntry);
+    }
+
+    public set selectedIndex(value: number) {
+        this.selectByIndex(value);
+    }
+
+    public get selectedIndices(): number[] {
+        return this.selectedEntries.map(entry => this.getIndex(entry));
     }
 
     public set selectedValues(values: ValueType[]) {

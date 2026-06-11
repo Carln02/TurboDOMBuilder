@@ -30,9 +30,12 @@ export class DemoBox extends TurboElement {
         value.forEach(el => $(this.contentBox).addChild(el));
     }
 
-    public addContent(value: Element): this {
-        this.content.push(value);
-        $(this.contentBox).addChild(value);
+    public addContent(...values: Element[]): this {
+        if (!this.content) return this;
+        values.forEach(el => {
+            this.content.push(el);
+            $(this.contentBox).addChild(el);
+        });
         return this;
     }
 

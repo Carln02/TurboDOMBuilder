@@ -10,7 +10,7 @@ import {TurboContentSwitch} from "./contentSwitch";
 enum ContentSwitchMode {
     fadeLeft = "fadeLeft",
     fadeRight = "fadeRight",
-    carousel = "carousel",
+    carousel = "carousel"
 }
 
 type TurboContentSwitchProperties<

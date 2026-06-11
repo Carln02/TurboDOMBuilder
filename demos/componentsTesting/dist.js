@@ -9441,6 +9441,17 @@
    * @group Element Creation
    * @category Base Elements
    *
+   * @description Creates a "h2" element with the specified properties.
+   * @param {TurboProperties<"h2">} [properties] - Object containing properties of the element.
+   * @returns {ValidElement<"h2">} The created element.
+   */
+  function h2(properties = {}) {
+      return element({ ...properties, tag: "h2" });
+  }
+  /**
+   * @group Element Creation
+   * @category Base Elements
+   *
    * @description Creates a "h4" element with the specified properties.
    * @param {TurboProperties<"h4">} [properties] - Object containing properties of the element.
    * @returns {ValidElement<"h4">} The created element.
@@ -18528,7 +18539,7 @@
            */
           initialize(state, objects, options) {
               if (!this.enabled)
-                  return;
+                  return this;
               state = this.parseState(state);
               options = this.initializeOptions(options, objects);
               this.getEnabledObjects(objects, options).forEach(object => {
@@ -18542,10 +18553,11 @@
                   if (data.onSwitch)
                       data.onSwitch(state, data.index, data.total, this.getObject(data));
               });
+              return this;
           }
           apply(state, objects, options) {
               if (!this.enabled)
-                  return;
+                  return this;
               state = this.parseState(state);
               options = this.initializeOptions(options, objects);
               this.getEnabledObjects(objects, options).forEach(object => {
@@ -18559,10 +18571,11 @@
                   if (data.onSwitch)
                       data.onSwitch(state, data.index, data.total, this.getObject(data));
               });
+              return this;
           }
           toggle(objects, options) {
               if (!this.enabled)
-                  return;
+                  return this;
               if (!objects)
                   objects = [];
               else if (objects instanceof HTMLCollection)
@@ -18572,7 +18585,20 @@
               const referenceObject = objects[0] ?? this.attachedObjects.array[0];
               const previousState = this.getData(referenceObject)?.lastState;
               const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
-              this.apply(this.states[nextStateIndex], objects, options);
+              return this.apply(this.states[nextStateIndex], objects, options);
+          }
+          unapply(objects, options) {
+              if (!this.enabled)
+                  return this;
+              options = this.initializeOptions(options, objects);
+              this.getEnabledObjects(objects, options).forEach(object => {
+                  const data = this.getData(object);
+                  if (!data || !data.resolvedValues)
+                      return;
+                  this.unapplyAll(object, options?.applyStylesInstantly);
+                  // if (data.onSwitch) data.onSwitch(undefined, data.index, data.total, this.getObject(data));
+              });
+              return this;
           }
           /**
            * @function reloadFor
@@ -18638,6 +18664,12 @@
               this.applyProperties(object);
               this.applyClasses(object);
           }
+          unapplyAll(object, applyStylesInstantly = false) {
+              this.unapplyReplaceWith(object);
+              this.unapplyStyles(object, applyStylesInstantly);
+              this.unapplyProperties(object);
+              this.unapplyClasses(object);
+          }
           refreshAll() {
               this.refreshReplaceWith();
               this.refreshProperties();
@@ -18663,6 +18695,23 @@
                   }
               }, state);
           }
+          unapplyProperties(object) {
+              this.applyField(object, "properties", (object, data, state) => {
+                  const properties = data.resolvedValues?.properties?.[state];
+                  if (!properties)
+                      return;
+                  for (const field of Object.keys(properties)) {
+                      if (!field)
+                          continue;
+                      try {
+                          object[field] = undefined;
+                      }
+                      catch (e) {
+                          console.error(`Unable to unset property ${field}: ${e.message}`);
+                      }
+                  }
+              });
+          }
           refreshProperties() {
               if (!this.enabled || !this.propertiesEnabled)
                   return;
@@ -18683,6 +18732,9 @@
                   }
               }, state);
           }
+          unapplyReplaceWith(object) {
+              return;
+          }
           refreshReplaceWith() {
               if (!this.enabled || !this.replacedWithEnabled)
                   return;
@@ -18696,6 +18748,15 @@
                       turbo(object).toggleClass(value, state === key);
                   }
               }, state);
+          }
+          unapplyClasses(object) {
+              this.applyField(object, "classes", (object, data, state) => {
+                  if (!(object instanceof Element) || !data.resolvedValues?.classes)
+                      return;
+                  for (const value of Object.values(data.resolvedValues.classes)) {
+                      turbo(object).toggleClass(value, false);
+                  }
+              });
           }
           refreshClasses() {
               if (!this.enabled || !this.classesEnabled)
@@ -18723,14 +18784,37 @@
                       turbo(object).reloadReifectsChainableStyles();
               }, state);
           }
+          unapplyStyles(object, applyStylesInstantly = false) {
+              this.applyField(object, "styles", (object, data, state) => {
+                  if (!(object instanceof Element) || !data.resolvedValues?.styles)
+                      return;
+                  let hasChainable = false;
+                  for (const state of this.states) {
+                      const styles = data.resolvedValues.styles?.[state];
+                      if (!styles)
+                          return;
+                      for (const key of Object.keys(styles)) {
+                          if (StatefulReifect.chainableStyleFields.has(key))
+                              hasChainable = true;
+                          else
+                              turbo(object).setStyle(key, "", applyStylesInstantly);
+                      }
+                  }
+                  data.resolvedValues.styles = {};
+                  if (hasChainable)
+                      turbo(object).reloadReifectsChainableStyles();
+              });
+          }
           refreshStyles() {
               if (!this.enabled || !this.stylesEnabled)
                   return;
               this.attachedObjects.forEach(object => this.applyStyles(object));
           }
           getChainableStyles(object) {
+              if (!this.enabled || !this.stylesEnabled)
+                  return {};
               const data = this.getData(object);
-              if (!data?.resolvedValues?.styles || !data.lastState)
+              if (!data?.resolvedValues?.styles || !data.lastState || !data.enabled.global || !data.enabled.styles)
                   return {};
               const styles = data.resolvedValues.styles[data.lastState];
               if (!styles)
@@ -18857,7 +18941,7 @@
           }
           normalizePropertyConfig(currentConfig, newConfig) {
               const out = currentConfig ? { ...currentConfig } : {};
-              if (isUndefined(newConfig))
+              if (isUndefined(newConfig) || !this.states?.length)
                   return out;
               const isObject = typeof newConfig === "object" && newConfig !== null && !Array.isArray(newConfig);
               const keys = isObject ? Reflect.ownKeys(newConfig) : [];
@@ -19021,6 +19105,13 @@
       }
       apply(objects, options) {
           super.apply("default", objects, options);
+      }
+      normalizePropertyConfig(currentConfig, newConfig) {
+          if (typeof newConfig === "function" && newConfig.length <= 3) {
+              const wrapped = (_state, index, total, object) => newConfig(index, total, object);
+              return super.normalizePropertyConfig(currentConfig, wrapped);
+          }
+          return super.normalizePropertyConfig(currentConfig, newConfig);
       }
   }
 
@@ -21733,7 +21824,11 @@
                       defaultValue: (value) => TurboRichElement.create({ text: stringify(value) })
                   })];
               _set_multiSelection_decorators = [auto({ defaultValue: false })];
-              _forceSelection_decorators = [auto({ defaultValueCallback: function () { return !this.multiSelection; } })];
+              _forceSelection_decorators = [auto({
+                      defaultValueCallback: function () {
+                          return !this.multiSelection;
+                      }
+                  })];
               _selectedEntriesClasses_decorators = [auto({
                       callBefore: function () {
                           this.selectedEntries?.forEach(entry => turbo(entry).removeClass(this.selectedEntryClasses));
@@ -22084,6 +22179,15 @@
           get selectedEntry() {
               return this.selectedEntries[0];
           }
+          get selectedIndex() {
+              return this.getIndex(this.selectedEntry);
+          }
+          set selectedIndex(value) {
+              this.selectByIndex(value);
+          }
+          get selectedIndices() {
+              return this.selectedEntries.map(entry => this.getIndex(entry));
+          }
           set selectedValues(values) {
               if (!this.forceSelection)
                   this.deselectAll();
@@ -22215,6 +22319,7 @@
    */
   let TurboSelectElement = (() => {
       let _classSuper = TurboElement;
+      let _instanceExtraInitializers = [];
       let _values_decorators;
       let _values_initializers = [];
       let _values_extraInitializers = [];
@@ -22224,6 +22329,12 @@
       let _selectedEntry_decorators;
       let _selectedEntry_initializers = [];
       let _selectedEntry_extraInitializers = [];
+      let _selectedIndex_decorators;
+      let _selectedIndex_initializers = [];
+      let _selectedIndex_extraInitializers = [];
+      let _selectedIndices_decorators;
+      let _selectedIndices_initializers = [];
+      let _selectedIndices_extraInitializers = [];
       let _entriesClasses_decorators;
       let _entriesClasses_initializers = [];
       let _entriesClasses_extraInitializers = [];
@@ -22266,12 +22377,15 @@
       let _stringSelectedValue_decorators;
       let _stringSelectedValue_initializers = [];
       let _stringSelectedValue_extraInitializers = [];
+      let _set_transitionReifect_decorators;
       return class TurboSelectElement extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
               _values_decorators = [expose("select")];
               _selectedEntries_decorators = [expose("select")];
               _selectedEntry_decorators = [expose("select", false)];
+              _selectedIndex_decorators = [expose("select")];
+              _selectedIndices_decorators = [expose("select", false)];
               _entriesClasses_decorators = [expose("select")];
               _selectedEntriesClasses_decorators = [expose("select")];
               _inputName_decorators = [expose("select")];
@@ -22286,8 +22400,19 @@
               _selectedSecondaryValues_decorators = [expose("select", false)];
               _selectedSecondaryValue_decorators = [expose("select", false)];
               _stringSelectedValue_decorators = [expose("select", false)];
+              _set_transitionReifect_decorators = [auto({
+                      preprocessValue: function (value) {
+                          if (!value)
+                              return;
+                          if (value instanceof Reifect)
+                              return value;
+                          return new Reifect(value);
+                      }
+                  })];
               __esDecorate$1(this, null, _selectedEntries_decorators, { kind: "accessor", name: "selectedEntries", static: false, private: false, access: { has: obj => "selectedEntries" in obj, get: obj => obj.selectedEntries, set: (obj, value) => { obj.selectedEntries = value; } }, metadata: _metadata }, _selectedEntries_initializers, _selectedEntries_extraInitializers);
               __esDecorate$1(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
+              __esDecorate$1(this, null, _selectedIndex_decorators, { kind: "accessor", name: "selectedIndex", static: false, private: false, access: { has: obj => "selectedIndex" in obj, get: obj => obj.selectedIndex, set: (obj, value) => { obj.selectedIndex = value; } }, metadata: _metadata }, _selectedIndex_initializers, _selectedIndex_extraInitializers);
+              __esDecorate$1(this, null, _selectedIndices_decorators, { kind: "accessor", name: "selectedIndices", static: false, private: false, access: { has: obj => "selectedIndices" in obj, get: obj => obj.selectedIndices, set: (obj, value) => { obj.selectedIndices = value; } }, metadata: _metadata }, _selectedIndices_initializers, _selectedIndices_extraInitializers);
               __esDecorate$1(this, null, _inputName_decorators, { kind: "accessor", name: "inputName", static: false, private: false, access: { has: obj => "inputName" in obj, get: obj => obj.inputName, set: (obj, value) => { obj.inputName = value; } }, metadata: _metadata }, _inputName_initializers, _inputName_extraInitializers);
               __esDecorate$1(this, null, _inputField_decorators, { kind: "accessor", name: "inputField", static: false, private: false, access: { has: obj => "inputField" in obj, get: obj => obj.inputField, set: (obj, value) => { obj.inputField = value; } }, metadata: _metadata }, _inputField_initializers, _inputField_extraInitializers);
               __esDecorate$1(this, null, _multiSelection_decorators, { kind: "accessor", name: "multiSelection", static: false, private: false, access: { has: obj => "multiSelection" in obj, get: obj => obj.multiSelection, set: (obj, value) => { obj.multiSelection = value; } }, metadata: _metadata }, _multiSelection_initializers, _multiSelection_extraInitializers);
@@ -22300,6 +22425,7 @@
               __esDecorate$1(this, null, _selectedSecondaryValues_decorators, { kind: "accessor", name: "selectedSecondaryValues", static: false, private: false, access: { has: obj => "selectedSecondaryValues" in obj, get: obj => obj.selectedSecondaryValues, set: (obj, value) => { obj.selectedSecondaryValues = value; } }, metadata: _metadata }, _selectedSecondaryValues_initializers, _selectedSecondaryValues_extraInitializers);
               __esDecorate$1(this, null, _selectedSecondaryValue_decorators, { kind: "accessor", name: "selectedSecondaryValue", static: false, private: false, access: { has: obj => "selectedSecondaryValue" in obj, get: obj => obj.selectedSecondaryValue, set: (obj, value) => { obj.selectedSecondaryValue = value; } }, metadata: _metadata }, _selectedSecondaryValue_initializers, _selectedSecondaryValue_extraInitializers);
               __esDecorate$1(this, null, _stringSelectedValue_decorators, { kind: "accessor", name: "stringSelectedValue", static: false, private: false, access: { has: obj => "stringSelectedValue" in obj, get: obj => obj.stringSelectedValue, set: (obj, value) => { obj.stringSelectedValue = value; } }, metadata: _metadata }, _stringSelectedValue_initializers, _stringSelectedValue_extraInitializers);
+              __esDecorate$1(this, null, _set_transitionReifect_decorators, { kind: "setter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, set: (obj, value) => { obj.transitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(null, null, _values_decorators, { kind: "field", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
               __esDecorate$1(null, null, _entriesClasses_decorators, { kind: "field", name: "entriesClasses", static: false, private: false, access: { has: obj => "entriesClasses" in obj, get: obj => obj.entriesClasses, set: (obj, value) => { obj.entriesClasses = value; } }, metadata: _metadata }, _entriesClasses_initializers, _entriesClasses_extraInitializers);
               __esDecorate$1(null, null, _selectedEntriesClasses_decorators, { kind: "field", name: "selectedEntriesClasses", static: false, private: false, access: { has: obj => "selectedEntriesClasses" in obj, get: obj => obj.selectedEntriesClasses, set: (obj, value) => { obj.selectedEntriesClasses = value; } }, metadata: _metadata }, _selectedEntriesClasses_initializers, _selectedEntriesClasses_extraInitializers);
@@ -22308,6 +22434,7 @@
           static defaultProperties = {
               entriesTag: "turbo-rich-element"
           };
+          _sizeTransitionTimeout = __runInitializers$1(this, _instanceExtraInitializers);
           select = TurboSelect.create();
           entriesTag;
           get entries() {
@@ -22323,7 +22450,13 @@
           #selectedEntry_accessor_storage = (__runInitializers$1(this, _selectedEntries_extraInitializers), __runInitializers$1(this, _selectedEntry_initializers, void 0));
           get selectedEntry() { return this.#selectedEntry_accessor_storage; }
           set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
-          entriesClasses = (__runInitializers$1(this, _selectedEntry_extraInitializers), __runInitializers$1(this, _entriesClasses_initializers, void 0));
+          #selectedIndex_accessor_storage = (__runInitializers$1(this, _selectedEntry_extraInitializers), __runInitializers$1(this, _selectedIndex_initializers, void 0));
+          get selectedIndex() { return this.#selectedIndex_accessor_storage; }
+          set selectedIndex(value) { this.#selectedIndex_accessor_storage = value; }
+          #selectedIndices_accessor_storage = (__runInitializers$1(this, _selectedIndex_extraInitializers), __runInitializers$1(this, _selectedIndices_initializers, void 0));
+          get selectedIndices() { return this.#selectedIndices_accessor_storage; }
+          set selectedIndices(value) { this.#selectedIndices_accessor_storage = value; }
+          entriesClasses = (__runInitializers$1(this, _selectedIndices_extraInitializers), __runInitializers$1(this, _entriesClasses_initializers, void 0));
           selectedEntriesClasses = (__runInitializers$1(this, _entriesClasses_extraInitializers), __runInitializers$1(this, _selectedEntriesClasses_initializers, void 0));
           #inputName_accessor_storage = (__runInitializers$1(this, _selectedEntriesClasses_extraInitializers), __runInitializers$1(this, _inputName_initializers, void 0));
           get inputName() { return this.#inputName_accessor_storage; }
@@ -22362,19 +22495,79 @@
           get stringSelectedValue() { return this.#stringSelectedValue_accessor_storage; }
           set stringSelectedValue(value) { this.#stringSelectedValue_accessor_storage = value; }
           initialize() {
+              this.select.onSelect.add(() => this.applyTransition());
               super.initialize();
               if (!this.select.parent)
                   this.select.parent = this;
           }
-          constructor() {
-              super(...arguments);
-              __runInitializers$1(this, _stringSelectedValue_extraInitializers);
+          _transitionDuration = (__runInitializers$1(this, _stringSelectedValue_extraInitializers), 0);
+          get transitionDuration() {
+              return this._transitionDuration;
           }
+          /**
+           * @description Duration of the container size transition in seconds. Kept in sync with
+           * `switchTransitionReifect` — set this to change both at once.
+           */
+          set transitionDuration(value) {
+              this._transitionDuration = value;
+              if (value <= 0)
+                  return;
+              if (!this.transitionReifect)
+                  this.transitionReifect = new Reifect({});
+              this.transitionReifect.styles = `transition: width ${value}s ease-in-out, height ${value}s ease-in-out`;
+          }
+          set transitionReifect(value) {
+              if (!value)
+                  return;
+              value.attach(this);
+          }
+          get transitionReifect() { return; }
+          /**
+           * @description Animates the container from its current size to the selected entry's natural
+           * size. Subclasses should call `super.applyTransition()` then add their own entry-level logic.
+           *
+           * The sequence:
+           * 1. Freeze container at current px size (gives CSS transition a `from` value)
+           * 2. Call `beforeResize()` — subclass hook to prepare entries before the frame
+           * 3. Next frame: read selected entry's natural size, animate container to it
+           * 4. After `transitionDuration`ms: release explicit container size
+           */
+          applyTransition() {
+              if (this.transitionDuration <= 0 || !this.transitionReifect)
+                  return;
+              const selectedEntry = this.selectedEntry;
+              if (!selectedEntry)
+                  return;
+              this.transitionReifect.unapply(this);
+              turbo(this).setStyles({ width: `${this.offsetWidth}px`, height: `${this.offsetHeight}px` }, true);
+              this.transitionReifect.apply(this);
+              this.beforeResize(selectedEntry);
+              requestAnimationFrame(() => turbo(this).setStyles({
+                  width: `${selectedEntry.offsetWidth}px`,
+                  height: `${selectedEntry.offsetHeight}px`
+              }));
+              clearTimeout(this._sizeTransitionTimeout);
+              this._sizeTransitionTimeout = setTimeout(() => {
+                  turbo(this).setStyles({ width: "", height: "" });
+                  this.afterResize(selectedEntry);
+              }, this.transitionDuration * 1000);
+          }
+          /**
+           * @description Called synchronously inside `applyTransition`, before the rAF that reads the
+           * selected entry's new size. Use this to reposition/reflow entries so the size read is correct.
+           * @param selectedEntry - The newly selected entry.
+           */
+          beforeResize(selectedEntry) { }
+          /**
+           * @description Called after the container size transition completes.
+           * @param selectedEntry - The selected entry.
+           */
+          afterResize(selectedEntry) { }
       };
   })();
   define(TurboSelectElement);
 
-  var css_248z$3$1 = "turbo-content-switch{display:block;overflow:hidden;position:relative}turbo-content-switch>*{box-sizing:border-box;left:0;top:0;width:100%}";
+  var css_248z$3$1 = "turbo-content-switch{align-items:flex-start;display:flex;flex-direction:column;overflow:hidden;position:relative}turbo-content-switch>*{box-sizing:border-box;left:0;position:absolute;top:0}";
   styleInject$1(css_248z$3$1);
 
   var ContentSwitchMode;
@@ -22388,176 +22581,108 @@
       let _classSuper = TurboSelectElement;
       let _instanceExtraInitializers = [];
       let _set_mode_decorators;
-      let _set_transitionDuration_decorators;
-      let _set_transitionReifect_decorators;
+      let _set_entryTransitionReifect_decorators;
       let _set_movementReifect_decorators;
+      let _set_transitionDuration_decorators;
       return class TurboContentSwitch extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
               _set_mode_decorators = [auto({ defaultValue: ContentSwitchMode.fadeRight })];
-              _set_transitionDuration_decorators = [auto({ defaultValue: 0.3 })];
-              _set_transitionReifect_decorators = [auto()];
-              _set_movementReifect_decorators = [auto()];
+              _set_entryTransitionReifect_decorators = [auto({
+                      preprocessValue: function (value) {
+                          if (!value)
+                              return;
+                          if (value instanceof Reifect)
+                              return value;
+                          return new Reifect(value);
+                      }
+                  })];
+              _set_movementReifect_decorators = [auto({
+                      preprocessValue: function (value) {
+                          if (!value)
+                              return;
+                          if (value instanceof Reifect)
+                              return value;
+                          return new Reifect(value);
+                      }
+                  })];
+              _set_transitionDuration_decorators = [auto({ override: true })];
               __esDecorate$1(this, null, _set_mode_decorators, { kind: "setter", name: "mode", static: false, private: false, access: { has: obj => "mode" in obj, set: (obj, value) => { obj.mode = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _set_transitionReifect_decorators, { kind: "setter", name: "transitionReifect", static: false, private: false, access: { has: obj => "transitionReifect" in obj, set: (obj, value) => { obj.transitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_entryTransitionReifect_decorators, { kind: "setter", name: "entryTransitionReifect", static: false, private: false, access: { has: obj => "entryTransitionReifect" in obj, set: (obj, value) => { obj.entryTransitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_movementReifect_decorators, { kind: "setter", name: "movementReifect", static: false, private: false, access: { has: obj => "movementReifect" in obj, set: (obj, value) => { obj.movementReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
-          static defaultProperties = {
-              transitionReifect: new Reifect({ styles: "transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;" }),
-          };
-          _previousSelectedIndex = (__runInitializers$1(this, _instanceExtraInitializers), -1);
+          static defaultProperties = { transitionDuration: 0.3 };
           set mode(value) {
-              turbo(this).toggleClass("carousel", value === ContentSwitchMode.carousel);
+              this.reloadMovementReifect();
           }
-          get mode() { return; }
-          set transitionDuration(_value) { }
-          get transitionDuration() { return; }
-          set transitionReifect(value) {
-              if (value && this.entries.length > 0)
+          set entryTransitionReifect(value) {
+              if (!value)
+                  return;
+              if (this.entries.length > 0)
                   value.attach(...this.entries);
           }
+          get entryTransitionReifect() { return; }
           set movementReifect(value) {
               if (value && this.entries.length > 0)
                   value.attach(...this.entries);
           }
+          get movementReifect() { return; }
+          set transitionDuration(value) {
+              if (value <= 0)
+                  return;
+              if (!this.entryTransitionReifect)
+                  this.entryTransitionReifect = new Reifect({});
+              this.entryTransitionReifect.styles = `transition: transform ${value}s ease-in-out, opacity ${value}s ease-in-out`;
+          }
           initialize() {
-              // this.movementReifect = new StatefulReifect<Shown>({
-              //     states: Shown,
-              //     styles: (state, index) => {
-              //         const newIndex = this.select.getIndex(this.select.selectedEntry);
-              //         const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
-              //         //TODO
-              //     }
-              // });
-              this.select.parent = this;
-              this.select.onEntryAdded.add((entry) => {
-                  if (this.mode === ContentSwitchMode.carousel) {
-                      this.initCarouselEntry(entry);
-                      return;
-                  }
-                  const reifect = this.movementReifect;
-                  if (!reifect?.enabled)
-                      return;
-                  reifect.attach(entry);
-                  reifect.initialize(Shown.hidden, entry, { applyStylesInstantly: true });
-                  turbo(entry).setStyles({ position: "absolute" }, true);
-              });
-              this.select.onSelect.add(() => {
-                  if (this.mode === ContentSwitchMode.carousel) {
-                      this.applyCarouselTransition();
-                  }
-                  else {
-                      this.applyFadeTransition();
-                  }
+              this.select.onEntryAdded.add(entry => this.setupEntry(entry));
+              this.select.onEntryRemoved.add(entry => {
+                  this.entryTransitionReifect?.detach(entry);
+                  this.movementReifect?.detach(entry);
               });
               super.initialize();
+              this.reloadMovementReifect();
           }
-          applyFadeTransition() {
-              const selectedEntry = this.select.selectedEntry;
-              this.select.entries.forEach(entry => {
-                  const isSelected = entry === selectedEntry;
-                  turbo(entry).setStyles({ position: isSelected ? "relative" : "absolute" }, true);
-                  const reifect = this.movementReifect;
-                  if (reifect?.enabled)
-                      reifect.apply(isSelected ? Shown.visible : Shown.hidden, entry);
+          setupEntry(entry) {
+              turbo(entry).setStyles({ position: "relative", width: "", height: "", top: "0", left: "0" }, true);
+              this.entryTransitionReifect?.attach(entry);
+              this.movementReifect?.attach(entry);
+              requestAnimationFrame(() => {
+                  if (entry !== this.selectedEntry)
+                      this.freezeAndHide(entry);
               });
           }
-          initCarouselEntry(entry) {
+          freezeAndHide(entry, isRelative = false) {
               turbo(entry).setStyles({
-                  position: "absolute",
-                  opacity: "0",
-                  transform: "translateX(100%)",
-                  pointerEvents: "none",
-                  transition: "none",
+                  width: isRelative ? "" : `${entry.offsetWidth}px`,
+                  height: isRelative ? "" : `${entry.offsetHeight}px`,
+                  position: isRelative ? "relative" : "absolute",
+                  top: "0",
+                  left: "0",
               }, true);
           }
-          applyCarouselTransition() {
-              const entries = this.select.entries;
-              const selectedEntry = this.select.selectedEntry;
-              const newIndex = this.select.getIndex(selectedEntry);
-              const forward = this._previousSelectedIndex < 0 || newIndex > this._previousSelectedIndex;
-              const prevIndex = this._previousSelectedIndex;
-              this._previousSelectedIndex = newIndex;
-              const duration = this.transitionDuration;
-              const transitionStr = `transform ${duration}s ease-out, opacity ${duration}s ease-out`;
-              entries.forEach((entry, i) => {
-                  const el = entry;
-                  const isSelected = entry === selectedEntry;
-                  const wasPrevious = i === prevIndex;
-                  if (isSelected) {
-                      turbo(el).setStyles({
-                          transition: "none",
-                          transform: `translateX(${forward ? "100%" : "-100%"})`,
-                          opacity: "0",
-                          position: "relative",
-                          pointerEvents: "none",
-                      }, true);
-                      requestAnimationFrame(() => {
-                          turbo(el).setStyles({
-                              transition: transitionStr,
-                              transform: "translateX(0)",
-                              opacity: "1",
-                              pointerEvents: "all",
-                          }, true);
-                      });
-                  }
-                  else if (wasPrevious) {
-                      turbo(el).setStyles({
-                          transition: transitionStr,
-                          transform: `translateX(${forward ? "-100%" : "100%"})`,
-                          opacity: "0",
-                          pointerEvents: "none",
-                      }, true);
-                      setTimeout(() => {
-                          turbo(el).setStyles({
-                              position: "absolute",
-                              transition: "none",
-                          }, true);
-                      }, duration * 1000);
-                  }
-                  else {
-                      turbo(el).setStyles({
-                          transition: "none",
-                          position: "absolute",
-                          opacity: "0",
-                          transform: `translateX(${i < newIndex ? "-100%" : "100%"})`,
-                          pointerEvents: "none",
-                      }, true);
-                  }
-              });
+          reloadMovementReifect() {
+              if (!this.movementReifect)
+                  this.movementReifect = new Reifect({});
+              this.movementReifect.styles = (index) => {
+                  const offset = index - this.selectedIndex;
+                  if (offset === 0)
+                      return "transform: translateX(0); opacity: 1; pointer-events: all;";
+                  if (this.mode === ContentSwitchMode.carousel)
+                      return `transform: translateX(${offset > 0 ? "100%" : "-100%"}); opacity: 0; pointer-events: none;`;
+                  const dx = this.mode === ContentSwitchMode.fadeLeft ? "-100%" : "100%";
+                  return `transform: translateX(${dx}); opacity: 0; pointer-events: none;`;
+              };
           }
-          generateTransitionReifect(value) {
-              if (value instanceof StatefulReifect)
-                  return value;
-              if (typeof value === "object" && value !== null) {
-                  return new StatefulReifect(value);
-              }
-              if (this.mode === ContentSwitchMode.carousel) {
-                  const r = new StatefulReifect({ states: [Shown.visible, Shown.hidden], styles: {} });
-                  r.enabled = false;
-                  return r;
-              }
-              const dx = this.mode === ContentSwitchMode.fadeLeft ? "-100%" : "100%";
-              //TODO remove this
-              return new StatefulReifect({
-                  states: [Shown.visible, Shown.hidden],
-                  styles: {
-                      [Shown.visible]: () => ({
-                          opacity: "1",
-                          transform: "translateX(0)",
-                          pointerEvents: "all",
-                          transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
-                      }),
-                      [Shown.hidden]: () => ({
-                          opacity: "0",
-                          transform: `translateX(${dx})`,
-                          pointerEvents: "none",
-                          transition: `opacity ${this.transitionDuration}s ease-out, transform ${this.transitionDuration}s ease-out`,
-                      })
-                  }
-              });
+          beforeResize(selectedEntry) {
+              this.select.entries.forEach(entry => this.freezeAndHide(entry, entry === selectedEntry));
+              this.movementReifect?.apply(this.select.entries, { recomputeProperties: true });
+          }
+          constructor() {
+              super(...arguments);
+              __runInitializers$1(this, _instanceExtraInitializers);
           }
       };
   })();
@@ -23167,8 +23292,8 @@
       };
   })();
 
-  var css_248z$7 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
-  styleInject$1(css_248z$7);
+  var css_248z$8 = "turbo-dropdown{display:inline-block;position:relative}turbo-dropdown>.turbo-popup{background-color:#fff;border:.1em solid #5e5e5e;border-radius:.4em;display:flex;flex-direction:column;overflow:hidden}turbo-dropdown>.turbo-popup>turbo-select-entry{padding:.5em}turbo-dropdown>.turbo-popup>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}turbo-dropdown>turbo-select-entry{padding:.5em .7em;width:100%}turbo-dropdown>turbo-select-entry:hover{background-color:#d7d7d7}turbo-dropdown>turbo-select-entry:not(:last-child){border-bottom:.1em solid #bdbdbd}";
+  styleInject$1(css_248z$8);
 
   /**
    * @class TurboDropdown
@@ -23354,308 +23479,291 @@
    * @group Components
    * @category TurboSelectWheel
    *
-   * @extends TurboSelect
-   * @description Class to create a dynamic selection wheel.
-   * @template {string} ValueType
-   * @template {TurboSelectEntry<ValueType, any>} EntryType
+   * @extends TurboSelectElement
+   * @description A swipeable selection wheel. Entries are always position absolute, fanned out by a
+   * continuous pixel offset. Dragging moves all entries in real time; releasing snaps to the nearest.
+   * The container sizes to the selected entry. Visual state is driven by `entryTransitionReifect`
+   * (CSS transitions) and `computeAndApplyStyling` (per-entry opacity/scale/transform).
    */
   let TurboSelectWheel = (() => {
-      let _classSuper = TurboElement;
+      let _classSuper = TurboSelectElement;
       let _instanceExtraInitializers = [];
-      let _entries_decorators;
-      let _entries_initializers = [];
-      let _entries_extraInitializers = [];
-      let _values_decorators;
-      let _values_initializers = [];
-      let _values_extraInitializers = [];
-      let _selectedEntry_decorators;
-      let _selectedEntry_initializers = [];
-      let _selectedEntry_extraInitializers = [];
-      let _selectedValue_decorators;
-      let _selectedValue_initializers = [];
-      let _selectedValue_extraInitializers = [];
       let _opacity_decorators;
       let _opacity_initializers = [];
       let _opacity_extraInitializers = [];
       let _set_size_decorators;
-      let _get_reifect_decorators;
+      let _set_entryTransitionReifect_decorators;
+      let _set_transitionDuration_decorators;
+      let _set_customReifect_decorators;
       let _set_alwaysOpen_decorators;
-      let _set_index_decorators;
       let _set_open_decorators;
       return class TurboSelectWheel extends _classSuper {
           static {
               const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-              _entries_decorators = [expose("selector")];
-              _values_decorators = [expose("selector")];
-              _selectedEntry_decorators = [expose("selector", false)];
-              _selectedValue_decorators = [expose("selector", false)];
               _opacity_decorators = [auto({
                       defaultValue: { max: 1, min: 0 },
-                      preprocessValue: (value) => {
-                          return {
-                              max: trim(value?.max, 1),
-                              min: trim(value?.min, 1)
-                          };
-                      }
+                      preprocessValue: (value) => ({
+                          max: trim(value?.max ?? 1, 1),
+                          min: trim(value?.min ?? 0, 1),
+                      }),
                   })];
               _set_size_decorators = [auto({
-                      preprocessValue: (value) => typeof value == "object" ? value : { max: value ?? 100, min: -(value ?? 100) }
+                      defaultValue: { max: 100, min: -100 },
+                      preprocessValue: (value) => typeof value === "object" ? value : { max: value ?? 100, min: -(value ?? 100) },
                   })];
-              _get_reifect_decorators = [auto({
+              _set_entryTransitionReifect_decorators = [auto({
                       preprocessValue: function (value) {
+                          if (!value)
+                              return;
                           if (value instanceof Reifect)
                               return value;
-                          if (!value)
-                              value = {};
-                          if (!value.transitionProperties)
-                              value.transitionProperties = "opacity transform";
-                          if (value.transitionDuration == undefined)
-                              value.transitionDuration = 0.2;
-                          if (!value.transitionTimingFunction)
-                              value.transitionTimingFunction = "ease-in-out";
                           return new Reifect(value);
                       }
                   })];
+              _set_transitionDuration_decorators = [auto({ override: true })];
+              _set_customReifect_decorators = [auto({
+                      preprocessValue: function (value) {
+                          if (!value)
+                              return null;
+                          if (value instanceof Reifect)
+                              return value;
+                          return new Reifect(value);
+                      },
+                  })];
               _set_alwaysOpen_decorators = [auto({ defaultValue: false })];
-              _set_index_decorators = [auto({ cancelIfUnchanged: false })];
               _set_open_decorators = [auto()];
-              __esDecorate$1(this, null, _entries_decorators, { kind: "accessor", name: "entries", static: false, private: false, access: { has: obj => "entries" in obj, get: obj => obj.entries, set: (obj, value) => { obj.entries = value; } }, metadata: _metadata }, _entries_initializers, _entries_extraInitializers);
-              __esDecorate$1(this, null, _values_decorators, { kind: "accessor", name: "values", static: false, private: false, access: { has: obj => "values" in obj, get: obj => obj.values, set: (obj, value) => { obj.values = value; } }, metadata: _metadata }, _values_initializers, _values_extraInitializers);
-              __esDecorate$1(this, null, _selectedEntry_decorators, { kind: "accessor", name: "selectedEntry", static: false, private: false, access: { has: obj => "selectedEntry" in obj, get: obj => obj.selectedEntry, set: (obj, value) => { obj.selectedEntry = value; } }, metadata: _metadata }, _selectedEntry_initializers, _selectedEntry_extraInitializers);
-              __esDecorate$1(this, null, _selectedValue_decorators, { kind: "accessor", name: "selectedValue", static: false, private: false, access: { has: obj => "selectedValue" in obj, get: obj => obj.selectedValue, set: (obj, value) => { obj.selectedValue = value; } }, metadata: _metadata }, _selectedValue_initializers, _selectedValue_extraInitializers);
               __esDecorate$1(this, null, _set_size_decorators, { kind: "setter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, set: (obj, value) => { obj.size = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _get_reifect_decorators, { kind: "getter", name: "reifect", static: false, private: false, access: { has: obj => "reifect" in obj, get: obj => obj.reifect }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_entryTransitionReifect_decorators, { kind: "setter", name: "entryTransitionReifect", static: false, private: false, access: { has: obj => "entryTransitionReifect" in obj, set: (obj, value) => { obj.entryTransitionReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_transitionDuration_decorators, { kind: "setter", name: "transitionDuration", static: false, private: false, access: { has: obj => "transitionDuration" in obj, set: (obj, value) => { obj.transitionDuration = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
+              __esDecorate$1(this, null, _set_customReifect_decorators, { kind: "setter", name: "customReifect", static: false, private: false, access: { has: obj => "customReifect" in obj, set: (obj, value) => { obj.customReifect = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_alwaysOpen_decorators, { kind: "setter", name: "alwaysOpen", static: false, private: false, access: { has: obj => "alwaysOpen" in obj, set: (obj, value) => { obj.alwaysOpen = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-              __esDecorate$1(this, null, _set_index_decorators, { kind: "setter", name: "index", static: false, private: false, access: { has: obj => "index" in obj, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(this, null, _set_open_decorators, { kind: "setter", name: "open", static: false, private: false, access: { has: obj => "open" in obj, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, null, _instanceExtraInitializers);
               __esDecorate$1(null, null, _opacity_decorators, { kind: "field", name: "opacity", static: false, private: false, access: { has: obj => "opacity" in obj, get: obj => obj.opacity, set: (obj, value) => { obj.opacity = value; } }, metadata: _metadata }, _opacity_initializers, _opacity_extraInitializers);
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
-          selector = __runInitializers$1(this, _instanceExtraInitializers);
-          #entries_accessor_storage = __runInitializers$1(this, _entries_initializers, void 0);
-          get entries() { return this.#entries_accessor_storage; }
-          set entries(value) { this.#entries_accessor_storage = value; }
-          #values_accessor_storage = (__runInitializers$1(this, _entries_extraInitializers), __runInitializers$1(this, _values_initializers, void 0));
-          get values() { return this.#values_accessor_storage; }
-          set values(value) { this.#values_accessor_storage = value; }
-          #selectedEntry_accessor_storage = (__runInitializers$1(this, _values_extraInitializers), __runInitializers$1(this, _selectedEntry_initializers, void 0));
-          get selectedEntry() { return this.#selectedEntry_accessor_storage; }
-          set selectedEntry(value) { this.#selectedEntry_accessor_storage = value; }
-          #selectedValue_accessor_storage = (__runInitializers$1(this, _selectedEntry_extraInitializers), __runInitializers$1(this, _selectedValue_initializers, void 0));
-          get selectedValue() { return this.#selectedValue_accessor_storage; }
-          set selectedValue(value) { this.#selectedValue_accessor_storage = value; }
-          _currentPosition = (__runInitializers$1(this, _selectedValue_extraInitializers), 0);
+          static defaultProperties = { transitionDuration: 0.3 };
+          _currentPosition = (__runInitializers$1(this, _instanceExtraInitializers), 0);
+          _index = 0;
           sizePerEntry = [];
           positionPerEntry = [];
           totalSize = 0;
           dragLimitOffset = 30;
-          /**
-           * @description Hides after the set time has passed. Set to a negative value to never hide the wheel. In ms.
-           */
           openTimeout = 3000;
           direction = Direction.horizontal;
           scale = { max: 1, min: 0.5 };
           generateCustomStyling;
-          dragging;
+          dragging = false;
           openTimer;
           initialize() {
-              this.selector = TurboSelect.create();
-              this.selector.multiSelection = false;
-              this.selector.forceSelection = true;
-              this.selector.onSelect.add((b) => {
-                  if (!b)
-                      return;
-                  this.open = true;
-                  if (!this.alwaysOpen)
-                      this.setOpenTimer();
-              });
-              this.selector.onEntryRemoved.add((entry) => this.reifect?.detach(entry));
-              this.selector.onEntryAdded.add((entry) => {
-                  if (entry instanceof Element && entry.parentElement) {
-                      this.reifect?.attach(entry);
-                      this.reloadEntrySizes();
-                  }
-                  let showTimer;
-                  turbo(entry)
-                      .setStyles({ position: "absolute" })
-                      .on(DefaultEventName.dragStart, (e) => {
+              this.select.onEntryAdded.add(entry => {
+                  turbo(entry).setStyles({ position: "absolute", whiteSpace: "nowrap" }, true);
+                  this.entryTransitionReifect?.attach(entry);
+                  this.customReifect?.attach(entry);
+                  turbo(entry).on(DefaultEventName.dragStart, () => {
                       this.clearOpenTimer();
                       this.open = true;
                       this.dragging = true;
-                      // this.reifect.enabled.transition = false;
+                      if (this.entryTransitionReifect)
+                          this.entryTransitionReifect.unapply();
                       this.reloadEntrySizes();
                       return Propagation.stopImmediatePropagation;
-                  })
-                      .on("pointerover", () => {
-                      clearTimeout(showTimer);
-                      showTimer = setTimeout(() => this.open = true, 1000);
-                  })
-                      .on("pointerout", () => {
-                      if (showTimer)
-                          clearTimeout(showTimer);
-                      showTimer = null;
                   });
-                  this.refresh();
+                  requestAnimationFrame(() => {
+                      this.reloadEntrySizes();
+                  });
+              });
+              this.select.onEntryRemoved.add(entry => {
+                  this.entryTransitionReifect?.detach(entry);
+                  this.customReifect?.detach(entry);
+                  requestAnimationFrame(() => this.reloadEntrySizes());
               });
               super.initialize();
-              this.refresh();
-              turbo(this).setStyles({ display: "block", position: "relative" });
+              turbo(this).setStyles({ display: "inline-block", position: "relative", overflow: "hidden" });
           }
           opacity = __runInitializers$1(this, _opacity_initializers, void 0);
           set size(value) { }
           get size() { return; }
-          get reifect() { return; }
-          set reifect(value) {
-              this.reifect.attach(...this.entries);
+          set entryTransitionReifect(value) {
+              if (!value)
+                  return;
+              if (this.entries.length > 0)
+                  value.attach(...this.entries);
           }
-          closeOnClick = (__runInitializers$1(this, _opacity_extraInitializers), () => this.open = false);
+          get entryTransitionReifect() { return; }
+          set transitionDuration(value) {
+              if (value <= 0)
+                  return;
+              if (!this.entryTransitionReifect)
+                  this.entryTransitionReifect = new Reifect({});
+              this.entryTransitionReifect.styles = `transition: transform ${value}s ease-in-out, opacity ${value}s ease-in-out`;
+          }
+          set customReifect(value) {
+              if (this.customReifect && this.entries.length > 0)
+                  this.customReifect.attach(...this.entries);
+          }
+          get customReifect() { return; }
+          _closeOnClick = (__runInitializers$1(this, _opacity_extraInitializers), () => this.open = false);
           set alwaysOpen(value) {
               if (value)
-                  turbo(document.body).removeListener(DefaultEventName.click, this.closeOnClick);
+                  turbo(document.body).removeListener(DefaultEventName.click, this._closeOnClick);
               else
-                  turbo(document.body).on(DefaultEventName.click, this.closeOnClick);
+                  turbo(document.body).on(DefaultEventName.click, this._closeOnClick);
               this.open = value;
-          }
-          get isVertical() {
-              return this.direction == Direction.vertical;
-          }
-          set index(value) {
-              this.selector.selectByIndex(this.trimmedIndex);
-          }
-          get trimmedIndex() {
-              return trim(Math.round(this.index), this.entries.length - 1);
-          }
-          get flooredTrimmedIndex() {
-              return trim(Math.floor(this.index), this.entries.length - 1);
           }
           set open(value) {
               turbo(this).setStyle("overflow", value ? "visible" : "hidden");
           }
-          get currentPosition() {
-              return this._currentPosition;
+          get isVertical() {
+              return this.direction === Direction.vertical;
           }
+          /** Fractional index — integer when snapped, fractional mid-drag. */
+          get index() { return this._index; }
+          set index(value) {
+              this._index = value;
+              this.select.selectByIndex(trim(Math.round(value), this.entries.length - 1));
+          }
+          // -------------------------------------------------------------------------
+          // Position
+          // -------------------------------------------------------------------------
+          get currentPosition() { return this._currentPosition; }
           set currentPosition(value) {
+              if (!this.sizePerEntry.length)
+                  return;
               const min = -this.dragLimitOffset - this.sizePerEntry[0] / 2;
               const max = this.totalSize + this.dragLimitOffset - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
-              if (value < min)
-                  value = min;
-              if (value > max)
-                  value = max;
-              this._currentPosition = value;
-              const elements = this.reifect.getEnabledObjects();
-              if (elements.length === 0)
-                  return;
-              // elements.forEach((el, index) =>
-              //     this.computeAndApplyStyling(el.object.deref() as HTMLElement, this.positionPerEntry[index] - value));
+              this._currentPosition = Math.min(Math.max(value, min), max);
+              this._index = this.positionToIndex(this._currentPosition);
+              this.applyAllEntryStyles();
           }
+          // -------------------------------------------------------------------------
+          // UI Listeners
+          // -------------------------------------------------------------------------
           setupUIListeners() {
               super.setupUIListeners();
               turbo(document.body)
                   .on(DefaultEventName.drag, (e) => {
                   if (!this.dragging)
                       return;
-                  e.stopImmediatePropagation();
-                  this.currentPosition += this.computeDragValue(e.scaledDeltaPosition);
+                  this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
+                  return Propagation.stopImmediatePropagation;
               })
-                  .on(DefaultEventName.dragEnd, (e) => {
+                  .on(DefaultEventName.dragEnd, () => {
                   if (!this.dragging)
                       return;
-                  e.stopImmediatePropagation();
                   this.dragging = false;
-                  this.recomputeIndex();
-                  // this.snapTo(this.trimmedIndex);
+                  if (this.entryTransitionReifect)
+                      this.entryTransitionReifect.apply();
+                  this.snapToNearest();
                   if (!this.alwaysOpen)
                       this.setOpenTimer();
+                  return Propagation.stopImmediatePropagation;
               });
           }
-          computeDragValue(delta) {
+          computeDragDelta(delta) {
               return -delta[this.isVertical ? "y" : "x"];
           }
-          /**
-           * Recalculates the dimensions and positions of all entries
-           */
+          // -------------------------------------------------------------------------
+          // Layout
+          // -------------------------------------------------------------------------
           reloadEntrySizes() {
-              if (!this.reifect)
-                  return;
               this.sizePerEntry.length = 0;
               this.positionPerEntry.length = 0;
               this.totalSize = 0;
-              this.reifect.getEnabledObjects().forEach(entry => {
-                  // const object = entry.object.deref();
-                  // const size = object ? object[this.isVertical ? "offsetHeight" : "offsetWidth"] : 0;
-                  // this.sizePerEntry.push(size);
-                  // this.positionPerEntry.push(this.totalSize);
-                  // this.totalSize += size;
+              this.entries.forEach(entry => {
+                  const size = entry[this.isVertical ? "offsetHeight" : "offsetWidth"];
+                  this.sizePerEntry.push(size);
+                  this.positionPerEntry.push(this.totalSize);
+                  this.totalSize += size;
               });
-              const flooredIndex = Math.floor(this.index);
-              const indexOffset = this.index - Math.floor(this.index);
-              this.currentPosition = 0;
-              if (this.index < 0)
-                  this.currentPosition = -Math.abs(this.index) * this.sizePerEntry[0];
-              else if (this.index >= this.sizePerEntry.length)
-                  this.currentPosition =
-                      (this.index - this.sizePerEntry.length + 1) * this.sizePerEntry[this.sizePerEntry.length - 1];
-              else
-                  this.currentPosition = this.positionPerEntry[flooredIndex] + this.sizePerEntry[flooredIndex] * indexOffset;
+              if (!this.sizePerEntry.length) {
+                  this._currentPosition = 0;
+                  return;
+              }
+              this._currentPosition = this.indexToPosition(this._index);
+              this.applyAllEntryStyles();
+              if (this.selectedIndex >= 0)
+                  this.applyTransition();
           }
-          recomputeIndex() {
-              let index = 0;
-              while (index < this.positionPerEntry.length - 1 && this.positionPerEntry[index + 1] < this.currentPosition)
-                  index++;
-              if (this.currentPosition - this.positionPerEntry[index] > this.sizePerEntry[index + 1] / 2)
-                  index++;
-              this.index = index;
+          indexToPosition(index) {
+              if (!this.sizePerEntry.length)
+                  return 0;
+              if (index < 0)
+                  return -Math.abs(index) * this.sizePerEntry[0];
+              if (index >= this.sizePerEntry.length)
+                  return this.totalSize - this.sizePerEntry[this.sizePerEntry.length - 1] / 2;
+              const floor = trim(Math.floor(index), this.sizePerEntry.length - 1);
+              return this.positionPerEntry[floor] + this.sizePerEntry[floor] * (index - Math.floor(index));
+          }
+          positionToIndex(position) {
+              if (!this.positionPerEntry.length)
+                  return 0;
+              let i = 0;
+              while (i < this.positionPerEntry.length - 1 && this.positionPerEntry[i + 1] <= position)
+                  i++;
+              if (i >= this.sizePerEntry.length - 1)
+                  return i;
+              return i + Math.min((position - this.positionPerEntry[i]) / (this.sizePerEntry[i] || 1), 1);
+          }
+          snapToNearest() {
+              const nearest = trim(Math.round(this.positionToIndex(this._currentPosition)), this.entries.length - 1);
+              this.index = nearest;
+              this._currentPosition = this.indexToPosition(nearest);
+              this.applyAllEntryStyles();
+          }
+          // -------------------------------------------------------------------------
+          // Transition (overrides TurboSelectElement — wheel sizes to selected entry directly)
+          // -------------------------------------------------------------------------
+          applyTransition() {
+              const i = this.selectedIndex;
+              if (i < 0)
+                  return;
+              this._index = i;
+              this._currentPosition = this.indexToPosition(i);
+              this.applyAllEntryStyles();
+              // Size container to selected entry
+              if (this.sizePerEntry.length) {
+                  const entry = this.entries[i];
+                  const w = this.isVertical ? entry.offsetWidth : this.sizePerEntry[i];
+                  const h = this.isVertical ? this.sizePerEntry[i] : entry.offsetHeight;
+                  $(this).setStyles({ width: `${w}px`, height: `${h}px` });
+              }
+          }
+          // -------------------------------------------------------------------------
+          // Styling
+          // -------------------------------------------------------------------------
+          applyAllEntryStyles() {
+              this.entries.forEach((el, i) => {
+                  const translationValue = (this.positionPerEntry[i] ?? 0) - this._currentPosition;
+                  if (this.customReifect) {
+                      this.customReifect.apply(el, { recomputeProperties: true });
+                  }
+                  else {
+                      this.computeAndApplyStyling(el, translationValue);
+                  }
+              });
           }
           computeAndApplyStyling(element, translationValue, size = this.size) {
-              let opacityValue, scaleValue;
               const bound = translationValue > 0 ? size.max : size.min;
-              opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
-              scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+              const opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
+              const scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
               let styles = {
-                  left: "50%", top: "50%", opacity: opacityValue, transform: `translate3d(
-            calc(${!this.isVertical ? translationValue : 0}px - 50%),
-            calc(${this.isVertical ? translationValue : 0}px - 50%),
-            0) scale3d(${scaleValue}, ${scaleValue}, 1)`
+                  left: "50%",
+                  top: "50%",
+                  opacity: opacityValue,
+                  transform: `translate3d(
+                calc(${!this.isVertical ? translationValue : 0}px - 50%),
+                calc(${this.isVertical ? translationValue : 0}px - 50%),
+                0) scale3d(${scaleValue}, ${scaleValue}, 1)`,
               };
               if (this.generateCustomStyling)
                   styles = this.generateCustomStyling({
-                      element: element,
-                      translationValue: translationValue,
-                      opacityValue: opacityValue,
-                      scaleValue: scaleValue,
-                      size: size,
-                      defaultComputedStyles: styles
+                      element, translationValue, opacityValue, scaleValue, size, defaultComputedStyles: styles,
                   });
               $(element).setStyles(styles);
           }
-          select(entry, selected = true) {
-              // super.select(entry, selected);
-              if (entry === undefined || entry === null)
-                  return this;
-              const index = this.selector.getIndex(this.selectedEntry);
-              if (index != this.index)
-                  this.index = index;
-              if (this.reifect) {
-                  // this.reifect.enabled.transition = true;
-                  this.reloadEntrySizes();
-              }
-              const computedStyle = getComputedStyle(this.selectedEntry);
-              $(this).setStyles({ minWidth: computedStyle.width, minHeight: computedStyle.height }, true);
-              return this;
-          }
-          clear() {
-              this.reifect.detach(...this.entries);
-              this.selector.clear();
-          }
-          refresh() {
-              if (this.selectedEntry)
-                  this.select(this.selectedEntry);
-              else
-                  this.reset();
-          }
-          reset() {
-              this.select(this.entries[0]);
-          }
+          // -------------------------------------------------------------------------
+          // Timer helpers
+          // -------------------------------------------------------------------------
           clearOpenTimer() {
               if (this.openTimer)
                   clearTimeout(this.openTimer);
@@ -23818,8 +23926,8 @@
     }
   }
 
-  var css_248z$6 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:flex-start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--gap);padding:calc(var(--pad)*.9);position:relative;z-index:0}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;position:relative;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans);z-index:0}demo-box .case-entry>:nth-child(2){align-items:flex-start;display:flex;flex-direction:row;gap:.4rem;justify-content:flex-start;position:relative}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(.turbo-popup):hover{transform:translateY(-1px);transition:transform var(--trans)}";
-  styleInject(css_248z$6);
+  var css_248z$7 = "demo-box{background:linear-gradient(180deg,var(--panel) 0,var(--panel-2) 100%);border:1px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);display:grid;gap:.75rem;padding:calc(var(--pad)*.9)}demo-box>:first-child{color:var(--text);font-weight:700;letter-spacing:.2px;margin:0;padding:.25rem 0 .1rem}demo-box>:last-child{align-items:flex-start;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 hsla(0,0%,100%,.03);display:flex;flex-direction:row;flex-wrap:wrap;gap:var(--gap);padding:calc(var(--pad)*.9);position:relative;z-index:0}demo-box .case-entry{align-items:start;background:linear-gradient(180deg,hsla(0,0%,100%,.02),hsla(0,0%,100%,0));border:1px solid var(--border);border-radius:var(--radius-sm);display:grid;gap:.6rem;min-width:12rem;padding:.75rem;position:relative;transition:transform var(--trans),border-color var(--trans),box-shadow var(--trans);z-index:0}demo-box .case-entry>:nth-child(2){align-items:flex-start;display:flex;flex-direction:row;gap:.4rem;justify-content:flex-start;position:relative}demo-box .case-entry:hover{border-color:color-mix(in oklab,var(--border) 70%,var(--ring));box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translateY(-2px)}demo-box>:last-child>:not(.turbo-popup):hover{transform:translateY(-1px);transition:transform var(--trans)}";
+  styleInject(css_248z$7);
 
   let DemoBox = (() => {
       let _classDecorators = [define("demo-box")];
@@ -23860,9 +23968,13 @@
                   return;
               value.forEach(el => $(this.contentBox).addChild(el));
           }
-          addContent(value) {
-              this.content.push(value);
-              $(this.contentBox).addChild(value);
+          addContent(...values) {
+              if (!this.content)
+                  return this;
+              values.forEach(el => {
+                  this.content.push(el);
+                  $(this.contentBox).addChild(el);
+              });
               return this;
           }
           addSubBox(label, ...values) {
@@ -23901,8 +24013,8 @@
       return DemoBox.create({ parent: document.body, label, content: content });
   }
 
-  var css_248z$5 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:16px;justify-content:center;width:16px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;fill:#fff;height:100%;width:100%}";
-  styleInject(css_248z$5);
+  var css_248z$6 = ".row{align-items:center;display:flex;gap:12px;margin:6px 0}.tag{font:12px/1.2 monospace;opacity:.7}.turbo-icon{align-items:center;display:block;height:16px;justify-content:center;width:16px}.turbo-icon>img,.turbo-icon>svg{aspect-ratio:1;fill:#fff;height:100%;width:100%}";
+  styleInject(css_248z$6);
 
   const onLoadedLog = (prefix) => (el) => console.log(`[${prefix}] loaded`, el);
   function iconTest1() {
@@ -24012,8 +24124,8 @@
       iconTest8();
   }
 
-  var css_248z$4 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
-  styleInject(css_248z$4);
+  var css_248z$5 = ".turbo-rich-element{--tre-bg:color-mix(in oklab,#fff 6%,transparent);--tre-border:color-mix(in oklab,#8aa4ff 25%,#e6ebf5);--tre-border-hover:color-mix(in oklab,#8aa4ff 45%,#d9e2f5);--tre-ring:#8fd3ff;align-items:center;border:1px solid var(--tre-border);border-radius:12px;display:inline-flex;flex-direction:row;gap:.55rem;padding:.55rem .7rem;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),border-color .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1)}.turbo-rich-element:hover{border-color:var(--tre-border-hover);box-shadow:0 12px 26px rgba(16,19,26,.12),inset 0 1px 0 #fff;transform:translateY(-1px)}.turbo-rich-element:active{filter:saturate(1.03);transform:translateY(0)}.turbo-rich-element:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--tre-ring) 60%,transparent),0 12px 26px rgba(16,19,26,.12),0 1px 0 #fff inset;outline:none}.pill{--pill-bg:color-mix(in oklab,#7dd3fc 24%,#fff);--pill-text:#0f141c;--pill-border:color-mix(in oklab,#7c8cf8 35%,#e6ebf5);align-items:center;background:linear-gradient(180deg,var(--pill-bg),#fff);border:1px solid var(--pill-border);border-radius:999px;box-shadow:0 4px 12px rgba(16,19,26,.06),inset 0 1px 0 hsla(0,0%,100%,.9);color:var(--pill-text);display:inline-flex;font:12px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;gap:.4rem;padding:.2rem .6rem;transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s cubic-bezier(.2,.8,.2,1);white-space:nowrap}.pill:hover{box-shadow:0 8px 16px rgba(16,19,26,.08),inset 0 1px 0 #fff;transform:translateY(-1px)}";
+  styleInject(css_248z$5);
 
   function richTest1() {
       // Basics: element as text, left/right icons, prefix/suffix strings
@@ -24237,8 +24349,8 @@
       richTest8();
   }
 
-  var css_248z$3 = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
-  styleInject(css_248z$3);
+  var css_248z$4 = ".turbo-input{color:var(--text);display:grid;gap:.5rem}.turbo-input>label{color:color-mix(in oklab,var(--text) 82%,#9ba7b6);font:600 12.5px/1.2 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;letter-spacing:.2px}.turbo-input>div{align-items:center;background:linear-gradient(180deg,#101624,#0c111a);border:1px solid color-mix(in oklab,var(--border) 70%,#2b3a55);border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 hsla(0,0%,100%,.04);display:grid;padding:.55rem .7rem;transition:border-color .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s cubic-bezier(.2,.8,.2,1),background .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}.turbo-input>div:hover{border-color:color-mix(in oklab,var(--ring) 36%,#2b3a55);box-shadow:0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05);transform:translateY(-1px)}.turbo-input input,.turbo-input textarea{background:transparent;border:0;caret-color:var(--ring);color:var(--text);font:14.5px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;outline:none;padding:0;width:100%}.turbo-input textarea{resize:none}.turbo-input input::-moz-placeholder,.turbo-input textarea::-moz-placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input input::placeholder,.turbo-input textarea::placeholder{color:color-mix(in oklab,var(--text) 45%,#7d8898);opacity:.7}.turbo-input:has(input:focus-visible),.turbo-input:has(textarea:focus-visible){outline:none}.turbo-input:has(input:focus-visible)>div,.turbo-input:has(textarea:focus-visible)>div{border-color:color-mix(in oklab,var(--ring) 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 35%,transparent),0 12px 26px rgba(0,0,0,.42),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input:has(input[disabled]),.turbo-input:has(input[readonly]),.turbo-input:has(textarea[disabled]),.turbo-input:has(textarea[readonly]){opacity:.7}.turbo-input:has(input[disabled])>div,.turbo-input:has(textarea[disabled])>div{cursor:not-allowed;filter:grayscale(.1)}.turbo-input.is-invalid>div,.turbo-input[aria-invalid=true]>div{border-color:color-mix(in oklab,#fb7185 60%,#2b3a55);box-shadow:0 0 0 3px color-mix(in oklab,#fb7185 25%,transparent),0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 hsla(0,0%,100%,.05)}.turbo-input.ti-compact>div{padding:.4rem .6rem}.turbo-input.ti-compact>label{font-size:11.5px}.turbo-input input[type=number]{-moz-appearance:textfield}.turbo-input input[type=number]::-webkit-inner-spin-button,.turbo-input input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}@media (prefers-reduced-motion:reduce){.turbo-input>div{transition:none!important}}";
+  styleInject(css_248z$4);
 
   const valueProbe = (label, el) => {
       const wrap = div({ class: "case-entry" });
@@ -24505,8 +24617,8 @@
       numTest3();
   }
 
-  var css_248z$2 = ".select-parent{display:flex;gap:.5rem;padding:.25rem}.select-parent>*{border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:8px;cursor:pointer;padding:.4rem .7rem;transition:background .15s ease,transform .08s ease,border-color .2s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.select-parent>.selected{background-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);border-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%)}.tabs-bar{border-bottom:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%)}.tabs-panels{background:color-mix(in oklab,var(--bg,#131313),#000 10%);border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:10px;padding:.75rem}.tabs-panels>.is-active{animation:panelIn .18s ease both}@keyframes panelIn{0%{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}";
-  styleInject(css_248z$2);
+  var css_248z$3 = ".select-parent{display:flex;gap:.5rem;padding:.25rem}.select-parent>*{border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:8px;cursor:pointer;padding:.4rem .7rem;transition:background .15s ease,transform .08s ease,border-color .2s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.select-parent>.selected{background-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%);border-color:color-mix(in oklab,var(--brand,#6aa9ff),#000 50%)}.tabs-bar{border-bottom:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%)}.tabs-panels{background:color-mix(in oklab,var(--bg,#131313),#000 10%);border:1px solid color-mix(in oklab,var(--border,#2a2a2a),#000 20%);border-radius:10px;padding:.75rem}.tabs-panels>.is-active{animation:panelIn .18s ease both}@keyframes panelIn{0%{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}";
+  styleInject(css_248z$3);
 
   // Small helper to print the selection nicely
   const logSelection = (label, sel) => {
@@ -24759,8 +24871,8 @@
       selectTestTabs();
   }
 
-  var css_248z$1 = ".turbo-drawer{align-items:stretch;color:var(--text);display:inline-flex;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;gap:0;position:relative;-webkit-tap-highlight-color:transparent}.turbo-drawer>.turbo-drawer-thumb:first-child{align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--text);cursor:pointer;display:flex;height:32px;justify-content:center;min-height:32px;min-width:32px;transition:background-color var(--trans),border-color var(--trans),transform .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:32px}.turbo-drawer-thumb:hover{background:color-mix(in hsl,var(--panel-2),#fff 4%)}.turbo-drawer-thumb:active{transform:scale(.98)}.turbo-drawer-thumb:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.turbo-drawer-thumb svg [fill]{fill:currentColor!important}.turbo-drawer-thumb svg [stroke]{stroke:currentColor!important}.turbo-drawer-thumb svg{background:transparent!important}.turbo-drawer-thumb>.turbo-icon{height:18px;width:18px}.turbo-drawer-panel-container{border-radius:var(--radius);overflow:hidden;position:relative}.turbo-drawer-panel{background-color:transparent;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text);min-height:84px;min-width:220px;padding:.85rem;position:relative}.turbo-drawer-panel:after{border-radius:inherit;box-shadow:inset 0 0 0 1px var(--edge);content:\"\";inset:0;pointer-events:none;position:absolute}.turbo-drawer.is-compact .turbo-drawer-thumb{border-radius:var(--radius-xs);height:28px;min-height:28px;min-width:28px;width:28px}.turbo-drawer.is-compact .turbo-drawer-panel{min-width:200px;padding:.7rem}.top-drawer .turbo-drawer-thumb{margin-bottom:6px}.bottom-drawer .turbo-drawer-thumb{margin-top:6px}.left-drawer .turbo-drawer-thumb{margin-right:6px}.right-drawer .turbo-drawer-thumb{margin-left:6px}\n\n/*!* nicer content defaults inside the panel (fixes white form controls) *!*/\n\n/*!* reduce motion *!*/";
-  styleInject(css_248z$1);
+  var css_248z$2 = ".turbo-drawer{align-items:stretch;color:var(--text);display:inline-flex;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;gap:0;position:relative;-webkit-tap-highlight-color:transparent}.turbo-drawer>.turbo-drawer-thumb:first-child{align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--text);cursor:pointer;display:flex;height:32px;justify-content:center;min-height:32px;min-width:32px;transition:background-color var(--trans),border-color var(--trans),transform .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:32px}.turbo-drawer-thumb:hover{background:color-mix(in hsl,var(--panel-2),#fff 4%)}.turbo-drawer-thumb:active{transform:scale(.98)}.turbo-drawer-thumb:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.turbo-drawer-thumb svg [fill]{fill:currentColor!important}.turbo-drawer-thumb svg [stroke]{stroke:currentColor!important}.turbo-drawer-thumb svg{background:transparent!important}.turbo-drawer-thumb>.turbo-icon{height:18px;width:18px}.turbo-drawer-panel-container{border-radius:var(--radius);overflow:hidden;position:relative}.turbo-drawer-panel{background-color:transparent;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text);min-height:84px;min-width:220px;padding:.85rem;position:relative}.turbo-drawer-panel:after{border-radius:inherit;box-shadow:inset 0 0 0 1px var(--edge);content:\"\";inset:0;pointer-events:none;position:absolute}.turbo-drawer.is-compact .turbo-drawer-thumb{border-radius:var(--radius-xs);height:28px;min-height:28px;min-width:28px;width:28px}.turbo-drawer.is-compact .turbo-drawer-panel{min-width:200px;padding:.7rem}.top-drawer .turbo-drawer-thumb{margin-bottom:6px}.bottom-drawer .turbo-drawer-thumb{margin-top:6px}.left-drawer .turbo-drawer-thumb{margin-right:6px}.right-drawer .turbo-drawer-thumb{margin-left:6px}\n\n/*!* nicer content defaults inside the panel (fixes white form controls) *!*/\n\n/*!* reduce motion *!*/";
+  styleInject(css_248z$2);
 
   function drawerTest1_Basics() {
       const dLeft = drawer({
@@ -24955,8 +25067,8 @@
       drawerTest8_RaceProps();
   }
 
-  var css_248z = ":root{--panel-2:#1a1f2b;--text:#e7ecf3;--edge:hsla(0,0%,100%,.06);--shadow:0 10px 30px rgba(0,0,0,.35),0 1px 0 hsla(0,0%,100%,.04) inset}.popup-test-trigger{align-items:center;display:inline-flex;gap:.5rem;justify-content:center;min-width:120px;padding:.25rem;position:relative}.turbo-popup{background:var(--panel-2);border:1px solid var(--edge);border-radius:12px;box-shadow:var(--shadow);color:var(--text);min-width:150px;padding:12px 14px}.popup-body{max-width:min(360px,80vw);overflow:auto}.popup-body.wide{max-width:86vw;width:min(520px,86vw)}";
-  styleInject(css_248z);
+  var css_248z$1 = ":root{--panel-2:#1a1f2b;--text:#e7ecf3;--edge:hsla(0,0%,100%,.06);--shadow:0 10px 30px rgba(0,0,0,.35),0 1px 0 hsla(0,0%,100%,.04) inset}.popup-test-trigger{align-items:center;display:inline-flex;gap:.5rem;justify-content:center;min-width:120px;padding:.25rem;position:relative}.turbo-popup{background:var(--panel-2);border:1px solid var(--edge);border-radius:12px;box-shadow:var(--shadow);color:var(--text);min-width:150px;padding:12px 14px}.popup-body{max-width:min(360px,80vw);overflow:auto}.popup-body.wide{max-width:86vw;width:min(520px,86vw)}";
+  styleInject(css_248z$1);
 
   function makeTrigger(label = "Trigger", popupProperties = {}) {
       const trg = TurboButton.create({ text: label });
@@ -25349,6 +25461,9 @@
       ddTestTabs();
   }
 
+  var css_248z = "turbo-select-wheel{display:block;height:var(2rem);position:relative}turbo-select-wheel>*{left:50%;position:absolute;top:50%;transform:translate(-50%,-50%);-webkit-user-select:none;-moz-user-select:none;user-select:none;white-space:nowrap}";
+  styleInject(css_248z);
+
   function selectWheelTest1() {
       const wheel = TurboSelectWheel.create({});
       wheel.values = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
@@ -25356,11 +25471,11 @@
           .addSubBox("wheel", wheel)
           .addContent(TurboButton.create({
           text: "Select Beta",
-          onClick: () => wheel.selector.select("Beta")
+          onClick: () => wheel.select.select("Beta")
       }))
           .addContent(TurboButton.create({
           text: "selectByIndex(2)",
-          onClick: () => wheel.selector.selectByIndex(2)
+          onClick: () => wheel.select.selectByIndex(2)
       }))
           .addContent(TurboButton.create({
           text: "Log selected",
@@ -25391,125 +25506,130 @@
       selectWheelTest2();
   }
 
-  const panelColors = ["#4a90d9", "#6bc76f", "#e07b4a", "#9b59b6"];
-  const makePanel = (label, color) => div({
-      styles: {
-          background: color,
-          padding: "1.5rem 2rem",
-          borderRadius: "12px",
-          fontSize: "1.1rem",
-          fontWeight: "600",
-          color: "#fff",
-          minHeight: "100px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-      },
-      text: label,
-  });
-  function makeSwitch(mode, extraProps = {}) {
-      const cs = TurboContentSwitch.create({ mode, ...extraProps });
+  const palette = ["#4a90d9", "#6bc76f", "#e07b4a", "#9b59b6", "#e74c3c", "#1abc9c"];
+  function makePanel(label, color, content = {}) {
+      return div({
+          styles: {
+              background: color,
+              padding: "1.5rem 2rem",
+              borderRadius: "12px",
+              color: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+              width: content.wide ? "420px" : content.narrow ? "160px" : "280px",
+              minHeight: content.tall ? "200px" : "80px",
+              boxSizing: "border-box",
+          },
+          children: [
+              h2({
+                  styles: { margin: "0", fontSize: "1.1rem", fontWeight: "700" },
+                  text: label,
+              }),
+              content.subtitle && span({
+                  styles: { fontSize: "0.8rem", opacity: "0.85", fontWeight: "500" },
+                  text: content.subtitle,
+              }),
+              content.body && p({
+                  styles: { margin: "0", fontSize: "0.9rem", opacity: "0.9", lineHeight: "1.5" },
+                  text: content.body,
+              }),
+          ].filter(Boolean),
+      });
+  }
+  function makeSwitch(mode) {
+      const cs = TurboContentSwitch.create({ mode });
       cs.select.forceSelection = false;
       return cs;
   }
-  /* 1) fadeRight (default) */
+  /* 1) Same-size panels — baseline */
   function csTest1() {
       const cs = makeSwitch();
-      const panels = ["Panel A", "Panel B", "Panel C"].map((label, i) => {
-          const p = makePanel(label, panelColors[i]);
-          cs.appendChild(p);
-          return p;
-      });
-      // Let MO process entries, then show first panel
+      const panels = [
+          makePanel("Panel A", palette[0], { subtitle: "First slide", body: "Consistent sizing across all panels." }),
+          makePanel("Panel B", palette[1], { subtitle: "Second slide", body: "All panels are the same width and height." }),
+          makePanel("Panel C", palette[2], { subtitle: "Third slide", body: "The container should not jump at all." }),
+      ];
+      panels.forEach(p => cs.appendChild(p));
       setTimeout(() => cs.select.select(panels[0]));
-      box("TurboContentSwitch — fadeRight (default)")
+      box("ContentSwitch — Same size panels (fadeRight)")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Panel A", onClick: () => cs.select.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Panel B", onClick: () => cs.select.select(panels[1]) }))
-          .addContent(TurboButton.create({ text: "→ Panel C", onClick: () => cs.select.select(panels[2]) }));
+          .addContent(...panels.map((_, i) => TurboButton.create({ text: `→ Panel ${["A", "B", "C"][i]}`, onClick: () => cs.select.select(panels[i]) })));
   }
-  /* 2) fadeLeft */
+  /* 2) Varying widths */
   function csTest2() {
-      const cs = makeSwitch(ContentSwitchMode.fadeLeft);
-      const panels = ["Left A", "Left B", "Left C"].map((label, i) => {
-          const p = makePanel(label, [panelColors[0], panelColors[2], panelColors[3]][i]);
-          cs.appendChild(p);
-          return p;
-      });
+      const cs = makeSwitch();
+      const panels = [
+          makePanel("Narrow", palette[3], { narrow: true, subtitle: "160px wide" }),
+          makePanel("Normal Panel", palette[0], { subtitle: "280px wide", body: "Standard width." }),
+          makePanel("Wide Panel — lots of content here", palette[4], { wide: true, subtitle: "420px wide", body: "This one is much wider than the others." }),
+      ];
+      panels.forEach(p => cs.appendChild(p));
       setTimeout(() => cs.select.select(panels[0]));
-      box("TurboContentSwitch — fadeLeft")
+      box("ContentSwitch — Varying widths")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Left A", onClick: () => cs.select.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Left B", onClick: () => cs.select.select(panels[1]) }))
-          .addContent(TurboButton.create({ text: "→ Left C", onClick: () => cs.select.select(panels[2]) }));
+          .addContent(...["Narrow", "Normal", "Wide"].map((label, i) => TurboButton.create({ text: `→ ${label}`, onClick: () => cs.select.select(panels[i]) })));
   }
-  /* 3) carousel — direction-aware, no wrap to avoid index-direction mismatch */
+  /* 3) Varying heights */
   function csTest3() {
-      const cs = makeSwitch(ContentSwitchMode.carousel);
-      const panels = ["Slide 1", "Slide 2", "Slide 3", "Slide 4"].map((label, i) => {
-          const p = makePanel(label, panelColors[i]);
-          cs.appendChild(p);
-          return p;
-      });
-      let currentIndex = 0;
+      const cs = makeSwitch(ContentSwitchMode.fadeLeft);
+      const panels = [
+          makePanel("Short", palette[1], { subtitle: "Just a title and subtitle" }),
+          makePanel("Tall Panel", palette[2], {
+              tall: true,
+              subtitle: "Much more content",
+              body: "This panel has a lot of text content inside it, making it significantly taller than the others. The container should animate its height smoothly when switching to or from this panel.",
+          }),
+          makePanel("Medium", palette[5], {
+              subtitle: "In between",
+              body: "A bit of body text here.",
+          }),
+      ];
+      panels.forEach(p => cs.appendChild(p));
       setTimeout(() => cs.select.select(panels[0]));
-      box("TurboContentSwitch — carousel")
+      box("ContentSwitch — Varying heights (fadeLeft)")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({
-          text: "← Prev",
-          onClick: () => {
-              if (currentIndex > 0) {
-                  currentIndex--;
-                  cs.select.select(panels[currentIndex]);
-              }
-          }
-      }))
-          .addContent(TurboButton.create({
-          text: "Next →",
-          onClick: () => {
-              if (currentIndex < panels.length - 1) {
-                  currentIndex++;
-                  cs.select.select(panels[currentIndex]);
-              }
-          }
-      }))
-          .addContent(TurboButton.create({
-          text: "→ Slide 1",
-          onClick: () => { currentIndex = 0; cs.select.select(panels[0]); }
-      }))
-          .addContent(TurboButton.create({
-          text: "→ Slide 4",
-          onClick: () => { currentIndex = 3; cs.select.select(panels[3]); }
-      }));
+          .addContent(...["Short", "Tall", "Medium"].map((label, i) => TurboButton.create({ text: `→ ${label}`, onClick: () => cs.select.select(panels[i]) })));
   }
-  /* 4) custom transitionDuration */
+  /* 4) Carousel with varying sizes */
   function csTest4() {
-      const cs = TurboContentSwitch.create({ transitionDuration: 0.8 });
-      cs.select.forceSelection = false;
-      const panels = ["Slow A", "Slow B"].map((label, i) => {
-          const p = makePanel(label, [panelColors[1], panelColors[2]][i]);
-          cs.appendChild(p);
-          return p;
-      });
+      const cs = makeSwitch(ContentSwitchMode.carousel);
+      const panels = [
+          makePanel("Slide 1", palette[0], { subtitle: "Narrow start", narrow: true }),
+          makePanel("Slide 2", palette[1], { subtitle: "Normal", body: "Back to standard width." }),
+          makePanel("Slide 3", palette[2], { wide: true, subtitle: "Wide slide", body: "Carousel with size change." }),
+          makePanel("Slide 4", palette[3], { tall: true, subtitle: "Tall slide", body: "Height changes too." }),
+      ];
+      panels.forEach(p => cs.appendChild(p));
+      let idx = 0;
       setTimeout(() => cs.select.select(panels[0]));
-      box("TurboContentSwitch — custom transitionDuration (0.8s)")
+      box("ContentSwitch — Carousel + varying sizes")
           .addSubBox("switch", cs)
-          .addContent(TurboButton.create({ text: "→ Slow A", onClick: () => cs.select.select(panels[0]) }))
-          .addContent(TurboButton.create({ text: "→ Slow B", onClick: () => cs.select.select(panels[1]) }))
-          .addContent(TurboButton.create({
-          text: "duration = 0.2s",
-          onClick: () => cs.transitionDuration = 0.2
-      }))
-          .addContent(TurboButton.create({
-          text: "duration = 1.5s",
-          onClick: () => cs.transitionDuration = 1.5
-      }));
+          .addContent(TurboButton.create({ text: "← Prev", onClick: () => { if (idx > 0)
+              cs.select.select(panels[--idx]); } }), TurboButton.create({ text: "Next →", onClick: () => { if (idx < panels.length - 1)
+              cs.select.select(panels[++idx]); } }), ...panels.map((_, i) => TurboButton.create({ text: `→ ${i + 1}`, onClick: () => { idx = i; cs.select.select(panels[i]); } })));
+  }
+  /* 5) Slow transition to inspect size animation clearly */
+  function csTest5() {
+      const cs = TurboContentSwitch.create({ transitionDuration: 1.2 });
+      cs.select.forceSelection = false;
+      const panels = [
+          makePanel("Slow A", palette[4], { narrow: true, subtitle: "Small start" }),
+          makePanel("Slow B — bigger", palette[5], { wide: true, tall: true, subtitle: "Watch it grow", body: "The transition is intentionally slow so you can see width and height animating." }),
+          makePanel("Slow C", palette[0], { subtitle: "Back to normal" }),
+      ];
+      panels.forEach(p => cs.appendChild(p));
+      setTimeout(() => cs.select.select(panels[0]));
+      box("ContentSwitch — Slow transition (1.2s) for visual inspection")
+          .addSubBox("switch", cs)
+          .addContent(...["A", "B", "C"].map((label, i) => TurboButton.create({ text: `→ Slow ${label}`, onClick: () => cs.select.select(panels[i]) })));
   }
   function setupContentSwitchTests() {
       csTest1();
       csTest2();
       csTest3();
       csTest4();
+      csTest5();
   }
 
   turbo(TurboIcon.defaultProperties).applyDefaults({ directory: "assets", defaultClasses: "icon" });

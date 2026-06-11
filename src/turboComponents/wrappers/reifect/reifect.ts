@@ -105,6 +105,15 @@ class Reifect<ClassType extends object = Node> extends StatefulReifect<"default"
     public apply(objects?: ClassType[] | ClassType, options?: ReifectAppliedOptions<"default", ClassType>) {
         super.apply("default", objects, options);
     }
+
+    protected normalizePropertyConfig<Type>(currentConfig: any, newConfig: any): any {
+        if (typeof newConfig === "function" && newConfig.length <= 3) {
+            const wrapped = (_state: "default", index: number, total: number, object: ClassType) =>
+                newConfig(index, total, object);
+            return super.normalizePropertyConfig(currentConfig, wrapped);
+        }
+        return super.normalizePropertyConfig(currentConfig, newConfig);
+    }
 }
 
 export {Reifect};

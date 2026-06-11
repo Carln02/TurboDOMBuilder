@@ -1,5 +1,7 @@
 turbo-content-switch {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     position: relative;
     overflow: hidden;
 }
@@ -7,6 +9,6 @@ turbo-content-switch {
 turbo-content-switch > * {
     top: 0;
     left: 0;
-    width: 100%;
     box-sizing: border-box;
+    position: absolute;
 }
