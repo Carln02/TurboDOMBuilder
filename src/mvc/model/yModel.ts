@@ -27,9 +27,16 @@ class TurboYModel<
      * @inheritDoc
      */
     @auto({override: true}) public set enabledCallbacks(value: boolean) {
-        if (!this.data || !(this.data instanceof YAbstractType)) return;
-        if (value) this.attachNestedObservers(this.data);
-        else this.detachNestedObservers(this.data);
+        if (!this.data) return;
+        if (this.data instanceof YAbstractType) {
+            if (value) this.attachNestedObservers(this.data);
+            else this.detachNestedObservers(this.data);
+        } else if (Array.isArray(this.data)) {
+            for (const item of this.data) {
+                if (value) this.attachNestedObservers(item);
+                else this.detachNestedObservers(item);
+            }
+        }
     }
 
     /*
@@ -74,6 +81,12 @@ class TurboYModel<
             }
             return index as DataKeyType;
         }
+        if (Array.isArray(data)) {
+            const index = super.addAction(model, data, value, key);
+            if (index !== undefined && value != null && typeof value === "object")
+                this.attachNestedObservers(value);
+            return index;
+        }
         return super.addAction(model, data, value, key);
     }
 
@@ -114,14 +127,23 @@ class TurboYModel<
      */
     public initialize() {
         super.initialize();
-        if (this.enabledCallbacks && this.data instanceof YAbstractType) this.attachNestedObservers(this.data);
+        if (!this.enabledCallbacks) return;
+        if (this.data instanceof YAbstractType) this.attachNestedObservers(this.data);
+        else if (Array.isArray(this.data)) {
+            for (const item of this.data) this.attachNestedObservers(item);
+        }
     }
 
     /**
      * @inheritDoc
      */
     public clear(clearData: boolean = true) {
-        if (clearData && this.data instanceof YAbstractType) this.data?.unobserve(this.observer);
+        if (clearData) {
+            if (this.data instanceof YAbstractType) this.data?.unobserve(this.observer);
+            else if (Array.isArray(this.data)) {
+                for (const item of this.data) this.detachNestedObservers(item);
+            }
+        }
         super.clear(clearData);
     }
 
@@ -171,18 +193,24 @@ class TurboYModel<
         }
     }
 
-    private attachNestedObservers(value: any) {
-        if (!(value instanceof YAbstractType)) return;
-        value.observe(this.observer);
-        for (const key of this.getKeysAction(value)) {
-            if (!this.nestedModels.has(key as any)) this.attachNestedObservers(this.getAction(value, key));
+    protected attachNestedObservers(value: any) {
+        if (value instanceof YAbstractType) {
+            value.observe(this.observer);
+            for (const key of this.getKeysAction(value)) {
+                if (!this.nestedModels.has(key as any)) this.attachNestedObservers(this.getAction(value, key));
+            }
+        } else if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) this.attachNestedObservers(value[i]);
         }
     }
 
-    private detachNestedObservers(value: any) {
-        if (!(value instanceof YAbstractType)) return;
-        value.unobserve(this.observer);
-        for (const key of this.getKeysAction(value)) this.detachNestedObservers(this.getAction(value, key));
+    protected detachNestedObservers(value: any) {
+        if (value instanceof YAbstractType) {
+            value.unobserve(this.observer);
+            for (const key of this.getKeysAction(value)) this.detachNestedObservers(this.getAction(value, key));
+        } else if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) this.detachNestedObservers(value[i]);
+        }
     }
 
     private shiftIndices(fromIndex: number, offset: number) {

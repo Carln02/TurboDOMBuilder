@@ -1,4 +1,4 @@
-import {initializeEffects, signal} from "../../decorators/reactivity/reactivity";
+import {initializeEffects, markDirtyPath, signal} from "../../decorators/reactivity/reactivity";
 import {TurboModelProperties, TurboModelProxy, TurboObserverProperties} from "./model.types";
 import {SignalBox} from "../../decorators/reactivity/reactivity.types";
 import {auto} from "../../decorators/auto/auto";
@@ -119,7 +119,7 @@ class TurboModel<
 
     public readonly onDataChanged = new Delegate<(oldData: any, newData: any) => void>();
 
-    public fireCallbackHook: (value: any, key: string) => void;
+    public fireCallbackHook: (key: string, ...values: any[]) => void;
 
     protected isInitialized: boolean = false;
 
@@ -150,6 +150,7 @@ class TurboModel<
         this.clear(false);
         this._data = data;
         if (data) this.initialize();
+        markDirtyPath(this, []);
         this.onDataChanged.fire(oldData, data);
     }
 
@@ -479,7 +480,9 @@ class TurboModel<
             else key = this.internalAdd(undefined, this.get(keys[0],
                 ...keys.slice(1, -1)), value, keys[keys.length - 1]);
         }
-        if (!isUndefined(key)) this.keyChanged([...keys, key]);
+        const lastKeyWasUndefined = isUndefined(keys[keys.length - 1]);
+        const changePath = lastKeyWasUndefined ? [...keys.slice(0, -1), key] : keys;
+        if (!isUndefined(key)) this.keyChanged(changePath);
         return key;
     }
 
@@ -493,7 +496,9 @@ class TurboModel<
      */
     public addFlat(value: unknown, flatKey: FlatKeyType, depth?: number): KeyType {
         const keys = this.scopeKey(flatKey as any, depth);
-        if (keys?.length) return this.add(value, ...keys);
+        if (!keys?.length) throw new Error(
+            `TurboModel.addFlat: could not resolve flat key "${String(flatKey)}" to a key path.`);
+        return this.add(value, ...keys);
     }
 
     /*
@@ -1043,7 +1048,7 @@ class TurboModel<
         if (key === undefined) return;
 
         this.signals.get(key)?.emit();
-        //TODO markDirty(this, ...keys);
+        markDirtyPath(this, keys);
         if (deleted) this.signals.delete(key);
 
         if (!this.enabledCallbacks) return;
@@ -1086,10 +1091,18 @@ class TurboModel<
     }
 
     private static flattenSize(data: any, depth: number): number {
-        if (!data || depth <= 0 || !Array.isArray(data)) return 1;
-        let total = 0;
-        for (const item of data) total += this.flattenSize(item, depth - 1);
-        return total;
+        if (!data || depth <= 0) return 1;
+        if (Array.isArray(data)) {
+            let total = 0;
+            for (const item of data) total += this.flattenSize(item, depth - 1);
+            return total;
+        }
+        if (typeof data === "object" && typeof data.length === "number" && typeof data.get === "function") {
+            let total = 0;
+            for (let i = 0; i < data.length; i++) total += this.flattenSize(data.get(i), depth - 1);
+            return total;
+        }
+        return 1;
     }
 
     /**
@@ -1150,19 +1163,25 @@ class TurboModel<
             });
         }
 
+        if (depth == null) throw new Error("TurboModel.scopeKey: depth is required for numeric flat keys.");
+
         const keys: number[] = [];
         let remaining = flatKey as number;
         let current: any = this.data;
 
         for (let i = 0; i < depth; i++) {
-            if (!Array.isArray(current)) break;
+            const isIndexable = Array.isArray(current)
+                || (typeof current === "object" && current !== null
+                    && typeof current.length === "number" && typeof current.get === "function");
+            if (!isIndexable) break;
             const remainingDepth = depth - i - 1;
+            const getItem = Array.isArray(current) ? (j: number) => current[j] : (j: number) => current.get(j);
 
             for (let j = 0; j < current.length; j++) {
-                const size = TurboModel.flattenSize(current[j], remainingDepth);
+                const size = TurboModel.flattenSize(getItem(j), remainingDepth);
                 if (remaining < size) {
                     keys.push(j);
-                    current = current[j];
+                    current = getItem(j);
                     break;
                 }
                 remaining -= size;
@@ -1205,8 +1224,8 @@ class TurboModel<
         this._data = data;
     }
 
-    public fireCallback(key: string, value?: any) {
-        this.fireCallbackHook?.(value, key);
+    public fireCallback(key: string, ...values: any[]) {
+        this.fireCallbackHook?.(key, ...values);
     }
 
     private createNestedChild(model: TurboModel, key: KeyType, properties: TurboModelProperties): TurboModel {

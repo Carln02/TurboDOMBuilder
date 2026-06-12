@@ -910,7 +910,7 @@ var Turbo = (function (exports, yjs) {
                     writeFlag = true;
                     options.callBefore?.call(this, value);
                     let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                    if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                    if ((options.cancelIfUnchanged ?? true) && Object.is(baseRead.call(this), next)) {
                         writeFlag = false;
                         return;
                     }
@@ -2409,6 +2409,17 @@ var Turbo = (function (exports, yjs) {
         markDirty(target, key) {
             this.getSignal(target, key)?.emit();
         }
+        markDirtyPath(target, keys) {
+            const changed = this.serializePath(keys);
+            for (const [boundPath, propertyKey] of this.data(target).pathMap) {
+                // An empty changed path means the root was replaced, which overlaps every bound path
+                if (changed === ""
+                    || boundPath === changed
+                    || boundPath.startsWith(changed + "|")
+                    || changed.startsWith(boundPath + "|"))
+                    this.markDirty(target, propertyKey);
+            }
+        }
         bindPath(target, propertyKey, keys) {
             this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
         }
@@ -2783,6 +2794,23 @@ var Turbo = (function (exports, yjs) {
             ? utils$a.getKeyFromPath(target, keys)
             : keys[0];
         return utils$a.markDirty(target, computedKey ?? keys[0]);
+    }
+    /**
+     * @function markDirtyPath
+     * @group Decorators
+     * @category Signal
+     *
+     * @description Marks as dirty every signal whose bound key path (registered via {@link modelSignal} or
+     * {@link nestedModelSignal}) overlaps the given changed key path, and fires their attached effects.
+     * A bound path overlaps the changed path when either is a prefix of (or equal to) the other:
+     * replacing a parent value invalidates signals bound deeper inside it, and changing a nested value
+     * invalidates signals bound to any of its ancestors. An empty `keys` array marks every bound path dirty,
+     * as it represents a change at the root.
+     * @param {object} target - The target to which the signals are bound.
+     * @param {KeyType[]} keys - The key path of the data that changed.
+     */
+    function markDirtyPath(target, keys) {
+        utils$a.markDirtyPath(target, keys);
     }
     /**
      * @function initializeEffects
@@ -3977,6 +4005,7 @@ var Turbo = (function (exports, yjs) {
                 this._data = data;
                 if (data)
                     this.initialize();
+                markDirtyPath(this, []);
                 this.onDataChanged.fire(oldData, data);
             }
             /**
@@ -4255,8 +4284,10 @@ var Turbo = (function (exports, yjs) {
                     else
                         key = this.internalAdd(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
                 }
+                const lastKeyWasUndefined = isUndefined(keys[keys.length - 1]);
+                const changePath = lastKeyWasUndefined ? [...keys.slice(0, -1), key] : keys;
                 if (!isUndefined(key))
-                    this.keyChanged([...keys, key]);
+                    this.keyChanged(changePath);
                 return key;
             }
             /**
@@ -4269,8 +4300,9 @@ var Turbo = (function (exports, yjs) {
              */
             addFlat(value, flatKey, depth) {
                 const keys = this.scopeKey(flatKey, depth);
-                if (keys?.length)
-                    return this.add(value, ...keys);
+                if (!keys?.length)
+                    throw new Error(`TurboModel.addFlat: could not resolve flat key "${String(flatKey)}" to a key path.`);
+                return this.add(value, ...keys);
             }
             /*
              *
@@ -4656,7 +4688,7 @@ var Turbo = (function (exports, yjs) {
                 if (key === undefined)
                     return;
                 this.signals.get(key)?.emit();
-                //TODO markDirty(this, ...keys);
+                markDirtyPath(this, keys);
                 if (deleted)
                     this.signals.delete(key);
                 if (!this.enabledCallbacks)
@@ -4694,12 +4726,21 @@ var Turbo = (function (exports, yjs) {
                     this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
             }
             static flattenSize(data, depth) {
-                if (!data || depth <= 0 || !Array.isArray(data))
+                if (!data || depth <= 0)
                     return 1;
-                let total = 0;
-                for (const item of data)
-                    total += this.flattenSize(item, depth - 1);
-                return total;
+                if (Array.isArray(data)) {
+                    let total = 0;
+                    for (const item of data)
+                        total += this.flattenSize(item, depth - 1);
+                    return total;
+                }
+                if (typeof data === "object" && typeof data.length === "number" && typeof data.get === "function") {
+                    let total = 0;
+                    for (let i = 0; i < data.length; i++)
+                        total += this.flattenSize(data.get(i), depth - 1);
+                    return total;
+                }
+                return 1;
             }
             /**
              * @function flattenKey
@@ -4736,18 +4777,24 @@ var Turbo = (function (exports, yjs) {
                         return isNaN(n) || k === "" ? k : n;
                     });
                 }
+                if (depth == null)
+                    throw new Error("TurboModel.scopeKey: depth is required for numeric flat keys.");
                 const keys = [];
                 let remaining = flatKey;
                 let current = this.data;
                 for (let i = 0; i < depth; i++) {
-                    if (!Array.isArray(current))
+                    const isIndexable = Array.isArray(current)
+                        || (typeof current === "object" && current !== null
+                            && typeof current.length === "number" && typeof current.get === "function");
+                    if (!isIndexable)
                         break;
                     const remainingDepth = depth - i - 1;
+                    const getItem = Array.isArray(current) ? (j) => current[j] : (j) => current.get(j);
                     for (let j = 0; j < current.length; j++) {
-                        const size = TurboModel.flattenSize(current[j], remainingDepth);
+                        const size = TurboModel.flattenSize(getItem(j), remainingDepth);
                         if (remaining < size) {
                             keys.push(j);
-                            current = current[j];
+                            current = getItem(j);
                             break;
                         }
                         remaining -= size;
@@ -4785,8 +4832,8 @@ var Turbo = (function (exports, yjs) {
                 this.clear(false);
                 this._data = data;
             }
-            fireCallback(key, value) {
-                this.fireCallbackHook?.(value, key);
+            fireCallback(key, ...values) {
+                this.fireCallbackHook?.(key, ...values);
             }
             createNestedChild(model, key, properties) {
                 if (model.nestedModels.has(key))
@@ -4948,7 +4995,7 @@ var Turbo = (function (exports, yjs) {
                 entry = {
                     emitter: new TurboEmitter(),
                     operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
-                    emitterCallback: (value, key) => entry.emitter?.fire(value, key),
+                    emitterCallback: (key, ...values) => entry.emitter?.fire(key, ...values),
                     emitterKeyCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
                 };
                 this.dataMap.set(element, entry);
@@ -11424,6 +11471,7 @@ var Turbo = (function (exports, yjs) {
                 const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
                 return this.apply(this.states[nextStateIndex], objects, options);
             }
+            //TODO FIXXXX
             unapply(objects, options) {
                 if (!this.enabled)
                     return this;
@@ -12969,12 +13017,22 @@ var Turbo = (function (exports, yjs) {
              * @inheritDoc
              */
             set enabledCallbacks(value) {
-                if (!this.data || !(this.data instanceof yjs.AbstractType))
+                if (!this.data)
                     return;
-                if (value)
-                    this.attachNestedObservers(this.data);
-                else
-                    this.detachNestedObservers(this.data);
+                if (this.data instanceof yjs.AbstractType) {
+                    if (value)
+                        this.attachNestedObservers(this.data);
+                    else
+                        this.detachNestedObservers(this.data);
+                }
+                else if (Array.isArray(this.data)) {
+                    for (const item of this.data) {
+                        if (value)
+                            this.attachNestedObservers(item);
+                        else
+                            this.detachNestedObservers(item);
+                    }
+                }
             }
             /*
              *
@@ -13023,6 +13081,12 @@ var Turbo = (function (exports, yjs) {
                     }
                     return index;
                 }
+                if (Array.isArray(data)) {
+                    const index = super.addAction(model, data, value, key);
+                    if (index !== undefined && value != null && typeof value === "object")
+                        this.attachNestedObservers(value);
+                    return index;
+                }
                 return super.addAction(model, data, value, key);
             }
             /**
@@ -13065,15 +13129,27 @@ var Turbo = (function (exports, yjs) {
              */
             initialize() {
                 super.initialize();
-                if (this.enabledCallbacks && this.data instanceof yjs.AbstractType)
+                if (!this.enabledCallbacks)
+                    return;
+                if (this.data instanceof yjs.AbstractType)
                     this.attachNestedObservers(this.data);
+                else if (Array.isArray(this.data)) {
+                    for (const item of this.data)
+                        this.attachNestedObservers(item);
+                }
             }
             /**
              * @inheritDoc
              */
             clear(clearData = true) {
-                if (clearData && this.data instanceof yjs.AbstractType)
-                    this.data?.unobserve(this.observer);
+                if (clearData) {
+                    if (this.data instanceof yjs.AbstractType)
+                        this.data?.unobserve(this.observer);
+                    else if (Array.isArray(this.data)) {
+                        for (const item of this.data)
+                            this.detachNestedObservers(item);
+                    }
+                }
                 super.clear(clearData);
             }
             /*
@@ -13126,20 +13202,28 @@ var Turbo = (function (exports, yjs) {
                 }
             }
             attachNestedObservers(value) {
-                if (!(value instanceof yjs.AbstractType))
-                    return;
-                value.observe(this.observer);
-                for (const key of this.getKeysAction(value)) {
-                    if (!this.nestedModels.has(key))
-                        this.attachNestedObservers(this.getAction(value, key));
+                if (value instanceof yjs.AbstractType) {
+                    value.observe(this.observer);
+                    for (const key of this.getKeysAction(value)) {
+                        if (!this.nestedModels.has(key))
+                            this.attachNestedObservers(this.getAction(value, key));
+                    }
+                }
+                else if (Array.isArray(value)) {
+                    for (let i = 0; i < value.length; i++)
+                        this.attachNestedObservers(value[i]);
                 }
             }
             detachNestedObservers(value) {
-                if (!(value instanceof yjs.AbstractType))
-                    return;
-                value.unobserve(this.observer);
-                for (const key of this.getKeysAction(value))
-                    this.detachNestedObservers(this.getAction(value, key));
+                if (value instanceof yjs.AbstractType) {
+                    value.unobserve(this.observer);
+                    for (const key of this.getKeysAction(value))
+                        this.detachNestedObservers(this.getAction(value, key));
+                }
+                else if (Array.isArray(value)) {
+                    for (let i = 0; i < value.length; i++)
+                        this.detachNestedObservers(value[i]);
+                }
             }
             shiftIndices(fromIndex, offset) {
                 Array.from(this.changeObservers).forEach(entry => {
@@ -17878,6 +17962,7 @@ var Turbo = (function (exports, yjs) {
     exports.listener = listener;
     exports.loadLocalFont = loadLocalFont;
     exports.markDirty = markDirty;
+    exports.markDirtyPath = markDirtyPath;
     exports.mod = mod;
     exports.modelSignal = modelSignal;
     exports.mutator = mutator;

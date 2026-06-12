@@ -134,6 +134,18 @@ export class ReactivityUtils {
         this.getSignal(target, key)?.emit();
     }
 
+    public markDirtyPath(target: object, keys: KeyType[]) {
+        const changed = this.serializePath(keys);
+        for (const [boundPath, propertyKey] of this.data(target).pathMap) {
+            // An empty changed path means the root was replaced, which overlaps every bound path
+            if (changed === ""
+                || boundPath === changed
+                || boundPath.startsWith(changed + "|")
+                || changed.startsWith(boundPath + "|"))
+                this.markDirty(target, propertyKey);
+        }
+    }
+
     public bindPath(target: object, propertyKey: PropertyKey, keys: KeyType[]) {
         this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
     }

@@ -61,6 +61,26 @@ describe("@auto", () => {
         expect(s2.v).toBe(10);
     });
 
+    it("treats NaN -> NaN as unchanged (Object.is semantics)", () => {
+        const setSpy = vi.fn();
+
+        class S3 {
+            @auto() set v(n: number) { setSpy(n); }
+        }
+
+        const s3 = new S3();
+        s3.v = NaN;
+        expect(setSpy).toHaveBeenCalledTimes(1);
+
+        s3.v = NaN;
+        s3.v = NaN;
+        expect(setSpy).toHaveBeenCalledTimes(1);
+        expect(Number.isNaN(s3.v)).toBe(true);
+
+        s3.v = 1;
+        expect(setSpy).toHaveBeenCalledTimes(2);
+    });
+
     it("by default reads backing (not user getter) unless returnDefinedGetterValue=true", () => {
         class G {
             #v = 21;

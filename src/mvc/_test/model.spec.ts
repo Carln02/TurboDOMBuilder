@@ -482,6 +482,21 @@ describe("TurboModel", () => {
             m.addFlat(99, flat, 2);
             expect(m.get(0, 0)).toBe(99);
         });
+
+        it("addFlat throws for a numeric flat key without depth", () => {
+            const m = TurboModel.create({data: [[1, 2], [3, 4]]});
+            expect(() => m.addFlat(99, 1)).toThrow(/depth/);
+        });
+
+        it("addFlat throws when the flat key cannot be resolved to a key path", () => {
+            const m = TurboModel.create({data: {a: 1}});
+            expect(() => m.addFlat(99, 0, 2)).toThrow(/could not resolve/);
+        });
+
+        it("scopeKey throws for a numeric flat key without depth", () => {
+            const m = TurboModel.create({data: [[1, 2]]});
+            expect(() => (m as any).scopeKey(0)).toThrow(/depth/);
+        });
     });
 
     // ── getKey / getFlatKey / getKeys / getFlatKeys ────────────────────────────

@@ -386,6 +386,24 @@ function markDirty(target: object, ...keys: KeyType[]) {
 }
 
 /**
+ * @function markDirtyPath
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Marks as dirty every signal whose bound key path (registered via {@link modelSignal} or
+ * {@link nestedModelSignal}) overlaps the given changed key path, and fires their attached effects.
+ * A bound path overlaps the changed path when either is a prefix of (or equal to) the other:
+ * replacing a parent value invalidates signals bound deeper inside it, and changing a nested value
+ * invalidates signals bound to any of its ancestors. An empty `keys` array marks every bound path dirty,
+ * as it represents a change at the root.
+ * @param {object} target - The target to which the signals are bound.
+ * @param {KeyType[]} keys - The key path of the data that changed.
+ */
+function markDirtyPath(target: object, keys: KeyType[]): void {
+    utils.markDirtyPath(target, keys);
+}
+
+/**
  * @function initializeEffects
  * @group Decorators
  * @category Effect
@@ -442,6 +460,7 @@ export {
     nestedModelSignal,
     getSignal,
     markDirty,
+    markDirtyPath,
     initializeEffects,
     disposeEffect,
     untrack

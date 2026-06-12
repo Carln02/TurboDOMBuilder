@@ -41,7 +41,7 @@ export class MvcFunctionsUtils {
             entry = {
                 emitter: new TurboEmitter(),
                 operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
-                emitterCallback: (value: any, key: string) => entry.emitter?.fire(value, key),
+                emitterCallback: (key: string, ...values: any[]) => entry.emitter?.fire(key, ...values),
                 emitterKeyCallback: (value: any, ...keys: KeyType[]) => entry.emitter?.fireKey(value, ...keys)
             };
             this.dataMap.set(element, entry);

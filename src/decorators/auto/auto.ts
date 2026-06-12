@@ -108,7 +108,7 @@ function auto(options?: AutoOptions) {
 
                 options.callBefore?.call(this, value);
                 let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                if ((options.cancelIfUnchanged ?? true) && Object.is(baseRead.call(this), next)) {
                     writeFlag = false;
                     return;
                 }
