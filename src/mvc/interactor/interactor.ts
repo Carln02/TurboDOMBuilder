@@ -58,17 +58,15 @@ class TurboInteractor<
     public readonly options: ListenerOptions;
 
     public constructor(properties: TurboInteractorProperties<ElementType, ViewType, ModelType, EmitterType>) {
-       super(properties);
+        super(properties);
         this.manager = properties.manager ?? this.manager ?? TurboEventManager.instance;
         this.toolName = properties.toolName ?? this.toolName ?? undefined;
         this.options = properties.listenerOptions ?? {};
 
         const host = this.element as any;
-        try {this.target = properties.target ?? this.target ?? host instanceof Node ? host
+        try {this.target = properties.target ?? this.target ?? (host instanceof Node ? host
                 : host?.element instanceof Node ? host.element
-                    : undefined} catch {}
-        this.setup();
-
+                    : undefined)} catch {}
     }
 }
 

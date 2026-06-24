@@ -95,7 +95,11 @@ class Listener<
     public match(properties: MatchListenerProperties = {}): boolean {
         for (let [key, value] of Object.entries(properties)) {
             if (key === "target" && value instanceof TurboSelector) value = value.element;
-            if (value === undefined || key === "optionsToSkip") continue;
+            if (key === "optionsToSkip") continue;
+            if (value === undefined) {
+                if (key === "toolName" && this.toolName !== undefined) return false;
+                continue;
+            }
             if (typeof value === "object") {
                 if (typeof this[key] !== "object") return false;
                 for (const [subKey, subValue] of Object.entries(value)) {

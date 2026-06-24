@@ -6185,7 +6185,6 @@ var Turbo = (function (exports, yjs) {
             }
             return result;
         };
-        //TODO maybe use .cloneNode() for vanilla nodes
         TurboSelector.prototype.clone = function _clone(options = {}) {
             const originElement = this.element instanceof Node ? this.element : undefined;
             if (!originElement)
@@ -6199,7 +6198,7 @@ var Turbo = (function (exports, yjs) {
                     return true;
                 if (exclude.has(key) || key === "mvc" || key === "__proto__" || key === "prototype")
                     return false;
-                if (typeof value === "function")
+                if (typeof value === "function" || value instanceof Delegate)
                     return false;
                 if (key === "model" || key === "view" || key === "emitter" || key === "operators"
                     || key === "handlers" || key === "interactors" || key === "tools" || key === "constrainers")
@@ -6207,55 +6206,83 @@ var Turbo = (function (exports, yjs) {
                 const desc = Object.getOwnPropertyDescriptor(prototype, key);
                 if (!desc)
                     return false;
-                if (desc.get && !desc.set && !force.has(key))
+                if (desc.get && !desc.set)
                     return false;
-                if ("writable" in desc && desc.writable === false && !force.has(key))
+                if (desc.writable === false)
                     return false;
                 return true;
             };
             const copyField = (key, value) => {
-                if (!value || typeof value !== "object")
+                if (value === null || value === undefined || typeof value !== "object")
                     return value;
                 if (copyReference.has(key))
                     return value;
-                try {
-                    if (value instanceof Node) {
-                        if (deepClone.has(key) || options.deepCloneNodes)
+                if (value instanceof Node) {
+                    if (deepClone.has(key) || options.deepCloneNodes) {
+                        try {
                             return turbo(value).clone(options);
-                        if (options.copyNodes)
-                            return value;
-                    }
-                    else {
-                        if (options.deepCloneObjects || deepClone.has(key)) {
-                            if (typeof structuredClone === "function")
-                                return structuredClone(value);
                         }
-                        return value;
+                        catch {
+                            return undefined;
+                        }
                     }
+                    return options.copyNodes ? value : undefined;
                 }
-                catch {
+                if (options.deepCloneObjects || deepClone.has(key)) {
+                    try {
+                        return structuredClone(value);
+                    }
+                    catch { /* fall through to reference */ }
                 }
+                return value;
             };
             const constructor = originElement.constructor;
             const prototypeChain = getPrototypeChain(originElement);
-            originElement["mvc"];
-            let properties = {};
-            //TODO FIX
-            // if (mvc && mvc instanceof Mvc) {
-            //     const defaultProperties: any = {};
-            //     for (let i = 0; i < prototypeChain.length; i++) {
-            //         turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
-            //     }
-            //     properties = mvc.getDifference(defaultProperties);
-            // }
-            //TODO maybe clone the data
-            if (originElement["model"] && originElement["data"])
-                properties["data"] = originElement["data"];
-            const clone = typeof constructor.create === "function" ? constructor.create(properties)
-                : turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
-            for (const attr of Array.from(originElement.attributes)) {
-                if (!exclude.has(attr.name))
-                    clone.setAttribute(attr.name, attr.value);
+            const properties = {};
+            if (originElement["model"] && originElement["data"] != null) {
+                const rawData = originElement["data"];
+                let clonedData = rawData;
+                if (options.deepCloneObjects) {
+                    try {
+                        clonedData = structuredClone(rawData);
+                    }
+                    catch { }
+                }
+                properties.data = clonedData;
+            }
+            try {
+                Object.assign(properties, turbo(originElement).getMvcDifference());
+            }
+            catch { }
+            let clone;
+            if (typeof constructor.create === "function") {
+                try {
+                    clone = constructor.create(properties);
+                }
+                catch { }
+            }
+            if (!clone) {
+                if (originElement instanceof Element) {
+                    clone = turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
+                }
+                else {
+                    try {
+                        clone = originElement.cloneNode(false);
+                    }
+                    catch { }
+                }
+            }
+            if (!clone)
+                return;
+            if (originElement instanceof Element && clone instanceof Element) {
+                for (const attr of Array.from(originElement.attributes)) {
+                    if (exclude.has(attr.name))
+                        continue;
+                    try {
+                        clone.setAttribute(attr.name, attr.value);
+                    }
+                    catch { }
+                }
             }
             const keys = new Map();
             const addKeys = (prototype) => {
@@ -6266,9 +6293,10 @@ var Turbo = (function (exports, yjs) {
                     if (!keys.has(property))
                         keys.set(property, prototype);
             };
+            const mathMLProto = typeof MathMLElement !== "undefined" ? MathMLElement.prototype : null;
             addKeys(originElement);
             for (const prototype of prototypeChain) {
-                if (equalToAny(prototype, Element.prototype, Node.prototype, HTMLElement.prototype, SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype))
+                if (equalToAny(prototype, TurboElement.prototype, TurboBaseElement.prototype, TurboProxiedElement.prototype, TurboHeadlessElement.prototype, Element.prototype, Node.prototype, HTMLElement.prototype, SVGElement.prototype, mathMLProto, EventTarget.prototype, Object.prototype))
                     break;
                 addKeys(prototype);
             }
@@ -6276,13 +6304,12 @@ var Turbo = (function (exports, yjs) {
                 const value = originElement[key];
                 if (!shouldCopy(key, value, prototype))
                     continue;
-                let newValue = copyField(key, value);
+                const newValue = copyField(key, value);
                 if (newValue !== undefined)
                     try {
                         clone[key] = newValue;
                     }
-                    catch {
-                    }
+                    catch { }
             }
             return clone;
         };
@@ -8661,8 +8688,13 @@ var Turbo = (function (exports, yjs) {
             for (let [key, value] of Object.entries(properties)) {
                 if (key === "target" && value instanceof TurboSelector)
                     value = value.element;
-                if (value === undefined || key === "optionsToSkip")
+                if (key === "optionsToSkip")
                     continue;
+                if (value === undefined) {
+                    if (key === "toolName" && this.toolName !== undefined)
+                        return false;
+                    continue;
+                }
                 if (typeof value === "object") {
                     if (typeof this[key] !== "object")
                         return false;
@@ -12982,12 +13014,11 @@ var Turbo = (function (exports, yjs) {
             this.options = properties.listenerOptions ?? {};
             const host = this.element;
             try {
-                this.target = properties.target ?? this.target ?? host instanceof Node ? host
+                this.target = properties.target ?? this.target ?? (host instanceof Node ? host
                     : host?.element instanceof Node ? host.element
-                        : undefined;
+                        : undefined);
             }
             catch { }
-            this.setup();
         }
     }
     addRegistryCategory(TurboInteractor);
