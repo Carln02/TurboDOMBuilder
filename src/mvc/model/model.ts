@@ -611,6 +611,10 @@ class TurboModel<
     public delete(...keys: KeyType[]): void;
     public delete(...keys: KeyType[]): void {
         if (keys.length === 0) return;
+        // keyChanged must fire before internalDelete/deleteAction so that observer slots are
+        // vacated before shiftIndices (triggered synchronously by the Yjs transaction inside
+        // deleteAction) shifts neighbouring entries into the slot being deleted.
+        this.keyChanged(keys, undefined, true);
         if (keys.length === 1) this.internalDelete(this, this.data, keys[0]);
         else {
             const nested = this.getNested(keys[0]);
@@ -621,7 +625,6 @@ class TurboModel<
                 this.internalDelete(undefined, parentData, keys[keys.length - 1]);
             }
         }
-        this.keyChanged(keys, undefined, true);
     }
 
     /**
@@ -1163,7 +1166,7 @@ class TurboModel<
             });
         }
 
-        if (depth == null) throw new Error("TurboModel.scopeKey: depth is required for numeric flat keys.");
+        if (depth == null) depth = 1;
 
         const keys: number[] = [];
         let remaining = flatKey as number;

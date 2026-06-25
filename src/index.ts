@@ -290,6 +290,8 @@ import {aabbCorners, closestPointOnAabb} from "./utils/geometry/aabb";
 export {aabbCorners, closestPointOnAabb};
 import {isPointInConvexPolygon, segmentIntersectsPolygon, projectPolygonOntoAxis, hasSeparatingAxisForPolygons, polygonsIntersect} from "./utils/geometry/polygon";
 export {isPointInConvexPolygon, segmentIntersectsPolygon, projectPolygonOntoAxis, hasSeparatingAxisForPolygons, polygonsIntersect};
+import {closestPointOnEdge, pointInsideRect} from "./utils/geometry/rect";
+export {closestPointOnEdge, pointInsideRect};
 import {closestPointOnSegment, intersectSegments} from "./utils/geometry/segment";
 export {closestPointOnSegment, intersectSegments};
 import {css} from "./utils/styling/css";

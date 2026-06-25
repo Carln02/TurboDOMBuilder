@@ -4387,6 +4387,10 @@ let TurboModel = (() => {
         delete(...keys) {
             if (keys.length === 0)
                 return;
+            // keyChanged must fire before internalDelete/deleteAction so that observer slots are
+            // vacated before shiftIndices (triggered synchronously by the Yjs transaction inside
+            // deleteAction) shifts neighbouring entries into the slot being deleted.
+            this.keyChanged(keys, undefined, true);
             if (keys.length === 1)
                 this.internalDelete(this, this.data, keys[0]);
             else {
@@ -4400,7 +4404,6 @@ let TurboModel = (() => {
                     this.internalDelete(undefined, parentData, keys[keys.length - 1]);
                 }
             }
-            this.keyChanged(keys, undefined, true);
         }
         /**
          * @function deleteFlat
@@ -4778,7 +4781,7 @@ let TurboModel = (() => {
                 });
             }
             if (depth == null)
-                throw new Error("TurboModel.scopeKey: depth is required for numeric flat keys.");
+                depth = 1;
             const keys = [];
             let remaining = flatKey;
             let current = this.data;
@@ -13092,8 +13095,14 @@ let TurboYModel = (() => {
                     data.delete(index, 1);
                 data.doc.transact(() => data.insert(index, [value]), this);
             }
-            else
+            else {
+                const oldValue = this.getAction(data, key);
+                if (oldValue !== value && oldValue != null && typeof oldValue === "object")
+                    this.detachNestedObservers(oldValue);
                 super.setAction(data, value, key);
+                if (oldValue !== value && value != null && typeof value === "object")
+                    this.attachNestedObservers(value);
+            }
         }
         /**
          * @inheritDoc
@@ -13127,7 +13136,7 @@ let TurboYModel = (() => {
             if (data instanceof Map$1)
                 return data.has(key.toString());
             if (data instanceof Array$1)
-                return typeof key === "number" && key >= 0 && key < this.dataSize;
+                return typeof key === "number" && key >= 0 && key < data.length;
             return super.hasAction(data, key);
         }
         /**
@@ -13136,7 +13145,7 @@ let TurboYModel = (() => {
         deleteAction(data, key) {
             if (data instanceof Map$1)
                 data.doc.transact(() => data.delete(key.toString()), this);
-            else if (data instanceof Array$1 && typeof key === "number" && key >= 0 && key < this.dataSize)
+            else if (data instanceof Array$1 && typeof key === "number" && key >= 0 && key < data.length)
                 data.doc.transact(() => data.delete(key, 1), this);
             else
                 super.deleteAction(data, key);
@@ -13189,12 +13198,11 @@ let TurboYModel = (() => {
          *
          */
         observeChanges(event, transaction) {
-            !!transaction?.local; //TODO
-            const origin = transaction?.origin;
-            if (origin === this)
-                return;
+            const selfOriginated = transaction?.origin === this;
             const basePath = this.getPathToTarget(event.target);
             if (event instanceof YMapEvent) {
+                if (selfOriginated)
+                    return;
                 event.keysChanged.forEach(key => {
                     const change = event.changes.keys.get(key);
                     if (!change)
@@ -13216,18 +13224,22 @@ let TurboYModel = (() => {
                     else if (delta.insert) {
                         const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                         const count = insertedItems.length;
-                        this.shiftIndices(currentIndex, count);
-                        for (let i = 0; i < count; i++) {
-                            this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
-                            this.keyChanged([...basePath, currentIndex + i]);
+                        this.shiftIndices(basePath, currentIndex, count);
+                        if (!selfOriginated) {
+                            for (let i = 0; i < count; i++) {
+                                this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                                this.keyChanged([...basePath, currentIndex + i]);
+                            }
                         }
                         currentIndex += count;
                     }
                     else if (delta.delete) {
                         const count = delta.delete;
-                        for (let i = 0; i < count; i++)
-                            this.keyChanged([...basePath, currentIndex + i], undefined, true);
-                        this.shiftIndices(currentIndex + count, -count);
+                        if (!selfOriginated) {
+                            for (let i = 0; i < count; i++)
+                                this.keyChanged([...basePath, currentIndex + i], undefined, true);
+                        }
+                        this.shiftIndices(basePath, currentIndex + count, -count);
                     }
                 }
             }
@@ -13256,20 +13268,23 @@ let TurboYModel = (() => {
                     this.detachNestedObservers(value[i]);
             }
         }
-        shiftIndices(fromIndex, offset) {
+        shiftIndices(basePath, fromIndex, offset) {
+            const depth = basePath.length;
             Array.from(this.changeObservers).forEach(entry => {
                 const observer = entry.observer;
-                const pathsToShift = observer.paths
-                    .filter(path => Number(path[0]) >= fromIndex);
+                const pathsToShift = observer.paths.filter(path => path.length > depth &&
+                    basePath.every((k, i) => path[i] == k) &&
+                    Number(path[depth]) >= fromIndex);
                 const itemsToShift = pathsToShift
-                    .map(path => [Number(path[0]), path, observer.get(...path)]);
-                itemsToShift.sort((a, b) => a[0] - b[0]);
+                    .map(path => [Number(path[depth]), path, observer.get(...path)]);
+                itemsToShift.sort((a, b) => offset < 0 ? a[0] - b[0] : b[0] - a[0]);
                 pathsToShift.forEach(path => observer.detach(...path));
                 for (const [oldIndex, path, instance] of itemsToShift) {
                     const newIndex = oldIndex + offset;
                     if (typeof instance === "object" && "dataId" in instance)
-                        instance.dataId = newIndex;
-                    observer.set(instance, newIndex, ...path.slice(1));
+                        instance.dataId = String(newIndex);
+                    const newPath = [...basePath, newIndex, ...path.slice(depth + 1)];
+                    observer.set(instance, ...newPath);
                 }
             });
         }
@@ -17659,8 +17674,8 @@ function removeFromYArray(entry, parentYArray) {
  * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
  * changes.
  * @param {YAbstractType} data - The Yjs type to observe.
- * @param {(fieldChanged: string, event: YEvent, target: YAbstractType) => void} callback - The function to call
- * when a matching field changes.
+ * @param {(fieldChanged: string | null, event: YEvent, target: YAbstractType) => void} callback - The function to
+ * call when a matching field changes. `fieldChanged` is `null` for direct insertions/deletions on `data` itself.
  * @param {...string} fieldNames - List of field names to observe.
  */
 function deepObserveAny(data, callback, ...fieldNames) {
@@ -17670,6 +17685,10 @@ function deepObserveAny(data, callback, ...fieldNames) {
     data.observeDeep((events) => {
         for (const event of events) {
             const target = event.target;
+            if (event.target === data && event instanceof YArrayEvent) {
+                callback(null, event, target);
+                return;
+            }
             const parentMap = target._item?.parent;
             const key = target._item?.parentSub;
             for (const field of fields) {
@@ -17730,6 +17749,31 @@ function getEventPosition(e) {
     if (e instanceof PointerEvent)
         return new Point(e.clientX, e.clientY);
     return;
+}
+
+function closestPointOnEdge(pointer, rect) {
+    const closestPoint = {
+        x: trim(pointer.x, rect.right, rect.left),
+        y: trim(pointer.y, rect.bottom, rect.top)
+    };
+    const axisFromSide = (side) => {
+        if (side === Side.top || side === Side.bottom)
+            return "y";
+        if (side === Side.left || side === Side.right)
+            return "x";
+    };
+    let closestSide = Side.top;
+    Object.values(Side).forEach(side => {
+        if (Math.abs(closestPoint[axisFromSide(side)] - rect[side])
+            < Math.abs(closestPoint[axisFromSide(closestSide)] - rect[closestSide]))
+            closestSide = side;
+    });
+    closestPoint[axisFromSide(closestSide)] = rect[closestSide];
+    return new Point(closestPoint);
+}
+function pointInsideRect(point, rect, margin = 5) {
+    return (point.x < rect.right + margin && point.x > rect.left - margin)
+        && (point.y < rect.bottom + margin && point.y > rect.top - margin);
 }
 
 /**
@@ -17793,4 +17837,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, markDirtyPath, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnEdge, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, markDirtyPath, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, pointInsideRect, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };

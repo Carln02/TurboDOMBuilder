@@ -156,13 +156,13 @@ function removeFromYArray(entry: unknown, parentYArray: YArray): boolean {
  * @description Observes deeply for changes to any of the specified fields and invokes callback when any field
  * changes.
  * @param {YAbstractType} data - The Yjs type to observe.
- * @param {(fieldChanged: string, event: YEvent, target: YAbstractType) => void} callback - The function to call
- * when a matching field changes.
+ * @param {(fieldChanged: string | null, event: YEvent, target: YAbstractType) => void} callback - The function to
+ * call when a matching field changes. `fieldChanged` is `null` for direct insertions/deletions on `data` itself.
  * @param {...string} fieldNames - List of field names to observe.
  */
 function deepObserveAny(
     data: YAbstractType,
-    callback: (fieldChanged: string, event: YEvent, target: YAbstractType) => void,
+    callback: (fieldChanged: string | null, event: YEvent, target: YAbstractType) => void,
     ...fieldNames: string[]
 ): void {
     if (!data) return;
@@ -170,6 +170,12 @@ function deepObserveAny(
     data.observeDeep((events: YEvent[]) => {
         for (const event of events) {
             const target = event.target;
+
+            if (event.target === data && event instanceof YArrayEvent) {
+                callback(null, event, target);
+                return;
+            }
+
             const parentMap = target._item?.parent;
             const key = target._item?.parentSub;
 

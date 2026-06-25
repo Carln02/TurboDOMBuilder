@@ -63,7 +63,14 @@ class TurboYModel<
             const index = trim(Number(key), data.length + 1);
             if (index < data.length) data.delete(index, 1);
             data.doc.transact(() =>  data.insert(index, [value]), this);
-        } else super.setAction(data, value, key);
+        } else {
+            const oldValue = this.getAction(data, key);
+            if (oldValue !== value && oldValue != null && typeof oldValue === "object")
+                this.detachNestedObservers(oldValue);
+            super.setAction(data, value, key);
+            if (oldValue !== value && value != null && typeof value === "object")
+                this.attachNestedObservers(value);
+        }
     }
 
     /**
@@ -95,7 +102,7 @@ class TurboYModel<
      */
     protected hasAction(data: any, key: KeyType): boolean {
         if (data instanceof YMap) return data.has(key.toString());
-        if (data instanceof YArray) return typeof key === "number" && key >= 0 && key < this.dataSize;
+        if (data instanceof YArray) return typeof key === "number" && key >= 0 && key < data.length;
         return super.hasAction(data, key);
     }
 
@@ -104,7 +111,7 @@ class TurboYModel<
      */
     protected deleteAction(data: any, key: KeyType) {
         if (data instanceof YMap)  data.doc.transact(() =>  data.delete(key.toString()), this);
-        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize)
+        else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < data.length)
             data.doc.transact(() =>  data.delete(key, 1), this);
         else super.deleteAction(data, key);
     }
@@ -154,13 +161,11 @@ class TurboYModel<
      */
 
     protected observeChanges(event: YEvent, transaction: any) {
-        const isLocal = !!transaction?.local; //TODO
-        const origin = transaction?.origin;
-        if (origin === this) return;
-
+        const selfOriginated = transaction?.origin === this;
         const basePath = this.getPathToTarget(event.target);
 
         if (event instanceof YMapEvent) {
+            if (selfOriginated) return;
             event.keysChanged.forEach(key => {
                 const change = event.changes.keys.get(key);
                 if (!change) return;
@@ -178,16 +183,21 @@ class TurboYModel<
                 } else if (delta.insert) {
                     const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                     const count = insertedItems.length;
-                    this.shiftIndices(currentIndex, count);
-                    for (let i = 0; i < count; i++) {
-                        this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
-                        this.keyChanged([...basePath, currentIndex + i]);
+                    this.shiftIndices(basePath, currentIndex, count);
+                    if (!selfOriginated) {
+                        for (let i = 0; i < count; i++) {
+                            this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                            this.keyChanged([...basePath, currentIndex + i]);
+                        }
                     }
                     currentIndex += count;
                 } else if (delta.delete) {
                     const count = delta.delete;
-                    for (let i = 0; i < count; i++) this.keyChanged([...basePath, currentIndex + i], undefined, true);
-                    this.shiftIndices(currentIndex + count, -count);
+                    if (!selfOriginated) {
+                        for (let i = 0; i < count; i++)
+                            this.keyChanged([...basePath, currentIndex + i], undefined, true);
+                    }
+                    this.shiftIndices(basePath, currentIndex + count, -count);
                 }
             }
         }
@@ -213,21 +223,27 @@ class TurboYModel<
         }
     }
 
-    private shiftIndices(fromIndex: number, offset: number) {
+    private shiftIndices(basePath: KeyType[], fromIndex: number, offset: number) {
+        const depth = basePath.length;
         Array.from(this.changeObservers).forEach(entry => {
             const observer = entry.observer;
-            const pathsToShift = observer.paths
-                .filter(path => Number(path[0]) >= fromIndex);
+            const pathsToShift = observer.paths.filter(path =>
+                path.length > depth &&
+                basePath.every((k, i) => path[i] == k) &&
+                Number(path[depth]) >= fromIndex
+            );
 
-            const itemsToShift: [number, DataKeyType[], any][] = pathsToShift
-                .map(path => [Number(path[0]), path, observer.get(...path)]);
-            itemsToShift.sort((a, b) => a[0] - b[0]);
+            const itemsToShift: [number, KeyType[], any][] = pathsToShift
+                .map(path => [Number(path[depth]), path, observer.get(...path)]);
+            itemsToShift.sort((a, b) => offset < 0 ? a[0] - b[0] : b[0] - a[0]);
 
             pathsToShift.forEach(path => observer.detach(...path));
             for (const [oldIndex, path, instance] of itemsToShift) {
                 const newIndex = oldIndex + offset;
-                if (typeof instance === "object" && "dataId" in instance) instance.dataId = newIndex;
-                observer.set(instance, newIndex as DataKeyType, ...path.slice(1));
+                if (typeof instance === "object" && "dataId" in instance)
+                    instance.dataId = String(newIndex);
+                const newPath = [...basePath, newIndex, ...path.slice(depth + 1)] as KeyType[];
+                observer.set(instance, ...newPath as DataKeyType[]);
             }
         });
     }
