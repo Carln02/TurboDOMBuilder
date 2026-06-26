@@ -353,3 +353,60 @@ describe("TurboObserver", () => {
         });
     });
 });
+// ── Cascade deletion (depth-2 observer, 3+ outer keys) ───────────────────────────────────────
+// These tests guard against the bug where deleting one inner/outer entry corrupts siblings.
+
+describe("cascade deletion with 3+ outer keys (ALL observer)", () => {
+    function makeObs(model: TurboModel) {
+        return model.generateObserver<any, {id: string}>({
+            onAdded: (_d, _s, ...keys) => ({id: keys.join(".")}),
+        }, TurboModel.ALL);
+    }
+
+    it("depth-2 inner delete does not remove sibling entries", () => {
+        const model = TurboModel.create({
+            data: {A: {0: "fa"}, B: {0: "fb"}, C: {0: "fc"}},
+            initialize: true,
+        });
+        const obs = makeObs(model);
+        expect(obs.size).toBe(3);
+
+        model.delete("C", "0");
+
+        expect(obs.get("C", "0")).toBeUndefined();
+        expect(obs.get("A", "0")).toBeDefined();
+        expect(obs.get("B", "0")).toBeDefined();
+        expect(obs.size).toBe(2);
+    });
+
+    it("outer key delete (Bug 2 cascade) does not remove sibling entries", () => {
+        const model = TurboModel.create({
+            data: {A: {0: "fa"}, B: {0: "fb"}, C: {0: "fc"}},
+            initialize: true,
+        });
+        const obs = makeObs(model);
+        expect(obs.size).toBe(3);
+
+        model.delete("C");
+
+        expect(obs.get("C", "0")).toBeUndefined();
+        expect(obs.get("A", "0")).toBeDefined();
+        expect(obs.get("B", "0")).toBeDefined();
+        expect(obs.size).toBe(2);
+    });
+
+    it("deleting in the middle does not corrupt remaining entries", () => {
+        const model = TurboModel.create({
+            data: {A: {0: "fa"}, B: {0: "fb"}, C: {0: "fc"}},
+            initialize: true,
+        });
+        const obs = makeObs(model);
+
+        model.delete("B");
+
+        expect(obs.get("B", "0")).toBeUndefined();
+        expect(obs.get("A", "0")).toBeDefined();
+        expect(obs.get("C", "0")).toBeDefined();
+        expect(obs.size).toBe(2);
+    });
+});

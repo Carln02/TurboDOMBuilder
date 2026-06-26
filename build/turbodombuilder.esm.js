@@ -4658,19 +4658,56 @@ let TurboModel = (() => {
                 observer.initialize();
             return observer;
         }
-        initializeObserverOnPath(data, observer, keys, prefixKeys) {
+        /**
+         * @function generateDeepObserver
+         * @description Like {@link generateObserver}, but fires for the registered depth **and all deeper levels**.
+         * Whereas `generateObserver(..., TurboModel.ALL)` only notifies at depth-2, `generateDeepObserver(..., TurboModel.ALL)`
+         * also notifies for depth-3, depth-4, etc. — passing the full key path to `onAdded`/`onUpdated`/`onDeleted`.
+         * Use when you need to react to any nested change regardless of depth.
+         * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+         * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe.
+         * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+         */
+        generateDeepObserver(properties = {}, ...keys) {
+            const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
+            const observer = new (properties.customConstructor
+                ?? this.observerConstructor
+                ?? (TurboObserver))({
+                ...properties,
+                initialize: false,
+                onDestroy: (self) => {
+                    Array.from(this.changeObservers)
+                        .filter(e => e.observer === self)
+                        .forEach(e => this.changeObservers.delete(e));
+                    properties.onDestroy?.(self);
+                },
+                onInitialize: (self) => {
+                    this.initializeObserverOnPath(this.data, self, keys, [], true);
+                    properties.onInitialize?.(self);
+                }
+            });
+            this.changeObservers.add({ keys, observer, deep: true });
+            if (initialize)
+                observer.initialize();
+            return observer;
+        }
+        initializeObserverOnPath(data, observer, keys, prefixKeys, deep = false) {
             if (keys.length === 0) {
                 if (!this.isInitialized)
                     return;
-                for (const key of this.getKeysAction(data))
-                    observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
+                for (const key of this.getKeysAction(data)) {
+                    const value = this.getAction(data, key);
+                    observer.keyChanged([...prefixKeys, key], value);
+                    if (deep && value !== null && typeof value === "object")
+                        this.initializeObserverOnPath(value, observer, [], [...prefixKeys, key], deep);
+                }
             }
             else if (keys[0] === TurboModel.ALL)
                 for (const key of this.getKeysAction(data)) {
-                    this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+                    this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key], deep);
                 }
             else
-                this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]]);
+                this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]], deep);
         }
         /*
          *
@@ -4699,9 +4736,9 @@ let TurboModel = (() => {
             if (!deleted && !this.nestedModels.has(key) && this.nestedListeners.size > 0)
                 this.nestedListeners.forEach(({ listener }) => listener(keys, value));
             this.onKeyChanged.fire(value, ...keys);
-            this.changeObservers.forEach(({ observer, keys: pattern }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+            this.changeObservers.forEach(({ observer, keys: pattern, deep }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted, deep));
         }
-        matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted) {
+        matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted, deep = false) {
             if (!observer.isInitialized)
                 return;
             if (pattern.length === 0) {
@@ -4711,22 +4748,31 @@ let TurboModel = (() => {
                             observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
                         }
                     }
+                    else if (deleted) {
+                        for (const path of observer.getPathsAt(...prefixKeys)) {
+                            observer.keyChanged([...prefixKeys, ...path], undefined, true);
+                        }
+                    }
                 }
-                else
+                else if (deep) {
+                    observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
+                }
+                else {
                     observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                }
                 return;
             }
             if (incomingKeys.length === 0) {
                 if (!deleted && value !== null && typeof value === "object") {
                     for (const key of this.getKeysAction(value))
-                        this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+                        this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted, deep);
                 }
                 return;
             }
             const [head, ...tail] = incomingKeys;
             const [patternHead, ...patternTail] = pattern;
             if (patternHead === TurboModel.ALL || patternHead === head)
-                this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
+                this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted, deep);
         }
         static flattenSize(data, depth) {
             if (!data || depth <= 0)
@@ -4976,6 +5022,7 @@ class TurboEmitter {
 addRegistryCategory(TurboEmitter);
 define(TurboEmitter);
 
+const proxyWrapperSymbol = Symbol("__proxyWrapper__");
 class MvcFunctionsUtils {
     dataMap = new WeakMap;
     modelLookupMap = new WeakMap;
@@ -5128,8 +5175,12 @@ class MvcFunctionsUtils {
     generateInstance(data, element) {
         if (!data)
             return undefined;
+        // If element is a raw DOM node backing a TurboProxiedElement, pass the wrapper instead so
+        // that view/operator/etc. constructors receive the public class instance (e.g. FlowEntry)
+        // rather than the internal <g> element.
+        const effectiveElement = element?.[proxyWrapperSymbol] ?? element;
         if (typeof data === "function")
-            return new data(element ? { element } : undefined);
+            return new data(effectiveElement ? { element: effectiveElement } : undefined);
         return data;
     }
     generateInstances(data, element) {
@@ -5158,7 +5209,8 @@ class MvcFunctionsUtils {
      */
     extractClassEssenceName(element, constructor, type) {
         let className = constructor.name;
-        let prototype = Object.getPrototypeOf(element);
+        const target = element[proxyWrapperSymbol] ?? element;
+        let prototype = Object.getPrototypeOf(target);
         while (prototype && prototype.constructor !== Object) {
             const name = prototype.constructor.name.replaceAll("_", "");
             if (className.startsWith(name)) {
@@ -5959,7 +6011,32 @@ class TurboProxiedElement {
     static customCreate(properties) {
         const obj = new this();
         obj[elementSymbol] = blindElement({ tag: properties["tag"] });
-        turbo(obj, true).setProperties(properties);
+        // turbo(obj) without raw unwraps to obj.element, which is the same key the model getter
+        // resolves to later. Using raw=true here would key MVC data under obj instead, making
+        // turbo(obj).model return undefined during initialize().
+        // The back-reference lets extractClassEssenceName walk obj's prototype chain (FlowEntry,
+        // etc.) instead of the raw SVGGElement chain, so handler/operator key derivation works.
+        obj[elementSymbol][proxyWrapperSymbol] = obj;
+        const shouldInitialize = properties["initialize"] !== false;
+        turbo(obj).setProperties(Object.assign({}, properties, { initialize: false }));
+        // Dispatch custom wrapper setters that setProperties couldn't reach.
+        // turbo(obj) routes through obj.element (the raw DOM node), so properties that have no
+        // meaning on the raw element (e.g. FlowEntry.flow) are silently dropped. We replay them
+        // onto obj directly — but only when: (1) not an MVC field already handled by TurboSelector,
+        // (2) the raw element has no descriptor for the key (setProperties already handled it), and
+        // (3) obj's prototype chain has a real setter for the key.
+        const rawEl = obj[elementSymbol];
+        for (const [key, value] of Object.entries(properties)) {
+            if (MvcFields.includes(key))
+                continue;
+            if (getFirstDescriptorInChain(rawEl, key))
+                continue;
+            const desc = getFirstDescriptorInChain(obj, key);
+            if (desc?.set)
+                obj[key] = value;
+        }
+        if (shouldInitialize && typeof obj["initialize"] === "function")
+            obj["initialize"]();
         return obj;
     }
     /**
@@ -7553,7 +7630,7 @@ class TurboEventManagerWheelOperator extends TurboOperator {
         const eventName = (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
             ? TurboEventName.pinch
             : TurboEventName.scroll;
-        const target = document.elementFromPoint(e.clientX, e.clientY) || document;
+        const target = document.elementFromPoint?.(e.clientX, e.clientY) || document;
         this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
     };
 }
@@ -7900,6 +7977,22 @@ class TurboEventManagerDispatchOperator extends TurboOperator {
     };
     getToolHandlingCallback(type, e) {
         const toolName = this.element.getCurrentToolName(this.model.currentClick);
+        // For move events, composedPath() is the drag-origin's ancestor chain and never
+        // includes non-topmost components at the current cursor (e.g. Playback behind
+        // ClipRenderer). Use the full z-stack at the cursor instead, dispatching topmost-first
+        // and stopping at the first handler that returns non-propagate.
+        if (type === TurboMoveEventName.move && e instanceof TurboDragEvent && e.position) {
+            const { x, y } = e.position;
+            const stack = document.elementsFromPoint?.(x, y) ?? [];
+            for (const el of stack) {
+                if (!(el instanceof Node))
+                    continue;
+                const propagate = turbo(el).executeAction(type, toolName, e, undefined, this.element);
+                if (propagate !== Propagation.propagate)
+                    break;
+            }
+            return;
+        }
         const path = e.composedPath?.() || [];
         for (let i = path.length - 1; i >= 0; i--) {
             if (!(path[i] instanceof Node))
@@ -9268,7 +9361,7 @@ function setupStyleFunctions() {
                 return;
             if (element instanceof Element) {
                 const prevClass = element[selectedClass];
-                const nextClass = element["defaultSelectedClasses"] || "selected";
+                const nextClass = this["defaultSelectedClasses"] || "selected";
                 element[selectedClass] = nextClass;
                 if (prevClass && prevClass !== nextClass)
                     turbo(element).toggleClass(prevClass, false);

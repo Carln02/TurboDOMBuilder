@@ -21,6 +21,7 @@ type ObserverData<
 > = {
     observer: TurboObserver<DataType, ComponentType, DataKeyType>,
     keys: KeyType[],
+    deep?: boolean,
 };
 
 type ListenerData = {
@@ -1020,15 +1021,59 @@ class TurboModel<
         return observer;
     }
 
-    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[]) {
+    /**
+     * @function generateDeepObserver
+     * @description Like {@link generateObserver}, but fires for the registered depth **and all deeper levels**.
+     * Whereas `generateObserver(..., TurboModel.ALL)` only notifies at depth-2, `generateDeepObserver(..., TurboModel.ALL)`
+     * also notifies for depth-3, depth-4, etc. — passing the full key path to `onAdded`/`onUpdated`/`onDeleted`.
+     * Use when you need to react to any nested change regardless of depth.
+     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+     * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe.
+     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+     */
+    public generateDeepObserver(
+        properties: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType> = {},
+        ...keys: KeyType[]
+    ): TurboObserver<DataEntryType, ComponentType, DataKeyType> {
+        const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
+        const observer = new (
+            properties.customConstructor
+            ?? this.observerConstructor
+            ?? TurboObserver<DataEntryType, ComponentType, DataKeyType>
+        )({
+            ...properties,
+            initialize: false,
+            onDestroy: (self) => {
+                Array.from(this.changeObservers)
+                    .filter(e => e.observer === self)
+                    .forEach(e => this.changeObservers.delete(e));
+                properties.onDestroy?.(self);
+            },
+            onInitialize: (self) => {
+                this.initializeObserverOnPath(this.data, self, keys, [], true);
+                properties.onInitialize?.(self);
+            }
+        }) as TurboObserver<DataEntryType, ComponentType, DataKeyType>;
+
+        this.changeObservers.add({keys, observer, deep: true});
+        if (initialize) observer.initialize();
+        return observer;
+    }
+
+    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[], deep: boolean = false) {
         if (keys.length === 0) {
             if (!this.isInitialized) return;
-            for (const key of this.getKeysAction(data)) observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
+            for (const key of this.getKeysAction(data)) {
+                const value = this.getAction(data, key);
+                observer.keyChanged([...prefixKeys, key], value);
+                if (deep && value !== null && typeof value === "object")
+                    this.initializeObserverOnPath(value, observer, [], [...prefixKeys, key], deep);
+            }
         } else if (keys[0] === TurboModel.ALL) for (const key of this.getKeysAction(data)) {
-            this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+            this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key], deep);
         }
         else this.initializeObserverOnPath(this.getAction(data, keys[0]), observer,
-                keys.slice(1), [...prefixKeys, keys[0]]);
+                keys.slice(1), [...prefixKeys, keys[0]], deep);
     }
 
     /*
@@ -1059,12 +1104,12 @@ class TurboModel<
             this.nestedListeners.forEach(({listener}) => listener(keys, value));
 
         this.onKeyChanged.fire(value, ...keys);
-        this.changeObservers.forEach(({observer, keys: pattern}) =>
-            this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+        this.changeObservers.forEach(({observer, keys: pattern, deep}) =>
+            this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted, deep));
     }
 
     private matchObserverAndNotify(observer: TurboObserver, incomingKeys: KeyType[], pattern: KeyType[],
-                           prefixKeys: KeyType[], value: unknown, deleted: boolean) {
+                           prefixKeys: KeyType[], value: unknown, deleted: boolean, deep: boolean = false) {
         if (!observer.isInitialized) return;
 
         if (pattern.length === 0) {
@@ -1073,16 +1118,23 @@ class TurboModel<
                     for (const key of this.getKeysAction(value)) {
                         observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
                     }
+                } else if (deleted) {
+                    for (const path of observer.getPathsAt(...prefixKeys as any)) {
+                        observer.keyChanged([...prefixKeys, ...path] as any, undefined, true);
+                    }
                 }
+            } else if (deep) {
+                observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
+            } else {
+                observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
             }
-            else observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
             return;
         }
 
         if (incomingKeys.length === 0) {
             if (!deleted && value !== null && typeof value === "object") {
                 for (const key of this.getKeysAction(value))
-                    this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+                    this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted, deep);
             }
             return;
         }
@@ -1090,7 +1142,7 @@ class TurboModel<
         const [head, ...tail] = incomingKeys;
         const [patternHead, ...patternTail] = pattern;
         if (patternHead === TurboModel.ALL || patternHead === head)
-            this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
+            this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted, deep);
     }
 
     private static flattenSize(data: any, depth: number): number {

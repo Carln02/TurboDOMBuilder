@@ -9,7 +9,9 @@ import {defineUIPrototype} from "../setup/ui/ui";
 import {ValidElement, ValidTag} from "../../types/element.types";
 import {TurboElementProperties} from "../turboElement.types";
 import {turbo} from "../../turboFunctions/turboFunctions";
-import {getPrototypeChain} from "../../utils/dataManipulation/prototype";
+import {proxyWrapperSymbol} from "../../turboFunctions/mvc/mvc.utils";
+import {MvcFields} from "../../turboFunctions/mvc/mvc";
+import {getFirstDescriptorInChain, getPrototypeChain} from "../../utils/dataManipulation/prototype";
 import {addRegistryCategory} from "../../decorators/define/define";
 
 const elementSymbol = Symbol("___element___");
@@ -49,7 +51,30 @@ class TurboProxiedElement<
     protected static customCreate(properties: object): object {
         const obj = new this();
         obj[elementSymbol] = blindElement({tag: properties["tag"]});
-        turbo(obj, true).setProperties(properties);
+        // turbo(obj) without raw unwraps to obj.element, which is the same key the model getter
+        // resolves to later. Using raw=true here would key MVC data under obj instead, making
+        // turbo(obj).model return undefined during initialize().
+        // The back-reference lets extractClassEssenceName walk obj's prototype chain (FlowEntry,
+        // etc.) instead of the raw SVGGElement chain, so handler/operator key derivation works.
+        obj[elementSymbol][proxyWrapperSymbol] = obj;
+        const shouldInitialize = properties["initialize"] !== false;
+        turbo(obj).setProperties(Object.assign({}, properties, {initialize: false}));
+
+        // Dispatch custom wrapper setters that setProperties couldn't reach.
+        // turbo(obj) routes through obj.element (the raw DOM node), so properties that have no
+        // meaning on the raw element (e.g. FlowEntry.flow) are silently dropped. We replay them
+        // onto obj directly — but only when: (1) not an MVC field already handled by TurboSelector,
+        // (2) the raw element has no descriptor for the key (setProperties already handled it), and
+        // (3) obj's prototype chain has a real setter for the key.
+        const rawEl = obj[elementSymbol];
+        for (const [key, value] of Object.entries(properties)) {
+            if ((MvcFields as string[]).includes(key)) continue;
+            if (getFirstDescriptorInChain(rawEl, key)) continue;
+            const desc = getFirstDescriptorInChain(obj, key);
+            if (desc?.set) obj[key] = value;
+        }
+
+        if (shouldInitialize && typeof obj["initialize"] === "function") obj["initialize"]();
         return obj;
     }
 

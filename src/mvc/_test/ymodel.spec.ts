@@ -938,4 +938,87 @@ describe("YModel", () => {
             expect(added).toContain("card-2");
         });
     });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cascade deletion — YMap<string → YArray> with 3+ outer keys
+// Guards the flow-entries pattern: outer keys are startNodeId strings,
+// each maps to a YArray. Deleting one outer key must not corrupt siblings.
+// ─────────────────────────────────────────────────────────────────────────────
+
+    describe("cascade deletion with 3+ outer keys — YMap<string, YArray> (flow-entries pattern)", () => {
+        function makeFlowEntriesModel() {
+            const doc = new Y.Doc();
+            const ymap = doc.getMap<Y.Array<any>>("flowEntries");
+
+            const arrA = new Y.Array<any>();
+            arrA.push(["entryA0"]);
+            const arrB = new Y.Array<any>();
+            arrB.push(["entryB0"]);
+            const arrC = new Y.Array<any>();
+            arrC.push(["entryC0"]);
+
+            ymap.set("A", arrA);
+            ymap.set("B", arrB);
+            ymap.set("C", arrC);
+
+            const model = TurboYModel.create({data: ymap as any, initialize: true});
+            return {doc, ymap, arrA, arrB, arrC, model};
+        }
+
+        function makeObs(model: TurboYModel) {
+            return model.generateObserver<any, {id: string}>({
+                onAdded: (_d, _s, ...keys) => ({id: keys.join(".")}),
+            }, TurboModel.ALL);
+        }
+
+        it("outer-key delete (Bug 2 cascade) via ymap.delete does not remove sibling entries", () => {
+            const {ymap, model} = makeFlowEntriesModel();
+            const obs = makeObs(model);
+            expect(obs.size).toBe(3);
+
+            ymap.delete("C");
+
+            expect(obs.get("C", 0)).toBeUndefined();
+            expect(obs.get("A", 0)).toBeDefined();
+            expect(obs.get("B", 0)).toBeDefined();
+            expect(obs.size).toBe(2);
+        });
+
+        it("inner-array delete via arr.delete does not remove sibling entries", () => {
+            const {arrC, model} = makeFlowEntriesModel();
+            const obs = makeObs(model);
+            expect(obs.size).toBe(3);
+
+            arrC.delete(0, 1);
+
+            expect(obs.get("C", 0)).toBeUndefined();
+            expect(obs.get("A", 0)).toBeDefined();
+            expect(obs.get("B", 0)).toBeDefined();
+            expect(obs.size).toBe(2);
+        });
+
+        it("deleting middle outer key does not corrupt first or last entry", () => {
+            const {ymap, model} = makeFlowEntriesModel();
+            const obs = makeObs(model);
+
+            ymap.delete("B");
+
+            expect(obs.get("B", 0)).toBeUndefined();
+            expect(obs.get("A", 0)).toBeDefined();
+            expect(obs.get("C", 0)).toBeDefined();
+            expect(obs.size).toBe(2);
+        });
+
+        it("deleting inner array entry of middle outer key does not corrupt others", () => {
+            const {arrB, model} = makeFlowEntriesModel();
+            const obs = makeObs(model);
+
+            arrB.delete(0, 1);
+
+            expect(obs.get("B", 0)).toBeUndefined();
+            expect(obs.get("A", 0)).toBeDefined();
+            expect(obs.get("C", 0)).toBeDefined();
+            expect(obs.size).toBe(2);
+        });
+    });
 });

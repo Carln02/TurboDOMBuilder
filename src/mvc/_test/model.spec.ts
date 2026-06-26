@@ -483,9 +483,10 @@ describe("TurboModel", () => {
             expect(m.get(0, 0)).toBe(99);
         });
 
-        it("addFlat throws for a numeric flat key without depth", () => {
+        it("addFlat without depth defaults to depth 1 and inserts at the outer level", () => {
             const m = TurboModel.create({data: [[1, 2], [3, 4]]});
-            expect(() => m.addFlat(99, 1)).toThrow(/depth/);
+            m.addFlat(99, 1);
+            expect(m.get(1)).toBe(99);
         });
 
         it("addFlat throws when the flat key cannot be resolved to a key path", () => {
@@ -493,9 +494,9 @@ describe("TurboModel", () => {
             expect(() => m.addFlat(99, 0, 2)).toThrow(/could not resolve/);
         });
 
-        it("scopeKey throws for a numeric flat key without depth", () => {
+        it("scopeKey without depth defaults to depth 1 and returns the outer-level path", () => {
             const m = TurboModel.create({data: [[1, 2]]});
-            expect(() => (m as any).scopeKey(0)).toThrow(/depth/);
+            expect((m as any).scopeKey(0)).toEqual([0]);
         });
     });
 

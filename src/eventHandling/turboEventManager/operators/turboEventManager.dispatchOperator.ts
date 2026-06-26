@@ -5,7 +5,8 @@ import {TurboEvent} from "../../events/turboEvent";
 import {TurboRawEventProperties} from "../../events/turboEvent.types";
 import {turbo} from "../../../turboFunctions/turboFunctions";
 import {TurboOperator} from "../../../mvc/operator/operator";
-import {TurboKeyEventName} from "../../../types/eventNaming.types";
+import {TurboKeyEventName, TurboMoveEventName} from "../../../types/eventNaming.types";
+import {TurboDragEvent} from "../../events/turboDragEvent";
 import {Propagation} from "../../../turboFunctions/event/event.types";
 
 export class TurboEventManagerDispatchOperator extends TurboOperator<TurboEventManager, any, TurboEventManagerModel> {
@@ -41,6 +42,22 @@ export class TurboEventManagerDispatchOperator extends TurboOperator<TurboEventM
 
     private getToolHandlingCallback(type: string, e: Event) {
         const toolName = this.element.getCurrentToolName(this.model.currentClick);
+
+        // For move events, composedPath() is the drag-origin's ancestor chain and never
+        // includes non-topmost components at the current cursor (e.g. Playback behind
+        // ClipRenderer). Use the full z-stack at the cursor instead, dispatching topmost-first
+        // and stopping at the first handler that returns non-propagate.
+        if (type === TurboMoveEventName.move && e instanceof TurboDragEvent && e.position) {
+            const {x, y} = e.position;
+            const stack = document.elementsFromPoint?.(x, y) ?? [];
+            for (const el of stack) {
+                if (!(el instanceof Node)) continue;
+                const propagate = turbo(el as Node).executeAction(type, toolName, e, undefined, this.element);
+                if (propagate !== Propagation.propagate) break;
+            }
+            return;
+        }
+
         const path = e.composedPath?.() || [];
 
         for (let i = path.length - 1; i >= 0; i--) {

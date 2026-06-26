@@ -32,7 +32,7 @@ export class TurboEventManagerWheelOperator extends TurboOperator<TurboEventMana
             ? TurboEventName.pinch
             : TurboEventName.scroll;
 
-        const target = document.elementFromPoint(e.clientX, e.clientY) || document;
+        const target = document.elementFromPoint?.(e.clientX, e.clientY) || document;
         this.emitter.fire("dispatchEvent", target, TurboWheelEvent, {delta: new Point(e.deltaX, e.deltaY), eventName: eventName});
     };
 }

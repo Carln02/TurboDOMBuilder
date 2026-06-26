@@ -39,7 +39,7 @@ export function setupStyleFunctions() {
 
             if (element instanceof Element) {
                 const prevClass = element[selectedClass];
-                const nextClass = element["defaultSelectedClasses"] || "selected";
+                const nextClass = this["defaultSelectedClasses"] || "selected";
                 element[selectedClass] = nextClass;
                 if (prevClass && prevClass !== nextClass) turbo(element).toggleClass(prevClass, false);
                 turbo(element).toggleClass(nextClass, !!value);

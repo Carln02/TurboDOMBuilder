@@ -22,6 +22,8 @@ type MvcData = {
     emitterKeyCallback: (value: any, ...keys: KeyType[]) => void;
 };
 
+export const proxyWrapperSymbol = Symbol("__proxyWrapper__");
+
 export class MvcFunctionsUtils {
     private dataMap = new WeakMap<object, MvcData>;
     private modelLookupMap = new WeakMap<TurboModel, Set<object>>;
@@ -155,7 +157,11 @@ export class MvcFunctionsUtils {
 
     public generateInstance<Type>(data: MvcManyInstancesOrConstructors<Type>, element?: object): Type {
         if (!data) return undefined;
-        if (typeof data === "function") return new (data as any)(element ? {element} : undefined);
+        // If element is a raw DOM node backing a TurboProxiedElement, pass the wrapper instead so
+        // that view/operator/etc. constructors receive the public class instance (e.g. FlowEntry)
+        // rather than the internal <g> element.
+        const effectiveElement = element?.[proxyWrapperSymbol] ?? element;
+        if (typeof data === "function") return new (data as any)(effectiveElement ? {element: effectiveElement} : undefined);
         return data as Type;
     }
 
@@ -183,7 +189,8 @@ export class MvcFunctionsUtils {
      */
     public extractClassEssenceName(element: object, constructor: new (...args: any[]) => any, type: string): string {
         let className = constructor.name;
-        let prototype = Object.getPrototypeOf(element);
+        const target = element[proxyWrapperSymbol] ?? element;
+        let prototype = Object.getPrototypeOf(target);
 
         while (prototype && prototype.constructor !== Object) {
             const name = prototype.constructor.name.replaceAll("_", "");

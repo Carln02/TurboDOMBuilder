@@ -1000,6 +1000,7 @@ declare class TurboHandler<ModelType extends TurboModel = TurboModel> {
 type ObserverData<DataType = any, ComponentType extends object = any, DataKeyType extends KeyType = KeyType> = {
     observer: TurboObserver<DataType, ComponentType, DataKeyType>;
     keys: KeyType[];
+    deep?: boolean;
 };
 type ListenerData = {
     listener: (keys: KeyType[], value: any) => void;
@@ -1493,7 +1494,18 @@ declare class TurboModel<DataType = any, DataKeyType extends KeyType = any, IdTy
      * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
      */
     generateObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType>, ...keys: KeyType[]): TurboObserver<DataEntryType, ComponentType, DataKeyType>;
-    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[]): void;
+    /**
+     * @function generateDeepObserver
+     * @description Like {@link generateObserver}, but fires for the registered depth **and all deeper levels**.
+     * Whereas `generateObserver(..., TurboModel.ALL)` only notifies at depth-2, `generateDeepObserver(..., TurboModel.ALL)`
+     * also notifies for depth-3, depth-4, etc. — passing the full key path to `onAdded`/`onUpdated`/`onDeleted`.
+     * Use when you need to react to any nested change regardless of depth.
+     * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+     * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe.
+     * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+     */
+    generateDeepObserver(properties?: TurboObserverProperties<DataEntryType, ComponentType, DataKeyType>, ...keys: KeyType[]): TurboObserver<DataEntryType, ComponentType, DataKeyType>;
+    protected initializeObserverOnPath(data: any, observer: TurboObserver, keys: KeyType[], prefixKeys: KeyType[], deep?: boolean): void;
     /**
      * @protected
      * @function keyChanged
