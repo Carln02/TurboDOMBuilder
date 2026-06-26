@@ -17,6 +17,7 @@ class TurboYModel<
     DataEntryType = any
 > extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private readonly observer = (event: any, transaction: any) => this.observeChanges(event, transaction);
+    private readonly observedYTypes = new WeakSet<object>();
 
     /**
      * @inheritDoc
@@ -146,7 +147,7 @@ class TurboYModel<
      */
     public clear(clearData: boolean = true) {
         if (clearData) {
-            if (this.data instanceof YAbstractType) this.data?.unobserve(this.observer);
+            if (this.data instanceof YAbstractType) this.detachNestedObservers(this.data);
             else if (Array.isArray(this.data)) {
                 for (const item of this.data) this.detachNestedObservers(item);
             }
@@ -205,7 +206,10 @@ class TurboYModel<
 
     protected attachNestedObservers(value: any) {
         if (value instanceof YAbstractType) {
-            value.observe(this.observer);
+            if (!this.observedYTypes.has(value)) {
+                value.observe(this.observer);
+                this.observedYTypes.add(value);
+            }
             for (const key of this.getKeysAction(value)) {
                 if (!this.nestedModels.has(key as any)) this.attachNestedObservers(this.getAction(value, key));
             }
@@ -216,7 +220,10 @@ class TurboYModel<
 
     protected detachNestedObservers(value: any) {
         if (value instanceof YAbstractType) {
-            value.unobserve(this.observer);
+            if (this.observedYTypes.has(value)) {
+                value.unobserve(this.observer);
+                this.observedYTypes.delete(value);
+            }
             for (const key of this.getKeysAction(value)) this.detachNestedObservers(this.getAction(value, key));
         } else if (Array.isArray(value)) {
             for (let i = 0; i < value.length; i++) this.detachNestedObservers(value[i]);

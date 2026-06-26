@@ -5569,6 +5569,7 @@ type YDocumentProperties<ViewType extends TurboView = TurboView<any, any>, DataT
  */
 declare class TurboYModel<DataType = any, DataKeyType extends KeyType = any, IdType extends KeyType = any, ComponentType extends object = any, DataEntryType = any> extends TurboModel<DataType, DataKeyType, IdType, ComponentType, DataEntryType> {
     private readonly observer;
+    private readonly observedYTypes;
     /**
      * @inheritDoc
      */
@@ -6782,6 +6783,7 @@ declare class TurboSelect<ValueType = string, SecondaryValueType = string, Entry
     protected getEntryData(entry: EntryType): EntryData;
     protected clearEntryData(entry: EntryType): void;
     addEntry(entry: EntryType, index?: number): void;
+    removeEntry(value: ValueType | EntryType): this;
     getEntryFromSecondaryValue(value: SecondaryValueType): EntryType;
     isSelected(entry: EntryType): boolean;
     protected getEntry(value: EntryType | ValueType): EntryType;

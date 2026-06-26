@@ -353,6 +353,53 @@ describe("TurboObserver", () => {
         });
     });
 });
+// ── Flat observer: deep nested deletion must not fire onDeleted at top-level ─────────────────
+// Guards the bug where matchObserverAndNotify propagated deleted=true from a deep nested
+// deletion to a flat (no ALL) observer, causing onDeleted to fire for the top-level key even
+// though that key was never removed.
+
+describe("flat observer — deep nested deletion fires onUpdated, not onDeleted", () => {
+    it("deleting a depth-2 key fires onUpdated (not onDeleted) on the flat observer", () => {
+        const model = TurboModel.create({
+            data: {flow: {entries: {a: "x", b: "y"}}},
+            initialize: true,
+        });
+        const deleted: string[] = [];
+        const updated: string[] = [];
+        const obs = model.generateObserver<any, {id: string}>({
+            onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+            onUpdated: (_d, _i, _s, ...keys) => updated.push(keys[0] as string),
+            onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
+        });
+
+        expect(obs.size).toBe(1);
+        expect(obs.get("flow")).toBeDefined();
+
+        // Delete a key 2 levels deep — "flow" itself is NOT removed
+        model.delete("flow", "entries", "a");
+
+        expect(deleted).toHaveLength(0);          // onDeleted must NOT fire for "flow"
+        expect(updated).toContain("flow");         // onUpdated SHOULD fire for "flow"
+        expect(obs.get("flow")).toBeDefined();     // instance must still be in the observer
+        expect(obs.size).toBe(1);
+    });
+
+    it("deleting the actual top-level key correctly fires onDeleted", () => {
+        const model = TurboModel.create({
+            data: {flow: {entries: {a: "x"}}},
+            initialize: true,
+        });
+        const deleted: string[] = [];
+        model.generateObserver<any, {id: string}>({
+            onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+            onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
+        });
+
+        model.delete("flow");
+        expect(deleted).toContain("flow");
+    });
+});
+
 // ── Cascade deletion (depth-2 observer, 3+ outer keys) ───────────────────────────────────────
 // These tests guard against the bug where deleting one inner/outer entry corrupts siblings.
 

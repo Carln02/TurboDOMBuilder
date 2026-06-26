@@ -1,4 +1,4 @@
-import {describe, it, expect} from "vitest";
+import {describe, it, expect, vi} from "vitest";
 import * as Y from "yjs";
 import {TurboYModel} from "../model/yModel";
 import {TurboModel} from "../model/model";
@@ -636,6 +636,39 @@ describe("YModel", () => {
             expect(fired).toContain("b");
         });
 
+        it("repeated data reassignment does not accumulate Yjs observers or emit warnings", () => {
+            // Simulates setClip() being called multiple times (e.g. thumbnail capture path)
+            // Each call: old content detached, new content attached.
+            // Before the fix, detachNestedObservers called unobserve() on types that were never
+            // observed (first call) or already detached, producing console.error from Yjs.
+            const doc = new Y.Doc();
+            const warnSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+            const makeContent = () => {
+                const arr = new Y.Array<Y.Map<any>>();
+                const item = new Y.Map([["text", "hello"]] as [string, any][]);
+                arr.push([item]);
+                return arr;
+            };
+
+            const content1 = makeContent();
+            const content2 = makeContent();
+            const content3 = makeContent();
+
+            // Nest content under a plain-JS-object model (mimics ClipRendererModel.text.data)
+            const model = TurboYModel.create({data: {content: content1} as any, initialize: true});
+
+            // First re-assignment: old = content1 (observed), new = content2
+            model.set(content2 as any, "content");
+            // Second re-assignment: old = content2 (observed), new = content3
+            model.set(content3 as any, "content");
+            // Third re-assignment back to content1 (was detached)
+            model.set(content1 as any, "content");
+
+            expect(warnSpy).not.toHaveBeenCalled();
+            warnSpy.mockRestore();
+        });
+
         it("replacing data with new YMap re-initializes observers", () => {
             const doc = new Y.Doc();
             const map1 = doc.getMap("m1");
@@ -1019,6 +1052,70 @@ describe("YModel", () => {
             expect(obs.get("A", 0)).toBeDefined();
             expect(obs.get("C", 0)).toBeDefined();
             expect(obs.size).toBe(2);
+        });
+    });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Flat observer — deep nested deletion must not fire onDeleted at top-level
+// Guards the bug where a YArray deletion 4 levels deep inside a flow caused the
+// flat flows observer to fire onDeleted for the entire flow entry.
+// ─────────────────────────────────────────────────────────────────────────────
+
+    describe("flat observer — deep nested YArray deletion fires onUpdated, not onDeleted", () => {
+        it("arr.delete inside nested YArray does not trigger onDeleted on flat parent observer", () => {
+            const doc = new Y.Doc();
+            const root = doc.getMap<any>("flows");
+
+            // flow "vP" → YMap with "flowEntries" → YMap → "Eg4r" → YArray
+            const innerArr = new Y.Array<any>();
+            innerArr.push(["entry0"]);
+
+            const flowEntries = new Y.Map<any>();
+            flowEntries.set("Eg4r", innerArr);
+
+            const flowMap = new Y.Map<any>();
+            flowMap.set("flowEntries", flowEntries);
+
+            root.set("vP", flowMap);
+
+            const model = TurboYModel.create({data: root as any, initialize: true});
+
+            const deleted: string[] = [];
+            const updated: string[] = [];
+            const obs = model.generateObserver<any, {id: string}>({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+                onUpdated: (_d, _i, _s, ...keys) => updated.push(keys[0] as string),
+                onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
+            });
+
+            expect(obs.size).toBe(1);
+            expect(obs.get("vP")).toBeDefined();
+
+            // Delete 4 levels deep — "vP" itself must NOT be removed from the observer
+            innerArr.delete(0, 1);
+
+            expect(deleted).toHaveLength(0);       // onDeleted must NOT fire for "vP"
+            expect(updated).toContain("vP");        // onUpdated SHOULD fire for "vP"
+            expect(obs.get("vP")).toBeDefined();    // instance must still be in the observer
+            expect(obs.size).toBe(1);
+        });
+
+        it("deleting the actual top-level YMap key correctly fires onDeleted on flat observer", () => {
+            const doc = new Y.Doc();
+            const root = doc.getMap<any>("flows");
+
+            const flowMap = new Y.Map<any>();
+            root.set("vP", flowMap);
+
+            const model = TurboYModel.create({data: root as any, initialize: true});
+            const deleted: string[] = [];
+            model.generateObserver<any, {id: string}>({
+                onAdded: (_d, _s, ...keys) => ({id: keys[0] as string}),
+                onDeleted: (_d, _i, _s, ...keys) => deleted.push(keys[0] as string),
+            });
+
+            root.delete("vP");
+            expect(deleted).toContain("vP");
         });
     });
 });

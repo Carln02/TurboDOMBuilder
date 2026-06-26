@@ -271,6 +271,26 @@ class TurboSelect<
         requestAnimationFrame(() => this.select(this.selectedEntry));
     }
 
+    public removeEntry(value: ValueType | EntryType): this {
+        const entry = this.getEntry(value as any);
+        if (!entry) return this;
+
+        this.enableObserver(false);
+
+        if (this.getEntryData(entry).selected && this.forceSelection) {
+            const fallback = this.enabledEntries.find(e => e !== entry);
+            if (fallback) this.select(fallback);
+        }
+
+        this.onEntryRemoved.fire(entry);
+        if (entry instanceof Node && entry.parentElement) entry.parentElement.removeChild(entry);
+        this.clearEntryData(entry);
+        this.refreshInputField();
+
+        this.enableObserver(true);
+        return this;
+    }
+
     public getEntryFromSecondaryValue(value: SecondaryValueType): EntryType {
         return this.entries.find((entry: EntryType) => this.getSecondaryValue(entry) === value);
     }

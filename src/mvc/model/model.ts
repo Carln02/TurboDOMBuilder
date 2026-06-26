@@ -1126,7 +1126,10 @@ class TurboModel<
             } else if (deep) {
                 observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
             } else {
-                observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                // Only propagate deleted=true when the change is directly AT the observed depth.
+                // A deletion deeper than the registered pattern (incomingKeys.length > 1) means the
+                // observed key itself still exists — fire onUpdated, not onDeleted.
+                observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted && incomingKeys.length === 1);
             }
             return;
         }

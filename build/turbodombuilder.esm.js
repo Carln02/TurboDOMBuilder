@@ -4758,7 +4758,10 @@ let TurboModel = (() => {
                     observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
                 }
                 else {
-                    observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                    // Only propagate deleted=true when the change is directly AT the observed depth.
+                    // A deletion deeper than the registered pattern (incomingKeys.length > 1) means the
+                    // observed key itself still exists — fire onUpdated, not onDeleted.
+                    observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted && incomingKeys.length === 1);
                 }
                 return;
             }
@@ -13136,6 +13139,7 @@ let TurboYModel = (() => {
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         observer = (__runInitializers(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+        observedYTypes = new WeakSet();
         /**
          * @inheritDoc
          */
@@ -13277,7 +13281,7 @@ let TurboYModel = (() => {
         clear(clearData = true) {
             if (clearData) {
                 if (this.data instanceof AbstractType)
-                    this.data?.unobserve(this.observer);
+                    this.detachNestedObservers(this.data);
                 else if (Array.isArray(this.data)) {
                     for (const item of this.data)
                         this.detachNestedObservers(item);
@@ -13339,7 +13343,10 @@ let TurboYModel = (() => {
         }
         attachNestedObservers(value) {
             if (value instanceof AbstractType) {
-                value.observe(this.observer);
+                if (!this.observedYTypes.has(value)) {
+                    value.observe(this.observer);
+                    this.observedYTypes.add(value);
+                }
                 for (const key of this.getKeysAction(value)) {
                     if (!this.nestedModels.has(key))
                         this.attachNestedObservers(this.getAction(value, key));
@@ -13352,7 +13359,10 @@ let TurboYModel = (() => {
         }
         detachNestedObservers(value) {
             if (value instanceof AbstractType) {
-                value.unobserve(this.observer);
+                if (this.observedYTypes.has(value)) {
+                    value.unobserve(this.observer);
+                    this.observedYTypes.delete(value);
+                }
                 for (const key of this.getKeysAction(value))
                     this.detachNestedObservers(this.getAction(value, key));
             }
@@ -15339,6 +15349,24 @@ let TurboSelect = (() => {
                 turbo(this.parent).addChild(entry, index);
             this.enableObserver(true);
             requestAnimationFrame(() => this.select(this.selectedEntry));
+        }
+        removeEntry(value) {
+            const entry = this.getEntry(value);
+            if (!entry)
+                return this;
+            this.enableObserver(false);
+            if (this.getEntryData(entry).selected && this.forceSelection) {
+                const fallback = this.enabledEntries.find(e => e !== entry);
+                if (fallback)
+                    this.select(fallback);
+            }
+            this.onEntryRemoved.fire(entry);
+            if (entry instanceof Node && entry.parentElement)
+                entry.parentElement.removeChild(entry);
+            this.clearEntryData(entry);
+            this.refreshInputField();
+            this.enableObserver(true);
+            return this;
         }
         getEntryFromSecondaryValue(value) {
             return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
