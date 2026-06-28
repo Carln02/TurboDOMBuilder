@@ -2735,6 +2735,63 @@ function nestedModelSignal(...keys) {
         });
     };
 }
+/**
+ * @decorator
+ * @function isolatedModelSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Decorator that binds a reactive signal to a nested {@link TurboModel} at the given key path,
+ * where the nested model's data is **not** stored inside the parent model's data container.
+ *
+ * Use this when the nested model holds data that lives outside the parent's data tree — for example,
+ * a Y.js type that is already part of a Y.js document at a different location. Unlike
+ * {@link nestedModelSignal}, this decorator does **not** write to the parent model's data when
+ * the value is set, so it will not attempt to insert a foreign Y.js type into the parent's Y.js
+ * structure (which would throw, since a Y.js type can only belong to one place in a document).
+ *
+ * - Getter returns the nested model instance via `this.nest(...keys)`.
+ * - Setter assigns directly to `nestedModel.data = value`, leaving the parent's data untouched.
+ *
+ * **Limitation:** `@modelSignal("myField", "subKey")` will **not** work for a field backed by
+ * `@isolatedModelSignal`, because `TurboModel.get()` reads through the parent's data container
+ * rather than routing through registered nested models. Access sub-keys directly through the
+ * nested model instead: `(this.myField as MyNestedModel).subKey`.
+ *
+ * @param {...string[]} keys - The key path identifying the nested model slot. Defaults to the
+ * decorated property name if omitted.
+ *
+ * @example
+ * ```ts
+ * class CardModel extends TurboYModel {
+ *   // Foreign YMap managed elsewhere in the Y.js document — must not be written into this
+ *   // model's data tree.
+ *   @isolatedModelSignal() cardData: CardDataModel;
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class CardModel extends TurboYModel {
+ *   @signal get cardData() { return this.nest("cardData"); }
+ *   set cardData(value) { this.nest("cardData").data = value; }
+ * }
+ * ```
+ */
+function isolatedModelSignal(...keys) {
+    return function (value, context) {
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
+        context.addInitializer(function () {
+            utils$a.bindPath(this, context.name, resolvedKeys);
+        });
+        return signalUtils.signalDecorator(value, context, function () {
+            return this.nest?.(...resolvedKeys);
+        }, function (value) {
+            const model = this.nest?.(...resolvedKeys);
+            if (model)
+                model.data = value;
+        });
+    };
+}
 function effect(...args) {
     const value = args[0];
     const context = args[1];
@@ -4001,10 +4058,14 @@ let TurboModel = (() => {
             const oldData = this._data;
             if (areEqual(oldData, data))
                 return;
-            this.clear(false);
-            this._data = data;
-            if (data)
-                this.initialize();
+            if (this.diffCheck(oldData, data))
+                this.diffAction(oldData, data);
+            else {
+                this.clear(false);
+                this._data = data;
+                if (data)
+                    this.initialize();
+            }
             markDirtyPath(this, []);
             this.onDataChanged.fire(oldData, data);
         }
@@ -4459,6 +4520,49 @@ let TurboModel = (() => {
          */
         flatSize(depth) {
             return TurboModel.flattenSize(this.data, depth);
+        }
+        /*
+         *
+         * DIFFING
+         *
+         */
+        diffCheck(oldData, newData) {
+            if (!oldData || !newData)
+                return false;
+            if (Array.isArray(oldData) && Array.isArray(newData))
+                return true;
+            if (oldData instanceof Map && newData instanceof Map)
+                return true;
+            if (Array.isArray(oldData) || Array.isArray(newData) || oldData instanceof Map || newData instanceof Map
+                || oldData instanceof Set || newData instanceof Set)
+                return false;
+            if (typeof oldData !== "object" || typeof newData !== "object")
+                return false;
+            return Object.getPrototypeOf(oldData) === Object.prototype && Object.getPrototypeOf(newData) === Object.prototype;
+        }
+        diffAction(oldData, newData) {
+            this._data = newData;
+            for (const [key, child] of this.nestedModels) {
+                const newVal = this.getAction(newData, key);
+                if (child.data !== newVal)
+                    child.data = newVal;
+            }
+            const oldKeys = new Set(this.getKeysAction(oldData));
+            const newKeys = new Set(this.getKeysAction(newData));
+            for (const key of oldKeys) {
+                if (!newKeys.has(key))
+                    this.keyChanged([key], undefined, true);
+                else {
+                    const oldVal = this.getAction(oldData, key);
+                    const newVal = this.getAction(newData, key);
+                    if (!areEqual(oldVal, newVal))
+                        this.keyChanged([key], newVal);
+                }
+            }
+            for (const key of newKeys) {
+                if (!oldKeys.has(key))
+                    this.keyChanged([key], this.getAction(newData, key));
+            }
         }
         /*
          *
@@ -13289,6 +13393,11 @@ let TurboYModel = (() => {
             }
             super.clear(clearData);
         }
+        diffCheck(oldData, newData) {
+            if (oldData instanceof AbstractType || newData instanceof AbstractType)
+                return false;
+            return super.diffCheck(oldData, newData);
+        }
         /*
          *
          * Utilities
@@ -13347,6 +13456,11 @@ let TurboYModel = (() => {
                     value.observe(this.observer);
                     this.observedYTypes.add(value);
                 }
+                // Skip key iteration when the type has no document yet — Y.js throws
+                // "Invalid access: Add Yjs type to a document before reading data."
+                // when keys() / get() are called before the type is inserted into a doc.
+                if (!value.doc)
+                    return;
                 for (const key of this.getKeysAction(value)) {
                     if (!this.nestedModels.has(key))
                         this.attachNestedObservers(this.getAction(value, key));
@@ -13360,7 +13474,11 @@ let TurboYModel = (() => {
         detachNestedObservers(value) {
             if (value instanceof AbstractType) {
                 if (this.observedYTypes.has(value)) {
-                    value.unobserve(this.observer);
+                    // Guard: Y.js GC can clear event handlers on deleted types, leaving
+                    // observedYTypes stale. Check the internal handler array before calling
+                    // unobserve to avoid "[yjs] Tried to remove event handler that doesn't exist."
+                    if (value._eH?.l?.includes(this.observer))
+                        value.unobserve(this.observer);
                     this.observedYTypes.delete(value);
                 }
                 for (const key of this.getKeysAction(value))
@@ -17216,23 +17334,44 @@ let TurboSelectWheel = (() => {
         dragging = false;
         openTimer;
         initialize() {
-            this.select.onEntryAdded.add(entry => {
+            const initEntry = (entry) => {
                 turbo(entry).setStyles({ position: "absolute", whiteSpace: "nowrap" }, true);
                 this.entryTransitionReifect?.attach(entry);
                 this.customReifect?.attach(entry);
-                turbo(entry).on(DefaultEventName.dragStart, () => {
+                turbo(entry)
+                    .on(DefaultEventName.dragStart, () => {
                     this.clearOpenTimer();
                     this.open = true;
                     this.dragging = true;
+                    // Remove transitions instantly so the first drag frame isn't animated.
                     if (this.entryTransitionReifect)
-                        this.entryTransitionReifect.unapply();
+                        this.entryTransitionReifect.unapply(undefined, { applyStylesInstantly: true });
                     this.reloadEntrySizes();
                     return Propagation.stopImmediatePropagation;
+                })
+                    .on(DefaultEventName.drag, (e) => {
+                    if (!this.dragging)
+                        return;
+                    this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
+                    return Propagation.stopImmediatePropagation;
+                })
+                    .on(DefaultEventName.dragEnd, () => {
+                    if (!this.dragging)
+                        return;
+                    this.dragging = false;
+                    // recomputeProperties is required because unapplyStyles() clears resolvedValues.styles,
+                    // so apply() without it finds styles["default"] === undefined and returns early,
+                    // never calling reloadReifectsChainableStyles — leaving transition: "none" stuck.
+                    if (this.entryTransitionReifect)
+                        this.entryTransitionReifect.apply(undefined, { recomputeProperties: true });
+                    this.snapToNearest();
+                    if (!this.alwaysOpen)
+                        this.setOpenTimer();
+                    return Propagation.stopImmediatePropagation;
                 });
-                requestAnimationFrame(() => {
-                    this.reloadEntrySizes();
-                });
-            });
+                requestAnimationFrame(() => this.reloadEntrySizes());
+            };
+            this.select.onEntryAdded.add(initEntry);
             this.select.onEntryRemoved.add(entry => {
                 this.entryTransitionReifect?.detach(entry);
                 this.customReifect?.detach(entry);
@@ -17240,17 +17379,25 @@ let TurboSelectWheel = (() => {
             });
             super.initialize();
             turbo(this).setStyles({ display: "inline-block", position: "relative", overflow: "hidden" });
+            // Entries set via create({values: [...]}) fire onEntryAdded before initialize() has a
+            // chance to add the callback above. Replay initEntry for any such pre-existing entries.
+            this.entries.forEach(initEntry);
         }
         opacity = __runInitializers(this, _opacity_initializers, void 0);
-        set size(value) { }
-        get size() { return; }
+        set size(value) {
+        }
+        get size() {
+            return;
+        }
         set entryTransitionReifect(value) {
             if (!value)
                 return;
             if (this.entries.length > 0)
                 value.attach(...this.entries);
         }
-        get entryTransitionReifect() { return; }
+        get entryTransitionReifect() {
+            return;
+        }
         set transitionDuration(value) {
             if (value <= 0)
                 return;
@@ -17262,7 +17409,9 @@ let TurboSelectWheel = (() => {
             if (this.customReifect && this.entries.length > 0)
                 this.customReifect.attach(...this.entries);
         }
-        get customReifect() { return; }
+        get customReifect() {
+            return;
+        }
         _closeOnClick = (__runInitializers(this, _opacity_extraInitializers), () => this.open = false);
         set alwaysOpen(value) {
             if (value)
@@ -17273,12 +17422,18 @@ let TurboSelectWheel = (() => {
         }
         set open(value) {
             turbo(this).setStyle("overflow", value ? "visible" : "hidden");
+            // When opening, entries may have had zero layout size if the wheel was off-screen or
+            // hidden when first populated. Reload now that the wheel is visible.
+            if (value)
+                requestAnimationFrame(() => this.reloadEntrySizes());
         }
         get isVertical() {
             return this.direction === Direction.vertical;
         }
         /** Fractional index — integer when snapped, fractional mid-drag. */
-        get index() { return this._index; }
+        get index() {
+            return this._index;
+        }
         set index(value) {
             this._index = value;
             this.select.selectByIndex(trim(Math.round(value), this.entries.length - 1));
@@ -17286,7 +17441,9 @@ let TurboSelectWheel = (() => {
         // -------------------------------------------------------------------------
         // Position
         // -------------------------------------------------------------------------
-        get currentPosition() { return this._currentPosition; }
+        get currentPosition() {
+            return this._currentPosition;
+        }
         set currentPosition(value) {
             if (!this.sizePerEntry.length)
                 return;
@@ -17295,30 +17452,6 @@ let TurboSelectWheel = (() => {
             this._currentPosition = Math.min(Math.max(value, min), max);
             this._index = this.positionToIndex(this._currentPosition);
             this.applyAllEntryStyles();
-        }
-        // -------------------------------------------------------------------------
-        // UI Listeners
-        // -------------------------------------------------------------------------
-        setupUIListeners() {
-            super.setupUIListeners();
-            turbo(document.body)
-                .on(DefaultEventName.drag, (e) => {
-                if (!this.dragging)
-                    return;
-                this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
-                return Propagation.stopImmediatePropagation;
-            })
-                .on(DefaultEventName.dragEnd, () => {
-                if (!this.dragging)
-                    return;
-                this.dragging = false;
-                if (this.entryTransitionReifect)
-                    this.entryTransitionReifect.apply();
-                this.snapToNearest();
-                if (!this.alwaysOpen)
-                    this.setOpenTimer();
-                return Propagation.stopImmediatePropagation;
-            });
         }
         computeDragDelta(delta) {
             return -delta[this.isVertical ? "y" : "x"];
@@ -17338,6 +17471,13 @@ let TurboSelectWheel = (() => {
             });
             if (!this.sizePerEntry.length) {
                 this._currentPosition = 0;
+                return;
+            }
+            // If the wheel or its ancestors weren't in layout yet (e.g. off-screen, hidden, or
+            // added to the DOM after entries were created), all sizes read as 0. Retry next frame
+            // so the browser has time to perform layout.
+            if (this.totalSize === 0) {
+                requestAnimationFrame(() => this.reloadEntrySizes());
                 return;
             }
             this._currentPosition = this.indexToPosition(this._index);
@@ -17393,24 +17533,32 @@ let TurboSelectWheel = (() => {
         // Styling
         // -------------------------------------------------------------------------
         applyAllEntryStyles() {
+            // Apply instantly during drag so transforms aren't queued behind a rAF while a CSS
+            // transition is still active on the element, which would cause visual lag.
+            const instant = this.dragging;
             this.entries.forEach((el, i) => {
                 const translationValue = (this.positionPerEntry[i] ?? 0) - this._currentPosition;
                 if (this.customReifect) {
                     this.customReifect.apply(el, { recomputeProperties: true });
                 }
                 else {
-                    this.computeAndApplyStyling(el, translationValue);
+                    this.computeAndApplyStyling(el, translationValue, undefined, instant);
                 }
             });
         }
-        computeAndApplyStyling(element, translationValue, size = this.size) {
+        computeAndApplyStyling(element, translationValue, size = this.size, instant = false) {
             const bound = translationValue > 0 ? size.max : size.min;
             const opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
             const scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+            // `transition` is a "chainable style field" — Reifect.unapply() clears its own
+            // resolved state but reloadReifectsChainableStyles() only writes keys that still
+            // have an active contribution, so the old inline transition is never explicitly
+            // removed. Writing "none" here overrides it every drag frame.
             let styles = {
                 left: "50%",
                 top: "50%",
                 opacity: opacityValue,
+                ...(instant && { transition: "none" }),
                 transform: `translate3d(
                 calc(${!this.isVertical ? translationValue : 0}px - 50%),
                 calc(${this.isVertical ? translationValue : 0}px - 50%),
@@ -17420,7 +17568,7 @@ let TurboSelectWheel = (() => {
                 styles = this.generateCustomStyling({
                     element, translationValue, opacityValue, scaleValue, size, defaultComputedStyles: styles,
                 });
-            $(element).setStyles(styles);
+            $(element).setStyles(styles, instant);
         }
         // -------------------------------------------------------------------------
         // Timer helpers
@@ -17958,4 +18106,4 @@ function loadLocalFont(font) {
     }).join("\n"));
 }
 
-export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnEdge, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, markDirtyPath, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, pointInsideRect, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };
+export { $, AccessLevel, ActionMode, Anchor, AnchorPoint, ApplyDefaultsMergeProperties, BasicInputEvents, ClickMode, ClosestOrigin, Color, ContentSwitchMode, DefaultClickEventName, DefaultDragEventName, DefaultEventName, DefaultKeyEventName, DefaultMoveEventName, DefaultWheelEventName, Delegate, Direction, InOut, InputDevice, Listener, ListenerSet, MathMLNamespace, MathMLTags, NonPassiveEvents, OnOff, Open, Point, PopupFallbackMode, Propagation, Range, RegistryCategory, Reifect, Shown, Side, SideH, SideV, StatefulReifect, SvgNamespace, SvgTags, TurboBaseElement, TurboButton, TurboButtonPopup, TurboClickEventName, TurboConstrainer, TurboContentSwitch, TurboDragEvent, TurboDragEventName, TurboDrawer, TurboDropdown, TurboElement, TurboEmitter, TurboEvent, TurboEventManager, TurboEventName, TurboGrid, TurboHandler, TurboHeadlessElement, TurboIcon, TurboIconSwitch, TurboIconToggle, TurboInput, TurboInteractor, TurboKeyEvent, TurboKeyEventName, TurboLabelElement, TurboMap, TurboMarkingMenu, TurboModel, TurboMoveEventName, TurboNestedMap, TurboNodeList, TurboNumericalInput, TurboObserver, TurboOperator, TurboPopup, TurboProxiedElement, TurboQueue, TurboRect, TurboRichElement, TurboSelect, TurboSelectElement, TurboSelectInputEvent, TurboSelectWheel, TurboSelector, TurboTool, TurboView, TurboWeakSet, TurboWheelEvent, TurboWheelEventName, TurboYModel, a, aabbCorners, addInYArray, addInYMap, addRegistryCategory, alphabeticalSorting, areEqual, areSimilar, attachListenersAndBehaviors, auto, behavior, blindElement, blobToUrl, button, cache, callOnce, callOncePerInstance, camelToKebabCase, canvas, checker, clearCache, clearCacheEntry, clearUrlParams, closestPointOnAabb, closestPointOnEdge, closestPointOnSegment, constrainer, createProxy, createYArray, createYDoc, createYMap, css, deepObserveAll, deepObserveAny, define, disposeEffect, div, drawer, eachEqualToAny, effect, element, equalToAny, expose, fetchSvg, findRegistered, flexCol, flexColCenter, flexRow, flexRowCenter, form, formatHHMMSS, formatMMSS, formatMmSs, generateTagFunction, getAllRegistered, getConstructorChain, getEventPosition, getFileExtension, getFirstDescriptorInChain, getFirstPrototypeInChainWith, getPrototypeChain, getRegisteredByCategories, getRegisteredElements, getRegisteredEntry, getRegisteredMvc, getSignal, getSuperDescriptor, getSuperMethod, getUrlParam, getVideoDuration, h1, h2, h3, h4, h5, h6, handler, hasPropertyInChain, hasSeparatingAxisForPolygons, hashBySize, hashString, img, initializeEffects, input, interactor, intersectSegments, isNull, isPointInConvexPolygon, isUndefined, isolatedModelSignal, jsonToYjs, kebabToCamelCase, linearInterpolation, link, listener, loadLocalFont, markDirty, markDirtyPath, mod, modelSignal, mutator, nestedModelSignal, observe, operator, p, parse$1 as parse, pointInsideRect, polygonsIntersect, projectPolygonOntoAxis, pushUrlParams, randomFromRange, randomId, randomString, removeFromYArray, replaceUrlParams, segmentIntersectsPolygon, setSignal, signal, solver, spacer, span, stringify, style, stylesheet, t, textToElement, textarea, tool, trim, tu, turbo, turbofy, untrack, urlToBlob, video };

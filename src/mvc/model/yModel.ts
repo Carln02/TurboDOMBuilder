@@ -155,6 +155,11 @@ class TurboYModel<
         super.clear(clearData);
     }
 
+    protected diffCheck(oldData: DataType, newData: DataType): boolean {
+        if (oldData instanceof YAbstractType || newData instanceof YAbstractType) return false;
+        return super.diffCheck(oldData, newData);
+    }
+
     /*
      *
      * Utilities
@@ -210,6 +215,10 @@ class TurboYModel<
                 value.observe(this.observer);
                 this.observedYTypes.add(value);
             }
+            // Skip key iteration when the type has no document yet — Y.js throws
+            // "Invalid access: Add Yjs type to a document before reading data."
+            // when keys() / get() are called before the type is inserted into a doc.
+            if (!(value as any).doc) return;
             for (const key of this.getKeysAction(value)) {
                 if (!this.nestedModels.has(key as any)) this.attachNestedObservers(this.getAction(value, key));
             }
@@ -221,7 +230,10 @@ class TurboYModel<
     protected detachNestedObservers(value: any) {
         if (value instanceof YAbstractType) {
             if (this.observedYTypes.has(value)) {
-                value.unobserve(this.observer);
+                // Guard: Y.js GC can clear event handlers on deleted types, leaving
+                // observedYTypes stale. Check the internal handler array before calling
+                // unobserve to avoid "[yjs] Tried to remove event handler that doesn't exist."
+                if ((value as any)._eH?.l?.includes(this.observer)) value.unobserve(this.observer);
                 this.observedYTypes.delete(value);
             }
             for (const key of this.getKeysAction(value)) this.detachNestedObservers(this.getAction(value, key));

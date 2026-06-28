@@ -148,9 +148,14 @@ class TurboModel<
     public set data(data: DataType) {
         const oldData = this._data;
         if (areEqual(oldData, data)) return;
-        this.clear(false);
-        this._data = data;
-        if (data) this.initialize();
+
+        if (this.diffCheck(oldData, data)) this.diffAction(oldData, data);
+        else {
+            this.clear(false);
+            this._data = data;
+            if (data) this.initialize();
+        }
+
         markDirtyPath(this, []);
         this.onDataChanged.fire(oldData, data);
     }
@@ -684,6 +689,46 @@ class TurboModel<
      */
     public flatSize(depth: number): number {
         return TurboModel.flattenSize(this.data, depth);
+    }
+
+    /*
+     *
+     * DIFFING
+     *
+     */
+
+    protected diffCheck(oldData: DataType, newData: DataType): boolean {
+        if (!oldData || !newData) return false;
+        if (Array.isArray(oldData) && Array.isArray(newData)) return true;
+        if (oldData instanceof Map && newData instanceof Map) return true;
+        if (Array.isArray(oldData) || Array.isArray(newData) || oldData instanceof Map || newData instanceof Map
+            || oldData instanceof Set || newData instanceof Set) return false;
+        if (typeof oldData !== "object" || typeof newData !== "object") return false;
+        return Object.getPrototypeOf(oldData) === Object.prototype && Object.getPrototypeOf(newData) === Object.prototype;
+    }
+
+    protected diffAction(oldData: DataType, newData: DataType) {
+        this._data = newData;
+
+        for (const [key, child] of this.nestedModels) {
+            const newVal = this.getAction(newData, key);
+            if (child.data !== newVal) child.data = newVal;
+        }
+
+        const oldKeys = new Set(this.getKeysAction(oldData));
+        const newKeys = new Set(this.getKeysAction(newData));
+
+        for (const key of oldKeys) {
+            if (!newKeys.has(key)) this.keyChanged([key], undefined, true);
+            else {
+                const oldVal = this.getAction(oldData, key);
+                const newVal = this.getAction(newData, key);
+                if (!areEqual(oldVal, newVal)) this.keyChanged([key], newVal);
+            }
+        }
+        for (const key of newKeys) {
+            if (!oldKeys.has(key)) this.keyChanged([key], this.getAction(newData, key));
+        }
     }
 
     /*

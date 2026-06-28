@@ -61,24 +61,42 @@ class TurboSelectWheel<
     protected openTimer: ReturnType<typeof setTimeout>;
 
     public initialize(): void {
-        this.select.onEntryAdded.add(entry => {
+        const initEntry = (entry: EntryType) => {
             turbo(entry).setStyles({position: "absolute", whiteSpace: "nowrap"}, true);
             this.entryTransitionReifect?.attach(entry);
             this.customReifect?.attach(entry);
 
-            turbo(entry).on(DefaultEventName.dragStart, () => {
-                this.clearOpenTimer();
-                this.open = true;
-                this.dragging = true;
-                if (this.entryTransitionReifect) this.entryTransitionReifect.unapply();
-                this.reloadEntrySizes();
-                return Propagation.stopImmediatePropagation;
-            });
+            turbo(entry)
+                .on(DefaultEventName.dragStart, () => {
+                    this.clearOpenTimer();
+                    this.open = true;
+                    this.dragging = true;
+                    // Remove transitions instantly so the first drag frame isn't animated.
+                    if (this.entryTransitionReifect) this.entryTransitionReifect.unapply(undefined, {applyStylesInstantly: true});
+                    this.reloadEntrySizes();
+                    return Propagation.stopImmediatePropagation;
+                })
+                .on(DefaultEventName.drag, (e: TurboDragEvent) => {
+                    if (!this.dragging) return;
+                    this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
+                    return Propagation.stopImmediatePropagation;
+                })
+                .on(DefaultEventName.dragEnd, () => {
+                    if (!this.dragging) return;
+                    this.dragging = false;
+                    // recomputeProperties is required because unapplyStyles() clears resolvedValues.styles,
+                    // so apply() without it finds styles["default"] === undefined and returns early,
+                    // never calling reloadReifectsChainableStyles — leaving transition: "none" stuck.
+                    if (this.entryTransitionReifect) this.entryTransitionReifect.apply(undefined, {recomputeProperties: true});
+                    this.snapToNearest();
+                    if (!this.alwaysOpen) this.setOpenTimer();
+                    return Propagation.stopImmediatePropagation;
+                });
 
-            requestAnimationFrame(() => {
-                this.reloadEntrySizes();
-            });
-        });
+            requestAnimationFrame(() => this.reloadEntrySizes());
+        };
+
+        this.select.onEntryAdded.add(initEntry);
 
         this.select.onEntryRemoved.add(entry => {
             this.entryTransitionReifect?.detach(entry);
@@ -89,6 +107,10 @@ class TurboSelectWheel<
         super.initialize();
 
         turbo(this).setStyles({display: "inline-block", position: "relative", overflow: "hidden"});
+
+        // Entries set via create({values: [...]}) fire onEntryAdded before initialize() has a
+        // chance to add the callback above. Replay initEntry for any such pre-existing entries.
+        this.entries.forEach(initEntry);
     }
 
     @auto({
@@ -103,8 +125,12 @@ class TurboSelectWheel<
         defaultValue: {max: 100, min: -100},
         preprocessValue: (value) =>
             typeof value === "object" ? value : {max: value ?? 100, min: -(value ?? 100)},
-    }) public set size(value: Record<Range, number> | number) {}
-    public get size(): Record<Range, number> { return; }
+    }) public set size(value: Record<Range, number> | number) {
+    }
+
+    public get size(): Record<Range, number> {
+        return;
+    }
 
     @auto({
         preprocessValue: function (value) {
@@ -116,7 +142,10 @@ class TurboSelectWheel<
         if (!value) return;
         if (this.entries.length > 0) value.attach(...this.entries);
     }
-    public get entryTransitionReifect(): Reifect {return;}
+
+    public get entryTransitionReifect(): Reifect {
+        return;
+    }
 
     @auto({override: true}) public set transitionDuration(value: number) {
         if (value <= 0) return;
@@ -133,7 +162,10 @@ class TurboSelectWheel<
     }) public set customReifect(value: Reifect | StatelessReifectProperties | null) {
         if (this.customReifect && this.entries.length > 0) this.customReifect.attach(...this.entries);
     }
-    public get customReifect(): Reifect { return; }
+
+    public get customReifect(): Reifect {
+        return;
+    }
 
     private readonly _closeOnClick = () => this.open = false;
 
@@ -145,6 +177,9 @@ class TurboSelectWheel<
 
     @auto() public set open(value: boolean) {
         turbo(this).setStyle("overflow", value ? "visible" : "hidden");
+        // When opening, entries may have had zero layout size if the wheel was off-screen or
+        // hidden when first populated. Reload now that the wheel is visible.
+        if (value) requestAnimationFrame(() => this.reloadEntrySizes());
     }
 
     public get isVertical() {
@@ -152,7 +187,10 @@ class TurboSelectWheel<
     }
 
     /** Fractional index — integer when snapped, fractional mid-drag. */
-    public get index(): number { return this._index; }
+    public get index(): number {
+        return this._index;
+    }
+
     protected set index(value: number) {
         this._index = value;
         this.select.selectByIndex(trim(Math.round(value), this.entries.length - 1));
@@ -162,7 +200,9 @@ class TurboSelectWheel<
     // Position
     // -------------------------------------------------------------------------
 
-    public get currentPosition(): number { return this._currentPosition; }
+    public get currentPosition(): number {
+        return this._currentPosition;
+    }
 
     protected set currentPosition(value: number) {
         if (!this.sizePerEntry.length) return;
@@ -171,29 +211,6 @@ class TurboSelectWheel<
         this._currentPosition = Math.min(Math.max(value, min), max);
         this._index = this.positionToIndex(this._currentPosition);
         this.applyAllEntryStyles();
-    }
-
-    // -------------------------------------------------------------------------
-    // UI Listeners
-    // -------------------------------------------------------------------------
-
-    protected setupUIListeners() {
-        super.setupUIListeners();
-
-        turbo(document.body)
-            .on(DefaultEventName.drag, (e: TurboDragEvent) => {
-                if (!this.dragging) return;
-                this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
-                return Propagation.stopImmediatePropagation;
-            })
-            .on(DefaultEventName.dragEnd, () => {
-                if (!this.dragging) return;
-                this.dragging = false;
-                if (this.entryTransitionReifect) this.entryTransitionReifect.apply();
-                this.snapToNearest();
-                if (!this.alwaysOpen) this.setOpenTimer();
-                return Propagation.stopImmediatePropagation;
-            });
     }
 
     protected computeDragDelta(delta: Point): number {
@@ -216,7 +233,17 @@ class TurboSelectWheel<
             this.totalSize += size;
         });
 
-        if (!this.sizePerEntry.length) { this._currentPosition = 0; return; }
+        if (!this.sizePerEntry.length) {
+            this._currentPosition = 0;
+            return;
+        }
+        // If the wheel or its ancestors weren't in layout yet (e.g. off-screen, hidden, or
+        // added to the DOM after entries were created), all sizes read as 0. Retry next frame
+        // so the browser has time to perform layout.
+        if (this.totalSize === 0) {
+            requestAnimationFrame(() => this.reloadEntrySizes());
+            return;
+        }
         this._currentPosition = this.indexToPosition(this._index);
         this.applyAllEntryStyles();
         if (this.selectedIndex >= 0) this.applyTransition();
@@ -272,12 +299,15 @@ class TurboSelectWheel<
     // -------------------------------------------------------------------------
 
     protected applyAllEntryStyles() {
+        // Apply instantly during drag so transforms aren't queued behind a rAF while a CSS
+        // transition is still active on the element, which would cause visual lag.
+        const instant = this.dragging;
         this.entries.forEach((el, i) => {
             const translationValue = (this.positionPerEntry[i] ?? 0) - this._currentPosition;
             if (this.customReifect) {
                 this.customReifect.apply(el as any, {recomputeProperties: true});
             } else {
-                this.computeAndApplyStyling(el, translationValue);
+                this.computeAndApplyStyling(el, translationValue, undefined, instant);
             }
         });
     }
@@ -286,15 +316,21 @@ class TurboSelectWheel<
         element: HTMLElement,
         translationValue: number,
         size: Record<Range, number> = this.size,
+        instant: boolean = false,
     ) {
         const bound = translationValue > 0 ? size.max : size.min;
         const opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
         const scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
 
+        // `transition` is a "chainable style field" — Reifect.unapply() clears its own
+        // resolved state but reloadReifectsChainableStyles() only writes keys that still
+        // have an active contribution, so the old inline transition is never explicitly
+        // removed. Writing "none" here overrides it every drag frame.
         let styles: string | PartialRecord<keyof CSSStyleDeclaration, string | number> = {
             left: "50%",
             top: "50%",
             opacity: opacityValue,
+            ...(instant && {transition: "none"}),
             transform: `translate3d(
                 calc(${!this.isVertical ? translationValue : 0}px - 50%),
                 calc(${this.isVertical ? translationValue : 0}px - 50%),
@@ -305,7 +341,7 @@ class TurboSelectWheel<
             element, translationValue, opacityValue, scaleValue, size, defaultComputedStyles: styles,
         });
 
-        $(element).setStyles(styles);
+        $(element).setStyles(styles, instant);
     }
 
     // -------------------------------------------------------------------------

@@ -250,6 +250,79 @@ function nestedModelSignal(...keys: string[]) {
 }
 
 /**
+ * @decorator
+ * @function isolatedModelSignal
+ * @group Decorators
+ * @category Signal
+ *
+ * @description Decorator that binds a reactive signal to a nested {@link TurboModel} at the given key path,
+ * where the nested model's data is **not** stored inside the parent model's data container.
+ *
+ * Use this when the nested model holds data that lives outside the parent's data tree — for example,
+ * a Y.js type that is already part of a Y.js document at a different location. Unlike
+ * {@link nestedModelSignal}, this decorator does **not** write to the parent model's data when
+ * the value is set, so it will not attempt to insert a foreign Y.js type into the parent's Y.js
+ * structure (which would throw, since a Y.js type can only belong to one place in a document).
+ *
+ * - Getter returns the nested model instance via `this.nest(...keys)`.
+ * - Setter assigns directly to `nestedModel.data = value`, leaving the parent's data untouched.
+ *
+ * **Limitation:** `@modelSignal("myField", "subKey")` will **not** work for a field backed by
+ * `@isolatedModelSignal`, because `TurboModel.get()` reads through the parent's data container
+ * rather than routing through registered nested models. Access sub-keys directly through the
+ * nested model instead: `(this.myField as MyNestedModel).subKey`.
+ *
+ * @param {...string[]} keys - The key path identifying the nested model slot. Defaults to the
+ * decorated property name if omitted.
+ *
+ * @example
+ * ```ts
+ * class CardModel extends TurboYModel {
+ *   // Foreign YMap managed elsewhere in the Y.js document — must not be written into this
+ *   // model's data tree.
+ *   @isolatedModelSignal() cardData: CardDataModel;
+ * }
+ * ```
+ * Is equivalent to:
+ * ```ts
+ * class CardModel extends TurboYModel {
+ *   @signal get cardData() { return this.nest("cardData"); }
+ *   set cardData(value) { this.nest("cardData").data = value; }
+ * }
+ * ```
+ */
+function isolatedModelSignal(...keys: string[]) {
+    return function <Type extends object, Value>(
+        value:
+            | ((initial: Value) => Value)
+            | ((this: Type) => Value)
+            | ((this: Type, v: Value) => void)
+            | { get?: (this: Type) => Value; set?: (this: Type, value: Value) => void },
+        context:
+            | ClassFieldDecoratorContext<Type, Value>
+            | ClassGetterDecoratorContext<Type, Value>
+            | ClassSetterDecoratorContext<Type, Value>
+            | ClassAccessorDecoratorContext<Type, Value>
+    ): any {
+        const resolvedKeys = keys.length > 0 ? keys : [String(context.name)];
+        context.addInitializer(function (this: any) {
+            utils.bindPath(this, context.name, resolvedKeys);
+        });
+        return signalUtils.signalDecorator(
+            value,
+            context,
+            function (this: any) {
+                return this.nest?.(...resolvedKeys);
+            },
+            function (this: any, value: Value) {
+                const model = this.nest?.(...resolvedKeys);
+                if (model) model.data = value;
+            }
+        );
+    };
+}
+
+/**
  * @overload
  * @function effect
  * @group Decorators
@@ -458,6 +531,7 @@ export {
     signal,
     modelSignal,
     nestedModelSignal,
+    isolatedModelSignal,
     getSignal,
     markDirty,
     markDirtyPath,

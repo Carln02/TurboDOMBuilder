@@ -22,8 +22,8 @@ import {operator, handler, interactor, tool, constrainer} from "./decorators/mvc
 export {operator, handler, interactor, tool, constrainer};
 import {observe} from "./decorators/observe/observe";
 export {observe};
-import {effect,setSignal,signal,modelSignal,nestedModelSignal,getSignal,markDirty,markDirtyPath,initializeEffects,disposeEffect,untrack} from "./decorators/reactivity/reactivity";
-export {effect,setSignal,signal,modelSignal,nestedModelSignal,getSignal,markDirty,markDirtyPath,initializeEffects,disposeEffect,untrack};
+import {effect,setSignal,signal,modelSignal,nestedModelSignal,isolatedModelSignal,getSignal,markDirty,markDirtyPath,initializeEffects,disposeEffect,untrack} from "./decorators/reactivity/reactivity";
+export {effect,setSignal,signal,modelSignal,nestedModelSignal,isolatedModelSignal,getSignal,markDirty,markDirtyPath,initializeEffects,disposeEffect,untrack};
 import {SignalEntry, SignalBox} from "./decorators/reactivity/reactivity.types";
 export {SignalEntry, SignalBox};
 import {a,canvas,div,form,h1,h2,h3,h4,h5,h6,img,input,link,p,span,style,textarea,video,button} from "./elementCreation/basicElements";

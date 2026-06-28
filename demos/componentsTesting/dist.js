@@ -8614,7 +8614,7 @@
                   writeFlag = true;
                   options.callBefore?.call(this, value);
                   let next = options?.preprocessValue ? options.preprocessValue.call(this, value) : value;
-                  if ((options.cancelIfUnchanged ?? true) && baseRead.call(this) === next) {
+                  if ((options.cancelIfUnchanged ?? true) && Object.is(baseRead.call(this), next)) {
                       writeFlag = false;
                       return;
                   }
@@ -9966,6 +9966,17 @@
       markDirty(target, key) {
           this.getSignal(target, key)?.emit();
       }
+      markDirtyPath(target, keys) {
+          const changed = this.serializePath(keys);
+          for (const [boundPath, propertyKey] of this.data(target).pathMap) {
+              // An empty changed path means the root was replaced, which overlaps every bound path
+              if (changed === ""
+                  || boundPath === changed
+                  || boundPath.startsWith(changed + "|")
+                  || changed.startsWith(boundPath + "|"))
+                  this.markDirty(target, propertyKey);
+          }
+      }
       bindPath(target, propertyKey, keys) {
           this.data(target).pathMap.set(this.serializePath(keys), propertyKey);
       }
@@ -10212,6 +10223,23 @@
           ? utils$a.getKeyFromPath(target, keys)
           : keys[0];
       return utils$a.markDirty(target, computedKey ?? keys[0]);
+  }
+  /**
+   * @function markDirtyPath
+   * @group Decorators
+   * @category Signal
+   *
+   * @description Marks as dirty every signal whose bound key path (registered via {@link modelSignal} or
+   * {@link nestedModelSignal}) overlaps the given changed key path, and fires their attached effects.
+   * A bound path overlaps the changed path when either is a prefix of (or equal to) the other:
+   * replacing a parent value invalidates signals bound deeper inside it, and changing a nested value
+   * invalidates signals bound to any of its ancestors. An empty `keys` array marks every bound path dirty,
+   * as it represents a change at the root.
+   * @param {object} target - The target to which the signals are bound.
+   * @param {KeyType[]} keys - The key path of the data that changed.
+   */
+  function markDirtyPath(target, keys) {
+      utils$a.markDirtyPath(target, keys);
   }
   /**
    * @function initializeEffects
@@ -11288,6 +11316,7 @@
               this._data = data;
               if (data)
                   this.initialize();
+              markDirtyPath(this, []);
               this.onDataChanged.fire(oldData, data);
           }
           /**
@@ -11566,8 +11595,10 @@
                   else
                       key = this.internalAdd(undefined, this.get(keys[0], ...keys.slice(1, -1)), value, keys[keys.length - 1]);
               }
+              const lastKeyWasUndefined = isUndefined(keys[keys.length - 1]);
+              const changePath = lastKeyWasUndefined ? [...keys.slice(0, -1), key] : keys;
               if (!isUndefined(key))
-                  this.keyChanged([...keys, key]);
+                  this.keyChanged(changePath);
               return key;
           }
           /**
@@ -11580,8 +11611,9 @@
            */
           addFlat(value, flatKey, depth) {
               const keys = this.scopeKey(flatKey, depth);
-              if (keys?.length)
-                  return this.add(value, ...keys);
+              if (!keys?.length)
+                  throw new Error(`TurboModel.addFlat: could not resolve flat key "${String(flatKey)}" to a key path.`);
+              return this.add(value, ...keys);
           }
           /*
            *
@@ -11666,6 +11698,10 @@
           delete(...keys) {
               if (keys.length === 0)
                   return;
+              // keyChanged must fire before internalDelete/deleteAction so that observer slots are
+              // vacated before shiftIndices (triggered synchronously by the Yjs transaction inside
+              // deleteAction) shifts neighbouring entries into the slot being deleted.
+              this.keyChanged(keys, undefined, true);
               if (keys.length === 1)
                   this.internalDelete(this, this.data, keys[0]);
               else {
@@ -11679,7 +11715,6 @@
                       this.internalDelete(undefined, parentData, keys[keys.length - 1]);
                   }
               }
-              this.keyChanged(keys, undefined, true);
           }
           /**
            * @function deleteFlat
@@ -11934,19 +11969,56 @@
                   observer.initialize();
               return observer;
           }
-          initializeObserverOnPath(data, observer, keys, prefixKeys) {
+          /**
+           * @function generateDeepObserver
+           * @description Like {@link generateObserver}, but fires for the registered depth **and all deeper levels**.
+           * Whereas `generateObserver(..., TurboModel.ALL)` only notifies at depth-2, `generateDeepObserver(..., TurboModel.ALL)`
+           * also notifies for depth-3, depth-4, etc. — passing the full key path to `onAdded`/`onUpdated`/`onDeleted`.
+           * Use when you need to react to any nested change regardless of depth.
+           * @param {TurboObserverProperties<DataEntryType, ComponentType, KeyType>} [properties={}] - Observer options and lifecycle callbacks.
+           * @param {...KeyType[]} keys - Optional key path to the nested model(s) to observe.
+           * @returns {TurboObserver<DataEntryType, ComponentType, KeyType>}
+           */
+          generateDeepObserver(properties = {}, ...keys) {
+              const initialize = (this.isInitialized && isUndefined(properties.initialize)) || properties.initialize === true;
+              const observer = new (properties.customConstructor
+                  ?? this.observerConstructor
+                  ?? (TurboObserver))({
+                  ...properties,
+                  initialize: false,
+                  onDestroy: (self) => {
+                      Array.from(this.changeObservers)
+                          .filter(e => e.observer === self)
+                          .forEach(e => this.changeObservers.delete(e));
+                      properties.onDestroy?.(self);
+                  },
+                  onInitialize: (self) => {
+                      this.initializeObserverOnPath(this.data, self, keys, [], true);
+                      properties.onInitialize?.(self);
+                  }
+              });
+              this.changeObservers.add({ keys, observer, deep: true });
+              if (initialize)
+                  observer.initialize();
+              return observer;
+          }
+          initializeObserverOnPath(data, observer, keys, prefixKeys, deep = false) {
               if (keys.length === 0) {
                   if (!this.isInitialized)
                       return;
-                  for (const key of this.getKeysAction(data))
-                      observer.keyChanged([...prefixKeys, key], this.getAction(data, key));
+                  for (const key of this.getKeysAction(data)) {
+                      const value = this.getAction(data, key);
+                      observer.keyChanged([...prefixKeys, key], value);
+                      if (deep && value !== null && typeof value === "object")
+                          this.initializeObserverOnPath(value, observer, [], [...prefixKeys, key], deep);
+                  }
               }
               else if (keys[0] === TurboModel.ALL)
                   for (const key of this.getKeysAction(data)) {
-                      this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key]);
+                      this.initializeObserverOnPath(this.getAction(data, key), observer, keys.slice(1), [...prefixKeys, key], deep);
                   }
               else
-                  this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]]);
+                  this.initializeObserverOnPath(this.getAction(data, keys[0]), observer, keys.slice(1), [...prefixKeys, keys[0]], deep);
           }
           /*
            *
@@ -11967,7 +12039,7 @@
               if (key === undefined)
                   return;
               this.signals.get(key)?.emit();
-              //TODO markDirty(this, ...keys);
+              markDirtyPath(this, keys);
               if (deleted)
                   this.signals.delete(key);
               if (!this.enabledCallbacks)
@@ -11975,9 +12047,9 @@
               if (!deleted && !this.nestedModels.has(key) && this.nestedListeners.size > 0)
                   this.nestedListeners.forEach(({ listener }) => listener(keys, value));
               this.onKeyChanged.fire(value, ...keys);
-              this.changeObservers.forEach(({ observer, keys: pattern }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted));
+              this.changeObservers.forEach(({ observer, keys: pattern, deep }) => this.matchObserverAndNotify(observer, keys, pattern, [], value, deleted, deep));
           }
-          matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted) {
+          matchObserverAndNotify(observer, incomingKeys, pattern, prefixKeys, value, deleted, deep = false) {
               if (!observer.isInitialized)
                   return;
               if (pattern.length === 0) {
@@ -11987,30 +12059,51 @@
                               observer.keyChanged([...prefixKeys, key], this.getAction(value, key), deleted);
                           }
                       }
+                      else if (deleted) {
+                          for (const path of observer.getPathsAt(...prefixKeys)) {
+                              observer.keyChanged([...prefixKeys, ...path], undefined, true);
+                          }
+                      }
                   }
-                  else
-                      observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted);
+                  else if (deep) {
+                      observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
+                  }
+                  else {
+                      // Only propagate deleted=true when the change is directly AT the observed depth.
+                      // A deletion deeper than the registered pattern (incomingKeys.length > 1) means the
+                      // observed key itself still exists — fire onUpdated, not onDeleted.
+                      observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted && incomingKeys.length === 1);
+                  }
                   return;
               }
               if (incomingKeys.length === 0) {
                   if (!deleted && value !== null && typeof value === "object") {
                       for (const key of this.getKeysAction(value))
-                          this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted);
+                          this.matchObserverAndNotify(observer, [key], pattern, prefixKeys, this.getAction(value, key), deleted, deep);
                   }
                   return;
               }
               const [head, ...tail] = incomingKeys;
               const [patternHead, ...patternTail] = pattern;
               if (patternHead === TurboModel.ALL || patternHead === head)
-                  this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted);
+                  this.matchObserverAndNotify(observer, tail, patternTail, [...prefixKeys, head], value, deleted, deep);
           }
           static flattenSize(data, depth) {
-              if (!data || depth <= 0 || !Array.isArray(data))
+              if (!data || depth <= 0)
                   return 1;
-              let total = 0;
-              for (const item of data)
-                  total += this.flattenSize(item, depth - 1);
-              return total;
+              if (Array.isArray(data)) {
+                  let total = 0;
+                  for (const item of data)
+                      total += this.flattenSize(item, depth - 1);
+                  return total;
+              }
+              if (typeof data === "object" && typeof data.length === "number" && typeof data.get === "function") {
+                  let total = 0;
+                  for (let i = 0; i < data.length; i++)
+                      total += this.flattenSize(data.get(i), depth - 1);
+                  return total;
+              }
+              return 1;
           }
           /**
            * @function flattenKey
@@ -12047,18 +12140,24 @@
                       return isNaN(n) || k === "" ? k : n;
                   });
               }
+              if (depth == null)
+                  depth = 1;
               const keys = [];
               let remaining = flatKey;
               let current = this.data;
               for (let i = 0; i < depth; i++) {
-                  if (!Array.isArray(current))
+                  const isIndexable = Array.isArray(current)
+                      || (typeof current === "object" && current !== null
+                          && typeof current.length === "number" && typeof current.get === "function");
+                  if (!isIndexable)
                       break;
                   const remainingDepth = depth - i - 1;
+                  const getItem = Array.isArray(current) ? (j) => current[j] : (j) => current.get(j);
                   for (let j = 0; j < current.length; j++) {
-                      const size = TurboModel.flattenSize(current[j], remainingDepth);
+                      const size = TurboModel.flattenSize(getItem(j), remainingDepth);
                       if (remaining < size) {
                           keys.push(j);
-                          current = current[j];
+                          current = getItem(j);
                           break;
                       }
                       remaining -= size;
@@ -12096,8 +12195,8 @@
               this.clear(false);
               this._data = data;
           }
-          fireCallback(key, value) {
-              this.fireCallbackHook?.(value, key);
+          fireCallback(key, ...values) {
+              this.fireCallbackHook?.(key, ...values);
           }
           createNestedChild(model, key, properties) {
               if (model.nestedModels.has(key))
@@ -12237,6 +12336,7 @@
   addRegistryCategory(TurboEmitter);
   define(TurboEmitter);
 
+  const proxyWrapperSymbol = Symbol("__proxyWrapper__");
   class MvcFunctionsUtils {
       dataMap = new WeakMap;
       modelLookupMap = new WeakMap;
@@ -12259,7 +12359,7 @@
               entry = {
                   emitter: new TurboEmitter(),
                   operators: new Map(), constrainers: new Map(), interactors: new Map(), tools: new Map(),
-                  emitterCallback: (value, key) => entry.emitter?.fire(value, key),
+                  emitterCallback: (key, ...values) => entry.emitter?.fire(key, ...values),
                   emitterKeyCallback: (value, ...keys) => entry.emitter?.fireKey(value, ...keys)
               };
               this.dataMap.set(element, entry);
@@ -12389,8 +12489,12 @@
       generateInstance(data, element) {
           if (!data)
               return undefined;
+          // If element is a raw DOM node backing a TurboProxiedElement, pass the wrapper instead so
+          // that view/operator/etc. constructors receive the public class instance (e.g. FlowEntry)
+          // rather than the internal <g> element.
+          const effectiveElement = element?.[proxyWrapperSymbol] ?? element;
           if (typeof data === "function")
-              return new data(element ? { element } : undefined);
+              return new data(effectiveElement ? { element: effectiveElement } : undefined);
           return data;
       }
       generateInstances(data, element) {
@@ -12419,7 +12523,8 @@
        */
       extractClassEssenceName(element, constructor, type) {
           let className = constructor.name;
-          let prototype = Object.getPrototypeOf(element);
+          const target = element[proxyWrapperSymbol] ?? element;
+          let prototype = Object.getPrototypeOf(target);
           while (prototype && prototype.constructor !== Object) {
               const name = prototype.constructor.name.replaceAll("_", "");
               if (className.startsWith(name)) {
@@ -13220,7 +13325,32 @@
       static customCreate(properties) {
           const obj = new this();
           obj[elementSymbol] = blindElement({ tag: properties["tag"] });
-          turbo(obj, true).setProperties(properties);
+          // turbo(obj) without raw unwraps to obj.element, which is the same key the model getter
+          // resolves to later. Using raw=true here would key MVC data under obj instead, making
+          // turbo(obj).model return undefined during initialize().
+          // The back-reference lets extractClassEssenceName walk obj's prototype chain (FlowEntry,
+          // etc.) instead of the raw SVGGElement chain, so handler/operator key derivation works.
+          obj[elementSymbol][proxyWrapperSymbol] = obj;
+          const shouldInitialize = properties["initialize"] !== false;
+          turbo(obj).setProperties(Object.assign({}, properties, { initialize: false }));
+          // Dispatch custom wrapper setters that setProperties couldn't reach.
+          // turbo(obj) routes through obj.element (the raw DOM node), so properties that have no
+          // meaning on the raw element (e.g. FlowEntry.flow) are silently dropped. We replay them
+          // onto obj directly — but only when: (1) not an MVC field already handled by TurboSelector,
+          // (2) the raw element has no descriptor for the key (setProperties already handled it), and
+          // (3) obj's prototype chain has a real setter for the key.
+          const rawEl = obj[elementSymbol];
+          for (const [key, value] of Object.entries(properties)) {
+              if (MvcFields.includes(key))
+                  continue;
+              if (getFirstDescriptorInChain(rawEl, key))
+                  continue;
+              const desc = getFirstDescriptorInChain(obj, key);
+              if (desc?.set)
+                  obj[key] = value;
+          }
+          if (shouldInitialize && typeof obj["initialize"] === "function")
+              obj["initialize"]();
           return obj;
       }
       /**
@@ -13449,7 +13579,6 @@
           }
           return result;
       };
-      //TODO maybe use .cloneNode() for vanilla nodes
       TurboSelector.prototype.clone = function _clone(options = {}) {
           const originElement = this.element instanceof Node ? this.element : undefined;
           if (!originElement)
@@ -13463,7 +13592,7 @@
                   return true;
               if (exclude.has(key) || key === "mvc" || key === "__proto__" || key === "prototype")
                   return false;
-              if (typeof value === "function")
+              if (typeof value === "function" || value instanceof Delegate)
                   return false;
               if (key === "model" || key === "view" || key === "emitter" || key === "operators"
                   || key === "handlers" || key === "interactors" || key === "tools" || key === "constrainers")
@@ -13471,55 +13600,83 @@
               const desc = Object.getOwnPropertyDescriptor(prototype, key);
               if (!desc)
                   return false;
-              if (desc.get && !desc.set && !force.has(key))
+              if (desc.get && !desc.set)
                   return false;
-              if ("writable" in desc && desc.writable === false && !force.has(key))
+              if (desc.writable === false)
                   return false;
               return true;
           };
           const copyField = (key, value) => {
-              if (!value || typeof value !== "object")
+              if (value === null || value === undefined || typeof value !== "object")
                   return value;
               if (copyReference.has(key))
                   return value;
-              try {
-                  if (value instanceof Node) {
-                      if (deepClone.has(key) || options.deepCloneNodes)
+              if (value instanceof Node) {
+                  if (deepClone.has(key) || options.deepCloneNodes) {
+                      try {
                           return turbo(value).clone(options);
-                      if (options.copyNodes)
-                          return value;
-                  }
-                  else {
-                      if (options.deepCloneObjects || deepClone.has(key)) {
-                          if (typeof structuredClone === "function")
-                              return structuredClone(value);
                       }
-                      return value;
+                      catch {
+                          return undefined;
+                      }
                   }
+                  return options.copyNodes ? value : undefined;
               }
-              catch {
+              if (options.deepCloneObjects || deepClone.has(key)) {
+                  try {
+                      return structuredClone(value);
+                  }
+                  catch { /* fall through to reference */ }
               }
+              return value;
           };
           const constructor = originElement.constructor;
           const prototypeChain = getPrototypeChain(originElement);
-          originElement["mvc"];
-          let properties = {};
-          //TODO FIX
-          // if (mvc && mvc instanceof Mvc) {
-          //     const defaultProperties: any = {};
-          //     for (let i = 0; i < prototypeChain.length; i++) {
-          //         turbo(defaultProperties).applyDefaults(prototypeChain[i]?.defaultProperties);
-          //     }
-          //     properties = mvc.getDifference(defaultProperties);
-          // }
-          //TODO maybe clone the data
-          if (originElement["model"] && originElement["data"])
-              properties["data"] = originElement["data"];
-          const clone = typeof constructor.create === "function" ? constructor.create(properties)
-              : turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
-          for (const attr of Array.from(originElement.attributes)) {
-              if (!exclude.has(attr.name))
-                  clone.setAttribute(attr.name, attr.value);
+          const properties = {};
+          if (originElement["model"] && originElement["data"] != null) {
+              const rawData = originElement["data"];
+              let clonedData = rawData;
+              if (options.deepCloneObjects) {
+                  try {
+                      clonedData = structuredClone(rawData);
+                  }
+                  catch { }
+              }
+              properties.data = clonedData;
+          }
+          try {
+              Object.assign(properties, turbo(originElement).getMvcDifference());
+          }
+          catch { }
+          let clone;
+          if (typeof constructor.create === "function") {
+              try {
+                  clone = constructor.create(properties);
+              }
+              catch { }
+          }
+          if (!clone) {
+              if (originElement instanceof Element) {
+                  clone = turbo(document.createElement(originElement.tagName)).setProperties(properties).element;
+              }
+              else {
+                  try {
+                      clone = originElement.cloneNode(false);
+                  }
+                  catch { }
+              }
+          }
+          if (!clone)
+              return;
+          if (originElement instanceof Element && clone instanceof Element) {
+              for (const attr of Array.from(originElement.attributes)) {
+                  if (exclude.has(attr.name))
+                      continue;
+                  try {
+                      clone.setAttribute(attr.name, attr.value);
+                  }
+                  catch { }
+              }
           }
           const keys = new Map();
           const addKeys = (prototype) => {
@@ -13530,9 +13687,10 @@
                   if (!keys.has(property))
                       keys.set(property, prototype);
           };
+          const mathMLProto = typeof MathMLElement !== "undefined" ? MathMLElement.prototype : null;
           addKeys(originElement);
           for (const prototype of prototypeChain) {
-              if (equalToAny(prototype, Element.prototype, Node.prototype, HTMLElement.prototype, SVGElement.prototype, MathMLElement.prototype, EventTarget.prototype, Object.prototype))
+              if (equalToAny(prototype, TurboElement.prototype, TurboBaseElement.prototype, TurboProxiedElement.prototype, TurboHeadlessElement.prototype, Element.prototype, Node.prototype, HTMLElement.prototype, SVGElement.prototype, mathMLProto, EventTarget.prototype, Object.prototype))
                   break;
               addKeys(prototype);
           }
@@ -13540,13 +13698,12 @@
               const value = originElement[key];
               if (!shouldCopy(key, value, prototype))
                   continue;
-              let newValue = copyField(key, value);
+              const newValue = copyField(key, value);
               if (newValue !== undefined)
                   try {
                       clone[key] = newValue;
                   }
-                  catch {
-                  }
+                  catch { }
           }
           return clone;
       };
@@ -14669,7 +14826,7 @@
           const eventName = (this.model.inputDevice == InputDevice.trackpad && e.ctrlKey)
               ? TurboEventName.pinch
               : TurboEventName.scroll;
-          const target = document.elementFromPoint(e.clientX, e.clientY) || document;
+          const target = document.elementFromPoint?.(e.clientX, e.clientY) || document;
           this.emitter.fire("dispatchEvent", target, TurboWheelEvent, { delta: new Point(e.deltaX, e.deltaY), eventName: eventName });
       };
   }
@@ -15016,6 +15173,22 @@
       };
       getToolHandlingCallback(type, e) {
           const toolName = this.element.getCurrentToolName(this.model.currentClick);
+          // For move events, composedPath() is the drag-origin's ancestor chain and never
+          // includes non-topmost components at the current cursor (e.g. Playback behind
+          // ClipRenderer). Use the full z-stack at the cursor instead, dispatching topmost-first
+          // and stopping at the first handler that returns non-propagate.
+          if (type === TurboMoveEventName.move && e instanceof TurboDragEvent && e.position) {
+              const { x, y } = e.position;
+              const stack = document.elementsFromPoint?.(x, y) ?? [];
+              for (const el of stack) {
+                  if (!(el instanceof Node))
+                      continue;
+                  const propagate = turbo(el).executeAction(type, toolName, e, undefined, this.element);
+                  if (propagate !== Propagation.propagate)
+                      break;
+              }
+              return;
+          }
           const path = e.composedPath?.() || [];
           for (let i = path.length - 1; i >= 0; i--) {
               if (!(path[i] instanceof Node))
@@ -15807,8 +15980,13 @@
           for (let [key, value] of Object.entries(properties)) {
               if (key === "target" && value instanceof TurboSelector)
                   value = value.element;
-              if (value === undefined || key === "optionsToSkip")
+              if (key === "optionsToSkip")
                   continue;
+              if (value === undefined) {
+                  if (key === "toolName" && this.toolName !== undefined)
+                      return false;
+                  continue;
+              }
               if (typeof value === "object") {
                   if (typeof this[key] !== "object")
                       return false;
@@ -16379,7 +16557,7 @@
                   return;
               if (element instanceof Element) {
                   const prevClass = element[selectedClass];
-                  const nextClass = element["defaultSelectedClasses"] || "selected";
+                  const nextClass = this["defaultSelectedClasses"] || "selected";
                   element[selectedClass] = nextClass;
                   if (prevClass && prevClass !== nextClass)
                       turbo(element).toggleClass(prevClass, false);
@@ -18587,6 +18765,7 @@
               const nextStateIndex = mod(!previousState ? 0 : this.states.indexOf(previousState) + 1, this.states.length);
               return this.apply(this.states[nextStateIndex], objects, options);
           }
+          //TODO FIXXXX
           unapply(objects, options) {
               if (!this.enabled)
                   return this;
@@ -19887,12 +20066,11 @@
           this.options = properties.listenerOptions ?? {};
           const host = this.element;
           try {
-              this.target = properties.target ?? this.target ?? host instanceof Node ? host
+              this.target = properties.target ?? this.target ?? (host instanceof Node ? host
                   : host?.element instanceof Node ? host.element
-                      : undefined;
+                      : undefined);
           }
           catch { }
-          this.setup();
       }
   }
   addRegistryCategory(TurboInteractor);
@@ -19914,6 +20092,7 @@
               if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
           }
           observer = (__runInitializers$1(this, _instanceExtraInitializers), (event, transaction) => this.observeChanges(event, transaction));
+          observedYTypes = new WeakSet();
           /**
            * @inheritDoc
            */
@@ -19922,12 +20101,22 @@
            * @inheritDoc
            */
           set enabledCallbacks(value) {
-              if (!this.data || !(this.data instanceof AbstractType))
+              if (!this.data)
                   return;
-              if (value)
-                  this.attachNestedObservers(this.data);
-              else
-                  this.detachNestedObservers(this.data);
+              if (this.data instanceof AbstractType) {
+                  if (value)
+                      this.attachNestedObservers(this.data);
+                  else
+                      this.detachNestedObservers(this.data);
+              }
+              else if (Array.isArray(this.data)) {
+                  for (const item of this.data) {
+                      if (value)
+                          this.attachNestedObservers(item);
+                      else
+                          this.detachNestedObservers(item);
+                  }
+              }
           }
           /*
            *
@@ -19956,8 +20145,14 @@
                       data.delete(index, 1);
                   data.doc.transact(() => data.insert(index, [value]), this);
               }
-              else
+              else {
+                  const oldValue = this.getAction(data, key);
+                  if (oldValue !== value && oldValue != null && typeof oldValue === "object")
+                      this.detachNestedObservers(oldValue);
                   super.setAction(data, value, key);
+                  if (oldValue !== value && value != null && typeof value === "object")
+                      this.attachNestedObservers(value);
+              }
           }
           /**
            * @inheritDoc
@@ -19976,6 +20171,12 @@
                   }
                   return index;
               }
+              if (Array.isArray(data)) {
+                  const index = super.addAction(model, data, value, key);
+                  if (index !== undefined && value != null && typeof value === "object")
+                      this.attachNestedObservers(value);
+                  return index;
+              }
               return super.addAction(model, data, value, key);
           }
           /**
@@ -19985,7 +20186,7 @@
               if (data instanceof YMap)
                   return data.has(key.toString());
               if (data instanceof YArray)
-                  return typeof key === "number" && key >= 0 && key < this.dataSize;
+                  return typeof key === "number" && key >= 0 && key < data.length;
               return super.hasAction(data, key);
           }
           /**
@@ -19994,7 +20195,7 @@
           deleteAction(data, key) {
               if (data instanceof YMap)
                   data.doc.transact(() => data.delete(key.toString()), this);
-              else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < this.dataSize)
+              else if (data instanceof YArray && typeof key === "number" && key >= 0 && key < data.length)
                   data.doc.transact(() => data.delete(key, 1), this);
               else
                   super.deleteAction(data, key);
@@ -20018,15 +20219,27 @@
            */
           initialize() {
               super.initialize();
-              if (this.enabledCallbacks && this.data instanceof AbstractType)
+              if (!this.enabledCallbacks)
+                  return;
+              if (this.data instanceof AbstractType)
                   this.attachNestedObservers(this.data);
+              else if (Array.isArray(this.data)) {
+                  for (const item of this.data)
+                      this.attachNestedObservers(item);
+              }
           }
           /**
            * @inheritDoc
            */
           clear(clearData = true) {
-              if (clearData && this.data instanceof AbstractType)
-                  this.data?.unobserve(this.observer);
+              if (clearData) {
+                  if (this.data instanceof AbstractType)
+                      this.detachNestedObservers(this.data);
+                  else if (Array.isArray(this.data)) {
+                      for (const item of this.data)
+                          this.detachNestedObservers(item);
+                  }
+              }
               super.clear(clearData);
           }
           /*
@@ -20035,12 +20248,11 @@
            *
            */
           observeChanges(event, transaction) {
-              !!transaction?.local; //TODO
-              const origin = transaction?.origin;
-              if (origin === this)
-                  return;
+              const selfOriginated = transaction?.origin === this;
               const basePath = this.getPathToTarget(event.target);
               if (event instanceof YMapEvent) {
+                  if (selfOriginated)
+                      return;
                   event.keysChanged.forEach(key => {
                       const change = event.changes.keys.get(key);
                       if (!change)
@@ -20062,52 +20274,77 @@
                       else if (delta.insert) {
                           const insertedItems = Array.isArray(delta.insert) ? delta.insert : [delta.insert];
                           const count = insertedItems.length;
-                          this.shiftIndices(currentIndex, count);
-                          for (let i = 0; i < count; i++) {
-                              this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
-                              this.keyChanged([...basePath, currentIndex + i]);
+                          this.shiftIndices(basePath, currentIndex, count);
+                          if (!selfOriginated) {
+                              for (let i = 0; i < count; i++) {
+                                  this.attachNestedObservers(this.getAction(event.target, currentIndex + i));
+                                  this.keyChanged([...basePath, currentIndex + i]);
+                              }
                           }
                           currentIndex += count;
                       }
                       else if (delta.delete) {
                           const count = delta.delete;
-                          for (let i = 0; i < count; i++)
-                              this.keyChanged([...basePath, currentIndex + i], undefined, true);
-                          this.shiftIndices(currentIndex + count, -count);
+                          if (!selfOriginated) {
+                              for (let i = 0; i < count; i++)
+                                  this.keyChanged([...basePath, currentIndex + i], undefined, true);
+                          }
+                          this.shiftIndices(basePath, currentIndex + count, -count);
                       }
                   }
               }
           }
           attachNestedObservers(value) {
-              if (!(value instanceof AbstractType))
-                  return;
-              value.observe(this.observer);
-              for (const key of this.getKeysAction(value)) {
-                  if (!this.nestedModels.has(key))
-                      this.attachNestedObservers(this.getAction(value, key));
+              if (value instanceof AbstractType) {
+                  if (!this.observedYTypes.has(value)) {
+                      value.observe(this.observer);
+                      this.observedYTypes.add(value);
+                  }
+                  for (const key of this.getKeysAction(value)) {
+                      if (!this.nestedModels.has(key))
+                          this.attachNestedObservers(this.getAction(value, key));
+                  }
+              }
+              else if (Array.isArray(value)) {
+                  for (let i = 0; i < value.length; i++)
+                      this.attachNestedObservers(value[i]);
               }
           }
           detachNestedObservers(value) {
-              if (!(value instanceof AbstractType))
-                  return;
-              value.unobserve(this.observer);
-              for (const key of this.getKeysAction(value))
-                  this.detachNestedObservers(this.getAction(value, key));
+              if (value instanceof AbstractType) {
+                  if (this.observedYTypes.has(value)) {
+                      // Guard: Y.js GC can clear event handlers on deleted types, leaving
+                      // observedYTypes stale. Check the internal handler array before calling
+                      // unobserve to avoid "[yjs] Tried to remove event handler that doesn't exist."
+                      if (value._eH?.l?.includes(this.observer))
+                          value.unobserve(this.observer);
+                      this.observedYTypes.delete(value);
+                  }
+                  for (const key of this.getKeysAction(value))
+                      this.detachNestedObservers(this.getAction(value, key));
+              }
+              else if (Array.isArray(value)) {
+                  for (let i = 0; i < value.length; i++)
+                      this.detachNestedObservers(value[i]);
+              }
           }
-          shiftIndices(fromIndex, offset) {
+          shiftIndices(basePath, fromIndex, offset) {
+              const depth = basePath.length;
               Array.from(this.changeObservers).forEach(entry => {
                   const observer = entry.observer;
-                  const pathsToShift = observer.paths
-                      .filter(path => Number(path[0]) >= fromIndex);
+                  const pathsToShift = observer.paths.filter(path => path.length > depth &&
+                      basePath.every((k, i) => path[i] == k) &&
+                      Number(path[depth]) >= fromIndex);
                   const itemsToShift = pathsToShift
-                      .map(path => [Number(path[0]), path, observer.get(...path)]);
-                  itemsToShift.sort((a, b) => a[0] - b[0]);
+                      .map(path => [Number(path[depth]), path, observer.get(...path)]);
+                  itemsToShift.sort((a, b) => offset < 0 ? a[0] - b[0] : b[0] - a[0]);
                   pathsToShift.forEach(path => observer.detach(...path));
                   for (const [oldIndex, path, instance] of itemsToShift) {
                       const newIndex = oldIndex + offset;
                       if (typeof instance === "object" && "dataId" in instance)
-                          instance.dataId = newIndex;
-                      observer.set(instance, newIndex, ...path.slice(1));
+                          instance.dataId = String(newIndex);
+                      const newPath = [...basePath, newIndex, ...path.slice(depth + 1)];
+                      observer.set(instance, ...newPath);
                   }
               });
           }
@@ -22050,6 +22287,24 @@
               this.enableObserver(true);
               requestAnimationFrame(() => this.select(this.selectedEntry));
           }
+          removeEntry(value) {
+              const entry = this.getEntry(value);
+              if (!entry)
+                  return this;
+              this.enableObserver(false);
+              if (this.getEntryData(entry).selected && this.forceSelection) {
+                  const fallback = this.enabledEntries.find(e => e !== entry);
+                  if (fallback)
+                      this.select(fallback);
+              }
+              this.onEntryRemoved.fire(entry);
+              if (entry instanceof Node && entry.parentElement)
+                  entry.parentElement.removeChild(entry);
+              this.clearEntryData(entry);
+              this.refreshInputField();
+              this.enableObserver(true);
+              return this;
+          }
           getEntryFromSecondaryValue(value) {
               return this.entries.find((entry) => this.getSecondaryValue(entry) === value);
           }
@@ -23555,23 +23810,44 @@
           dragging = false;
           openTimer;
           initialize() {
-              this.select.onEntryAdded.add(entry => {
+              const initEntry = (entry) => {
                   turbo(entry).setStyles({ position: "absolute", whiteSpace: "nowrap" }, true);
                   this.entryTransitionReifect?.attach(entry);
                   this.customReifect?.attach(entry);
-                  turbo(entry).on(DefaultEventName.dragStart, () => {
+                  turbo(entry)
+                      .on(DefaultEventName.dragStart, () => {
                       this.clearOpenTimer();
                       this.open = true;
                       this.dragging = true;
+                      // Remove transitions instantly so the first drag frame isn't animated.
                       if (this.entryTransitionReifect)
-                          this.entryTransitionReifect.unapply();
+                          this.entryTransitionReifect.unapply(undefined, { applyStylesInstantly: true });
                       this.reloadEntrySizes();
                       return Propagation.stopImmediatePropagation;
+                  })
+                      .on(DefaultEventName.drag, (e) => {
+                      if (!this.dragging)
+                          return;
+                      this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
+                      return Propagation.stopImmediatePropagation;
+                  })
+                      .on(DefaultEventName.dragEnd, () => {
+                      if (!this.dragging)
+                          return;
+                      this.dragging = false;
+                      // recomputeProperties is required because unapplyStyles() clears resolvedValues.styles,
+                      // so apply() without it finds styles["default"] === undefined and returns early,
+                      // never calling reloadReifectsChainableStyles — leaving transition: "none" stuck.
+                      if (this.entryTransitionReifect)
+                          this.entryTransitionReifect.apply(undefined, { recomputeProperties: true });
+                      this.snapToNearest();
+                      if (!this.alwaysOpen)
+                          this.setOpenTimer();
+                      return Propagation.stopImmediatePropagation;
                   });
-                  requestAnimationFrame(() => {
-                      this.reloadEntrySizes();
-                  });
-              });
+                  requestAnimationFrame(() => this.reloadEntrySizes());
+              };
+              this.select.onEntryAdded.add(initEntry);
               this.select.onEntryRemoved.add(entry => {
                   this.entryTransitionReifect?.detach(entry);
                   this.customReifect?.detach(entry);
@@ -23579,17 +23855,25 @@
               });
               super.initialize();
               turbo(this).setStyles({ display: "inline-block", position: "relative", overflow: "hidden" });
+              // Entries set via create({values: [...]}) fire onEntryAdded before initialize() has a
+              // chance to add the callback above. Replay initEntry for any such pre-existing entries.
+              this.entries.forEach(initEntry);
           }
           opacity = __runInitializers$1(this, _opacity_initializers, void 0);
-          set size(value) { }
-          get size() { return; }
+          set size(value) {
+          }
+          get size() {
+              return;
+          }
           set entryTransitionReifect(value) {
               if (!value)
                   return;
               if (this.entries.length > 0)
                   value.attach(...this.entries);
           }
-          get entryTransitionReifect() { return; }
+          get entryTransitionReifect() {
+              return;
+          }
           set transitionDuration(value) {
               if (value <= 0)
                   return;
@@ -23601,7 +23885,9 @@
               if (this.customReifect && this.entries.length > 0)
                   this.customReifect.attach(...this.entries);
           }
-          get customReifect() { return; }
+          get customReifect() {
+              return;
+          }
           _closeOnClick = (__runInitializers$1(this, _opacity_extraInitializers), () => this.open = false);
           set alwaysOpen(value) {
               if (value)
@@ -23612,12 +23898,18 @@
           }
           set open(value) {
               turbo(this).setStyle("overflow", value ? "visible" : "hidden");
+              // When opening, entries may have had zero layout size if the wheel was off-screen or
+              // hidden when first populated. Reload now that the wheel is visible.
+              if (value)
+                  requestAnimationFrame(() => this.reloadEntrySizes());
           }
           get isVertical() {
               return this.direction === Direction.vertical;
           }
           /** Fractional index — integer when snapped, fractional mid-drag. */
-          get index() { return this._index; }
+          get index() {
+              return this._index;
+          }
           set index(value) {
               this._index = value;
               this.select.selectByIndex(trim(Math.round(value), this.entries.length - 1));
@@ -23625,7 +23917,9 @@
           // -------------------------------------------------------------------------
           // Position
           // -------------------------------------------------------------------------
-          get currentPosition() { return this._currentPosition; }
+          get currentPosition() {
+              return this._currentPosition;
+          }
           set currentPosition(value) {
               if (!this.sizePerEntry.length)
                   return;
@@ -23634,30 +23928,6 @@
               this._currentPosition = Math.min(Math.max(value, min), max);
               this._index = this.positionToIndex(this._currentPosition);
               this.applyAllEntryStyles();
-          }
-          // -------------------------------------------------------------------------
-          // UI Listeners
-          // -------------------------------------------------------------------------
-          setupUIListeners() {
-              super.setupUIListeners();
-              turbo(document.body)
-                  .on(DefaultEventName.drag, (e) => {
-                  if (!this.dragging)
-                      return;
-                  this.currentPosition += this.computeDragDelta(e.scaledDeltaPosition);
-                  return Propagation.stopImmediatePropagation;
-              })
-                  .on(DefaultEventName.dragEnd, () => {
-                  if (!this.dragging)
-                      return;
-                  this.dragging = false;
-                  if (this.entryTransitionReifect)
-                      this.entryTransitionReifect.apply();
-                  this.snapToNearest();
-                  if (!this.alwaysOpen)
-                      this.setOpenTimer();
-                  return Propagation.stopImmediatePropagation;
-              });
           }
           computeDragDelta(delta) {
               return -delta[this.isVertical ? "y" : "x"];
@@ -23677,6 +23947,13 @@
               });
               if (!this.sizePerEntry.length) {
                   this._currentPosition = 0;
+                  return;
+              }
+              // If the wheel or its ancestors weren't in layout yet (e.g. off-screen, hidden, or
+              // added to the DOM after entries were created), all sizes read as 0. Retry next frame
+              // so the browser has time to perform layout.
+              if (this.totalSize === 0) {
+                  requestAnimationFrame(() => this.reloadEntrySizes());
                   return;
               }
               this._currentPosition = this.indexToPosition(this._index);
@@ -23732,24 +24009,32 @@
           // Styling
           // -------------------------------------------------------------------------
           applyAllEntryStyles() {
+              // Apply instantly during drag so transforms aren't queued behind a rAF while a CSS
+              // transition is still active on the element, which would cause visual lag.
+              const instant = this.dragging;
               this.entries.forEach((el, i) => {
                   const translationValue = (this.positionPerEntry[i] ?? 0) - this._currentPosition;
                   if (this.customReifect) {
                       this.customReifect.apply(el, { recomputeProperties: true });
                   }
                   else {
-                      this.computeAndApplyStyling(el, translationValue);
+                      this.computeAndApplyStyling(el, translationValue, undefined, instant);
                   }
               });
           }
-          computeAndApplyStyling(element, translationValue, size = this.size) {
+          computeAndApplyStyling(element, translationValue, size = this.size, instant = false) {
               const bound = translationValue > 0 ? size.max : size.min;
               const opacityValue = linearInterpolation(translationValue, 0, bound, this.opacity.max, this.opacity.min);
               const scaleValue = linearInterpolation(translationValue, 0, bound, this.scale.max, this.scale.min);
+              // `transition` is a "chainable style field" — Reifect.unapply() clears its own
+              // resolved state but reloadReifectsChainableStyles() only writes keys that still
+              // have an active contribution, so the old inline transition is never explicitly
+              // removed. Writing "none" here overrides it every drag frame.
               let styles = {
                   left: "50%",
                   top: "50%",
                   opacity: opacityValue,
+                  ...(instant && { transition: "none" }),
                   transform: `translate3d(
                 calc(${!this.isVertical ? translationValue : 0}px - 50%),
                 calc(${this.isVertical ? translationValue : 0}px - 50%),
@@ -23759,7 +24044,7 @@
                   styles = this.generateCustomStyling({
                       element, translationValue, opacityValue, scaleValue, size, defaultComputedStyles: styles,
                   });
-              $(element).setStyles(styles);
+              $(element).setStyles(styles, instant);
           }
           // -------------------------------------------------------------------------
           // Timer helpers
@@ -25501,9 +25786,107 @@
           onClick: () => wheel.alwaysOpen = true
       }));
   }
+  // Tests Bug 2 fix (zero-size retry) and removeEntry.
+  // The wheel starts populated. Entries added/removed dynamically should size correctly.
+  function selectWheelTest3() {
+      const initialValues = ["One", "Two", "Three"];
+      const wheel = TurboSelectWheel.create({});
+      wheel.alwaysOpen = true;
+      wheel.values = [...initialValues];
+      box("TurboSelectWheel — Dynamic add/remove (Bug 2: size retry)")
+          .addSubBox("wheel", wheel)
+          .addContent(TurboButton.create({
+          text: "Add 'Four'",
+          onClick: () => { wheel.values = [...wheel.values, "Four"]; }
+      }))
+          .addContent(TurboButton.create({
+          text: "Remove last entry",
+          onClick: () => {
+              const last = wheel.entries[wheel.entries.length - 1];
+              if (last)
+                  wheel.select.removeEntry(last);
+          }
+      }))
+          .addContent(TurboButton.create({
+          text: "Clear all",
+          onClick: () => { wheel.values = []; }
+      }))
+          .addContent(TurboButton.create({
+          text: "Restore original",
+          onClick: () => { wheel.values = [...initialValues]; }
+      }))
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[wheel3] selected:", wheel.selectedValue)
+      }));
+  }
+  // Tests Bug 1 fix (drag propagation isolation).
+  // A parent div has a border that turns red if it receives a dragStart behavior.
+  // Dragging the wheel entries should NOT trigger the parent's drag — border stays neutral.
+  function selectWheelTest4() {
+      const wheel = TurboSelectWheel.create({});
+      wheel.alwaysOpen = true;
+      wheel.values = ["North", "South", "East", "West", "Centre"];
+      const status = TurboRichElement.create({ text: "Parent drag: NOT fired ✓" });
+      status.style.cssText = "padding:6px 10px; border-radius:4px; background:#d4f5d4; color:#1a6b1a; font-size:12px;";
+      const parent = document.createElement("div");
+      parent.style.cssText = "padding:16px; border:2px solid #aaa; border-radius:8px; display:inline-flex; flex-direction:column; gap:8px; align-items:flex-start;";
+      parent.appendChild(wheel);
+      parent.appendChild(status);
+      // Simulate what a parent Card behavior would do
+      parent.addEventListener("turbo-drag-start", () => {
+          parent.style.borderColor = "#e55";
+          status.textContent = "Parent drag: FIRED ✗ (Bug 1 regression!)";
+          status.style.background = "#fdd";
+          status.style.color = "#a00";
+      }, { capture: false });
+      box("TurboSelectWheel — Drag propagation isolation (Bug 1)")
+          .addContent(parent)
+          .addContent(TurboButton.create({
+          text: "Reset indicator",
+          onClick: () => {
+              parent.style.borderColor = "#aaa";
+              status.textContent = "Parent drag: NOT fired ✓";
+              status.style.background = "#d4f5d4";
+              status.style.color = "#1a6b1a";
+          }
+      }))
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[wheel4] selected:", wheel.selectedValue)
+      }));
+  }
+  // Tests that dragging is smooth (no transition lag) — the wheel should track your finger instantly.
+  function selectWheelTest5() {
+      const wheel = TurboSelectWheel.create({});
+      wheel.alwaysOpen = true;
+      wheel.transitionDuration = 0.4;
+      wheel.values = ["🍎 Apple", "🍋 Lemon", "🍇 Grape", "🍊 Orange", "🍓 Berry", "🥝 Kiwi", "🍑 Peach"];
+      box("TurboSelectWheel — Drag smoothness (transition disabled during drag)")
+          .addSubBox("wheel", wheel)
+          .addContent(TurboButton.create({
+          text: "transition 0.1s",
+          onClick: () => wheel.transitionDuration = 0.1
+      }))
+          .addContent(TurboButton.create({
+          text: "transition 0.4s",
+          onClick: () => wheel.transitionDuration = 0.4
+      }))
+          .addContent(TurboButton.create({
+          text: "transition 1s",
+          onClick: () => wheel.transitionDuration = 1
+      }))
+          .addContent(TurboButton.create({
+          text: "Log selected",
+          onClick: () => console.log("[wheel5] selected:", wheel.selectedValue)
+      }));
+  }
   function setupSelectWheelTests() {
       selectWheelTest1();
       selectWheelTest2();
+      selectWheelTest3();
+      selectWheelTest4();
+      selectWheelTest5();
   }
 
   const palette = ["#4a90d9", "#6bc76f", "#e07b4a", "#9b59b6", "#e74c3c", "#1abc9c"];
