@@ -745,6 +745,8 @@ declare class TurboNestedMap<ValueType = any, KeyType = string | symbol | number
  */
 declare class TurboObserver<DataType = any, ComponentType extends object = any, DataKeyType extends KeyType = KeyType> extends TurboNestedMap<ComponentType, DataKeyType> {
     protected _isInitialized: boolean;
+    private readonly prevData;
+    private replaceOnUpdate;
     /**
      * @property onAdded
      * @description Delegate called when a change is reported at a key path for which no component instance exists yet.
@@ -882,6 +884,7 @@ type TurboObserverProperties<DataType = any, ComponentType extends object = any,
     onAdded?: (data: DataType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => ComponentType | void;
     onUpdated?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void;
     onDeleted?: (data: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void;
+    replaceOnUpdate?: (prevData: DataType, newData: DataType, instance: ComponentType, self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => boolean;
     onInitialize?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void;
     onDestroy?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void;
 };

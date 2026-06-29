@@ -3391,6 +3391,8 @@ class TurboNestedMap {
  */
 class TurboObserver extends TurboNestedMap {
     _isInitialized = false;
+    prevData = new TurboNestedMap();
+    replaceOnUpdate;
     /**
      * @property onAdded
      * @description Delegate called when a change is reported at a key path for which no component instance exists yet.
@@ -3448,6 +3450,8 @@ class TurboObserver extends TurboNestedMap {
             else
                 this.removeValue(instance);
         });
+        if (properties.replaceOnUpdate)
+            this.replaceOnUpdate = properties.replaceOnUpdate;
         if (properties.onInitialize)
             this.onInitialize.add((self) => properties.onInitialize(self));
         if (properties.onDestroy)
@@ -3508,6 +3512,7 @@ class TurboObserver extends TurboNestedMap {
                     instance.remove();
             });
         super.clear();
+        this.prevData.clear();
         this._isInitialized = false;
     }
     /**
@@ -3533,16 +3538,30 @@ class TurboObserver extends TurboNestedMap {
         let instance = this.get(...keys);
         if (!instance && deleted)
             return;
-        else if (instance && deleted) {
+        if (instance && deleted) {
+            this.prevData.remove(...keys);
             this.onDeleted.fire(value, instance, this, ...keys);
             return;
         }
-        else if (!instance) {
+        if (instance && this.replaceOnUpdate) {
+            const prev = this.prevData.get(...keys);
+            if (this.replaceOnUpdate(prev, value, instance, this, ...keys)) {
+                // Semantically a different item at this key — destroy old, create new.
+                this.prevData.remove(...keys);
+                this.onDeleted.fire(prev, instance, this, ...keys);
+                // Force-detach if the onDeleted handler didn't remove the instance.
+                if (this.get(...keys) === instance)
+                    this.detach(...keys);
+                instance = undefined;
+            }
+        }
+        if (!instance) {
             instance = this.onAdded.fire(value, this, ...keys);
             if (!instance)
                 return;
             this.set(instance, ...keys);
         }
+        this.prevData.set(value, ...keys);
         this.onUpdated.fire(value, instance, this, ...keys);
     }
 }
@@ -4859,15 +4878,10 @@ let TurboModel = (() => {
                         }
                     }
                 }
-                else if (deep) {
+                else if (deep)
                     observer.keyChanged([...prefixKeys, ...incomingKeys], this.get(...prefixKeys, ...incomingKeys), deleted);
-                }
-                else {
-                    // Only propagate deleted=true when the change is directly AT the observed depth.
-                    // A deletion deeper than the registered pattern (incomingKeys.length > 1) means the
-                    // observed key itself still exists — fire onUpdated, not onDeleted.
+                else
                     observer.keyChanged([...prefixKeys, incomingKeys[0]], this.get(...prefixKeys, incomingKeys[0]), deleted && incomingKeys.length === 1);
-                }
                 return;
             }
             if (incomingKeys.length === 0) {

@@ -69,6 +69,9 @@ type TurboObserverProperties<
     onDeleted?: (data: DataType, instance: ComponentType,
                  self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => void,
 
+    replaceOnUpdate?: (prevData: DataType, newData: DataType, instance: ComponentType,
+                       self: TurboObserver<DataType, ComponentType, DataKeyType>, ...keys: KeyType[]) => boolean,
+
     onInitialize?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void,
     onDestroy?: (self: TurboObserver<DataType, ComponentType, DataKeyType>) => void,
 };

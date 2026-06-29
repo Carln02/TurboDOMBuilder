@@ -3,6 +3,7 @@ import {TurboNestedMap} from "../../turboComponents/datatypes/nestedMap/nestedMa
 import {TurboObserverProperties} from "./model.types";
 import {TurboModel} from "./model";
 import {KeyType} from "../../types/basic.types";
+import {areEqual} from "../../utils/computations/equity";
 
 /**
  * @class TurboObserver
@@ -24,6 +25,9 @@ class TurboObserver<
     DataKeyType extends KeyType = KeyType,
 > extends TurboNestedMap<ComponentType, DataKeyType> {
     protected _isInitialized = false;
+
+    private readonly prevData: TurboNestedMap<DataType, DataKeyType> = new TurboNestedMap();
+    private replaceOnUpdate: TurboObserverProperties<DataType, ComponentType, DataKeyType>["replaceOnUpdate"];
 
     /**
      * @property onAdded
@@ -93,6 +97,8 @@ class TurboObserver<
             else this.removeValue(instance);
         });
 
+        if (properties.replaceOnUpdate) this.replaceOnUpdate = properties.replaceOnUpdate;
+
         if (properties.onInitialize) this.onInitialize.add((self) => properties.onInitialize(self));
         if (properties.onDestroy) this.onDestroy.add((self) => properties.onDestroy(self));
 
@@ -152,6 +158,7 @@ class TurboObserver<
                 instance.remove();
         });
         super.clear();
+        this.prevData.clear();
         this._isInitialized = false;
     }
 
@@ -179,14 +186,31 @@ class TurboObserver<
         let instance: ComponentType | void = this.get(...keys);
 
         if (!instance && deleted) return;
-        else if (instance && deleted) {
+
+        if (instance && deleted) {
+            this.prevData.remove(...keys);
             this.onDeleted.fire(value, instance, this, ...keys);
             return;
-        } else if (!instance) {
+        }
+
+        if (instance && this.replaceOnUpdate) {
+            const prev = this.prevData.get(...keys);
+            if (this.replaceOnUpdate(prev, value, instance, this, ...keys)) {
+                // Semantically a different item at this key — destroy old, create new.
+                this.prevData.remove(...keys);
+                this.onDeleted.fire(prev, instance, this, ...keys);
+                // Force-detach if the onDeleted handler didn't remove the instance.
+                if (this.get(...keys) === instance) this.detach(...keys);
+                instance = undefined;
+            }
+        }
+
+        if (!instance) {
             instance = this.onAdded.fire(value, this, ...keys);
             if (!instance) return;
             this.set(instance, ...keys);
         }
+        this.prevData.set(value, ...keys);
         this.onUpdated.fire(value, instance, this, ...keys);
     }
 }
