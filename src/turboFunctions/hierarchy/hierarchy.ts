@@ -292,10 +292,13 @@ export function setupHierarchyFunctions() {
     };
 
     /**
-     * Finds the closest ancestor of the current element (or the current element itself) that matches the provided
-     * CSS selector or element type.
-     * @param {ValidTag | (new (...args: any[]) => Element)} type - The (valid) CSS selector string, or element
-     * constructor/class to match.
+     * Finds the closest ancestor of the current element (or the current element itself) that matches the
+     * provided type. Accepts either a constructor (matched via `instanceof`) or a string. When a string is
+     * given it is first resolved to a constructor via `customElements` (so `"my-component"` matches any
+     * element that is an `instanceof MyComponent`); if no custom element is registered for that name it
+     * falls back to a native CSS-selector walk via `Element.closest()`.
+     * @param {string | (new (...args: any[]) => Element)} type - Custom-element tag name, CSS selector,
+     * or element constructor to match.
      * @returns {Element | null} The matching ancestor element, or null if no match is found.
      */
     TurboSelector.prototype.closest = function _closest(
@@ -305,19 +308,18 @@ export function setupHierarchyFunctions() {
         if (!this.element || !type || !(this.element instanceof Element)) return null;
 
         if (typeof type === "string") {
-            const constructor = customElements.get(type);
-            if (constructor) {
-                let element: Element = this.element;
-                while (element && !(element instanceof constructor)) element = element.parentElement;
-                return element || null;
+            const ctor = customElements.get(type);
+            if (ctor) {
+                let el: Element = this.element;
+                while (el && !(el instanceof ctor)) el = el.parentElement;
+                return el || null;
             }
             return this.element.closest(type);
-        } else if (typeof type === "function") {
-            let element: Element = this.element;
-            while (element && !(element instanceof type)) element = (element as Element).parentElement;
-            return element || null;
         }
-        return null;
+
+        let el: Element = this.element;
+        while (el && !(el instanceof type)) el = (el as Element).parentElement;
+        return el || null;
     };
 
     //Parent identification

@@ -86,26 +86,45 @@ class TurboEvent extends Event {
     }
 
     /**
-     * @description Returns the closest element of the provided type to the target (Searches through the element and
-     * all its parents to find one of matching type).
-     * @param type
-     * @param strict
-     * @param from
+     * @description Returns the closest ancestor (or the element itself) that matches the given type.
+     * Accepts a constructor (matched via `instanceof`) or a custom-element tag name string such as
+     * `"my-component"` (resolved to its registered constructor via `customElements`, then matched via
+     * `instanceof`). Falls back to a native CSS-selector walk when no custom element is registered for
+     * the given string.
+     * @param type - Constructor or custom-element tag name / CSS selector string.
+     * @param strict - When `true` (default) the matched element must contain the event position.
+     * Pass an `Element` to use that element's bounds as the containment check instead.
+     * @param from - Whether to start from the event target or from the elements under the pointer position.
      */
+    public closest<T extends Element>(type: new (...args: any[]) => T, strict?: Element | boolean,
+                                      from?: ClosestOrigin): T | null;
+    public closest(type: string, strict?: Element | boolean, from?: ClosestOrigin): Element | null;
     @cache()
-    public closest<T extends Element>(type: new (...args: any[]) => T, strict: Element | boolean = true,
-                                      from: ClosestOrigin = ClosestOrigin.target): T | null {
-        const elements = from == ClosestOrigin.target ? [this.target]
+    public closest<T extends Element>(
+        type: string | (new (...args: any[]) => T),
+        strict: Element | boolean = true,
+        from: ClosestOrigin = ClosestOrigin.target
+    ): T | Element | null {
+        const elements = from === ClosestOrigin.target ? [this.target]
             : document.elementsFromPoint(this.position.x, this.position.y);
 
         const strictElement = strict instanceof Element ? strict : null;
         const isStrict = strict === true || strictElement !== null;
 
+        const ctor: (new (...args: any[]) => Element) | undefined =
+            typeof type === "string" ? customElements.get(type) : type;
+
         for (let element of elements) {
-            while (element && !((element instanceof type)
+            if (!ctor) {
+                // No registered custom element for the string — CSS selector fallback.
+                const match = (element as Element).closest(type as string);
+                if (match && (!isStrict || this.isPositionInsideElement(this.position, strictElement ?? match)))
+                    return match;
+                continue;
+            }
+            while (element && !((element instanceof ctor)
                 && (!isStrict || this.isPositionInsideElement(this.position, strictElement ?? element))
             )) element = element.parentElement;
-
             if (element) return element as T;
         }
         return null;
